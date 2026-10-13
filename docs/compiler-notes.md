@@ -31,7 +31,8 @@ names are examples in this repository where the pattern can be seen.
   any name ending in `_XXXXXXXX` does. symbol_addrs.txt adds names without an address (`sqrtf`, which GCC's
   `__builtin_sqrtf` calls as its NaN fallback).
 - The C calls libultra by address names (`func_800B0610`); libultra_map.json gives the real names (`osRecvMesg`).
-- Globals are `extern` in the function files. Only src/data defines storage, at the address in each name.
+- Globals are `extern` (include/variables.h, or the source file when the type is local to it). Only src/data defines
+  storage.
 - A `lui`/`%lo` pair may form a struct's base with the field offset in the instruction
   (`addiu $v0, $v0, -0x5BC0 ; D_800CA440` then `swc1 $f0, 0x3C($v0)`): use the base symbol with a struct or array,
   not a separate extern for the field.
@@ -47,7 +48,7 @@ names are examples in this repository where the pattern can be seen.
 
 ## Display lists (F3DEX2 GBI)
 
-ctx.h includes `<ultra64.h>` with `F3DEX_GBI_2`: the game's display lists use F3DEX2 command bytes. They are
+common.h includes `<ultra64.h>` with `F3DEX_GBI_2`: the game's display lists use F3DEX2 command bytes. They are
 built with the SDK macros on a post-incremented `Gfx *`: `gDPPipeSync(gdl++);`,
 `gDPSetPrimColor(gdl++, 0, 0, r, g, b, 255);`, `gDPFillRectangle(gdl++, ulx, uly, lrx, lry);`,
 `gDPLoadTLUT_pal256(gdl++, pal);`, `gSPDisplayList(gdl++, dl);`, `gSPEndDisplayList(gdl++);`. Recognise them by the

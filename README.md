@@ -89,11 +89,13 @@ build_asm.py, build_libultra.py, build_data.py, then build_rom.py. To check edit
 
 ```
 functions.csv        every function-sized range of both images: name, image, address, size, module,
-                     kind (c, copy, asm, libultra, padding), compiler profile, source
-include/             ctx.h (shared declarations; includes <ultra64.h>), data.h
-src/game/<module>/   the game's C, one file per function, grouped by original source file
-src/game/unnamed/    functions of object files whose name is unknown, by segment and start address
-src/boot/            the boot loader's C
+                     kind (c, copy, asm, libultra, padding), compiler profile, source, copy_of (the game function
+                     a boot loader copy is built from)
+include/             common.h (<ultra64.h> and basics), game.h (what the game's C includes: structs.h, functions.h,
+                     variables.h), boot.h (the boot loader's declarations), data.h (types for src/data)
+src/game/<module>.c  the game's C, one file per original source file, functions in address order
+src/game/unnamed/    object files whose name is unknown, named after their segment and start address
+src/boot/            the boot loader's C, one file per object and compiler
 src/data/            initialized data of both images
 src/libgcc/          libgcc's 64-bit division as KMC shipped it
 asm/                 hand-written asm, each file naming its image and address range
@@ -109,6 +111,11 @@ docs/                compiler-notes.md: the compilers and how their output maps 
 
 - Names are still mostly `func_XXXXXXXX` / `D_XXXXXXXX`, and many structs are offsets and pad fields. Naming and
   documentation are welcome; tools/build_all.py checks that the build still matches.
+- Each function was matched with its own declarations, and they don't always agree: a global seen as a different
+  struct, a function declared with other parameters. Where a function's code depends on its own view, it uses a
+  second name for the same symbol, the shared name plus `_<n>` (`D_800EFD70_3`, `func_800A2444_2`; same address,
+  listed in the symbol table). Struct names ending in `_<n>` are different layouts that functions gave the same
+  name. Unifying these is part of naming the game's data.
 - 6 functions keep inline asm because the original holds instructions C does not produce (the `break 0x407` halts,
   a debug `break 0x400`, a library function from another compiler). A few others use empty asm statements to force a
   register allocation (docs/compiler-notes.md).
