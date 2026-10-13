@@ -1,0 +1,32 @@
+# Compiler profiles (tools/sn64.py). `toolchain` names the setting (environment variable or config.toml entry, see
+# README.md) that gives the folder holding the three programs. functions.csv says which profile built each function.
+default_profile = "sn281"
+
+[profiles.sn281]
+# SN Systems SN64: GNU C 2.8.1-based cc1n64 + asn64 (marijnvdwerf/sn64 release 1,0,0,2). The game image and 15
+# boot loader functions.
+toolchain = "SN64_GCC281"
+cpp = "cppn64.exe"
+cc1 = "cc1n64.exe"
+as = "asn64.exe"
+cflags = "-O2 -G0 -mcpu=vr4300 -mips3 -mgp32 -mfp32"
+asflags = "-q -G0"
+
+[profiles.sn272_0006]
+# SN64 GNU C 2.7.2 (cygnus-2.7.2-970404, SN32.3.7 build 0006; decomp.me's n64_sn272_0006). Most of the boot loader
+# (epilogues end `addiu $sp; jr $ra; nop`) and the boot loader's data.
+toolchain = "SN64_GCC272_0006"
+cpp = "cppn64.exe"
+cc1 = "cc1n64.exe"
+as = "asn64.exe"
+cflags = "-O2 -G0 -mcpu=vr4300 -mips3 -mgp32 -mfp32"
+asflags = "-q -G0"
+
+[profiles.sn272_0001]
+# SN64 GNU C 2.7.2.SN32.3.7 build 0001 (Feb 1997; decomp.me's n64_sn272_0001). 8 boot loader functions.
+toolchain = "SN64_GCC272_0001"
+cpp = "cppn64.exe"
+cc1 = "cc1n64.exe"
+as = "asn64.exe"
+cflags = "-O2 -G0 -mips3 -mgp32 -mfp32"
+asflags = "-q -G0"

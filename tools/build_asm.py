@@ -1,0 +1,119 @@
+"""Assemble the hand-written asm (asm/*.s) and write it into a build's code images.
+
+usage: python tools/build_asm.py [OUT]      (default: build/out)
+
+Each asm/*.s names its image and range in its header (`# image: boot`, `# vram: 0x80002CB0-0x80003660`).
+Every file is assembled with GNU as for MIPS (MIPS_PREFIX, default mips-linux-gnu-; -march=vr4300 -mabi=32 -G0
+-EB) and linked with ld at its range's start (through WSL on Windows); symbols it uses but doesn't define, named
+by address (func_/boot_func_/D_XXXXXXXX), are given to ld with --defsym. Then, in OUT/boot.bin and OUT/game.bin,
+every asm block (BLOCKS below) and every file's range is zeroed and the assembled bytes are written there, and
+each image is compared with the original. Nothing is written if a file fails to assemble.
+"""
+import re
+import shlex
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import common  # noqa: E402
+
+ROOT = common.ROOT
+ASM = ROOT / "asm"
+VRAM = common.VRAM
+# The ranges of the original images that are hand-written asm (functions.csv kind `asm`; the SN stub and SwdExpand
+# ranges include the bytes around their functions, SwdExpand's starts at its module's variables). Every byte of
+# these must come from some asm/*.s.
+BLOCKS = {"game": [(0x80000400, 0x80000450)],
+          "boot": [(0x80000400, 0x80000450), (0x80002CB0, 0x80003660), (0x800113B0, 0x80011600)]}
+
+
+def parse(src: Path):
+    text = src.read_text()
+    img = re.search(r"^#\s*image:\s*(\w+)", text, re.M)
+    rng = re.search(r"^#\s*vram:\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)", text, re.M)
+    if not img or not rng:
+        sys.exit(f"{src.name}: header needs `# image: <boot|game>` and `# vram: 0xSTART-0xEND`")
+    defined = set(re.findall(r"^\s*([A-Za-z_.$][\w.$]*):", text, re.M))
+    used = set(re.findall(r"\b([A-Za-z_]\w*_([0-9A-Fa-f]{8}))\b", text))
+    ext = sorted((n, int(a, 16)) for n, a in used if n not in defined)
+    return img.group(1), int(rng.group(1), 16), int(rng.group(2), 16), ext
+
+
+def main():
+    build = common.output_dir(sys.argv[1] if len(sys.argv) > 1 else common.BUILD / "out")
+    files = sorted(ASM.glob("*.s"))
+    if not files:
+        sys.exit(f"no .s files in {ASM}")
+    x = common.setting("MIPS_PREFIX", "mips-linux-gnu-")
+    jobs = []
+    with tempfile.TemporaryDirectory() as td:
+        tdir = Path(td)
+        script = ["set -e"]
+        for f in files:
+            img, lo, hi, ext = parse(f)
+            inside = [n for n, a in ext if lo <= a < hi]
+            if inside:
+                print(f"warning: {f.name} uses {', '.join(inside)} inside its own range but doesn't define it")
+            stem = shlex.quote(common.posix_path(tdir / f.stem))
+            defs = " ".join(f"--defsym {n}=0x{a:08X}" for n, a in ext)
+            script += [f"echo '== {f.name}'",
+                       f"{x}as -march=vr4300 -mabi=32 -G0 -EB -o {stem}.o {shlex.quote(common.posix_path(f))}",
+                       # as gives .text 16-byte alignment; ld would pad a start like 0x80011584 up to 0x80011590
+                       f"{x}objcopy --set-section-alignment .text=4 {stem}.o",
+                       f"{x}ld -EB -Ttext=0x{lo:08X} -e 0x{lo:08X} {defs} -o {stem}.elf {stem}.o",
+                       f"{x}objcopy -O binary -j .text {stem}.elf {stem}.bin"]
+            jobs.append((f, img, lo, hi))
+        sh = tdir / "build.sh"
+        sh.write_text("\n".join(script) + "\n", newline="\n")
+        rc, out = common.run_posix(sh)
+        if rc:
+            sys.exit(f"assembly failed (nothing written):\n{out}")
+        if any(not line.startswith("== ") for line in out.splitlines()):
+            print(out)                                  # assembler/linker warnings
+        blobs = []
+        for f, img, lo, hi in jobs:
+            b = (tdir / f"{f.stem}.bin").read_bytes()
+            n = hi - lo
+            if len(b) < n or any(b[n:]):
+                sys.exit(f"{f.name}: assembled {len(b):#x} bytes, range {lo:#x}-{hi:#x} needs {n:#x} "
+                         f"(nothing written)")
+            blobs.append((f, img, lo, hi, b[:n]))
+
+    # The ranges must not overlap and must cover every asm block.
+    cover = {}
+    for f, img, lo, hi, _ in blobs:
+        for a in range(lo, hi):
+            if (img, a) in cover:
+                sys.exit(f"{f.name} overlaps {cover[img, a]} at {a:#x}")
+            cover[img, a] = f.name
+    for img, blocks in BLOCKS.items():
+        for lo, hi in blocks:
+            miss = [a for a in range(lo, hi) if (img, a) not in cover]
+            if miss:
+                print(f"warning: {img} {miss[0]:#x}-{miss[-1] + 1:#x}: {len(miss)} asm-block bytes no .s covers")
+
+    images = {}
+    for img in sorted(set(BLOCKS) | {j[1] for j in blobs}):
+        p = build / f"{img}.bin"
+        if not p.exists():
+            sys.exit(f"missing {p}")
+        images[img] = bytearray(p.read_bytes())
+    zero = [(img, lo, hi) for img, bl in BLOCKS.items() for lo, hi in bl] + [(j[1], j[2], j[3]) for j in blobs]
+    for img, lo, hi in zero:
+        images[img][lo - VRAM:hi - VRAM] = bytes(hi - lo)
+    for f, img, lo, hi, b in blobs:
+        images[img][lo - VRAM:hi - VRAM] = b
+    orig = {img: common.original(img) for img in images}
+    for f, img, lo, hi, b in blobs:
+        d = sum(x != y for x, y in zip(b, orig[img][lo - VRAM:hi - VRAM]))
+        print(f"{f.name:20} {img} {lo:#010x}-{hi:#010x} {hi - lo:5} bytes, {d} differ")
+    for img, data in images.items():
+        (build / f"{img}.bin").write_bytes(data)
+        o = orig[img]
+        d = sum(x != y for x, y in zip(data, o)) + abs(len(data) - len(o))
+        print(f"{img}: {d} bytes differ from the original")
+
+
+if __name__ == "__main__":
+    main()

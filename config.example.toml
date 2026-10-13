@@ -1,0 +1,21 @@
+# Copy to config.toml (not tracked) and fill in, or set environment variables of the same names.
+# Paths may use forward slashes on Windows.
+
+# SN Systems SN64 toolchains: folders holding cppn64.exe, cc1n64.exe and asn64.exe
+SN64_GCC281 = "/path/to/sn64/gcc281"            # GNU C 2.8.1 build (the game)
+SN64_GCC272_0006 = "/path/to/sn64/gcc272_0006"  # GNU C 2.7.2 build 0006 (the boot loader)
+SN64_GCC272_0001 = "/path/to/sn64/gcc272_0001"  # GNU C 2.7.2 build 0001 (8 boot loader functions)
+
+# decompals/ultralib checkout at commit e24c836 (headers for the C; libultra sources)
+ULTRALIB = "/path/to/ultralib"
+
+# KMC GCC 2.7.2 + binutils 2.6 for Linux, extracted into one folder (gcc, cc1, cpp, as, ar, ...)
+KMC_GCC = "/path/to/kmc-gcc-2.7.2"
+
+# John Brandwood's SWD32 compressor (github.com/jbrandwood/SWD32)
+SWD32 = "/path/to/swd32.exe"
+
+# Optional
+# MIPS_PREFIX = "mips-linux-gnu-"                 # GNU binutils for MIPS (run through WSL on Windows)
+# WINE = "wine"                                   # runs the Win32 tools on a non-Windows host
+# LIBULTRA_WORK = "~/excitebike64-libultra"       # Linux-filesystem folder the libultra objects are built in

@@ -1,0 +1,1 @@
+sqrtf = 0x800ADFB0; // libultra sqrtf: GCC's __builtin_sqrtf NaN fallback calls it by this name

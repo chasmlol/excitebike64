@@ -1,0 +1,18 @@
+# ROMs (bring your own)
+*.z64
+*.n64
+*.v64
+baserom*
+
+# build output: extracted images, objects, the rebuilt ROM
+build/
+*.o
+*.bin
+
+# local settings and toolchains
+config.toml
+toolchain/
+toolchains/
+tools/bin/
+__pycache__/
+*.pyc
