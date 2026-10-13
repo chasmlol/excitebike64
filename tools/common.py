@@ -13,6 +13,7 @@ repository root (not tracked; see config.example.toml):
 from __future__ import annotations
 
 import csv
+import json
 import os
 import subprocess
 import sys
@@ -72,6 +73,72 @@ def functions() -> tuple[dict, ...]:
             r["size"] = int(r["size"])
             out.append(r)
     return tuple(out)
+
+
+@lru_cache(None)
+def symbols() -> dict:
+    """symbols.txt: {image: {name: Symbol}}, every name the C, asm and data use (see the file's header)."""
+    out = {k: {} for k in IMAGES}
+    for n, line in enumerate((ROOT / "symbols.txt").read_text().splitlines(), 1):
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        f = line.split()
+        if len(f) not in (5, 6) or f[1] not in IMAGES or f[3] not in ("func", "data"):
+            sys.exit(f"symbols.txt:{n}: expected `name image address kind size [shares-address-with]`")
+        sym = Symbol(f[0], f[1], int(f[2], 16), f[3], None if f[4] == "-" else int(f[4], 0),
+                     f[5] if len(f) == 6 else None)
+        if sym.name in out[sym.image]:
+            sys.exit(f"symbols.txt:{n}: {sym.name} is listed twice for the {sym.image} image")
+        out[sym.image][sym.name] = sym
+    return out
+
+
+class Symbol:
+    __slots__ = ("name", "image", "address", "kind", "size", "alias_of")
+
+    def __init__(self, name, image, address, kind, size, alias_of):
+        self.name, self.image, self.address, self.kind = name, image, address, kind
+        self.size, self.alias_of = size, alias_of
+
+
+@lru_cache(None)
+def libultra_names(image: str) -> dict[str, int]:
+    """libultra's own names (libultra_map.json): its functions and the symbols its objects define."""
+    m = json.loads((ROOT / "libultra_map.json").read_text())["images"][image]
+    out = {n: int(a, 16) for n, a in m["symbols"].items()}
+    for e in m["objects"]:
+        out.update({n: int(a, 16) for n, a in e.get("functions", {}).items()})
+    return out
+
+
+def resolver(image: str):
+    """name -> address in one image: symbols.txt, then libultra's own names. None if the name is unknown."""
+    tab = symbols()[image]
+    lib = libultra_names(image)
+
+    def resolve(name: str):
+        s = tab.get(name)
+        if s is not None:
+            return s.address
+        return lib.get(name)
+    return resolve
+
+
+@lru_cache(None)
+def names_at(image: str) -> dict[int, str]:
+    """address -> the name to show for it: a function of functions.csv, else the first symbol there that isn't a
+    second name, else libultra's."""
+    out = {}
+    for f in functions():
+        if f["image"] == image and f["kind"] != "padding":
+            out.setdefault(f["address"], f["name"])
+    for s in symbols()[image].values():
+        if s.alias_of is None:
+            out.setdefault(s.address, s.name)
+    for n, a in libultra_names(image).items():
+        out.setdefault(a, n)
+    return out
 
 
 @lru_cache(None)

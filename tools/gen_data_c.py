@@ -6,7 +6,7 @@ Needs rabbitizer (the code's accesses to each address come from listings of the 
    run on the result: bytes that stay poisoned both times are written by no other step. Saved in
    build/data_left.json (--reuse skips the builds).
 2. Symbols. One starts at every leftover run's start, at every address of the same image the code names
-   (D_XXXXXXXX in the C of src/, libultra_map.json, boot_syms.json) and at every address a data word points to.
+   (symbols.txt, libultra_map.json) and at every address a data word points to.
    A symbol ends where the next one starts. (The listings' `; D_` addresses only tell how an address is accessed:
    their lui/lo pairing is a linear scan that crosses branches and names addresses inside strings.)
 3. Relocations. A 4-aligned word whose value is an address of the image becomes `(u32)name` (`(u32)&name` for a
@@ -23,7 +23,8 @@ Needs rabbitizer (the code's accesses to each address come from listings of the 
 6. Check: every file is compiled (build_data.py's compile) and each symbol compared with the original bytes; a
    float symbol that doesn't reproduce is regenerated as u32.
 Output: include/data.h and one file per block of leftover runs (runs less than 0x400 bytes apart):
-src/data/<image>_<start>.c. Existing src/data/*.c files are replaced.
+src/data/<image>_<start>.c. Existing src/data/*.c files are replaced. A symbol takes the name symbols.txt has for its
+address, else D_XXXXXXXX, which is added to symbols.txt.
 
 usage: python tools/gen_data_c.py [--reuse]
 """
@@ -37,6 +38,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -117,25 +119,21 @@ def leftover():
 
 # ---------------------------------------------------------------- 2. what the code references
 def code_refs():
-    """-> names {image: {address}}: the symbols the code names (the C, libultra_map.json, boot_syms.json);
+    """-> names {image: {address}}: the symbols the code names (the C, symbols.txt, libultra_map.json);
     ops {image: {address: {mnemonic}}}: how the original functions access an address (listings' `; D_` comments)."""
     names = {k: set() for k in IMAGES}
     ops = {k: defaultdict(set) for k in IMAGES}
     decls = {k: defaultdict(set) for k in IMAGES}
-    for fn in common.functions():
-        if fn["kind"] != "c":
-            continue
-        k = fn["image"]
-        text = (ROOT / fn["source"]).read_text(errors="replace")
-        for m in re.finditer(r"\b[A-Za-z]\w*_([0-9A-Fa-f]{8})\b", text):
-            names[k].add(int(m.group(1), 16))
-        for a, cat in extern_decls(text):
+    sources = {(fn["image"], fn["source"]) for fn in common.functions() if fn["kind"] == "c"}
+    sources |= {("game", "include/variables.h"), ("boot", "include/boot.h")}
+    for k, src in sorted(sources):
+        text = (ROOT / src).read_text(errors="replace")
+        for a, cat in extern_decls(text, common.symbols()[k]):
             decls[k][a].add(cat)
     lib = json.loads((ROOT / "libultra_map.json").read_text())["images"]
     for k in IMAGES:
         names[k] |= {int(v, 16) for v in lib[k]["symbols"].values()}
-    if (ROOT / "boot_syms.json").exists():
-        names["boot"] |= {int(v, 16) for v in json.loads((ROOT / "boot_syms.json").read_text()).values()}
+        names[k] |= {s.address for s in common.symbols()[k].values()}
     # The listings' `; D_` comments pair each low half with the last lui of its register in a linear scan, which
     # crosses branches (func_80017338 +0x538 reads D_800E7728; its comment says D_800D7728, inside a string):
     # they tell how an address is accessed (lwc1, lhu, ...), not where symbols start.
@@ -155,8 +153,8 @@ CATS = {"u8": "u8", "unsigned char": "u8", "s8": "s8", "signed char": "s8", "cha
         "double": "f64", "s32": "s32", "int": "s32", "u32": "u32", "unsigned int": "u32", "unsigned": "u32"}
 
 
-def extern_decls(text):
-    """(address, category) for each `extern T D_XXXXXXXX...;` declarator: u8 s8 char u16 s16 f32 f64 s32 u32,
+def extern_decls(text, symtab):
+    """(address, category) for each `extern T name...;` declarator of a symbol: u8 s8 char u16 s16 f32 f64 s32 u32,
     ptr (pointers, function pointers) or other (structs, typedefs)."""
     for m in re.finditer(r"^\s*extern\s+([^;{}]*);", text, re.M):
         t = re.match(r"((?:(?:const|volatile|unsigned|signed|struct|union|enum)\s+)*[A-Za-z_]\w*)\s*(.*)$",
@@ -174,9 +172,9 @@ def extern_decls(text):
                 cur += ch
         decl.append(cur)
         for d in decl:
-            n = re.search(r"\bD_([0-9A-Fa-f]{8})\b", d)
+            n = next((m for m in re.finditer(r"[A-Za-z_]\w*", d) if m.group(0) in symtab), None)
             if n:
-                yield int(n.group(1), 16), "ptr" if "*" in d[:n.start()] else CATS.get(base, "other")
+                yield symtab[n.group(0)].address, "ptr" if "*" in d[:n.start()] else CATS.get(base, "other")
 
 
 def known_names(image):
@@ -196,6 +194,34 @@ def known_names(image):
     for n, a in m["symbols"].items():
         names.setdefault(int(a, 16), n)
     return names, funcs
+
+
+@lru_cache(None)
+def _data_names(image):
+    out = {}
+    for sym in common.symbols()[image].values():
+        if sym.alias_of is None and sym.kind == "data":
+            out.setdefault(sym.address, sym.name)
+    return out
+
+
+def default_name(image, addr):
+    """The name symbols.txt gives a data address (not a second name), else D_XXXXXXXX."""
+    return _data_names(image).get(addr, f"D_{addr:08X}")
+
+
+def add_symbols(syms):
+    """List the generated symbols symbols.txt doesn't have yet."""
+    tab = common.symbols()
+    new = [f"{s.name}  {k}  0x{s.addr:08X}  data  {s.size:#x}" for k in IMAGES for s in syms[k]
+           if s.name not in tab[k]]
+    if new:
+        with open(ROOT / "symbols.txt", "a", newline="\n") as fh:
+            fh.write("\n".join(new) + "\n")
+        common.symbols.cache_clear()
+        common.names_at.cache_clear()
+        _data_names.cache_clear()
+        print(f"added {len(new)} symbols to symbols.txt")
 
 
 # ---------------------------------------------------------------- 4. symbols and types
@@ -488,6 +514,8 @@ def generate(res, no_float):
                 syms += classify(cx, a, b, ptrs)
         syms.sort(key=lambda s: s.addr)
         assert sum(s.size for s in syms) == sum(hi - lo for lo, hi in left)
+        for s in syms:
+            s.name = default_name(image, s.addr)
         # relocation expressions
         addrs = [s.addr for s in syms]
 
@@ -498,7 +526,7 @@ def generate(res, no_float):
                 return (syms[i].name, w - syms[i].addr, syms[i].ctype + " scalar" * syms[i].scalar)
             if w in names:
                 return (names[w], 0, "func" if w in funcs else "u8")
-            return (f"D_{w:08X}", 0, "u8")
+            return (default_name(image, w), 0, "u8")
         refd = defaultdict(set)
         for s in syms:
             if s.items and s.ctype == "u32":
@@ -526,7 +554,7 @@ def generate(res, no_float):
             out = [f"/* {image} data {lo:#010x}-{hi:#010x}: {len(fs)} symbols, {nbytes} bytes from C",
                    f" * image: {image}",
                    " * Generated by tools/gen_data_c.py from the original image; built by tools/build_data.py,",
-                   " * which places every symbol at the address in its name. Gaps are bytes other steps build. */",
+                   " * which places every symbol at its address in symbols.txt. Gaps are bytes other steps build. */",
                    '#include "data.h"', ""]
             if used:
                 out += [f"extern void {n}();" if kind == "func" else
@@ -590,6 +618,7 @@ def main():
         (ROOT / "include" / "data.h").write_text(DATA_H, newline="\n")
         for name, text in files.items():
             (SRC / name).write_text(text, newline="\n")
+        add_symbols(syms)
         built, errors = BD.build_all(sorted(SRC.glob("*.c")))
         for e in errors:
             print("error:", e)
@@ -600,8 +629,8 @@ def main():
             orig = common.original(image)
             for fname, n, addr, data, rels in built[image]:
                 if data != orig[addr - VRAM:addr - VRAM + len(data)]:
-                    bad.append((image, n))
-        fl = [(k, int(n[2:], 16)) for k, n in bad if (k, int(n[2:], 16)) not in no_float]
+                    bad.append((image, n, addr))
+        fl = [(k, a) for k, n, a in bad if (k, a) not in no_float]
         print(f"wrote {len(files)} files, {sum(len(v) for v in syms.values())} symbols; "
               f"{len(bad)} symbols differ from the original" + (f": {bad[:8]}" if bad else ""))
         if not bad:

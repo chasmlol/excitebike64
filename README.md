@@ -85,6 +85,20 @@ build_asm.py, build_libultra.py, build_data.py, then build_rom.py. To check edit
 `python tools/build_code.py build/test --only func_80000F0C` reports the bytes that differ from the original.
 `python tools/sn64.py func_80000F0C` lists the original function, `python tools/sn64.py file.c` the compiled one.
 
+## Naming
+
+symbols.txt is the one place that says where a name is: the tools resolve every name of the C, the asm and the data
+through it (and libultra's own names through libultra_map.json), never from the name itself. To rename symbols:
+
+```sh
+python tools/rename.py func_8000D2E0 game_main D_800EFD70 gGame
+```
+
+replaces the names everywhere (sources, headers, asm, data, symbols.txt, functions.csv, tools, docs), the
+`_<n>` second names with them (`OLD_3` becomes `NEW_3`), refuses a name that is already taken, and then
+runs tools/build_all.py, which must still end with the original ROM's SHA-1. A new symbol needs a line in
+symbols.txt.
+
 ## Layout
 
 ```
@@ -99,8 +113,7 @@ src/boot/            the boot loader's C, one file per object and compiler
 src/data/            initialized data of both images
 src/libgcc/          libgcc's 64-bit division as KMC shipped it
 asm/                 hand-written asm, each file naming its image and address range
-symbol_addrs.txt     names without an address in them
-boot_syms.json       boot-image addresses of the symbols the boot copies of game functions use
+symbols.txt          every name the C, asm and data use: image, address, kind (func or data), size
 libultra_map.json    where each libultra object's sections sit, and libultra's symbol addresses
 platform.toml        compiler profiles
 tools/               extraction, build and analysis scripts (tools/common.py lists the settings)

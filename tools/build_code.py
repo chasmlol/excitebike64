@@ -3,7 +3,8 @@ functions.csv with its profile, link each function at its original address (relo
 literals placed where the game keeps them) and write the bytes into OUT/game.bin and OUT/boot.bin. Each function's
 range is zeroed first, so nothing of the original code survives unnoticed. The boot loader's copies of game
 functions (`copy`, the game function named in `copy_of`) are built from the game function's C, linked at the boot
-address. Reports the bytes and the functions that differ from the original images.
+address. Names resolve through symbols.txt (common.resolver). Reports the bytes and the functions that differ from
+the original images.
 
 A source file holds several functions (one object file); each is linked by its symbol. The object's data sections
 (.rdata: strings, float literals, jump tables) are placed whole where all of its functions' original lui/lo pairs
@@ -15,7 +16,6 @@ usage: python tools/build_code.py OUT [--base DIR] [--jobs N] [--only NAME ...]
 """
 import argparse
 import concurrent.futures as cf
-import json
 import struct
 import sys
 import tempfile
@@ -101,11 +101,11 @@ def solve_bases(lnk, refs):
     return bases, problems
 
 
-def link_function(fn, symbol, lnk, addr, size, orig_img, resolver=None, bases=None):
+def link_function(fn, symbol, lnk, addr, size, orig_img, resolver, bases=None):
     """-> (code bytes, [(address, bytes, (section, offset) or None for a whole section)], [problems]).
-    lnk: the object (LnkFile or bytes); bases: solve_bases() for the object (default: from this function alone).
+    lnk: the object (LnkFile or bytes); resolver: name -> address (common.resolver(image));
+    bases: solve_bases() for the object (default: from this function alone).
     The data sections with a base are placed whole; the literals of the others one by one."""
-    resolver = resolver or sn64.resolve
     if not isinstance(lnk, LnkFile):
         lnk = LnkFile(lnk)
     tidx, text = lnk.section_by_name(".text")
@@ -241,7 +241,7 @@ def derive_syms(lnk, symbol, addr, size, orig_img):
     return out
 
 
-def link_image(entries, objs, orig_img, resolver=None):
+def link_image(entries, objs, orig_img, resolver):
     """Link functions into one image. entries: [(name, symbol, source, address, size)].
     -> {name: (code, placed, problems)}"""
     by_src = {}
@@ -319,7 +319,7 @@ def main():
     data_bytes = {"game": 0, "boot": 0}
     writes = []          # (image, function, address, bytes, padding?)
 
-    def link(entries, img, resolver=None):
+    def link(entries, img, resolver):
         for fn, (code, placed, probs) in link_image(entries, objs, orig[img], resolver).items():
             f = table[fn]
             if probs:
@@ -330,24 +330,19 @@ def main():
             writes.extend((img, fn, base, data) for base, data, where in placed)
     for img in common.IMAGES:
         link([(f["name"], f["name"], f["source"], f["address"], f["size"]) for f in items
-              if f["image"] == img and f["source"] in objs], img)
-    # The symbols the boot copies use live elsewhere in the boot image; their boot addresses come from
-    # boot_syms.json (written once from the original relocated fields, then reused).
-    sym_path = ROOT / "boot_syms.json"
-    boot_syms = json.loads(sym_path.read_text()) if sym_path.exists() else None
+              if f["image"] == img and f["source"] in objs], img, common.resolver(img))
+    # The boot copies are linked with the boot image's symbols: the game names they use are listed for the boot
+    # image in symbols.txt as well.
     dup_entries = [(f["name"], f["copy_of"], table[f["copy_of"]]["source"], f["address"], f["size"]) for f in dups
                    if table[f["copy_of"]]["source"] in objs]
-    if boot_syms is None:
-        derived = {}
-        for name, sym, src, ad, n in dup_entries:
-            derived.update(derive_syms(LnkFile(objs[src]), sym, ad, n, orig["boot"]))
-        boot_syms = derived
-        sym_path.write_text(json.dumps({k: f"{v:#010x}" for k, v in sorted(boot_syms.items())}, indent=1))
-        print(f"wrote {sym_path.name}: {len(boot_syms)} boot-side symbol addresses")
-    else:
-        boot_syms = {k: int(v, 16) for k, v in boot_syms.items()}
-    bres = lambda name: boot_syms.get(name, sn64.resolve(name))  # noqa: E731
-    link(dup_entries, "boot", bres)
+    link(dup_entries, "boot", common.resolver("boot"))
+    for name, sym, src, ad, n in dup_entries:
+        if any("unresolved" in x for x in problems.get(name, [])):
+            known = common.symbols()["boot"]
+            hint = {k: v for k, v in derive_syms(LnkFile(objs[src]), sym, ad, n, orig["boot"]).items()
+                    if k not in known}
+            problems[name].append("symbols.txt has no boot address for "
+                                  + ", ".join(f"{k} (the original uses {v:#010x})" for k, v in hint.items()))
     print(f"boot copies of game functions: {len(dup_entries)} built from the game's C")
     for img, fn, base, data in writes:
         o = base - VRAM

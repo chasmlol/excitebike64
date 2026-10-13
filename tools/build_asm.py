@@ -4,8 +4,8 @@ usage: python tools/build_asm.py [OUT]      (default: build/out)
 
 Each asm/*.s names its image and range in its header (`# image: boot`, `# vram: 0x80002CB0-0x80003660`).
 Every file is assembled with GNU as for MIPS (MIPS_PREFIX, default mips-linux-gnu-; -march=vr4300 -mabi=32 -G0
--EB) and linked with ld at its range's start (through WSL on Windows); symbols it uses but doesn't define, named
-by address (func_/boot_func_/D_XXXXXXXX), are given to ld with --defsym. Then, in OUT/boot.bin and OUT/game.bin,
+-EB) and linked with ld at its range's start (through WSL on Windows); the symbols of its image (symbols.txt) it
+uses but doesn't define are given to ld with --defsym. Then, in OUT/boot.bin and OUT/game.bin,
 every asm block (BLOCKS below) and every file's range is zeroed and the assembled bytes are written there, and
 each image is compared with the original. Nothing is written if a file fails to assemble.
 """
@@ -35,8 +35,11 @@ def parse(src: Path):
     if not img or not rng:
         sys.exit(f"{src.name}: header needs `# image: <boot|game>` and `# vram: 0xSTART-0xEND`")
     defined = set(re.findall(r"^\s*([A-Za-z_.$][\w.$]*):", text, re.M))
-    used = set(re.findall(r"\b([A-Za-z_]\w*_([0-9A-Fa-f]{8}))\b", text))
-    ext = sorted((n, int(a, 16)) for n, a in used if n not in defined)
+    code = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    code = re.sub(r"#.*", "", code)
+    resolve = common.resolver(img.group(1))
+    used = {n for n in re.findall(r"(?<![\w.$])([A-Za-z_]\w*)", code) if n not in defined}
+    ext = sorted((n, resolve(n)) for n in used if resolve(n) is not None)
     return img.group(1), int(rng.group(1), 16), int(rng.group(2), 16), ext
 
 

@@ -27,9 +27,9 @@ names are examples in this repository where the pattern can be seen.
 
 ## Names, globals and literals
 
-- `func_XXXXXXXX` (game), `boot_func_XXXXXXXX` (boot loader) and `D_XXXXXXXX` resolve to the address in the name;
-  any name ending in `_XXXXXXXX` does. symbol_addrs.txt adds names without an address (`sqrtf`, which GCC's
-  `__builtin_sqrtf` calls as its NaN fallback).
+- Every name resolves through symbols.txt (per image: the boot loader's `func_80008030` is not the game's), libultra's
+  own names through libultra_map.json (`sqrtf`, which GCC's `__builtin_sqrtf` calls as its NaN fallback). The
+  default names are `func_XXXXXXXX` (game), `boot_func_XXXXXXXX` (boot loader) and `D_XXXXXXXX`.
 - The C calls libultra by address names (`func_800B0610`); libultra_map.json gives the real names (`osRecvMesg`).
 - Globals are `extern` (include/variables.h, or the source file when the type is local to it). Only src/data defines
   storage.

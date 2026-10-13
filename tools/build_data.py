@@ -1,20 +1,19 @@
 """Build the game's initialized data from C (src/data/*.c) and write it into a build's images.
 
-Every src/data/*.c names its image in a header comment (`image: game` or `image: boot`) and defines symbols named
-by address (D_XXXXXXXX, or a name in symbol_addrs.txt). Each file is compiled with the SN compiler (tools/sn64.py;
-profile sn281 for the game, sn272_0006 for the boot loader) through a wrapper that also records sizeof() of every
-symbol the file defines; each symbol's bytes are taken from the object, its relocations (REL32 words:
-`(u32)func_80012340`, `(u32)D_800D5DD8 + 4`, ...) resolved by name -- libultra_map.json for libultra's names,
-boot_syms.json and boot addresses for the boot image, otherwise the address in the name -- and written at its
-address in OUT/<image>.bin. The ranges in FROM_ROM are ROM content, not program data: the C only declares them
-extern, and they are copied from the extracted images. Then the written bytes are compared with the originals.
+Every src/data/*.c names its image in a header comment (`image: game` or `image: boot`) and defines symbols that
+symbols.txt places. Each file is compiled with the SN compiler (tools/sn64.py; profile sn281 for the game,
+sn272_0006 for the boot loader) through a wrapper that also records sizeof() of every symbol the file defines; each
+symbol's bytes are taken from the object, its relocations (REL32 words: `(u32)func_80012340`,
+`(u32)D_800D5DD8 + 4`, ...) resolved by name through symbols.txt (and libultra_map.json for libultra's names), and
+written at its address in OUT/<image>.bin. The ranges in FROM_ROM are ROM content, not program data: the C only
+declares them extern, and they are copied from the extracted images. Then the written bytes are compared with the
+originals.
 
 usage: python tools/build_data.py [OUT] [--check]    (default OUT: build/out)
   --check   compile and compare only, leave OUT untouched
 Exit status 1 if a byte differs or a symbol can't be placed.
 """
 import argparse
-import json
 import re
 import struct
 import sys
@@ -62,16 +61,8 @@ def rom_decl(lo, hi, name, ctype, what):
 
 
 def resolver(image):
-    """name -> address for the given image: libultra's real names (libultra_map.json), the boot image's addresses
-    of game-named symbols (boot_syms.json), otherwise the address the name encodes / symbol_addrs.txt."""
-    names = {}
-    m = json.loads((ROOT / "libultra_map.json").read_text())["images"][image]
-    names.update({k: int(v, 16) for k, v in m["symbols"].items()})
-    for e in m["objects"]:
-        names.update({k: int(v, 16) for k, v in e.get("functions", {}).items()})
-    if image == "boot" and (ROOT / "boot_syms.json").exists():
-        names.update({k: int(v, 16) for k, v in json.loads((ROOT / "boot_syms.json").read_text()).items()})
-    return lambda name: names.get(name, sn64.resolve(name))
+    """name -> address in the given image (symbols.txt, libultra's names)."""
+    return common.resolver(image)
 
 
 def file_image(path: Path) -> str:
@@ -131,7 +122,7 @@ def compile_file(src: Path):
         sec, off, kind = syms[n]
         addr = res(n)
         if addr is None:
-            problems.append(f"{n}: no address (name it D_XXXXXXXX or add it to symbol_addrs.txt)")
+            problems.append(f"{n}: not in symbols.txt for the {image} image")
             continue
         size = size_of[n]
         s = lnk.sections.get(sec)

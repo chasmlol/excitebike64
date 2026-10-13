@@ -1,17 +1,17 @@
-"""The SN Systems SN64 toolchain: compile a C file to an SN LNK object, resolve names to addresses, list code.
+"""The SN Systems SN64 toolchain: compile a C file to an SN LNK object, list code.
 
 compile(): cppn64 -> cc1n64 -> asn64 with a platform.toml profile, producing a Psy-Q LNK object (tools/snobj.py).
-resolve(): names that encode an address (func_XXXXXXXX, D_XXXXXXXX, any name ending in _XXXXXXXX) and the names in
-symbol_addrs.txt.
 
 Listings (need rabbitizer: pip install rabbitizer), one instruction per line, the same notation for the original
-and for an object: relocations resolved to the original's addresses (`lui $v0, 0x800C` / `addiu $v0, $v0, 0x2384`),
-a `; D_XXXXXXXX` comment on each low half naming the address its %hi/%lo pair forms, branches and in-function jumps
-as `L+0x1c` (offset from the function start), calls as `jal func_XXXXXXXX`. Literals in an object's own .rdata
-show as `%lo(rdata+0x10:3dcccccd)` (their bytes), jump tables as `jtbl=L+0x1c,...`.
+and for an object: relocations resolved to the original's addresses through symbols.txt (`lui $v0, 0x800C` /
+`addiu $v0, $v0, 0x2384`), a `; D_XXXXXXXX` comment on each low half naming the address its %hi/%lo pair forms,
+branches and in-function jumps as `L+0x1c` (offset from the function start), calls by the callee's name
+(`jal func_8000ED10`). Literals in an object's own .rdata show as `%lo(rdata+0x10:3dcccccd)` (their bytes), jump
+tables as `jtbl=L+0x1c,...`.
 
-usage: python tools/sn64.py func_XXXXXXXX        listing of a function of the original images
-       python tools/sn64.py file.c [profile]     compile (default profile sn281) and list the object's functions
+usage: python tools/sn64.py NAME                  listing of a function of the original images (functions.csv)
+       python tools/sn64.py file.c [profile]     compile (default: the file's profile in functions.csv, else sn281)
+                                                 and list the object's functions
 """
 from __future__ import annotations
 
@@ -40,24 +40,9 @@ CPP_DEFINES = ["-undef", "-D__GNUC__=2", "-Dmips", "-D__mips__", "-D__mips", "-D
 
 # --- names -------------------------------------------------------------------------------------------------
 
-@lru_cache(None)
-def symbol_map() -> dict[str, int]:
-    """Names a C file may use for an address, beyond the _XXXXXXXX convention (symbol_addrs.txt: name = 0x...;)."""
-    out = {}
-    f = ROOT / "symbol_addrs.txt"
-    if f.exists():
-        for line in f.read_text().splitlines():
-            m = re.match(r"\s*([A-Za-z_]\w*)\s*=\s*(0x[0-9A-Fa-f]+)\s*;", line)
-            if m:
-                out[m.group(1)] = int(m.group(2), 16)
-    return out
-
-
-def resolve(name: str) -> int | None:
-    m = re.search(r"_([0-9A-Fa-f]{8})$", name)
-    if m:
-        return int(m.group(1), 16)
-    return symbol_map().get(name)
+def call_name(image: str, a: int) -> str:
+    """How listings name a call target: its symbol, else func_XXXXXXXX."""
+    return common.names_at(image).get(a, f"func_{a:08X}")
 
 
 # --- compiling ---------------------------------------------------------------------------------------------
@@ -242,11 +227,11 @@ def target_lines(img: str, start: int, size: int) -> list[tuple[int, str]]:
         op = i.getOpcodeName()
         call = jump = None
         if op == "jal":
-            call = f"func_{i.getInstrIndexAsVram():08X}"
+            call = call_name(img, i.getInstrIndexAsVram())
         elif op == "j":
             t = i.getInstrIndexAsVram()
             jump = t - start
-            call = f"func_{t:08X}"
+            call = call_name(img, t)
         texts.append(render(w, off, size, call, jump))
     texts = pair_comments(texts)
     out = []
@@ -283,9 +268,10 @@ def _literal_key(lnk: LnkFile, sec: int, off: int, op: str, fstart: int, part: s
     return f"{label}:{data[:n].hex()}"
 
 
-def disassemble(obj: Path) -> dict[str, list[tuple[int, str]]]:
-    """Listing of every function of an SN object, relocations resolved where the name gives an address."""
+def disassemble(obj: Path, image: str = "game") -> dict[str, list[tuple[int, str]]]:
+    """Listing of every function of an SN object, relocations resolved through the image's symbols."""
     rz = _rabbitizer()
+    resolve = common.resolver(image)
     lnk = LnkFile(Path(obj).read_bytes())
     tidx, text = lnk.section_by_name(".text")
     if text is None:
@@ -331,14 +317,14 @@ def disassemble(obj: Path) -> dict[str, list[tuple[int, str]]]:
                 if addr is not None:
                     w = patch(w, t, addr)
                     if t.startswith("REL26"):
-                        call = f"func_{addr:08X}"
+                        call = call_name(image, addr)
                 elif jump is None:
                     if t.startswith("REL26"):
                         call = label
                     else:
                         sym = f"%{part}({label})"
             if op == "jal" and call is None:
-                call = f"func_{rz.Instruction(w, VRAM).getInstrIndexAsVram():08X}"
+                call = call_name(image, rz.Instruction(w, VRAM).getInstrIndexAsVram())
             texts.append(render(w, off, size, call, jump, sym))
         out[name] = [(k * 4, t) for k, t in enumerate(pair_comments(texts))]
     return out
@@ -349,13 +335,16 @@ def main():
         sys.exit(__doc__)
     arg = sys.argv[1]
     if arg.endswith(".c"):
-        prof = common.profile(sys.argv[2] if len(sys.argv) > 2 else "sn281")
+        rel = Path(arg).resolve().relative_to(ROOT).as_posix() if Path(arg).resolve().is_relative_to(ROOT) else arg
+        row = next((f for f in common.functions() if f["source"] == rel and f["kind"] == "c"), None)
+        name = sys.argv[2] if len(sys.argv) > 2 else (row["profile"] or "sn281") if row else "sn281"
+        image = row["image"] if row else ("boot" if "/boot/" in rel else "game")
         with tempfile.TemporaryDirectory() as td:
             obj = Path(td) / "m.o"
-            ok, msg = compile(prof, Path(arg), obj, [ROOT / "include"])
+            ok, msg = compile(common.profile(name), Path(arg), obj, [ROOT / "include"])
             if not ok:
                 sys.exit(msg)
-            listings = disassemble(obj)
+            listings = disassemble(obj, image)
         for name, lines in listings.items():
             print(f"{name}:")
             for off, t in lines:
