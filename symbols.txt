@@ -4276,7 +4276,6 @@ sExhaustTextures                      game  0x800E929C  data        -
 sPuffTextures                         game  0x800E92A0  data        -
 sSplashSoundTime                      game  0x800E92A8  data        -
 D_800E92C8                            game  0x800E92C8  data        -
-D_800E92C8_2                          game  0x800E92C8  data        -  D_800E92C8
 sShadowTexAlloc                       game  0x800E92D0  data        -
 sClipInCount                          game  0x800E92D4  data        -
 sClipOutCount                         game  0x800E92D8  data        -

@@ -437,8 +437,8 @@ void decal_update_tire_tracks(void)
         if (sTireTrackCur[i] != NULL) {
             curArea = sTireTrackCur[i]->area;
             if (gCurTrack_5->mode == 1) {
-                ox = (((TrackModelList *)sHeightAreas)->e[curArea].x0 + ((TrackModelList *)sHeightAreas)->e[curArea].x1) / 2;
-                oz = (((TrackModelList *)sHeightAreas)->e[curArea].z0 + ((TrackModelList *)sHeightAreas)->e[curArea].z1) / 2;
+                ox = (sHeightAreas->e[curArea].x0 + sHeightAreas->e[curArea].x1) / 2;
+                oz = (sHeightAreas->e[curArea].z0 + sHeightAreas->e[curArea].z1) / 2;
             } else if (gCurTrack_5->mode == 2) {
                 ox = (curArea >> 16) * 8000 + 4000;
                 oz = (s16)curArea * 8000 + 4000;
@@ -522,8 +522,8 @@ TireTrack *decal_add_quad(s32 area, s32 *a0, s32 *a1, s32 *b0, s32 *b1, s32 surf
 
     mode = gCurTrack_32->mode;
     if (mode == 1) {
-        sx = (((TrackModelList *)sHeightAreas)->e[area].x0 + ((TrackModelList *)sHeightAreas)->e[area].x1) / 2;
-        sy = (((TrackModelList *)sHeightAreas)->e[area].z0 + ((TrackModelList *)sHeightAreas)->e[area].z1) / 2;
+        sx = (sHeightAreas->e[area].x0 + sHeightAreas->e[area].x1) / 2;
+        sy = (sHeightAreas->e[area].z0 + sHeightAreas->e[area].z1) / 2;
     } else if (mode == 2) {
         sx = (s16)(area >> 16) * 8000 + 4000;
         sy = (s16)area * 8000 + 4000;
@@ -634,10 +634,10 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
             }
         }
     } else if (gCurTrack_5->mode == 1) {
-        TrackModelList *l = (TrackModelList *)sHeightAreas;
+        TrackModelList *l = sHeightAreas;
         u32 bit;
         {
-            for (i = 0; i < ((TrackModelList *)sHeightAreas)->count; i++) {
+            for (i = 0; i < sHeightAreas->count; i++) {
                 if (l->e[i].mask & (1 << (arg3 * 2))) {
                 started = 0;
                 for (j = 0; j < 128; j++) {
@@ -675,7 +675,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
             for (j = 0; j < 8; j++) {
                 idx = i + j;
                 if (sTireTracks[idx].active) {
-                    if (((TrackModelList *)sHeightAreas)->e[sTireTracks[idx].area].mask & (1 << (arg3 * 2))) {
+                    if (sHeightAreas->e[sTireTracks[idx].area].mask & (1 << (arg3 * 2))) {
                         a = idx - sTireTrackNext;
                         if (a < 0) a += 128;
                         if (a >= 16) {

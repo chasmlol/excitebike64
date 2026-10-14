@@ -175,11 +175,11 @@ void particles_load_textures(void *file)
         } while (i < sSparkleTextures->count);
     }
     sSplashTextures = (TexSet *)res_load(file, D_800D0924);
-    prim_flip_images((ImgSet *)sSplashTextures);
+    prim_flip_images(sSplashTextures);
     sExhaustTextures = (TexSet *)res_load(file, D_800D0DAC);
-    prim_flip_images((ImgSet *)sExhaustTextures);
-    D_800E92C8_2 = (TexSet *)res_load(file, D_800D10B4);
-    prim_flip_images((ImgSet *)D_800E92C8_2);
+    prim_flip_images(sExhaustTextures);
+    D_800E92C8 = (TexSet *)res_load(file, D_800D10B4);
+    prim_flip_images(D_800E92C8);
 }
 
 typedef struct {

@@ -1183,7 +1183,6 @@ extern TexSet *sExhaustTextures;
 extern TexSet *sPuffTextures;
 extern s32 sSplashSoundTime[];
 extern TexSet *D_800E92C8;
-extern TexSet *D_800E92C8_2;
 extern void *sShadowTexAlloc;
 extern s32 sClipInCount;
 extern s32 sClipOutCount;
