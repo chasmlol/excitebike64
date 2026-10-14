@@ -85,6 +85,15 @@
 #define PAK_SCREEN_LOAD_USER_TRACK 3
 #define PAK_SCREEN_SAVE_USER_TRACK 4
 
+/* gCups: the season's rounds (Season.cup - gCups), then the custom round and the tutorial's lessons */
+#define CUP_BRONZE    0
+#define CUP_SILVER    1
+#define CUP_GOLD      2
+#define CUP_PLATINUM  3
+#define CUP_CHALLENGE 4 /* one race against one rider, after Platinum */
+#define CUP_CUSTOM    5 /* the custom round the player puts together */
+#define CUP_TUTORIAL  6
+
 /* gTracks flags (+0x50) the front end tests */
 #define TRACK_FLAG_USER         0x0002 /* the user track: no records */
 #define TRACK_FLAG_NEW_TIME     0x0080 /* the race set a record: initials to enter */
