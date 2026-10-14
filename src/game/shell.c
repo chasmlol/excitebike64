@@ -1,12 +1,6 @@
 #include "game.h"
 
 typedef struct {
-    u8 unk0[0xD];
-    u8 id;
-    u8 unkE[0x28 - 0xE];
-} Track_2;
-
-typedef struct {
     u8 pad[0x669];
     u8 f669;
     u8 pad66A[0x68C - 0x66A];
@@ -14,7 +8,6 @@ typedef struct {
     u8 pad690[0x7E0 - 0x690];
 } Ent_3;
 
-extern Track_2 gTutorialLessons_2[];
 extern Ent_3 gRiders_3[];
 
 s32 shell_format_pak_file_label(u8 *src, char *dst, s32 flag)
@@ -384,7 +377,7 @@ void shell_cb_season(s32 arg0) {
             gSeason->cup = &gCups[6];
             gSeason->round = 0;
             for (i = 0; i < 17; i++) {
-                if (gTutorialLessons_2[i].id == gSaveData_8.trackId) {
+                if (gTutorialLessons[i].level == gSaveData_8.trackId) {
                     gSeason->round = i;
                     return;
                 }
@@ -5555,7 +5548,7 @@ void shell_cb_tutorial(s32 arg)
         gSeason->cup = sTutorialRound;
         gSeason->round = 0;
         for (i = 0; i < 0x11; i++) {
-            if (gTutorialLessons_2[i].id == gSaveData_14.track) {
+            if (gTutorialLessons[i].level == gSaveData_14.track) {
                 gSeason->round = i;
                 return;
             }

@@ -133,15 +133,6 @@ Gfx *finishline_draw_user_track(Gfx *gdl, Mtx *proj, s32 i, s32 j)
 typedef struct { s16 m[32]; } MtxS_4;
 
 typedef struct {
-    u8 pad0[0xC];
-    u8 fC;
-    u8 padD[0x18 - 0xD];
-    s16 f18;
-    s16 f1A;
-    u8 pad1C[0x28 - 0x1C];
-} Track_15;
-
-typedef struct {
     f32 x, y, z;
     u8 padC[0x14 - 0xC];
     f32 f14;
@@ -152,7 +143,6 @@ typedef struct {
 typedef struct { u8 pad[0x58]; u16 f58; u8 pad5A[6]; u16 f60; } Fog_2;
 typedef struct { Mtx m[4]; } MtxSet;
 
-extern Track_15 gTutorialLessons_13[];
 extern Node_21 *gPathNodes_33;
 extern MtxSet sPropMtx_3[];
 extern Fog_2 *gCurTrack_36;
@@ -164,23 +154,23 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
     s32 ratio;
     Node_21 *nd;
 
-    if (gTutorialLessons_13[gSeason->round].f1A < gPathNodeCount) {
-        { u32 b = (u32)gPathNodes_33; nd = (Node_21 *)(gTutorialLessons_13[gSeason->round].f1A * sizeof(Node_21) + b); }
+    if (gTutorialLessons[gSeason->round].goalNode < gPathNodeCount) {
+        { u32 b = (u32)gPathNodes_33; nd = (Node_21 *)(gTutorialLessons[gSeason->round].goalNode * sizeof(Node_21) + b); }
         math_to_polar(nd->f18 * 1024.0f, nd->f14 * 1024.0f, &ang, &ratio);
         mtx_from_angles_pos_scale(&m1, 0, 0, ang, 0, 0, 0, 0x100);
         mtx_from_angles_pos_scale(&m2, 0, 0, 0,
-                      gPathNodes_33[gTutorialLessons_13[gSeason->round].f1A].x * 1000.0f,
-                      gPathNodes_33[gTutorialLessons_13[gSeason->round].f1A].y * 1000.0f,
-                      gPathNodes_33[gTutorialLessons_13[gSeason->round].f1A].z * 1000.0f, 0x10);
+                      gPathNodes_33[gTutorialLessons[gSeason->round].goalNode].x * 1000.0f,
+                      gPathNodes_33[gTutorialLessons[gSeason->round].goalNode].y * 1000.0f,
+                      gPathNodes_33[gTutorialLessons[gSeason->round].goalNode].z * 1000.0f, 0x10);
         mtx_mul(m1.m, m2.m, (s16 *)&sPropMtx_3[n].m[0]);
     }
-    nd = (Node_21 *)(gTutorialLessons_13[gSeason->round].f18 * sizeof(Node_21) + (u32)gPathNodes_33);
+    nd = (Node_21 *)(gTutorialLessons[gSeason->round].startNode * sizeof(Node_21) + (u32)gPathNodes_33);
     math_to_polar(nd->f18 * 1024.0f, nd->f14 * 1024.0f, &ang, &ratio);
     mtx_from_angles_pos_scale(&m1, 0, 0, ang, 0, 0, 0, 0x100);
     mtx_from_angles_pos_scale(&m2, 0, 0, 0,
-                  gPathNodes_33[gTutorialLessons_13[gSeason->round].f18].x * 1000.0f,
-                  gPathNodes_33[gTutorialLessons_13[gSeason->round].f18].y * 1000.0f,
-                  gPathNodes_33[gTutorialLessons_13[gSeason->round].f18].z * 1000.0f, 0x10);
+                  gPathNodes_33[gTutorialLessons[gSeason->round].startNode].x * 1000.0f,
+                  gPathNodes_33[gTutorialLessons[gSeason->round].startNode].y * 1000.0f,
+                  gPathNodes_33[gTutorialLessons[gSeason->round].startNode].z * 1000.0f, 0x10);
     mtx_mul(m1.m, m2.m, (s16 *)&sPropMtx_3[n].m[1]);
 
     gSPMatrix(gdl++, &sPropMtx_3[n].m[1], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
@@ -200,7 +190,7 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gPrimIATextures = 1;
     gdl = prim_build_dl(0, D_800F16E0, D_800EFD6C_3, gdl);
-    if (gTutorialLessons_13[gSeason->round].fC & 2) {
+    if (gTutorialLessons[gSeason->round].flags & 2) {
         gPrimIATextures = 0;
     } else {
         gSPMatrix(gdl++, &sPropMtx_3[n].m[0], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);

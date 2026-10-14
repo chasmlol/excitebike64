@@ -105,12 +105,6 @@ typedef struct {
 } Track_6;
 
 typedef struct {
-    u8 pad0[0x18];
-    s16 f18;
-    u8 pad1A[0x28 - 0x1A];
-} Course;
-
-typedef struct {
     u8 pad0[0x2C];
     s32 f2C;
     u8 pad30[0x50 - 0x30];
@@ -128,7 +122,6 @@ extern Blk500 *gBikeSkelTemplate_3;
 extern Blk780 *gRiderSkelTemplate_4;
 extern Bk gCamModes[];
 extern Opt_3 *gCurTrack_17;
-extern Course gTutorialLessons_7[];
 extern Track_6 *gPathNodes_3;
 extern Track_6 *trk_800EE498;
 
@@ -336,7 +329,7 @@ void bikes_init(void) {
                            || (gGame.mode == 0 && (gCurTrack_17->f50 & 2))) {
                     idx = 1;
                 } else if (gGame.mode == 9) {
-                    idx = gTutorialLessons_7[gSeason->round].f18;
+                    idx = gTutorialLessons[gSeason->round].startNode;
                 } else {
                     idx = gPathStartNode;
                 }

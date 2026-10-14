@@ -31,6 +31,27 @@ typedef struct Season {
     /* 0x6C */ u8 standings[8];     /* the riders by points */
 } Season; /* size 0x74 */
 
+/* A step of a tutorial lesson: a message shown at an event time, or with flag 2 a trick to perform. */
+typedef struct TutorialStep {
+    /* 0x00 */ s32 value;           /* event time, or trick */
+    /* 0x04 */ char *lines[3];
+} TutorialStep; /* size 0x10 */
+
+/* gTutorialLessons: the 17 lessons and tests of the tutorial (gSeason->round is the lesson). */
+typedef struct TutorialLesson {
+    /* 0x00 */ s32 unk_00[3];
+    /* 0x0C */ u8 flags;            /* 2 trick steps, 4 a second rider (takedown), 8 the start countdown */
+    /* 0x0D */ u8 level;            /* lessons of a level share it; gCups[6].progress[0] is the level open */
+    /* 0x0E */ u8 unk_0E[2];
+    /* 0x10 */ char *name;
+    /* 0x14 */ s32 time;            /* gEvent.time at the start */
+    /* 0x18 */ s16 startNode;       /* racing line nodes (gPathNodes) */
+    /* 0x1A */ s16 goalNode;
+    /* 0x1C */ s32 *demo;           /* the resource id of the demo replay, or NULL */
+    /* 0x20 */ s32 numSteps;
+    /* 0x24 */ TutorialStep *steps;
+} TutorialLesson; /* size 0x28 */
+
 /* The race HUD's glyph images (gGame.hudGlyphs, event_draw_glyph_string): an image set of res_load. */
 typedef struct HudGlyphs {
     /* 0x00 */ s32 count;

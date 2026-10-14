@@ -1,13 +1,6 @@
 #include "game.h"
 
 
-typedef struct {
-    s32 f[7];
-    s32 *p;
-    s32 g[2];
-} Ent40_2;
-
-extern Ent40_2 gTutorialLessons_3[];
 
 void race_init_replay(void)
 {
@@ -34,7 +27,7 @@ void race_init_replay(void)
         replay_play_start_2((s32)gActiveReplay_2);
     } else {
         if ((gGame.flags & 0x81) == 0 && gGame.mode == 9 &&
-            gTutorialLessons_3[gSeason->round].p != 0 && (gEvent.flags & 0x4000) == 0) {
+            gTutorialLessons[gSeason->round].demo != 0 && (gEvent.flags & 0x4000) == 0) {
             gEvent.flags = gEvent.flags & 0xffffbfff;
             gGhostRace = 0;
             gDemoPlayback = 1;
@@ -44,7 +37,7 @@ void race_init_replay(void)
                 gDemoPlayback = 0;
                 sDemoActive = 0;
             } else {
-                piVar1 = res_load(D_800E7728, *gTutorialLessons_3[gSeason->round].p);
+                piVar1 = res_load(D_800E7728, *gTutorialLessons[gSeason->round].demo);
                 *(volatile s32 **)&gActiveReplay_2 = piVar1;
                 gActiveReplaySize = piVar1[1] - piVar1[0];
                 gActiveReplay_2 = piVar1 + 2;
@@ -74,9 +67,6 @@ void race_init_replay(void)
     }
 }
 
-typedef struct { u8 pad[0x1C]; s32 *ptr; u8 pad2[8]; } Ent_10;
-
-extern Ent_10 gTutorialLessons_4[];
 
 void race_finish_replay(s32 param_1)
 {
@@ -92,7 +82,7 @@ void race_finish_replay(s32 param_1)
     if (gGhostRace == 0) {
         if (gDemoPlayback != 0) {
             gActiveReplay = 0;
-            res_unload((u32 *)((s32 *)D_800E7728_2[1] + gTutorialLessons_4[gSeason->round].ptr[0]));
+            res_unload((u32 *)((s32 *)D_800E7728_2[1] + gTutorialLessons[gSeason->round].demo[0]));
             goto T;
         }
         if (gRaceExitCode == 3 || g->mode == 9) goto T;
@@ -189,12 +179,6 @@ typedef struct {
 } Small;
 
 typedef struct {
-    u8 pad[0xC];
-    u8 fl;
-    u8 pad0D[0x1B];
-} Tab28;
-
-typedef struct {
     s32 data[0x1E0];
 } Blk_6;
 
@@ -206,7 +190,6 @@ typedef struct {
 
 extern Obj_6 *gCurTrack_14;
 extern Small D_800E3730_5;
-extern Tab28 gTutorialLessons_5[];
 extern Blk_6 *gRiderSkelTemplate_3;
 extern Slot_4 gRiders_14[8];
 
@@ -277,7 +260,7 @@ void race_init(s32 arg)
     if (gGame.mode == 4 || gGame.mode == 5) {
         gNumRiders = 6;
     } else if (gGame.mode == 9) {
-        if (gTutorialLessons_5[gSeason->round].fl & 4) {
+        if (gTutorialLessons[gSeason->round].flags & 4) {
             gNumRiders = 2;
         } else {
             gNumRiders = 1;
@@ -969,12 +952,6 @@ typedef struct {
 } Res_2;
 
 typedef struct {
-    u8 pad0[0xC];
-    u8 bC;
-    u8 padD[0x28 - 0xD];
-} Trk_6;
-
-typedef struct {
     s32 *a;
     s32 *b;
     s32 *w;
@@ -992,7 +969,6 @@ extern Player_7 gRiders_15[8];
 extern Gui D_800E3730_6;
 extern Res_2 *D_800E7728_4;
 extern Opt_2 gSaveData_3;
-extern Trk_6 gTutorialLessons_6[];
 
 void race_update(u32 *arg)
 {
@@ -1522,7 +1498,7 @@ void race_update(u32 *arg)
                 }
                 gPauseMenu = 0;
                 gEvent.flags &= ~0x2000;
-                if (gTutorialLessons_6[gSeason->round].bC & 4) {
+                if (gTutorialLessons[gSeason->round].flags & 4) {
                     gNumRiders = 2;
                 } else {
                     gNumRiders = 1;

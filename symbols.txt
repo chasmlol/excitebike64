@@ -1862,18 +1862,6 @@ D_800CACA4                            game  0x800CACA4  data     0x40
 D_800CACE4                            game  0x800CACE4  data     0x40
 D_800CAD24                            game  0x800CAD24  data     0xc0
 gTutorialLessons                      game  0x800CADE4  data    0x2b4
-gTutorialLessons_10                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_11                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_12                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_13                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_2                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_3                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_4                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_5                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_6                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_7                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_8                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_9                    game  0x800CADE4  data        -  gTutorialLessons
 sTutorialFailText                     game  0x800CB098  data     0x20
 sQuitConfirmItems                     game  0x800CB0B8  data      0x8
 sTutorialMenuItems                    game  0x800CB0C0  data     0x14
