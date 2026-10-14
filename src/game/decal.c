@@ -221,25 +221,25 @@ f32 debug_round_sig3(f32 x)
     return -a;
 }
 
-void debug_print_float(char *param_1, f32 param_2)
+void debug_print_float(char *label, f32 value)
 {
     char buf[40];
     s32 len;
-    str_copy(buf, param_1);
+    str_copy(buf, label);
     len = strlen(buf);
-    debug_ftoa(buf + len, param_2, 3);
+    debug_ftoa(buf + len, value, 3);
 }
 
-void debug_print_float2(char *param_1, f32 param_2, f32 param_3)
+void debug_print_float2(char *label, f32 a, f32 b)
 {
     char buf[40];
     s32 n;
     s32 i;
 
     mem_fill((u8 *)buf, 0x20, 0x1E);
-    str_copy(buf, param_1);
+    str_copy(buf, label);
     n = strlen(buf);
-    debug_ftoa(buf + n, param_2, 3);
+    debug_ftoa(buf + n, a, 3);
     i = 0;
     if (0 < n + 6) {
         do {
@@ -249,7 +249,7 @@ void debug_print_float2(char *param_1, f32 param_2, f32 param_3)
             i++;
         } while (i < n + 6);
     }
-    debug_ftoa(buf + 6 + n, param_3, 3);
+    debug_ftoa(buf + 6 + n, b, 3);
 }
 
 void debug_print_vec3(s32 arg0, f32 *v)
@@ -266,21 +266,21 @@ void debug_print_vec3(s32 arg0, f32 *v)
     debug_ftoa(bz + strlen(bz), v[2], 6);
 }
 
-void debug_print_int(char *param_1, s32 param_2) {
+void debug_print_int(char *label, s32 value) {
     char pad[16];
     char buf[40];
     char *b;
 
     b = buf;
-    str_copy(b, param_1);
-    int_to_str(param_2, b + strlen(b));
+    str_copy(b, label);
+    int_to_str(value, b + strlen(b));
 }
 
-void debug_print_hex(char *param_1, u32 param_2) {
+void debug_print_hex(char *label, u32 value) {
     char buf[56];
     char *s = buf + 16;
-    str_copy(s, param_1);
-    u32_to_hex_str(param_2, s + strlen(s));
+    str_copy(s, label);
+    u32_to_hex_str(value, s + strlen(s));
 }
 
 void decal_init(void)
@@ -699,9 +699,9 @@ void decal_free(void)
     mem_free(sTireTracks);
 }
 
-void decal_end_track(s32 a0)
+void decal_end_track(s32 rider)
 {
-    sTireTrackCur[a0] = 0;
+    sTireTrackCur[rider] = 0;
 }
 
 void decal_clear_all(void) {

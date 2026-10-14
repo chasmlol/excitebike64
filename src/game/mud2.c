@@ -93,31 +93,31 @@ struct Obj_29 {
     f32 v354[3];
 };
 
-void particles_emit_sparks(Obj_29 *param_1)
+void particles_emit_sparks(Obj_29 *rider)
 {
     f32 o[3];
     f32 t[3];
     u32 r;
     s32 iv;
 
-    if (gNumScreens == 1 && param_1->cnt350 != 0) {
-        param_1->cnt350 = param_1->cnt350 - 1;
-        if ((void *)param_1 == (void *)gRiders) {
-            vec3_mul_mtx3f(param_1->v354, param_1->vA0, o);
-            o[0] = param_1->v48[0] + o[0];
-            o[1] = param_1->v48[1] + o[1];
-            o[2] = param_1->v48[2] + o[2];
-            t[0] = param_1->v54[0] * 0.016666668f;
-            t[1] = param_1->v54[1] * 0.016666668f;
-            t[2] = param_1->v54[2] * 0.016666668f;
+    if (gNumScreens == 1 && rider->cnt350 != 0) {
+        rider->cnt350 = rider->cnt350 - 1;
+        if ((void *)rider == (void *)gRiders) {
+            vec3_mul_mtx3f(rider->v354, rider->vA0, o);
+            o[0] = rider->v48[0] + o[0];
+            o[1] = rider->v48[1] + o[1];
+            o[2] = rider->v48[2] + o[2];
+            t[0] = rider->v54[0] * 0.016666668f;
+            t[1] = rider->v54[1] * 0.016666668f;
+            t[2] = rider->v54[2] * 0.016666668f;
             r = random_byte();
-            if (0.0f < param_1->v354[0]) {
+            if (0.0f < rider->v354[0]) {
                 iv = r + 0x80;
             } else {
                 iv = r - 0x80;
             }
-            t[0] = t[0] + param_1->vA0[0] * ((f32)iv * 0.00012207031f);
-            t[2] = t[2] + param_1->vA0[2] * ((f32)iv * 0.00012207031f);
+            t[0] = t[0] + rider->vA0[0] * ((f32)iv * 0.00012207031f);
+            t[2] = t[2] + rider->vA0[2] * ((f32)iv * 0.00012207031f);
             r = random_byte();
             t[1] = t[1] + (f32)(s32)(r - 0x40) * 0.02f * 0.0078125f;
             particle_spawn(PARTICLE_SPARK, 0, (Vec3f *)o, (Vec3f *)t, gParticleWhite);
@@ -126,14 +126,14 @@ void particles_emit_sparks(Obj_29 *param_1)
     return;
 }
 
-void particles_load_textures(void *param_1)
+void particles_load_textures(void *file)
 {
     s32 n;
     s32 j;
     s32 i;
     u8 *pb;
 
-    sPuffTextures = (TexSet *)res_load(param_1, D_800D0E0C);
+    sPuffTextures = (TexSet *)res_load(file, D_800D0E0C);
     n = sPuffTextures->tex[0].width * (sPuffTextures->tex[0].height << 3);
     if (sPuffTextures->count != 0) {
         i = 0;
@@ -156,8 +156,8 @@ void particles_load_textures(void *param_1)
             i++;
         } while (i < sPuffTextures->count);
     }
-    sClodTextures = (TexSet *)res_load(param_1, D_800D0DB4);
-    sSparkleTextures = (TexSet *)res_load(param_1, D_800D0D20);
+    sClodTextures = (TexSet *)res_load(file, D_800D0DB4);
+    sSparkleTextures = (TexSet *)res_load(file, D_800D0D20);
     i = 0;
     if (sSparkleTextures->count != 0) {
         do {
@@ -174,11 +174,11 @@ void particles_load_textures(void *param_1)
             i++;
         } while (i < sSparkleTextures->count);
     }
-    sSplashTextures = (TexSet *)res_load(param_1, D_800D0924);
+    sSplashTextures = (TexSet *)res_load(file, D_800D0924);
     prim_flip_images((ImgSet *)sSplashTextures);
-    sExhaustTextures = (TexSet *)res_load(param_1, D_800D0DAC);
+    sExhaustTextures = (TexSet *)res_load(file, D_800D0DAC);
     prim_flip_images((ImgSet *)sExhaustTextures);
-    D_800E92C8_2 = (TexSet *)res_load(param_1, D_800D10B4);
+    D_800E92C8_2 = (TexSet *)res_load(file, D_800D10B4);
     prim_flip_images((ImgSet *)D_800E92C8_2);
 }
 
@@ -952,14 +952,14 @@ Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf) {
     return gdl;
 }
 
-void particles_init(s32 p)
+void particles_init(s32 surfaces)
 {
     sParticles = mem_alloc_dbg(0xD80, 0, D_800D6D00, 0x60);
     mem_fill((u8 *)sParticles, 0, 0xD80);
     sParticleLast = 0;
     mem_fill(sExhaustPuffTimers, 0, 0x40);
     mem_fill(sSplashSoundTime, 0, 0x20);
-    gSurfaceTablePtr = p;
+    gSurfaceTablePtr = surfaces;
     particles_update();
 }
 

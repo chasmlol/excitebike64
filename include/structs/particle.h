@@ -26,4 +26,7 @@ typedef struct Particle {
     /* 0x18 */ Vec3f vel;   /* metres per frame */
 } Particle; /* size 0x24 */
 
+/* Exhaust puffs and rain have no records of their own: sExhaustPuffTimers holds two 15-frame timers per bike, and
+   the rain of Rainforest Run is 64 streaks, each a quad of sRainVtx in screen space. */
+
 #endif
