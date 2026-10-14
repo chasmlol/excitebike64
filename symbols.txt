@@ -297,7 +297,6 @@ cam_get_track_pos                     game  0x8002C6B4  func    0x10c
 cam_collide_walls                     game  0x8002C7C0  func    0x2b0
 cam_shift_xz                          game  0x8002CA70  func    0x1c0
 cam_clamp_to_track                    game  0x8002CC30  func    0x5c0
-cam_clamp_to_track_2                  game  0x8002CC30  func        -  cam_clamp_to_track
 cam_keep_above_ground                 game  0x8002D1F0  func    0x194
 cam_shift_z                           game  0x8002D384  func     0xe0
 cam_mode_chase_7m                     game  0x8002D464  func     0x1c
@@ -1696,7 +1695,6 @@ sCamDampUp                            game  0x800C968C  data      0x4
 sCamSpringDown                        game  0x800C9690  data      0x4
 sCamDampDown                          game  0x800C9694  data      0x4
 gCamModes                             game  0x800C9698  data     0xc0
-gCamModes_2                           game  0x800C9698  data        -  gCamModes
 sCamHillDist                          game  0x800C9758  data      0x4
 sCamHillHeight                        game  0x800C975C  data      0x4
 sCamHillPitch                         game  0x800C9760  data      0x4
@@ -4212,20 +4210,10 @@ gCamPitch                             game  0x800E7978  data        -
 gCamPitch_2                           game  0x800E7978  data        -  gCamPitch
 sCamHistoryPos                        game  0x800E7988  data        -
 sCamHistory                           game  0x800E7998  data        -
-sCamHistory_2                         game  0x800E7998  data        -  sCamHistory
-sCamHistory_3                         game  0x800E7998  data        -  sCamHistory
-sCamHistory_4                         game  0x800E7998  data        -  sCamHistory
-sCamHistory_5                         game  0x800E7998  data        -  sCamHistory
-sCamHistory_6                         game  0x800E7998  data        -  sCamHistory
 D_800E7F98                            game  0x800E7F98  data        -
 sCamFrozen                            game  0x800E7FA8  data        -
 gCamZoneState                         game  0x800E7FC8  data        -
 gCamZoneState_2                       game  0x800E7FC8  data        -  gCamZoneState
-gCamZoneState_3                       game  0x800E7FC8  data        -  gCamZoneState
-gCamZoneState_4                       game  0x800E7FC8  data        -  gCamZoneState
-gCamZoneState_5                       game  0x800E7FC8  data        -  gCamZoneState
-gCamZoneState_6                       game  0x800E7FC8  data        -  gCamZoneState
-gCamZoneState_7                       game  0x800E7FC8  data        -  gCamZoneState
 sCamFrameCount                        game  0x800E7FE8  data        -
 gCamSegFlags                          game  0x800E7FF0  data        -
 gCamSegFlags_2                        game  0x800E7FF0  data        -  gCamSegFlags
@@ -4233,21 +4221,14 @@ gCamYaw                               game  0x800E8000  data        -
 gCamYaw_2                             game  0x800E8000  data        -  gCamYaw
 D_800E8002                            game  0x800E8002  data        -
 sCamAirBlend                          game  0x800E8010  data        -
-sCamAirBlend_2                        game  0x800E8010  data        -  sCamAirBlend
 sCamAirPitch                          game  0x800E8020  data        -
 sCamHistorySum                        game  0x800E8030  data        -
-sCamHistorySum_2                      game  0x800E8030  data        -  sCamHistorySum
-sCamHistorySum_3                      game  0x800E8030  data        -  sCamHistorySum
-sCamHistorySum_4                      game  0x800E8030  data        -  sCamHistorySum
-sCamHistorySum_5                      game  0x800E8030  data        -  sCamHistorySum
-sCamHistorySum_6                      game  0x800E8030  data        -  sCamHistorySum
 gCamPos                               game  0x800E8090  data        -
 gCamPos_2                             game  0x800E8090  data        -  gCamPos
 gCamPos_3                             game  0x800E8090  data        -  gCamPos
 gCamPos_4                             game  0x800E8090  data        -  gCamPos
 gCamPos_5                             game  0x800E8090  data        -  gCamPos
 sCamSegOrder                          game  0x800E80C0  data        -
-sCamSegOrder_2                        game  0x800E80C0  data        -  sCamSegOrder
 sGroundBestHeight                     game  0x800E80D0  data        -
 gGroundHeight                         game  0x800E80D4  data        -
 gGroundTris                           game  0x800E80D8  data        -

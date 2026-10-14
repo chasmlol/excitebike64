@@ -1,7 +1,5 @@
 #include "game.h"
 
-typedef struct { u8 pad[0x20]; f32 pos; f32 vel; } S28;
-
 struct Player_10 {
     s32 x, y, z;
     u8 pad0C[0x54 - 0xC];
@@ -16,41 +14,33 @@ struct Player_10 {
     u8 pad62A[0x7E0 - 0x62A];
 };
 
-struct Rec6 {
-    s32 x, y, z;
-    s32 rx, ry, rz;
-};
-
-struct Rec_4 {
-    s32 x, y, z, a, b, c;
-};
-
-struct Ent_2 { s32 w[6]; };
-
-extern Ent_2 sCamHistorySum[];
-extern S28 sCamPitchSprings[];
+extern CamMode gCamModes[];
+extern CamOut sCamHistorySum[4];
+extern CamPitchSpring sCamPitchSprings[4];
 
 void cam_init(s32 arg0)
 {
     s32 i, j;
+    s16 *order;
 
-    mem_fill(sCamShakeY, 0, 0x10);
-    mem_fill(sCamFrozen, 0, 0x20);
-    sCamSegOrder_2 = mem_alloc_dbg_2(gPathNodeCount << 1, 0, D_800D6A70, 0x239);
+    mem_fill((u8 *)sCamShakeY, 0, sizeof(sCamShakeY));
+    mem_fill((u8 *)sCamFrozen, 0, sizeof(sCamFrozen));
+    order = mem_alloc_dbg(gPathNodeCount << 1, 0, (s32)D_800D6A70, 0x239);
+    sCamSegOrder = order; /* through a local: the lui after the call */
     cam_build_segment_order();
-    mem_fill(sCamHistorySum, 0, 0x60);
-    mem_fill(sCamHistory, 0, 0x600);
-    mem_fill(sCamHistoryPos, 0, 0x10);
-    mem_fill(gCamZoneState_2, 0, 0x20);
-    mem_fill((u8 *)sCamPitchSprings, 0, 0xa0);
-    mem_fill(sCamAirBlend, 0, 0x10);
+    mem_fill((u8 *)sCamHistorySum, 0, sizeof(sCamHistorySum));
+    mem_fill((u8 *)sCamHistory, 0, sizeof(sCamHistory));
+    mem_fill((u8 *)sCamHistoryPos, 0, sizeof(sCamHistoryPos));
+    mem_fill((u8 *)gCamZoneState_2, 0, sizeof(gCamZoneState_2));
+    mem_fill((u8 *)sCamPitchSprings, 0, sizeof(sCamPitchSprings));
+    mem_fill((u8 *)sCamAirBlend, 0, sizeof(sCamAirBlend));
     sCamFrameCount = 0;
     for (i = 0; i < 4; i++) {
-        gCamPos_4[i].a = 0;
-        gCamPos_4[i].b = 0xbb0;
-        gCamPos_4[i].c = 0;
+        gCamPos[i].x = 0;
+        gCamPos[i].y = 2992;
+        gCamPos[i].z = 0;
         gCamTargets[i] = -1;
-        for (j = 0; j < 0x78; j++) {
+        for (j = 0; j < 120; j++) {
             sCamPitchSprings[i].vel += (2000.0f - sCamPitchSprings[i].pos) * sCamSpringUp;
             sCamPitchSprings[i].pos += sCamPitchSprings[i].vel;
             sCamPitchSprings[i].vel *= sCamDampUp;
@@ -118,39 +108,18 @@ typedef struct {
 } Cam_2;
 
 typedef struct {
-    u16 flags;
-    s16 mode;
-    u8 pad[4];
-} CamFlags;
-
-typedef struct {
-    void (*f0)(void);
-    void (*f4)(void *, s32 *);
-    void (*f8)(void);
-    u16 fC;
-    u16 pad;
-} CamMode;
-
-typedef struct {
-    s32 x, y, z, w, f10, f14;
-} CamPos;
-
-typedef struct {
     u8 pad[0x64];
     u8 b64;
     u8 pad2[0x6C - 0x65];
 } Area;
 
-extern CamMode gCamModes_2[];
 extern Player_10 gRiders_25[];
-extern CamFlags gCamZoneState_3[];
-extern CamPos sCamHistorySum_2[];
 extern Area *gPathNodes_6;
 extern Game_13 gGame_28;
 extern Cam_2 gEvent_12;
 
 void cam_update(void) {
-    s32 buf[6];
+    CamOut out;
     Vec3f pos;
     s32 area;
     f32 hh;
@@ -160,12 +129,10 @@ void cam_update(void) {
     s32 m2;
     s32 mode;
     s32 t, k;
-    CamFlags *e;
+    CamZoneState *e;
     u16 f;
     CamMode *cm;
     Player_10 *pl;
-    CamPos *c;
-    Vec3i *v;
     f32 dx, dz, d;
 
     sel = 0;
@@ -207,7 +174,7 @@ void cam_update(void) {
     if (gGame_28.f0 & 0x10) {
         t = gGame_28.f1C[gCamView];
         sCamTarget = t;
-        cam_update_rider_select(&gRiders_25[t], buf, t != gCamTargets[gCamView]);
+        cam_update_rider_select(&gRiders_25[t], &out, t != gCamTargets[gCamView]);
         gCamTargets[gCamView] = sCamTarget;
     } else {
         {
@@ -226,32 +193,32 @@ void cam_update(void) {
             gEvent_12.f58 &= ~0x80;
         }
         if (cam_find_zone() != 0) {
-            gCamZoneState_3[gCamView].flags |= 2;
+            gCamZoneState_2[gCamView].flags |= 2;
         } else {
-            gCamZoneState_3[gCamView].flags &= ~2;
+            gCamZoneState_2[gCamView].flags &= ~2;
         }
         if (D_800EE140 != 0) {
-            func_8002D888(&gRiders_25[sCamTarget], buf);
+            func_8002D888(&gRiders_25[sCamTarget], &out);
         } else {
             if ((gReplayPlayback != 0 || gCreditsMode != 0 || (gGame_28.f0 & 0x81)) &&
-                (gCamZoneState_3[gCamView].flags & 2)) {
-                if (!(gCamZoneState_3[gCamView].flags & 1)) {
-                    gCamZoneState_3[gCamView].flags |= 1;
+                (gCamZoneState_2[gCamView].flags & 2)) {
+                if (!(gCamZoneState_2[gCamView].flags & 1)) {
+                    gCamZoneState_2[gCamView].flags |= 1;
                     func_8002D890();
                 }
-                switch (gCamZoneState_3[gCamView].mode) {
+                switch (gCamZoneState_2[gCamView].type) {
                 case 0:
-                    cam_zone_update_dolly(&gRiders_25[sCamTarget], buf);
+                    cam_zone_update_dolly(&gRiders_25[sCamTarget], &out);
                     break;
                 case 1:
-                    cam_zone_update_follow(&gRiders_25[sCamTarget], buf);
+                    cam_zone_update_follow(&gRiders_25[sCamTarget], &out);
                     break;
                 }
             } else {
-                { CamFlags *bs = gCamZoneState_3; e = &bs[gCamView]; }
+                { CamZoneState *bs = gCamZoneState_2; e = &bs[gCamView]; }
                 f = e->flags;
                 if (f & 1) {
-                    mode = e->mode;
+                    mode = e->type;
                     e->flags = f & 0xFFFE;
                     if (mode < 2) if (mode >= 0) {
                         changed = 1;
@@ -278,45 +245,45 @@ void cam_update(void) {
                                     if (m >= 12) {
                                         m = 0;
                                     }
-                                } while (gCamModes_2[m].fC & 8);
+                                } while (gCamModes[m].flags & 8);
                             }
                         }
                     }
                 }
             }
             if (sel) {
-                cm = &gCamModes_2[gRiders_25[sCamTarget].f5AA];
-                if (cm->fC & 2) {
+                cm = &gCamModes[gRiders_25[sCamTarget].f5AA];
+                if (cm->flags & 2) {
                     changed = 1;
                 }
-                if (cm->f8 != NULL) {
-                    cm->f8();
+                if (cm->exit != NULL) {
+                    cm->exit();
                 }
                 pl = &gRiders_25[sCamTarget];
                 pl->f5A8 = m;
                 pl->f5AA = m;
                 gCamLastModes[gCamView] = (s16)m;
-                cm = &gCamModes_2[pl->f5AA];
-                if (cm->fC & 1) {
+                cm = &gCamModes[pl->f5AA];
+                if (cm->flags & 1) {
                     changed = 1;
                 }
-                if (cm->f0 != NULL) {
-                    cm->f0();
+                if (cm->init != NULL) {
+                    cm->init();
                 }
             }
             {
-            if (!(gCamZoneState_3[gCamView].flags & 1)) {
-                cm = &gCamModes_2[gRiders_25[sCamTarget].f5AA];
+            if (!(gCamZoneState_2[gCamView].flags & 1)) {
+                cm = &gCamModes[gRiders_25[sCamTarget].f5AA];
                 if (gInsetViewActive != 0 && gCamView == 1) {
-                    cm = &gCamModes_2[7];
+                    cm = &gCamModes[7];
                 }
-                if (cm->f4 != NULL) {
-                    cm->f4(&gRiders_25[gCamTargetOverride != -1 ? gCamTargetOverride : sCamTarget], buf);
+                if (cm->update != NULL) {
+                    cm->update(&gRiders_25[gCamTargetOverride != -1 ? gCamTargetOverride : sCamTarget], &out);
                     if (changed) {
                         if (s5 != NULL) {
-                            cam_snap_to_moving(buf, s5);
+                            cam_snap_to_moving(&out, s5);
                         } else {
-                            cam_snap_to(buf);
+                            cam_snap_to(&out);
                         }
                     }
                 }
@@ -325,22 +292,22 @@ void cam_update(void) {
         }
     }
     t = gCamView;
-    gCamPos[t].x = sCamHistorySum_2[t].x / 16;
-    gCamPos[t].y = sCamHistorySum_2[t].y / 16 + sCamShakeY[t];
-    gCamPos[t].z = sCamHistorySum_2[t].z / 16;
-    gCamPitch[t] = sCamHistorySum_2[t].w;
+    gCamPos[t].x = sCamHistorySum[t].x / 16;
+    gCamPos[t].y = sCamHistorySum[t].y / 16 + sCamShakeY[t];
+    gCamPos[t].z = sCamHistorySum[t].z / 16;
+    gCamPitch[t] = sCamHistorySum[t].pitch;
     if (sCamShakeY[t] != 0) {
         dx = (f32)gRiders_25[t].x - (f32)gCamPos[t].x;
         dz = (f32)gRiders_25[t].z - (f32)gCamPos[t].z;
         d = __builtin_sqrtf(dx * dx + dz * dz);
         gCamPitch[gCamView] += (s32)((f32)sCamShakeY[gCamView] / d * 32768.0f / 3.1415927f);
     }
-    gCamRoll[gCamView] = sCamHistorySum_2[gCamView].f10;
-    gCamYaw[gCamView] = sCamHistorySum_2[gCamView].f14;
+    gCamRoll[gCamView] = sCamHistorySum[gCamView].roll;
+    gCamYaw[gCamView] = sCamHistorySum[gCamView].yaw;
     sCamFrameCount++;
-    if (!(gCamZoneState_3[gCamView].flags & 1) && gRiders_25[gCamView].f5AA != 9) {
+    if (!(gCamZoneState_2[gCamView].flags & 1) && gRiders_25[gCamView].f5AA != 9) {
         gCamSegFlags_2[gCamView] = 0;
-        cam_clamp_to_track_2(sCamTarget);
+        cam_clamp_to_track(sCamTarget, gCamView);
         return;
     }
     pos.x = (f32)gCamPos[gCamView].x / 1000.0f;
@@ -511,7 +478,7 @@ struct Obj_14 {
 
 extern Ctl_6 gGame_29;
 
-void cam_update_rider_select(Obj_14 *p, s32 *out, s32 arg2)
+void cam_update_rider_select(Obj_14 *p, CamOut *out, s32 arg2)
 {
     s32 buf[10];
     s32 in[3];
@@ -532,15 +499,15 @@ void cam_update_rider_select(Obj_14 *p, s32 *out, s32 arg2)
         yoff = 0x8FC;
     }
     e = gGame_29.tab[gCamView];
-    out[0] = p->x * 1000.0f + (f32)((gCosTable[((e[0] >> 4) - 0x400) & 0xFFF] * amp) >> 14);
-    out[1] = p->y * 1000.0f + (f32)yoff;
+    out->x = p->x * 1000.0f + (f32)((gCosTable[((e[0] >> 4) - 0x400) & 0xFFF] * amp) >> 14);
+    out->y = p->y * 1000.0f + (f32)yoff;
     r = 0;
-    out[2] = p->z * 1000.0f + (f32)((gCosTable[(e[0] >> 4) & 0xFFF] * amp) >> 14);
+    out->z = p->z * 1000.0f + (f32)((gCosTable[(e[0] >> 4) & 0xFFF] * amp) >> 14);
     z = 0;
-    out[3] = 0xE10;
-    out[4] = 0;
-    out[5] = (0x8000U - e[0]) & 0xFFFF;
-    mtx3i_from_angles(buf, out[3], out[4], out[5]);
+    out->pitch = 0xE10;
+    out->roll = 0;
+    out->yaw = (0x8000U - e[0]) & 0xFFFF;
+    mtx3i_from_angles(buf, out->pitch, out->roll, out->yaw);
     switch (gGame_29.mode) {
     case 1:
         switch (gGame_29.f40C) {
@@ -580,9 +547,9 @@ void cam_update_rider_select(Obj_14 *p, s32 *out, s32 arg2)
         in[2] = 0;
     }
     vec3i_mul_mtx3i(in, buf, res);
-    out[0] += res[0];
-    out[1] += res[1];
-    out[2] += res[2];
+    out->x += res[0];
+    out->y += res[1];
+    out->z += res[2];
     cam_snap_to(out);
 }
 
@@ -649,7 +616,8 @@ typedef struct {
 extern State_3 gEvent_13;
 extern Bike_16 gRiders_26[];
 
-s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
+/* Returns what its callees leave in v0: cam_snap_to_2 and cam_update_chase_2 are declared to return s32. */
+s32 cam_mode_soccer(Bike_16 *bike, CamOut *out) {
     u16 a1;
     s32 ratio;
     u16 a2;
@@ -676,9 +644,9 @@ s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
             out->z = z = fz;
             math_to_polar(gSoccerBall.x * s - (f32)out->x, gSoccerBall.z * s - (f32)z, &a1, &ratio);
             math_to_polar(ratio, gSoccerBall.y * s - (f32)out->y, &a2, &ratio);
-            out->ry = 0;
-            out->rx = a2 - 0x4000;
-            out->rz = -a1;
+            out->roll = 0;
+            out->pitch = a2 - 0x4000;
+            out->yaw = -a1;
             break;
         case 2:
             s = 1000.0f;
@@ -691,9 +659,9 @@ s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
             out->z = z = fz;
             math_to_polar(gSoccerBall.x * s - (f32)out->x, gSoccerBall.z * s - (f32)z, &a1, &ratio);
             math_to_polar(ratio, gSoccerBall.y * s - (f32)out->y, &a2, &ratio);
-            out->ry = 0;
-            out->rx = a2 - 0x4000;
-            out->rz = -a1;
+            out->roll = 0;
+            out->pitch = a2 - 0x4000;
+            out->yaw = -a1;
             break;
         default:
             fatal_halt(1);
@@ -704,18 +672,18 @@ s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
         out->x = p->f48 * 1000.0f + (f32)((COST(gEvent_13.f6C * 14000 / 180 - 7000) * 625) >> 11);
         out->y = 1000;
         out->z = p->f50 * 1000.0f - (f32)((SINT(gEvent_13.f6C * 14000 / 180 - 7000) * 625) >> 11);
-        out->rx = 1000;
-        out->rz = gEvent_13.f6C * 14000 / 180 - 7000;
-        out->ry = 0;
+        out->pitch = 1000;
+        out->yaw = gEvent_13.f6C * 14000 / 180 - 7000;
+        out->roll = 0;
         break; }
     case 2: {
         Bike_16 *p = &gRiders_26[i];
         out->x = p->f48 * 1000.0f + (f32)((COST(7000 - gEvent_13.f6C * 14000 / 180) * 625) >> 11);
         out->y = 1000;
         out->z = p->f50 * 1000.0f + (f32)((SINT(7000 - gEvent_13.f6C * 14000 / 180) * 625) >> 11);
-        out->rx = 1000;
-        out->rz = gEvent_13.f6C * 14000 / 180 + 0x64A8;
-        out->ry = 0;
+        out->pitch = 1000;
+        out->yaw = gEvent_13.f6C * 14000 / 180 + 0x64A8;
+        out->roll = 0;
         break; }
     }
     return cam_snap_to_2(out);
@@ -763,10 +731,6 @@ f32 cam_calc_hill_climb_pitch(u8 *param_1)
     return fs + 2000.0f;
 }
 
-typedef struct {
-    s32 x, y, z, w3, w4, w5;
-} TblEnt;
-
 struct Obj_15 {
     u8 pad0[0x34];
     u16 s34;
@@ -778,15 +742,15 @@ struct Obj_15 {
     u16 c624;
 };
 
-void cam_mode_hill_climb(Obj_15 *p, s32 *out)
+void cam_mode_hill_climb(Obj_15 *p, CamOut *out)
 {
     s32 v[4];
     s32 r[4];
     s32 m[10];
     s16 ang;
     s32 dist;
-    TblEnt *tb;
-    TblEnt *base;
+    CamOut *tb;
+    CamOut *base;
     s32 z2, a, b;
     V3 *pv;
     s32 z, d;
@@ -801,34 +765,34 @@ void cam_mode_hill_climb(Obj_15 *p, s32 *out)
         v[2] = -sCamHillDist;
         vec3i_mul_mtx3i(v, m, r);
         pv = &p->pos;
-        out[0] = r[0] + pv->x * 1000.0f;
-        out[1] = r[1] + pv->y * 1000.0f + sCamHillHeight;
-        out[2] = r[2] + pv->z * 1000.0f;
-        out[3] = h;
-        out[4] = 0;
-        out[5] = rot;
+        out->x = r[0] + pv->x * 1000.0f;
+        out->y = r[1] + pv->y * 1000.0f + sCamHillHeight;
+        out->z = r[2] + pv->z * 1000.0f;
+        out->pitch = h;
+        out->roll = 0;
+        out->yaw = rot;
     } else {
         base = sCamHistorySum;
         tb = &base[gCamView];
-        out[0] = tb->x / 16;
-        out[1] = tb->y / 16;
+        out->x = tb->x / 16;
+        out->y = tb->y / 16;
         z = tb->z;
         if (z < 0) {
             z += 0xF;
         }
         z2 = z >> 4;
-        out[2] = z2;
-        a = out[0] - (s32)(p->pos.x * 1000.0f);
+        out->z = z2;
+        a = out->x - (s32)(p->pos.x * 1000.0f);
         b = (s32)(p->pos.z * 1000.0f) - z2;
-        d = (s32)(p->pos.y * 1000.0f) + sCamHillHeight - out[1];
+        d = (s32)(p->pos.y * 1000.0f) + sCamHillHeight - out->y;
         math_to_polar(a, b, &ang, &dist);
         if (dist > 10000) {
             p->c624 += 3;
         }
-        out[5] = ang;
+        out->yaw = ang;
         math_to_polar(-d, dist, &ang, &dist);
-        out[3] = ang;
-        out[4] = 0;
+        out->pitch = ang;
+        out->roll = 0;
     }
     cam_smooth_to(out);
 }
@@ -862,7 +826,7 @@ struct Bike_17 {
 extern Game_14 gGame_30;
 extern Rep gEvent_14;
 
-void cam_update_chase(Bike_17 *p, s32 *out, s32 z)
+void cam_update_chase(Bike_17 *p, CamOut *out, s32 z)
 {
     s32 n, k, ang, tv, zero;
     s32 rot;
@@ -872,14 +836,14 @@ void cam_update_chase(Bike_17 *p, s32 *out, s32 z)
     s32 res[3];
     s32 mtx[10];
     f32 *pp;
-    S28 *e, *eb;
+    CamPitchSpring *e, *eb;
     s32 *q, *cnt;
     s32 tb;
     s32 *q2;
     f32 cs;
 
     k = p->f744;
-    cnt = sCamAirBlend_2;
+    cnt = sCamAirBlend;
     n = cnt[gCamView];
     if (p->f6F4 * 60.0f + (f32)k > 60.0f) {
         if (n < 0x20) {
@@ -899,7 +863,7 @@ first:
         b = cam_calc_air_pitch(p);
         f = (a * (f32)(0x20 - n) + b * (f32)n) * 0.03125f;
     }
-    sCamAirBlend_2[gCamView] = n;
+    sCamAirBlend[gCamView] = n;
     eb = sCamPitchSprings;
     e = &eb[gCamView];
     f = f - e->pos;
@@ -954,12 +918,12 @@ first:
     mtx3i_from_angles(mtx, ang, 0, (s16)rot);
     vec3i_mul_mtx3i(vec, mtx, res);
     pp = p->pos;
-    out[0] = (f32)res[0] + pp[0] * 1000.0f;
-    out[1] = (f32)res[1] + pp[1] * 1000.0f + 600.0f;
-    out[2] = (f32)res[2] + pp[2] * 1000.0f;
-    out[3] = ang - 500;
-    out[5] = (s16)rot;
-    out[4] = 0;
+    out->x = (f32)res[0] + pp[0] * 1000.0f;
+    out->y = (f32)res[1] + pp[1] * 1000.0f + 600.0f;
+    out->z = (f32)res[2] + pp[2] * 1000.0f;
+    out->pitch = ang - 500;
+    out->yaw = (s16)rot;
+    out->roll = 0;
     if (gGame_30.mode != 9) {
         if ((p->f5B0 & 0x200) || ((gPlayerInputs_2 & 0x10) && gEvent_14.active == 0 && !(gGame_30.flags & 0x8000))) {
             cam_snap_to(out);
@@ -998,9 +962,9 @@ struct Ent_23 {
 
 extern Ent_23 gRiders_27[];
 
-void cam_mode_fall_view(Ent_23 *e, Rec_4 *r)
+void cam_mode_fall_view(Ent_23 *e, CamOut *r)
 {
-    Rec_4 *b;
+    CamOut *b;
     s32 i;
     s32 d;
 
@@ -1010,9 +974,9 @@ void cam_mode_fall_view(Ent_23 *e, Rec_4 *r)
     r->y = b[i].y / 16;
     r->z = b[i].z / 16;
     d = e->y - r->y;
-    r->a = b[i].a;
-    r->c = b[i].c;
-    r->b = 0;
+    r->pitch = b[i].pitch;
+    r->yaw = b[i].yaw;
+    r->roll = 0;
     cam_snap_to(r);
     if (gGameMode == 7) {
         e->f44C = 0.5f;
@@ -1029,7 +993,7 @@ extern Row_3 gSurfaceTable_5[];
 
 void cam_start_fall_view(Ent_24 *p)
 {
-    Rec_4 loc;
+    CamOut loc;
     s32 m[9];
     s32 v[3];
     s32 o[3];
@@ -1044,7 +1008,7 @@ void cam_start_fall_view(Ent_24 *p)
         if (gCurTrack == D_800CB5D0) {
             loc = sCamFallViewPos;
             math_to_polar(loc.x - p->f0, p->f8 - loc.z, &ang, &dist);
-            loc.c = ang;
+            loc.yaw = ang;
         } else {
             path_update_bike(p);
             math_to_polar(-(gPathTangentX * 1000.0f), gPathTangentZ * 1000.0f, &ang, &dist);
@@ -1067,9 +1031,9 @@ void cam_start_fall_view(Ent_24 *p)
             loc.x = (s32)(p->x * 1000.0f) + o[0];
             loc.y = (s32)(p->y * 1000.0f) + o[1] - 1000;
             loc.z = (s32)(p->z * 1000.0f) + o[2];
-            loc.a = 0x1000;
-            loc.b = 0;
-            loc.c = ang;
+            loc.pitch = 0x1000;
+            loc.roll = 0;
+            loc.yaw = ang;
         }
         gCamView = idx = p - gRiders_28;
         cam_snap_to(&loc);
@@ -1089,7 +1053,7 @@ struct Bike_18 {
     u8 pad748[0x7E0 - 0x748];
 };
 
-void cam_mode_stunt_pip(Bike_18 *p, Rec6 *out)
+void cam_mode_stunt_pip(Bike_18 *p, CamOut *out)
 {
     s32 a[3];
     s32 b[3];
@@ -1111,19 +1075,16 @@ void cam_mode_stunt_pip(Bike_18 *p, Rec6 *out)
         out->x = (f32)b[0] + p->x * 1000.0f;
         out->y = (f32)b[1] + p->y * 1000.0f;
         out->z = (f32)b[2] + p->z * 1000.0f;
-        out->rx = 0x800;
-        out->rz = p->f2C + gCamPipOrbitAngle;
-        out->ry = 0;
+        out->pitch = 0x800;
+        out->yaw = p->f2C + gCamPipOrbitAngle;
+        out->roll = 0;
         cam_snap_to(out);
     }
 }
 
-extern Ent_2 sCamHistory_2[][16];
-
-void cam_smooth_to(Ent_2 *p)
+void cam_smooth_to(CamOut *p)
 {
     s32 a, b, c, k, j, idx;
-    Ent_2 *h, *s, *q;
 
     if (sCamFrameCount == 0) {
         cam_snap_to(p);
@@ -1131,67 +1092,58 @@ void cam_smooth_to(Ent_2 *p)
     }
     c = b = a = 0;
     idx = sCamHistoryPos[gCamView];
-        sCamHistorySum[gCamView].w[0] -= sCamHistory_2[gCamView][idx].w[0];
-    sCamHistorySum[gCamView].w[1] -= sCamHistory_2[gCamView][idx].w[1];
-    sCamHistorySum[gCamView].w[2] -= sCamHistory_2[gCamView][idx].w[2];
-    sCamHistory_2[gCamView][idx] = *p;
-        sCamHistorySum[gCamView].w[0] += sCamHistory_2[gCamView][idx].w[0];
-    sCamHistorySum[gCamView].w[1] += sCamHistory_2[gCamView][idx].w[1];
-    sCamHistorySum[gCamView].w[2] += sCamHistory_2[gCamView][idx].w[2];
+    sCamHistorySum[gCamView].x -= sCamHistory[gCamView][idx].x;
+    sCamHistorySum[gCamView].y -= sCamHistory[gCamView][idx].y;
+    sCamHistorySum[gCamView].z -= sCamHistory[gCamView][idx].z;
+    sCamHistory[gCamView][idx] = *p;
+    sCamHistorySum[gCamView].x += sCamHistory[gCamView][idx].x;
+    sCamHistorySum[gCamView].y += sCamHistory[gCamView][idx].y;
+    sCamHistorySum[gCamView].z += sCamHistory[gCamView][idx].z;
     j = idx - 1;
     for (k = 0; k < 15; k++) {
         if (j < 0) j += 16;
-                a += (s16)(sCamHistory_2[gCamView][j].w[5] - sCamHistory_2[gCamView][idx].w[5]);
-        b += (s16)(sCamHistory_2[gCamView][j].w[4] - sCamHistory_2[gCamView][idx].w[4]);
-        c += (s16)(sCamHistory_2[gCamView][j].w[3] - sCamHistory_2[gCamView][idx].w[3]);
+        a += (s16)(sCamHistory[gCamView][j].yaw - sCamHistory[gCamView][idx].yaw);
+        b += (s16)(sCamHistory[gCamView][j].roll - sCamHistory[gCamView][idx].roll);
+        c += (s16)(sCamHistory[gCamView][j].pitch - sCamHistory[gCamView][idx].pitch);
         j--;
     }
-    sCamHistorySum[gCamView].w[3] = c / 16 + sCamHistory_2[gCamView][idx].w[3];
-    sCamHistorySum[gCamView].w[4] = b / 16 + sCamHistory_2[gCamView][idx].w[4];
-    sCamHistorySum[gCamView].w[5] = a / 16 + sCamHistory_2[gCamView][idx].w[5];
+    sCamHistorySum[gCamView].pitch = c / 16 + sCamHistory[gCamView][idx].pitch;
+    sCamHistorySum[gCamView].roll = b / 16 + sCamHistory[gCamView][idx].roll;
+    sCamHistorySum[gCamView].yaw = a / 16 + sCamHistory[gCamView][idx].yaw;
     sCamHistoryPos[gCamView] = (idx + 1) % 16;
 }
 
-void cam_snap_to(Ent_2 *src)
+void cam_snap_to(CamOut *src)
 {
     s32 i;
-    s32 t2;
-    s32 off;
     s32 v;
     u8 *base;
     s32 o;
-    Ent_2 *d;
+    CamOut *d;
 
     i = 0;
-    base = sCamHistory;
+    base = (u8 *)sCamHistory;
     do {
         v = gCamView;
-        o = (i * 0x18 + v * 0x180) + (s32)base;
+        o = (i * sizeof(CamOut) + v * sizeof(sCamHistory[0])) + (s32)base;
         i++;
-        *(Ent_2 *)o = *src;
+        *(CamOut *)o = *src;
     } while (i < 16);
     sCamHistorySum[gCamView] = *src;
     d = &sCamHistorySum[gCamView];
-    d->w[0] <<= 4;
-    d->w[1] <<= 4;
-    d->w[2] <<= 4;
+    d->x <<= 4;
+    d->y <<= 4;
+    d->z <<= 4;
 }
 
-struct S {
-    s32 x, y, z, w, u, v;
-};
-
-extern S sCamHistory_3[][16];
-extern S sCamHistorySum_3[];
-
-void cam_snap_to_moving(S *p, f32 *v)
+void cam_snap_to_moving(CamOut *p, f32 *v)
 {
     s32 i;
     s32 sx, sy, sz;
 
     sx = sy = sz = 0;
     for (i = 15; i >= 0; i--) {
-        sCamHistory_3[gCamView][i] = *p;
+        sCamHistory[gCamView][i] = *p;
         sx += p->x;
         sy += p->y;
         sz += p->z;
@@ -1199,40 +1151,20 @@ void cam_snap_to_moving(S *p, f32 *v)
         p->y -= (s32)(v[1] * 16.666666f);
         p->z -= (s32)(v[2] * 16.666666f);
     }
-    sCamHistorySum_3[gCamView] = *p;
-    sCamHistorySum_3[gCamView].x = sx;
-    sCamHistorySum_3[gCamView].y = sy;
-    sCamHistorySum_3[gCamView].z = sz;
+    sCamHistorySum[gCamView] = *p;
+    sCamHistorySum[gCamView].x = sx;
+    sCamHistorySum[gCamView].y = sy;
+    sCamHistorySum[gCamView].z = sz;
     sCamHistoryPos[gCamView] = 0;
 }
-
-typedef struct RecA {
-    u8 pad0[0x14];
-    s16 i0;
-    s16 i1;
-    u32 flags;
-} RecA;
-
-typedef struct RecB {
-    u8 pad0[0x18];
-    u32 flags;
-    s32 i0;
-    s32 i1;
-} RecB;
 
 typedef struct Obj_16 {
     u8 pad0[0x74];
     s16 nA;
     s16 nB;
-    RecA *la;
-    RecB *lb;
+    CamFollowZone *la;
+    CamDollyZone *lb;
 } Obj_16;
-
-typedef struct Flag {
-    u16 f0;
-    s16 h2;
-    void *p4;
-} Flag;
 
 typedef struct G {
     u8 pad0[0x3C];
@@ -1251,11 +1183,15 @@ typedef struct Node_3 {
     u8 pad1[0x6C - 0x50];
 } Node_3;
 
-extern Flag gCamZoneState_4[];
 extern Node_3 *gPathNodes_8;
 extern Obj_16 *gCurTrack_20;
 extern Obj_16 *gCurTrack_43;
 extern Big gRiders_29[];
+
+/* The zone at byte offset off of the track's lists */
+#define FOLLOW_ZONE(off) (*(CamFollowZone *)(off + (s32)P->la))
+#define DOLLY_ZONE(off) (*(CamDollyZone *)(off + (s32)P->lb))
+#define ZONE_STATE ((CamZoneState *)pf)
 
 s32 cam_find_zone(void)
 {
@@ -1267,19 +1203,19 @@ s32 cam_find_zone(void)
     s32 off;
     s16 *pv;
     Obj_16 *P;
-    u16 *pf;
-    Flag *fl;
+    u16 *pf; /* the view's zone state, by its flags: stores through a u16 keep gCamView's load in the loop */
+    CamZoneState *states;
     G *g;
     s16 *tab;
-    void *rec;
+    CamFollowZone *rec;
     s32 a2, b2;
-    void *rec2;
+    CamDollyZone *rec2;
 
     if (gCamView == 0) {
         D_800C97E4 = -1;
     }
     g = &gEvent;
-    fl = gCamZoneState_4;
+    states = gCamZoneState_2;
     P = gCurTrack_20;
     tab = sCamSegOrder;
     cur = gRiders_29[sCamTarget].f628;
@@ -1289,20 +1225,20 @@ s32 cam_find_zone(void)
         }
         if (P->la != NULL && (k = 0, P->nA > 0)) {
             pv = (s16 *)(cur * 2 + (s32)tab);
-            pf = (u16 *)(gCamView * 8 + (s32)fl);
+            pf = (u16 *)(gCamView * 8 + (s32)states);
             off = k;
         loopA:
             {
-                if (pass == 0 || ((*(RecA *)(off + (s32)P->la)).flags & 0x40)) {
-                    b = tab[(*(RecA *)(off + (s32)P->la)).i1];
-                    a = tab[(*(RecA *)(off + (s32)P->la)).i0];
+                if (pass == 0 || (FOLLOW_ZONE(off).flags & 0x40)) {
+                    b = tab[FOLLOW_ZONE(off).endNode];
+                    a = tab[FOLLOW_ZONE(off).startNode];
                     if ((b < a && (*pv >= a || *pv < b)) ||
                         (a < b && *pv >= a && *pv < b)) {
-                        if (g->f3C != 0 || !((*(RecA *)(off + (s32)P->la)).flags & 2)) {
-                            ((s16 *)pf)[1] = 1;
-                            rec = (RecA *)((u8 *)P->la + off);
-                            v = rec != *(void **)(pf + 2);
-                            *(void **)(pf + 2) = rec;
+                        if (g->f3C != 0 || !(FOLLOW_ZONE(off).flags & 2)) {
+                            ZONE_STATE->type = 1;
+                            rec = (CamFollowZone *)((u8 *)P->la + off);
+                            v = rec != ZONE_STATE->zone.follow;
+                            ZONE_STATE->zone.follow = rec;
                             if (v || !(*pf & 2)) {
                                 *pf |= 4;
                             }
@@ -1316,7 +1252,7 @@ s32 cam_find_zone(void)
                     }
                 }
                 if (pv == (s16 *)tab) v = 1; else v = 2;
-                off += sizeof(RecA);
+                off += sizeof(CamFollowZone);
                 k++;
             }
             if (k < gCurTrack_20->nA) goto loopA;
@@ -1327,20 +1263,20 @@ s32 cam_find_zone(void)
         if (P->lb != NULL && (k = 0, P->nB > 0)) {
             pv = (s16 *)(cur * 2 + (s32)tab);
             d = gCamView;
-            pf = (u16 *)(d * 8 + (s32)fl);
+            pf = (u16 *)(d * 8 + (s32)states);
             off = k;
         loopB:
             {
-                if (pass == 0 || ((*(RecB *)(off + (s32)P->lb)).flags & 0x40)) {
-                    b2 = tab[(*(RecB *)(off + (s32)P->lb)).i1];
-                    a2 = tab[(*(RecB *)(off + (s32)P->lb)).i0];
+                if (pass == 0 || (DOLLY_ZONE(off).flags & 0x40)) {
+                    b2 = tab[DOLLY_ZONE(off).endNode];
+                    a2 = tab[DOLLY_ZONE(off).startNode];
                     if ((b2 < a2 && (*pv >= a2 || *pv < b2)) ||
                         (a2 < b2 && *pv >= a2 && *pv < b2)) {
-                        if (g->f3C != 0 || !((*(RecB *)(off + (s32)P->lb)).flags & 2)) {
-                            ((s16 *)pf)[1] = 0;
-                            rec2 = (RecB *)((u8 *)P->lb + off);
-                            v = rec2 != *(void **)(pf + 2);
-                            *(void **)(pf + 2) = rec2;
+                        if (g->f3C != 0 || !(DOLLY_ZONE(off).flags & 2)) {
+                            ZONE_STATE->type = 0;
+                            rec2 = (CamDollyZone *)((u8 *)P->lb + off);
+                            v = rec2 != ZONE_STATE->zone.dolly;
+                            ZONE_STATE->zone.dolly = rec2;
                             if (v || !(*pf & 2)) {
                                 *pf |= 4;
                             }
@@ -1356,7 +1292,7 @@ s32 cam_find_zone(void)
                         }
                     }
                 }
-                off += sizeof(RecB);
+                off += sizeof(CamDollyZone);
                 k++;
             }
             if (k < gCurTrack_43->nB) goto loopB;
@@ -1383,12 +1319,6 @@ typedef struct {
     u8 pad50[0x6C - 0x50];
 } Seg_7;
 
-typedef struct {
-    u16 flags;
-    u8 pad2[6];
-} Trk_8;
-
-extern Trk_8 gCamZoneState_5[];
 extern Seg_7 *gPathNodes_9;
 
 f32 cam_zone_get_progress(Obj_17 *p, s32 a, s32 b)
@@ -1398,7 +1328,7 @@ f32 cam_zone_get_progress(Obj_17 *p, s32 a, s32 b)
     s32 d;
     f32 frac;
 
-    if (gCamZoneState_5[gCamView].flags & 8) {
+    if (gCamZoneState_2[gCamView].flags & 8) {
         len = sCamSegOrder[b] - sCamSegOrder[a];
         seg = path_find_segment(&p->pos, gPathNodes_9[p->seg].start, 15, 1);
         path_get_lateral_offset(&p->pos, seg);
@@ -1429,103 +1359,69 @@ struct Obj_18 {
 };
 
 typedef struct {
-    s32 w0;
-    u16 h4;
-    u16 h6;
-    s32 w8;
-    s32 w12;
-    s32 w16;
-    s16 s20;
-    s16 s22;
-} Track_7;
-
-typedef struct {
     s16 h[2];
     s32 w;
 } Tmp30;
 
-typedef struct {
-    u16 flags;
-    u16 pad;
-    Track_7 *node;
-} Slot_5;
-
-extern Slot_5 gCamZoneState_6[];
-
-void cam_zone_update_follow(Obj_18 *param_1, s32 *param_2)
+void cam_zone_update_follow(Obj_18 *rider, CamOut *out)
 {
-    u16 uVar1;
-    Track_7 *piVar2;
-    f32 fT;
-    f32 fA;
-    f32 fB;
-    u32 uA;
-    u32 uB;
-    u32 sum4;
-    s32 vS;
-    s32 iVar5;
-    s32 local_78[4];
-    s32 local_68[3];
-    s32 aiStack_58[10];
-    Tmp30 t30;
-    s16 local_28[4];
-
-    uVar1 = gCamZoneState_6[gCamView].flags;
-    if (uVar1 & 4) {
-        gCamZoneState_6[gCamView].flags = uVar1 & 0xFFFB;
-    }
-    piVar2 = gCamZoneState_6[gCamView].node;
-    fT = cam_zone_get_progress(param_1, piVar2->s20, piVar2->s22);
-    vS = piVar2->w0 + (s32)((f32)(piVar2->w8 - piVar2->w0) * fT);
-    fA = (f32)piVar2->w12 * fT;
-    uA = (u32)fA;
-    fB = (f32)piVar2->w16 * fT;
-    sum4 = piVar2->h4 + uA;
-    uB = (u32)fB;
-    mtx3i_from_angles(aiStack_58, (-((piVar2->h6 + uB) & 0xFFFF)) + 1000, 0,
-                  (param_1->h2e + sum4) & 0xFFFF);
-    local_78[0] = 0;
-    local_78[1] = 0;
-    local_78[2] = vS;
-    vec3i_mul_mtx3i(local_78, aiStack_58, local_68);
-    param_2[0] = (s32)(param_1->f6c * 1000.0f + (f32)local_68[0]);
-    param_2[1] = (s32)(param_1->f70 * 1000.0f + (f32)local_68[1] + 1000.0f);
-    iVar5 = (s32)(param_1->f74 * 1000.0f + (f32)local_68[2]);
-    param_2[2] = iVar5;
-    math_to_polar((s32)(param_1->f6c * 1000.0f - (f32)param_2[0]),
-                  (s32)(param_1->f74 * 1000.0f - (f32)iVar5), t30.h, &t30.w);
-    math_to_polar(t30.w, (s32)((param_1->f70 + 0.7f) * 1000.0f - (f32)param_2[1]), local_28, &t30.w);
-    param_2[4] = 0;
-    {
-        s32 ta = local_28[0] + -0x4000;
-        s32 tb = -t30.h[0];
-        param_2[3] = ta;
-        param_2[5] = tb;
-    }
-    cam_snap_to(param_2);
-}
-
-typedef struct {
-    s32 x, y, z;
-    s32 rx, ry, rz;
-    s32 flags;
-    s32 p7, p8;
-} Obj_19;
-
-typedef struct {
     u16 flags;
-    u16 pad;
-    Obj_19 *obj;
-} Slot_6;
+    CamFollowZone *zone;
+    f32 t;
+    f32 yaw;
+    f32 pitchF;
+    u32 yawI;
+    u32 pitchI;
+    u32 yawSum;
+    s32 dist;
+    s32 z;
+    s32 vec[4];
+    s32 res[3];
+    s32 mtx[10];
+    Tmp30 polar;
+    s16 pitch[4];
+
+    flags = gCamZoneState_2[gCamView].flags;
+    if (flags & 4) {
+        gCamZoneState_2[gCamView].flags = flags & 0xFFFB;
+    }
+    zone = gCamZoneState_2[gCamView].zone.follow;
+    t = cam_zone_get_progress(rider, zone->startNode, zone->endNode);
+    dist = zone->dist0 + (s32)((f32)(zone->dist1 - zone->dist0) * t);
+    yaw = (f32)zone->yawSweep * t;
+    yawI = (u32)yaw;
+    pitchF = (f32)zone->pitchSweep * t;
+    yawSum = zone->yaw0 + yawI;
+    pitchI = (u32)pitchF;
+    mtx3i_from_angles(mtx, (-((zone->pitch0 + pitchI) & 0xFFFF)) + 1000, 0,
+                  (rider->h2e + yawSum) & 0xFFFF);
+    vec[0] = 0;
+    vec[1] = 0;
+    vec[2] = dist;
+    vec3i_mul_mtx3i(vec, mtx, res);
+    out->x = (s32)(rider->f6c * 1000.0f + (f32)res[0]);
+    out->y = (s32)(rider->f70 * 1000.0f + (f32)res[1] + 1000.0f);
+    z = (s32)(rider->f74 * 1000.0f + (f32)res[2]);
+    out->z = z;
+    math_to_polar((s32)(rider->f6c * 1000.0f - (f32)out->x),
+                  (s32)(rider->f74 * 1000.0f - (f32)z), polar.h, &polar.w);
+    math_to_polar(polar.w, (s32)((rider->f70 + 0.7f) * 1000.0f - (f32)out->y), pitch, &polar.w);
+    out->roll = 0;
+    {
+        s32 ta = pitch[0] + -0x4000;
+        s32 tb = -polar.h[0];
+        out->pitch = ta;
+        out->yaw = tb;
+    }
+    cam_snap_to(out);
+}
 
 struct Actor {
     u8 pad[0x6C];
     f32 fx, fy, fz;
 };
 
-extern Slot_6 gCamZoneState_7[];
-
-void cam_zone_update_dolly(Actor *act, Rec6 *out)
+void cam_zone_update_dolly(Actor *rider, CamOut *out)
 {
     s32 m[3];
     s32 mtx[10];
@@ -1535,62 +1431,62 @@ void cam_zone_update_dolly(Actor *act, Rec6 *out)
     s16 b1;
     s32 r2;
     s16 b2;
-    Slot_6 *sl;
+    CamZoneState *st;
     s32 idx;
-    Obj_19 *o;
-    u16 sf;
+    CamDollyZone *zone;
+    u16 flags;
     s32 f;
     s32 rx, rz;
     f32 t, u, v;
 
-    sl = gCamZoneState_7;
-    sl += gCamView;
-    sf = sl->flags;
-    o = sl->obj;
-    if (sf & 4) {
-        sl->flags = sf & ~4;
-        f = o->flags;
+    st = gCamZoneState_2;
+    st += gCamView;
+    flags = st->flags;
+    zone = st->zone.dolly;
+    if (flags & 4) {
+        st->flags = flags & ~4;
+        f = zone->flags;
         if (f & 8) {
             if (f & 1) {
                 if (f & 4) {
-                    o->x = (f32)gCamPos[gCamView].x - act->fx * 1000.0f;
-                    o->y = (f32)gCamPos[gCamView].y - act->fy * 1000.0f;
-                    o->z = (f32)gCamPos[gCamView].z - act->fz * 1000.0f;
+                    zone->x = (f32)gCamPos[gCamView].x - rider->fx * 1000.0f;
+                    zone->y = (f32)gCamPos[gCamView].y - rider->fy * 1000.0f;
+                    zone->z = (f32)gCamPos[gCamView].z - rider->fz * 1000.0f;
                 } else {
-                    o->x = gCamPos[gCamView].x;
-                    o->y = gCamPos[gCamView].y;
-                    o->z = gCamPos[gCamView].z;
+                    zone->x = gCamPos[gCamView].x;
+                    zone->y = gCamPos[gCamView].y;
+                    zone->z = gCamPos[gCamView].z;
                 }
             } else {
-                o->x = gCamPos[gCamView].x;
-                o->y = gCamPos[gCamView].y;
-                o->z = gCamPos[gCamView].z;
+                zone->x = gCamPos[gCamView].x;
+                zone->y = gCamPos[gCamView].y;
+                zone->z = gCamPos[gCamView].z;
             }
-            f = o->flags;
+            f = zone->flags;
         }
         if (f & 0x10) {
-            mtx3i_from_angles(mtx, o->rx, 0, o->rz);
+            mtx3i_from_angles(mtx, zone->x1, 0, zone->z1);
             m[0] = 0;
             m[1] = 0;
-            m[2] = o->ry;
+            m[2] = zone->y1;
             vec3i_mul_mtx3i(m, mtx, &sCamZoneOffset);
         } else if (f & 4) {
-            math_to_polar(-o->x, o->z, &a1, &r1);
-            math_to_polar(r1, -o->y + 700, &a2, &r1);
+            math_to_polar(-zone->x, zone->z, &a1, &r1);
+            math_to_polar(r1, -zone->y + 700, &a2, &r1);
             mtx3i_from_angles(mtx, a2 - 0x4000, 0, -a1);
             m[0] = 0;
             m[1] = 0;
-            m[2] = o->ry;
+            m[2] = zone->y1;
             vec3i_mul_mtx3i(m, mtx, &sCamZoneOffset);
         }
     }
-    t = cam_zone_get_progress(act, o->p7, o->p8);
-    f = o->flags;
+    t = cam_zone_get_progress(rider, zone->startNode, zone->endNode);
+    f = zone->flags;
     if (f & 4) {
-        out->x = (f32)o->x + act->fx * 1000.0f;
-        out->y = (f32)o->y + act->fy * 1000.0f;
-        out->z = (f32)o->z + act->fz * 1000.0f;
-        if (o->flags & 0x20) {
+        out->x = (f32)zone->x + rider->fx * 1000.0f;
+        out->y = (f32)zone->y + rider->fy * 1000.0f;
+        out->z = (f32)zone->z + rider->fz * 1000.0f;
+        if (zone->flags & 0x20) {
             u = 1.0f - t;
             out->x = (f32)out->x + (f32)sCamZoneOffset.x * u;
             out->y = (f32)out->y + (f32)sCamZoneOffset.y * u;
@@ -1601,34 +1497,34 @@ void cam_zone_update_dolly(Actor *act, Rec6 *out)
             out->z = (f32)out->z + (f32)sCamZoneOffset.z * t;
         }
     } else if (f & 1) {
-        out->x = (f32)o->x + (f32)(o->rx - o->x) * t;
-        out->y = (f32)o->y + (f32)(o->ry - o->y) * t;
-        out->z = (f32)o->z + (f32)(o->rz - o->z) * t;
+        out->x = (f32)zone->x + (f32)(zone->x1 - zone->x) * t;
+        out->y = (f32)zone->y + (f32)(zone->y1 - zone->y) * t;
+        out->z = (f32)zone->z + (f32)(zone->z1 - zone->z) * t;
     } else if (f & 0x10) {
         if (f & 0x20) {
-            out->x = (f32)(o->x + sCamZoneOffset.x) - (f32)sCamZoneOffset.x * t;
-            out->y = (f32)(o->y + sCamZoneOffset.y) - (f32)sCamZoneOffset.y * t;
-            out->z = (f32)(o->z + sCamZoneOffset.z) - (f32)sCamZoneOffset.z * t;
+            out->x = (f32)(zone->x + sCamZoneOffset.x) - (f32)sCamZoneOffset.x * t;
+            out->y = (f32)(zone->y + sCamZoneOffset.y) - (f32)sCamZoneOffset.y * t;
+            out->z = (f32)(zone->z + sCamZoneOffset.z) - (f32)sCamZoneOffset.z * t;
         } else {
-            out->x = (f32)o->x + (f32)sCamZoneOffset.x * t;
-            out->y = (f32)o->y + (f32)sCamZoneOffset.y * t;
-            out->z = (f32)o->z + (f32)sCamZoneOffset.z * t;
+            out->x = (f32)zone->x + (f32)sCamZoneOffset.x * t;
+            out->y = (f32)zone->y + (f32)sCamZoneOffset.y * t;
+            out->z = (f32)zone->z + (f32)sCamZoneOffset.z * t;
         }
     } else {
-        out->x = o->x;
-        out->y = o->y;
-        out->z = o->z;
+        out->x = zone->x;
+        out->y = zone->y;
+        out->z = zone->z;
     }
-    if (o->flags & 0x10) {
-        out->rx = o->rx;
-        out->ry = 0;
-        out->rz = o->rz;
+    if (zone->flags & 0x10) {
+        out->pitch = zone->x1;
+        out->roll = 0;
+        out->yaw = zone->z1;
     } else {
-        math_to_polar(act->fx * 1000.0f - (f32)out->x, act->fz * 1000.0f - (f32)out->z, &b1, &r2);
-        math_to_polar(r2, (act->fy + 0.7f) * 1000.0f - (f32)out->y, &b2, &r2);
-        out->ry = 0;
-        out->rx = b2 - 0x4000;
-        out->rz = -b1;
+        math_to_polar(rider->fx * 1000.0f - (f32)out->x, rider->fz * 1000.0f - (f32)out->z, &b1, &r2);
+        math_to_polar(r2, (rider->fy + 0.7f) * 1000.0f - (f32)out->y, &b2, &r2);
+        out->roll = 0;
+        out->pitch = b2 - 0x4000;
+        out->yaw = -b1;
     }
     cam_snap_to(out);
 }
@@ -1697,23 +1593,23 @@ typedef struct {
 void cam_collide_walls(s32 a, s32 b, s32 c)
 {
     Node_4 *nd, *nd0;
-    s32 *tb;
+    Vec3i *tb;
     Vec3f p;
     f32 pt[3];
     f32 n[3];
     f32 q[4];
     f32 tt[2];
     f32 sum, len, L, t;
-    s32 *dst;
+    Vec3i *dst;
 
     nd0 = gRiders;
     nd = nd0 + a;
     tb = gCamPos;
     p = nd->pos;
-    dst = &tb[b * 3];
-    pt[0] = (f32)dst[0] / 1000.0f;
-    pt[1] = (f32)dst[1] / 1000.0f;
-    pt[2] = (f32)dst[2] / 1000.0f;
+    dst = &tb[b];
+    pt[0] = (f32)dst->x / 1000.0f;
+    pt[1] = (f32)dst->y / 1000.0f;
+    pt[2] = (f32)dst->z / 1000.0f;
     pt[0] = pt[0] - p.x;
     pt[1] = pt[1] - p.y;
     pt[2] = pt[2] - p.z;
@@ -1736,10 +1632,10 @@ void cam_collide_walls(s32 a, s32 b, s32 c)
         pt[0] = p.x + t * n[0];
         pt[1] = p.y + t * n[1];
         pt[2] = p.z + t * n[2];
-        dst[0] = (s32)(pt[0] * 1000.0f);
-        dst[1] = (s32)(pt[1] * 1000.0f);
+        dst->x = (s32)(pt[0] * 1000.0f);
+        dst->y = (s32)(pt[1] * 1000.0f);
         tt[0] = t;
-        dst[2] = (s32)(pt[2] * 1000.0f);
+        dst->z = (s32)(pt[2] * 1000.0f);
     }
     cam_keep_above_ground(a, b);
 }
@@ -1756,15 +1652,7 @@ typedef struct {
     s16 v;
 } Ang;
 
-typedef struct {
-    s32 x, y, z;
-    s32 pad0C, pad10;
-    s32 w14;
-} Seg_8;
-
 extern Bike_19 gRiders_30[];
-extern Seg_8 sCamHistory_4[][16];
-extern Seg_8 sCamHistorySum_4[];
 
 void cam_shift_xz(s32 p1, s32 p2, s32 p3, s32 p4)
 {
@@ -1785,12 +1673,12 @@ void cam_shift_xz(s32 p1, s32 p2, s32 p3, s32 p4)
     gCamYaw[p1] -= (d = c.v - a.v);
     if (b > 0x1000) {
         for (i = 0; i < 16; i++) {
-            sCamHistory_4[p1][i].x += p3;
-            sCamHistory_4[p1][i].z += p4;
-            sCamHistory_4[p1][i].w14 -= d;
+            sCamHistory[p1][i].x += p3;
+            sCamHistory[p1][i].z += p4;
+            sCamHistory[p1][i].yaw -= d;
         }
-        sCamHistorySum_4[p1].x += p3 * 16;
-        sCamHistorySum_4[p1].z += p4 * 16;
+        sCamHistorySum[p1].x += p3 * 16;
+        sCamHistorySum[p1].z += p4 * 16;
     }
 }
 
@@ -1824,16 +1712,10 @@ typedef struct Blk_8 {
     u8 p748[0x7e0 - 0x748];
 } Blk_8;
 
-typedef struct Ent_25 {
-    s32 f00, f04, f08, f0c, f10, f14;
-} Ent_25;
-
 typedef struct { u8 p0[0x2C]; s32 f2C; u8 p30[0xA0 - 0x30]; } Trk_9;
 
 extern Trk_9 *gCurTrack_21;
 extern Blk_8 gRiders_31[];
-extern Ent_25 sCamHistorySum_5[];
-extern Ent_25 sCamHistory_5[][16];
 extern Trk_9 gTracks_9[];
 
 static inline f32 lerp(f32 a, f32 b, f32 t)
@@ -1916,10 +1798,10 @@ void cam_clamp_to_track(s32 m, s32 n)
                     math_to_polar((s32)g, r, &a1, &ratio);
                     gCamPitch[n] -= a1 - a0;
                     for (k = 0; k < 16; k++) {
-                        sCamHistory_5[n][k].f04 += h - gCamPos[n].y;
-                        sCamHistory_5[n][k].f0c -= a1 - a0;
+                        sCamHistory[n][k].y += h - gCamPos[n].y;
+                        sCamHistory[n][k].pitch -= a1 - a0;
                     }
-                    sCamHistorySum_5[n].f04 += (h - gCamPos[n].y) * 16;
+                    sCamHistorySum[n].y += (h - gCamPos[n].y) * 16;
                     gCamPos[n].y = h;
                 }
                 {
@@ -1964,9 +1846,8 @@ extern Rec37_2 gRiders_32[];
 
 void cam_keep_above_ground(s32 param_1, s32 param_2)
 {
-    u32 bp = (u32)gCamPos;
-    s32 off = param_2 * 12;
-    s32 *t = (s32 *)(off + (s32)bp);
+    Vec3i *base = gCamPos;
+    Vec3i *t = &base[param_2];
     s32 iVar1;
     f32 r;
     f32 fVar2, fVar4;
@@ -1975,29 +1856,22 @@ void cam_keep_above_ground(s32 param_1, s32 param_2)
     s32 bw;
     s32 iStack2c;
 
-    iVar1 = height_get_ground(t[0], t[1] + 0x1F4, t[2]);
+    iVar1 = height_get_ground(t->x, t->y + 0x1F4, t->z);
     iVar1 = iVar1 + 200;
-    if (gGroundFound != 0 && t[1] < iVar1) {
-        fVar3 = gRiders_32[param_1].fA * 1000.0f - (f32)t[0];
-        dz = gRiders_32[param_1].fB * 1000.0f - (f32)t[2];
+    if (gGroundFound != 0 && t->y < iVar1) {
+        fVar3 = gRiders_32[param_1].fA * 1000.0f - (f32)t->x;
+        dz = gRiders_32[param_1].fB * 1000.0f - (f32)t->z;
         r = sqrtf(fVar3 * fVar3 + dz * dz);
         fVar4 = (f32)gCamPitch[param_2] * 3.1415925f * 3.0517578e-05f;
         fVar3 = r;
         fVar2 = sinf(fVar4);
         fVar4 = cosf(fVar4);
-        fVar4 = (fVar2 / fVar4) * fVar3 - (f32)(t[1] - iVar1);
+        fVar4 = (fVar2 / fVar4) * fVar3 - (f32)(t->y - iVar1);
         math_to_polar((s32)fVar4, (s32)fVar3, (s16 *)&bw, &iStack2c);
         gCamPitch[param_2] = (s32)((s16 *)&bw)[0];
-        t[1] = iVar1;
+        t->y = iVar1;
     }
 }
-
-typedef struct {
-    s32 a;
-    s32 b;
-    s32 c;
-    s32 pad[3];
-} E18;
 
 typedef struct {
     s32 x;
@@ -2006,17 +1880,15 @@ typedef struct {
     u8 pad[0x7E0 - 12];
 } R7E0;
 
-extern E18 sCamHistorySum_6[];
-extern E18 sCamHistory_6[][16];
 extern R7E0 gRiders_33[];
 
 void cam_shift_z(s32 p, s32 q)
 {
     s32 i;
 
-    sCamHistorySum_6[p].c += q * 16;
+    sCamHistorySum[p].z += q * 16;
     for (i = 0; i < 16; i++) {
-        sCamHistory_6[p][i].c += q;
+        sCamHistory[p][i].z += q;
     }
     gCamView = p;
     cam_update();
@@ -2027,12 +1899,12 @@ void cam_shift_z(s32 p, s32 q)
     }
 }
 
-void cam_mode_chase_7m(int param_1, int *param_2)
+void cam_mode_chase_7m(int param_1, CamOut *param_2)
 {
     cam_update_chase(param_1, param_2, -7000);
 }
 
-void cam_mode_chase_far_alt(s32 a, s32 *b)
+void cam_mode_chase_far_alt(s32 a, CamOut *b)
 {
     cam_update_chase(a, b, -10000);
 }
@@ -2043,16 +1915,16 @@ struct Obj_20 {
     f32 f74;
 };
 
-void cam_mode_side_view(Obj_20 *param_1, s32 *param_2)
+void cam_mode_side_view(Obj_20 *param_1, CamOut *param_2)
 {
     f32 k = 1000.0f;
 
-    param_2[0] = (s32)-sCamSideViewParams[0];
-    param_2[1] = (s32)(param_1->f70 * k + sCamSideViewParams[1]);
-    param_2[2] = (s32)(param_1->f74 * k - sCamSideViewParams[2]);
-    param_2[3] = (s32)sCamSideViewParams[4];
-    param_2[5] = (s32)-sCamSideViewParams[3];
-    param_2[4] = 0;
+    param_2->x = (s32)-sCamSideViewParams[0];
+    param_2->y = (s32)(param_1->f70 * k + sCamSideViewParams[1]);
+    param_2->z = (s32)(param_1->f74 * k - sCamSideViewParams[2]);
+    param_2->pitch = (s32)sCamSideViewParams[4];
+    param_2->yaw = (s32)-sCamSideViewParams[3];
+    param_2->roll = 0;
     cam_snap_to(param_2);
 }
 
@@ -2063,21 +1935,17 @@ struct Obj_21 {
     f32 f74;
 };
 
-struct Out_2 {
-    s32 w0, w4, w8, wC, w10, w14;
-};
-
-void func_8002D528(Obj_21 *o, Out_2 *out) {
-    out->w0 = o->f6c * 1000.0f + -28000.0f;
-    out->w4 = 0x5BCC;
-    out->w8 = o->f74 * 1000.0f - 10000.0f;
-    out->wC = 0x1800;
-    out->w14 = -0x4000;
-    out->w10 = 0;
+void func_8002D528(Obj_21 *o, CamOut *out) {
+    out->x = o->f6c * 1000.0f + -28000.0f;
+    out->y = 0x5BCC;
+    out->z = o->f74 * 1000.0f - 10000.0f;
+    out->pitch = 0x1800;
+    out->yaw = -0x4000;
+    out->roll = 0;
     cam_smooth_to(out);
 }
 
-void cam_mode_chase_near(u8 *p, s32 *p2) {
+void cam_mode_chase_near(u8 *p, CamOut *p2) {
     s32 v = -0x9C4;
 
     if (p[0x44] != 0) {
@@ -2089,12 +1957,12 @@ void cam_mode_chase_near(u8 *p, s32 *p2) {
     cam_update_chase(p, p2, v);
 }
 
-void cam_mode_chase_mid(s32 param_1, s32 *param_2)
+void cam_mode_chase_mid(s32 param_1, CamOut *param_2)
 {
     cam_update_chase(param_1, param_2, -5000);
 }
 
-void cam_mode_chase_far(s32 a, s32 *b) {
+void cam_mode_chase_far(s32 a, CamOut *b) {
     cam_update_chase(a, b, -10000);
 }
 
@@ -2104,7 +1972,7 @@ typedef struct { s32 l60[4]; s32 l50; s32 l4c; s32 l48; s32 pad[1]; s32 arr[10];
 
 extern GS *gCurTrack_22;
 
-void cam_mode_celebration(Obj_22 *o, s32 *out)
+void cam_mode_celebration(Obj_22 *o, CamOut *out)
 {
     Stk st;
     s16 it;
@@ -2126,16 +1994,16 @@ void cam_mode_celebration(Obj_22 *o, s32 *out)
     st.l60[2] = -5000;
     mtx3i_from_angles(st.arr, it, 0, sv);
     vec3i_mul_mtx3i(st.l60, st.arr, &st.l50);
-    out[0] = (s32)((f32)st.l50 + o->f6c * 1000.0f);
-    out[1] = (s32)((f32)st.l4c + o->f70 * 1000.0f + 750.0f);
-    out[2] = (s32)((f32)st.l48 + o->f74 * 1000.0f);
-    out[3] = it;
-    out[5] = sv;
-    out[4] = 0;
+    out->x = (s32)((f32)st.l50 + o->f6c * 1000.0f);
+    out->y = (s32)((f32)st.l4c + o->f70 * 1000.0f + 750.0f);
+    out->z = (s32)((f32)st.l48 + o->f74 * 1000.0f);
+    out->pitch = it;
+    out->yaw = sv;
+    out->roll = 0;
     cam_snap_to(out);
 }
 
-void cam_mode_first_person(s32 *p1, s32 *p2)
+void cam_mode_first_person(s32 *p1, CamOut *p2)
 {
     s32 t[4];
     s32 o[3];
@@ -2149,20 +2017,20 @@ void cam_mode_first_person(s32 *p1, s32 *p2)
     t[2] = 0;
     vec3i_mul_mtx3i(t, a, o);
     pf = (f32 *)p1;
-    p2[0] = (s32)((f32)o[0] + pf[27] * 1000.0f);
-    p2[1] = (s32)((f32)o[1] + pf[28] * 1000.0f);
-    p2[2] = (s32)((f32)o[2] + pf[29] * 1000.0f);
-    p2[3] = p1[6] / 2;
-    p2[5] = p1[8];
+    p2->x = (s32)((f32)o[0] + pf[27] * 1000.0f);
+    p2->y = (s32)((f32)o[1] + pf[28] * 1000.0f);
+    p2->z = (s32)((f32)o[2] + pf[29] * 1000.0f);
+    p2->pitch = p1[6] / 2;
+    p2->yaw = p1[8];
     v = p1[7];
     if (v < 0) {
         v += 3;
     }
-    p2[4] = v >> 2;
+    p2->roll = v >> 2;
     cam_snap_to(p2);
 }
 
-void func_8002D888(Player_10 *arg0, s32 *arg1)
+void func_8002D888(Player_10 *arg0, CamOut *arg1)
 {
 }
 
