@@ -1,11 +1,6 @@
 #include "game.h"
 
 typedef struct {
-    u8 pad0[0x18];
-    f32 f18;
-} Sub;
-
-typedef struct {
     u32 f0;
     u8 pad4[0x1C - 0x4];
     s32 f1C[4];
@@ -214,22 +209,22 @@ void bikes_init(void) {
                     case 0:
                         gRiders[i].bike.pos.x = -1.0f;
                         gRiders[i].bike.pos.z = -10.0f;
-                        quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, 0.0f);
+                        quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 0.0f);
                         break;
                     case 1:
                         gRiders[i].bike.pos.x = 1.0f;
                         gRiders[i].bike.pos.z = -10.0f;
-                        quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, 0.0f);
+                        quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 0.0f);
                         break;
                     case 2:
                         gRiders[i].bike.pos.x = 1.0f;
                         gRiders[i].bike.pos.z = 10.0f;
-                        quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, 3.1415927f);
+                        quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 3.1415927f);
                         break;
                     case 3:
                         gRiders[i].bike.pos.x = -1.0f;
                         gRiders[i].bike.pos.z = 10.0f;
-                        quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, 3.1415927f);
+                        quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 3.1415927f);
                         break;
                     }
                 } else {
@@ -237,12 +232,12 @@ void bikes_init(void) {
                     case 0:
                         gRiders[i].bike.pos.x = 0.01f;
                         gRiders[i].bike.pos.z = -10.0f;
-                        quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, 0.00958738f);
+                        quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 0.00958738f);
                         break;
                     case 1:
                         gRiders[i].bike.pos.x = -0.015f;
                         gRiders[i].bike.pos.z = 10.0f;
-                        quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, 3.15118f);
+                        quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 3.15118f);
                         break;
                     }
                 }
@@ -251,7 +246,7 @@ void bikes_init(void) {
             case 5:
                 p->bike.pos.x = sStartLineOffsets[i].x;
                 p->bike.pos.z = sStartLineOffsets[i].z;
-                quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, 0.0f);
+                quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 0.0f);
                 break;
             default:
                 if ((gGame_25.f0 & 0x11) == 0x11) {
@@ -291,10 +286,10 @@ void bikes_init(void) {
                     k = idx + 1;
                 }
                 math_to_polar(gPathNodes_3[k].f18 * 1024.0f, gPathNodes_3[k].f14 * 1024.0f, (s16 *)&ang, &ratio);
-                quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
+                quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
                 if (gCurTrack_17->f2C == 0 && !(gGame_25.f0 & 0x10)) {
                     ang = (ang + 0x1000) & ~0x3FFF;
-                    quat_from_euler((u8 *)&gRiders[i].bike.pos + 0x30, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
+                    quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
                 }
                 if (gGame_25.f4C != 6) {
                     a = (s16)ang >> 4;
@@ -345,47 +340,45 @@ void bikes_init(void) {
     D_800C8DC0 = 1;
 }
 
-#define FLD(p, off) (*(f32 *)((u8 *)(p) + (off)))
-
 typedef struct {
     f32 f[10];
 } Rec28;
 
 extern Rec28 sRiderStatsTable[];
 
-void bike_apply_rider_stats(u8 *a0, s32 a1)
+void bike_apply_rider_stats(Rider *a0, s32 a1)
 {
-    if (a0[0x6E8] == 0) {
-        FLD(a0, 0x1BC) = 250.0f;
-        FLD(a0, 0x7B8) = sRiderStatsTable[a1].f[0];
-        FLD(a0, 0x7BC) = sRiderStatsTable[a1].f[1] * (sBikeTune[14] * sBikeTune[5]) * 32.0f * FLD(a0, 0x7D0);
-        FLD(a0, 0x7C4) = sRiderStatsTable[a1].f[2] * sBikeTune[12] * 3.1415927f * 0.00390625f;
-        FLD(a0, 0x7C8) = sRiderStatsTable[a1].f[3] / 48.0f;
-        FLD(a0, 0x7D0) = sRiderStatsTable[a1].f[4] * 0.57f;
-        FLD(a0, 0x7C0) = sRiderStatsTable[a1].f[5];
-        FLD(a0, 0x7B4) = sRiderStatsTable[a1].f[6];
-        FLD(a0, 0x7D4) = sRiderStatsTable[a1].f[7];
-        FLD(a0, 0x7D8) = sRiderStatsTable[a1].f[8];
+    if (a0->isCpu == 0) {
+        a0->bike.mass = 250.0f;
+        a0->landing = sRiderStatsTable[a1].f[0];
+        a0->handling = sRiderStatsTable[a1].f[1] * (sBikeTune[14] * sBikeTune[5]) * 32.0f * a0->turnRadius;
+        a0->airTurn = sRiderStatsTable[a1].f[2] * sBikeTune[12] * 3.1415927f * 0.00390625f;
+        a0->airFloat = sRiderStatsTable[a1].f[3] / 48.0f;
+        a0->turnRadius = sRiderStatsTable[a1].f[4] * 0.57f;
+        a0->turbo = sRiderStatsTable[a1].f[5];
+        a0->weight = sRiderStatsTable[a1].f[6];
+        a0->unk_7D4 = sRiderStatsTable[a1].f[7];
+        a0->power = sRiderStatsTable[a1].f[8];
         return;
     }
-    FLD(a0, 0x1BC) = 250.0f;
-    FLD(a0, 0x7D4) = 0.3f;
-    FLD(a0, 0x7B8) = 1.0f;
-    FLD(a0, 0x7C0) = 1.0f;
+    a0->bike.mass = 250.0f;
+    a0->unk_7D4 = 0.3f;
+    a0->landing = 1.0f;
+    a0->turbo = 1.0f;
     {
         f32 k57 = 0.57f;
         f32 t = sBikeTune[12] * 3.1415927f * 0.00390625f;
-        FLD(a0, 0x7D0) = k57;
-        FLD(a0, 0x7C8) = 0.020833334f;
-        FLD(a0, 0x7C4) = t;
-        FLD(a0, 0x7BC) = sBikeTune[14] * sBikeTune[5] * 32.0f * k57;
+        a0->turnRadius = k57;
+        a0->airFloat = 0.020833334f;
+        a0->airTurn = t;
+        a0->handling = sBikeTune[14] * sBikeTune[5] * 32.0f * k57;
     }
-    if (gGameMode == 0xF) {
-        FLD(a0, 0x7D8) = 0.7f;
+    if (gGame_25.f4C == 0xF) {
+        a0->power = 0.7f;
     } else {
-        FLD(a0, 0x7D8) = 1.0f;
+        a0->power = 1.0f;
     }
-    FLD(a0, 0x7B4) = sRiderStatsTable[a1].f[6];
+    a0->weight = sRiderStatsTable[a1].f[6];
 }
 
 f32 bike_wheel_ground_bisect(Rider *o, f32 *p, f32 p3)
@@ -644,16 +637,13 @@ void bike_wheel_spring_force(Wheel *p, f32 x)
     }
 }
 
-#define F_2(off) (*(f32 *)(s + (off)))
-#define W(off) (*(s32 *)(s + (off)))
-
-void bike_update_suspension(u8 *s)
+void bike_update_suspension(Rider *s)
 {
     f32 x;
     f32 m1;
     f32 one, fv2, B, A3, t1, t2, t3, fs1v, m2;
 
-    x = F_2(0x1BC);
+    x = s->bike.mass;
     m1 = x * 0.65f;
     m2 = x * 0.6f;
     A3 = ((m1 / 1.25f) - 11.5199995f) * 14.700001f;
@@ -672,27 +662,27 @@ void bike_update_suspension(u8 *s)
     } else {
         t3 = t2 / 15000.0f;
     }
-    bike_wheel_spring_force((s32)(s + 0x4F8), t3);
+    bike_wheel_spring_force(&s->frontWheel, t3);
 
-    if (((F_2(0x420) + 5.0f) * 250.0f * 30.0f) < F_2(0x514)) {
-        W(0x520) = 0;
-        W(0x47C) = 0;
+    if (((s->speed + 5.0f) * 250.0f * 30.0f) < s->frontWheel.springForce) {
+        s->frontWheel.groundDist = 0.0f;
+        s->rearWheel.groundDist = 0.0f;
         bike_crash_begin(s, 0x1c);
     }
-    bike_wheel_spring_force((s32)(s + 0x454), fs1v);
-    if (((F_2(0x420) + 5.0f) * 250.0f * 30.0f) < F_2(0x470)) {
-        W(0x520) = 0;
-        W(0x47C) = 0;
+    bike_wheel_spring_force(&s->rearWheel, fs1v);
+    if (((s->speed + 5.0f) * 250.0f * 30.0f) < s->rearWheel.springForce) {
+        s->frontWheel.groundDist = 0.0f;
+        s->rearWheel.groundDist = 0.0f;
         bike_crash_begin(s, 0x19);
     }
-    if (3675.0002f < F_2(0x514) || 3675.0002f < F_2(0x470)) {
-        if (0x78 < W(0x5C8) - gRaceFrame) {
+    if (3675.0002f < s->frontWheel.springForce || 3675.0002f < s->rearWheel.springForce) {
+        if (0x78 < s->hardLandFrame - gRaceFrame) {
             bike_crash_begin(s, 0x1c);
         }
     } else {
-        W(0x5C8) = gRaceFrame;
+        s->hardLandFrame = gRaceFrame;
     }
-    if (W(0x4FC) == gPhysTicks || W(0x458) == gPhysTicks) {
+    if (s->frontWheel.airTicks == gPhysTicks || s->rearWheel.airTicks == gPhysTicks) {
         func_80022908(s);
     }
 }
@@ -884,8 +874,8 @@ void bike_place_on_ground(Rider *b)
 
     b->drawRot[0] = 0;
     b->drawRot[1] = 0;
-    quat_to_mtx3f(&b->bike.right.x, &b->bike.quat[0]);
-    quat_to_angles(&b->bike.quat[0], &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
+    quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
+    quat_to_angles(b->bike.quat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
     r = bike_raycast_ground(&b->bike.pos, &b->bike.up, 0.0f, 0.002f, tmp);
     d[0] = b->bike.up.x * -((r + 0.5f) - b->bike.mass * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
     d[1] = b->bike.up.y * -((r + 0.5f) - b->bike.mass * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
@@ -895,14 +885,14 @@ void bike_place_on_ground(Rider *b)
     b->bike.pos.z -= d[2];
     i = 16;
     do {
-        quat_to_angles(&b->bike.quat[0], &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
-        quat_to_mtx3f(&b->bike.right.x, &b->bike.quat[0]);
+        quat_to_angles(b->bike.quat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
+        quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
         bike_update_wheel_contacts(b);
         a = (b->frontWheel.groundDist - b->rearWheel.groundDist) / 2.5f * 32768.0f / 3.1415927f;
         if (a > 0x1000) a = 0x1000;
         if (a < -0x1000) a = -0x1000;
         b->drawRot[0] -= a;
-        quat_from_euler(&b->bike.quat[0], (f32)b->drawRot[0] * 3.1415927f * 3.0517578e-05f,
+        quat_from_euler(b->bike.quat, (f32)b->drawRot[0] * 3.1415927f * 3.0517578e-05f,
                       (f32)b->drawRot[1] * 3.1415927f * 3.0517578e-05f,
                       (f32)b->drawRot[2] * 3.1415927f * 3.0517578e-05f);
         df = b->frontWheel.groundDist - b->rearWheel.groundDist;
@@ -949,59 +939,60 @@ void bike_wheel_surface_bumps(Wheel *a0, f32 *a1)
     a0->groundDist += pos + acc;
 }
 
-void bike_update_brakes(u8 *p)
+void bike_update_brakes(Rider *p)
 {
     f32 a514;
     f32 f3, f5, a470;
     s16 sv;
 
     f3 = 0.5f;
-    a514 = *(f32 *)(p + 0x514);
-    a470 = *(f32 *)(p + 0x470);
-    *(u32 *)(p + 0x4bc) = 0;
+    a514 = p->frontWheel.springForce;
+    a470 = p->rearWheel.springForce;
+    /* zeroed as words: the float compare below reads the field again */
+    *(u32 *)&p->rearWheel.brakeTorque = 0;
     f5 = a514 + a470;
-    *(u32 *)(p + 0x560) = 0;
-    if (*(f32 *)(p + 0x4bc) < f5) {
+    *(u32 *)&p->frontWheel.brakeTorque = 0;
+    if (p->rearWheel.brakeTorque < f5) {
         f3 = a514 / f5;
     }
-    if ((*(u32 *)(p + 0x5b0) & 0x20) != 0) {
+    if ((p->input & 0x20) != 0) {
         f5 = 6.0f;
-        sv = *(s16 *)(p + 0x55c) + 1;
-        *(s16 *)(p + 0x55c) = sv;
+        sv = p->frontWheel.brakeRamp + 1;
+        p->frontWheel.brakeRamp = sv;
         if (f5 < (f32)sv) {
-            *(s16 *)(p + 0x55c) = 6;
+            p->frontWheel.brakeRamp = 6;
         }
-        if (*(s32 *)(p + 0x4fc) < 1) {
-            *(f32 *)(p + 0x560) = ((f32)*(s16 *)(p + 0x55c) * 2572.5f * f3) / f5;
+        if (p->frontWheel.airTicks < 1) {
+            p->frontWheel.brakeTorque = ((f32)p->frontWheel.brakeRamp * 2572.5f * f3) / f5;
         }
-        sv = *(s16 *)(p + 0x4b8) + 1;
-        *(s16 *)(p + 0x4b8) = sv;
+        sv = p->rearWheel.brakeRamp + 1;
+        p->rearWheel.brakeRamp = sv;
         if (f5 < (f32)sv) {
-            *(s16 *)(p + 0x4b8) = 6;
+            p->rearWheel.brakeRamp = 6;
         }
-        if (*(s32 *)(p + 0x458) < 1) {
-            *(f32 *)(p + 0x4bc) = ((f32)*(s16 *)(p + 0x4b8) * 2572.5f * (1.0f - f3)) / f5;
+        if (p->rearWheel.airTicks < 1) {
+            p->rearWheel.brakeTorque = ((f32)p->rearWheel.brakeRamp * 2572.5f * (1.0f - f3)) / f5;
         }
     } else {
-        *(s16 *)(p + 0x55c) = 0;
-        *(s16 *)(p + 0x4b8) = 0;
+        p->frontWheel.brakeRamp = 0;
+        p->rearWheel.brakeRamp = 0;
     }
-    f5 = *(f32 *)(p + 0x424);
+    f5 = p->fwdSpeed;
     if (0.0f < f5) {
-        *(u8 *)(p + 0x6e9) = 0;
+        p->reversing = 0;
     } else {
-        *(u8 *)(p + 0x6e9) = 1;
+        p->reversing = 1;
     }
     if ((gEventFlags & 0x10) == 0) {
-        if ((*(u32 *)(p + 0x5b0) & 0x20010) != 0 && f5 < 0.0f) {
+        if ((p->input & 0x20010) != 0 && f5 < 0.0f) {
             f32 m, q;
             m = f3 * -2572.5f;
             q = -2572.5f - m;
-            *(f32 *)(p + 0x560) = m;
-            *(f32 *)(p + 0x4bc) = q;
+            p->frontWheel.brakeTorque = m;
+            p->rearWheel.brakeTorque = q;
             return;
         }
-        if (*(s16 *)(p + 0x416) == 0) {
+        if (p->wheelieTimer == 0) {
             if (f5 < sBikeMaxReverseSpeed) {
                 goto neg;
             }
@@ -1011,18 +1002,18 @@ void bike_update_brakes(u8 *p)
             return;
         }
 neg:
-        *(f32 *)(p + 0x560) = -*(f32 *)(p + 0x560);
-        *(f32 *)(p + 0x4bc) = -*(f32 *)(p + 0x4bc);
+        p->frontWheel.brakeTorque = -p->frontWheel.brakeTorque;
+        p->rearWheel.brakeTorque = -p->rearWheel.brakeTorque;
         return;
     }
     {
         f32 m, dv;
         m = f5 * 250.0f;
         dv = gPhysDeltaTime + gPhysDeltaTime;
-        *(s16 *)(p + 0x412) = 0x3000;
+        p->unk_412 = 0x3000;
         m = m / dv;
-        *(f32 *)(p + 0x560) = m;
-        *(f32 *)(p + 0x4bc) = m;
+        p->frontWheel.brakeTorque = m;
+        p->rearWheel.brakeTorque = m;
         return;
     }
 }
@@ -1205,12 +1196,8 @@ end:
     rider_update_input_history(o, a1);
 }
 
-#define F_3(p, o) (*(f32 *)((u8 *)(p) + (o)))
-#define I(p, o) (*(s32 *)((u8 *)(p) + (o)))
-#define V(p, o) ((f32 *)((u8 *)(p) + (o)))
-#define MINSPD ((I(b, 0x5B0) & 0x10000) ? 250.0f : 1000.0f)
+#define MINSPD ((b->input & 0x10000) ? 250.0f : 1000.0f)
 
-typedef struct Cam_8 Cam_8;
 typedef struct { u8 pad[0x28]; f32 f28; f32 f2C; } Glob_2;
 
 extern Glob_2 sBikeTune_2;
@@ -1224,79 +1211,79 @@ void bike_update_tire_forces(Rider *b)
     f32 ratio;
     f32 d1, scale, sp, sl, x2, y2, ss, f, v, len, sv, t, n, m, g, e;
 
-    if (I(b, 0x458) <= 0) {
-        F_3(b, 0x46C) = F_3(b, 0x448) - F_3(b, 0x4BC);
-        bike_rear_tire_force(b, (Cam_8 *)V(b, 0x454));
+    if (b->rearWheel.airTicks <= 0) {
+        b->rearWheel.lonForce = b->driveForce - b->rearWheel.brakeTorque;
+        bike_rear_tire_force(b, &b->rearWheel);
     } else {
-        F_3(b, 0x4F0) = F_3(b, 0x448) = F_3(b, 0x4BC) = F_3(b, 0x45C) = F_3(b, 0x460) = F_3(b, 0x464) = 0.0f;
+        b->rearWheel.slip = b->driveForce = b->rearWheel.brakeTorque = b->rearWheel.force.x = b->rearWheel.force.y = b->rearWheel.force.z = 0.0f;
     }
-    if (I(b, 0x4FC) <= 0) {
-    d.x = F_3(b, 0x538) - F_3(b, 0x48);
-    d.y = F_3(b, 0x53C) - F_3(b, 0x4C);
-    d.z = F_3(b, 0x540) - F_3(b, 0x50);
-    c.x = F_3(b, 0x8C) * d.z - d.y * F_3(b, 0x90);
-    c.y = F_3(b, 0x90) * d.x - d.z * F_3(b, 0x88);
-    c.z = F_3(b, 0x88) * d.y - d.x * F_3(b, 0x8C);
-    c.x += F_3(b, 0x54);
-    c.y += F_3(b, 0x58);
-    c.z += F_3(b, 0x5C);
-    d1 = vec3_dot(&c.x, V(b, 0x570));
-    d2 = vec3_dot(&c.x, V(b, 0x57C));
+    if (b->frontWheel.airTicks <= 0) {
+    d.x = b->frontWheel.contact.x - b->bike.pos.x;
+    d.y = b->frontWheel.contact.y - b->bike.pos.y;
+    d.z = b->frontWheel.contact.z - b->bike.pos.z;
+    c.x = b->bike.angVel.y * d.z - d.y * b->bike.angVel.z;
+    c.y = b->bike.angVel.z * d.x - d.z * b->bike.angVel.x;
+    c.z = b->bike.angVel.x * d.y - d.x * b->bike.angVel.y;
+    c.x += b->bike.vel.x;
+    c.y += b->bike.vel.y;
+    c.z += b->bike.vel.z;
+    d1 = vec3_dot(&c.x, &b->frontWheel.latAxis.x);
+    d2 = vec3_dot(&c.x, &b->frontWheel.lonAxis.x);
     scale = sBikeTune_2.f28;
-    m = scale * (*(Sub **)((u8 *)b + 0x588))->f18;
+    m = scale * b->frontWheel.surface->grip;
     ratio = sBikeTune_2.f2C / scale;
-    F_3(b, 0x598) = m;
-    if (*((u8 *)b + 0x41B) == 1) {
-        F_3(b, 0x598) = m / 3.0f;
+    b->frontWheel.grip = m;
+    if (b->powerSlide == 1) {
+        b->frontWheel.grip = m / 3.0f;
         ratio = 1.0f;
-    } else if (I(b, 0x5B0) & 0x10000) {
-        F_3(b, 0x598) = m * 1.3f;
+    } else if (b->input & 0x10000) {
+        b->frontWheel.grip = m * 1.3f;
     }
-    x2 = F_3(b, 0x50C);
+    x2 = b->frontWheel.latForce;
     x2 *= x2;
-    y2 = F_3(b, 0x510);
+    y2 = b->frontWheel.lonForce;
     y2 *= y2;
     ss = x2 + y2;
     sl = __builtin_sqrtf(ss);
     if (sl > 0.0f) {
-        F_3(b, 0x598) = F_3(b, 0x598) * (ss / (x2 + y2 / ratio));
+        b->frontWheel.grip = b->frontWheel.grip * (ss / (x2 + y2 / ratio));
     }
-    t = vec3_dot(V(b, 0x564), V(b, 0xAC));
-    f = F_3(b, 0x514) - vec3_dot(V(b, 0x500), V(b, 0xAC));
+    t = vec3_dot(&b->frontWheel.normal.x, &b->bike.up.x);
+    f = b->frontWheel.springForce - vec3_dot(&b->frontWheel.force.x, &b->bike.up.x);
     f /= t;
     v = f;
     if (v > 4000.0f) v = 4000.0f;
     if (v < MINSPD) v = MINSPD;
-    if (sl < v * F_3(b, 0x598) || gGameMode == 15) {
-        d.x = F_3(b, 0x564) * f;
-        d.y = F_3(b, 0x568) * f;
-        d.z = F_3(b, 0x56C) * f;
-        F_3(b, 0x500) += d.x;
-        F_3(b, 0x504) += d.y;
-        F_3(b, 0x508) += d.z;
-        F_3(b, 0x594) = 0.0f;
-        F_3(b, 0x590) = d2;
+    if (sl < v * b->frontWheel.grip || gGameMode == 15) {
+        d.x = b->frontWheel.normal.x * f;
+        d.y = b->frontWheel.normal.y * f;
+        d.z = b->frontWheel.normal.z * f;
+        b->frontWheel.force.x += d.x;
+        b->frontWheel.force.y += d.y;
+        b->frontWheel.force.z += d.z;
+        b->frontWheel.slip = 0.0f;
+        b->frontWheel.spin = d2;
     } else {
-    y2 = d2 - F_3(b, 0x590);
+    y2 = d2 - b->frontWheel.spin;
     len = __builtin_sqrtf(y2 * y2 + d1 * d1);
-    F_3(b, 0x594) = len;
+    b->frontWheel.slip = len;
     if (len > 2.0f) {
         y2 = -y2 / len;
-        d.x = F_3(b, 0x57C) * y2;
-        d.y = F_3(b, 0x580) * y2;
-        d.z = F_3(b, 0x584) * y2;
+        d.x = b->frontWheel.lonAxis.x * y2;
+        d.y = b->frontWheel.lonAxis.y * y2;
+        d.z = b->frontWheel.lonAxis.z * y2;
         d1 = -d1 / len;
         x2 = d1 * d1;
-        dir.x = F_3(b, 0x570) * d1;
+        dir.x = b->frontWheel.latAxis.x * d1;
         y2 = y2 * y2;
-        dir.y = F_3(b, 0x574) * d1;
-        dir.z = F_3(b, 0x578) * d1;
+        dir.y = b->frontWheel.latAxis.y * d1;
+        dir.z = b->frontWheel.latAxis.z * d1;
         dir.y += d.y;
         dir.x += d.x;
         dir.z += d.z;
-        F_3(b, 0x598) = scale * (x2 + y2) / (x2 + y2 / ratio);
+        b->frontWheel.grip = scale * (x2 + y2) / (x2 + y2 / ratio);
     } else {
-        dir = *(Vec3f *)V(b, 0x500);
+        dir = *(Vec3f *)&b->frontWheel.force.x;
         n = __builtin_sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
         if (n != 0.0f) {
             dir.x /= n;
@@ -1304,29 +1291,29 @@ void bike_update_tire_forces(Rider *b)
             dir.z /= n;
         }
     }
-    sp = t + vec3_dot(&dir.x, V(b, 0xAC)) * F_3(b, 0x598);
+    sp = t + vec3_dot(&dir.x, &b->bike.up.x) * b->frontWheel.grip;
     if (sp < 0.5f) sp = 0.5f;
-    f = F_3(b, 0x514) / sp;
+    f = b->frontWheel.springForce / sp;
     if (f < 0.0f) f = 0.0f;
     v = f;
     if (v > 4000.0f) v = 4000.0f;
     if (v < MINSPD) v = MINSPD;
     sl = v;
-    sl *= F_3(b, 0x598);
-    F_3(b, 0x500) = f * F_3(b, 0x564) + sl * dir.x;
-    F_3(b, 0x504) = f * F_3(b, 0x568) + sl * dir.y;
-    F_3(b, 0x508) = f * F_3(b, 0x56C) + sl * dir.z;
-    F_3(b, 0x590) += (-vec3_dot(V(b, 0x500), V(b, 0x57C)) - F_3(b, 0x560)) / 9765.625f;
-    if (F_3(b, 0x590) < 0.0f) F_3(b, 0x590) = 0.0f;
-    e = F_3(b, 0x590) - d2;
+    sl *= b->frontWheel.grip;
+    b->frontWheel.force.x = f * b->frontWheel.normal.x + sl * dir.x;
+    b->frontWheel.force.y = f * b->frontWheel.normal.y + sl * dir.y;
+    b->frontWheel.force.z = f * b->frontWheel.normal.z + sl * dir.z;
+    b->frontWheel.spin += (-vec3_dot(&b->frontWheel.force.x, &b->frontWheel.lonAxis.x) - b->frontWheel.brakeTorque) / 9765.625f;
+    if (b->frontWheel.spin < 0.0f) b->frontWheel.spin = 0.0f;
+    e = b->frontWheel.spin - d2;
     if (e > 10.0f) {
-        F_3(b, 0x590) = d2 + 10.0f;
+        b->frontWheel.spin = d2 + 10.0f;
     } else if (e < -10.0f) {
-        F_3(b, 0x590) = d2 - 10.0f;
+        b->frontWheel.spin = d2 - 10.0f;
     }
     }
     } else {
-        F_3(b, 0x594) = F_3(b, 0x560) = F_3(b, 0x500) = F_3(b, 0x504) = F_3(b, 0x508) = 0.0f;
+        b->frontWheel.slip = b->frontWheel.brakeTorque = b->frontWheel.force.x = b->frontWheel.force.y = b->frontWheel.force.z = 0.0f;
     }
 }
 
@@ -1443,73 +1430,73 @@ void bike_solve_tire_constraints(Rider *b)
     }
 }
 
-f32 bike_calc_lean_torque(u8 *p)
+f32 bike_calc_lean_torque(Rider *p)
 {
     struct { s16 h[2]; s32 w; } lo;
     f32 fVar2, fVar3, fVar4, fX, fR;
 
-    if (*(s16 *)(p + 0x416) == 0) {
-        if (*(f32 *)(p + 0x424) < 1.0f && *(u8 *)(p + 0x41B) == 0) {
-            if ((*(u32 *)(p + 0x5B0) & 0x20) != 0) {
-                *(s16 *)(p + 0x412) = (s16)(s32)((f32)(s32)*(s16 *)(p + 0x412) + *(f32 *)(p + 0x424) * 1066.6666f);
+    if (p->wheelieTimer == 0) {
+        if (p->fwdSpeed < 1.0f && p->powerSlide == 0) {
+            if ((p->input & 0x20) != 0) {
+                p->unk_412 = (s16)(s32)((f32)(s32)p->unk_412 + p->fwdSpeed * 1066.6666f);
             } else {
-                *(u16 *)(p + 0x412) = D_800C94C0;
+                p->unk_412 = D_800C94C0;
             }
-            if (*(u8 *)(p + 0x41A) < 0x10) *(u8 *)(p + 0x41A) += 2;
-            if (*(u8 *)(p + 0x419) < 0x10) *(u8 *)(p + 0x419) += 2;
+            if (p->rightFootOut < 0x10) p->rightFootOut += 2;
+            if (p->leftFootOut < 0x10) p->leftFootOut += 2;
         } else {
-            if (*(s32 *)(p + 0x1C) >= 0x1001 &&
-                (*(u8 *)(p + 0x6E8) != 0 || (*(u32 *)(p + 0x5B0) & 0x10000) != 0 ||
-                 *(u8 *)(p + 0x41B) != 0 || *(u8 *)(p + 0x41C) != 0 || *(f32 *)(p + 0x424) < 10.0f)) {
-                if (*(u8 *)(p + 0x41A) < 0x10) *(u8 *)(p + 0x41A) += 2;
+            if (p->drawRot[1] >= 0x1001 &&
+                (p->isCpu != 0 || (p->input & 0x10000) != 0 ||
+                 p->powerSlide != 0 || p->hardTurn != 0 || p->fwdSpeed < 10.0f)) {
+                if (p->rightFootOut < 0x10) p->rightFootOut += 2;
             } else {
-                if (*(u8 *)(p + 0x41A) != 0) *(u8 *)(p + 0x41A) -= 1;
+                if (p->rightFootOut != 0) p->rightFootOut -= 1;
             }
-            if (*(s32 *)(p + 0x1C) < -0x1000 &&
-                (*(u8 *)(p + 0x6E8) != 0 || (*(u32 *)(p + 0x5B0) & 0x10000) != 0 ||
-                 *(u8 *)(p + 0x41B) != 0 || *(u8 *)(p + 0x41C) == 1 || *(f32 *)(p + 0x424) < 10.0f)) {
-                if (*(u8 *)(p + 0x419) < 0x10) *(u8 *)(p + 0x419) += 2;
+            if (p->drawRot[1] < -0x1000 &&
+                (p->isCpu != 0 || (p->input & 0x10000) != 0 ||
+                 p->powerSlide != 0 || p->hardTurn == 1 || p->fwdSpeed < 10.0f)) {
+                if (p->leftFootOut < 0x10) p->leftFootOut += 2;
             } else {
-                if (*(u8 *)(p + 0x419) != 0) *(u8 *)(p + 0x419) -= 1;
+                if (p->leftFootOut != 0) p->leftFootOut -= 1;
             }
         }
     }
-    math_to_polar((s32)(*(f32 *)(p + 0xA4) * 1000.0f), (s32)(*(f32 *)(p + 0xB0) * 1000.0f), lo.h, &lo.w);
+    math_to_polar((s32)(p->bike.right.y * 1000.0f), (s32)(p->bike.up.y * 1000.0f), lo.h, &lo.w);
     fVar4 = (f32)(s32)lo.h[0] * 0.001953125f;
 
-    if (*(s32 *)(p + 0x744) < 0) {
-        fVar3 = (f32)(s32)*(s8 *)(p + 0x5D0);
-        fVar2 = *(f32 *)(p + 0x420);
+    if (p->airFrames < 0) {
+        fVar3 = (f32)(s32)p->stickX;
+        fVar2 = p->speed;
         if (fVar2 < 0.0f) {
             fVar3 = 0.0f;
         } else if (fVar2 < 4.0f) {
             fVar3 = fVar3 * fVar2 * 0.25f;
         }
-        if (*(s32 *)(p + 0x5C0) < 0) fVar3 = fVar3 * 0.6667f;
-        if (*(s32 *)(p + 0x5C0) >= -9 && (fVar3 - fVar4) * fVar4 < 0.0f) {
+        if (p->rHeld < 0) fVar3 = fVar3 * 0.6667f;
+        if (p->rHeld >= -9 && (fVar3 - fVar4) * fVar4 < 0.0f) {
             fVar3 = fVar4 + (fVar3 - fVar4) * 0.25f;
         }
-    } else if (*(s8 *)(p + 0x3D0) == -1) {
-        if (*(u8 *)(p + 0x6E8) != 0) {
-            fVar3 = (f32)(s32)*(s8 *)(p + 0x5D0) * 0.25f;
+    } else if (p->anim == -1) {
+        if (p->isCpu != 0) {
+            fVar3 = (f32)(s32)p->stickX * 0.25f;
         } else {
-            fVar3 = (f32)(s32)*(s8 *)(p + 0x5D0) * 0.5f;
+            fVar3 = (f32)(s32)p->stickX * 0.5f;
         }
     } else {
         fVar3 = 0.0f;
-        if ((u8)(*(u8 *)(p + 0x3D0) - 0x10) < 2) {
-            fVar3 = (f32)((((s32)((u32)*(u16 *)(p + 0x622) << 16)) >> 27) * 3);
+        if ((u8)((u8)p->anim - 0x10) < 2) {
+            fVar3 = (f32)((((s32)((u32)(u16)p->unk_622 << 16)) >> 27) * 3);
         }
     }
-    if (*(u8 *)(p + 0x6E9) != 0) fVar3 = 0.0f;
+    if (p->reversing != 0) fVar3 = 0.0f;
     fX = fVar3 - fVar4;
     if (12.0f < fX) fX = 12.0f;
     else if (fX < -12.0f) fX = -12.0f;
 
-    if (*(u8 *)(p + 0x6E8) == 0) {
-        fX = sLeanTorqueGain * fX - sLeanTorqueDamping * *(f32 *)(p + 0x438);
+    if (p->isCpu == 0) {
+        fX = sLeanTorqueGain * fX - sLeanTorqueDamping * p->localAngVel.z;
     } else {
-        fX = fX * 0.015f - *(f32 *)(p + 0x438) * 0.1f;
+        fX = fX * 0.015f - p->localAngVel.z * 0.1f;
     }
     fR = 0.0f;
     if (gGameMode != 0xF) fR = fX;
@@ -1517,12 +1504,6 @@ f32 bike_calc_lean_torque(u8 *p)
 }
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
-
-typedef struct {
-    u8 pad0[0x10];
-    f32 f10;
-    f32 f14;
-} Surf_2;
 
 void bike_compute_forces(Rider *b) {
     Vec3f F;
@@ -1767,25 +1748,25 @@ void bike_compute_forces(Rider *b) {
     }
 }
 
-void bike_integrate_velocity(u8 *param_1)
+void bike_integrate_velocity(Rider *param_1)
 {
     f32 len;
     f32 r;
 
-    *(f32 *)(param_1 + 0x54) = *(f32 *)(param_1 + 0x54) + *(f32 *)(param_1 + 0x60) * gPhysDeltaTime;
-    *(f32 *)(param_1 + 0x58) = *(f32 *)(param_1 + 0x58) + *(f32 *)(param_1 + 0x64) * gPhysDeltaTime;
-    *(f32 *)(param_1 + 0x5C) = *(f32 *)(param_1 + 0x5C) + *(f32 *)(param_1 + 0x68) * gPhysDeltaTime;
-    *(f32 *)(param_1 + 0x88) = *(f32 *)(param_1 + 0x88) + *(f32 *)(param_1 + 0x94) * gPhysDeltaTime;
-    *(f32 *)(param_1 + 0x8C) = *(f32 *)(param_1 + 0x8C) + *(f32 *)(param_1 + 0x98) * gPhysDeltaTime;
-    *(f32 *)(param_1 + 0x90) = *(f32 *)(param_1 + 0x90) + *(f32 *)(param_1 + 0x9C) * gPhysDeltaTime;
-    mtx3f_mul_vec3((f32 *)(param_1 + 0x88), (f32 *)(param_1 + 0xA0), (f32 *)(param_1 + 0x430));
-    len = *(f32 *)(param_1 + 0x54) * *(f32 *)(param_1 + 0x54)
-        + *(f32 *)(param_1 + 0x58) * *(f32 *)(param_1 + 0x58)
-        + *(f32 *)(param_1 + 0x5C) * *(f32 *)(param_1 + 0x5C);
-    *(f32 *)(param_1 + 0x420) = __builtin_sqrtf(len);
-    r = vec3_dot((f32 *)(param_1 + 0x54), (f32 *)(param_1 + 0xB8));
-    *(f32 *)(param_1 + 0x424) = r;
-    if (*(u8 *)(param_1 + 0x44) == 0 && *(s8 *)(param_1 + 0x3D0) != 0xF) {
+    param_1->bike.vel.x = param_1->bike.vel.x + param_1->bike.acc.x * gPhysDeltaTime;
+    param_1->bike.vel.y = param_1->bike.vel.y + param_1->bike.acc.y * gPhysDeltaTime;
+    param_1->bike.vel.z = param_1->bike.vel.z + param_1->bike.acc.z * gPhysDeltaTime;
+    param_1->bike.angVel.x = param_1->bike.angVel.x + param_1->bike.angAcc.x * gPhysDeltaTime;
+    param_1->bike.angVel.y = param_1->bike.angVel.y + param_1->bike.angAcc.y * gPhysDeltaTime;
+    param_1->bike.angVel.z = param_1->bike.angVel.z + param_1->bike.angAcc.z * gPhysDeltaTime;
+    mtx3f_mul_vec3(&param_1->bike.angVel.x, &param_1->bike.right.x, &param_1->localAngVel.x);
+    len = param_1->bike.vel.x * param_1->bike.vel.x
+        + param_1->bike.vel.y * param_1->bike.vel.y
+        + param_1->bike.vel.z * param_1->bike.vel.z;
+    param_1->speed = __builtin_sqrtf(len);
+    r = vec3_dot(&param_1->bike.vel.x, &param_1->bike.fwd.x);
+    param_1->fwdSpeed = r;
+    if (param_1->crashState == 0 && param_1->anim != 0xF) {
         cam_calc_bike_yaw(param_1);
     }
 }
@@ -1839,10 +1820,6 @@ void bike_integrate_position(Rider *b)
     }
 }
 
-#define FL(o) (*(f32 *)((u8 *)b + (o)))
-#define WD(o) (*(s32 *)((u8 *)b + (o)))
-#define PF(o) ((f32 *)((u8 *)b + (o)))
-
 void bike_update_render_pose(Rider *b)
 {
     f32 tmp[3];
@@ -1853,42 +1830,42 @@ void bike_update_render_pose(Rider *b)
     f32 x, y, m, d, len, ang, s, s2, c, k;
     s32 v, r;
 
-    x = FL(0x51C);
-    y = FL(0x478);
-    if (*((u8 *)b + 0x44) == 0) {
-        mtx3f_mul_vec3(PF(0x564), PF(0xA0), tmp);
+    x = b->frontWheel.suspLength;
+    y = b->rearWheel.suspLength;
+    if (b->crashState == 0) {
+        mtx3f_mul_vec3(&b->frontWheel.normal.x, &b->bike.right.x, tmp);
         x += (1.0f - tmp[1] / __builtin_sqrtf(1.0f - tmp[0] * tmp[0])) * 0.25f;
-        mtx3f_mul_vec3(PF(0x4C0), PF(0xA0), tmp);
+        mtx3f_mul_vec3(&b->rearWheel.normal.x, &b->bike.right.x, tmp);
         y += (1.0f - tmp[1] / __builtin_sqrtf(1.0f - tmp[0] * tmp[0])) * 0.25f;
     }
     m = 0.0f;
-    WD(0x38) = x / 0.001f;
-    WD(0x3C) = y / 0.001f;
+    b->drawSuspFront = x / 0.001f;
+    b->drawSuspRear = y / 0.001f;
     if (x > 0.2f) {
-        WD(0x38) = 200;
+        b->drawSuspFront = 200;
         m = 0.2f - x;
     }
     if (y > 0.2f) {
         d = 0.2f - y;
-        WD(0x3C) = 200;
+        b->drawSuspRear = 200;
         if (d < m) {
             m = d;
         }
     }
     m += 0.5f;
     if (y < -0.1f) {
-        WD(0x3C) = -100;
+        b->drawSuspRear = -100;
     }
-    WD(0x38) = (f32)WD(0x38) + 50.0f;
-    WD(0x0) = (FL(0x48) - FL(0xAC) * m) * 1000.0f;
-    WD(0x4) = (FL(0x4C) - FL(0xB0) * m) * 1000.0f;
-    WD(0x8) = (FL(0x50) - FL(0xB4) * m) * 1000.0f;
-    WD(0x30) = FL(0x5A0) * 32768.0f / 3.1415927f;
-    *(Blk *)PF(0x370) = *(Blk *)PF(0x78);
-    if (*((u8 *)b + 0x44) == 0) {
-        quat_to_angles(PF(0x78), &WD(0x24), &WD(0x28), &WD(0x2C));
-        if (*((s8 *)b + 0x3D0) == -1 || *((s8 *)b + 0x3D0) == 15) {
-            v = WD(0x24);
+    b->drawSuspFront = (f32)b->drawSuspFront + 50.0f;
+    b->drawPos.x = (b->bike.pos.x - b->bike.up.x * m) * 1000.0f;
+    b->drawPos.y = (b->bike.pos.y - b->bike.up.y * m) * 1000.0f;
+    b->drawPos.z = (b->bike.pos.z - b->bike.up.z * m) * 1000.0f;
+    b->drawSteer = b->steer * 32768.0f / 3.1415927f;
+    *(Quat_2 *)b->drawQuat = *(Quat_2 *)b->bike.quat;
+    if (b->crashState == 0) {
+        quat_to_angles(b->bike.quat, &b->rot[0], &b->rot[1], &b->rot[2]);
+        if (b->anim == -1 || b->anim == 15) {
+            v = b->rot[0];
             if (v > 0x3000) {
                 bike_crash_begin(b, 0x19);
             } else if (v < -0x3000) {
@@ -1896,31 +1873,31 @@ void bike_update_render_pose(Rider *b)
             }
         }
         bike_update_trick_offset(b);
-        if (FL(0x3A8) != 0.0f) {
-            q[0] = (1.0f - FL(0x3A8)) + FL(0x38C) * FL(0x3A8);
-            q[1] = FL(0x390) * FL(0x3A8);
-            q[2] = FL(0x394) * FL(0x3A8);
-            q[3] = FL(0x398) * FL(0x3A8);
+        if (b->trickBlend != 0.0f) {
+            q[0] = (1.0f - b->trickBlend) + b->trickQuat[0] * b->trickBlend;
+            q[1] = b->trickQuat[1] * b->trickBlend;
+            q[2] = b->trickQuat[2] * b->trickBlend;
+            q[3] = b->trickQuat[3] * b->trickBlend;
             len = __builtin_sqrtf(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
             q[0] /= len;
             q[1] /= len;
             q[2] /= len;
             q[3] /= len;
-            quat_mul(PF(0x370), PF(0x78), q);
-            vec3_mul_mtx3f(PF(0x39C), PF(0xA0), o);
-            WD(0x0) = (f32)WD(0x0) + o[0] * (FL(0x3A8) * 1000.0f);
-            WD(0x4) = (f32)WD(0x4) + o[1] * (FL(0x3A8) * 1000.0f);
-            WD(0x8) = (f32)WD(0x8) + o[2] * (FL(0x3A8) * 1000.0f);
+            quat_mul(b->drawQuat, b->bike.quat, q);
+            vec3_mul_mtx3f(&b->trickOffset.x, &b->bike.right.x, o);
+            b->drawPos.x = (f32)b->drawPos.x + o[0] * (b->trickBlend * 1000.0f);
+            b->drawPos.y = (f32)b->drawPos.y + o[1] * (b->trickBlend * 1000.0f);
+            b->drawPos.z = (f32)b->drawPos.z + o[2] * (b->trickBlend * 1000.0f);
         }
-        quat_to_angles(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
-        if (*((u8 *)b + 0x6E8) != 0) {
-            v = WD(0x1C);
+        quat_to_angles(b->drawQuat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
+        if (b->isCpu != 0) {
+            v = b->drawRot[1];
             if (v > 0x1800) {
                 r = 0;
             } else if (v > 0xC00) {
                 r = 0x1800 - v;
             } else if (v >= -0xBFF) {
-                r = WD(0x28);
+                r = b->rot[1];
             } else if (v >= -0x17FF) {
                 r = -0x1800 - v;
             } else {
@@ -1933,108 +1910,108 @@ void bike_update_render_pose(Rider *b)
             c = cosf(ang);
             s = sinf(ang);
             r1[0] = c;
-            r1[1] = s * FL(0xB8);
-            r1[2] = s * FL(0xBC);
-            r1[3] = s * FL(0xC0);
-            quat_mul(PF(0x370), r1, PF(0x370));
-            quat_to_angles(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
-        } else if ((WD(0x5B0) & 0x20000) && gRaceFrame - WD(0x5B8) < 0x3C &&
-                   ((*(Info **)((u8 *)b + 0x4E4))->f28 & 4) && WD(0x744) < 0 && FL(0x420) < 5.0f) {
-            if (FL(0x420) > 2.0f) {
-                k = (f32)(WD(0x5B8) - (gRaceFrame - 0x3C)) * 6.1035155e-07f / 60.0f;
+            r1[1] = s * b->bike.fwd.x;
+            r1[2] = s * b->bike.fwd.y;
+            r1[3] = s * b->bike.fwd.z;
+            quat_mul(b->drawQuat, r1, b->drawQuat);
+            quat_to_angles(b->drawQuat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
+        } else if ((b->input & 0x20000) && gRaceFrame - b->turboPressFrame < 0x3C &&
+                   (b->rearWheel.surface->flags & 4) && b->airFrames < 0 && b->speed < 5.0f) {
+            if (b->speed > 2.0f) {
+                k = (f32)(b->turboPressFrame - (gRaceFrame - 0x3C)) * 6.1035155e-07f / 60.0f;
             } else {
                 k = 1.2207031e-06f;
             }
-            ang = gCosTable[((((gRaceFrame - WD(0x5B8)) << 13) >> 4) - 0x400) & 0xFFF];
+            ang = gCosTable[((((gRaceFrame - b->turboPressFrame) << 13) >> 4) - 0x400) & 0xFFF];
             ang *= k;
             r2[0] = cosf(ang);
             s2 = sinf(ang);
-            r2[1] = s2 * FL(0xAC);
-            r2[2] = s2 * FL(0xB0);
-            r2[3] = s2 * FL(0xB4);
-            quat_mul(PF(0x370), r2, PF(0x370));
-            quat_to_angles(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
+            r2[1] = s2 * b->bike.up.x;
+            r2[2] = s2 * b->bike.up.y;
+            r2[3] = s2 * b->bike.up.z;
+            quat_mul(b->drawQuat, r2, b->drawQuat);
+            quat_to_angles(b->drawQuat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
         }
     } else {
-        quat_to_mtx3f(PF(0x224), PF(0x1FC));
-        WD(0xC) = FL(0x1CC) * 1000.0f;
-        WD(0x10) = FL(0x1D0) * 1000.0f;
-        WD(0x14) = FL(0x1D4) * 1000.0f;
+        quat_to_mtx3f(&b->body.right.x, b->body.quat);
+        b->drawBodyPos.x = b->body.pos.x * 1000.0f;
+        b->drawBodyPos.y = b->body.pos.y * 1000.0f;
+        b->drawBodyPos.z = b->body.pos.z * 1000.0f;
     }
-    WD(0x30) = FL(0x5A0) * 32768.0f / 3.1415927f;
-    quat_to_mtx3f(PF(0xA0), PF(0x78));
+    b->drawSteer = b->steer * 32768.0f / 3.1415927f;
+    quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
 }
 
-void bike_handle_landing(void *a0)
+void bike_handle_landing(Rider *a0)
 {
-    u8 *s1 = (u8 *)a0;
-    u8 *s0 = s1 + 0x54;
+    Rider *s1 = a0;
+    f32 *s0 = &s1->bike.vel.x;
     f32 fs0, d;
     s32 iv, v1;
 
-    fs0 = vec3_dot((f32 *)s0, (f32 *)(s1 + 0x4C0)) + vec3_dot((f32 *)s0, (f32 *)(s1 + 0x564));
-    if (s1[0x3D0] < 0x10 && *(s32 *)(s1 + 0x744) >= 0xB)
+    fs0 = vec3_dot(s0, &s1->rearWheel.normal.x) + vec3_dot(s0, &s1->frontWheel.normal.x);
+    if ((u8)s1->anim < 0x10 && s1->airFrames >= 0xB)
         bike_crash_begin(s1, 0x1C);
-    *(s32 *)(s1 + 0x5C0) = 0;
+    s1->rHeld = 0;
     if (fs0 < -10.0f)
-        *(s16 *)(s1 + 0x416) = 0;
+        s1->wheelieTimer = 0;
     if (gGameMode == 0xF) {
-        *(f32 *)(s1 + 0x7B8) = sBikeTuneLanding;
-        *(s32 *)(s1 + 0x8C) = 0;
+        s1->landing = sBikeTuneLanding;
+        s1->bike.angVel.y = 0.0f;
     }
-    if (*(s32 *)(s1 + 0x744) < 0x29)
+    if (s1->airFrames < 0x29)
         goto L1c0;
-    d = *(f32 *)(s1 + 0x520) - *(f32 *)(s1 + 0x47C);
-    *(f32 *)(s1 + 0x75C) = *(f32 *)(s1 + 0x758);
+    d = s1->frontWheel.groundDist - s1->rearWheel.groundDist;
+    s1->prevJumpDist = s1->jumpDist;
     if (d < -2.0f) {
         bike_crash_begin(s1, 0x19);
         goto L178;
     }
     if (d < -0.8f) {
-        *(s8 *)(s1 + 0x45) = 0x19;
+        s1->pendingCrash = 0x19;
         goto L160;
     }
     if (d < -0.3f) {
-        *(s8 *)(s1 + 0x5CD) = 1;
+        s1->roughLanding = 1;
         goto L178;
     }
     if (d < 0.3f) {
-        *(s8 *)(s1 + 0x5CC) = 1;
+        s1->landingAssist = 1;
         goto L178;
     }
     if (d < 0.6f) {
-        *(s8 *)(s1 + 0x5CD) = 1;
+        s1->roughLanding = 1;
         goto L178;
     }
-    *(s8 *)(s1 + 0x45) = 0x1C;
+    s1->pendingCrash = 0x1C;
 L160:
-    *(T3 *)(s1 + 0x43C) = *(T3 *)(s1 + 0x54);
+    s1->crashVel = s1->bike.vel;
 L178:
-    if (*(s8 *)(s1 + 0x45) != 0 && -10.0f < fs0) {
-        *(s8 *)(s1 + 0x45) = 0;
-        *(s8 *)(s1 + 0x5CD) = 1;
+    if (s1->pendingCrash != 0 && -10.0f < fs0) {
+        s1->pendingCrash = 0;
+        s1->roughLanding = 1;
     }
-    if (*(u8 *)(s1 + 0x5CC) != 0) {
+    if (s1->landingAssist != 0) {
         f32 zf = 0.0f;
-        *(f32 *)(s1 + 0x90) = zf;
-        *(f32 *)(s1 + 0x8C) = zf;
-        *(f32 *)(s1 + 0x88) = zf;
+        s1->bike.angVel.z = zf;
+        s1->bike.angVel.y = zf;
+        s1->bike.angVel.x = zf;
     }
 L1c0:
-    if (*(s32 *)(s1 + 0x744) < 0x15)
+    if (s1->airFrames < 0x15)
         goto END;
     iv = (s32)(-fs0 * 10.0f);
-    *(s32 *)(s1 + 0x768) = iv;
+    s1->landingImpact = iv;
     if (iv < 0)
-        *(s32 *)(s1 + 0x768) = 0;
-    if (*(s32 *)(s1 + 0x768) >= 0x100)
-        *(s32 *)(s1 + 0x768) = 0xFF;
+        s1->landingImpact = 0;
+    if (s1->landingImpact >= 0x100)
+        s1->landingImpact = 0xFF;
     v1 = gRaceFrame;
-    *(u8 *)(s1 + 0x764) = 0xFF;
-    *(s32 *)(s1 + 0x5A0) = 0;
-    *(s32 *)(s1 + 0x774) = v1;
+    s1->impactFlags = 0xFF;
+    s1->steer = 0.0f;
+    s1->landingFrame = v1;
 END:
-    *(s32 *)(s1 + 0x744) = 0;
+    s1->airFrames = 0;
 }
 
 f32 bike_predict_landing(Rider *p, f32 g, f32 t, f32 *out)
@@ -2129,8 +2106,6 @@ void bike_align_to_ground(Rider *b)
     b->bike.angVel.y = c.y * qd;
     b->bike.angVel.z = c.z * qd;
 }
-
-typedef struct { u8 pad[0x28]; s32 flags; } Sub_4;
 
 void bike_update_wheelie(Rider *e)
 {
@@ -2471,9 +2446,7 @@ void bike_update_jump(Rider *b) {
     b->takeoffVelY = b->bike.vel.y;
 }
 
-#define IDX(p) ((((s32)(p) - (s32)&gRiders) * -0x41041041) >> 5)
-
-void bike_update_alpha(u8 *a2)
+void bike_update_alpha(Rider *a2)
 {
     s32 idx;
     s32 v;
@@ -2484,7 +2457,7 @@ void bike_update_alpha(u8 *a2)
     s32 *q;
 
     base = gRiderAlpha;
-    idx = IDX(a2);
+    idx = (a2 - gRiders);
     q = &base[idx];
     if (gGhostRace != 0 && gGhostSlot == idx) v = 0x80;
     else if (gDemoPlayback != 0) {
@@ -2492,28 +2465,28 @@ void bike_update_alpha(u8 *a2)
     } else v = 0xFF;
     *q = v;
 L74:
-    if (a2[0x44] != 0 && a2[0x6E8] != 0 && *(s16 *)(a2 + 0x624) > 0x58) {
-        gRiderAlpha[IDX(a2)] = (0x78 - *(s16 *)(a2 + 0x624)) * 8;
+    if (a2->crashState != 0 && a2->isCpu != 0 && a2->crashTimer > 0x58) {
+        gRiderAlpha[a2 - gRiders] = (0x78 - a2->crashTimer) * 8;
         return;
     }
-    if (*(s8 *)(a2 + 0x620) != 0) {
-        b = a2[0x621] - 1;
-        a2[0x621] = b;
+    if ((s8)a2->blinkCount != 0) {
+        b = a2->blinkTimer - 1;
+        a2->blinkTimer = b;
         if ((s32)((u32)b << 24) <= 0) {
-            c = a2[0x620] - 1;
-            a2[0x620] = c;
+            c = a2->blinkCount - 1;
+            a2->blinkCount = c;
             if (c == 0 && gGhostRace == 0) {
-                if (a2[0x6E8] == 0) {
-                    if ((gCheatFlags & 0x100) == 0) a2[0x41D] = 0;
+                if (a2->isCpu == 0) {
+                    if ((gCheatFlags & 0x100) == 0) a2->noCollide = 0;
                 } else {
-                    a2[0x41D] = 0;
+                    a2->noCollide = 0;
                 }
             }
-            n = (((s32)((u32)a2[0x620] << 24)) >> 25) - 10;
-            a2[0x621] = n;
-            if (n < 4) a2[0x621] = 4;
+            n = (((s32)((u32)a2->blinkCount << 24)) >> 25) - 10;
+            a2->blinkTimer = n;
+            if (n < 4) a2->blinkTimer = 4;
         }
-        if (a2[0x620] & 1) gRiderAlpha[IDX(a2)] = 0;
+        if (a2->blinkCount & 1) gRiderAlpha[a2 - gRiders] = 0;
     }
 }
 
@@ -2810,14 +2783,14 @@ void bikes_free(void) {
     race_free_extra_rider_spawns();
 }
 
-void bike_apply_surface_bumps(u8 *p) {
-    bike_wheel_surface_bumps(p + 0x4F8, p + 0x388);
-    bike_wheel_surface_bumps(p + 0x454, p + 0x388);
+void bike_apply_surface_bumps(Rider *p) {
+    bike_wheel_surface_bumps(&p->frontWheel, &p->bumpSeed);
+    bike_wheel_surface_bumps(&p->rearWheel, &p->bumpSeed);
 }
 
-void bike_update_finish_celebration(u8 *p)
+void bike_update_finish_celebration(Rider *p)
 {
-    s32 st = *(u8 *)(p + 0x3FF);
+    s32 st = p->finishState;
 
     if (st == 1) goto arm1;
     if (st < 2) return;
@@ -2825,22 +2798,22 @@ void bike_update_finish_celebration(u8 *p)
     return;
 
 arm1:
-    if (*(s8 *)(p + 0x3D0) == -1 && *(f32 *)(p + 0x420) < 8.0f && *(s32 *)(p + 0x744) < -30) {
-        *(u8 *)(p + 0x3FF) = 2;
-        stunt_start(p, *(s16 *)(p + 0x668) + 0x13);
+    if (p->anim == -1 && p->speed < 8.0f && p->airFrames < -30) {
+        p->finishState = 2;
+        stunt_start(p, p->race.finishPlace + 0x13);
         if ((gGame & 0x8000) == 0) {
-            *(u16 *)(p + 0x5AA) = 10;
+            p->camMode = 10;
         }
     }
     return;
 
 arm2:
-    if (*(s8 *)(p + 0x3D0) < 0) {
-        *(u8 *)(p + 0x3FF) = 3;
+    if (p->anim < 0) {
+        p->finishState = 3;
         if (gGameMode == 5) {
-            *(u8 *)(p + 0x3FF) = 0;
-            *(u8 *)(p + 0x6E8) = 1;
-            *(u16 *)(p + 0x5AA) = *(u16 *)(p + 0x5A8);
+            p->finishState = 0;
+            p->isCpu = 1;
+            p->camMode = (u16)p->savedCamMode;
         }
     }
 }

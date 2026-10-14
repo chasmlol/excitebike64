@@ -1046,11 +1046,6 @@ void path_get_segment_and_t(Vec3f *pos, s32 *area, f32 *t, s32 p4)
 }
 
 typedef struct {
-    u8 pad0[0x28];
-    u32 flags;
-} Part_4;
-
-typedef struct {
     f32 x, y, z;      /* 0x00 */
     u8 pad0C[0x8];
     f32 f14;          /* 0x14 */

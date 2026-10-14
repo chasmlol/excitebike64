@@ -35,8 +35,6 @@ void soccer_ball_init_contacts(void)
     }
 }
 
-typedef struct { f32 q[4]; } Quat_3;
-
 extern RigidBody gSoccerBall;
 
 void soccer_ball_reset(s32 a0)

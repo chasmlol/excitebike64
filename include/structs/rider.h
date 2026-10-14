@@ -279,7 +279,8 @@ typedef struct Rider {
     /* 0x748 */ s32 jumpState;
     /* 0x74C */ Vec3f takeoffPos;
     /* 0x758 */ f32 jumpDist;
-    /* 0x75C */ u8 unk_75C[8];
+    /* 0x75C */ f32 prevJumpDist;
+    /* 0x760 */ u8 unk_760[4];
     /* 0x764 */ u8 impactFlags;
     /* 0x765 */ u8 unk_765[3];
     /* 0x768 */ s32 landingImpact;

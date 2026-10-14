@@ -983,11 +983,6 @@ typedef struct {
 } Cfg64;
 
 typedef struct {
-    u8 pad0[0x38];
-    s32 f38;
-} Obj4E4;
-
-typedef struct {
     s32 f0;             /* 0x00 */
     u8 pad04[0x1E];
     s16 h22;            /* 0x22 */

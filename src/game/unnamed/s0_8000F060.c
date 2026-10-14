@@ -417,12 +417,6 @@ typedef struct {
     s32 f60;
 } Snd_2;
 
-typedef struct {
-    u8 pad0[0x38];
-    s32 f38;
-    s32 f3C;
-} Surf;
-
 extern Snd_2 sRiderSounds_4[];
 
 void snd_update_rider(s32 arg0) {
