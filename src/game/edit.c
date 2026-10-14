@@ -3669,9 +3669,10 @@ int edit_user_piece_height_min_next(int point, s16 *slopes)
 #define LIM_2 (gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2)
 #define T1_2 ((s16 *)gUserPieceHeights)
 
-static inline s16 *At(s16 *b, s32 c, s32 i)
+/* &heights[piece][i] of a flat view of gUserPieceHeights */
+static inline s16 *At(s16 *heights, s32 piece, s32 i)
 {
-    return &b[c * USER_PIECE_HEIGHTS + i];
+    return &heights[piece * USER_PIECE_HEIGHTS + i];
 }
 
 /* The highest a point can be raised before the slope turns by more than 45 degrees over it (the point's height is
