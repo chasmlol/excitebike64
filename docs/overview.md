@@ -78,8 +78,11 @@ asks to leave by setting it), 4 (exiting) or 5 (waiting for the GPU to drain). O
    editor goes to a test race on the user track (track 21) or, with flag 2, back to the shell; `gRaceExitCode` 8
    returns from a race to the editor; after a race with flag 0x800000 the next race is the credits run on track 13
    (`gCreditsMode`);
-4. builds the display list with the state's draw function, ends it, and submits an `OSScTask` (F3DEX2) when fewer
-   than two tasks are pending (`sGfxTasksPending`); the two `gGfxContexts` alternate.
+4. builds the display list with the state's draw function, ends it, and submits an `OSScTask` when fewer than two
+   tasks are pending (`sGfxTasksPending`); the two `gGfxContexts` alternate. Every task starts with rspboot
+   (`gRspBootText`) and the F3DLX2.Rej xbus microcode (`gF3dlx2RejText`, `gF3dlx2RejData`); display lists switch to
+   F3DEX2.NoN xbus (`gF3dex2NonText`, `gF3dex2NonData`) where they need it (`render_load_ucode`: render.c's near
+   track and the editor's views).
 
 A graphics-done message decrements `sGfxTasksPending`. Debug leftovers in the loop: a busy-wait lag generator
 (`sDebugLagEnable`), a freeze while D-pad up+down are held (it writes a development PI port at 0x0FF70000), and a
@@ -123,7 +126,8 @@ states:
 
 **Tracks**: `gTracks` holds 27 records of 0xA0 bytes, the name at +0, the environment type at +0x2C (0 stadium,
 drawn by arngfx.c; 1 outdoor, tubegfx.c; 2 desert, desgfx.c) and the replay camera zones at +0x74/+0x78.
-`gCurTrack` points at the current one (`gCurTrack - gTracks` is the index the per-track code tests).
+`gCurTrack` points at the current one (`gCurTrack - gTracks` is the index the per-track code tests; `enum TrackId`
+in include/structs/race.h names the indices).
 
 | # | track | # | track | # | track |
 |---|---|---|---|---|---|
@@ -167,7 +171,7 @@ Entering a code in the front end toggles a bit of `sCheatMask`; Debug Mode sets 
 Mud, ClrScrn, Collision, Vtx Wind, Hud.
 
 **Structures**: include/structs.h declares the types several source files share; the named structures of the game's
-subsystems are in include/structs/ (135 structs in 33 headers, which structs.h includes):
+subsystems are in include/structs/ (136 structs in 33 headers, which structs.h includes):
 
 - the riders: rider.h (`Rider` and its parts, the skeletons, the sphere trees, the animations, the ponytail; the
   section below) and surface.h (`Surface`, the ground surfaces);
@@ -184,7 +188,7 @@ subsystems are in include/structs/ (135 structs in 33 headers, which structs.h i
 - sound, the NES emulator and files: nes.h (`Nes`), softmix.h, sfx.h, tunes.h, snd.h (`RiderSound`) and file.h
   (`FileDirEntry`, `FileHandle`);
 - the game and the race: race.h (`Event`, `TrackRecord`, `Season`, `Cup`, `TutorialLesson`, `PauseScreen`,
-  `HudGlyphs`), game.h (`Game`, `GameState`), hacks.h (`TrackHack`) and podium.h (the ceremony's clips).
+  `HudGlyphs`), game.h (`Game`, `GameState`, `SaveData`), hacks.h (`TrackHack`) and podium.h (the ceremony's clips).
 
 ## The rider struct
 
@@ -268,7 +272,13 @@ their names say what they hold or where they start.
 - **unnamed/lib_800BF3C0.c**: an SRAM PI handle with 32 KB reads and writes (`sram_*`); never called.
 - **resman.c** (../RESMAN.C): resource sets. A set is a "<name>.dir" of offsets (the byte order is detected), the
   ".BIG" data and ".gid" names. `res_load` relocates a resource, loads what it depends on and calls the handler
-  registered for its three-letter type (`res_register_type`).
+  registered for its three-letter type (`res_register_type`). The ROM's file system holds the sets "resource",
+  "sfx", "guires", "pieces" and "nesres" with their .DIR, .big, .GID and .GDH files. Two of the headers keep the
+  original names: RESOURCE.GDH declares the 56 ids of the "resource" set's groups as ints (`extern int
+  GID_ArnGround;` ...): they are the game's `gGid*` variables (`GID_ArnGround` is `gGidArnGround`; `track_res_get`
+  gives the current track's resource of a group), and sfx.GDH / sfx.GID name the sound clips (`smp_*`:
+  `smp_Overtake`, `smp_Last_Rac`, `smp_Cliff_Fa`, ...), which the announcer and stream functions are named after
+  (`announce_overtake`, `announce_race_start`, `tunes_play_cliff_fall`). The other .GDH files are empty.
 - **decoder.c** (DECODER.C): decompresses "SAM" samples to companded 8-bit (`decoder_decode_adpcm`,
   `decoder_decode_sample`); the block decoders it calls are hand-written code among the data (asm/game_decoder.s,
   below).
@@ -403,11 +413,13 @@ their names say what they hold or where they start.
   while a rider's timer runs (`gInsetViewActive`). Rider palettes are rebuilt every frame
   (`render_update_rider_palette`: fog, terrain tint, overheat and invincibility flashes, lightning, the credits'
   sepia). It also draws 2D: images (`render_draw_image`, used by the HUD, menus and editor), the temperature gauge,
-  place markers, the sound and controller option screens, and the credits (`gCreditsMode`); and switches microcode
-  (`render_load_ucode`).
+  place markers, the sound and controller option screens, and the credits (`gCreditsMode`). A race frame starts
+  with the task's F3DLX2.Rej microcode (the opaque riders, then with clip ratio 2 the far track and pass 1 of the
+  track hacks); `render_load_ucode` switches to F3DEX2.NoN (clip ratio 1) for the near track and what follows, and
+  back to F3DLX2.Rej for translucent riders. The editor (edit.c) draws its views with F3DEX2.NoN.
 - **prim.c**: models. `prim_build_dl` compiles the compact model command stream (vertices, triangles, texture and
-  TLUT loads, bone matrices) into F3DEX2 display lists; it also relocates "PKG" and "N64" resources, flips images and
-  animates textures.
+  TLUT loads, bone matrices) into display lists (the F3DEX2 GBI, which both microcodes read); it also relocates
+  "PKG" and "N64" resources, flips images and animates textures.
 - **arngfx.c**: stadium tracks (`arn_*`): model lists `gTrackSections`, `gTrackObjects` and `gWaterModels`, entries
   of 0x20 bytes {model, x0, z0, x1, z1, ..., flags, view mask}, culled by distance and angle (`arn_cull_models`).
 - **tubegfx.c**: outdoor tracks (`tube_*`): culling by PVS lists, per-object matrices from a pool of 300, animated
@@ -543,7 +555,7 @@ section, three asm modules at the end of the game image (0x800DB550-0x800DB8B8 a
 
 ## Saves
 
-`gSaveData` is a 0x804-byte image: a magic word (0x5748FB3A) and a checksum (xor 0xFCB1121D), the records of 24
+`gSaveData` (`SaveData`, include/structs/game.h) is a 0x804-byte image: a magic word (0x5748FB3A) and a checksum (xor 0xFCB1121D), the records of 24
 tracks (best times and initials, "?????" by default), season progress (+0x2BF rounds done, +0x2C0 highest difficulty
 reached), options (+0x2C4: 1 stereo, 2 high resolution, 0x10 drones off; +0x2C5-0x2C7 music, effects and speech
 volumes), tutorial progress (+0x2C1; 7 unlocks Original Excitebike), the NES design track (+0x2D4, 0x220 bytes,

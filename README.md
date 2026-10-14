@@ -20,13 +20,14 @@ All code and data are decompiled and matching: the build reproduces the original
   starts the game, and the sound code the linker placed among the game's data (tunes.c's ADPCM block decoder,
   softmix.c's voice mixers and output converters, DECODER.C's ADPCM block decoders, and the decoders' tables:
   asm/game_tunes.s, asm/game_softmix.s, asm/game_decoder.s).
-- Names: 1218 of the 1278 functions of C (1178 of 1234 in the game, 40 of 44 in the boot loader) and 1062 of the
-  2882 data symbols are named; the rest are still `func_XXXXXXXX` / `D_XXXXXXXX`. The game's C is split into its
-  original source files where the game's strings name them.
-- Structures: the data the game's subsystems share has named structs, 135 in 33 headers under include/structs/
-  (the riders and their skeletons, the ground surfaces, the game's setup and the race, the track and its models, the
-  camera and effects, the racing line, the track editor, the front end, fonts and the Controller Pak screen, sound,
-  the NES emulator, files); include/structs.h includes them.
+- Names: 1267 of the 1278 functions of C (1223 of 1234 in the game, all 44 in the boot loader) and 1957 of the
+  2779 data symbols are named; the rest are still `func_XXXXXXXX` / `D_XXXXXXXX`. The game's C is split into its
+  original source files where the game's strings name them, and the resource group ids keep the names the ROM's
+  RESOURCE.GDH gives them (`GID_ArnGround` is `gGidArnGround`).
+- Structures: the data the game's subsystems share has named structs, 136 in 33 headers under include/structs/
+  (the riders and their skeletons, the ground surfaces, the game's setup, the save image and the race, the track and
+  its models, the camera and effects, the racing line, the track editor, the front end, fonts and the Controller Pak
+  screen, sound, the NES emulator, files); include/structs.h includes them.
 - [docs/overview.md](docs/overview.md) describes how the game works: threads and game states, the main structures
   (the rider struct field by field), each source file, the NES emulator, sound, saves, the track editor and what is
   particular to the LodgeNet build.
@@ -149,7 +150,7 @@ docs/                overview.md: how the game works; compiler-notes.md: the com
 - Each function was matched with its own declarations, and they don't always agree: a global seen as a different
   struct, a function declared with other parameters. Where a function's code depends on its own view, it uses a
   second name for the same symbol, the shared name plus `_<n>` (`gCurTrack_5`, `nes_read_io_2`; same address,
-  listed in the symbol table; 263 are left). Struct names ending in `_<n>` are different layouts that functions gave
+  listed in the symbol table; 260 are left). Struct names ending in `_<n>` are different layouts that functions gave
   the same name. Unifying these is part of naming the game's data.
 - 6 functions keep inline asm because the original holds instructions C does not produce (the `break 0x407` halts,
   a debug `break 0x400`, a library function from another compiler). A few others use empty asm statements to force a
