@@ -232,7 +232,7 @@ extern s32 sDirtFrameCount;
 extern Vp sShadowViewport;
 extern s32 sRiderBoneNames[];
 extern u8 D_800C9A3C[];
-extern u8 gRiderAnims_9[];
+extern RiderAnim gRiderAnims[];
 extern struct { u8 pad[4]; s32 f4; } *D_800C9E84;
 extern u32 sDesMarkerVtx[];
 extern s32 sDesArrowAngle;

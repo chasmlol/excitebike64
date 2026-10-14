@@ -4339,20 +4339,12 @@ typedef struct {
     s32 stats[4];
 } Rider_8;
 
-typedef struct {
-    u8 pad0[0x14];
-    void *f14;
-    char *f18;
-    u8 pad1C[0x3C - 0x1C];
-} BikeDef;
-
 extern Glob_8 gGame_78;
 extern Track_17 *gCurTrack_41;
 extern Cheat sCheatTable_2[];
 extern Save_5 gSaveData_13;
 extern Track_17 gTracks_16[];
 extern Course_3 D_800CA9C8_8[];
-extern BikeDef gRiderAnims_17[];
 extern Champ *gSeason_23;
 extern Race_9 gEvent_40;
 extern Rider_8 sRiderBios_3[];
@@ -5916,12 +5908,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         img = &D.p390[2];
                         DRAWV(VP[0][0].x, VP[0][0].y - img->h + yo, img, 6);
                         for (j = 0; j < 16; j++) {
-                            if (str_icmp(sRiderBios_3[D.f1C[i]].f10, gRiderAnims_17[j].f18) == 0) {
+                            if (str_icmp(sRiderBios_3[D.f1C[i]].f10, gRiderAnims[j].name) == 0) {
                                 break;
                             }
                         }
-                        if (gRiderAnims_17[j].f14 != NULL) {
-                            gdl = event_draw_glyph_string(gdl, fb, gRiderAnims_17[j].f14, 0x8C, yo + VP[0][0].y - 0x48);
+                        if (gRiderAnims[j].inputGlyphs != NULL) {
+                            gdl = event_draw_glyph_string(gdl, fb, gRiderAnims[j].inputGlyphs, 0x8C, yo + VP[0][0].y - 0x48);
                         }
                     }
                     gDPSetTextureLUT(gdl++, G_TT_NONE);

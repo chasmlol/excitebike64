@@ -29,6 +29,35 @@ typedef struct RiderSkeleton {
     /* 0x000 */ Bone bones[15];     /* gRiderSkelTemplate */
 } RiderSkeleton; /* size 0x780 */
 
+/* A keyframe animation resource (rider_anims_load). */
+typedef struct AnimClip {
+    /* 0x00 */ s32 bones;           /* a frame holds (bones * 3 + 7) / 2 halfwords */
+    /* 0x04 */ s32 count;           /* frames */
+    /* 0x08 */ s32 unk_08;
+    /* 0x0C */ s32 unk_0C;
+    /* 0x10 */ void *data;          /* the frames below, set when loaded */
+    /* 0x14 */ u8 frames[4];        /* [count] */
+} AnimClip;
+
+/* A rider animation or trick (gRiderAnims, indexed by Rider.anim). */
+typedef struct RiderAnim {
+    /* 0x00 */ u32 flags;
+    /* 0x04 */ s32 *bodyRes;        /* resource of the body clip */
+    /* 0x08 */ s32 *rootRes;        /* resource of the root clip (bike offset and rotation), or NULL */
+    /* 0x0C */ AnimClip *body;      /* 26 halfwords per frame */
+    /* 0x10 */ AnimClip *root;      /* 12 bytes per frame */
+    /* 0x14 */ void *inputGlyphs;   /* the button combination, as glyphs */
+    /* 0x18 */ char *name;
+    /* 0x1C */ s32 riderMask;       /* the riders who can do it */
+    /* 0x20 */ s32 points;
+    /* 0x24 */ s32 unk_24;
+    /* 0x28 */ s32 holdFrames;
+    /* 0x2C */ s32 unk_2C;
+    /* 0x30 */ s32 unk_30;
+    /* 0x34 */ s32 speed;
+    /* 0x38 */ s32 announce;        /* announcer clip, -1 none */
+} RiderAnim; /* size 0x3C */
+
 /* A sphere of a body's bounding-sphere tree (collide.c), built from CollideSphereDesc entries into a 16000-byte
    pool. The tests use the body's up and forward rows only. */
 typedef struct CollideNode {
@@ -332,7 +361,7 @@ typedef struct Rider {
     /* 0x7A5 */ u8 inactive;
     /* 0x7A6 */ u8 laneBlocked;      /* ai_update_lanes */
     /* 0x7A7 */ u8 standing;         /* index in gRiderStandings */
-    /* 0x7A8 */ s8 award;
+    /* 0x7A8 */ s8 fistPump;        /* frame of the fist-pump animation, 0 none */
     /* 0x7A9 */ u8 gridSlot;
     /* 0x7AA */ s8 laneChange;      /* Excite 3D lane change frames */
     /* 0x7AB */ u8 unk_7AB;

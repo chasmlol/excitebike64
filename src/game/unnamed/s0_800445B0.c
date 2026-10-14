@@ -27,7 +27,7 @@ void bike_crash_begin(Rider *b, s32 n)
         gEvent_15.flags &= ~0x1000;
     }
     b->unk_3FB = 0;
-    b->award = 0;
+    b->fistPump = 0;
     b->savedCamMode = (u16)b->camMode;
     if (b->isCpu == 0) {
         flash_start(0x3C);

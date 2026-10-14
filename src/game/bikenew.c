@@ -2166,7 +2166,7 @@ void bike_update_wheelie(Rider *e)
             }
             e->wheelieTimer++;
             if (e->wheelieTimer == 0xF0) {
-                e->award = 1;
+                e->fistPump = 1;
             }
             if (e->stickY >= 0) {
                 e->wheelieTimer = 0xF;
@@ -2179,18 +2179,11 @@ void bike_update_wheelie(Rider *e)
 }
 
 typedef struct {
-    u8 pad0[0xC];
-    Trk_2 *fC;
-    u8 pad10[0x2C];
-} Ent_13;
-
-typedef struct {
     u8 pad0[0x64];
     u8 f64;
     u8 pad65[0x7];
 } Seg_4;
 
-extern Ent_13 gRiderAnims[];
 extern Seg_4 *gPathNodes_4;
 
 void bike_update_jump(Rider *b) {
@@ -2313,7 +2306,7 @@ void bike_update_jump(Rider *b) {
                         stunt_start(b, 17);
                     }
                     if (b->anim != -1) {
-                        b->animSpeed = (f32)(gRiderAnims[b->anim].fC->f4 << 9) / (b->landingTime * 60.0f);
+                        b->animSpeed = (f32)(gRiderAnims[b->anim].body->count << 9) / (b->landingTime * 60.0f);
                     }
                 }
                 if (b->anim == 16) {

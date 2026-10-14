@@ -183,20 +183,12 @@ typedef struct {
 } Cam_3;
 
 typedef struct {
-    s32 f0;
-    u8 pad4[0x8];
-    struct { u8 pad[4]; s32 f4; } *fC;
-    u8 pad10[0x2C];
-} Ent_36;
-
-typedef struct {
     u8 pad[0xA4C];
     u8 *fA4C;
     Bone *fA50;
     u8 padA54[0x2C];
 } Slot_7;
 
-extern Ent_36 gRiderAnims_2[];
 extern Cam_3 sRiderIkTargets_2;
 extern Slot_7 gRiderGfx_10[];
 
@@ -217,11 +209,11 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
     st = B.anim;
     scale = 0x100;
     if (st >= 0) {
-        fl = gRiderAnims_2[st].f0;
+        fl = gRiderAnims[st].flags;
         if (fl & 1) {
             if (B.animFrame < 0x400) scale = B.animFrame / 4;
         } else if (fl & 2) {
-            fl = gRiderAnims_2[st].fC->f4;
+            fl = gRiderAnims[st].body->count;
             if (B.animFrame >= (fl - 4) << 8) {
                 scale = ((fl << 8) - B.animFrame) / 4;
             } else if (B.animFrame < 0x400) {
@@ -396,7 +388,7 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
         h = (h * 12000) >> 14;
         mtx3i_from_angles(&sRiderIkTargets_2.rot, (0x4000 - SINS(st * 4)) >> 4, 0, B.drawRot[2] + h);
         rider_apply_ik(m->bones);
-        st = B.award;
+        st = B.fistPump;
         if (st != 0) {
             s32 o;
             struct { u8 pad[4]; s32 f4; } *pp = D_800C9E84;
@@ -423,30 +415,14 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
     }
 }
 
-typedef struct Hdr_7 {
-    u8 pad[0x10];
-    u8 *p;
-    u8 data[4];
-} Hdr_7;
-
-typedef struct Rec_21 {
-    s32 f00;
-    s32 *f04;
-    s32 *f08;
-    Hdr_7 *f0C;
-    Hdr_7 *f10;
-    u8 pad[0x3C - 0x14];
-} Rec_21;
-
-extern Rec_21 gRiderAnims_3[];
 
 void rider_anims_load(u8 *param_1)
 {
     s32 i;
     s32 v;
-    Rec_21 *p;
+    RiderAnim *p;
     s32 m;
-    Hdr_7 *r;
+    AnimClip *r;
 
     if (gPodiumMode == 0) {
         for (i = 0; i < 0xF; i++) {
@@ -460,13 +436,13 @@ void rider_anims_load(u8 *param_1)
         for (i = 7; i >= 0; i--) {
             gRiders[i].animFrame = m;
         }
-        for (i = 0; gRiderAnims_3[i].f04 != 0; i++) {
+        for (i = 0; gRiderAnims[i].bodyRes != 0; i++) {
             if (i >= 16 || !(gGame & 0x10)) {
-                gRiderAnims_3[i].f0C = res_load(param_1, *gRiderAnims_3[i].f04);
-                gRiderAnims_3[i].f0C->p = gRiderAnims_3[i].f0C->data;
-                if (gRiderAnims_3[i].f08 != 0) {
-                    gRiderAnims_3[i].f10 = res_load(param_1, *gRiderAnims_3[i].f08);
-                    gRiderAnims_3[i].f10->p = gRiderAnims_3[i].f10->data;
+                gRiderAnims[i].body = res_load(param_1, *gRiderAnims[i].bodyRes);
+                gRiderAnims[i].body->data = gRiderAnims[i].body->frames;
+                if (gRiderAnims[i].rootRes != 0) {
+                    gRiderAnims[i].root = res_load(param_1, *gRiderAnims[i].rootRes);
+                    gRiderAnims[i].root->data = gRiderAnims[i].root->frames;
                 }
             }
         }
@@ -475,22 +451,6 @@ void rider_anims_load(u8 *param_1)
 
 #define LERPROT(b, x, y, z, t)                                              {                                                                           u16 cx = (b)->angles[0];                                                u16 cy;                                                                 u16 cz;                                                                 cx += (s16)((x) - cx) * (t) / 256;                                      cy = (b)->angles[1];                                                    cy += (s16)((y) - cy) * (t) / 256;                                      cz = (b)->angles[2];                                                    cz += (s16)((z) - cz) * (t) / 256;                                      mtx3i_from_angles((b)->rot.m, (s16)cx, (s16)cy, (s16)cz);               }
 
-typedef struct Anim {
-    u8 p00[4];
-    s32 count;
-    u8 p08[8];
-    s16 *data;
-} Anim;
-
-typedef struct Tab_4 {
-    u32 flags;
-    u8 p04[8];
-    Anim *keys;
-    Anim *sub;
-    u8 p14[0x3C - 0x14];
-} Tab_4;
-
-extern Tab_4 gRiderAnims_4[];
 
 static inline void lerpRot(Bone *b, s32 x, s32 y, s32 z, s32 t)
 {
@@ -521,9 +481,9 @@ void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3)
     u16 rx;
     u16 ry;
     u16 rz;
-    Anim *sub;
-    Tab_4 *t;
-    Anim *keys;
+    AnimClip *sub;
+    RiderAnim *t;
+    AnimClip *keys;
     s32 s4;
     s16 *fr;
     s16 *sf;
@@ -536,11 +496,11 @@ void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3)
 
     {
         s8 ix = gRiders[param_2].anim;
-        Tab_4 *tb = gRiderAnims_4;
+        RiderAnim *tb = gRiderAnims;
         t = &tb[ix];
     }
-    keys = t->keys;
-    sub = t->sub;
+    keys = t->body;
+    sub = t->root;
     s4 = gRiders[param_2].animFrame >> 8;
     if ((t->flags & 8) != 0 && !(s4 < keys->count)) {
         s4 -= 5;
@@ -629,15 +589,12 @@ void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3)
     skel_update_world_transforms(bones, 0xf);
 }
 
-typedef struct { u8 pad[0x10]; u8 *anim; u8 rest[0x28]; } Slot_8;
-
-extern Slot_8 gRiderAnims_5[];
 
 void bike_update_trick_offset(Rider *param_1)
 {
     s8 idx;
     u8 *ent;
-    u8 *st;
+    AnimClip *st;
     s16 *ps;
     s8 *cp;
     s32 n;
@@ -653,7 +610,7 @@ void bike_update_trick_offset(Rider *param_1)
     if (param_1->anim == -1) {
         return;
     }
-    st = gRiderAnims_5[param_1->anim].anim;
+    st = gRiderAnims[param_1->anim].root;
     if (st == 0) {
         return;
     }
@@ -662,12 +619,12 @@ void bike_update_trick_offset(Rider *param_1)
     if (iv < 0) {
         iv = 0;
     }
-    n = *(s32 *)(st + 4);
+    n = st->count;
     if (iv >= n) {
         iv = n - 1;
     }
     six = 6;
-    ps = (s16 *)*(u8 **)(st + 0x10) + iv * six;
+    ps = (s16 *)st->data + iv * six;
     f = (f32)a2 * 0.0009765625f;
     cp = (s8 *)((u8 *)ps + 6);
     param_1->trickBlend = f;
@@ -683,21 +640,6 @@ void bike_update_trick_offset(Rider *param_1)
     param_1->trickOffset.z = (f32)(ps[2]) / 1000.0f;
 }
 
-typedef struct {
-    s32 w0;
-    s32 count;
-    s32 w2;
-    s32 w3;
-    s8 *data;
-} EbSeq;
-
-typedef struct {
-    s32 pad0[4];
-    EbSeq *seq;
-    s32 pad1[10];
-} EbRow;
-
-extern EbRow gRiderAnims_6[];
 
 void bike_skel_update(BikeSkeleton *p1, s32 p2)
 {
@@ -708,7 +650,7 @@ void bike_skel_update(BikeSkeleton *p1, s32 p2)
     s32 nn;
     s32 idx;
     s32 i;
-    EbSeq *e;
+    AnimClip *e;
     s8 *bp;
     s8 *d;
     s32 k;
@@ -740,7 +682,7 @@ void bike_skel_update(BikeSkeleton *p1, s32 p2)
         mtx3i_from_angles(p1->bones[3].rot.m, (s16)blk->frontSpinAngle, 0, 0);
         mtx3i_from_angles(p1->bones[8].rot.m, (s16)blk->rearSpinAngle, 0, 0);
         if (blk->anim != -1) {
-            e = gRiderAnims_6[blk->anim].seq;
+            e = gRiderAnims[blk->anim].root;
             if (e != 0) {
                 idx = blk->animFrame >> 8;
                 if (idx < 0) {
@@ -784,7 +726,7 @@ void rider_update_head_look(void)
             if (i) dx = 1; else dx = 2;
             continue;
         }
-        if (((gPlayerInputs[i] & 0x20) && gRiders[i].rightFootOut && gRiders[i].leftFootOut) || gRiders[i].award) {
+        if (((gPlayerInputs[i] & 0x20) && gRiders[i].rightFootOut && gRiders[i].leftFootOut) || gRiders[i].fistPump) {
             D_800EA7B8[i] = 1;
             v = 24000;
         } else {
@@ -886,27 +828,20 @@ void func_8003F128(void)
     } while (i < 8);
 }
 
-typedef struct {
-    char pad[0x444];
-    Pal *cfg;
-} Blk_12;
-
-extern Blk_12 gRiderAnims_7;
-
 void rider_update_fist_pump(void)
 {
     s32 i = 0;
 
     do {
-        if (gRiders[i].award == 0) {
+        if (gRiders[i].fistPump == 0) {
             i++;
             continue;
         }
         if ((gRaceFrame & 1) != 0) {
-            u8 v = gRiders[i].award + 1;
-            gRiders[i].award = v;
-            if ((s8)v >= gRiderAnims_7.cfg->f4) {
-                gRiders[i].award = 0;
+            u8 v = gRiders[i].fistPump + 1;
+            gRiders[i].fistPump = v;
+            if ((s8)v >= gRiderAnims[18].body->count) {
+                gRiders[i].fistPump = 0;
             }
         }
         i++;
@@ -915,17 +850,10 @@ void rider_update_fist_pump(void)
 
 typedef struct { s8 v[3]; } B3;
 
-typedef struct {
-    u8 pad[0xC];
-    s32 *tbl;
-    u8 pad2[0x3C - 0x10];
-} TEnt;
-
-extern TEnt gRiderAnims_8[];
 
 void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
 {
-    s32 *tbl;
+    AnimClip *tbl;
     s32 half;
     B3 *pb;
     s32 k;
@@ -934,11 +862,11 @@ void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
     u16 a, b, c;
     Vec3i save;
 
-    tbl = gRiderAnims_8[param_2].tbl;
-    half = (tbl[0] * 3 + 7) / 2;
+    tbl = gRiderAnims[param_2].body;
+    half = (tbl->bones * 3 + 7) / 2;
     if (p4 < 0) p4 = 0;
-    if (tbl[1] - 1 < p4) p4 = tbl[1] - 1;
-    pb = (B3 *)((u8 *)tbl[4] + half * p4 * 2 + 6);
+    if (tbl->count - 1 < p4) p4 = tbl->count - 1;
+    pb = (B3 *)((u8 *)tbl->data + half * p4 * 2 + 6);
 
     for (k = 0; k < 15; k++) {
         mtx3i_to_angles(p1[k].rot.m, &a, &b, &c);
@@ -977,13 +905,13 @@ void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
 
 s32 rider_anim_get_length(s32 a0, s32 *a1)
 {
-    u8 *base;
-    u8 *rec;
+    RiderAnim *base;
+    RiderAnim *rec;
 
-    base = gRiderAnims_9;
-    rec = base + a0 * 0x3C;
-    *a1 = *(s32 *)rec;
-    return *(s32 *)(*(u8 **)(rec + 0xC) + 4);
+    base = gRiderAnims;
+    rec = &base[a0];
+    *a1 = rec->flags;
+    return rec->body->count;
 }
 
 void rider_pose_snapshot(Bone *p, s32 n)
@@ -1009,26 +937,16 @@ s32 rider_ik_split_len(s32 a, s32 b, s32 c) {
     return t / d + c / 2;
 }
 
-typedef struct {
-    u32 f0;
-    void *f4;
-    u32 f8;
-    u32 fc;
-    u32 f10;
-    u8 pad[0x3C - 0x14];
-} Slot_10;
-
-extern Slot_10 gRiderAnims_10[];
 
 void rider_anims_unload(void) {
     s32 i;
 
-    if (gPodiumMode == 0 && gRiderAnims_10[0].f4 != NULL) {
+    if (gPodiumMode == 0 && gRiderAnims[0].bodyRes != NULL) {
         i = 0;
         do {
-            gRiderAnims_10[i].fc = 0;
-            gRiderAnims_10[i].f10 = 0;
+            gRiderAnims[i].body = NULL;
+            gRiderAnims[i].root = NULL;
             i++;
-        } while (gRiderAnims_10[i].f4 != NULL);
+        } while (gRiderAnims[i].bodyRes != NULL);
     }
 }

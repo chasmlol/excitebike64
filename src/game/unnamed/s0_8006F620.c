@@ -93,16 +93,9 @@ void stunt_init_input_tables(void)
 
 typedef struct {
     u8 pad[0x1C];
-    s32 mask;
-    u8 rest[0x1C];
-} Move;
-
-typedef struct {
-    u8 pad[0x1C];
     s32 sh[1];
 } Cfg_11;
 
-extern Move gRiderAnims_12[];
 extern Cfg_11 gGame_51;
 
 void stunt_read_input(Rider *e)
@@ -150,7 +143,7 @@ void stunt_read_input(Rider *e)
         do {
             for (i = 0; i < 7; i++) {
                 if (p[i + 1] == 0 &&
-                    (((gRiderAnims_12[p[0]].mask >> gGame_51.sh[e - gRiders]) & 1) ||
+                    (((gRiderAnims[p[0]].riderMask >> gGame_51.sh[e - gRiders]) & 1) ||
                      (gCheatFlags & 0x200))) {
                     e->trickFrame = gRaceFrame;
                     e->unk_3D3 = p[0];
@@ -163,13 +156,6 @@ void stunt_read_input(Rider *e)
     }
 }
 
-typedef struct {
-    s32 pad[3];
-    s32 *p;
-    s32 rest[11];
-} TblEnt_2;
-
-extern TblEnt_2 gRiderAnims_13[];
 
 void stunt_update(Rider *o)
 {
@@ -230,7 +216,7 @@ void stunt_update(Rider *o)
             v = (s32)(o->landingTime * 60.0f);
             if (o->animSpeed > 0 && v >= 16) {
                 o->animFrame += o->animSpeed;
-                lim = gRiderAnims_13[o->anim].p[1] << 8;
+                lim = gRiderAnims[o->anim].body->count << 8;
                 if (o->animFrame >= lim) {
                     o->animFrame = lim - 0x100;
                     o->animSpeed = -0x100;
@@ -271,17 +257,6 @@ void stunt_update(Rider *o)
     }
 }
 
-typedef struct {
-    s32 f0;
-    u8 p4[0x1C];
-    s32 f20;
-    u8 p24[8];
-    s32 f2C;
-    u8 p30[8];
-    s32 f38;
-} Tab_7;
-
-extern Tab_7 gRiderAnims_14[];
 
 void stunt_start(Rider *o, s32 n)
 {
@@ -299,7 +274,7 @@ void stunt_start(Rider *o, s32 n)
                 return;
             }
         }
-    } else if (!(gRiderAnims_14[n].f0 & 0x10)) {
+    } else if (!(gRiderAnims[n].flags & 0x10)) {
         return;
     }
     o->powerSlide = 0;
@@ -315,10 +290,10 @@ void stunt_start(Rider *o, s32 n)
     }
     o->anim = n;
     o->animFrame = 0;
-    u = gRiderAnims_14[n].f2C;
+    u = gRiderAnims[n].unk_2C;
     o->unk_3D3 = -1;
     o->animHold = 0;
-    o->award = 0;
+    o->fistPump = 0;
     o->trickCount = 0;
     o->unk_3BA = 0;
     o->unk_622 = 0;
@@ -326,7 +301,7 @@ void stunt_start(Rider *o, s32 n)
     if (n >= 0x10) {
         return;
     }
-    if (gRiderAnims_14[n].f38 == -1) {
+    if (gRiderAnims[n].announce == -1) {
         return;
     }
     if (o->unk_3FB != 0) {
@@ -355,7 +330,7 @@ void stunt_start(Rider *o, s32 n)
         o->stuntScore = 0;
     } else {
         a2 = (s8)c;
-        v = gRiderAnims_14[a2].f20;
+        v = gRiderAnims[a2].points;
         v += o->unk_3BA * 2;
         for (; d < 4; d++) {
             if (a2 == o->trickHist[d]) {
@@ -368,7 +343,7 @@ void stunt_start(Rider *o, s32 n)
     }
     id = ((s32)o - (s32)gRiders) * -0x41041041 >> 5;
     if (id != gGhostSlot || gGhostRace == 0) {
-        announce_trick(id, gRiderAnims_14[n].f38);
+        announce_trick(id, gRiderAnims[n].announce);
     }
     c2 = 0;
     for (j = 0; j < 4; j++) {
@@ -377,7 +352,7 @@ void stunt_start(Rider *o, s32 n)
         }
     }
     if (c2 < 2) {
-        if (gRiderAnims_14[n].f20 < 0x3E9) {
+        if (gRiderAnims[n].points < 0x3E9) {
             c2 = 1;
         } else {
             c2 = 2;
@@ -388,25 +363,12 @@ void stunt_start(Rider *o, s32 n)
     tunes_queue_crowd(c2);
 }
 
-typedef struct Tbl_6 {
-    u32 flags;
-    u8 pad4[8];
-    s32 *f0C;
-    u8 pad10[0x18];
-    s32 f28;
-    u8 pad2C[4];
-    s32 f30;
-    s32 f34;
-    u8 pad38[4];
-} Tbl_6;
-
-extern Tbl_6 gRiderAnims_15[];
 
 s32 stunt_animate(Rider *p, s32 k)
 {
     s32 i;
     s32 top;
-    Tbl_6 *e;
+    RiderAnim *e;
     s32 v;
     u32 fl;
 
@@ -414,8 +376,8 @@ s32 stunt_animate(Rider *p, s32 k)
     if (i < 0) {
         goto ret0;
     }
-    e = &gRiderAnims_15[i];
-    top = e->f0C[1] << 8;
+    e = &gRiderAnims[i];
+    top = e->body->count << 8;
     fl = e->flags;
 
     if (i == 15) {
@@ -446,7 +408,7 @@ s32 stunt_animate(Rider *p, s32 k)
     }
 
     if (p->trickCount != 0) {
-        if (p->trickCount < e->f28 || k != 0) {
+        if (p->trickCount < e->holdFrames || k != 0) {
             u16 o = p->trickCount;
             s32 x;
             s32 y;
@@ -460,7 +422,7 @@ s32 stunt_animate(Rider *p, s32 k)
             p->animFrame = top - y;
             goto ret0;
         }
-        p->animSpeed = -e->f34;
+        p->animSpeed = -e->speed;
         p->trickCount = 0;
         goto ret0;
     } else {
@@ -476,7 +438,7 @@ s32 stunt_animate(Rider *p, s32 k)
                 return 1;
             }
             if ((fl & 8) && k != 0) {
-                s32 q = e->f30;
+                s32 q = e->unk_30;
                 p->trickCount = 1;
                 p->unk_3BA = 1;
                 p->animHold = 1;
@@ -487,7 +449,7 @@ s32 stunt_animate(Rider *p, s32 k)
                 goto ret0;
             }
             p->trickCount = 0;
-            p->animSpeed = -e->f34;
+            p->animSpeed = -e->speed;
             goto ret0;
         }
         {
@@ -536,13 +498,6 @@ struct Obj_58 {
     u8 f3e4[4];
 };
 
-typedef struct {
-    u8 pad[0x20];
-    s32 f20;
-    u8 rest[0x3C - 0x24];
-} Ent_80;
-
-extern Ent_80 gRiderAnims_16[];
 
 void stunt_add_points(Obj_58 *o) {
     s32 base;
@@ -554,7 +509,7 @@ void stunt_add_points(Obj_58 *o) {
         return;
     }
     idx = (s8)o->f3d0;
-    base = gRiderAnims_16[idx].f20;
+    base = gRiderAnims[idx].points;
     base += o->f3ba * 2;
     for (k = 0; k < 4; k++) {
         if (idx == o->f3e4[k]) {

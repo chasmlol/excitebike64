@@ -1060,7 +1060,7 @@ void event_update_soccer(void)
                 gEvent_26.t6C = 180;
                 gEvent_26.c68++;
                 announce_goal();
-                gRiders[0].award = 1;
+                gRiders[0].fistPump = 1;
                 gEvent_26.flags |= 0x11;
                 if ((gEvent_26.f6E >> ((gNumPlayers - 1) >> 1)) == 1) {
                     gEvent_26.flags |= 0x20;
@@ -1072,7 +1072,7 @@ void event_update_soccer(void)
                 gEvent_26.t6C = 180;
                 gEvent_26.c6A++;
                 announce_goal();
-                gRiders[1].award = 1;
+                gRiders[1].fistPump = 1;
                 gEvent_26.flags |= 0x12;
                 if ((gEvent_26.f6E >> ((gNumPlayers - 1) >> 1)) == 0) {
                     gEvent_26.flags |= 0x20;
@@ -1715,14 +1715,7 @@ typedef struct {
     u32 w18;
 } Txt;
 
-typedef struct {
-    u8 pad0[0x18];
-    char *name;
-    u8 pad1C[0x3C - 0x1C];
-} Trick;
-
 extern Txt *gHudTextObjs_3[];
-extern Trick gRiderAnims_11[];
 
 Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
 {
@@ -1790,7 +1783,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         if (idx >= 0) {
             font_text_create(gHudTextObjs_3[2], 0x40, 2, 2, 0x21);
             x3 = 0x100;
-            font_text_add(gHudTextObjs_3[2], gRiderAnims_11[idx].name);
+            font_text_add(gHudTextObjs_3[2], gRiderAnims[idx].name);
             y3 = ty + 8;
             font_text_create(gHudTextObjs_3[3], 0x40, 2, 4, 0x21);
             int_to_str(p->stuntScore, buf);
@@ -1815,7 +1808,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         }
         for (i = 0; i < p->trickListLen; i++) {
             font_text_create(gHudTextObjs_3[i + 8], 0x40, 2, 2, 0x20);
-            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->trickList[i]].name);
+            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims[p->trickList[i]].name);
             font_draw_text(gHudTextObjs_3[i + 8], 0x3C, ty + i * 8);
         }
         font_text_create(gHudTextObjs_3[6], 0x40, 3, 2, 0x12);
@@ -1873,7 +1866,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         }
         if (idx >= 0) {
             font_text_create(gHudTextObjs_3[2], 0x40, 1, 2, 0x21);
-            font_text_add(gHudTextObjs_3[2], gRiderAnims_11[idx].name);
+            font_text_add(gHudTextObjs_3[2], gRiderAnims[idx].name);
             font_text_create(gHudTextObjs_3[3], 0x40, 1, 4, 0x21);
             int_to_str(p->stuntScore, buf);
             font_text_add(gHudTextObjs_3[3], buf);
@@ -1913,7 +1906,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         font_draw_text(gHudTextObjs_3[6], x1, y1);
         for (i = 0; i < p->trickListLen; i++) {
             font_text_create(gHudTextObjs_3[i + 8], 0x40, 2, 2, 0x20);
-            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->trickList[i]].name);
+            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims[p->trickList[i]].name);
             font_draw_text(gHudTextObjs_3[i + 8], 0x23, by + i * dy);
         }
         if (gEventAllFinished != 0) {

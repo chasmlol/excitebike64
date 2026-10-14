@@ -1762,22 +1762,6 @@ D_800C9A30                            game  0x800C9A30  data      0x8
 D_800C9A38                            game  0x800C9A38  data      0x4
 D_800C9A3C                            game  0x800C9A3C  data      0x4
 gRiderAnims                           game  0x800C9A40  data    0x444
-gRiderAnims_10                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_11                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_12                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_13                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_14                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_15                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_16                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_17                        game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_2                         game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_3                         game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_4                         game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_5                         game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_6                         game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_7                         game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_8                         game  0x800C9A40  data        -  gRiderAnims
-gRiderAnims_9                         game  0x800C9A40  data        -  gRiderAnims
 D_800C9E84                            game  0x800C9E84  data    0x4ac
 sDesMarkerVtx                         game  0x800CA330  data     0x80
 sDesArrowAngle                        game  0x800CA3B0  data      0x4

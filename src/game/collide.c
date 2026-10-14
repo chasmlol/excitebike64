@@ -218,7 +218,7 @@ L12c:
     p1->pendingCrash = -0x1C;
 
 L1c8:
-    p1->award = 1;
+    p1->fistPump = 1;
     p1->engine.heat = 0.0f;
 
 L1d8:
@@ -262,7 +262,7 @@ L1d8:
             if (p2->input & 0x20) return 0;
             if ((p2->input & 0x20010) == 0) return 0;
         }
-        p1->award = 1;
+        p1->fistPump = 1;
         p1->engine.heat = 0.0f;
         if (p1->isCpu == 0 || p2->isCpu == 0) announce_takeout(p1 - gRiders, p2 - gRiders);
         if (o1[0] - o2[0] > 0.0f) {
@@ -282,7 +282,7 @@ L1d8:
             if (p1->input & 0x20) return 0;
             if ((p1->input & 0x20010) == 0) return 0;
         }
-        p2->award = 1;
+        p2->fistPump = 1;
         p2->engine.heat = 0.0f;
         if (p1->isCpu == 0 || p2->isCpu == 0) announce_takeout(p2 - gRiders, p1 - gRiders);
         if (o2[0] - o1[0] > 0.0f) {
