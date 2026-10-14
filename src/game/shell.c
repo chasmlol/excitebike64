@@ -18,7 +18,7 @@ s32 shell_format_pak_file_label(u8 *header, char *dst, s32 compact)
     dst[0] = 0;
     if (replay_get_info(header, (u32 *)&track, (u32 *)&rider, (u32 *)&time) == 0) {
         /* a ghost */
-        time = time - FRAMES(0x102);
+        time = time - FRAMES(258);
         __builtin_memcpy(dst, sStrGhostLabel, 8);
         str_cat(dst, gTracks_13 + track * 160);
         if (compact == 0) {
