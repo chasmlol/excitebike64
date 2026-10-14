@@ -47,4 +47,25 @@
 #define FADE_IN     2
 #define FADE_DONE   3
 
+/* The scheduler (unnamed/sched.c). Messages on its own event queue (sSchedSysEventQueue): */
+#define SCHED_MSG_RETRACE       1       /* VI retrace (osViSetEvent) */
+#define SCHED_MSG_RDP_DONE      2       /* OS_EVENT_DP: the RDP finished the task, show its framebuffer */
+#define SCHED_MSG_PRENMI        3       /* OS_EVENT_PRENMI: the reset button was pressed */
+#define SCHED_MSG_FAULT         4       /* OS_EVENT_FAULT, OS_EVENT_CPU_BREAK: show the main thread's registers */
+#define SCHED_MAX_CLIENTS       4       /* queues told of each retrace (sched_add_client) */
+/* Messages the clients receive (an s16 the message points at): */
+#define SCHED_CLIENT_RETRACE    1       /* sSchedRetraceMsg, each retrace */
+#define SCHED_CLIENT_GFX_DONE   2       /* the message of a graphics task, once its framebuffer is shown */
+
+/* VI modes (gViMode, gViModeRequest); sViModeWidths and sViModeHeights give the sizes. */
+#define VI_MODE_320X240         0
+#define VI_MODE_512X240         1
+#define VI_MODE_640X480         2       /* interlaced: libultra's Hpf1 mode unchanged */
+#define FB_320X240_SIZE         0x25800 /* bytes of a 320x240 framebuffer of 16-bit pixels */
+#define FAULT_FB_WIDTH          0x140   /* the register dump draws in VI_MODE_320X240 */
+
+/* Controllers, Rumble Paks and EEPROM over gSiMesgQueue (unnamed/s0_8000CD00.c). gRumbleTimers count frames down
+   while a motor runs. */
+#define RUMBLE_OFF              (-1)    /* a rumble_start duration that stops the motor */
+
 #endif
