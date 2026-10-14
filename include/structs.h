@@ -61,7 +61,6 @@ typedef struct Ent_47 Ent_47;
 typedef struct Bike_33 Bike_33;
 typedef struct Bike_34 Bike_34;
 typedef struct Obj_40 Obj_40;
-typedef struct Rec_33 Rec_33;
 typedef struct Obj_42 Obj_42;
 typedef struct Obj_43 Obj_43;
 typedef struct Spawn Spawn;

@@ -649,7 +649,7 @@ void debug_print_int(char *param_1, s32 param_2);
 void debug_print_hex(char *param_1, u32 param_2);
 void decal_init(void);
 void decal_update_tire_tracks(void);
-Rec_33 *decal_add_quad(s32 p1, s32 *p2, s32 *p3, s32 *p4, s32 *p5, s32 p6);
+TireTrack *decal_add_quad(s32 area, s32 *a0, s32 *a1, s32 *b0, s32 *b1, s32 surface);
 Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3);
 void decal_free(void);
 void decal_end_track(s32 a0);

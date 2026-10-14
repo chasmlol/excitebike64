@@ -4241,9 +4241,6 @@ sWallEdges                            game  0x800E8538  data        -
 D_800E8938                            game  0x800E8938  data        -
 sHeightAreaMin                        game  0x800E8940  data        -
 sHeightAreas                          game  0x800E8948  data        -
-sHeightAreas_5                        game  0x800E8948  data        -  sHeightAreas
-sHeightAreas_6                        game  0x800E8948  data        -  sHeightAreas
-sHeightAreas_7                        game  0x800E8948  data        -  sHeightAreas
 sHeightAreaMax                        game  0x800E8950  data        -
 gGroundArea                           game  0x800E8958  data        -
 sWallTris                             game  0x800E8960  data        -
@@ -4723,23 +4720,14 @@ sSplineNodeCount                      game  0x800F0750  data        -
 sSplineNodes                          game  0x800F0754  data        -
 sTireTrackNext                        game  0x800F0770  data        -
 sTireTracks                           game  0x800F0774  data        -
-sTireTracks_2                         game  0x800F0774  data        -  sTireTracks
-sTireTracks_3                         game  0x800F0774  data        -  sTireTracks
-sTireTracks_4                         game  0x800F0774  data        -  sTireTracks
 sTireTrackLastY                       game  0x800F0778  data        -
-sTireTrackLastY_2                     game  0x800F0778  data        -  sTireTrackLastY
 sTireTrackCur                         game  0x800F0798  data        -
-sTireTrackCur_2                       game  0x800F0798  data        -  sTireTrackCur
 sTireTrackSurface                     game  0x800F07B8  data        -
-sTireTrackSurface_2                   game  0x800F07B8  data        -  sTireTrackSurface
 gTireTrackTimers                      game  0x800F07D8  data        -
 sTireTrackVtx                         game  0x800F07F8  data        -
-sTireTrackVtx_2                       game  0x800F07F8  data        -  sTireTrackVtx
 sTireTrackMudSurface                  game  0x800F0800  data        -
-sTireTrackMudSurface_2                game  0x800F0800  data        -  sTireTrackMudSurface
 sTireTrackTexture                     game  0x800F0820  data        -
 sTireTrackMudTimer                    game  0x800F0828  data        -
-sTireTrackMudTimer_2                  game  0x800F0828  data        -  sTireTrackMudTimer
 sReplayRecDeltas                      game  0x800F0850  data        -
 sReplayRecDeltas_2                    game  0x800F0850  data        -  sReplayRecDeltas
 sReplayBytesLeft                      game  0x800F0910  data        -
