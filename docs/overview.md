@@ -1,6 +1,7 @@
 # How the game works
 
-What the decompiled code shows about Excitebike 64 (USA LodgeNet): the threads and game states, the main data
+What the decompiled code shows about Excitebike 64 (USA LodgeNet, the reference; Versions, at the end, says what
+USA Rev 1 changes): the threads and game states, the main data
 structures, each source file, and the larger subsystems (bike physics, the NES emulator, sound, saves, the track
 editor). Names are the ones in symbols.txt and functions.csv; offsets are hex. Where something is inferred from
 how the code uses it rather than shown by strings or data, the text says so. Names still of the form
@@ -572,8 +573,8 @@ volumes), tutorial progress (+0x2C1; 7 unlocks Original Excitebike), the NES des
 `save_write` is called with a section number after records, settings or the user track change.
 
 The Controller Pak holds time-trial ghosts (unnamed/replay.c's format, 0x2800 bytes) and user tracks (pak.c).
-EEPROM code exists (`pak_probe_all` probes it, `eeprom_write_verify` writes with read-back) but this build does
-not use it (see below).
+EEPROM code exists (`pak_probe_all` probes it, `eeprom_write_verify` writes with read-back) but LodgeNet does not
+use it (see below); USA Rev 1 saves to the cartridge's 16 Kbit EEPROM (Versions).
 
 ## Track editor
 
@@ -626,3 +627,50 @@ This is the version LodgeNet ran on hotel-room N64s. What the code shows:
 - **Development leftovers** in this build: the SN Systems debug runtime and "output.log" writer in the boot
   loader, the D-pad freeze, the lag generator and the screenshot dump in the main loop, the debug menu
   (`gDrawFlags`), the bike tuning table (`sBikeTune`) and the unreferenced CIC/IPL3 checks.
+
+## Versions
+
+The tree builds USA LodgeNet (`lodgenet`, the reference) and USA Rev 1 (`us_rev1`, the retail cartridge's second
+revision) from one source: the code that differs is in `#if VERSION` blocks (include/version.h), each version's
+tables are in versions/<name>/ (README.md). USA Rev 1 has the same source files and nearly all the same functions at
+other addresses; what it changes, as the code shows:
+
+- **Saves on the cartridge.** `pak_probe_all` finds a 16 Kbit EEPROM (`sEepromType`). `save_load` reads the save
+  image from it (`SAVE_EEPROM_BLOCKS`, 256 blocks of 8 bytes) unless asked to reset; a blank image is reset to the
+  defaults, one that fails its checksum too, with `GAME_FLAG_BACKUP_LOST` set (a notice after the first splash).
+  `save_init_defaults` writes the whole image. `save_write` updates the section that changed, writes its blocks
+  (`eeprom_write_verify`, with read-back), then the checksum and the first two blocks; the high resolution option is
+  never saved. The options' "Controller Pak" (the Controller Pak manager) and "Reset Saved Data" (an "Erase all
+  data?" dialog) work, `save_update_unlocks` unlocks Soccer like the other special tracks (LodgeNet only ever locks
+  it), and the track editor can save to the Game Pak.
+- **Copy protection.** The checks that are unreferenced in LodgeNet are called, each with a quiet penalty when the
+  game did not boot from the real cartridge (the header is now CIC-6103):
+  - `cic_is_6103` fails: `shell_goto_screen` writes `osGetCount()` to a random word of RDRAM, and `shell_exit` sets
+    `D_800C8CD0`, after which `race_update` writes 0x80020000 to `D_800C29DC` at one stick position;
+  - `main_check_cart_ipl3` fails (`shell_update`): a random word of RDRAM, the same way;
+  - `cic_check_rdram_200` (`shell_draw`) or `shell_check_sp_dmem_magic` (`shell_init`, the RSP's data memory
+    starting with 0xFFFFFFFF): the lag generator is switched on;
+  - `cic_check_rdram_284` (`shell_draw`): `cont_finish_read` moves the Z-buffer to 0x80010000;
+  - `shell_check_sp_imem_magic` (`shell_init`): the NES emulator's BCS writes the count register to random RDRAM;
+  - no 16 Kbit EEPROM (`snd_set_volume`, setting the speech volume): `gCosTable` is filled with random products.
+- **RSP boot code from the cartridge.** The game image has no rspboot: `game_main` reads 0x100 bytes from ROM 0xB70
+  (inside the CIC-6103 IPL3) into `sRspBoot` with `osPiReadIo`, and the graphics tasks boot from that.
+- **Front end.** The second splash screen waits a minute instead of 5 seconds. After the first splash come the lost
+  backup's notice (when there is one) and the Controller Pak's free pages. START held at power-on skips the boot
+  loader's splash (which writes 0xDEAF at 0x80000406) and opens the Controller Pak manager first. Some menu
+  items ask for the number of players first (`SCREEN_ITEM_ASK_PLAYERS`). A time trial's replay can be saved when the
+  ghost fits a Controller Pak note. Starting the desert track sets one player where LodgeNet sets race series
+  fields.
+- **Gameplay and sound.** A jump pitches the bike less (2 instead of 3 times the right vector), the engine's RPM steps
+  are divided in floating point, CPU riders make no ground sound, the music stream's mix ring wraps with a modulo,
+  and the scheduler waits three frames after blanking the screen on reset (PRE-NMI). The NES emulator reserves its
+  fixed memory block from the allocator (`sNesBlock`; not when the Z-buffer is at 0x80300000) and leaves the NES
+  game if it cannot.
+- **Removed.** LodgeNet's D-pad freeze (`main_set_debug_freeze`, the scheduler's `gDebugPadFreeze`) and the
+  development board's PI handle (`main_init_dev_pi_handle`, and with it libultra's `osEPiWriteIo`; libultra's
+  `osPiReadIo` comes in). The other development leftovers stay.
+- **Data.** 17 of LodgeNet's RESOURCE sets are gone (its 74, 82, 86, 88, 94, 151, 191, 193, 202, 208, 212, 331, 578,
+  581, 585, 611 and 614), which renumbers every resource id after them: the C writes LodgeNet's numbers through
+  `RES()`. The source line numbers passed to the debug allocator differ (`SRC_LINE`), and some strings and tables
+  changed.
+- **ROM.** CIC-6103 instead of 6102; the boot loader is 0x30 bytes longer, so the container starts at 0x12230.
