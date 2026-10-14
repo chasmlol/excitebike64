@@ -353,12 +353,12 @@ void edit_exit(void)
         /* the packed track and the layout move through the z-buffer to fresh allocations */
         __builtin_memcpy(gZBuffer, gGame.userTrack, USER_TRACK_BUF_SIZE);
         layoutSize = (testPieces - 1) * 0xc + 0x110; /* sizeof(UserTrackLayout) with testPieces pieces */
-        memcpy(gZBuffer + 0x400, gUserTrackLayout, layoutSize);
+        memcpy(gZBuffer + USER_TRACK_BUF_SIZE, gUserTrackLayout, layoutSize);
         mem_free(gUserTrackLayout);
         mem_free(gGame.userTrack);
         gUserTrackLayout = mem_alloc_dbg(layoutSize, 0, sStrEditFile, 0x651);
         gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, sStrEditFile, 0x652);
-        memcpy(gUserTrackLayout, gZBuffer + 0x400, layoutSize);
+        memcpy(gUserTrackLayout, gZBuffer + USER_TRACK_BUF_SIZE, layoutSize);
         __builtin_memcpy(gGame.userTrack, gZBuffer, USER_TRACK_BUF_SIZE);
     }
     font_unload_set();
@@ -3568,7 +3568,7 @@ int edit_user_piece_height_max_prev(int point, u16 *slopes)
     if (point - 1 > 0 && point - 1 < LIM) {
         s16 *heights = gUserPieceHeights;
         s32 prevPoint = point - 2;
-        limit = heights[CEA_IDX * 15 + prevPoint] + 0xFA;
+        limit = heights[CEA_IDX * USER_PIECE_HEIGHTS + prevPoint] + 0xFA;
     } else {
         limit = 0xFA;
     }
@@ -3593,7 +3593,7 @@ int edit_user_piece_height_max_prev(int point, u16 *slopes)
     if (point - 1 > 0 && point - 1 < LIM) {
         s16 *heights = gUserPieceHeights;
         s32 prevPoint = point - 2;
-        rise += heights[CEA_IDX * 15 + prevPoint];
+        rise += heights[CEA_IDX * USER_PIECE_HEIGHTS + prevPoint];
     }
     res = rise;
     if (limit < res) {
@@ -3671,7 +3671,7 @@ int edit_user_piece_height_min_next(int point, s16 *slopes)
 
 static inline s16 *At(s16 *b, s32 c, s32 i)
 {
-    return &b[c * 15 + i];
+    return &b[c * USER_PIECE_HEIGHTS + i];
 }
 
 /* The highest a point can be raised before the slope turns by more than 45 degrees over it (the point's height is
@@ -3699,7 +3699,7 @@ s32 edit_user_piece_find_height_max(s32 point)
         math_to_polar(4000, rise << 4, &angleIn, &ratio);
         angleIn = 0x4000 - angleIn;
         if (point + 1 > 0 && point + 1 < LIM_2)
-            rise = T1_2[gEditor->userPiece * 15 + point];
+            rise = T1_2[gEditor->userPiece * USER_PIECE_HEIGHTS + point];
         else
             rise = 0;
         if (point > 0 && point < LIM_2)
@@ -3778,7 +3778,7 @@ s32 edit_user_piece_find_height_min(s32 point)
 #define HEIGHT_AT(c) ((c) > 0 && (c) < SEL_NUM_POINTS ? gUserPieceHeights[SEL_PIECE][(c) - 1] : 0)
 #define MIN_2(x, y) ((x) < (y) ? (x) : (y))
 #define MAX_2(x, y) ((x) > (y) ? (x) : (y))
-#define SEL_HEIGHT (({ s16 *_tb = (s16 *)gUserPieceHeights; _tb; })[({ s32 _c = SEL_POINT - 1; SEL_PIECE * 15 + _c; })])
+#define SEL_HEIGHT (({ s16 *_tb = (s16 *)gUserPieceHeights; _tb; })[({ s32 _c = SEL_POINT - 1; SEL_PIECE * USER_PIECE_HEIGHTS + _c; })])
 
 /* Moves the selected height point up or down, held between its neighbours' heights +-140 and +-450. */
 void edit_user_piece_adjust_height(void)
