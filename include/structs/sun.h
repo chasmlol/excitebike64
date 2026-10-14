@@ -6,10 +6,23 @@
 
 /* A light that can flare: the sun or a light of the track. Each frame sun_update_screen_pos projects it,
    sun_check_occlusion samples the Z buffer around it, and sun_draw_flare draws its rings and glare sprite. */
+#define FLARE_SUN       0x01 /* placed where the sky puts the sun */
+#define FLARE_FIXED     0x02 /* at a fixed point of the view */
+#define FLARE_ON_SCREEN 0x08
+#define FLARE_SAMPLED   0x10 /* its visibility was read from the Z buffer */
+
+#define SUN_NUM_VTX   128 /* the vertex buffer of each view (sSunVtxBufs) */
+#define SUN_NUM_STARS 64
+
+/* gSkyMode: what the background of a race is */
+#define SKY_FILL        0 /* the fog colour */
+#define SKY_IMAGE       1 /* the sky image (sky_draw) */
+#define SKY_MODEL       2 /* the sky model, shaded */
+#define SKY_MODEL_IMAGE 3 /* the sky model textured with the sky image */
+
 typedef struct Flare {
-    /* 0x00 */ u32 flags;   /* 1 the sun, placed by the sky; 2 at a fixed point of the view; 8 on screen;
-                               0x10 sampled in the Z buffer */
-    /* 0x04 */ s32 x;       /* position when neither 1 nor 2 */
+    /* 0x00 */ u32 flags;   /* FLARE_* */
+    /* 0x04 */ s32 x;       /* position when neither FLARE_SUN nor FLARE_FIXED */
     /* 0x08 */ s32 y;
     /* 0x0C */ s32 z;
     /* 0x10 */ s32 unk_10;

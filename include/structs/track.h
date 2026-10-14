@@ -12,6 +12,11 @@
 #define TRACK_ENV_OUTDOOR 1 /* tubegfx.c */
 #define TRACK_ENV_DESERT  2 /* desgfx.c and fractal.c */
 
+/* The flags of a track (gTracks +0x50). */
+#define TRACK_FLAG_FINISH_LINE 0x002 /* has the finish line props (finishline_load_models) */
+#define TRACK_FLAG_STARS       0x020 /* a night sky: sun.c draws stars */
+#define TRACK_FLAG_RECORDS     0x200 /* keeps records */
+
 /* gDrawFlags: bit n is item n of the debug menu, all set in a normal race. */
 #define DRAW_BIKES        0x001
 #define DRAW_SKY          0x002
