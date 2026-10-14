@@ -249,7 +249,7 @@ void bike_apply_surface_bumps(u8 *p);
 void bike_update_finish_celebration(u8 *p);
 void bike_update_dirt_spray(Obj_11 *o);
 
-/* src/game/tubegfx.c */
+/* src/game/arngfx.c */
 void arn_init(void);
 Gfx *arn_draw(Gfx *gdl, s32 a1, s32 a2, s32 view);
 Gfx *arn_draw_water(Gfx *gdl, s32 p2, s32 p3, u32 sh);
@@ -259,6 +259,8 @@ void arn_apply_noise_shading(Model_2 *m);
 void arn_free(void);
 void arn_update_view(s32 param_1);
 void arn_relocate(u32 *param);
+
+/* src/game/tubegfx.c */
 void tube_init(void);
 void tube_free(void);
 void tube_update_view(s32 n);
@@ -285,7 +287,7 @@ void tube_spawn_splash(s32 param_1, s32 param_2, s32 param_3, s32 param_4);
 void tube_update_splashes(void);
 Gfx *tube_tex_mode_callback(Gfx *gdl, s32 flag);
 
-/* src/game/height.c */
+/* src/game/camera.c */
 void cam_init(s32 arg0);
 void cam_build_segment_order(void);
 void cam_update(void);
@@ -333,6 +335,8 @@ void cam_free(void);
 void cam_get_track_turn(s16 p1, f32 f, u16 *p3);
 void cam_get_track_slope(s32 a0, f32 f, s16 *out);
 void cam_set_frozen(s32 i, s32 v);
+
+/* src/game/height.c */
 void height_init(Area_2 *area, s32 b, s32 c, u32 *polys);
 void height_free(void);
 s32 height_test_area(s32 id, s32 x, s32 y, s32 z);
@@ -356,6 +360,8 @@ int height_get_grid_cell(int x, int y);
 s32 point_in_poly_xz(Poly_2 *poly, s32 px, s32 pz);
 s32 func_80031FA0(s32 p1, s32 p2, s32 p3);
 s32 func_8003207C(s32 p1, s32 p2, s32 p3);
+
+/* src/game/sun.c */
 void sun_init(void);
 void sun_update_screen_pos(s32 param_1, s32 param_2, s32 arg2);
 void sun_check_occlusion(s32 a0);
@@ -405,7 +411,7 @@ void particles_start_sparks(u8 *p);
 void particles_project_point(f32 *v, s32 *a1, s32 *a2, s32 *a3, s32 *a4, s32 a5, s32 idx);
 void particles_start_exhaust_puff(s32 param_1);
 
-/* src/game/skel.c */
+/* src/game/shadow.c */
 Blk_2 *shadow_clear_texture(Blk_2 *gdl, s32 unused, s32 n);
 Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m);
 Gfx *shadow_draw(s32 id, s32 unused, Gfx *gdl, s32 arg3);
@@ -414,6 +420,8 @@ void shadow_build_mesh(s32 n);
 void shadow_clip_triangle(Facet_2 *a, s32 lim);
 void shadow_init(void);
 void shadow_free(void);
+
+/* src/game/skel.c */
 void *skel_load(u32 *param_1, s32 param_2);
 void skel_update_world_transforms(Node_6 *n, s32 count);
 s32 func_8003C588(Rec_20 *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx);
@@ -488,7 +496,7 @@ void bike_queue_crash_3(Obj_57 *p, s32 v);
 f32 body_time_to_ground(f32 *p);
 void rider_change_anim(Obj_35 *o, s32 b);
 
-/* src/game/unnamed/s0_80047940.c */
+/* src/game/unnamed/desert.c */
 void desert_init(void);
 void desert_export_checkpoints(void);
 void desert_update_race(void);
@@ -652,7 +660,7 @@ void decal_free(void);
 void decal_end_track(s32 a0);
 void decal_clear_all(void);
 
-/* src/game/unnamed/s0_8005EA20.c */
+/* src/game/unnamed/replay.c */
 void replay_record_start(u8 *param_1, s32 param_2);
 void replay_write_bits(s32 v, s32 n);
 void replay_record_frame(u32 *p);
@@ -737,7 +745,7 @@ void race_restore_grid_order(void);
 void race_apply_grid_order(void);
 void race_grid_from_standings(void);
 
-/* src/game/unnamed/s0_800651A0.c */
+/* src/game/unnamed/sched.c */
 void sched_init(u8 *param_1, int arg1);
 void sched_thread(void);
 void sched_init_vi_mode(s32 p);
@@ -769,7 +777,7 @@ void shatter_reset(void);
 void shatter_free(void);
 void shatter_update(void);
 
-/* src/game/palmod.c */
+/* src/game/map.c */
 void map_init(void);
 Gfx *map_draw_progress_bar(Gfx *gdl);
 Gfx *map_draw_rider_dot(Gfx *gdl, s32 player, s32 big);
@@ -781,6 +789,8 @@ void map_get_node_pos(f32 *a, f32 *b, f32 *c);
 Gfx *map_draw_dot(Gfx *gdl, s32 idx, s32 flag, s32 x, s32 y);
 void map_stamp_brush(u16 *dst, u16 *src, s32 x, s32 y);
 void map_free(void);
+
+/* src/game/palmod.c */
 void palmod_register(Obj_51 *a, s32 b);
 void palmod_update(void);
 void palmod_init(s32 p);
@@ -788,6 +798,8 @@ void palmod_free(void);
 void palmod_sepia(s32 a0, s32 *a1, s32 *a2, s32 *a3);
 void palmod_desaturate_rgb(u16 *dst, u8 *src);
 void palmod_desaturate_pal(u16 *dst, u16 *src);
+
+/* src/game/flash.c */
 void flash_init(s32 arg0);
 void flash_init_2(void);
 void flash_update(void);
@@ -853,10 +865,14 @@ Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2);
 void snow_update(void);
 void snow_respawn_flake(s32 *param_1);
 void snow_free(void);
+
+/* src/game/remove.c */
 void remove_walls_init(Mdl2 *m, Obj2 *o);
 void remove_walls_trigger(s32 id);
 void remove_walls_free(void);
 void remove_walls_reset(void);
+
+/* src/game/unnamed/s0_80072F70.c */
 Gfx *screen_draw_wipe(Gfx *gdl, Dyn *arg1, s32 arg2);
 
 /* src/game/unnamed/s1_80073200.c */
@@ -1177,7 +1193,7 @@ void usrtrk_free_user_piece_meshes(s32 param_1);
 void usrtrk_build_track(void);
 s16 usrtrk_get_packed_size(void);
 
-/* src/game/unnamed/lib_800B7680.c */
+/* src/game/sfx.c */
 s32 sfx_load_sample_name(u8 *name);
 s32 sfx_load_sample_id(s32 arg0);
 void sfx_free_sample(s32 param_1);
@@ -1244,7 +1260,7 @@ void sfx_lock_sample(s32 i);
 void func_800BA5F0(s32 a0);
 s32 sfx_get_voice(s32 param_1);
 
-/* src/game/unnamed/lib_800BA6B0.c */
+/* src/game/softmix.c */
 s32 softmix_init(s32 param_1, u32 param_2, s32 param_3, s32 arg3);
 s32 softmix_load_sample_file(s32 param_1);
 s32 softmix_load_sample_name(s32 param_1, s32 arg1, s32 arg2, s32 arg3);
@@ -1351,7 +1367,7 @@ s32 swd_decompress(void);
 void swd_reset_bits(void);
 u32 swd_read_bits(s32 param_1);
 
-/* src/game/unnamed/lib_800BDF80.c */
+/* src/game/file.c */
 s32 file_init(u8 *src);
 Ent_106 *file_load_page(Obj_81 *so, s32 si, s8 sf);
 s32 file_shutdown(void);
@@ -1388,7 +1404,7 @@ Blk_29 *sram_init(void);
 int sram_read(u32 param_1);
 s32 sram_write(s32 p);
 
-/* src/game/unnamed/lib_800BF530.c */
+/* src/game/resman.c */
 s32 res_open_set(char *path, Obj_82 **out);
 u32 res_load(u32 *pa0, s32 pa1);
 void res_register_type(u8 *name, s32 val);
@@ -1404,9 +1420,13 @@ s32 res_get_size(ResFile_2 *r, s32 idx);
 void res_set_load_buffer(s32 a0);
 void func_800C0264(s32 *param_1, u32 param_2);
 u32 res_hash_name(u8 *p);
+
+/* src/game/decoder.c */
 Hdr_14 *decoder_decode_adpcm(Src_4 *s);
 u32 *decoder_decode_sample(u32 *param_1);
 Out_6 *func_800C055C(Src_5 *p);
+
+/* src/game/fontcode.c */
 s32 font_load(ResFile *arc, u32 **ids, char *name);
 u8 *font_draw_text(s32 *p, s32 x, s32 y);
 s32 font_get_char_pos(Obj_83 *p, s32 x, s32 unused, s32 n);

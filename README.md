@@ -108,7 +108,8 @@ functions.csv        every function-sized range of both images: name, image, add
 include/             common.h (<ultra64.h> and basics), game.h (what the game's C includes: structs.h, functions.h,
                      variables.h), boot.h (the boot loader's declarations), data.h (types for src/data)
 src/game/<module>.c  the game's C, one file per original source file, functions in address order
-src/game/unnamed/    object files whose name is unknown, named after their segment and start address
+src/game/unnamed/    object files whose name is unknown: named after what they do (desert.c, replay.c, sched.c) or
+                     after their segment and start address
 src/boot/            the boot loader's C, one file per object and compiler
 src/data/            initialized data of both images
 src/libgcc/          libgcc's 64-bit division as KMC shipped it
@@ -134,7 +135,12 @@ docs/                compiler-notes.md: the compilers and how their output maps 
   register allocation (docs/compiler-notes.md).
 - The shipped libgcc 64-bit division has a word-order bug (KMC's big-endian build used the little-endian word
   order); src/libgcc/libgcc2.c reproduces it on purpose.
-- Module names come from the source file names the game's strings contain (`main.c`, `bikenew.c`, `nesn64.c`, ...).
+- Module names come from the source file names the game's strings contain (`main.c`, `bikenew.c`, `nesn64.c`,
+  `../SFX.C`, `FILE.C`, ...), passed with the line number to the memory allocator. Each original file is one
+  contiguous range of code, and the file-name strings sit in the data in the same order as the code, so where a
+  range of code passes several names it is split at the first function that passes the next one (camera.c, height.c
+  and sun.c; arngfx.c and tubegfx.c; RESMAN.C, DECODER.C and FONTCODE.C; ...). The libraries' upper-case names
+  are spelled in lower case (src/game/resman.c).
 
 ## Credits
 
