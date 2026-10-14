@@ -253,9 +253,9 @@ void ai_update_steering(Rider *b) {
         return;
     }
 
-    if ((u32)((u8)b->unk_418 - 1) < 2 && b->speed > 2.0f) {
+    if ((u32)((u8)b->crestAhead - 1) < 2 && b->speed > 2.0f) {
         idx = b->segment;
-        for (k = b->unk_418; k > 0; k--) {
+        for (k = b->crestAhead; k > 0; k--) {
             idx = gPathNodes_26[idx].next;
         }
         f = (b->bike.vel.x * gPathNodes_26[idx].dx + b->bike.vel.z * gPathNodes_26[idx].dz) / b->speed;

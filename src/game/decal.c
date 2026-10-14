@@ -59,7 +59,7 @@ void debug_update_value_display(void)
     case 2:
         for (i = 0; i < 6; i++) {
             debug_ftoa(buf, gRiders[i].timeScale / gCurTrack_31->f20[gGame_44.f410 - 1], 4);
-            debug_print_float(buf, gRiders[i].unk_450);
+            debug_print_float(buf, gRiders[i].aiSkill);
         }
         break;
     }

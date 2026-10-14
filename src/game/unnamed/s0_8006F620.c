@@ -109,7 +109,7 @@ void stunt_read_input(Rider *e)
     u8 *p;
 
     if ((e->prevInput & 0x100) && !(e->input & 0x100)) {
-        e->unk_3D3 = -1;
+        e->queuedTrick = -1;
         e->stickHist[e->stickHistIdx] = 1;
         return;
     }
@@ -146,7 +146,7 @@ void stunt_read_input(Rider *e)
                     (((gRiderAnims[p[0]].riderMask >> gGame_51.sh[e - gRiders]) & 1) ||
                      (gCheatFlags & 0x200))) {
                     e->trickFrame = gRaceFrame;
-                    e->unk_3D3 = p[0];
+                    e->queuedTrick = p[0];
                 }
                 if ((p + i)[1] != e->stickHist[(e->stickHistIdx + i) & 7]) break;
             }
@@ -201,12 +201,12 @@ void stunt_update(Rider *o)
     }
     s = o->anim;
     if (s < 0) {
-        d3 = o->unk_3D3;
+        d3 = o->queuedTrick;
         if (d3 >= 0) {
             if (gRaceFrame - o->trickFrame < 60) {
                 stunt_start(o, d3);
             } else {
-                o->unk_3D3 = -1;
+                o->queuedTrick = -1;
             }
         }
         return;
@@ -284,14 +284,14 @@ void stunt_start(Rider *o, s32 n)
             return;
         }
         if (o->airFrames >= 5) {
-            o->unk_3D3 = -1;
+            o->queuedTrick = -1;
             return;
         }
     }
     o->anim = n;
     o->animFrame = 0;
     u = gRiderAnims[n].unk_2C;
-    o->unk_3D3 = -1;
+    o->queuedTrick = -1;
     o->animHold = 0;
     o->fistPump = 0;
     o->trickCount = 0;
@@ -465,7 +465,7 @@ s32 stunt_animate(Rider *p, s32 k)
                 if (qq < b * 2) {
                     qq = b * 2;
                 }
-                if (p->unk_3D3 < 0) {
+                if (p->queuedTrick < 0) {
                     s32 h = b / 2;
                     vv = (h < qq) ? h : qq;
                 } else {

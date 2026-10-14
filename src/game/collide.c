@@ -526,8 +526,8 @@ s32 collide_bodies(RigidBody *p1, RigidBody *p2)
             }
             return 1;
         }
-        p1->unk_17E = 0xf;
-        p2->unk_17E = 0xf;
+        p1->hitTimer = 0xf;
+        p2->hitTimer = 0xf;
     }
     return 0;
 }

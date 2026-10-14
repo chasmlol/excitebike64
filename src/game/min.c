@@ -1475,11 +1475,11 @@ void race_update(u32 *arg)
             }
             for (j = 0; j < 8; j++) {
                 if (gRiders[j].inactive == 0) {
-                    if (gRiders[j].engine.throttle != 0 && gRiders[j].unk_5AC >= -0xFFF) {
-                        gRiders[j].unk_5AC -= 0x200;
+                    if (gRiders[j].engine.throttle != 0 && gRiders[j].throttleTwist >= -0xFFF) {
+                        gRiders[j].throttleTwist -= 0x200;
                     }
-                    if (gRiders[j].engine.throttle == 0 && gRiders[j].unk_5AC < 0) {
-                        gRiders[j].unk_5AC += 0x200;
+                    if (gRiders[j].engine.throttle == 0 && gRiders[j].throttleTwist < 0) {
+                        gRiders[j].throttleTwist += 0x200;
                     }
                 }
             }

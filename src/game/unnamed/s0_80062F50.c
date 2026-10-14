@@ -526,7 +526,7 @@ void race_update_riders(void)
             if (pl->isCpu != 0) {
                 f = 0.0f;
                 if (n1 >= 2) {
-                    f = pl->unk_450;
+                    f = pl->aiSkill;
                 }
                 e = pl->distToGo - sum1;
                 if (e > 64.0f) {
@@ -751,16 +751,16 @@ void race_init_ai_skills(s32 arg0, s32 count) {
 
     for (i = 0; i < count; i++) {
         if (count == 1) {
-            gRiders[sAiRiderOrder[i]].unk_450 = 0.0f;
+            gRiders[sAiRiderOrder[i]].aiSkill = 0.0f;
         } else {
-            gRiders[sAiRiderOrder[i]].unk_450 = (i - (count - 1) * 0.5f) / ((count - 1) * 5.0f);
+            gRiders[sAiRiderOrder[i]].aiSkill = (i - (count - 1) * 0.5f) / ((count - 1) * 5.0f);
         }
-        if (gRiders[sAiRiderOrder[i]].unk_450 == 0.1f) {
-            gRiders[sAiRiderOrder[i]].unk_450 += 0.01f;
+        if (gRiders[sAiRiderOrder[i]].aiSkill == 0.1f) {
+            gRiders[sAiRiderOrder[i]].aiSkill += 0.01f;
         } else {
-            gRiders[sAiRiderOrder[i]].unk_450 -= 0.01f;
+            gRiders[sAiRiderOrder[i]].aiSkill -= 0.01f;
         }
-        gRiders[sAiRiderOrder[i]].timeScale = 1.03f - gRiders[sAiRiderOrder[i]].unk_450;
+        gRiders[sAiRiderOrder[i]].timeScale = 1.03f - gRiders[sAiRiderOrder[i]].aiSkill;
     }
 }
 

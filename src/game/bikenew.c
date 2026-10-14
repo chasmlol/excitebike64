@@ -111,7 +111,7 @@ void bikes_init(void) {
         engine_reset(&gRiders[i].engine);
         gRiders[i].speed = 0.0f;
         gRiders[i].bumpSeed = 0.0f;
-        gRiders[i].unk_3D3 = -1;
+        gRiders[i].queuedTrick = -1;
         gRiders[i].inactive = 1;
         gRiders[i].race.placeAnim = 0x100;
         gRiders[i].trickQuat[1] = z;
@@ -1729,7 +1729,7 @@ void bike_compute_forces(Rider *b) {
             b->bike.angAcc.z = -d.z * q;
         }
     }
-    if (b->bike.unk_17E != 0) {
+    if (b->bike.hitTimer != 0) {
         f32 len;
         f32 t;
         e.x = b->frontWheel.normal.x + b->rearWheel.normal.x;
@@ -2111,7 +2111,7 @@ void bike_update_wheelie(Rider *e)
 {
     s8 c;
 
-    if (e->airFrames > 0x3C && (*(s32 *)&e->unk_418 & 0xFFFF00) == 0) {
+    if (e->airFrames > 0x3C && (*(s32 *)&e->crestAhead & 0xFFFF00) == 0) {
         e->wheelieTimer = 0;
     }
     if (e->wheelieTimer == 0) {

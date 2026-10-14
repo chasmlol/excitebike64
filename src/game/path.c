@@ -1216,10 +1216,10 @@ void path_update_bike(Rider *b)
     if (sq > 1.0f && b->airFrames < -15) {
         sq = __builtin_sqrtf(sq);
         if (b->bike.vel.x * gPathTangentX + b->bike.vel.z * gPathTangentZ / sq > 0.7f) {
-            b->unk_418 = path_find_crest_ahead(sq, b->segment);
+            b->crestAhead = path_find_crest_ahead(sq, b->segment);
         }
     } else {
-        b->unk_418 = -1;
+        b->crestAhead = -1;
     }
     if (b->race.finishPlace == -1) {
         b->distToGo = gPathLapLength * (f32)(b->lapAdjust + 1 + b->race.lap) - b->segmentDist;

@@ -277,10 +277,10 @@ s32 phys_body_step(RigidBody *b, Pt_4 *t, s32 n, u8 m)
     }
     height_gather_walls((s32)((b->pos.x + lx) * 1000.0f), (s32)((b->pos.z + lz) * 1000.0f),
                   (s32)((b->pos.x + hx) * 1000.0f), (s32)((b->pos.z + hz) * 1000.0f));
-    if (b->unk_17E != 0) {
-        b->unk_17E -= D_800E76C7;
-        if (b->unk_17E < 0) {
-            b->unk_17E = 0;
+    if (b->hitTimer != 0) {
+        b->hitTimer -= D_800E76C7;
+        if (b->hitTimer < 0) {
+            b->hitTimer = 0;
         }
     }
     dt = gPhysDeltaTime;
@@ -457,7 +457,7 @@ s32 phys_body_step(RigidBody *b, Pt_4 *t, s32 n, u8 m)
             }
             }
             dt *= 0.8f;
-            b->unk_17E = 15;
+            b->hitTimer = 15;
         } else {
             f32 ln;
             savepos = b->pos;
@@ -736,7 +736,7 @@ void bike_respawn(Rider *b) {
     b->engine.heat = 0.0f;
     b->engine.overheated = 0;
     b->prevAnim = -1;
-    b->unk_3D3 = -1;
+    b->queuedTrick = -1;
     b->unk_3FB = 0;
     b->unk_7DC = 0;
     if (b->finishState == 0) {

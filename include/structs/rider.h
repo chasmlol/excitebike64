@@ -127,7 +127,7 @@ typedef struct RigidBody {
     /* 0x178 */ f32 inertia;
     /* 0x17C */ u8 type;            /* 0 human bike, 1 CPU bike, 2 crashed bike, 3 rider, 4 ball */
     /* 0x17D */ u8 flags;
-    /* 0x17E */ s8 unk_17E;
+    /* 0x17E */ s8 hitTimer;        /* set after a collision, counts down */
     /* 0x17F */ u8 unk_17F;
     /* 0x180 */ struct Rider *owner;
 } RigidBody; /* size 0x184 */
@@ -198,13 +198,13 @@ typedef struct Rider {
     /* 0x024 */ s32 rot[3];         /* from the bike body's quaternion */
     /* 0x030 */ s32 drawSteer;
     /* 0x034 */ s16 heading;
-    /* 0x036 */ s16 yawLag;       /* cam_calc_bike_yaw */
+    /* 0x036 */ s16 yawLag;         /* cam_calc_bike_yaw */
     /* 0x038 */ s32 drawSuspFront;  /* mm */
     /* 0x03C */ s32 drawSuspRear;
     /* 0x040 */ u16 frontSpinAngle;
     /* 0x042 */ u16 rearSpinAngle;
     /* 0x044 */ u8 crashState;      /* 0 riding, 1 crashed, 2 rider clear of the bike */
-    /* 0x045 */ s8 pendingCrash;    /* > 0 crash on landing, < 0 crash now: 0x19 backwards, 0x1C forwards, 0x1F/0x22 side */
+    /* 0x045 */ s8 pendingCrash;    /* > 0 crash on landing, < 0 now: 0x19 back, 0x1C forward, 0x1F/0x22 side */
     /* 0x046 */ u8 unk_046[2];
     /* 0x048 */ RigidBody bike;
     /* 0x1CC */ RigidBody body;     /* the rider, once thrown off */
@@ -236,7 +236,7 @@ typedef struct Rider {
     /* 0x3D0 */ s8 anim;            /* current trick or animation, -1 none */
     /* 0x3D1 */ s8 prevAnim;
     /* 0x3D2 */ s8 trick;
-    /* 0x3D3 */ s8 unk_3D3;
+    /* 0x3D3 */ s8 queuedTrick;     /* stunt_read_input */
     /* 0x3D4 */ s8 stickHist[8];
     /* 0x3DC */ u8 unk_3DC[8];
     /* 0x3E4 */ u8 trickHist[6];
@@ -245,7 +245,7 @@ typedef struct Rider {
     /* 0x3FB */ u8 unk_3FB;
     /* 0x3FC */ u8 stickHistIdx;
     /* 0x3FD */ u8 stickHistCount;
-    /* 0x3FE */ s8 pipTimer;       /* stunt replay inset view */
+    /* 0x3FE */ s8 pipTimer;        /* stunt replay inset view */
     /* 0x3FF */ u8 finishState;
     /* 0x400 */ u16 celebrationTimer; /* cam_mode_celebration */
     /* 0x402 */ u8 checkpoint;      /* desert */
@@ -253,11 +253,11 @@ typedef struct Rider {
     /* 0x404 */ f32 checkpointDist;
     /* 0x408 */ s32 trickFrame;
     /* 0x40C */ u8 unk_40C[4];
-    /* 0x410 */ s16 unk_410;
+    /* 0x410 */ s16 crestCrouch;    /* grows while a crest is ahead */
     /* 0x412 */ s16 unk_412;
     /* 0x414 */ s16 wheelieBalance;
     /* 0x416 */ s16 wheelieTimer;
-    /* 0x418 */ s8 unk_418;
+    /* 0x418 */ s8 crestAhead;      /* path_find_crest_ahead */
     /* 0x419 */ u8 leftFootOut;
     /* 0x41A */ u8 rightFootOut;
     /* 0x41B */ u8 powerSlide;
@@ -272,7 +272,7 @@ typedef struct Rider {
     /* 0x43C */ Vec3f crashVel;     /* velocity at the crash */
     /* 0x448 */ f32 driveForce;     /* rear wheel */
     /* 0x44C */ f32 timeScale;
-    /* 0x450 */ f32 unk_450;
+    /* 0x450 */ f32 aiSkill;        /* race_init_ai_skills */
     /* 0x454 */ Wheel rearWheel;
     /* 0x4F8 */ Wheel frontWheel;
     /* 0x59C */ u8 unk_59C[4];
@@ -280,7 +280,7 @@ typedef struct Rider {
     /* 0x5A4 */ u8 unk_5A4[4];
     /* 0x5A8 */ s16 savedCamMode;
     /* 0x5AA */ s16 camMode;        /* gCamModes */
-    /* 0x5AC */ s32 unk_5AC;
+    /* 0x5AC */ s32 throttleTwist;  /* right wrist */
     /* 0x5B0 */ u32 input;          /* pad word: A 0x10, B 0x20, Start 0x40, L 0x8000, R 0x10000, Z 0x20000, stick x
                                        bits 24-27 (sign 8), y bits 28-31 (sign 2) */
     /* 0x5B4 */ u32 prevInput;
@@ -372,8 +372,8 @@ typedef struct Rider {
     /* 0x784 */ s32 contactFrame[8]; /* gRaceFrame of the last contact with each other rider */
     /* 0x7A4 */ u8 frozen;
     /* 0x7A5 */ u8 inactive;
-    /* 0x7A6 */ u8 laneBlocked;      /* ai_update_lanes */
-    /* 0x7A7 */ u8 standing;         /* index in gRiderStandings */
+    /* 0x7A6 */ u8 laneBlocked;     /* ai_update_lanes */
+    /* 0x7A7 */ u8 standing;        /* index in gRiderStandings */
     /* 0x7A8 */ s8 fistPump;        /* frame of the fist-pump animation, 0 none */
     /* 0x7A9 */ u8 gridSlot;
     /* 0x7AA */ s8 laneChange;      /* Excite 3D lane change frames */

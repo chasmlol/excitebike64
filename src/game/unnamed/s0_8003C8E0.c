@@ -228,7 +228,7 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
         a = (B.drawRot[1] * 250) / 8192;
         if (a > 0) a = -a;
         if (a < -500) a = -500;
-        c = B.unk_410 * 10;
+        c = B.crestCrouch * 10;
         if (c > 250) c = 250;
         s3 = B.inHistAvg;
         s3 -= B.drawPos.y;
@@ -358,7 +358,7 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
             sRiderIkTargets.limb[2].pos.z += z;
         }
         mtx3i_from_angles(sRiderIkTargets.limb[0].rot.m, 0x1000, 0, B.drawRot[2] + B.drawSteer);
-        mtx3i_from_angles(sRiderIkTargets.limb[1].rot.m, B.unk_5AC + 0x1000, 0, B.drawRot[2] + B.drawSteer);
+        mtx3i_from_angles(sRiderIkTargets.limb[1].rot.m, B.throttleTwist + 0x1000, 0, B.drawRot[2] + B.drawSteer);
         mtx3i_from_angles(sRiderIkTargets.limb[2].rot.m, B.drawRot[0] / 2, 0, B.drawRot[2]);
         mtx3i_from_angles(sRiderIkTargets.limb[3].rot.m, B.drawRot[0] / 2, 0, B.drawRot[2]);
         h = B.headYaw;
@@ -785,13 +785,13 @@ void func_8003F128(void)
     i = 0;
     t = gRaceFrame;
     do {
-        if (gRiders[i].unk_418 > 0) {
-            if ((s16)gRiders[i].unk_410 < 0x1E) {
-                gRiders[i].unk_410 = (u16)gRiders[i].unk_410 + 1;
+        if (gRiders[i].crestAhead > 0) {
+            if ((s16)gRiders[i].crestCrouch < 0x1E) {
+                gRiders[i].crestCrouch = (u16)gRiders[i].crestCrouch + 1;
             }
         } else {
-            if ((s16)gRiders[i].unk_410 > 0) {
-                gRiders[i].unk_410 = (u16)gRiders[i].unk_410 - 2;
+            if ((s16)gRiders[i].crestCrouch > 0) {
+                gRiders[i].crestCrouch = (u16)gRiders[i].crestCrouch - 2;
             }
         }
         if (D_800E1B50[i] & 0x2000) {
