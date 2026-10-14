@@ -13,9 +13,9 @@ typedef struct Surface {
     /* 0x20 */ f32 bumpNoise;
     /* 0x24 */ f32 bumpRate;
     /* 0x28 */ u32 flags;           /* 0x8 mud, 0x400, 0x800 crash, 0x10000 */
-    /* 0x2C */ u8 color[12];        /* two colours (dust, tire tracks) */
-    /* 0x38 */ s32 unk_38;
-    /* 0x3C */ s32 unk_3C;
+    /* 0x2C */ u8 color[12];        /* [0-2] dust puffs ([3] transparency), [4-6] clods, [8-10] tire tracks */
+    /* 0x38 */ s32 sfxId;           /* rolling sound's resource id (bit 31: the address of one), 0 none */
+    /* 0x3C */ s32 sfxSample;       /* its sample, loaded by snd_race_init; -1 none */
 } Surface; /* size 0x40 */
 
 #endif

@@ -931,7 +931,7 @@ void race_update(u32 *arg)
         }
         if (t < gRiders[i].landingImpact / 20) j = 1;
         if (gTireTrackTimers[i] != 0 && !(gFrameCounter & 7)) j = 1;
-        if (gRiders[i].rearWheel.surface != NULL && gRiders[i].rearWheel.surface->unk_38 != 0 &&
+        if (gRiders[i].rearWheel.surface != NULL && gRiders[i].rearWheel.surface->sfxId != 0 &&
             gRiders[i].speed > 8.0f && gFrameCounter % 6 == 0) j = 1;
         if (gPauseMenu != 0) j = 0;
         if (gRiders[i].isCpu != 0) j = 0;
@@ -1507,7 +1507,7 @@ void race_load_surface_table(Res_3 *r, s32 idx)
                 break;
             }
         }
-        gSurfaceTable[i].unk_38 = tab[j].val;
+        gSurfaceTable[i].sfxId = tab[j].val;
     }
     res_unload(&r->arr[idx]);
     res_unload(&gSfxResSet_3->arr[D_800D123C]);

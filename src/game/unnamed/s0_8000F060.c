@@ -53,13 +53,7 @@ void snd_load_engine_samples(void) {
     }
 }
 
-struct Slot_2 {
-    u8 pad[0x38];
-    s32 a;
-    s32 r;
-};
-
-void snd_race_init(Slot_2 *param_1)
+void snd_race_init(Surface *surfaces)
 {
     s32 i;
     u32 idx;
@@ -109,16 +103,16 @@ void snd_race_init(Slot_2 *param_1)
             sRiderSfx[i].sample = sfx_load_sample_id(*sRiderSfx[i].resId);
         }
     }
-    sSndSurfaces = param_1;
+    sSndSurfaces = surfaces;
     for (i = 0; i < 16; i++) {
-        a = sSndSurfaces[i].a;
+        a = sSndSurfaces[i].sfxId;
         if (a == 0) {
-            sSndSurfaces[i].r = -1;
+            sSndSurfaces[i].sfxSample = -1;
         } else {
             if (a & 0x80000000) {
                 a = *(s32 *)a;
             }
-            sSndSurfaces[i].r = sfx_load_sample_id(a);
+            sSndSurfaces[i].sfxSample = sfx_load_sample_id(a);
         }
     }
     if (tunes_is_song_playing() == 0) {
@@ -152,13 +146,6 @@ void snd_race_init(Slot_2 *param_1)
     softmix_set_decompress_buf(0, 0);
     sfx_set_frame_callback(snd_engine_callback);
 }
-
-typedef struct {
-    u8 pad[0x3C];
-    s32 arg;
-} Ent40;
-
-extern Ent40 *sSndSurfaces_2;
 
 void snd_race_exit(void)
 {
@@ -204,7 +191,7 @@ void snd_race_exit(void)
             } while (sRiderSfx[i].resId != 0);
         }
         for (i = 0; i < 16; i++) {
-            a = sSndSurfaces_2[i].arg;
+            a = sSndSurfaces[i].sfxSample;
             if (a != -1) {
                 sfx_free_sample(a);
             }
@@ -629,9 +616,9 @@ end:
         if (v < 0) {
             v = 0;
         }
-        if (gRiders[arg0].rearWheel.surface->unk_38 != 0 && v != 0 && gRiders[arg0].airFrames < 6) {
+        if (gRiders[arg0].rearWheel.surface->sfxId != 0 && v != 0 && gRiders[arg0].airFrames < 6) {
             if (s->surfaceHandle == -1) {
-                s->surfaceHandle = sfx_play(gRiders[arg0].rearWheel.surface->unk_3C, 0x2B11, (vol * v) >> 8, 7, 0, 1);
+                s->surfaceHandle = sfx_play(gRiders[arg0].rearWheel.surface->sfxSample, 0x2B11, (vol * v) >> 8, 7, 0, 1);
             } else {
                 sfx_set_volume(s->surfaceHandle, (vol * v) >> 8);
             }

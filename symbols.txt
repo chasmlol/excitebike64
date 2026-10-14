@@ -3757,7 +3757,6 @@ sSndFrameSamples                      game  0x800E32A4  data        -
 sRiderSounds                          game  0x800E32A8  data        -
 sSndOutputRate                        game  0x800E35C8  data        -
 sSndSurfaces                          game  0x800E35CC  data        -
-sSndSurfaces_2                        game  0x800E35CC  data        -  sSndSurfaces
 sR250Buffer                           game  0x800E35D0  data        -
 sR250Index                            game  0x800E36CC  data        -
 D_800E36D0                            game  0x800E36D0  data        -
@@ -3914,8 +3913,6 @@ sRainVtx                              game  0x800E9288  data        -
 sSparkleTextures                      game  0x800E9290  data        -
 sDustCloudStart                       game  0x800E9294  data        -
 gSurfaceTablePtr                      game  0x800E9298  data        -
-gSurfaceTablePtr_2                    game  0x800E9298  data        -  gSurfaceTablePtr
-gSurfaceTablePtr_3                    game  0x800E9298  data        -  gSurfaceTablePtr
 sExhaustTextures                      game  0x800E929C  data        -
 sPuffTextures                         game  0x800E92A0  data        -
 sSplashSoundTime                      game  0x800E92A8  data        -

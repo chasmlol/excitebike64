@@ -307,14 +307,6 @@ void decal_init(void)
     sTireTrackTexture[7] = 0x1F;
 }
 
-typedef struct Seg_14 {
-    u8 pad[0x28];
-    s32 flags;
-    u8 pad2[0x40 - 0x2C];
-} Seg_14;
-
-extern Seg_14 *gSurfaceTablePtr_2;
-
 void decal_update_tire_tracks(void)
 {
     s32 pos[3];
@@ -327,7 +319,7 @@ void decal_update_tire_tracks(void)
     s32 qr[4];
     s32 i, changed, area, surface, ox, oz, dx, dz, nx, nz, len, curArea;
     Rider *p;
-    Seg_14 *prev;
+    Surface *prev;
     TireTrack *r;
     s32 n;
     s32 l2;
@@ -395,8 +387,8 @@ void decal_update_tire_tracks(void)
             gTireTrackTimers[i] = 0;
             continue;
         }
-        surface = (Seg_14 *)p->rearWheel.surface - gSurfaceTablePtr_2;
-        if (sTireTrackMudTimer[i] != 0) surface = (Seg_14 *)sTireTrackMudSurface[i] - gSurfaceTablePtr_2;
+        surface = p->rearWheel.surface - gSurfaceTablePtr;
+        if (sTireTrackMudTimer[i] != 0) surface = sTireTrackMudSurface[i] - gSurfaceTablePtr;
         if (sTireTrackCur[i] != NULL) {
             curArea = sTireTrackCur[i]->area;
             if (gCurTrack_5->mode == 1) {
@@ -538,13 +530,8 @@ TireTrack *decal_add_quad(s32 area, s32 *a0, s32 *a1, s32 *b0, s32 *b1, s32 surf
 
 #define RAW(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-typedef struct { u8 pad[0x34]; u8 r, g, b; u8 pad2[9]; } Col_2;
-
-extern Col_2 *gSurfaceTablePtr_3;
-
 Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
     s32 i, j, k, m, a, idx, started, v, hi, lo;
-    Col_2 *c;
 
     if (D_800EE140 != 0) {
         return gdl;
@@ -588,7 +575,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                         a = idx - sTireTrackNext;
                         if (a < 0) a += 128;
                         if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks[idx].surface].r, gSurfaceTablePtr_3[sTireTracks[idx].surface].g, gSurfaceTablePtr_3[sTireTracks[idx].surface].b, a);
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], a);
                             gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                         }
                     }
@@ -622,7 +609,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                             a = idx - sTireTrackNext;
                             if (a < 0) a += 128;
                             if (a >= 16) {
-                                gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks[idx].surface].r, gSurfaceTablePtr_3[sTireTracks[idx].surface].g, gSurfaceTablePtr_3[sTireTracks[idx].surface].b, a);
+                                gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], a);
                                 gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                             }
                         }
@@ -642,7 +629,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                         a = idx - sTireTrackNext;
                         if (a < 0) a += 128;
                         if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks[idx].surface].r, gSurfaceTablePtr_3[sTireTracks[idx].surface].g, gSurfaceTablePtr_3[sTireTracks[idx].surface].b, a);
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], a);
                             gSP2Triangles(gdl++, j * 4, j * 4 + 1, j * 4 + 2, 0, j * 4 + 2, j * 4 + 1, j * 4 + 3, 0);
                         }
                     }

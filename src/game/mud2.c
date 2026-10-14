@@ -881,7 +881,7 @@ Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf) {
     return gdl;
 }
 
-void particles_init(s32 surfaces)
+void particles_init(Surface *surfaces)
 {
     sParticles = mem_alloc_dbg(0xD80, 0, D_800D6D00, 0x60);
     mem_fill((u8 *)sParticles, 0, 0xD80);

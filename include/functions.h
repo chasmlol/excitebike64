@@ -104,7 +104,7 @@ s32 random_byte_2(void);
 /* src/game/unnamed/s0_8000F060.c */
 void snd_init(void);
 void snd_load_engine_samples(void);
-void snd_race_init(Slot_2 *param_1);
+void snd_race_init(Surface *surfaces);
 void snd_race_exit(void);
 void snd_update_riders(void);
 void snd_update_rider(s32 arg0);
@@ -395,7 +395,7 @@ void particles_emit_water_splash(Rider *p);
 void particles_emit_dust_cloud(void);
 Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2);
 Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf);
-void particles_init(s32 surfaces);
+void particles_init(Surface *surfaces);
 void particles_free(void);
 void particles_start_dust_cloud(Vec3f *pos, s32 rider);
 void rain_init(void);

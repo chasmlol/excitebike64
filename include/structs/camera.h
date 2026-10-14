@@ -4,6 +4,8 @@
 
 #include "common.h"
 
+struct Rider;
+
 /* A camera placement: what a mode's update produces, the 16 samples of history per view and their running sum.
    Position in mm, angles in 1/0x10000 of a turn. */
 typedef struct CamOut {
@@ -15,10 +17,10 @@ typedef struct CamOut {
     /* 0x14 */ s32 yaw;
 } CamOut; /* size 0x18 */
 
-/* An entry of gCamModes, indexed by the rider's camera mode (rider+0x5AA). */
+/* An entry of gCamModes, indexed by the rider's camera mode (Rider.camMode). */
 typedef struct CamMode {
     /* 0x00 */ void (*init)(void);
-    /* 0x04 */ void (*update)(void *rider, CamOut *out);
+    /* 0x04 */ void (*update)(struct Rider *rider, CamOut *out);
     /* 0x08 */ void (*exit)(void);
     /* 0x0C */ u16 flags;   /* 1 snap when entering, 2 snap when leaving, 8 skipped by the Camera button */
     /* 0x0E */ u16 unk_0E;

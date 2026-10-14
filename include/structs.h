@@ -6,7 +6,6 @@
 
 /* Declared here for the prototypes and globals; most are defined in the source file that uses them. */
 typedef struct Dyn Dyn;
-typedef struct Slot_2 Slot_2;
 typedef struct MtxS_2 MtxS_2;
 typedef struct Res_3 Res_3;
 typedef struct List_6 List_6;
@@ -94,17 +93,7 @@ typedef struct {
     f32 x, z;
 } Start;
 
-typedef struct {
-    u8 unk0[0x28];
-    u32 flags;
-    u8 unk2C[0x40 - 0x2C];
-} Ent64;
-
 typedef struct { f32 x, y, z; } V3;
-typedef struct {
-    u8 pad[0x28];
-    s32 f28;
-} Info;
 
 typedef struct { s32 a, b, c; } T3;
 
@@ -113,7 +102,6 @@ typedef struct {
 } Quat;
 
 typedef struct { s32 a, b, c, d; } Quad;
-typedef struct { u8 pad[0x28]; u32 flags; } Trk;
 
 typedef struct { u8 pad[0x2C]; s32 mode; } Game_2;
 
