@@ -1137,21 +1137,6 @@ typedef struct Ctl_2 {
     s16 sel;
 } Ctl_2;
 
-typedef struct Obj_72 {
-    s32 f0;
-    struct Obj_72 *next;   /* 0x04 */
-    s32 f8;
-    s16 x;              /* 0x0C */
-    s16 y;              /* 0x0E */
-    u16 flags;          /* 0x10 */
-    s16 f12;
-    s32 f14;
-    s16 dir[2];         /* 0x18 */
-    s16 len[2];         /* 0x1C */
-    s16 w;              /* 0x20 */
-    s16 h;              /* 0x22 */
-} Obj_72;
-
 typedef struct {
     s16 h0;
     s16 h1;

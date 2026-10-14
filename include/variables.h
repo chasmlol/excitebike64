@@ -435,7 +435,6 @@ extern Rect sEditViewRectsBase[4];
 extern Editor *gEditor;
 extern s16 sEditMainMenuChoice;
 extern u16 sEditUserPieceItemCount[];
-extern Ctl_2 sEditTrackMenu_6;
 extern char *sEditMultiUseWarning[];
 extern char *sEditSizeLockWarning[];
 extern u8 sNesExitMsg[];

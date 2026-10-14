@@ -3041,29 +3041,22 @@ void edit_place_piece_before(EditPiece *a, EditPiece *b)
     }
 }
 
-typedef struct { u8 pad[0xC]; u16 f; u8 rest[0x32]; } Blk_23;
-typedef struct { s32 f0; u32 flags; s16 n; s16 pad; u32 mask; } Rec_50;
-typedef struct { s32 f0; s32 f4; Rec_50 *recs; } Grp;
-
-extern Blk_23 gPieceTypes_7[];
-extern Grp sEditTrackMenu_5;
-
 void edit_set_start_piece_choices(void)
 {
     s32 i;
     s32 k;
     s32 t0;
     s32 v;
-    Blk_23 *p;
+    PieceType *p;
     s32 w;
     s32 r;
 
     for (k = 0; k < 0x1D; k++) {
-        p = &gPieceTypes_7[k];
-        v = p->f;
+        p = &gPieceTypes[k];
+        v = (u16)p->flags; /* read unsigned here */
         if (v & 2) {
             w = v | 0x10;
-            p->f = w;
+            p->flags = w;
             if (w & 0x100) {
                 r = w | 0x20;
             } else {
@@ -3073,7 +3066,7 @@ void edit_set_start_piece_choices(void)
             r = v & ~0x10;
             r &= ~0x20;
         }
-        p->f = r;
+        p->flags = r;
     }
     for (i = 0; i < 4; i++) {
         switch (i) {
@@ -3090,46 +3083,20 @@ void edit_set_start_piece_choices(void)
             t0 = 0x12;
             break;
         }
-        sEditTrackMenu_5.recs[i].mask = 0;
-        for (k = 0; k < sEditTrackMenu_5.recs[i].n; k++) {
-            if (gPieceTypes_7[t0 + k].f & 0x30) {
-                sEditTrackMenu_5.recs[i].mask |= 1 << k;
+        sEditTrackMenu.items[i].mask = 0;
+        for (k = 0; k < sEditTrackMenu.items[i].count; k++) {
+            if (gPieceTypes[t0 + k].flags & (PIECE_FITS | PIECE_FITS_FLIPPED)) {
+                sEditTrackMenu.items[i].mask |= 1 << k;
             }
         }
-        if (sEditTrackMenu_5.recs[i].mask == 0) {
-            sEditTrackMenu_5.recs[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].mask == 0) {
+            sEditTrackMenu.items[i].flags &= ~0x10;
         } else {
-            sEditTrackMenu_5.recs[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= 0x10;
         }
     }
-    gui_menu_fix_cursor(&sEditTrackMenu_5);
+    gui_menu_fix_cursor(&sEditTrackMenu);
 }
-
-typedef struct Size {
-    s16 w;
-    s16 h;
-} Size;
-
-typedef struct Game_39 {
-    u8 pad0[0x170];
-    s32 f170;
-    u8 pad174[0x17C - 0x174];
-    Obj_72 *list;          /* 0x17C */
-    u8 pad180[0x16AC - 0x180];
-    Size *map;          /* 0x16AC */
-    u8 pad16B0[0x16F4 - 0x16B0];
-    s32 f16F4;
-    u8 pad16F8[0x1702 - 0x16F8];
-    s16 f1702;
-} Game_39;
-
-typedef struct Ent_86 {
-    s16 dim[2];         /* 0x00 */
-    s16 dir[2];         /* 0x04 */
-    s16 off[2];         /* 0x08 */
-    s16 flags;
-    u8 pad[0x40 - 0xE];
-} Ent_86;
 
 typedef struct Grid_3 {
     u8 g[30][30];
@@ -3139,11 +3106,9 @@ typedef struct Rect_4 {
     s32 x0, y0, x1, y1;
 } Rect_4;
 
-extern Game_39 *gEditor_23;
-extern Ent_86 gPieceTypes_8[];
 extern Grid_3 D_800F56B0;
 
-s32 edit_update_fitting_pieces(Obj_72 *o)
+s32 edit_update_fitting_pieces(EditPiece *o)
 {
     Grid_3 grid;
     Rect_4 r;
@@ -3153,8 +3118,8 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     s32 n, m, lo, hi, best;
     s16 s;
     s32 ret;
-    Obj_72 *p;
-    Ent_86 *e;
+    EditPiece *p;
+    PieceType *e;
 
     k = 1;
     if (o->next == NULL || (o->next->flags & 4)) {
@@ -3167,7 +3132,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     case 0:
         {
             s32 t, u;
-            t = o->x + o->len[k];
+            t = o->x + o->off[k];
             r.x0 = t - 14;
             u = o->y + o->h;
             r.x1 = t + 16;
@@ -3180,7 +3145,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             s32 t, u;
             t = o->x + o->w;
             r.x0 = t - 15;
-            u = o->y + o->len[k];
+            u = o->y + o->off[k];
             r.x1 = t + 15;
             r.y0 = u - 14;
             r.y1 = u + 16;
@@ -3189,7 +3154,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     case 2:
         {
             s32 t, u;
-            t = o->x + o->len[k];
+            t = o->x + o->off[k];
             r.x0 = t - 14;
             u = o->y;
             r.x1 = t + 16;
@@ -3202,7 +3167,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             s32 t, u;
             t = o->x;
             r.x0 = t - 15;
-            u = o->y + o->len[k];
+            u = o->y + o->off[k];
             r.x1 = t + 15;
             r.y0 = u - 14;
             r.y1 = u + 16;
@@ -3212,8 +3177,8 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     mem_fill((u8 *)&grid, 0, 0x384);
     for (j = 0; j < r.y1 - r.y0; j++) {
         for (i = 0; i < r.x1 - r.x0; i++) {
-            if (i + r.x0 < 0 || i + r.x0 >= gEditor_23->map->w
-                || j + r.y0 < 0 || j + r.y0 >= gEditor_23->map->h) {
+            if (i + r.x0 < 0 || i + r.x0 >= gEditor->gridSize[0]
+                || j + r.y0 < 0 || j + r.y0 >= gEditor->gridSize[1]) {
                 switch (o->dir[k]) {
                 case 0:
                     grid.g[i][j] = 1;
@@ -3231,7 +3196,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             }
         }
     }
-    p = gEditor_23->list;
+    p = gEditor->first;
     if (p != NULL) {
         do {
             if (!(p->flags & 4) && p->x < r.x1 && r.x0 < p->x + p->w
@@ -3276,12 +3241,12 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
                 }
             }
             p = p->next;
-        } while (p != NULL && p != gEditor_23->list);
+        } while (p != NULL && p != gEditor->first);
     }
     D_800F56B0 = grid;
 
     for (n = 0; n < 29; n++) {
-        e = &gPieceTypes_8[n];
+        e = &gPieceTypes[n];
         if (!(e->flags & 8)) {
             continue;
         }
@@ -3294,7 +3259,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             lo = hi;
         }
         for (m = lo; m <= hi; m++) {
-            if ((u32)(n - 18) < 8 && n - 18 >= gEditor_23->f16F4) {
+            if ((u32)(n - 18) < 8 && n - 18 >= gEditor->userPieceCount) {
                 e->flags &= ~0x30;
             } else {
                 switch (e->dir[other]) {
@@ -3365,10 +3330,10 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             }
         }
         if (e->flags & 0x80) {
-            if (gEditor_23->f170 != 6) {
+            if (gEditor->mode != 6) {
                 e->dim[1] = (best < e->dim[1]) ? best : e->dim[1];
             }
-            gEditor_23->f1702 = best;
+            gEditor->maxSegments = best;
         }
     }
 
@@ -3390,20 +3355,20 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
         default:
             continue;
         }
-        sEditTrackMenu_6.slots[i].mask = 0;
-        for (n = 0; n < sEditTrackMenu_6.slots[i].n; n++) {
-            if (gPieceTypes_8[j + n].flags & 0x30) {
-                sEditTrackMenu_6.slots[i].mask |= 1 << n;
+        sEditTrackMenu.items[i].mask = 0;
+        for (n = 0; n < sEditTrackMenu.items[i].count; n++) {
+            if (gPieceTypes[j + n].flags & 0x30) {
+                sEditTrackMenu.items[i].mask |= 1 << n;
             }
         }
-        if (sEditTrackMenu_6.slots[i].mask == 0) {
-            sEditTrackMenu_6.slots[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].mask == 0) {
+            sEditTrackMenu.items[i].flags &= ~0x10;
         } else {
             ret = 1;
-            sEditTrackMenu_6.slots[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= 0x10;
         }
     }
-    gui_menu_fix_cursor(&sEditTrackMenu_6);
+    gui_menu_fix_cursor(&sEditTrackMenu);
     return ret;
 }
 

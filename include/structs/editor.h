@@ -63,7 +63,7 @@ typedef struct PieceType {
     /* 0x00 */ s16 dim[2];          /* cells across and along; a user piece's dim[1] is its segment count */
     /* 0x04 */ s16 dir[2];          /* sides of the connectors: [0] entry, [1] exit */
     /* 0x08 */ s16 off[2];          /* connector positions along their sides */
-    /* 0x0C */ u16 flags;           /* PIECE_* */
+    /* 0x0C */ s16 flags;           /* PIECE_* */
     /* 0x0E */ s16 cursorAngle;     /* direction of the cursor arrow, 1/8 turns */
     /* 0x10 */ s16 rot;             /* rotation of a first piece */
     /* 0x12 */ s16 unk_12;

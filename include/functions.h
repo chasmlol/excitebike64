@@ -1022,7 +1022,7 @@ s32 edit_get_port_y(EditPiece *p, s32 k);
 void edit_place_piece_after(EditPiece *p, EditPiece *c);
 void edit_place_piece_before(EditPiece *a, EditPiece *b);
 void edit_set_start_piece_choices(void);
-s32 edit_update_fitting_pieces(Obj_72 *o);
+s32 edit_update_fitting_pieces(EditPiece *o);
 void edit_init_user_pieces(void);
 void edit_user_piece_remove_first_segment(void);
 void edit_user_piece_remove_last_segment(void);
