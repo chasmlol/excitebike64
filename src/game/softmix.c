@@ -72,7 +72,7 @@ s32 softmix_load_sample_file(s32 param_1)
 {
     s32 i;
     SoftmixSample *e;
-    s32 *f;
+    FileHandle *f;
     u8 buf[8];
     u8 *bp;
 

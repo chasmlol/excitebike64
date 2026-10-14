@@ -1710,15 +1710,13 @@ extern u8 *gSwdSrc;
 extern u8 *gSwdDst;
 extern s32 sFileInitDone;
 extern void *sFilePageMem;
-extern Ent_106 D_80100680_2;
-extern s32 D_80100680_3[];
+extern FilePage D_80100680;   /* the header page of a file too big for a cached page */
 extern s32 D_80100694;
 extern u32 sFileDirCount;
 extern u8 *sFileRomBase;
-extern s32 sFileRomBase_2;
 extern s32 sFileDataBase;
-extern u8 *sFileDir;
-extern Quad sFileHandles[];
+extern FileDirEntry *sFileDir;
+extern FileHandle sFileHandles[4];
 extern u8 *sFileTempPage;
 extern s32 sSramHandle;
 extern s32 sDmaPendingCount;

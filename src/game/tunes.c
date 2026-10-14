@@ -91,14 +91,14 @@ static inline void push_3(u32 v)
 
 void tunes_init(s32 param_1)
 {
-    u8 *p;
+    FileDirEntry *p;
     s32 i;
 
     sSpeechQueueCount = 0;
     p = file_find(D_800D7330);
     if (p != NULL) {
-        sStreamDataBase = *(s32 *)(p + 0x18);
-        sStreamDataEnd = sStreamDataBase + *(s32 *)(p + 0x14);
+        sStreamDataBase = (s32)p->rom;
+        sStreamDataEnd = sStreamDataBase + p->size;
         sStreamSampleTable = res_load(gSfxResSet, D_800D1244);
         if (sStreamSampleTable != 0) {
             sStreamMixBuf = mem_alloc_dbg(0x2000, 0, D_800D7338, 0xFC);

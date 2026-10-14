@@ -5201,15 +5201,11 @@ sFilePageMem                          game  0x80100674  data        -
 sFilePageHead                         game  0x80100678  data        -
 sFilePageTail                         game  0x8010067C  data        -
 D_80100680                            game  0x80100680  data        -
-D_80100680_2                          game  0x80100680  data        -  D_80100680
-D_80100680_3                          game  0x80100680  data        -  D_80100680
 D_80100694                            game  0x80100694  data        -
 sFileDirCount                         game  0x80100698  data        -
 sFileRomBase                          game  0x8010069C  data        -
-sFileRomBase_2                        game  0x8010069C  data        -  sFileRomBase
 sFileDataBase                         game  0x801006A0  data        -
 sFileDir                              game  0x801006A4  data        -
-sFileDir_2                            game  0x801006A4  data        -  sFileDir
 sFileHandles                          game  0x801006B0  data        -
 sFileTempPage                         game  0x801006F0  data        -
 sSramHandle                           game  0x80100700  data        -

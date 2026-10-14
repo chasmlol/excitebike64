@@ -15,7 +15,7 @@ s32 res_open_set(char *path, Obj_82 **out)
 {
     char buf[128];
     s32 flag;
-    s32 *f;
+    FileHandle *f;
     u32 n;
     u32 cnt;
     Obj_82 *o;
@@ -102,7 +102,7 @@ u32 res_load(u32 *pa0, s32 pa1)
 {
     u32 *p1 = pa0;
     s32 p2 = pa1;
-    s32 *piVar2;
+    FileHandle *piVar2;
     s32 *piVar3;
     u32 uVar5;
     u32 i;
@@ -374,7 +374,7 @@ s32 res_find_gid(u8 *a0, u8 *a1)
 {
     u8 buf[0x50];
     s32 cnt;
-    s32 *q;
+    FileHandle *q;
     u32 k;
     s32 i;
 
@@ -418,7 +418,7 @@ struct ResFile_2 {
 };
 
 s32 res_get_size(ResFile_2 *r, s32 idx) {
-    void *f;
+    FileHandle *f;
     u8 tmp[8];
     s32 val;
     u32 i;

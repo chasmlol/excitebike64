@@ -120,8 +120,7 @@ typedef struct Mesh_8 Mesh_8;
 #include "structs/softmix.h"
 #include "structs/sfx.h"
 #include "structs/tunes.h"
-typedef struct Slot_17 Slot_17;
-typedef struct Stream_2 Stream_2;
+#include "structs/file.h"
 typedef struct Blk_29 Blk_29;
 typedef struct Obj_82 Obj_82;
 typedef struct ListHdr ListHdr;
@@ -1228,49 +1227,6 @@ typedef struct Block {
     s32 size;
     s32 check;
 } Block;
-
-typedef struct Ent_106 {
-    struct Ent_106 *next;
-    struct Ent_106 *prev;
-    u8 *buf;
-    s32 owner;
-    s32 idx;
-} Ent_106;
-
-typedef struct X {
-    u8 pad[0x10];
-    s32 flags;
-    s32 pad2;
-    u8 *base;
-    u32 size;
-} X;
-
-typedef struct Obj_81 {
-    X *x;
-    Ent_106 *ent;
-} Obj_81;
-
-typedef struct Node_50 {
-    struct Node_50 *next;
-    struct Node_50 *prev;
-    s32 pad[2];
-    s32 cnt;
-} Node_50;
-
-typedef struct Q_2 {
-    Node_50 *a;
-    Node_50 *b;
-    s32 c;
-    s32 d;
-} Q_2;
-
-typedef struct Node_51 {
-    struct Node_51 *next;
-    struct Node_51 *prev;
-    s32 f8;
-    s32 key;
-    s32 cnt;
-} Node_51;
 
 typedef struct Q_3 {
     s32 *p0;

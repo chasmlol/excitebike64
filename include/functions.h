@@ -1360,16 +1360,16 @@ u32 swd_read_bits(s32 param_1);
 
 /* src/game/file.c */
 s32 file_init(u8 *src);
-Ent_106 *file_load_page(Obj_81 *so, s32 si, s8 sf);
+FilePage *file_load_page(FileHandle *so, s32 si, s8 sf);
 s32 file_shutdown(void);
-Slot_17 *file_open(u8 *param_1, char *arg1);
-void file_close(Q_2 *q);
-void file_seek(s32 *o, s32 v, s32 mode);
-s32 file_tell(s32 *p);
-s32 file_read(u8 *buf, s32 size, s32 count, Stream_2 *f);
-s32 file_eof(s32 *a0);
-u8 *file_find(u8 *param_1);
-Node_51 *file_get_page(s32 *k, s32 id, s8 flag);
+FileHandle *file_open(u8 *param_1, char *arg1);
+void file_close(FileHandle *q);
+void file_seek(FileHandle *o, s32 v, s32 mode);
+s32 file_tell(FileHandle *p);
+s32 file_read(u8 *buf, s32 size, s32 count, FileHandle *f);
+s32 file_eof(FileHandle *a0);
+FileDirEntry *file_find(u8 *param_1);
+FilePage *file_get_page(FileHandle *k, s32 id, s8 flag);
 void file_read_rom(void *param_1, void *param_2, s32 param_3);
 
 /* src/game/unnamed/lib_800BEC20.c */
