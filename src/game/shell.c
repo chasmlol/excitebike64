@@ -4461,7 +4461,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         break;
     }
     case SCREEN_TYPE_OPTIONS: {
-        s32 u5;
+        /* the volume bars, the items in their rows, the values of Sound, Hi-Res and Drones */
+        s32 uninit5;
 
         font_reset_queue();
         gDPSetTexturePersp(gdl++, G_TP_NONE);
@@ -4476,12 +4477,13 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
 
             gDPLoadTLUT_pal256(gdl++, gGame.titleBar->addr);
             gDPPipeSync(gdl++);
-            DRAW_K(0x4E, 0x1B, _t, 3, u5);
+            DRAW_K(0x4E, 0x1B, _t, 3, uninit5);
         }
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
         gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+        /* each volume: 29 segments, lit ones shading from red to orange (yellow when selected) */
         for (j = 0; j < 3; j++) {
             for (k = 0; k < 29; k++) {
                 x = 0x124 - j * 7 + k * 6;
@@ -4505,45 +4507,45 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
         gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 4);
         img = &gGame.cursorImg[gGame.menuAnimTimer / 2 % 30 + 1];
-        for (j = 0; j < 11; j++) {
-            if (j < 3) {
+        for (j = 0; j < OPTION_COUNT; j++) {
+            if (j < OPTION_SOUND) {
                 x = 0x52 - j * 7;
             } else {
-                x = 0x52 - ((j - 3) / 2 + 3) * 7 + ((j - 3) & 1) * 194;
+                x = 0x52 - ((j - OPTION_SOUND) / 2 + 3) * 7 + ((j - OPTION_SOUND) & 1) * 194;
             }
             y = sOptionsRowY[j];
-            if (j == 9 || j == 10) {
+            if (j == OPTION_RESET_SAVED_DATA || j == OPTION_CONTROLLER_PAK) {
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (j == gGame.optionsSel) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_GREYED | TEXT_LEFT);
             } else {
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (j == gGame.optionsSel) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY,
-                              (gHasExpansionPak_2 == 0 && j == 7) ? TEXT_GREYED | TEXT_LEFT : TEXT_LEFT);
+                              (gHasExpansionPak_2 == 0 && j == OPTION_HI_RES) ? TEXT_GREYED | TEXT_LEFT : TEXT_LEFT);
             }
             font_text_add(gGame.texts[0], gOptionsLabels[j]);
-            font_draw_text(gGame.texts[0], x + 0x24 + ((u16)y >> 16), y + 8);
+            font_draw_text(gGame.texts[0], x + 0x24 + ((u16)y >> 16), y + 8); /* (u16)y >> 16: 0, as the original */
             if (j == gGame.optionsSel) {
                 DRAW(x - 2, y, img, 3);
             }
             switch (j) {
-            case 3:
+            case OPTION_SOUND:
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (gGame.optionsSel == j) ? TEXT_COLOR_CYAN : TEXT_COLOR_LIGHT_GREY, TEXT_RIGHT);
-                font_text_add(gGame.texts[0], gMonoStereoStrings[SAVE.options & 1]);
+                font_text_add(gGame.texts[0], gMonoStereoStrings[SAVE.options & SAVE_OPTION_STEREO]);
                 font_draw_text(gGame.texts[0], x + 0xB4 + ((u16)x >> 16), y + 8);
                 break;
-            case 8:
+            case OPTION_DRONES:
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (gGame.optionsSel == j) ? TEXT_COLOR_CYAN : TEXT_COLOR_LIGHT_GREY, TEXT_RIGHT);
-                font_text_add(gGame.texts[0], sOffOnStrings[(SAVE.options & 0x10) == 0]);
+                font_text_add(gGame.texts[0], sOffOnStrings[(SAVE.options & SAVE_OPTION_DRONES_OFF) == 0]);
                 font_draw_text(gGame.texts[0], x + 0xB4, y + 8);
                 break;
-            case 7:
-                textColor = 2;
+            case OPTION_HI_RES:
+                textColor = TEXT_COLOR_LIGHT_GREY;
                 if (gGame.optionsSel == j) {
-                    textColor = 4;
+                    textColor = TEXT_COLOR_YELLOW;
                     if (gHasExpansionPak_2 != 0) {
-                        textColor = 6;
+                        textColor = TEXT_COLOR_CYAN;
                     }
                 }
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, textColor, (gHasExpansionPak_2 == 0) ? TEXT_GREYED | TEXT_RIGHT : TEXT_RIGHT);
-                font_text_add(gGame.texts[0], sOffOnStrings[(SAVE.options & 2) >> 1]);
+                font_text_add(gGame.texts[0], sOffOnStrings[(SAVE.options & SAVE_OPTION_HI_RES) >> 1]);
                 font_draw_text(gGame.texts[0], x + 0xB4, y + 8);
                 break;
             }
@@ -4559,6 +4561,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
     }
     case SCREEN_TYPE_PAK_STATUS:
     case SCREEN_TYPE_BACKUP_LOST:
+        /* the notices after the boot splashes: the saved data was lost, and the free pages of each Controller Pak */
         font_reset_queue();
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
@@ -4572,7 +4575,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
             gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
             img = &gGame.frames[1];
-            DRAW_V((0x200 - img->w * 8) >> 1, (0xF0 - img->h) / 2, img, 6);
+            DRAW_V((512 - img->w * 8) >> 1, (240 - img->h) / 2, img, 6);
             font_text_create(gGame.texts[0], 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
             font_text_add(gGame.texts[0], sStrWarning);
             font_draw_text(gGame.texts[0], 0x106, 0x4C);
@@ -4595,22 +4598,23 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
             gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
             img = &gGame.frames[1];
-            DRAW_V((0x200 - img->w * 8) >> 1, (0xF0 - img->h) / 2, img, 6);
+            DRAW_V((512 - img->w * 8) >> 1, (240 - img->h) / 2, img, 6);
             font_text_create(gGame.texts[0], 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
             font_text_add(gGame.texts[0], sStrControllerPaks);
             font_draw_text(gGame.texts[0], 0x110, 0x28);
             font_text_create(gGame.texts[0], 0x40, FONT_MENU, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
             font_text_add(gGame.texts[0], sStrTrademark);
             font_draw_text(gGame.texts[0], 400, 0x25);
-            for (slot = 0; slot < 5; slot++) {
-                if (slot == 4) {
+            /* a line per Controller Pak (pak_update_free_pages), with a note under it; without one, a message */
+            for (slot = 0; slot < MAXCONTROLLERS + 1; slot++) {
+                if (slot == MAXCONTROLLERS) {
                     if (found) {
                         break;
                     }
                     sprintf(pakLine, sStrNoSuitablePaks);
                     line = 4;
                     gPakFreePages[4] = 0;
-                    lineColor = 8;
+                    lineColor = TEXT_COLOR_RED;
                     pp = sPakMissingMsg;
                 } else if (gPakFreePages[slot] != -2) {
                     strcpy(pakLine, "Controller Pak #X ");
@@ -4626,12 +4630,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         }
                         str_cat(pakLine, sStrKeyDot);
                     }
-                    pakLine[16] = slot + '1';
-                    if (gPakFreePages[slot] < 40) {
-                        lineColor = 8;
+                    pakLine[16] = slot + '1'; /* the X */
+                    if (gPakFreePages[slot] < GHOST_SIZE / PAK_PAGE_SIZE) {
+                        lineColor = TEXT_COLOR_RED;
                         pp = sPakFewPagesMsg;
                     } else {
-                        lineColor = 7;
+                        lineColor = TEXT_COLOR_GREEN;
                         pp = sPakOkMsg;
                     }
                 } else {
@@ -4653,14 +4657,15 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         break;
     case SCREEN_TYPE_CHEAT_ENTRY:
     case SCREEN_TYPE_INITIALS: {
-        s32 u6;
-        s32 plr;
+        /* the keyboard (the key under the cursor framed), the name typed so far, and the cheat's result */
+        s32 uninit6;
+        s32 player;
         s32 cheat;
 
         font_reset_queue();
         cheat = (screen->type == SCREEN_TYPE_CHEAT_ENTRY);
         if (!cheat) {
-            plr = gGame.recordPlayer[gGame.entryRecord];
+            player = gGame.recordPlayer[gGame.entryRecord];
         }
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
@@ -4677,13 +4682,14 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         DRAW_V(0x100 - img->w * 4, 0x78 - (img->h >> 1), img, 6);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+        /* the controller icon, in the player's colour */
         img = &gGame.icons[gGame.blinkTimer / 2 % 60 + 1];
         if (gGame.numPlayers >= 2 && !cheat) {
-            gDPLoadTLUT_pal256(gdl++, gGame.playerPalettes + plr * 0x100);
+            gDPLoadTLUT_pal256(gdl++, gGame.playerPalettes + player * 0x100);
         } else {
             gDPLoadTLUT_pal256(gdl++, gGame.icons->addr);
         }
-        DRAW_K(0x18B, 0x2F, img, 3, u6);
+        DRAW_K(0x18B, 0x2F, img, 3, uninit6);
         font_text_create(gGame.texts[0], 0x20, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
         if (cheat) {
             strcpy(buf, "Enter A Cheat Code");
@@ -4691,7 +4697,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             font_draw_text(gGame.texts[0], 0x55, 0x35);
         } else {
             strcpy(buf, "Player ");
-            int_to_str(plr + 1, buf + strlen_2(buf));
+            int_to_str(player + 1, buf + strlen_2(buf));
             str_cat(buf, sStrInitialsSuffix);
             font_text_add(gGame.texts[0], buf);
             font_draw_text(gGame.texts[0], 0x55, 0x35);
@@ -4699,7 +4705,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         if (cheat && gGame.screenState == SCREEN_STATE_CHEAT_ACCEPTED) {
             font_text_create(gGame.texts[0], 0x20, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
             font_text_add(gGame.texts[0], sCheatTable[gGame.cheatEntered].name);
-            if (((1 << gGame.cheatEntered) == 4 && (gGame.flags & 0x20000000)) || ((sCheatMask >> gGame.cheatEntered) & 1)) {
+            if (((1 << gGame.cheatEntered) == 1 << CHEAT_DEBUG && (gGame.flags & GAME_FLAG_DEBUG)) || ((sCheatMask >> gGame.cheatEntered) & 1)) {
                 font_text_add(gGame.texts[0], sStrEnabledSuffix);
             } else {
                 font_text_add(gGame.texts[0], sStrDisabledSuffix);
@@ -4719,10 +4725,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             s32 xx;
 
             for (y = 0; y < 5; y++) {
-                for (x = 0; x < 8; x++) {
+                for (x = 0; x < KEYBOARD_COLUMNS; x++) {
+                    /* Del and OK in the small font; the characters greyed once the name is full */
                     xx = x * 26;
-                    font_text_create(gGame.texts[0], 0x20, (y * 8 + x > 0x25) ? FONT_SMALL : FONT_MAIN, TEXT_COLOR_LIGHT_GREY,
-                                  (gGame.nameLen == ((cheat) ? 10 : 3) && y * 8 + x < 0x26) ? TEXT_GREYED | TEXT_CENTER : TEXT_CENTER);
+                    font_text_create(gGame.texts[0], 0x20, (y * 8 + x > KEY_DEL - 1) ? FONT_SMALL : FONT_MAIN, TEXT_COLOR_LIGHT_GREY,
+                                  (gGame.nameLen == ((cheat) ? CHEAT_CODE_LEN : INITIALS_LEN) && y * 8 + x < KEY_DEL) ? TEXT_GREYED | TEXT_CENTER : TEXT_CENTER);
                     font_text_add(gGame.texts[0], gKeyboardKeys[y * 8 + x]);
                     font_draw_text(gGame.texts[0], xx + 0x54 - y * 4, y * 17 + 0x56);
                     if (y * 8 + x == gGame.keyIndex) {
@@ -4735,6 +4742,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 }
             }
         }
+        /* initials: what the record is ("2nd Best Time, Best Lap"); j is not set here (as in the original) */
         font_text_create(gGame.texts[0], 0x20, FONT_SMALL, (j == gGame.nameLen) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
         if (!cheat) {
             switch (gGame.entryRecord) {
@@ -4748,12 +4756,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     buf[3] = '\0';
                     font_text_add(gGame.texts[0], buf);
                 }
-                if (gCurTrack_41->flags & 0x400) {
+                if (gCurTrack_41->flags & TRACK_FLAG_SCORES) {
                     font_text_add(gGame.texts[0], sStrBestScore);
                 } else {
                     font_text_add(gGame.texts[0], sStrBestTime);
                 }
-                if (gGame.recordPlayer[3] == plr || gGame.bestLapPlayer == plr) {
+                if (gGame.recordPlayer[3] == player || gGame.bestLapPlayer == player) {
                     font_text_add(gGame.texts[0], sStrCommaBestLap);
                 }
                 break;
@@ -4763,7 +4771,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             }
             font_draw_text(gGame.texts[0], 0x2F, 0xB6);
         }
-        for (j = 0; (cheat) ? (j < 10) : (j < 3); j++) {
+        /* the name: a line per character, the character over it */
+        for (j = 0; (cheat) ? (j < CHEAT_CODE_LEN) : (j < INITIALS_LEN); j++) {
             font_text_create(gGame.texts[0], 0x20, FONT_MAIN, (j == gGame.nameLen) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
             font_text_add(gGame.texts[0], sStrUnderscore);
             font_draw_text(gGame.texts[0], (j - 1) * 20 + ((cheat) ? 0x50 : 0xE2), 0xB9);
@@ -4779,10 +4788,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         break;
     }
     case SCREEN_TYPE_CONTROLLER_SETTINGS: {
+        /* the controller with what each button does in the layout, and a controller icon per controller */
         Game *gp = &gGame;
 
         font_reset_queue();
         {
+            /* gDPPipeSync, the words computed from the packet's address (both always come out as the plain sync) */
             Gfx *_g = gdl++;
 
             _g->words.w0 = 0xE7000000 | ((u8)(u32)_g >> 8);
@@ -4813,32 +4824,34 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         buf[strlen_2(buf)] = gp->padConfig[gp->padConfigSel] + 'A';
         font_text_add(gp->texts[0], buf);
         font_draw_text(gp->texts[0], 0xE9, 0xBF);
+        /* the 9 buttons: the left ones right-aligned, alternate colours */
         for (j = 0; j < 9; j++) {
-            textColor = 6;
+            textColor = TEXT_COLOR_CYAN;
             if (j & 1) {
-                textColor = 4;
+                textColor = TEXT_COLOR_YELLOW;
             }
-            textFlags = 0x20;
+            textFlags = TEXT_LEFT;
             if (j < 5) {
-                textFlags = 0x22;
+                textFlags = TEXT_RIGHT;
             }
             if (!(j & 1)) {
-                textFlags |= 0x40000000;
+                textFlags |= TEXT_HIGHLIGHT;
             }
             font_text_create(gp->texts[0], 0x40, FONT_MENU, textColor, textFlags);
             font_text_add(gp->texts[0], gControlActionLabels[gControlConfigs[(s8)*(gp->padConfig + gp->padConfigSel)][j]]);
             font_draw_text(gp->texts[0], gControlLabelPos[j].x, gControlLabelPos[j].y);
             if (gControlConfigs[(s8)*(gp->padConfig + gp->padConfigSel)][j] == 6) {
-                textColor = 6;
+                /* this action has a second line (gControlReverseLabel) */
+                textColor = TEXT_COLOR_CYAN;
                 if (j & 1) {
-                    textColor = 4;
+                    textColor = TEXT_COLOR_YELLOW;
                 }
-                textFlags = 0x20;
+                textFlags = TEXT_LEFT;
                 if (j < 5) {
-                    textFlags = 0x22;
+                    textFlags = TEXT_RIGHT;
                 }
                 if (!(j & 1)) {
-                    textFlags |= 0x40000000;
+                    textFlags |= TEXT_HIGHLIGHT;
                 }
                 font_text_create(gp->texts[0], 0x40, FONT_MENU, textColor, textFlags);
                 font_text_add(gp->texts[0], gControlReverseLabel_2);
