@@ -2896,7 +2896,7 @@ void shell_load_screen(Screen *screen) {
             gPakScreen.data = gGame.userTrack;
             break;
         }
-        gPakScreen.label = shell_format_pak_file_label;
+        gPakScreen.describe = shell_format_pak_file_label;
         pak_screen_init();
         break;
     case SCREEN_TYPE_LIST:

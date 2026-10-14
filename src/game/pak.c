@@ -1,5 +1,6 @@
 #include "game.h"
 
+/* a note's name and extension, copied as blocks */
 typedef struct { char c[16]; } Name16;
 typedef struct { char c[4]; } Ext4;
 
@@ -14,23 +15,14 @@ typedef struct {
     Glyph_2 g[1];
 } Font_2;
 
-typedef struct {
-    char **lines;
-    char *text;
-    char *extra;
-} Msg;
-
-typedef struct { u8 b[0x68]; } Ctl;
-
 extern Font_2 *sPakButtonIcons;
-extern Msg sPakMessages[];
-extern Ctl sPakFs_2[4];
-
 
 void pak_build_note_list(s32 p, s32 z)
 {
+    s32 *cnt;
     s32 i;
     s32 r;
+    s32 j;
     PakNote *rec;
 
     sPakNoteCount[p] = 0;
@@ -41,10 +33,10 @@ void pak_build_note_list(s32 p, s32 z)
     for (i = 0; i < 16; i++) {
         rec = &sPakNoteTables[p][i];
         if (rec->fileNo != -1) {
-            if (rec->gameCode != 0x4E4D5847) {
+            if (rec->gameCode != PAK_GAME_CODE) {
                 r = 1;
             } else {
-                r = gPakScreen.label(rec->header, sPakStrBuf, gPakScreen.mode == 0);
+                r = gPakScreen.describe(rec->header, sPakStrBuf, gPakScreen.mode == 0);
                 if (r == 2) {
                     if (gPakScreen.mode == 1) {
                         continue;
@@ -53,18 +45,19 @@ void pak_build_note_list(s32 p, s32 z)
                 }
             }
             if (r != 1 || gPakScreen.mode != 1) {
-                mem_fill((u8 *)rec->text, 0, 0x30);
-                *(Name16 *)rec->text = *(Name16 *)rec->name;
+                mem_fill((u8 *)rec->label, 0, sizeof(rec->label));
+                *(Name16 *)rec->label = *(Name16 *)rec->name;
                 if (rec->ext[0] != 0) {
-                    str_cat(rec->text, D_800DA708);
-                    *(Ext4 *)&rec->text[strlen(rec->text)] = *(Ext4 *)rec->ext;
+                    str_cat(rec->label, D_800DA708);
+                    *(Ext4 *)&rec->label[strlen(rec->label)] = *(Ext4 *)rec->ext;
                 }
                 if (r != 1) {
-                    str_cat(rec->text, D_800DA70C);
-                    str_cat(rec->text, sPakStrBuf);
+                    str_cat(rec->label, D_800DA70C);
+                    str_cat(rec->label, sPakStrBuf);
                 }
                 rec->status = r;
-                sPakNoteList[p][sPakNoteCount[p]] = rec;
+                j = p * 17; j += sPakNoteCount[p];
+                sPakNoteList[0][j] = rec;   /* sPakNoteList[p][sPakNoteCount[p]] */
                 sPakNoteCount[p]++;
             }
         }
@@ -303,7 +296,7 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
                 e = sPakNoteList[gPakScreen.pak][i];
                 x = 0x58 - c * 5 / 2;
                 y = c * 10 + 0x3B;
-                str_copy((char *)sPakStrBuf, e->text);
+                str_copy((char *)sPakStrBuf, e->label);
                 if (gPakScreen.state == 0) {
                     c = 6;
                 } else if (i == gPakScreen.sel) {
@@ -368,15 +361,15 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         for (i = 0; lines[i] != NULL; i++) {
             gdl = drawCtr(gdl, lines[i], 1, 2, 0x100, 0x53 + i * 14);
         }
-        if (sPakMessages[gPakScreen.state].extra != NULL) {
-            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0, 0);
-            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0x100 - w / 2, 0xC6);
+        if (sPakMessages[gPakScreen.state].buttons != NULL) {
+            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen.state].buttons, 1, 4, 0, 0);
+            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen.state].buttons, 1, 4, 0x100 - w / 2, 0xC6);
         }
     } else if (sPakMessages[gPakScreen.state].text != NULL) {
         gdl = drawCtr(gdl, sPakMessages[gPakScreen.state].text, 1, 2, 0x100, 0xBE);
-        if (sPakMessages[gPakScreen.state].extra != NULL) {
-            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0, 0);
-            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0x100 - w / 2, 0xCE);
+        if (sPakMessages[gPakScreen.state].buttons != NULL) {
+            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen.state].buttons, 1, 4, 0, 0);
+            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen.state].buttons, 1, 4, 0x100 - w / 2, 0xCE);
         }
     }
     if (sPakWaitTimer != 0) {
@@ -419,10 +412,10 @@ void pak_refresh(s32 p)
     pak_build_note_list(p, 0);
 }
 
+/* 16 entries of a pak's note list, copied one down at once */
 typedef struct {
     PakNote *e[16];
-} EntryRow;
-
+} PakNoteRow;
 
 static inline void SET(s32 s, s32 m) {
     gPakScreen.state = s;
@@ -441,7 +434,7 @@ static inline void SET2(s32 s) {
 
 static inline void compact(s32 pak) {
     if (sPakNoteList[pak][0] == &sPakNewNoteEntry && sPakNoteCount[pak] > 0) {
-        *(EntryRow *)&sPakNoteList[pak][0] = *(EntryRow *)&sPakNoteList[pak][1];
+        *(PakNoteRow *)&sPakNoteList[pak][0] = *(PakNoteRow *)&sPakNoteList[pak][1];
         sPakNoteCount[pak]--;
     }
 }
@@ -470,9 +463,9 @@ void pak_screen_update(Pad16 *arg0) {
         sPakMessages[12].lines = D_800CDF78;
     }
     if (gPakScreen.mode == 2) {
-        sPakMessages[0].extra = D_800CE034;
+        sPakMessages[0].buttons = D_800CE034;
     } else {
-        sPakMessages[0].extra = D_800CE01C;
+        sPakMessages[0].buttons = D_800CE01C;
     }
     pad = gPadInput;
     if (pad & 0x2000) {
@@ -499,7 +492,7 @@ void pak_screen_update(Pad16 *arg0) {
                 if (sPakValidMask & (1 << i)) {
                     pak_refresh(i);
                 } else {
-                    mem_fill((u8 *)sPakNoteTables[i], 0, 0x740);
+                    mem_fill((u8 *)sPakNoteTables[i], 0, 16 * sizeof(PakNote));
                 }
                 if ((sPakBadMask & (1 << i)) && (gPakScreen.state == 0 || gPakScreen.state == 14)) {
                     gPakScreen.pak = i;
@@ -654,7 +647,7 @@ void pak_screen_update(Pad16 *arg0) {
                 }
             }
             if (gPakScreen.mode != 2 || sPakNoteList[gPakScreen.pak][j] == &sPakNewNoteEntry ||
-                sPakNoteList[gPakScreen.pak][j]->gameCode == 0x4E4D5847) {
+                sPakNoteList[gPakScreen.pak][j]->gameCode == PAK_GAME_CODE) {
                 goto done;
             }
             j += n;
@@ -808,7 +801,7 @@ void pak_screen_update(Pad16 *arg0) {
             if (pak_delete_note(gPakScreen.pak, e->fileNo) != 0) {
                 SET(11, 3);
             } else {
-                if (e->gameCode == 0x4E4D5847) {
+                if (e->gameCode == PAK_GAME_CODE) {
                     sPakOverwriteExt = e->ext[0];
                 } else {
                     sPakOverwriteExt = -1;
@@ -882,7 +875,7 @@ void pak_screen_update(Pad16 *arg0) {
                 for (;;) {
                     for (i = 0; i < sPakNoteCount[gPakScreen.pak]; i++) {
                         e = sPakNoteList[gPakScreen.pak][i];
-                        if (e->gameCode == 0x4E4D5847 && e->ext[0] == n) {
+                        if (e->gameCode == PAK_GAME_CODE && e->ext[0] == n) {
                             break;
                         }
                     }
@@ -899,7 +892,7 @@ void pak_screen_update(Pad16 *arg0) {
             sPakOverwriteExt = -1;
             mem_fill(sPakStrBuf, 0, 4);
             sPakStrBuf[0] = n;
-            j = pak_create_note(gPakScreen.pak, sPakGameName, sPakStrBuf, 0x3031, 0x4E4D5847, gPakScreen.pages << 8);
+            j = pak_create_note(gPakScreen.pak, sPakGameName, sPakStrBuf, 0x3031, PAK_GAME_CODE, gPakScreen.pages << 8);
             if (j < 0) {
                 SET(11, 3);
             }
@@ -1005,6 +998,7 @@ void pak_screen_exit(void)
     pak_probe_all();
 }
 
+/* a note's first 0x20 bytes, copied whole */
 typedef struct { u32 w[8]; } Hdr_10;
 
 
@@ -1023,15 +1017,15 @@ s32 pak_read_note_states(u32 p)
     k = 0;
     i = 0;
     do {
-        r = osPfsFileState(&sPakFs_2[p], i, (OSPfsState *)&sPakNoteTables[p][k]);
+        r = osPfsFileState(&sPakFs[p], i, (OSPfsState *)&sPakNoteTables[p][k]);
         if (r == 5) {
-            mem_fill((u8 *)&sPakNoteTables[p][k], 0, 0x74);
+            mem_fill((u8 *)&sPakNoteTables[p][k], 0, sizeof(PakNote));
             sPakNoteTables[p][k].fileNo = -1;
         } else if (r == 0) {
             sPakNoteTables[p][k].fileNo = i;
-            pak_pfs_to_ascii((u8 *)sPakNoteTables[p][k].name, 0x10);
-            pak_pfs_to_ascii((u8 *)sPakNoteTables[p][k].ext, 4);
-            if (sPakNoteTables[p][k].gameCode == 0x4E4D5847) {
+            pak_pfs_to_ascii(sPakNoteTables[p][k].name, 0x10);
+            pak_pfs_to_ascii(sPakNoteTables[p][k].ext, 4);
+            if (sPakNoteTables[p][k].gameCode == PAK_GAME_CODE) {
                 if (pak_read_note(p, i, 0, 0x20, (u8 *)&tmp) != 0) {
                     sPakNoteTables[p][k].gameCode = 0;
                 }
@@ -1076,7 +1070,7 @@ void pak_probe_port(s32 chan)
     sPakValidMask &= ~bit;
     gRumblePakMask &= ~bit;
     sPakBadMask &= ~bit;
-    switch (osPfsInitPak(&gSiMesgQueue, &sPakFs_2[i], i)) {
+    switch (osPfsInitPak(&gSiMesgQueue, &sPakFs[i], i)) {
     case 0:
         sPakValidMask |= bit;
         break;
@@ -1132,7 +1126,7 @@ void pak_probe_all(void)
     for (i = 0; i < 4; i++) {
         gRumbleTimers[i] = 0;
         if ((gContMask >> i) & 1) {
-            switch (osPfsInitPak(&gSiMesgQueue, &sPakFs_3[i], i)) {
+            switch (osPfsInitPak(&gSiMesgQueue, &sPakFs[i], i)) {
             case 0:
                 sPakValidMask |= 1 << i;
                 break;
@@ -1208,12 +1202,12 @@ void pak_update_free_pages(void)
     pak_probe_all();
     for (i = 0; i < 4; i++) {
         gPakFreePages[i] = -2;
-        if ((sPakValidMask & (1 << i)) && osPfsNumFiles(&sPakFs[i * 0x68], &a, &b) == 0) {
+        if ((sPakValidMask & (1 << i)) && osPfsNumFiles(&sPakFs[i], &a, &b) == 0) {
             if (!(sPakValidMask & (1 << i))) {
                 x = -1;
             } else {
                 cont_finish_read();
-                if (osPfsFreeBlocks(&sPakFs[i * 0x68], &c) != 0) {
+                if (osPfsFreeBlocks(&sPakFs[i], &c) != 0) {
                     x = -2;
                 } else {
                     x = c;
@@ -1237,7 +1231,7 @@ int pak_get_free_bytes(u32 param_1)
         return -1;
     }
     cont_finish_read();
-    if (osPfsFreeBlocks((u32 *)(sPakFs + param_1 * 0x68), local_10) != 0) {
+    if (osPfsFreeBlocks(&sPakFs[param_1], local_10) != 0) {
         return -2;
     }
     return local_10[0];
@@ -1260,7 +1254,7 @@ s32 pak_create_note(u32 param_1, char *param_2, char *param_3, s32 param_4, s32 
         str_copy(acStack_38, param_2);
         pak_ascii_to_pfs(acStack_38, 0x10);
         pak_ascii_to_pfs(acStack_28, 4);
-        iVar2 = osPfsAllocateFile(sPakFs + param_1 * 0x68, (u16)param_4, param_5, acStack_38, acStack_28, param_6, local_20);
+        iVar2 = osPfsAllocateFile(&sPakFs[param_1], (u16)param_4, param_5, acStack_38, acStack_28, param_6, local_20);
         if (iVar2 == 0) {
             iVar2 = local_20[0];
         } else {
@@ -1280,11 +1274,11 @@ s32 pak_delete_note(s32 channel, s32 file_no) {
         return -1;
     }
     cont_finish_read();
-    ret = osPfsFileState(&sPakFs_4[channel], file_no, &state);
+    ret = osPfsFileState(&sPakFs[channel], file_no, &state);
     if (ret != 0) {
         return 100 - ret;
     }
-    r2 = osPfsDeleteFile(&sPakFs_4[channel], state.company_code, state.game_code, state.game_name, state.ext_name);
+    r2 = osPfsDeleteFile(&sPakFs[channel], state.company_code, state.game_code, state.game_name, state.ext_name);
     if (r2 != 0) {
         return -r2;
     }
@@ -1299,7 +1293,7 @@ s32 pak_read_note(u32 param_1, s32 param_2, u32 param_3, u32 param_4, u8 *param_
         return -1;
     }
     cont_finish_read();
-    r = osPfsReadWriteFile((u8 *)sPakFs + param_1 * 0x68, param_2, 0, param_3, param_4, param_5);
+    r = osPfsReadWriteFile(&sPakFs[param_1], param_2, 0, param_3, param_4, param_5);
     if (r == 0) {
         return 0;
     }
@@ -1314,7 +1308,7 @@ s32 pak_write_note(u32 p1, s32 p2, u32 p3, u32 p4, u8 *p5)
         return -1;
     }
     cont_finish_read();
-    r = osPfsReadWriteFile(sPakFs + p1 * 0x68, p2, 1, p3, p4, p5);
+    r = osPfsReadWriteFile(&sPakFs[p1], p2, 1, p3, p4, p5);
     if (r != 0) {
         return -r;
     }
@@ -1368,7 +1362,7 @@ s32 pak_repair(u32 param_1)
     s32 r;
 
     cont_finish_read_2();
-    p = sPakFs + param_1 * 0x68;
+    p = &sPakFs[param_1];
     osPfsInitPak(&gSiMesgQueue, p, param_1);
     r = osPfsRepairId(p);
     osPfsInitPak(&gSiMesgQueue, p, param_1);
@@ -1433,8 +1427,8 @@ void pak_pfs_to_ascii(u8 *buf, s32 n)
 void pak_alloc_note_tables(void) {
     s32 i;
     for (i = 0; i < 4; i++) {
-        sPakNoteTables[i] = mem_alloc_dbg(0x740, 0, (s32)"pak.c", 0x75F);
-        mem_fill(sPakNoteTables[i], 0x77, 0x740);
+        sPakNoteTables[i] = mem_alloc_dbg(16 * sizeof(PakNote), 0, (s32)"pak.c", 0x75F);
+        mem_fill(sPakNoteTables[i], 0x77, 16 * sizeof(PakNote));
     }
 }
 
@@ -1444,7 +1438,6 @@ void pak_free_note_tables(void) {
         mem_free(sPakNoteTables[i]);
     }
 }
-
 
 void pak_remove_new_note_entry(s32 idx)
 {

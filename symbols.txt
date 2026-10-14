@@ -111,7 +111,6 @@ snd_play_sfx                          game  0x80010D84  func     0x74
 snd_set_master_volume                 game  0x80010DF8  func     0x20
 snd_get_master_volume                 game  0x80010E18  func     0x10
 snd_trigger_impact                    game  0x80010E28  func     0x34
-snd_trigger_impact_2                  game  0x80010E28  func        -  snd_trigger_impact
 snd_set_volume                        game  0x80010E5C  func     0x78
 snd_get_volume                        game  0x80010ED4  func     0x6c
 snd_stop_all_riders                   game  0x80010F40  func     0x88
@@ -120,7 +119,6 @@ snd_play_menu_sound                   game  0x8001102C  func     0x40
 func_8001106C                         game  0x8001106C  func     0x2c
 snd_stop_handle                       game  0x80011098  func     0x44
 snd_service                           game  0x800110DC  func     0xc4
-D_800111A0                            game  0x800111A0  data        -
 snd_engine_callback                   game  0x800111A0  func    0x104
 snd_free_engine_samples               game  0x800112A4  func     0x5c
 snd_stop_rider                        game  0x80011300  func     0x78
@@ -1321,11 +1319,8 @@ softmix_load_sample_name              game  0x800BAB1C  func    0x13c
 softmix_load_sample_id                game  0x800BAC58  func     0xe8
 softmix_create_sample                 game  0x800BAD40  func    0x114
 softmix_voice_set_sample              game  0x800BAE54  func     0xc0
-softmix_voice_set_sample_2            game  0x800BAE54  func        -  softmix_voice_set_sample
 softmix_voice_set_volume              game  0x800BAF14  func     0xc4
-softmix_voice_set_volume_2            game  0x800BAF14  func        -  softmix_voice_set_volume
 softmix_voice_set_pan                 game  0x800BAFD8  func     0xc4
-softmix_voice_set_pan_2               game  0x800BAFD8  func        -  softmix_voice_set_pan
 softmix_mix                           game  0x800BB09C  func    0x2b4
 softmix_sam_decompress                game  0x800BB350  func    0x12c
 softmix_get_caps                      game  0x800BB47C  func     0x20
@@ -1333,24 +1328,18 @@ softmix_shutdown                      game  0x800BB49C  func     0x50
 softmix_free_sample                   game  0x800BB4EC  func     0xa4
 softmix_get_sample_info               game  0x800BB590  func     0x3c
 softmix_set_sample_info               game  0x800BB5CC  func     0x3c
-softmix_set_sample_info_2             game  0x800BB5CC  func        -  softmix_set_sample_info
 softmix_voice_set_rate                game  0x800BB608  func     0xc4
-softmix_voice_set_rate_2              game  0x800BB608  func        -  softmix_voice_set_rate
 softmix_voice_set_position            game  0x800BB6CC  func     0x20
-softmix_voice_set_position_2          game  0x800BB6CC  func        -  softmix_voice_set_position
 softmix_voice_get_position            game  0x800BB6EC  func     0x24
 softmix_voice_set_flags               game  0x800BB710  func     0x70
-softmix_voice_set_flags_2             game  0x800BB710  func        -  softmix_voice_set_flags
 softmix_voice_get_flags               game  0x800BB780  func     0x24
 softmix_get_sample_count              game  0x800BB7A4  func     0x10
-softmix_get_sample_count_2            game  0x800BB7A4  func        -  softmix_get_sample_count
 softmix_convert_output                game  0x800BB7B4  func     0xa8
 softmix_echo_init                     game  0x800BB85C  func     0xc4
 softmix_echo_enable                   game  0x800BB920  func     0x58
 softmix_echo_set_level                game  0x800BB978  func     0x48
 softmix_echo_free                     game  0x800BB9C0  func     0x3c
 softmix_write_sample                  game  0x800BB9FC  func     0xb4
-softmix_write_sample_2                game  0x800BB9FC  func        -  softmix_write_sample
 softmix_set_decompressor              game  0x800BBAB0  func      0xc
 softmix_set_decompress_buf            game  0x800BBABC  func     0x14
 softmix_voice_update_levels           game  0x800BBAD0  func     0xb8
@@ -1455,7 +1444,6 @@ res_set_load_buffer                   game  0x800C0258  func      0xc
 func_800C0264                         game  0x800C0264  func     0x80
 res_hash_name                         game  0x800C02E4  func     0x6c
 decoder_decode_adpcm                  game  0x800C0350  func    0x19c
-D_800C04EC                            game  0x800C04EC  data        -
 decoder_decode_sample                 game  0x800C04EC  func     0x70
 func_800C055C                         game  0x800C055C  func    0x174
 font_load                             game  0x800C06D0  func    0x3fc
@@ -1580,11 +1568,7 @@ sSndEnabled                           game  0x800C2B5C  data      0x4
 sSndServiceBusy                       game  0x800C2B60  data      0x4
 sSndRaceLoaded                        game  0x800C2B64  data      0x4
 sEngineSamples                        game  0x800C2B68  data     0xa8
-sEngineSamples_2                      game  0x800C2B68  data        -  sEngineSamples
-sEngineSamples_3                      game  0x800C2B68  data        -  sEngineSamples
-sEngineSamples_4                      game  0x800C2B68  data        -  sEngineSamples
 sRiderSfx                             game  0x800C2C10  data     0x3c
-sRiderSfx_2                           game  0x800C2C10  data        -  sRiderSfx
 D_800C2C4C                            game  0x800C2C4C  data      0x8
 D_800C2C54                            game  0x800C2C54  data      0xc
 gCosTable                             game  0x800C2C60  data   0x2000
@@ -1768,7 +1752,6 @@ sSpeechQueueCount                     game  0x800CA858  data      0x4
 sSpeechQueueCount_2                   game  0x800CA858  data        -  sSpeechQueueCount
 sStreamLock                           game  0x800CA85C  data      0x4
 sCurrentSong                          game  0x800CA860  data      0x4
-sCurrentSong_2                        game  0x800CA860  data        -  sCurrentSong
 sRiderNameClips                       game  0x800CA864  data     0x60
 sLeaderFirstLapClips                  game  0x800CA8C4  data      0xc
 sFinalLapClips                        game  0x800CA8D0  data      0x8
@@ -2099,9 +2082,7 @@ sNesDutyTable                         game  0x800D05D8  data      0x8
 sNesLengthTable                       game  0x800D05E0  data     0x40
 sNesNoisePeriods                      game  0x800D0620  data     0x40
 sNesRowCallback                       game  0x800D0660  data     0x10
-sNesRowCallback_2                     game  0x800D0660  data        -  sNesRowCallback
 sNesCpuMemory                         game  0x800D0670  data     0x10
-sNesCpuMemory_2                       game  0x800D0670  data        -  sNesCpuMemory
 sPiecesResSet                         game  0x800D0680  data      0x4
 sPieceRotations                       game  0x800D0684  data     0x30
 D_800D06B4                            game  0x800D06B4  data     0x14
@@ -2628,11 +2609,9 @@ sN64SndMuted                          game  0x800D5620  data      0x8
 sN64SndBufIndex                       game  0x800D5628  data      0x4
 sN64SndActive                         game  0x800D562C  data      0x4
 sN64SndCallback                       game  0x800D5630  data      0x8
-sN64SndCallback_2                     game  0x800D5630  data        -  sN64SndCallback
 gN64SndSilenceFrames                  game  0x800D5638  data      0x4
 gN64SndDriver                         game  0x800D563C  data     0x74
 gN64SndMixCallback                    game  0x800D56B0  data      0xc
-gN64SndMixCallback_2                  game  0x800D56B0  data        -  gN64SndMixCallback
 sN64SndUnderruns                      game  0x800D56BC  data      0x4
 sHexDigitDivisors                     game  0x800D56C0  data     0x20
 sDecDigitDivisors                     game  0x800D56E0  data     0x20
@@ -3748,9 +3727,6 @@ gRumblePakMask                        game  0x800E1C60  data        -
 gContStatus                           game  0x800E1C68  data        -
 gContStatus_2                         game  0x800E1C68  data        -  gContStatus
 sPakFs                                game  0x800E1C78  data        -
-sPakFs_2                              game  0x800E1C78  data        -  sPakFs
-sPakFs_3                              game  0x800E1C78  data        -  sPakFs
-sPakFs_4                              game  0x800E1C78  data        -  sPakFs
 gContReadPending                      game  0x800E1E18  data        -
 gContPads                             game  0x800E1E40  data        -
 gContPads_2                           game  0x800E1E40  data        -  gContPads
@@ -3808,12 +3784,6 @@ gSndMasterVolume                      game  0x800E32A0  data        -
 gSndMasterVolume_2                    game  0x800E32A0  data        -  gSndMasterVolume
 sSndFrameSamples                      game  0x800E32A4  data        -
 sRiderSounds                          game  0x800E32A8  data        -
-sRiderSounds_2                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_3                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_4                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_5                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_6                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_7                        game  0x800E32A8  data        -  sRiderSounds
 sSndOutputRate                        game  0x800E35C8  data        -
 sSndSurfaces                          game  0x800E35CC  data        -
 sSndSurfaces_2                        game  0x800E35CC  data        -  sSndSurfaces
@@ -4194,7 +4164,6 @@ gLastSpeechTime                       game  0x800EECB8  data        -
 sStreamDataEnd                        game  0x800EECBC  data        -
 sAmbientLocked                        game  0x800EECC0  data        -
 sStreamMixBuf                         game  0x800EECC4  data        -
-sStreamMixBuf_2                       game  0x800EECC4  data        -  sStreamMixBuf
 sSpeechPriority                       game  0x800EECC8  data        -
 sStreamChannelCount                   game  0x800EECCC  data        -
 sStreamMixWritePos                    game  0x800EECD0  data        -
@@ -4203,35 +4172,16 @@ sLastLeader                           game  0x800EECD8  data        -
 sLastLeader_2                         game  0x800EECD8  data        -  sLastLeader
 sSpeechUseSfxVolume                   game  0x800EECDC  data        -
 sStreamEchoBuf                        game  0x800EECE0  data        -
-sStreamEchoBuf_2                      game  0x800EECE0  data        -  sStreamEchoBuf
 sCrowdQueue                           game  0x800EFCE0  data        -
-sCrowdQueue_2                         game  0x800EFCE0  data        -  sCrowdQueue
 sLastLeadCollisionTime                game  0x800EFCF0  data        -
 sSongTick                             game  0x800EFCF4  data        -
 sCrowdQueueCount                      game  0x800EFCF8  data        -
 sSpeechQueue                          game  0x800EFD00  data        -
-sSpeechQueue_2                        game  0x800EFD00  data        -  sSpeechQueue
 sStreamMixFill                        game  0x800EFD20  data        -
 sStreamChannels                       game  0x800EFD24  data        -
-sStreamChannels_10                    game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_11                    game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_2                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_3                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_4                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_5                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_6                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_7                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_8                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_9                     game  0x800EFD24  data        -  sStreamChannels
 gAnnounceTimes                        game  0x800EFD28  data        -
-gAnnounceTimes_2                      game  0x800EFD28  data        -  gAnnounceTimes
 sSongCursor                           game  0x800EFD48  data        -
 sStreamSampleTable                    game  0x800EFD4C  data        -
-sStreamSampleTable_2                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_3                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_4                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_5                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_6                  game  0x800EFD4C  data        -  sStreamSampleTable
 sStreamMixReadPos                     game  0x800EFD50  data        -
 sStreamEchoPos                        game  0x800EFD54  data        -
 sCountdownTextures                    game  0x800EFD60  data        -
@@ -4495,7 +4445,6 @@ D_800F1BC5_2                          game  0x800F1BC5  data        -  D_800F1BC
 D_800F1BC6                            game  0x800F1BC6  data        -
 D_800F1BC7                            game  0x800F1BC7  data        -
 gSaveNesTrack                         game  0x800F1BD4  data        -
-gSaveNesTrack_2                       game  0x800F1BD4  data        -  gSaveNesTrack
 D_800F1DF4                            game  0x800F1DF4  data        -
 D_800F1DF4_2                          game  0x800F1DF4  data        -  D_800F1DF4
 sStuntSeqByDir                        game  0x800F2110  data        -
@@ -4592,7 +4541,6 @@ D_800F55BC                            game  0x800F55BC  data        -
 sEditCamStep                          game  0x800F56A8  data        -
 D_800F56B0                            game  0x800F56B0  data        -
 sNesSnapshot                          game  0x800F5A40  data        -
-sNesSnapshot_2                        game  0x800F5A40  data        -  sNesSnapshot
 sNesGfx                               game  0x800F5A44  data        -
 sNesBgTlutLoaded                      game  0x800F5A48  data        -
 sNesLastTileKey                       game  0x800F5A4C  data        -
@@ -4600,7 +4548,6 @@ sNesMemory                            game  0x800F5A50  data        -
 sNesChrTiles                          game  0x800F5A54  data        -
 sNesPalette                           game  0x800F5A58  data        -
 sNesBgTluts                           game  0x800F5A60  data        -
-sNesBgTluts_2                         game  0x800F5A60  data        -  sNesBgTluts
 sNesSpriteTluts                       game  0x800F5A68  data        -
 sNesAudioFreq                         game  0x800F5A70  data        -
 sNesAudioBufIndex                     game  0x800F5A74  data        -
@@ -4611,7 +4558,6 @@ sNesClearFrames                       game  0x800F5A98  data        -
 sNesFrameCount                        game  0x800F5AA0  data        -
 sNesEffAddr                           game  0x800F5BB0  data        -
 sNesOperand                           game  0x800F5BB8  data        -
-sNesOperand_2                         game  0x800F5BB8  data        -  sNesOperand
 sNesOperand16                         game  0x800F5BBA  data        -
 sNesOperand8                          game  0x800F5BBB  data        -
 gUserTrackData                        game  0x800F5CC0  data        -
@@ -4622,49 +4568,19 @@ sSfxDriverFlags                       game  0x800FA848  data        -
 sSfxFrameMs                           game  0x800FA84C  data        -
 sSfxFrameSamples                      game  0x800FA850  data        -
 sSfxVoiceSounds                       game  0x800FA854  data        -
-sSfxVoiceSounds_2                     game  0x800FA854  data        -  sSfxVoiceSounds
 sSfxSamples                           game  0x800FA860  data        -
-sSfxSamples_2                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_3                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_4                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_5                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_6                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_7                         game  0x800FA860  data        -  sSfxSamples
 sSfxSoundPool                         game  0x800FC060  data        -
-sSfxSoundPool_2                       game  0x800FC060  data        -  sSfxSoundPool
 gSfxDriver                            game  0x800FE860  data        -
-gSfxDriver_10                         game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_2                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_3                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_4                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_5                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_6                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_7                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_8                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_9                          game  0x800FE860  data        -  gSfxDriver
 sSoftmixEchoBuf                       game  0x800FE870  data        -
 sSoftmixEchoPos                       game  0x800FE874  data        -
 sSoftmixEchoSize                      game  0x800FE878  data        -
 sSoftmixNameBuf                       game  0x800FE880  data        -
 sSoftmixVolumeTable                   game  0x800FE8D0  data        -
 sSoftmixVoices                        game  0x800FE8D4  data        -
-sSoftmixVoices_2                      game  0x800FE8D4  data        -  sSoftmixVoices
-sSoftmixVoices_3                      game  0x800FE8D4  data        -  sSoftmixVoices
 sSoftmixOutputRate                    game  0x800FE8D8  data        -
 sSoftmixFlags                         game  0x800FE8DC  data        -
 sSoftmixNumVoices                     game  0x800FE8E0  data        -
 sSoftmixSamples                       game  0x800FE8F0  data        -
-sSoftmixSamples_10                    game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_11                    game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_12                    game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_2                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_3                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_4                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_5                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_6                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_7                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_8                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_9                     game  0x800FE8F0  data        -  sSoftmixSamples
 sSoftmixSampleCount                   game  0x801004F0  data        -
 sSoftmixEchoTable                     game  0x80100500  data        -
 sSoftmixSavedLevels                   game  0x80100600  data        -
@@ -4696,15 +4612,11 @@ sFilePageMem                          game  0x80100674  data        -
 sFilePageHead                         game  0x80100678  data        -
 sFilePageTail                         game  0x8010067C  data        -
 D_80100680                            game  0x80100680  data        -
-D_80100680_2                          game  0x80100680  data        -  D_80100680
-D_80100680_3                          game  0x80100680  data        -  D_80100680
 D_80100694                            game  0x80100694  data        -
 sFileDirCount                         game  0x80100698  data        -
 sFileRomBase                          game  0x8010069C  data        -
-sFileRomBase_2                        game  0x8010069C  data        -  sFileRomBase
 sFileDataBase                         game  0x801006A0  data        -
 sFileDir                              game  0x801006A4  data        -
-sFileDir_2                            game  0x801006A4  data        -  sFileDir
 sFileHandles                          game  0x801006B0  data        -
 sFileTempPage                         game  0x801006F0  data        -
 sSramHandle                           game  0x80100700  data        -
@@ -4739,9 +4651,8 @@ D_80105440                            game  0x80105440  data        -
 sFontSprLists                         game  0x801054E0  data        -
 D_80105580                            game  0x80105580  data        -
 D_80105680                            game  0x80105680  data        -
-sNesReg4015                           game  0x80384015  data        -
 sNesRegS                              game  0x80394105  data        -
-D_803941AC                            game  0x803941AC  data        -
+sNesNoiseLength                       game  0x803941AC  data        -
 D_A0000200                            game  0xA0000200  data        -
 D_A0000284                            game  0xA0000284  data        -
 osTvType                              boot  0x80000300  data        -

@@ -69,12 +69,12 @@ void n64snd_update(void)
         osAiSetNextBuffer(sN64SndAiBuf + sN64SndAiBufSize * sN64SndBufIndex, sN64SndAiBufSize);
         piVar3 = sN64SndMixBuf;
         do {
-            if (sN64SndCallback_2 != 0) {
-                (*sN64SndCallback_2)();
+            if (sN64SndCallback != 0) {
+                (*sN64SndCallback)();
             }
             softmix_mix(piVar3, sN64SndFrames >> 1);
-            if (gN64SndMixCallback_2 != 0) {
-                (*gN64SndMixCallback_2)(piVar3, sN64SndFrames >> 1);
+            if (gN64SndMixCallback != 0) {
+                (*gN64SndMixCallback)(piVar3, sN64SndFrames >> 1);
             }
             h = sN64SndFrames >> 1;
             if (sN64SndMode & 1) {
@@ -114,111 +114,111 @@ void n64snd_shutdown(void)
     mem_free(sN64SndAiBufAlloc);
 }
 
-void n64snd_load_sample_named(s32 a, s32 b, s32 c, s32 d) {
-    softmix_load_sample_name(a, b, c, d);
+s32 n64snd_load_sample_named(u8 *name) {
+    return softmix_load_sample_name(name);
 }
 
-void n64snd_load_sample_index(s32 a)
+s32 n64snd_load_sample_index(s32 resId)
 {
-    softmix_load_sample_id(a);
+    return softmix_load_sample_id(resId);
 }
 
-void n64snd_create_sample(s32 a, s32 b, s32 c, s32 d, s32 e) {
-    softmix_create_sample(a, b, c, d, e);
+s32 n64snd_create_sample(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 unk) {
+    return softmix_create_sample(data, length, loopStart, loopEnd, unk);
 }
 
-void n64snd_free_sample(u32 a) {
-    softmix_free_sample(a);
+void n64snd_free_sample(u32 sample) {
+    softmix_free_sample(sample);
 }
 
-void n64snd_get_sample_info(s32 param_1, s32 *param_2)
+void n64snd_get_sample_info(s32 sample, s32 *info)
 {
-    softmix_get_sample_info(param_1, param_2);
+    softmix_get_sample_info(sample, info);
 }
 
-void n64snd_set_sample_info(s32 a)
+void n64snd_set_sample_info(s32 sample, s32 *info)
 {
-    softmix_set_sample_info_2(a);
+    softmix_set_sample_info(sample, info);
 }
 
-void n64snd_write_sample_data(s32 a)
+void n64snd_write_sample_data(s32 sample, u8 *data, u32 size)
 {
-    softmix_write_sample_2(a);
+    softmix_write_sample(sample, data, size);
 }
 
-void n64snd_voice_set_sample(s32 a)
+void n64snd_voice_set_sample(s32 voice, s32 sample)
 {
-    softmix_voice_set_sample_2(a);
+    softmix_voice_set_sample(voice, sample);
 }
 
-void n64snd_voice_set_rate(s32 a)
+void n64snd_voice_set_rate(s32 voice, s32 rate)
 {
-    softmix_voice_set_rate_2(a);
+    softmix_voice_set_rate(voice, rate);
 }
 
-void n64snd_voice_set_volume(s32 a)
+void n64snd_voice_set_volume(s32 voice, s32 volume)
 {
-    softmix_voice_set_volume_2(a);
+    softmix_voice_set_volume(voice, volume);
 }
 
-void n64snd_voice_set_pan(s32 a)
+void n64snd_voice_set_pan(s32 voice, s32 pan)
 {
-    softmix_voice_set_pan_2(a);
+    softmix_voice_set_pan(voice, pan);
 }
 
-void n64snd_voice_set_position(s32 a)
+void n64snd_voice_set_position(s32 voice, u32 position)
 {
-    softmix_voice_set_position_2(a);
+    softmix_voice_set_position(voice, position);
 }
 
-void n64snd_voice_get_position(s32 a)
+u32 n64snd_voice_get_position(s32 voice)
 {
-    softmix_voice_get_position(a);
+    return softmix_voice_get_position(voice);
 }
 
-void n64snd_voice_set_flags(s32 a)
+void n64snd_voice_set_flags(s32 voice, s32 flags)
 {
-    softmix_voice_set_flags_2(a);
+    softmix_voice_set_flags(voice, flags);
 }
 
-void n64snd_voice_get_flags(s32 a)
+s32 n64snd_voice_get_flags(s32 voice)
 {
-    softmix_voice_get_flags(a);
+    return softmix_voice_get_flags(voice);
 }
 
-void n64snd_get_sample_clock(s32 a)
+s32 n64snd_get_sample_clock(void)
 {
-    softmix_get_sample_count(a);
+    return softmix_get_sample_count();
 }
 
 u32 n64snd_get_buffer_clock(void) {
-    u32 r = softmix_get_sample_count_2();
+    u32 r = softmix_get_sample_count();
     return r / (sN64SndFrames >> 1);
 }
 
-void n64snd_set_callback(s32 v)
+void n64snd_set_callback(void (*fn)(void))
 {
-    sN64SndCallback = v;
+    sN64SndCallback = fn;
 }
 
-void n64snd_echo_init(s32 a)
+void n64snd_echo_init(s32 size)
 {
-    softmix_echo_init(a);
+    softmix_echo_init(size);
 }
 
-void n64snd_echo_enable(s32 a)
+void n64snd_echo_enable(s32 on)
 {
-    softmix_echo_enable(a);
+    softmix_echo_enable(on);
 }
 
-void n64snd_echo_set_level(s32 a)
+void n64snd_echo_set_level(s32 level)
 {
-    softmix_echo_set_level(a);
+    softmix_echo_set_level(level);
 }
 
-void n64snd_echo_free(s32 a)
+void n64snd_echo_free(void)
 {
-    softmix_echo_free(a);
+    softmix_echo_free();
 }
 
 void n64snd_stub1(void)

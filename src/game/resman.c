@@ -4,7 +4,7 @@ s32 res_open_set(char *path, ResSet **out)
 {
     char buf[128];
     s32 flag;
-    s32 *f;
+    FileHandle *f;
     u32 n;
     u32 cnt;
     ResSet *o;
@@ -82,7 +82,7 @@ s32 res_open_set(char *path, ResSet **out)
 
 void *res_load(ResSet *set, s32 id)
 {
-    s32 *f;
+    FileHandle *f;
     s32 *data;
     u32 handle;
     u32 i;
@@ -329,7 +329,7 @@ s32 res_find_gid(ResSet *set, char *name)
 {
     u8 buf[0x50];
     s32 cnt;
-    s32 *q;
+    FileHandle *q;
     u32 k;
     s32 i;
 
@@ -366,7 +366,7 @@ s32 res_find_gid(ResSet *set, char *name)
 }
 
 s32 res_get_size(ResSet *set, s32 id) {
-    void *f;
+    FileHandle *f;
     u8 tmp[8];
     s32 val;
     u32 i;

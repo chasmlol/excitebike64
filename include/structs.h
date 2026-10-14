@@ -75,20 +75,7 @@ typedef struct Ent_79 Ent_79;
 typedef struct Obj_58 Obj_58;
 typedef struct Obj_59 Obj_59;
 typedef struct Obj_60 Obj_60;
-typedef struct Chan_6 Chan_6;
-typedef struct Ring_2 Ring_2;
-typedef struct Obj_80 Obj_80;
-typedef struct Handle Handle;
-typedef struct Ent_99 Ent_99;
-typedef struct Ring_3 Ring_3;
-typedef struct Hdr_13 Hdr_13;
-typedef struct Slot_17 Slot_17;
-typedef struct Stream_2 Stream_2;
 typedef struct Blk_29 Blk_29;
-typedef struct Hdr_14 Hdr_14;
-typedef struct Src_4 Src_4;
-typedef struct Src_5 Src_5;
-typedef struct Out_6 Out_6;
 typedef struct Bike_25 Bike_25;
 
 typedef struct { u8 r, g, b; } Rgb;
@@ -142,15 +129,6 @@ typedef struct { s32 m[9]; } Mtx3;
 typedef struct Rec_2 {
     u8 pad[0xA0];
 } Rec_2;
-
-typedef struct {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    s32 f14;
-} Gear;
 
 typedef struct MtxS {
     s16 i[4][4];
@@ -953,87 +931,12 @@ typedef struct Obj_57 {
     s32 f744;
 } Obj_57;
 
-typedef struct Ring {
-    s32 f00;
-    s32 cur;        /* 0x04 */
-    s32 slot[2];    /* 0x08 */
-    u8 flag[2];     /* 0x10 */
-    u8 f12[2];      /* 0x12 */
-    u32 size;       /* 0x14 */
-    u8 *buf;        /* 0x18 */
-    u32 pos;        /* 0x1c */
-    u32 f20;        /* 0x20 */
-    u32 avail;      /* 0x24 */
-    s32 arg28;      /* 0x28 */
-    u32 len;        /* 0x2c */
-    u8 b30;
-    u8 b31;
-    u8 b32;
-    u8 sel;         /* 0x33 */
-} Ring;
-
-typedef struct Node_45 {
-    struct Node_45 *prev;
-    struct Node_45 *next;
-    s32 pad[9];
-    s32 key;
-    s32 flags;
-} Node_45;
-
-typedef struct Node_46 {
-    struct Node_46 *prev;
-    struct Node_46 *next;
-} Node_46;
-
 typedef struct Block {
     struct Block *next;
     s32 unk4;
     s32 size;
     s32 check;
 } Block;
-
-typedef struct Ent_106 {
-    struct Ent_106 *next;
-    struct Ent_106 *prev;
-    u8 *buf;
-    s32 owner;
-    s32 idx;
-} Ent_106;
-
-typedef struct X {
-    u8 pad[0x10];
-    s32 flags;
-    s32 pad2;
-    u8 *base;
-    u32 size;
-} X;
-
-typedef struct Obj_81 {
-    X *x;
-    Ent_106 *ent;
-} Obj_81;
-
-typedef struct Node_50 {
-    struct Node_50 *next;
-    struct Node_50 *prev;
-    s32 pad[2];
-    s32 cnt;
-} Node_50;
-
-typedef struct Q_2 {
-    Node_50 *a;
-    Node_50 *b;
-    s32 c;
-    s32 d;
-} Q_2;
-
-typedef struct Node_51 {
-    struct Node_51 *next;
-    struct Node_51 *prev;
-    s32 f8;
-    s32 key;
-    s32 cnt;
-} Node_51;
 
 typedef struct Q_3 {
     s32 *p0;
@@ -1070,6 +973,14 @@ typedef struct Q_3 {
 #include "structs/gui.h"
 #include "structs/hud.h"
 #include "structs/pak.h"
+
+/* Sound, the NES emulator and the files of the ROM. */
+#include "structs/nes.h"
+#include "structs/softmix.h"
+#include "structs/sfx.h"
+#include "structs/tunes.h"
+#include "structs/snd.h"
+#include "structs/file.h"
 
 /* The game's setup, the race, the season and the podium. */
 #include "structs/race.h"
