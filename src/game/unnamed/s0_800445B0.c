@@ -22,7 +22,7 @@ void bike_crash_begin(Rider *rider, s32 crashAnim)
     rider->engine.rpm = 0.0f;
     rider->engine.gear = 0;
     if (rider == &gRiders[1]) {
-        gEvent.flags &= ~EVENT_TAKEDOWN_REQUIRED;
+        gEvent.flags &= ~EVENT_TAKEDOWN;
     }
     rider->trickDoneTimer = 0;
     rider->fistPump = 0;
@@ -195,7 +195,7 @@ void bike_crash_update(Rider *rider)
     if (rider->bike.flags & BODY_MOVING) {
         rider->bike.acc.z = 0.0f;
         rider->bike.acc.x = 0.0f;
-        rider->bike.acc.y = -14.700001f;
+        rider->bike.acc.y = -GRAVITY;
         rider->impactSpeed = rider->slideSpeed = rider->bike.acc.z;
         phys_body_step(&rider->bike, sBikeCrashContactPoints, BIKE_CONTACT_COUNT, 1);
         CAP_SPEED(rider, bike);
@@ -217,7 +217,7 @@ void bike_crash_update(Rider *rider)
                 }
             }
         }
-        rider->bike.vel.y -= gPhysDeltaTime * 14.700001f;
+        rider->bike.vel.y -= gPhysDeltaTime * GRAVITY;
         rider->bike.angVel.x -= rider->bike.angVel.x * gPhysDeltaTime * 0.5f;
         rider->bike.angVel.y -= rider->bike.angVel.y * gPhysDeltaTime * 0.5f;
         rider->bike.angVel.z -= rider->bike.angVel.z * gPhysDeltaTime * 0.5f;
@@ -227,11 +227,11 @@ void bike_crash_update(Rider *rider)
     if (rider->body.flags & BODY_MOVING) {
         rider->body.acc.x = 0.0f;
         rider->body.acc.z = 0.0f;
-        rider->body.acc.y = -14.700001f;
+        rider->body.acc.y = -GRAVITY;
         phys_body_step(&rider->body, sRiderCrashContactPoints[rider->crashDir], RIDER_CONTACT_COUNT, 1);
         CAP_SPEED(rider, body);
         dt = gPhysDeltaTime;
-        gravity = 14.700001f;
+        gravity = GRAVITY;
         rider->body.vel.y -= dt * gravity;
         rider->body.angVel.x -= rider->body.angVel.x * gPhysDeltaTime;
         rider->body.angVel.y -= rider->body.angVel.y * gPhysDeltaTime;
@@ -321,7 +321,7 @@ s32 phys_body_step(RigidBody *body, Pt_4 *pts, s32 count, u8 freeBody)
         maxZ = 1.0f;
         minZ = body->vel.z * gPhysDeltaTime - 1.0f;
     }
-    if ((gDrawFlags & 0x200) && body == &gRiders[0].bike) { /* the wall debug display: a fixed box */
+    if ((gDrawFlags & DRAW_COLLISION) && body == &gRiders[0].bike) { /* the wall debug display: a fixed box */
         maxX = 4.0f;
         minX = -4.0f;
         maxZ = maxX;
@@ -799,7 +799,9 @@ void bike_respawn(Rider *rider)
     game = &gGame;
     switch (game->mode) {
     case GAME_MODE_SOCCER:
-        if ((gEvent.flags & 0xF) || (gEvent.state != 7 && gEvent.state != 11 && gEvent.state != 9)) {
+        if ((gEvent.flags & EVENT_SCORED)
+            || (gEvent.state != EVENT_STATE_FIRST_HALF && gEvent.state != EVENT_STATE_OVERTIME
+                && gEvent.state != EVENT_STATE_SECOND_HALF)) {
             /* the kick-off places, two a side */
             rider->blinkCount = 0;
             rider->blinkTimer = 0;
@@ -1014,10 +1016,10 @@ f32 body_time_to_ground(f32 *body)
         return 0.0f;
     }
     velY = body[4];
-    root = __builtin_sqrtf(velY * velY + height * 29.400002f) / 14.700001f;
-    time = -(-velY / 14.700001f) + root;
+    root = __builtin_sqrtf(velY * velY + height * 29.400002f) / GRAVITY;
+    time = -(-velY / GRAVITY) + root;
     if (!(time > 0.0f)) {
-        time = root + -velY / 14.700001f;
+        time = root + -velY / GRAVITY;
     }
     return time;
 }

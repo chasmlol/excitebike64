@@ -66,17 +66,6 @@ typedef struct TrackInfo {
     /* 0x84 */ u8 unk_84[0xA0 - 0x84];
 } TrackInfo; /* size 0xA0 */
 
-/* A gTracks record's environment: which code draws it. */
-#define TRACK_ENV_STADIUM   0   /* arngfx.c */
-#define TRACK_ENV_OUTDOOR   1   /* tubegfx.c */
-#define TRACK_ENV_DESERT    2   /* desgfx.c */
-
-/* A gTracks record's flags. */
-#define TRACK_FLAG_USER         0x002   /* the user track: built by UsrTrk.c, keeps no records */
-#define TRACK_FLAG_NEW_LAP      0x080   /* this race set a best lap: the initials are asked for */
-#define TRACK_FLAG_NEW_TIME     0x100   /* ... a best race time */
-#define TRACK_FLAG_RECORDS      0x200   /* keeps records (gGame.records, the save data) */
-
 /* gRacePhase: the track intro (track preview) and the race, each faded in and out by render_draw_race. */
 #define RACE_PHASE_INTRO_FADE_IN    0
 #define RACE_PHASE_INTRO            1   /* B goes back, A or START races */
@@ -93,17 +82,7 @@ typedef struct TrackInfo {
 #define PHASE_TIMER_OVER    (-2)
 #define PHASE_TIMER_FADED   (-3)
 
-/* gRaceExitCode: how the last race ended, for shell_init. */
-#define RACE_EXIT_BOOT      0   /* none yet: the game just started */
-#define RACE_EXIT_FINISHED  2
-#define RACE_EXIT_BACK      3   /* B on the track intro */
-#define RACE_EXIT_QUIT      4   /* Quit from the pause menu */
-#define RACE_EXIT_NONE      6   /* the default while racing */
-#define RACE_EXIT_PODIUM    7   /* after the podium ceremony */
-#define RACE_EXIT_EDITOR    8   /* the test ride's "Return to Editor" */
-
 #define RACE_NUM_TEXTS      74  /* the text objects of gRaceTextObjs (RaceTexts.text) */
-#define MENU_NUM_TEXTS      48  /* gGame.texts, created for the pause menu's screens */
 
 /* gPauseMenu: the menu shown over the race (gPauseMenuCursor is its item). */
 #define PAUSE_NONE          0
@@ -264,7 +243,7 @@ typedef struct Event {
     /* 0x2A */ s16 unk_2A;
     /* 0x2C */ s32 time;            /* frames (also gEventTime) */
     /* 0x30 */ s16 lapLeaderTimes[6]; /* the time (low half) the first rider completed each lap, -1 none */
-    /* 0x3C */ s32 noPlayers;       /* gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO) */
+    /* 0x3C */ s32 noPlayers;       /* gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO) */
     /* 0x40 */ s32 allFinished;
     /* 0x44 */ s32 camTarget;       /* gCamTargetOverride */
     /* 0x48 */ s32 unk_48;          /* hill climb: -1 */

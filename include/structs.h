@@ -3,6 +3,7 @@
 #define STRUCTS_H
 
 #include "common.h"
+#include "constants.h"
 
 /* Declared here for the prototypes and globals; most are defined in the source file that uses them. */
 typedef struct Dyn Dyn;
@@ -135,7 +136,7 @@ typedef struct Q_3 {
     s32 *f14;
 } Q_3;
 
-/* The input word, controllers, scheduler, heap, DMA, replays and maths. */
+/* Controllers, scheduler, heap, DMA, replays and maths. */
 #include "structs/system.h"
 
 /* The structures of the track, its models and the effects drawn on it. */

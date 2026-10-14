@@ -213,7 +213,7 @@ void render_update_screen_layout(void)
 {
     s32 limit;
 
-    if (gViMode == 2) { /* 640x480 */
+    if (gViMode == VI_MODE_HI_RES) {
         gViewLayouts = sLayout1PHiRes;
         sGaugeY = 300;
     } else {
@@ -353,7 +353,7 @@ void render_init(void) {
     gDebugRiderCount = 8;
     sRiderColors = res_load(gResourceSet, sRiderColorsResId);
     if (gCurTrack_9->envType != TRACK_ENV_DESERT) {
-        if (gReplayPlayback != 0 || (gGame.flags & GAME_FLAG_TRACK_CHOSEN) || gGhostRace != 0) {
+        if (gReplayPlayback != 0 || (gGame.flags & GAME_FLAG_TRACK_INTRO) || gGhostRace != 0) {
             gNumViews = 1;
         } else {
             gNumViews = gGame.numPlayers;
@@ -435,7 +435,7 @@ void render_init(void) {
         }
         render_load_rider(gResourceSet, j, sRiderModelTable[i].skins, gGame.bikeSkins[j % 6] & 1, gGame.bikeSkins[j % 6] >> 1, i);
     }
-    if (!(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN))) {
+    if (!(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO))) {
         event_hud_init();
     }
     for (i = 0; i < 8; i++) {
@@ -588,7 +588,7 @@ void render_free(void)
     mem_free(gBikeSkelTemplate);
     mem_free(gRiderSkelTemplate);
     mem_free(sGaugePalettes);
-    if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)) == 0) {
+    if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) == 0) {
         event_hud_free();
     }
     switch (gGame.mode) {
@@ -874,7 +874,7 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
             }
             font_text_create(gGame.texts[0], 0x40, 1, (row == gOptionsCursor) ? 6 : 2, 0x22);
             if (row == 3) {
-                font_text_add(gGame.texts[0], gMonoStereoStrings[gSaveData_2.options & 1]);
+                font_text_add(gGame.texts[0], gMonoStereoStrings[gSaveData_2.options & SAVE_OPT_STEREO]);
                 font_draw_text(gGame.texts[0], x + 0xB4, y + 8);
             }
         }
@@ -1063,7 +1063,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     }
     /* the stunt replay inset while the player's timer runs */
     if (gGame.numPlayers == 1 && gRiders[0].pipTimer != 0 &&
-        !(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)) && gReplayPlayback == 0 &&
+        !(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) && gReplayPlayback == 0 &&
         gGame.mode != GAME_MODE_EXCITE_3D && gGame.mode != GAME_MODE_HILL_CLIMB &&
         gGame.mode != GAME_MODE_TIME_TRIAL && gGame.mode != GAME_MODE_TUTORIAL && gGame.mode != GAME_MODE_TEST_LOOP &&
         gGame.mode != GAME_MODE_TEST_OPEN && gCurTrack_12->envType != TRACK_ENV_DESERT) {
@@ -1130,7 +1130,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                     guPerspective(&persp, &gPerspNorm, sFovY, 480.0f / gScreenHeight, k + 50.0f,
                                   gFarClip + k, 1.0f);
                 }
-            } else if (gViMode == 2) { /* 640x480 */
+            } else if (gViMode == VI_MODE_HI_RES) {
                 guPerspective(&persp, &gPerspNorm, sFovY, 640.0f / gScreenHeight, k + 50.0f,
                               gFarClip + k, 1.0f);
             } else {
@@ -1354,7 +1354,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
     }
     if (gNumScreens == 1 &&
-        (gReplayPlayback != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)))) {
+        (gReplayPlayback != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)))) {
         gdl = sun_draw_stars(render_set_viewport(gdl, dyn, 0, 1), dyn);
     }
     /* skeletons and matrices of the riders seen in any view */
@@ -1639,7 +1639,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gSPSetGeometryMode(gdl++, gCullMode);
         }
     }
-    if (gGame.flags & GAME_FLAG_TRACK_CHOSEN) {
+    if (gGame.flags & GAME_FLAG_TRACK_INTRO) {
         gdl = hud_draw_track_intro(gdl, dyn, fb, gCurView);
     }
     if (gCreditsMode != 0) {
@@ -2563,7 +2563,7 @@ void render_update_viewports(void)
             rects[5].x = screenW / 16;
             rects[5].z = *gScreenWidth_2 * 130 / 512;
             rects[5].w = gScreenHeight_3[0] * 70 / 240;
-            if (gViMode == 2) { /* 640x480 */
+            if (gViMode == VI_MODE_HI_RES) {
                 rects[5].y = 100;
             } else {
                 rects[5].y = 30;

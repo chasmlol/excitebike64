@@ -194,8 +194,8 @@ void nes_update_input(volatile s32 *input)
     if ((*input & INPUT_STICK_RIGHT) && stickX > 8) pad |= NES_PAD_RIGHT;
     NES->joypad = pad;
     if ((*input & (INPUT_L | INPUT_Z)) == (INPUT_L | INPUT_Z)) {
-        gRaceExitCode = 2;
-        gCurGameState->mode = 3; /* exit requested */
+        gRaceExitCode = RACE_EXIT_FINISHED;
+        gCurGameState->mode = STATE_EXIT;
     }
 }
 
@@ -708,7 +708,7 @@ void nes_exit(void)
     mem_free(sNesChrTiles);
     mem_free(sNesPalette);
     gNesActive = 0;
-    gRaceExitCode = 6;
+    gRaceExitCode = RACE_EXIT_NONE;
 }
 
 /* Frees the two audio buffers. */

@@ -54,8 +54,6 @@ typedef struct TrackInfoView {
     /* 0x68 */ u8 unk_68[0xA0 - 0x68];
 } TrackInfoView; /* size 0xA0 */
 
-#define TRACK_FLAG_RECORDS 0x200    /* the track keeps records (gGame.records, the save data) */
-
 /* N64 matrices (Mtx) as these functions declare them. */
 typedef struct { s16 m[4][4][2]; } MtxQ;
 
@@ -206,11 +204,6 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *dyn, s32 fb)
 /* Screen positions given for a 512x240 screen: x from the centre (positive to the left), y from the top. */
 #define SX(n) (gScreenWidth / 2 - gScreenWidth * (n) / 512)
 #define SY(n) (gScreenHeight * (n) / 240)
-
-/* gCups: the five season cups, then the custom cup and the tutorial's levels. */
-#define CUP_CHALLENGE   4   /* one race against one rider */
-#define CUP_CUSTOM      5
-#define CUP_TUTORIAL    6
 
 /* Text alignments of font_text_create. */
 #define TEXT_LEFT_MIDDLE   (TEXT_HALIGN_LEFT | TEXT_VALIGN_CENTER)
@@ -381,15 +374,6 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     return font_render(gdl);
 }
 
-/* The special tracks menu (gSpecialTracksItems): the items, and the codes save_update_unlocks returns for the one
-   that has just opened (gGame.newUnlocks), which the congratulations screen announces. */
-#define SPECIAL_TRACK_DESERT        0
-#define SPECIAL_TRACK_STUNT_COURSE  1
-#define SPECIAL_TRACK_NES           2   /* Original Excitebike */
-#define SPECIAL_TRACK_SOCCER        3
-#define SPECIAL_TRACK_HILL_CLIMB    4
-#define SPECIAL_TRACK_EXCITE_3D     5
-
 /* Draws the screen after a season's last race: "Congratulations!", what was achieved (gGame flags 0x400000 a new
    difficulty, 0x100000 a new round, 0x800000 the game finished) and, with flag 0x200000, the special track that has
    opened. */
@@ -400,7 +384,7 @@ void hud_draw_congratulations(u32 *gdl, Dyn *dyn, s32 fb)
 
     font_reset_queue();
     y = gScreenHeight_2 / 2 - 12;
-    if ((gGame.flags & 0x200000) != 0) {
+    if ((gGame.flags & GAME_FLAG_NEW_UNLOCKS) != 0) {
         y = gScreenHeight_2 / 2 - 24;
     }
     font_text_create(gRaceTextObjs->text[0], 0x40, 4, 7, TEXT_CENTER_MIDDLE);
@@ -413,15 +397,15 @@ void hud_draw_congratulations(u32 *gdl, Dyn *dyn, s32 fb)
                        *(volatile s32 *)&gScreenHeight_2 * 7 / 8);
     }
     font_text_create(gRaceTextObjs->text[0], 0x40, 4, 2, TEXT_CENTER_MIDDLE);
-    if ((gGame.flags & 0x400000) != 0) {
+    if ((gGame.flags & GAME_FLAG_DIFFICULTY_UP) != 0) {
         font_text_add(gRaceTextObjs->text[0], sStrUnlockedDifficulty);
         goto draw;
     }
-    if ((gGame.flags & 0x100000) != 0) {
+    if ((gGame.flags & GAME_FLAG_ROUND_WON) != 0) {
         font_text_add(gRaceTextObjs->text[0], sStrUnlockedRound);
         goto draw;
     }
-    if ((gGame.flags & 0x800000) != 0) {
+    if ((gGame.flags & GAME_FLAG_SEASON_COMPLETE) != 0) {
         font_text_add(gRaceTextObjs->text[0], sStrFinishedGame);
         goto draw;
     }
@@ -531,9 +515,9 @@ void save_init_defaults(void)
         p--;
     } while (i >= 0);
     sum = 0;
-    gSaveData.volumes[0] = 0x8C;
-    gSaveData.volumes[1] = 200;
-    gSaveData.volumes[2] = 0xA0;
+    gSaveData.volumes[VOLUME_MUSIC] = 0x8C;
+    gSaveData.volumes[VOLUME_SFX] = 200;
+    gSaveData.volumes[VOLUME_SPEECH] = 0xA0;
     gSaveData.options = SAVE_OPT_STEREO;
     gSaveData.unlockedTrackCount = 1;
     gSaveData.roundsDone = 0x1F;
@@ -683,9 +667,9 @@ void save_load(s32 unused)
         /* shifted by i, not 2 * i: the layouts of neighbouring controllers overlap */
         gGame.padConfig[i] = (gSaveData.padConfigs >> i) & 3;
     }
-    snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[1]);
-    snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[0]);
-    snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[2]);
+    snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+    snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+    snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
     for (i = 0; i < 5; i++) {
         for (k = 0; k < 3; k++) {
             gCups[i].progress[k] = gSaveData.cupProgress[0][i * 3 + k] >> 5;

@@ -18,10 +18,10 @@ void sched_init(u8 *priority, int unused)
     osCreateMesgQueue(&sSchedSysEventQueue, sSchedSysEventMsgs, 8);
     osCreateMesgQueue(&sSchedTaskQueue, sSchedTaskMsgs, 8);
     osCreateViManager(priority + 10);
-    sched_init_vi_mode(VI_MODE_320X240);
-    sched_init_vi_mode(VI_MODE_512X240);
-    sched_init_vi_mode(VI_MODE_640X480);
-    sched_set_vi_mode(VI_MODE_512X240);
+    sched_init_vi_mode(VI_MODE_LO_RES);
+    sched_init_vi_mode(VI_MODE_MED_RES);
+    sched_init_vi_mode(VI_MODE_HI_RES);
+    sched_set_vi_mode(VI_MODE_MED_RES);
     osViBlack(TRUE);
     osViSetSpecialFeatures(OS_VI_GAMMA_OFF | OS_VI_GAMMA_DITHER_OFF | OS_VI_DIVOT_OFF | OS_VI_DITHER_FILTER_OFF);
     osViSwapBuffer(0x80200000);
@@ -132,7 +132,7 @@ void sched_thread(void)
             osSendMesg(sSchedCurTask_2.cur->msgQ, sSchedCurTask_2.cur->msg, OS_MESG_NOBLOCK);
         } else if (msg == SCHED_MSG_PRENMI) {
             osViBlack(TRUE);
-            sched_set_vi_mode(VI_MODE_320X240);
+            sched_set_vi_mode(VI_MODE_LO_RES);
             osViBlack(TRUE);
             osViSetYScale(1.0f);
             cont_finish_read();
@@ -145,12 +145,12 @@ void sched_thread(void)
             for (;;) ;
         } else if (msg == SCHED_MSG_FAULT) {
             regs = (RegPair *)&gMainThread.context;  /* the registers as u64 pairs: .lo is the low word */
-            sched_set_vi_mode(VI_MODE_320X240);
+            sched_set_vi_mode(VI_MODE_LO_RES);
             mem_fill((u8 *)gFramebuffers_3, 0, FB_320X240_SIZE);
             osWritebackDCacheAll();
             osViSwapBuffer(gFramebuffers_3);
             osViBlack(FALSE);
-            if (!(gGame.flags & 0x20000000)) {      /* the Debug cheat */
+            if (!(gGame.flags & GAME_FLAG_DEBUG)) {
                 for (;;) ;
             }
             fault_draw_hex(0x32, 0x1E, *(u32 *)((u32)&gMainThread + 0x11C));  /* gMainThread.context.pc, as a scalar */
@@ -180,7 +180,7 @@ typedef struct {
 extern ViMode sViModes[];
 
 /* Builds sViModes[mode] from libultra's mode for the TV type (NTSC or MPAL; anything else hangs): the high-resolution
-   interlaced mode for VI_MODE_640X480, else the low-resolution one with its width and x scale set for
+   interlaced mode for VI_MODE_HI_RES, else the low-resolution one with its width and x scale set for
    sViModeWidths[mode]. */
 void sched_init_vi_mode(s32 mode)
 {
@@ -190,13 +190,13 @@ void sched_init_vi_mode(s32 mode)
     ViMode *base;
 
     if (osTvType == OS_TV_NTSC) {
-        if (mode == VI_MODE_640X480) {
+        if (mode == VI_MODE_HI_RES) {
             osMode = &osViModeNtscHpf1;
         } else {
             osMode = &osViModeNtscLpn1;
         }
     } else if (osTvType == OS_TV_MPAL) {
-        if (mode == VI_MODE_640X480) {
+        if (mode == VI_MODE_HI_RES) {
             osMode = &osViModeMpalHpf1;
         } else {
             osMode = &osViModeMpalLpn1;
@@ -207,7 +207,7 @@ void sched_init_vi_mode(s32 mode)
     sViModes[mode] = *osMode;
     off = mode * 0x50;      /* sizeof(OSViMode) */
     base = sViModes;
-    if (mode != VI_MODE_640X480) {
+    if (mode != VI_MODE_HI_RES) {
         vm = (ViMode *)(off + (s32)base);
         vm->width = sViModeWidths[mode];
         vm->xScale = (sViModeWidths[mode] << 9) / 320;    /* 0x200 (1.0) for 320 pixels */
@@ -323,13 +323,13 @@ void *sched_get_os_vi_mode(s32 mode)
 {
     void *osMode;
     if (osTvType == OS_TV_NTSC) {
-        if (mode == VI_MODE_640X480) {
+        if (mode == VI_MODE_HI_RES) {
             osMode = osViModeNtscHpf1_2;
         } else {
             osMode = osViModeNtscLpn1_2;
         }
     } else if (osTvType == OS_TV_MPAL) {
-        if (mode == VI_MODE_640X480) {
+        if (mode == VI_MODE_HI_RES) {
             osMode = osViModeMpalHpf1_2;
         } else {
             osMode = osViModeMpalLpn1_2;

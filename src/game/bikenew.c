@@ -135,7 +135,7 @@ void bikes_init(void)
             } else {
                 camMode = CAM_MODE_CHASE_MID;
             }
-            if (gCamModes[camMode].flags & CAM_MODE_NO_CYCLE) {
+            if (gCamModes[camMode].flags & CAM_FLAG_NO_CYCLE) {
                 camMode = CAM_MODE_CHASE_MID;
             }
             gRiders[i].camMode = camMode;
@@ -633,8 +633,8 @@ void bike_update_suspension(Rider *rider)
     mass = rider->bike.mass;
     frontShare = mass * 0.65f;
     rearShare = mass * 0.6f;
-    frontLoad = ((frontShare / 1.25f) - 11.5199995f) * 14.700001f;
-    rearLoad = ((rearShare / 1.25f) + 11.5199995f) * 14.700001f;
+    frontLoad = ((frontShare / 1.25f) - 11.5199995f) * GRAVITY;
+    rearLoad = ((rearShare / 1.25f) + 11.5199995f) * GRAVITY;
     one = 1.0f;
     scaleFrac = one - one / sSuspSpringScale;
     rearPreloadForce = scaleFrac * rearLoad;
@@ -870,9 +870,9 @@ void bike_place_on_ground(Rider *rider)
     quat_to_mtx3f(&rider->bike.right.x, rider->bike.quat);
     quat_to_angles(rider->bike.quat, &rider->drawRot[0], &rider->drawRot[1], &rider->drawRot[2]);
     dist = bike_raycast_ground(&rider->bike.pos, &rider->bike.up, 0.0f, 0.002f, normal);
-    offset[0] = rider->bike.up.x * -((dist + 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    offset[1] = rider->bike.up.y * -((dist + 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    offset[2] = rider->bike.up.z * -((dist + 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    offset[0] = rider->bike.up.x * -((dist + 0.5f) - rider->bike.mass * GRAVITY / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    offset[1] = rider->bike.up.y * -((dist + 0.5f) - rider->bike.mass * GRAVITY / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    offset[2] = rider->bike.up.z * -((dist + 0.5f) - rider->bike.mass * GRAVITY / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
     rider->bike.pos.x -= offset[0];
     rider->bike.pos.y -= offset[1];
     rider->bike.pos.z -= offset[2];
@@ -891,7 +891,7 @@ void bike_place_on_ground(Rider *rider)
         wheelDiff = rider->frontWheel.groundDist - rider->rearWheel.groundDist;
     } while ((0.0f < wheelDiff ? 0.02f < wheelDiff : 0.02f < -wheelDiff) && tries++ < 16);
     bike_update_wheel_contacts(rider);
-    dist = (((rider->frontWheel.groundDist + rider->rearWheel.groundDist) * 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    dist = (((rider->frontWheel.groundDist + rider->rearWheel.groundDist) * 0.5f) - rider->bike.mass * GRAVITY / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
     offset[0] = rider->bike.up.x * -dist;
     offset[1] = rider->bike.up.y * -dist;
     offset[2] = rider->bike.up.z * -dist;
@@ -981,7 +981,7 @@ void bike_update_brakes(Rider *rider)
     } else {
         rider->reversing = 1;
     }
-    if ((gEvent.flags & EVENT_TIMER_PAUSED) == 0) {
+    if ((gEvent.flags & EVENT_STOPPED) == 0) {
         if ((rider->input & (INPUT_Z | INPUT_A)) != 0 && val < 0.0f) {
             f32 torque, rearTorque;
             torque = frontShare * -2572.5f;
@@ -1359,7 +1359,7 @@ void bike_solve_tire_constraints(Rider *rider)
     if (rider->frontWheel.airTicks <= 0) {
         if (rider->rearWheel.airTicks <= 0) {
             newVel.x = rider->bike.vel.x + (rider->frontWheel.force.x + rider->rearWheel.force.x) * (gPhysDeltaTime / rider->bike.mass);
-            newVel.y = rider->bike.vel.y + (rider->frontWheel.force.y + rider->rearWheel.force.y) * (gPhysDeltaTime / rider->bike.mass) - gPhysDeltaTime * 14.700001f;
+            newVel.y = rider->bike.vel.y + (rider->frontWheel.force.y + rider->rearWheel.force.y) * (gPhysDeltaTime / rider->bike.mass) - gPhysDeltaTime * GRAVITY;
             newVel.z = rider->bike.vel.z + (rider->frontWheel.force.z + rider->rearWheel.force.z) * (gPhysDeltaTime / rider->bike.mass);
             CROSS(frontTorque, rider->frontWheel.contactOffset, rider->frontWheel.force);
             CROSS(rearTorque, rider->rearWheel.contactOffset, rider->rearWheel.force);
@@ -1594,7 +1594,7 @@ void bike_compute_forces(Rider *rider)
     pos = &rider->bike.pos;
     /* dead stores: they keep the original's register use */
     if (rider == 0) gravity = 1.0f; else if (pos == 0) gravity = 2.0f; else if (rider->rot[0] == rider->animFrame) gravity = 3.0f; else gravity = 4.0f;
-    gravity = 14.700001f;
+    gravity = GRAVITY;
     if (rider->airFrames < 7
         || (f32)height_get_ground(pos->x * 1000.0f, pos->y * 1000.0f, pos->z * 1000.0f) / 1000.0f - rider->bike.pos.y + 0.5f > -0.2f
         || rider->pendingCrash != 0) {
@@ -2231,7 +2231,7 @@ void bike_update_jump(Rider *rider)
             rider->cpuAirPitch = 0;
             rider->landingTime1 = (rider->bike.vel.y + rider->bike.vel.y) / 10.106251f;
             rider->landingTime2 = (rider->bike.vel.y + rider->bike.vel.y) / 19.29375f;
-            rider->landingTime = (rider->bike.vel.y + rider->bike.vel.y) / 14.700001f;
+            rider->landingTime = (rider->bike.vel.y + rider->bike.vel.y) / GRAVITY;
             stunt_on_takeoff(rider);
             takeoffSpeed = rider->speed;
             minAirTime = 0.5f;
@@ -2372,21 +2372,21 @@ void bike_update_jump(Rider *rider)
                 }
                 dirX /= horizSpeed;
                 dirZ /= horizSpeed;
-                score2 = rider->landingPos2.y * 14.700001f;
+                score2 = rider->landingPos2.y * GRAVITY;
                 slope = (dirX * rider->landingNormal2.x + dirZ * rider->landingNormal2.z) / rider->landingNormal2.y;
                 if (gGame.mode != GAME_MODE_DESERT) {
                     rider->landingSegment2 = path_find_segment(&rider->landingPos2, rider->landingSegment2, steer, rider->pathSearch);
-                    if (gPathNodes[rider->landingSegment2].flags & 0x10) {
+                    if (gPathNodes[rider->landingSegment2].flags & PATH_NODE_BAD_LANDING) {
                         score2 -= 1000.0f;
                     }
                 }
-                score1 = rider->landingPos1.y * 14.700001f;
+                score1 = rider->landingPos1.y * GRAVITY;
                 normalVel = rider->landingNormal2.x * rider->bike.vel.x + rider->landingNormal2.y * (rider->bike.vel.y - rider->landingTime2 * 17.640001f) + rider->landingNormal2.z * rider->bike.vel.z;
                 dirX = (dirX * rider->landingNormal1.x + dirZ * rider->landingNormal1.z) / rider->landingNormal1.y;
                 score2 -= normalVel * normalVel;
                 if (gGame.mode != GAME_MODE_DESERT) {
                     rider->landingSegment1 = path_find_segment(&rider->landingPos1, rider->landingSegment1, steer, rider->pathSearch);
-                    if (gPathNodes[rider->landingSegment1].flags & 0x10) {
+                    if (gPathNodes[rider->landingSegment1].flags & PATH_NODE_BAD_LANDING) {
                         score1 -= 500.0f;
                     }
                 }
@@ -2547,7 +2547,7 @@ void bike_update(Rider *rider, s32 ticks)
         } else {
             bike_update_steering(rider, ticks);
         }
-        if (gEvent.flags & EVENT_TIMER_PAUSED) {
+        if (gEvent.flags & EVENT_STOPPED) {
             rider->walkPhase = 0x3000;
             rider->input |= INPUT_B;
         }
@@ -2558,7 +2558,7 @@ void bike_update(Rider *rider, s32 ticks)
                 rider->input = 0;
                 rider->stickX = 0;
                 if (rider - gRiders == 0) {
-                    gEvent.flags |= EVENT_LESSON_DONE;
+                    gEvent.flags |= EVENT_RIDER_STOPPED;
                 }
             }
         }

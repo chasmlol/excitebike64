@@ -180,10 +180,6 @@ void sun_check_occlusion(s32 unused)
     }
 }
 
-/* Cosine and sine of a 16-bit angle, 1.0 = 0x4000 */
-#define COS16(a) gCosTable[((a) >> 4) & 0xFFF]
-#define SIN16(a) gCosTable[(((a) >> 4) - 0x400) & 0xFFF]
-
 /* sun_alloc_vtx written inline */
 static inline Vtx *allocVtx(s32 fb, s32 count) {
     s32 used = sSunVtxUsed[fb];

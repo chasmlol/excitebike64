@@ -65,7 +65,7 @@ void map_init(void)
                 sMapW = sMapW + sMapW / 2;
                 sMapH = sMapH + sMapH / 2;
             }
-            if (gViMode == 2) { /* 640x480 */
+            if (gViMode == VI_MODE_HI_RES) {
                 sMapY = sMapY + 0x34;
             }
             /* texture steps that fit the 64-texel image into the rectangle */
@@ -282,7 +282,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *dyn, s32 fb) {
     Rider *riders;
     s32 i;
 
-    if (gHudLevel != 0 || sMapImage == 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)) ||
+    if (gHudLevel != 0 || sMapImage == 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) ||
         gInsetViewActive != 0) {
         return gdl;
     }

@@ -122,7 +122,7 @@ void engine_update(s32 riderIdx, s32 ticks)
     if (rider->crashState != CRASH_STATE_RIDING) {
         rider->input &= ~(INPUT_Z | INPUT_A);
     }
-    if (rider->rearWheel.airTicks < 1 && (gEvent.flags & EVENT_TIMER_PAUSED) == 0) {
+    if (rider->rearWheel.airTicks < 1 && (gEvent.flags & EVENT_STOPPED) == 0) {
         if (rider->speed < 4.5f && (rider->input & (INPUT_Z | INPUT_A)) != 0) {
             /* pulling away: the clutch slips, the engine holds 6500 rpm */
             rpm = rider->engine.rpm;
@@ -177,7 +177,7 @@ void engine_update(s32 riderIdx, s32 ticks)
     if (14500.0f < rider->engine.rpm) {
         rider->engine.rpm = 14500.0f;
     }
-    if ((rider->input & (INPUT_Z | INPUT_A)) != 0 && (gEvent.flags & EVENT_TIMER_PAUSED) == 0) {
+    if ((rider->input & (INPUT_Z | INPUT_A)) != 0 && (gEvent.flags & EVENT_STOPPED) == 0) {
         if (rider->rearWheel.airTicks < 1) {
             if (rider->engine.overheated != 0) {
                 tmp = sOverheatPowerScale;

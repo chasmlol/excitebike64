@@ -72,7 +72,7 @@ void snd_race_init(Surface *surfaces)
     if (gPodiumMode != 0) {
         return;
     }
-    if (!(gGame.flags & 0x80)) {
+    if (!(gGame.flags & GAME_FLAG_TRACK_INTRO)) {
         snd_load_engine_samples();
     }
     i = gCurTrack_2 - gTracks;

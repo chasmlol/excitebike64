@@ -148,7 +148,7 @@ void cam_update(void) {
             func_8002D888(&gRiders[sCamTarget], &out); /* empty */
         } else {
             if ((gReplayPlayback != 0 || gCreditsMode != 0 ||
-                 (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN))) &&
+                 (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO))) &&
                 (gCamZoneState[gCamView].flags & CAM_ZONE_STATE_IN)) {
                 if (!(gCamZoneState[gCamView].flags & CAM_ZONE_STATE_ON)) {
                     gCamZoneState[gCamView].flags |= CAM_ZONE_STATE_ON;
@@ -494,10 +494,6 @@ after:
 done:
     return rider->heading;
 }
-
-/* Sine and cosine of a 16-bit angle, 1.0 = 0x4000 */
-#define SIN16(i) gCosTable[(((i) >> 4) - 0x400) & 0xFFF]
-#define COS16(i) gCosTable[((i) >> 4) & 0xFFF]
 
 /* Soccer: after a goal (EVENT_SCORED: the scoring side) a sweep around the ball or the scorer, else the
    chase camera. Returns what its callees leave in v0: cam_snap_to_2 and cam_update_chase_2 are declared to return

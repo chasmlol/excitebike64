@@ -68,7 +68,7 @@ void tutorial_check_lesson_skip(void)
             gEvent.tutorialAction = TUTORIAL_PREV;
             gRacePhase = RACE_PHASE_FADE_OUT;
             gRacePhaseTimer = PHASE_TIMER_START;
-            snd_play_menu_sound(MENU_SFX_SELECT);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
         }
         if ((gPadInput & INPUT_C_RIGHT) == 0) {
@@ -83,7 +83,7 @@ void tutorial_check_lesson_skip(void)
         gEvent.tutorialAction = TUTORIAL_NEXT;
         gRacePhase = RACE_PHASE_FADE_OUT;
         gRacePhaseTimer = PHASE_TIMER_START;
-        snd_play_menu_sound(MENU_SFX_SELECT);
+        snd_play_menu_sound(MENU_SOUND_SELECT);
     }
 }
 
@@ -125,7 +125,7 @@ void tutorial_update(void)
             /* tricks count up; a timed lesson counts down until rider 0 finishes */
             if (LESSON.flags & LESSON_TRICKS) {
                 gEvent.time++;
-            } else if (!(gRiders[0].flags & 0x10)) {
+            } else if (!(gRiders[0].flags & RIDER_FINISHED)) {
                 gEvent.time--;
             }
         } else {
@@ -205,7 +205,7 @@ void tutorial_update(void)
                 return;
             }
             if (gRiders[0].segment == LESSON.goalNode) {
-                if (gRiders[0].flags & 0x10) {
+                if (gRiders[0].flags & RIDER_FINISHED) {
                     if (gEvent.flags & EVENT_RIDER_STOPPED) {
                         bikes_free();
                         decal_clear_all();
@@ -216,21 +216,21 @@ void tutorial_update(void)
                         gEvent.flags = (gEvent.flags | EVENT_CAM_RESET) & ~EVENT_RIDER_STOPPED;
                     }
                 } else {
-                    gRiders[0].flags |= 0x10;
+                    gRiders[0].flags |= RIDER_FINISHED;
                     gEvent.flags &= ~EVENT_RIDER_STOPPED;
                 }
                 return;
             }
             if ((LESSON.flags & LESSON_TAKEDOWN) && gRiders[1].segment >= LESSON.goalNode &&
                 (LESSON.startNode < LESSON.goalNode || (gRiders[1].segment < LESSON.startNode - 2 && LESSON.goalNode < LESSON.startNode))) {
-                gRiders[1].flags |= 0x10;
+                gRiders[1].flags |= RIDER_FINISHED;
                 return;
             }
             break;
         case TUTORIAL_PLAY:
             /* a lesson without the countdown: at the goal, stop and show the menu */
             if (gRiders[0].segment == LESSON.goalNode) {
-                gRiders[0].flags |= 0x10;
+                gRiders[0].flags |= RIDER_FINISHED;
             }
             if ((gEvent.flags & EVENT_RIDER_STOPPED) && gPauseMenu != PAUSE_TUTORIAL) {
                 gPauseMenuCursor = TUTORIAL_ITEM_RETRY;
@@ -263,15 +263,15 @@ void tutorial_update(void)
                             event_request_exit();
                             gRaceExitCode = RACE_EXIT_FINISHED;
                             gPauseMenu = PAUSE_NONE;
-                            gGame.flags &= ~GAME_REPEAT_STATE;
+                            gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
                             return;
                         }
                     }
                     if (sTutorialStep < 10) {
                         sTutorialStep = 10;
                     }
-                } else if (!(gRiders[0].flags & 0x10)) {
-                    gRiders[0].flags |= 0x10;
+                } else if (!(gRiders[0].flags & RIDER_FINISHED)) {
+                    gRiders[0].flags |= RIDER_FINISHED;
                 }
             }
         }
@@ -289,7 +289,7 @@ void tutorial_update(void)
         }
         if ((u32)(gRiders[0].segment - LESSON.goalNode) < 10 || (gEvent.flags & EVENT_RIDER_STOPPED)) {
             /* past the goal: stop, open the next level if this was its last lesson, then the menu */
-            if (gRiders[0].flags & 0x10) {
+            if (gRiders[0].flags & RIDER_FINISHED) {
                 if (gSeason->round < TUTORIAL_NUM_LESSONS - 1 && LESSON.level != gTutorialLessons[gSeason->round + 1].level &&
                     tutorial_lesson_passed_2()) {
                     if (LESSON.level == gSeason->cup->progress[0]) {
@@ -305,7 +305,7 @@ void tutorial_update(void)
                     gPauseMenuCursor = tutorial_lesson_passed_2() ? TUTORIAL_ITEM_NEXT : TUTORIAL_ITEM_RETRY;
                 }
             } else {
-                gRiders[0].flags |= 0x10;
+                gRiders[0].flags |= RIDER_FINISHED;
             }
         } else if (gRiders[0].segment == NODE(NODE(LESSON.startNode)->prev)->prev && !(LESSON.flags & LESSON_TRICKS)) {
             gEvent.tutorialAction = TUTORIAL_RETRY;
@@ -317,7 +317,7 @@ void tutorial_update(void)
             gReplayRecording = 0;
         } else if ((LESSON.flags & LESSON_TAKEDOWN) && gRiders[1].segment >= LESSON.goalNode &&
                    (LESSON.startNode < LESSON.goalNode || (gRiders[1].segment < LESSON.startNode - 2 && LESSON.goalNode < LESSON.startNode))) {
-            gRiders[1].flags |= 0x10;
+            gRiders[1].flags |= RIDER_FINISHED;
         }
         break;
     }
@@ -340,7 +340,7 @@ void event_init(s32 numRiders, s32 numLaps)
 
     sRaceEndFrame = -1;
     mem_fill_2(gEvent.lapLeaderTimes, -1, 12);
-    if (gGame.mode == MODE_SEASON) {
+    if (gGame.mode == GAME_MODE_SEASON) {
         for (i = 0; i < gEvent.numRiders; i++) {
             gSeason->racePoints[i] = 0;
         }
@@ -356,18 +356,18 @@ void event_init(s32 numRiders, s32 numLaps)
     gEvent.idleFrames = 0;
     gEvent.numRiders = numRiders;
     gEvent.numLaps = numLaps;
-    if (gGame.mode == MODE_SEASON && !(gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) &&
+    if (gGame.mode == GAME_MODE_SEASON && !(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) &&
         gSeason->cup - gCups == 4) {
         gEvent.flags = EVENT_DUEL;
         gEvent.numRiders = 2;
         gNumRiders = 2;
     }
     gEvent.countdown = 150;
-    if (gCreditsMode != 0 || (gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) ||
-        gGame.mode == MODE_TEST_RIDE || gGame.mode == MODE_TEST_RIDE_OPEN) {
+    if (gCreditsMode != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) ||
+        gGame.mode == GAME_MODE_TEST_LOOP || gGame.mode == GAME_MODE_TEST_OPEN) {
         gEvent.state = EVENT_STATE_GO;
     } else {
-        if ((gGame.mode == MODE_EXHIBITION || gGame.mode == MODE_SEASON) &&
+        if ((gGame.mode == GAME_MODE_EXHIBITION || gGame.mode == GAME_MODE_SEASON) &&
             gCurTrack_14 - gTracks_10 != TRACK_LAS_VEGAS) {
             gEvent.state = EVENT_STATE_WAIT;
             gEvent.countdown = 0x100;
@@ -378,14 +378,14 @@ void event_init(s32 numRiders, s32 numLaps)
         gEvent.flags |= EVENT_STOPPED;
     }
     gEvent.time = 0;
-    gEvent.noPlayers = (gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) != 0;
+    gEvent.noPlayers = (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) != 0;
     mem_fill_2(gRiders, 0, sizeof(Rider) * 8);
-    gGame.flags &= ~GAME_REPEAT_STATE;
+    gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
     if (gRaceSeries_2.count > 0 && gRaceSeries_2.done == 0) {
         gRaceSeries_2.buf = mem_calloc_dbg(gRaceSeries_2.count * 4, 0, (s32)sStrEventFile, 0x6D9);
     }
     switch (gGame.mode) {
-    case MODE_SOCCER:
+    case GAME_MODE_SOCCER:
         gEvent.countdown = 180;
         gEvent.state = EVENT_STATE_KICKOFF;
         gEvent.ballToucher = 0;
@@ -394,11 +394,11 @@ void event_init(s32 numRiders, s32 numLaps)
         gEvent.goalTimer = 0;
         gEvent.flags |= EVENT_STOPPED;
         break;
-    case MODE_DESERT:
+    case GAME_MODE_DESERT:
         gEvent.flags |= EVENT_STOPPED;
         race_reset_grid_order();
         break;
-    case MODE_HILL_CLIMB:
+    case GAME_MODE_HILL_CLIMB:
         gEvent.unk_48 = -1;
         gEvent.flags |= EVENT_STOPPED;
         race_reset_grid_order();
@@ -406,16 +406,16 @@ void event_init(s32 numRiders, s32 numLaps)
             rider->timeLimit = 7200; /* two minutes for the first stage */
         }
         break;
-    case MODE_TUTORIAL:
+    case GAME_MODE_TUTORIAL:
         tutorial_init_lesson(1);
         break;
-    case MODE_STUNT:
+    case GAME_MODE_STUNT_COURSE:
         gEvent.time = 7200; /* two minutes */
         gEvent.flags |= EVENT_STOPPED;
         race_reset_grid_order();
         break;
-    case MODE_TEST_RIDE:
-    case MODE_TEST_RIDE_OPEN:
+    case GAME_MODE_TEST_LOOP:
+    case GAME_MODE_TEST_OPEN:
         break;
     default:
         if (gEvent.state == 8) {
@@ -444,11 +444,11 @@ s32 event_check_record_time(Rider *rider)
     if (rider->isCpu != 0) goto done;
     if (gReplayPlayback != 0) goto done;
     /* the custom round: the cup's index (/ sizeof(Cup)) is 5 */
-    if (gGame.mode == MODE_SEASON && gSeason != 0 && (((s32)gSeason->cup - (s32)gCups) * 0x38E38E39 >> 2) == 5) goto done;
+    if (gGame.mode == GAME_MODE_SEASON && gSeason != 0 && (((s32)gSeason->cup - (s32)gCups) * 0x38E38E39 >> 2) == 5) goto done;
     track = gCurTrack_14;
     if (track->flags & TRACK_FLAG_USER) goto done;
     if (gEvent.time >= gEvent.record.times[2]) goto done;
-    if (gGame.mode == MODE_TIME_TRIAL && rider != &gRiders[gTimeTrialPlayer]) goto done;
+    if (gGame.mode == GAME_MODE_TIME_TRIAL && rider != &gRiders[gTimeTrialPlayer]) goto done;
     if (gGame.numLaps != track->numLaps) goto done;
 
     best = gEvent.time < gEvent.record.times[0];
@@ -466,7 +466,7 @@ s32 event_check_record_time(Rider *rider)
     gEvent.record.times[i] = gEvent.time;
     gEvent.record.initials[i][0] = 0xFF;
     gEvent.record.initials[i][1] = 0xFF;
-    gEvent.record.initials[i][2] = (gGame.mode == MODE_TIME_TRIAL) ? 0 : (u8)(rider - gRiders);
+    gEvent.record.initials[i][2] = (gGame.mode == GAME_MODE_TIME_TRIAL) ? 0 : (u8)(rider - gRiders);
     gCurTrack_14->flags |= TRACK_FLAG_NEW_TIME;
     if (best) announce_record(rider - gRiders);
 done:
@@ -509,15 +509,15 @@ u32 event_rider_finished(s32 riderIdx)
     *(u16 *)(race + 8) = place;
     *(s32 *)(race + 0x2C) = event->time; /* race.finishTime */
     if (*(u8 *)((u8 *)&gRiders[0].race + ofs + 0x88) == 0 && gReplayPlayback == 0) { /* isCpu */
-        if ((gGame.mode != MODE_TIME_TRIAL || p == gTimeTrialPlayer) && gNumScreens == 1) {
+        if ((gGame.mode != GAME_MODE_TIME_TRIAL || p == gTimeTrialPlayer) && gNumScreens == 1) {
             snd_play_finish_song();
         }
     }
     rider = (u8 *)gRiders + ((((p << 6) - p)) << 5);
     isBest = event_check_record_time((Rider *)rider);
-    if ((gGame.flags & GAME_REPLAY) == 0) {
+    if ((gGame.flags & GAME_FLAG_REPLAY) == 0) {
         mode = gGame.mode;
-        if (mode == MODE_SEASON) {
+        if (mode == GAME_MODE_SEASON) {
             gSeason->places[p][gSeason->round] = *(u16 *)(race + 8);
             placeIdx = *(s16 *)(race + 8);
             placeIdx = (s16)placeIdx;
@@ -528,7 +528,7 @@ u32 event_rider_finished(s32 riderIdx)
             if (rider[0x6E8] != 0) { /* isCpu */
                 goto finished;
             }
-            /* the first to finish (the place count equals MODE_SEASON, 1) wins the round */
+            /* the first to finish (the place count equals GAME_MODE_SEASON, 1) wins the round */
             ofs = gEvent.numFinished;
             if (ofs != mode) {
                 goto human;
@@ -589,28 +589,28 @@ void event_rider_lap_completed(s32 p)
     s16 leaderTime;
 
     switch (gGame.mode) {
-    case MODE_SOCCER:
+    case GAME_MODE_SOCCER:
     case 3:
     case 4:
-    case MODE_DESERT:
-    case MODE_TUTORIAL:
-    case MODE_TEST_RIDE:
-    case MODE_TEST_RIDE_OPEN:
+    case GAME_MODE_DESERT:
+    case GAME_MODE_TUTORIAL:
+    case GAME_MODE_TEST_LOOP:
+    case GAME_MODE_TEST_OPEN:
         return;
     }
     race = &gRiders[p].race;
     if (race->lap < gEvent.numLaps) {
-        if (gRiders[p].isCpu == 0 && gReplayPlayback == 0 && gGame.mode != MODE_HILL_CLIMB && gGame.mode != MODE_DESERT &&
+        if (gRiders[p].isCpu == 0 && gReplayPlayback == 0 && gGame.mode != GAME_MODE_HILL_CLIMB && gGame.mode != GAME_MODE_DESERT &&
             !(gCurTrack_14->flags & TRACK_FLAG_USER) && (lapTime = race->lapTimes[race->lap]) < gEvent.record.bestLap &&
-            (gGame.mode != MODE_TIME_TRIAL || p == gTimeTrialPlayer)) {
+            (gGame.mode != GAME_MODE_TIME_TRIAL || p == gTimeTrialPlayer)) {
             gEvent.record.bestLap = lapTime;
             gEvent.record.initials[3][0] = 0xFF;
             gEvent.record.initials[3][1] = 0xFF;
-            gEvent.record.initials[3][2] = (gGame.mode == MODE_TIME_TRIAL) ? 0 : p;
+            gEvent.record.initials[3][2] = (gGame.mode == GAME_MODE_TIME_TRIAL) ? 0 : p;
             say = LAP_SAY_BEST_LAP;
             gCurTrack_14->flags |= TRACK_FLAG_NEW_LAP;
         }
-        if (gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) {
+        if (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) {
             goto end;
         }
         leaderTime = gEvent.lapLeaderTimes[race->lap];
@@ -633,7 +633,7 @@ void event_rider_lap_completed(s32 p)
         ((volatile RiderRace *)race)->lap++;
         if (race->lap != gEvent.numLaps) {
             if (say != LAP_SAY_BEST_LAP) {
-                if (gGame.mode == MODE_TIME_TRIAL && gRiderAlpha[p] == 0xFF) {
+                if (gGame.mode == GAME_MODE_TIME_TRIAL && gRiderAlpha[p] == 0xFF) {
                     say = LAP_SAY_LAP;
                 } else if (race->place == 0) {
                     say = LAP_SAY_LEADER_LAP;
@@ -774,7 +774,7 @@ void event_update_stunt(void)
         rider = &gRiders[i];
         if (rider->isCpu) continue;
         if (gReplayPlayback) continue;
-        if (gGame.mode == MODE_SEASON && gSeason != NULL && gSeason->cup - gCups == 5) continue;
+        if (gGame.mode == GAME_MODE_SEASON && gSeason != NULL && gSeason->cup - gCups == 5) continue;
         if (rider->stuntTotal > gEvent.record.times[2]) {
             for (j = 0; j < 3; j++) {
                 if (rider->stuntTotal >= gEvent.record.times[j]) {
@@ -988,9 +988,9 @@ void event_update_race(void) {
     for (m = 0; m < numPlayers; m++) {
         if (!done[m]) break;
     }
-    if (!((m == numPlayers && playersRacing == 0 && gGame.mode != MODE_TIME_TRIAL) ||
-          (gGame.mode == MODE_TIME_TRIAL && done[gTimeTrialPlayer]))) return;
-    if (gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) return;
+    if (!((m == numPlayers && playersRacing == 0 && gGame.mode != GAME_MODE_TIME_TRIAL) ||
+          (gGame.mode == GAME_MODE_TIME_TRIAL && done[gTimeTrialPlayer]))) return;
+    if (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) return;
     if (gRaceExitCode == RACE_EXIT_BACK) return;
     if (gEvent.allFinished == 0) {
         gEvent.messageTimer = 180;
@@ -1007,7 +1007,7 @@ void event_update_race(void) {
         if ((gPadInput_2[1] & INPUT_START) && !(gPadInputPrev_2[1] & INPUT_START)) goto go;
         if ((gPadInput_2[2] & INPUT_START) && !(gPadInputPrev_2[2] & INPUT_START)) goto go;
         if ((gPadInput_2[3] & INPUT_START) && !(gPadInputPrev_2[3] & INPUT_START)) goto go;
-        if (gCreditsMode != 0 && (gGame.flags & GAME_CREDITS_SKIPPABLE) && (gPadInput_2[0] & INPUT_B) && !(gPadInputPrev_2[0] & INPUT_B)) goto go;
+        if (gCreditsMode != 0 && (gGame.flags & GAME_FLAG_CREDITS_FROM_OPTIONS) && (gPadInput_2[0] & INPUT_B) && !(gPadInputPrev_2[0] & INPUT_B)) goto go;
         if (gEvent.messageTimer != 0 && gCreditsMode == 0) goto end;
         if ((gPadInput_2[0] & INPUT_A) && !(gPadInputPrev_2[0] & INPUT_A)) goto go;
         if ((gPadInput_2[1] & INPUT_A) && !(gPadInputPrev_2[1] & INPUT_A)) goto go;
@@ -1015,7 +1015,7 @@ void event_update_race(void) {
         if (!(gPadInput_2[3] & INPUT_A) || (gPadInputPrev_2[3] & INPUT_A)) goto end;
     go:
         if (gCreditsMode != 0) {
-            snd_play_menu_sound(MENU_SFX_BACK);
+            snd_play_menu_sound(MENU_SOUND_BACK);
         }
         if (gRacePhase == RACE_PHASE_RACING) {
             gRacePhase = RACE_PHASE_FADE_OUT;
@@ -1043,14 +1043,14 @@ void event_update_race(void) {
                         gRiders[k].race.finishPlace++;
                     }
                 }
-                if (gGame.mode == MODE_SEASON) {
+                if (gGame.mode == GAME_MODE_SEASON) {
                     gSeason->racePoints[k] += (u8)gRacePoints[gRiders[k].race.finishPlace];
                 }
             }
             gEvent.finishOrder[gRiders[k].race.finishPlace] = k;
         }
         gEvent.numFinished = gEvent.numRiders;
-        if (gGame.mode == MODE_SEASON) {
+        if (gGame.mode == GAME_MODE_SEASON) {
             /* the totals, and the standings sorted by them */
             for (i = 0; i < gEvent.numRiders; i++) {
                 gSeason->points[i] += gSeason->racePoints[i];
@@ -1083,7 +1083,7 @@ end:
                 gEvent.finishOrder[gEvent.numFinished] = i;
                 race->finishPlace = gEvent.numFinished++;
                 race->finishTime = (gEvent.time * gRiderStandings[0]->raceDist) / gRiders[i].raceDist;
-                /* (gGame.mode == MODE_SEASON, and gRacePoints[place]'s low byte, in a form that matches) */
+                /* (gGame.mode == GAME_MODE_SEASON, and gRacePoints[place]'s low byte, in a form that matches) */
                 if (gGame.mode == 1 + (((u32)&gRiders & 1) >> 1)) {
                     gSeason->places[gRiderStandings[i] - gRiders][gSeason->round] = race->finishPlace;
                     gSeason->racePoints[gRiderStandings[i] - gRiders] = ((Pts *)((u32)gRacePoints | (((u32)gRacePoints & 1) >> 1)))[race->finishPlace].b3;
@@ -1100,7 +1100,7 @@ void event_update(s32 unused)
     s32 i;
     s32 *input;
 
-    if ((gGame.flags & GAME_TRACK_INTRO) == 0) {
+    if ((gGame.flags & GAME_FLAG_TRACK_INTRO) == 0) {
         s32 bits;
         i = 0;
         bits = gContMask;
@@ -1114,10 +1114,10 @@ void event_update(s32 unused)
         }
     }
     switch (gGame.mode) {
-    case MODE_SOCCER:
+    case GAME_MODE_SOCCER:
         event_update_soccer();
         break;
-    case MODE_DESERT:
+    case GAME_MODE_DESERT:
         /* the clock stops at 60 minutes */
         event_update_countdown();
         if (gEvent.allFinished == 0) {
@@ -1134,23 +1134,23 @@ void event_update(s32 unused)
             break;
         }
         break;
-    case MODE_HILL_CLIMB:
+    case GAME_MODE_HILL_CLIMB:
         event_update_hillclimb();
         break;
-    case MODE_TUTORIAL:
+    case GAME_MODE_TUTORIAL:
         tutorial_update();
         break;
-    case MODE_STUNT:
+    case GAME_MODE_STUNT_COURSE:
         event_update_stunt();
         break;
     default:
         event_update_race();
-    case MODE_TEST_RIDE:
-    case MODE_TEST_RIDE_OPEN:
+    case GAME_MODE_TEST_LOOP:
+    case GAME_MODE_TEST_OPEN:
         break;
     }
-    if (gGame.mode < MODE_SOCCER && gEvent.numFinished > 0 && gEvent.finishOrder[0] < gGame.numPlayers &&
-        gEvent.finishTimer != -2 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL)) {
+    if (gGame.mode < GAME_MODE_SOCCER && gEvent.numFinished > 0 && gEvent.finishOrder[0] < gGame.numPlayers &&
+        gEvent.finishTimer != -2 && (gGame.numPlayers == 1 || gGame.mode == GAME_MODE_TIME_TRIAL)) {
         gEvent.finishTimer = gEvent.finishTimer + 1;
         if (gGame.numPlayers >= 3) {
             if (gEvent.finishTimer >= 100) goto store;
@@ -1176,7 +1176,7 @@ void event_hud_init(void)
     s32 height;
     Game *game;
 
-    if (gGame.mode == MODE_TUTORIAL) {
+    if (gGame.mode == GAME_MODE_TUTORIAL) {
         /* a palette of 256 greys (RGBA5551) */
         sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, sStrEventFile, 0xB4B);
         *sGreyPalette = 0;
@@ -1194,7 +1194,7 @@ void event_hud_init(void)
     if (1 < game->numPlayers) {
         sTempGaugeTextures = res_load(gResourceSet, sTempGaugeResId);
     }
-    if (game->mode == MODE_TUTORIAL) {
+    if (game->mode == GAME_MODE_TUTORIAL) {
         game->hudGlyphs = (HudGlyphs *)res_load(gResourceSet, gHudGlyphsResId);
         sTutorialPrevNextIcons = res_load(gResourceSet, sTutorialPrevNextResId);
         gFinishLineTexSet = res_load(gResourceSet, gFinishLineTexResId);
@@ -1209,7 +1209,7 @@ void event_hud_init(void)
     height = *(volatile s32 *)&gScreenHeight;
     guPerspective(persp, sHudPerspNorm, 33.0f, 320.0f / (f32)height, 50.0f, 4192.0f, 1.0f);
     i = 0;
-    if (game->mode == MODE_SOCCER) {
+    if (game->mode == GAME_MODE_SOCCER) {
         sSoccerMapTexture = res_load(gResourceSet, sSoccerMapResId);
     }
     for (j = 0; j < HUD_NUM_TEXTS; j++) {
@@ -1443,7 +1443,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 dyn, s32 fb, s32 view)
                       gViewRects_5[gNumScreens - 1][view][0] + gViewRects_5[gNumScreens - 1][view][2] / 2,
                       gViewRects_5[gNumScreens - 1][view][1] + gViewRects_5[gNumScreens - 1][view][3] / 2);
     }
-    if (gGame.flags & GAME_DEBUG) {
+    if (gGame.flags & GAME_FLAG_DEBUG) {
         /* rider 0's x and z, and the free memory */
         TextObj *xText;
         TextObj *zText;
@@ -1979,7 +1979,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 dyn, s32 fb, s32 view)
             tLap = font_text_create(gHudTextObjs[7], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
             tLapL = font_text_create(gHudTextObjs[8], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
         }
-        if (gGame.flags & GAME_DEBUG) {
+        if (gGame.flags & GAME_FLAG_DEBUG) {
             /* rider 0's x and z, and the free memory */
             TextObj *xText, *zText, *memText;
             xText = font_text_create(gHudTextObjs[9], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
@@ -1995,7 +1995,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 dyn, s32 fb, s32 view)
             font_text_add(memText, buf);
             font_draw_text(memText, 0x28, 0x32);
         }
-        if (gGame.mode == MODE_EXCITE_3D && gEvent.time == 0) {
+        if (gGame.mode == GAME_MODE_EXCITE_3D && gEvent.time == 0) {
             t = font_text_create(gHudTextObjs[19], 0x20, 2, 2, TEXT_VALIGN_BASELINE | TEXT_HALIGN_CENTER);
             font_text_add(t, "Press Up C Button for side view");
             font_draw_text(t, 0x100, 0x28);
@@ -2672,27 +2672,27 @@ Gfx *event_draw_hud(Gfx *gdl, s32 dyn, s32 fb, s32 view) {
     s32 sp;
     int n;
 
-    if (gHudLevel != 3 || gGame.mode == MODE_TUTORIAL) {
+    if (gHudLevel != 3 || gGame.mode == GAME_MODE_TUTORIAL) {
         switch (gGame.mode) {
-        case MODE_SOCCER:
+        case GAME_MODE_SOCCER:
             if (gPauseMenu == PAUSE_NONE) {
                 gdl = event_draw_hud_soccer(gdl, dyn, fb, view);
             }
             break;
-        case MODE_DESERT:
+        case GAME_MODE_DESERT:
             gdl = event_draw_hud_gates(gdl, dyn, fb, view);
             break;
-        case MODE_HILL_CLIMB:
+        case GAME_MODE_HILL_CLIMB:
             gdl = event_draw_hud_hillclimb(gdl, dyn, fb, view);
             break;
-        case MODE_STUNT:
+        case GAME_MODE_STUNT_COURSE:
             gdl = event_draw_hud_stunt(gdl, dyn, fb, view);
             break;
-        case MODE_TEST_RIDE:
-        case MODE_TEST_RIDE_OPEN:
+        case GAME_MODE_TEST_LOOP:
+        case GAME_MODE_TEST_OPEN:
             gdl = event_draw_hud_testride(gdl, dyn, fb, view);
             break;
-        case MODE_TUTORIAL:
+        case GAME_MODE_TUTORIAL:
             gdl = tutorial_draw_hud(gdl, dyn, fb, view);
             break;
         default:
@@ -2781,11 +2781,11 @@ Gfx *event_draw_hud(Gfx *gdl, s32 dyn, s32 fb, s32 view) {
         }
         break;
     case PAUSE_MAIN:
-        for (n = 0; n < (gGame.mode == MODE_SEASON ? 4 : 5); n++) {
+        for (n = 0; n < (gGame.mode == GAME_MODE_SEASON ? 4 : 5); n++) {
             font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, TEXT_VALIGN_BASELINE | TEXT_HALIGN_CENTER);
-            if (gGame.mode == MODE_SEASON) {
+            if (gGame.mode == GAME_MODE_SEASON) {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItemsSeason[n]);
-            } else if (gGame.mode == MODE_SOCCER) {
+            } else if (gGame.mode == GAME_MODE_SOCCER) {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItemsSoccer[n]);
             } else {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItems[n]);
@@ -2944,13 +2944,13 @@ extern RaceSeriesCount gRaceSeries_3;
 /* The event's exit: counts the race series, frees the tutorial's buffer, and saves. */
 void event_exit(void)
 {
-    if (0 < gRaceSeries_3.limit && (gGame.flags & GAME_REPEAT_STATE) == 0) {
+    if (0 < gRaceSeries_3.limit && (gGame.flags & GAME_FLAG_REPEAT_STATE) == 0) {
         gRaceSeries_3.counter = gRaceSeries_3.counter + 1;
         if (gRaceSeries_3.counter == gRaceSeries_3.limit) {
             mem_free(gRaceSeries_3.buf);
         }
     }
-    if (gGame.mode == MODE_TUTORIAL && gEvent.tutorialBuf != 0) {
+    if (gGame.mode == GAME_MODE_TUTORIAL && gEvent.tutorialBuf != 0) {
         mem_free(gEvent.tutorialBuf);
     }
     save_write(1, 0);
@@ -3137,7 +3137,7 @@ void event_hud_free(void)
     TextObj **hud;
     TextObj **menu;
 
-    if (gGame.mode == MODE_TUTORIAL) {
+    if (gGame.mode == GAME_MODE_TUTORIAL) {
         mem_free(sGreyPalette);
     }
     if (gGame.numPlayers == 1) {

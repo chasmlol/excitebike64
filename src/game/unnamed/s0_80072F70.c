@@ -14,7 +14,7 @@ Gfx *screen_draw_wipe(Gfx *gdl, Dyn *dyn, s32 fb)
     s32 width;
     s32 x;
 
-    if (gGame.flags & 0x10000000) {
+    if (gGame.flags & GAME_FLAG_SPLASH_3) {
         level = 0xFF;
     } else {
         if (gGame.fadeState == FADE_SWAP) {

@@ -99,8 +99,7 @@ typedef struct {
 extern Course_2 gTracks_14[];
 
 /* The front end's init (game state 0). After power-on it clears gGame and starts with the boot splashes; after a
-   race it picks the screen to come back to from gRaceExitCode (2 race over, 3 left during the intro, 4 quit from
-   the pause menu, 6 left the front end or the editor, 7 podium over) and the game mode. */
+   race it picks the screen to come back to from gRaceExitCode (RACE_EXIT_*) and the game mode. */
 void shell_init(void)
 {
     s32 toTrackLists;
@@ -115,12 +114,12 @@ void shell_init(void)
     toTrackLists = 0;
     gPodiumMode = 0;
     gReplayPlayback = 0;
-    if (gRaceExitCode == 2) {
+    if (gRaceExitCode == RACE_EXIT_FINISHED) {
         toTrackLists = toTrackLists < (u32)(gGame.flags & GAME_FLAG_TRACK_LISTS);
     }
     gSplitVertical = 0;
     gGame.flags &= ~GAME_FLAG_TRACK_LISTS;
-    if (gRaceExitCode == 0) {
+    if (gRaceExitCode == RACE_EXIT_BOOT) {
         /* power-on */
         mem_fill((u8 *)&gGame, 0, sizeof(Game));
         n = 0;
@@ -178,7 +177,7 @@ void shell_init(void)
     } else if (gGame.mode == GAME_MODE_TIME_TRIAL) {
         gGame.numPlayers = 1;
     }
-    if (gRaceExitCode == 7) {
+    if (gRaceExitCode == RACE_EXIT_PODIUM) {
         gGame.flags &= ~GAME_FLAG_UNLOCK_MESSAGES;
     }
     gGame.fadeState = FADE_DONE;
@@ -218,7 +217,7 @@ void shell_init(void)
     sShellViewport[5] = gScreenHeight * 2;
     gGame.greyPalette = mem_alloc_dbg(0x200, 0, "shell.c", 0x777);
     shell_blend_palette_to_gray(0xFF, 0);
-    if (gRaceExitCode == 4) {
+    if (gRaceExitCode == RACE_EXIT_QUIT) {
         gCurTrack_8->w50 &= ~TRACK_FLAG_NEW_RECORD;
         if (gActiveReplay != 0) {
             gActiveReplay = 0;
@@ -236,9 +235,9 @@ void shell_init(void)
         }
     } else {
         exitCode = gRaceExitCode;
-        if (exitCode == 0) {
+        if (exitCode == RACE_EXIT_BOOT) {
             shell_goto_screen(&sScreens[SCREEN_BOOT_SPLASH], 0, 1);
-        } else if ((gGame.flags & GAME_FLAG_REPLAY) || gCreditsMode != 0 || exitCode == 3) {
+        } else if ((gGame.flags & GAME_FLAG_REPLAY) || gCreditsMode != 0 || exitCode == RACE_EXIT_BACK) {
             /* back from a replay, the credits or the intro: the screen left */
             if (gActiveReplay != 0) {
                 if (!(gGame.flags & GAME_FLAG_REPLAY)) {
@@ -247,7 +246,7 @@ void shell_init(void)
                     }
                 }
             }
-            if (gRaceExitCode == 3 && gGame.mode == GAME_MODE_SEASON) {
+            if (gRaceExitCode == RACE_EXIT_BACK && gGame.mode == GAME_MODE_SEASON) {
                 shell_restore_race_results();
                 if (gSeason->round > 0) {
                     gSeason->round--;
@@ -267,21 +266,24 @@ void shell_init(void)
             shell_goto_screen(&sScreens[SCREEN_BRONZE_TRACKS], 1, 1);
         } else {
             /* the results of a finished race, else the title or the main menu */
-            if (gEvent.allFinished != 0 && exitCode != 0 && exitCode != 6 && gGame.mode == GAME_MODE_SEASON) {
+            if (gEvent.allFinished != 0 && exitCode != RACE_EXIT_BOOT && exitCode != RACE_EXIT_NONE
+                && gGame.mode == GAME_MODE_SEASON) {
                 if (gSeason != NULL && gSeason->cup - gCups == CUP_CHALLENGE) {
                     next = &sScreens[SCREEN_SEASON_STANDINGS];
                 } else {
                     next = &sScreens[SCREEN_SEASON_RACE_RESULT];
                 }
-            } else if ((gEvent.allFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGame.mode == GAME_MODE_EXHIBITION)
-                       || (gEvent.allFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGame.mode == GAME_MODE_TIME_TRIAL)) {
+            } else if ((gEvent.allFinished != 0 && gRaceExitCode != RACE_EXIT_BOOT && gRaceExitCode != RACE_EXIT_NONE
+                        && gGame.mode == GAME_MODE_EXHIBITION)
+                       || (gEvent.allFinished != 0 && gRaceExitCode != RACE_EXIT_BOOT && gRaceExitCode != RACE_EXIT_NONE
+                           && gGame.mode == GAME_MODE_TIME_TRIAL)) {
                 next = &sScreens[SCREEN_RACE_RESULT];
             } else {
                 if (gActiveReplay != 0) {
                     gActiveReplay = 0;
                 }
                 switch (gRaceExitCode) {
-                case 0:
+                case RACE_EXIT_BOOT:
                     next = &sScreens[SCREEN_TITLE];
                     break;
                 case 1:
@@ -297,7 +299,7 @@ void shell_init(void)
                 }
             }
             /* a new record: its initials first */
-            if (gRaceExitCode != 0 && gCurTrack_8 != NULL && (gCurTrack_8->w50 & TRACK_FLAG_NEW_RECORD)) {
+            if (gRaceExitCode != RACE_EXIT_BOOT && gCurTrack_8 != NULL && (gCurTrack_8->w50 & TRACK_FLAG_NEW_RECORD)) {
                 sScreens[SCREEN_INITIALS].items->target = next;
                 shell_goto_screen(&sScreens[SCREEN_INITIALS], 1, 1);
             } else {
@@ -305,7 +307,7 @@ void shell_init(void)
             }
         }
     }
-    if (gRaceExitCode == 0) {
+    if (gRaceExitCode == RACE_EXIT_BOOT) {
         save_load(0);
     }
     save_update_unlocks();
@@ -337,7 +339,7 @@ void shell_cb_soccer(s32 chosen)
         game->riders[1] = 4;
         game->riders[2] = 4;
         game->riders[3] = 4;
-        gGame.flags = gGame.flags & ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags = gGame.flags & ~GAME_FLAG_TRACK_INTRO;
         for (; i < MAXCONTROLLERS; i++) {
             if (((s32)gContMask >> i & 1) != 0) {
                 gGame.playerPad[player] = (u8)i;
@@ -367,7 +369,7 @@ void shell_cb_season(s32 chosen)
     if (chosen != 0) {
         gGame.mode = GAME_MODE_SEASON;
         gSeason = &sSeasonState;
-        gGame.flags |= GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags |= GAME_FLAG_TRACK_INTRO;
         mem_fill(&sSeasonState, 0, sizeof(Season));
         gSeason->cup = &gCups[gGame.cupSel];
         if (gGame.difficulty == 0) {
@@ -376,7 +378,7 @@ void shell_cb_season(s32 chosen)
             *(volatile s32 *)&gGame.numPlayers = 1; /* volatile: the store stays before the next one */
             *(volatile s32 *)&gEvent.tutorialBuf = 0;
             gGame.riders[0] = 4;
-            gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+            gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
             gSeason->cup = &gCups[CUP_TUTORIAL];
             gSeason->round = 0;
             for (i = 0; i < 17; i++) {
@@ -827,8 +829,6 @@ extern Trk_11 *gCurTrack_38;
 #define RESULTS_REPLAY 1 /* Show Replay; time trial: Save Ghost (greyed and skipped in this build's menus) */
 #define RESULTS_QUIT   2 /* Quit, Main Menu, Retire */
 
-#define GHOST_SIZE 0x2800 /* a time trial's replay, as saved */
-
 /* Race results: A opens the menu, then runs its choice: race again or pick a new track, watch the replay (save
    the ghost in a time trial), or quit to the main menu. The replay item is skipped when the replay did not fit. */
 void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
@@ -973,12 +973,12 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
         if (gGame.screenState == SCREEN_STATE_SEASON_MENU) {
             switch (gGame.menuSel) {
             case RESULTS_RETRY:
-                gGame.flags |= GAME_FLAG_TRACK_CHOSEN;
+                gGame.flags |= GAME_FLAG_TRACK_INTRO;
                 cup = gSeason->cup;
                 if (gSeason->round + 1 >= cup->numRounds) {
                     /* the last round: the podium when first overall (and the challenge race won) */
                     if (gSeason->standings[0] == 0 && (cup - gCups != CUP_CHALLENGE || gEvent.finishOrder[0] == 0)) {
-                        gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_CHOSEN) | GAME_FLAG_PODIUM;
+                        gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_INTRO) | GAME_FLAG_PODIUM;
                         shell_goto_screen(0, 0, 1);
                         gActiveReplay = 0;
                         return;
@@ -1041,7 +1041,7 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
         } else if (gGame.screenState == SCREEN_STATE_SEASON_MENU) {
             if (pressed & (INPUT_D_UP | INPUT_STICK_UP)) {
                 replaySize = gReplayWritePtr - gReplayBuf;
-                if (gGame.mode != GAME_MODE_TIME_TRIAL ? replaySize >= gReplayBufSize : replaySize >= GHOST_SIZE) {
+                if (gGame.mode != GAME_MODE_TIME_TRIAL ? replaySize >= gReplayBufSize : replaySize >= REPLAY_GHOST_SIZE) {
                     gGame.menuSel ^= 2;
                 } else {
                     if (--gGame.menuSel < 0) {
@@ -1053,7 +1053,7 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
             if (*buttons & (INPUT_D_DOWN | INPUT_STICK_DOWN)) {
                 snd_play_menu_sound(MENU_SOUND_MOVE);
                 replaySize = gReplayWritePtr - gReplayBuf;
-                if (gGame.mode != GAME_MODE_TIME_TRIAL ? replaySize >= gReplayBufSize : replaySize >= GHOST_SIZE) {
+                if (gGame.mode != GAME_MODE_TIME_TRIAL ? replaySize >= gReplayBufSize : replaySize >= REPLAY_GHOST_SIZE) {
                     gGame.menuSel ^= 2;
                 } else {
                     if (++gGame.menuSel >= 3) {
@@ -1082,11 +1082,6 @@ enum OptionItem {
     OPTION_COUNT
 };
 #define OPTIONS_JUST_ENTERED 0x100 /* in gGame.optionsSel: the screen was just loaded */
-
-/* gSaveData.volumes */
-#define VOLUME_MUSIC  0
-#define VOLUME_SFX    1
-#define VOLUME_SPEECH 2
 
 #define SPEECH_SAMPLE 0x9B /* the speech clip the speech volume plays */
 
@@ -1172,7 +1167,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             gGame.numPlayers = 1;
             gGame.returnScreen = screen;
             {
-                s32 flags = gGame.flags & ~GAME_FLAG_TRACK_CHOSEN;
+                s32 flags = gGame.flags & ~GAME_FLAG_TRACK_INTRO;
                 *(volatile s32 *)&gGame.flags = flags;
                 gGame.flags = flags | (GAME_FLAG_LOW_RES | GAME_FLAG_CREDITS_FROM_OPTIONS);
             }
@@ -1331,10 +1326,9 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
                 break;
             }
         }
-        /* the sound channels: 0 effects, 1 music, 2 speech */
-        snd_set_volume(1, gSaveData.volumes[VOLUME_MUSIC]);
-        snd_set_volume(2, gSaveData.volumes[VOLUME_SPEECH]);
-        snd_set_volume(0, gSaveData.volumes[VOLUME_SFX]);
+        snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+        snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+        snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
     }
     if (gGame.optionsSel != oldSel) {
         snd_play_menu_sound(MENU_SOUND_MOVE);
@@ -1806,7 +1800,7 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                             shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                             usrtrk_load_layout(gSaveData.userTrack);
                             gGame.mode = GAME_MODE_EXHIBITION;
-                            gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+                            gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
                             gGame.flags &= ~GAME_FLAG_EDITOR;
                         }
                     }
@@ -2060,7 +2054,6 @@ void shell_filter_stick_dirs(u32 *pads)
 
 #define REPLAY_SIZE            0xC800 /* gReplayBuffer */
 #define TIME_TRIAL_REPLAY_SIZE 0x6400 /* a time trial records into the first half, a loaded ghost sits in the second */
-#define SPECIAL_TRACKS_SOCCER  3      /* gSpecialTracksItems: Soccer needs two controllers */
 
 /* The front end's frame (game state 0): polls the controllers, gives the current screen the buttons pressed this
    frame (the D-pad as the stick), runs the screen's input, and runs the fade between two screens: at black the
@@ -2089,7 +2082,7 @@ void shell_update(Pad16 *pads)
         gGame.flags &= ~GAME_FLAG_NO_CONTROLLER;
     }
     if (gContCount < 2) {
-        gSpecialTracksItems[SPECIAL_TRACKS_SOCCER].flags |= SCREEN_ITEM_LOCKED;
+        gSpecialTracksItems[SPECIAL_TRACK_SOCCER].flags |= SCREEN_ITEM_LOCKED;
     } else {
         save_update_unlocks();
     }
@@ -2252,7 +2245,7 @@ void shell_update(Pad16 *pads)
                                 gCurTrack = &gTracks[TRACK_USER];
                                 shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                                 usrtrk_load_layout(gGame.userTrack + 4); /* after its checksum */
-                                gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+                                gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
                             }
                             gGame.mode = GAME_MODE_EXHIBITION;
                             mem_free(gGame.userTrack);
@@ -2360,7 +2353,7 @@ void shell_update(Pad16 *pads)
                 }
             } else {
                 /* no next screen: end the game state (gGameStates), the race comes next */
-                gCurGameState->mode = 3;
+                gCurGameState->mode = STATE_EXIT;
                 if (gGame.mode == GAME_MODE_TUTORIAL) {
                     gCurTrack = &gTracks[TRACK_TUTORIAL];
                 } else if (gGame.mode == GAME_MODE_SEASON) {
@@ -2409,7 +2402,6 @@ typedef struct {
 
 extern Lvl_2 *gCurTrack_39;
 
-#define SHELL_NUM_TEXTS 48 /* gGame.texts */
 #define NUM_TRACK_PICS  24 /* sTrackPicResIds */
 #define NUM_SEASON_BGS  7  /* the season screen's backgrounds, one per cup */
 
@@ -2517,7 +2509,7 @@ void shell_exit(void)
     }
     res_close_set(gResourceSet);
     mem_free(gGame.recordTracks);
-    gRaceExitCode = 6;
+    gRaceExitCode = RACE_EXIT_NONE;
     font_unload_set();
 }
 
@@ -2547,7 +2539,7 @@ void shell_unload_screen(Screen *screen)
     UNLOAD(sDialogTitleBarResId);
     UNLOAD(sDialogFrameResId);
     if ((screen->flags & SCREEN_TEXT_OBJECTS) && screen->left == NULL) {
-        for (i = 0; i < SHELL_NUM_TEXTS; i++) {
+        for (i = 0; i < MENU_NUM_TEXTS; i++) {
             font_text_destroy(gGame.texts[i]);
             mem_free(gGame.texts[i]);
         }
@@ -2600,9 +2592,9 @@ void shell_unload_screen(Screen *screen)
             }
         case GAME_MODE_EXHIBITION:
         case GAME_MODE_SEASON:
-            gGame.flags |= GAME_FLAG_TRACK_CHOSEN;
+            gGame.flags |= GAME_FLAG_TRACK_INTRO;
             if (gGame.savedTrack != NULL && (((Bike_41 *)gGame.savedTrack)->flags & TRACK_FLAG_USER)) {
-                gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+                gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
             }
             break;
         }
@@ -2788,7 +2780,7 @@ void shell_update_season_progress(void)
 
     flags = gGame.flags;
     game = &gGame;
-    if ((flags & (GAME_FLAG_RESULTS_SEEN | GAME_FLAG_REPLAY)) == 0 && gRaceExitCode != 3) {
+    if ((flags & (GAME_FLAG_RESULTS_SEEN | GAME_FLAG_REPLAY)) == 0 && gRaceExitCode != RACE_EXIT_BACK) {
         value = flags | GAME_FLAG_RESULTS_SEEN;
         gGame.flags = value;
         /* the cups of each difficulty: 1 Bronze and Silver, 2 up to Gold, 3 up to the challenge */
@@ -2879,7 +2871,7 @@ void shell_load_screen(Screen *screen)
     gGame.dialogFrame = LOAD(sDialogFrameResId);
     gGame.dialogTitleBar = LOAD(sDialogTitleBarResId);
     if ((screen->flags & SCREEN_TEXT_OBJECTS) && screen->left == NULL) {
-        for (i = 0; i < SHELL_NUM_TEXTS; i++) {
+        for (i = 0; i < MENU_NUM_TEXTS; i++) {
             gGame.texts[i] = font_text_create(0, 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
         }
     }
@@ -2935,7 +2927,7 @@ void shell_load_screen(Screen *screen)
         for (i = 0; i < 6; i++) {
             gGame.riderSkins[i] = i;
         }
-        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
         gGame.titleLogo = LOAD(sTitleLogoResId);
         gGame.frames = LOAD(sCopyrightResId);
         gCurTrack_2 = gTracks;
@@ -3086,7 +3078,7 @@ void shell_load_screen(Screen *screen)
             gPakScreen.data = (u8 *)(gActiveReplay + TIME_TRIAL_REPLAY_SIZE);
             break;
         case PAK_SCREEN_SAVE_GHOST:
-            gPakScreen.pages = GHOST_SIZE / PAK_PAGE_SIZE;
+            gPakScreen.pages = REPLAY_GHOST_SIZE / PAK_PAGE_SIZE;
             gPakScreen.mode = PAK_MODE_SAVE;
             gPakScreen.data = (u8 *)gActiveReplay;
             break;
@@ -3208,7 +3200,7 @@ void shell_load_screen(Screen *screen)
         gGame.padPlayer[0] = -1;
         gGame.savedMode = gGame.mode;
         gGame.savedTrack = gCurTrack_2;
-        gGame.flags &= ~(GAME_FLAG_PLAYERS_READY | GAME_FLAG_TRACK_CHOSEN | GAME_FLAG_RIDER_SELECT);
+        gGame.flags &= ~(GAME_FLAG_PLAYERS_READY | GAME_FLAG_TRACK_INTRO | GAME_FLAG_RIDER_SELECT);
         for (i = 0; i < MAXCONTROLLERS; i++) {
             if ((gContMask >> i) & 1) {
                 gGame.playerPad[player] = i;
@@ -3245,14 +3237,14 @@ void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
             if (screen != NULL) {
                 p = screen;
                 do {
-                    if (gRaceExitCode != 3 && gCreditsMode == 0) {
+                    if (gRaceExitCode != RACE_EXIT_BACK && gCreditsMode == 0) {
                         p->back = NULL;
                     }
                     shell_load_screen(p);
                     p = p->right;
                 } while (p != NULL);
                 for (p = screen->left; p != NULL; p = p->left) {
-                    if (gRaceExitCode != 3 && gCreditsMode == 0) {
+                    if (gRaceExitCode != RACE_EXIT_BACK && gCreditsMode == 0) {
                         p->back = NULL;
                     }
                     shell_load_screen(p);
@@ -4636,7 +4628,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         str_cat(pakLine, sStrKeyDot);
                     }
                     pakLine[16] = slot + '1'; /* the X */
-                    if (gPakFreePages[slot] < GHOST_SIZE / PAK_PAGE_SIZE) {
+                    if (gPakFreePages[slot] < REPLAY_GHOST_SIZE / PAK_PAGE_SIZE) {
                         lineColor = TEXT_COLOR_RED;
                         pp = sPakFewPagesMsg;
                     } else {
@@ -5604,7 +5596,7 @@ void shell_cb_desert(s32 chosen)
         gRaceSeries_5.b = 0;
         gRaceSeries_5.a = 1;
         gRaceSeries_5.c = 0;
-        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
     }
 }
 
@@ -5613,7 +5605,7 @@ void shell_cb_select_track(s32 chosen)
 {
     if (chosen != 0) {
         gCurTrack = gTracks_2 + gGame.trackSel * 0xA0;
-        gGame.flags |= GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags |= GAME_FLAG_TRACK_INTRO;
     }
 }
 
@@ -5626,7 +5618,7 @@ void shell_cb_time_trials(s32 chosen)
         game = &gGame;
         game->mode = GAME_MODE_TIME_TRIAL;
         game->numPlayers = 1;
-        game->flags = game->flags | GAME_FLAG_TRACK_CHOSEN;
+        game->flags = game->flags | GAME_FLAG_TRACK_INTRO;
     }
 }
 
@@ -5648,7 +5640,7 @@ void shell_cb_tutorial(s32 chosen)
         gGame.mode = GAME_MODE_TUTORIAL;
         gEvent.tutorialBuf = 0;
         gGame.riders[0] = 4;
-        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
         gSeason->cup = &gCups[CUP_TUTORIAL];
         gSeason->round = 0;
         for (i = 0; i < 17; i++) {
@@ -5687,7 +5679,7 @@ void shell_cb_excite3d(s32 chosen)
         gCurTrack = &gTracks[TRACK_EXCITE_3D];
         gGame.numPlayers = 1;
         gGame.difficulty = 2;
-        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
     }
 }
 
@@ -5711,7 +5703,7 @@ void shell_cb_hill_climb(s32 chosen)
         gSplitVertical = 1;
         gGame.mode = GAME_MODE_HILL_CLIMB;
         gCurTrack = &gTracks[TRACK_HILL_CLIMB];
-        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
     }
 }
 
@@ -5719,7 +5711,7 @@ void shell_cb_hill_climb(s32 chosen)
 void shell_cb_custom_tracks(s32 chosen)
 {
     if (chosen != 0) {
-        gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_CHOSEN) | GAME_FLAG_EDITOR;
+        gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_INTRO) | GAME_FLAG_EDITOR;
     }
 }
 
@@ -5737,7 +5729,7 @@ void shell_cb_desert_unused(s32 chosen)
     game = game2;
     gCurTrack = &gTracks[TRACK_DESERT];
     game2->mode = 4;
-    game2->flags = game2->flags & ~GAME_FLAG_TRACK_CHOSEN;
+    game2->flags = game2->flags & ~GAME_FLAG_TRACK_INTRO;
     for (i = 0; i < 4; i++) {
         if (i == 0) {
             game->playerPad[0] = 0;
@@ -5760,7 +5752,7 @@ void shell_cb_desert_unused(s32 chosen)
 void shell_cb_original_excitebike(s32 chosen)
 {
     gGame.mode = GAME_MODE_ORIGINAL;
-    gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_CHOSEN) | GAME_FLAG_NES;
+    gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_INTRO) | GAME_FLAG_NES;
 }
 
 /* Item callback of Stunt Course. */
@@ -5770,7 +5762,7 @@ void shell_cb_stunt_course(s32 chosen)
         Game *game = &gGame;
         game->mode = GAME_MODE_STUNT_COURSE;
         gCurTrack = &gTracks[TRACK_STUNT_COURSE];
-        gGame.flags = gGame.flags & ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.flags = gGame.flags & ~GAME_FLAG_TRACK_INTRO;
     }
 }
 

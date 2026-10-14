@@ -198,9 +198,6 @@ void arned_set_camera(s32 frame, s32 x, s32 y, s32 z, s16 yaw, s16 pitch)
     gArnedCamMtx[frame] = res;
 }
 
-/* cos(a / 0x10000 turns), 1.0 = 0x4000 */
-#define COS16(a) gCosTable[((a) >> 4) & 0xFFF]
-
 /* Draws the editor's 3D view for frame buffer `frame`: rebuilds the vertex buffers of the changed cells, then draws
    the floor (drawGrid), the walls' outsides, the cells' pieces (selected ones pulsing), the start cursor (cursorRot
    -1: none), the walls' insides and the object views. */

@@ -4,18 +4,6 @@
 
 #include "common.h"
 
-/* Volume kinds of snd_set_volume and snd_get_volume. */
-#define SND_VOLUME_SFX          0       /* effects and ambience (gSfxVolume, gAmbientVolume) */
-#define SND_VOLUME_MUSIC        1       /* both music channels (gStreamVolumes) */
-#define SND_VOLUME_SPEECH       2       /* the announcer (gSpeechVolume) */
-
-/* Menu sounds (sMenuSounds, snd_play_menu_sound). */
-#define MENU_SOUND_MOVE         0
-#define MENU_SOUND_SELECT       1
-#define MENU_SOUND_BACK         2
-#define MENU_SOUND_ERROR        3
-#define MENU_SOUND_COUNT        4
-
 /* Rates passed to sfx_play, and the centre of its pans (0-15). */
 #define SND_RATE_FULL           0x5622  /* 22050 Hz */
 #define SND_RATE_HALF           0x2B11  /* 11025 Hz */

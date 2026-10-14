@@ -774,10 +774,6 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 dyn) {
     return gdl;
 }
 
-/* Cosine and sine of a 16-bit angle, 1.0 = 0x4000 */
-#define COS16(a) gCosTable[((a) >> 4) & 0xFFF]
-#define SIN16(a) gCosTable[(((a) >> 4) - 0x400) & 0xFFF]
-
 /* Rainforest Run's rain (one view): 64 streaks in screen space, in 8 rows of depth, slanted by the camera's turn and
    sideways motion (kept as they were while paused), and a splash on the ground ahead each frame. */
 

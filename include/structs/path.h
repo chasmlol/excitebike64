@@ -4,8 +4,6 @@
 
 #include "common.h"
 
-#define GRAVITY 14.700001f          /* the bikes' gravity, m/s^2 */
-
 /* PathNode.flags */
 #define PATH_NODE_CAM_PITCH   0x01  /* the camera's pitch follows the path */
 #define PATH_NODE_FAST_CORNER 0x04  /* corner speed doubled */

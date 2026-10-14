@@ -19,10 +19,6 @@ typedef struct OSScTask_s {
 #define SC_LAST_TASK    0x0020  /* the last task of the frame */
 #define SC_SWAPBUFFER   0x0040  /* show its framebuffer when it is done */
 
-/* The scheduler's messages, and main_sched_event_thread's to the main thread (a pointer to the s16 type) */
-#define SC_MSG_RETRACE  1
-#define SC_MSG_GFX_DONE 2
-
 /* The u16 at 0x80000402 (in the entry code) says how the game image was started. */
 #define BOOT_MAGIC_DIRECT   0xDEAD  /* loaded directly */
 #define BOOT_MAGIC_LOADER   0xBEEF  /* by the boot loader, whose header is still at 0x803FFFC0 */
@@ -156,7 +152,7 @@ void game_main(void)
         gDebugFreeMem = gDebugFreeMem - gFbAllocWidth * gFbAllocHeight * 6 + 0xB4000;
         osRecvMesg(&sMainQueue, &msg, OS_MESG_BLOCK);
         switch (*(s16 *)msg) {
-        case SC_MSG_RETRACE:
+        case SCHED_CLIENT_RETRACE:
             if (gCurGameState->mode == STATE_INIT) {
                 /* start the state: its display lists, its video mode, cleared framebuffers */
                 if (gGfxContexts[0].dl == NULL) {
@@ -178,7 +174,7 @@ void game_main(void)
                 mem_fill((u8 *)gFramebuffers_2[1], 0, gFbAllocWidth * gFbAllocHeight * 2);
                 gCurGameState->mode = STATE_RUNNING;
                 D_800C29E4 = 4;
-                if (gGame.flags & GAME_REPLAY) {
+                if (gGame.flags & GAME_FLAG_REPLAY) {
                     gReplayPlayback = 1;
                 } else {
                     gReplayPlayback = 0;
@@ -238,7 +234,7 @@ void game_main(void)
                     if (i == GAME_STATE_EDITOR) {
                         /* the editor goes back to the front end, or to a test ride on the user track */
                         i = GAME_STATE_SHELL;
-                        if (gGame.flags & GAME_EDITOR_TO_SHELL) {
+                        if (gGame.flags & GAME_FLAG_EDITOR_TO_SHELL) {
                             gRaceExitCode = RACE_EXIT_NONE;
                         } else {
                             gCurTrack = &gTracks[TRACK_USER];
@@ -246,19 +242,19 @@ void game_main(void)
                         }
                     } else if (i == GAME_STATE_NES) {
                         i = GAME_STATE_SHELL;
-                    } else if (gGame.flags & GAME_NES) {
+                    } else if (gGame.flags & GAME_FLAG_NES) {
                         i = GAME_STATE_NES;
-                    } else if (i == GAME_STATE_SHELL && (gGame.flags & GAME_EDITOR)) {
+                    } else if (i == GAME_STATE_SHELL && (gGame.flags & GAME_FLAG_EDITOR)) {
                         i = GAME_STATE_EDITOR;
                     } else if (gRaceSeries[0] > 0 && gRaceSeries[1] < gRaceSeries[0]) {
                         i = GAME_STATE_RACE;
                     } else {
                         /* the front end and the race take turns */
-                        if (gGame.mode == MODE_SEASON && gSeason != NULL && !(gGame.flags & GAME_REPLAY)) {
+                        if (gGame.mode == GAME_MODE_SEASON && gSeason != NULL && !(gGame.flags & GAME_FLAG_REPLAY)) {
                             gCurTrack = &gTracks[gSeason->cup->tracks[gSeason->round]];
                         }
                         if (i == GAME_STATE_RACE) {
-                            if (gGame.flags & GAME_PODIUM) {
+                            if (gGame.flags & GAME_FLAG_PODIUM) {
                                 s32 k;
                                 for (k = 0; k < 6; k++) {
                                     gGame.riders[k] = gGame.savedRiders[k];
@@ -269,17 +265,17 @@ void game_main(void)
                         if (i == GAME_STATE_RACE && gRaceExitCode == RACE_EXIT_EDITOR) {
                             i = GAME_STATE_EDITOR;
                         } else if (i == GAME_STATE_RACE &&
-                                   (gGame.flags & (GAME_SEASON_COMPLETE | GAME_REPLAY)) == GAME_SEASON_COMPLETE) {
+                                   (gGame.flags & (GAME_FLAG_SEASON_COMPLETE | GAME_FLAG_REPLAY)) == GAME_FLAG_SEASON_COMPLETE) {
                             /* the season is won: the credits run on The Gravel Pit */
                             gCreditsMode = 1;
-                            gGame.mode = MODE_EXHIBITION;
-                            gGame.flags = (gGame.flags | GAME_LOW_RES) &
-                                          ~(GAME_SEASON_COMPLETE | GAME_DIFFICULTY_UP | GAME_NEW_UNLOCKS |
-                                            GAME_ROUND_WON | GAME_PODIUM | GAME_TRACK_INTRO);
+                            gGame.mode = GAME_MODE_EXHIBITION;
+                            gGame.flags = (gGame.flags | GAME_FLAG_LOW_RES) &
+                                          ~(GAME_FLAG_SEASON_COMPLETE | GAME_FLAG_DIFFICULTY_UP | GAME_FLAG_NEW_UNLOCKS |
+                                            GAME_FLAG_ROUND_WON | GAME_FLAG_PODIUM | GAME_FLAG_TRACK_INTRO);
                             gRaceExitCode = RACE_EXIT_NONE;
                             gCurTrack = &gTracks[TRACK_GRAVEL_PIT];
                             gGame.numPlayers = 1;
-                        } else if (!(gGame.flags & GAME_REPEAT_STATE)) {
+                        } else if (!(gGame.flags & GAME_FLAG_REPEAT_STATE)) {
                             i ^= 1;
                         }
                     }
@@ -349,7 +345,7 @@ void game_main(void)
                     task->next = NULL;
                     task->flags = SC_SWAPBUFFER | SC_LAST_TASK | SC_NEEDS_RSP | SC_NEEDS_RDP;
                     task->msgQ = &sSchedEventQueue;
-                    gGfxContexts[sGfxContextIndex].msgtype = SC_MSG_GFX_DONE;
+                    gGfxContexts[sGfxContextIndex].msgtype = SCHED_CLIENT_GFX_DONE;
                     task->msg = &gGfxContexts[sGfxContextIndex].msgtype;
                     task->framebuffer = gFramebuffers_2[sGfxContextIndex];
                     task->totalTime = 0;
@@ -364,7 +360,7 @@ void game_main(void)
                 }
             }
             break;
-        case SC_MSG_GFX_DONE:
+        case SCHED_CLIENT_GFX_DONE:
             /* a debug screenshot to e:\log\scr*.raw: the file writes are gone, only the conversion to RGB is left */
             if (sScreenshotRequest != 0) {
                 s32 x, y;
@@ -547,7 +543,7 @@ void main_sched_event_thread(void)
     for (;;) {
         osRecvMesg(&sSchedEventQueue, (OSMesg *)&msg, OS_MESG_BLOCK);
         switch (*msg) {
-        case SC_MSG_RETRACE:
+        case SCHED_CLIENT_RETRACE:
             sRetraceCount++;
             fb = sched_get_current_task() != (s32)gGfxContexts_2[0].task; /* the context being drawn */
             if (fb != sDisplayedFb) {
@@ -564,7 +560,7 @@ void main_sched_event_thread(void)
                 osSendMesg(&sMainQueue, msg, OS_MESG_NOBLOCK);
             }
             break;
-        case SC_MSG_GFX_DONE:
+        case SCHED_CLIENT_GFX_DONE:
             fb = msg != gGfxContexts_2[0].msg;
             sGfxDoneCount++;
             if (gNesActive != 0) {

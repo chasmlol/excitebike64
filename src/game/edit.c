@@ -1,35 +1,5 @@
 #include "game.h"
 
-/* The game's pad word (main_convert_pad_input): the stick's directions, the buttons, and the stick's magnitudes
-   (0-15) in bits 24-27 (x) and 28-31 (y). */
-#define PAD_STICK_UP    0x00000001
-#define PAD_STICK_DOWN  0x00000002
-#define PAD_STICK_LEFT  0x00000004
-#define PAD_STICK_RIGHT 0x00000008
-#define PAD_A           0x00000010
-#define PAD_B           0x00000020
-#define PAD_START       0x00000040
-#define PAD_C_UP        0x00000080
-#define PAD_C_DOWN      0x00000100
-#define PAD_C_LEFT      0x00000200
-#define PAD_C_RIGHT     0x00000400
-#define PAD_D_UP        0x00000800
-#define PAD_D_DOWN      0x00001000
-#define PAD_D_LEFT      0x00002000
-#define PAD_D_RIGHT     0x00004000
-#define PAD_L           0x00008000
-#define PAD_R           0x00010000
-#define PAD_Z           0x00020000
-
-/* snd_play_menu_sound */
-#define MENU_SFX_MOVE   0
-#define MENU_SFX_SELECT 1
-#define MENU_SFX_BACK   2
-#define MENU_SFX_ERROR  3
-
-/* SaveData.options: a user track is saved on the Game Pak */
-#define SAVE_HAS_USER_TRACK 8
-
 /* edit_ease_delta's curves */
 #define EASE_IN     0
 #define EASE_OUT    1
@@ -342,7 +312,7 @@ void edit_exit(void)
     mem_free(gEditor->bigText);
     usrtrk_free_user_piece_meshes(1);
     if (!(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
-        gRaceExitCode = 6;
+        gRaceExitCode = RACE_EXIT_NONE;
         mem_free(gEditor);
         gEditor = 0;
     }
@@ -381,18 +351,18 @@ void edit_update_name_entry(Editor *editor, s32 flags)
     /* the stick moves the cursor only when pushed past 6 */
     for (i = 0; i < 4; i++) {
         if ((((s32)gPadInput_3[i] >> 24) & 0xF) < 6) {
-            gPadInput_3[i] &= ~(PAD_STICK_LEFT | PAD_STICK_RIGHT);
+            gPadInput_3[i] &= ~(INPUT_STICK_LEFT | INPUT_STICK_RIGHT);
         }
         if ((s32)(gPadInput_3[i] >> 28) < 6) {
-            gPadInput_3[i] &= ~(PAD_STICK_UP | PAD_STICK_DOWN);
+            gPadInput_3[i] &= ~(INPUT_STICK_UP | INPUT_STICK_DOWN);
         }
     }
 
-    if (PRESSED(PAD_A)) {
+    if (PRESSED(INPUT_A)) {
         if (gEditor->nameKey == EDIT_KEY_DEL && gEditor->nameLen == 0) {
-            snd_play_menu_sound(MENU_SFX_ERROR);
+            snd_play_menu_sound(MENU_SOUND_ERROR);
         } else {
-            snd_play_menu_sound(MENU_SFX_SELECT);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
         }
         {
             Editor *ed = gEditor;
@@ -417,12 +387,12 @@ void edit_update_name_entry(Editor *editor, s32 flags)
         }
         return;
     }
-    if (PRESSED(PAD_B)) {
+    if (PRESSED(INPUT_B)) {
         if (gEditor->nameLen == 0) {
-            snd_play_menu_sound(MENU_SFX_ERROR);
+            snd_play_menu_sound(MENU_SOUND_ERROR);
             return;
         }
-        snd_play_menu_sound(MENU_SFX_SELECT);
+        snd_play_menu_sound(MENU_SOUND_SELECT);
         gEditor->nameBuf[gEditor->nameLen - 1] = gEditor->nameBuf[gEditor->nameLen];
         {
             Editor *ed = gEditor;
@@ -449,8 +419,8 @@ void edit_update_name_entry(Editor *editor, s32 flags)
             ed = (Editor *)y;
             hi2 = hi;
             x = ed->nameCursorX;
-            if (pad & (PAD_STICK_LEFT | PAD_STICK_RIGHT)) {
-                if (pad & PAD_STICK_RIGHT) {
+            if (pad & (INPUT_STICK_LEFT | INPUT_STICK_RIGHT)) {
+                if (pad & INPUT_STICK_RIGHT) {
                     newX = x + (((s32)pad >> 24) & 0xF);
                 } else {
                     newX = x - (((s32)pad >> 24) & 0xF);
@@ -459,10 +429,10 @@ void edit_update_name_entry(Editor *editor, s32 flags)
                 newX = x;
             }
             ed->nameCursorX = newX;
-            if (PRESSED(PAD_D_LEFT)) {
+            if (PRESSED(INPUT_D_LEFT)) {
                 gEditor->nameCursorX -= EDIT_KEY_W;
             }
-            if (PRESSED(PAD_D_RIGHT)) {
+            if (PRESSED(INPUT_D_RIGHT)) {
                 gEditor->nameCursorX += EDIT_KEY_W;
             }
             {
@@ -479,8 +449,8 @@ void edit_update_name_entry(Editor *editor, s32 flags)
                 u32 pad2 = gPadInput_3[0];
                 s32 newY;
                 y = e->nameCursorY;
-                if (pad2 & (PAD_STICK_UP | PAD_STICK_DOWN)) {
-                    if (pad2 & PAD_STICK_UP) {
+                if (pad2 & (INPUT_STICK_UP | INPUT_STICK_DOWN)) {
+                    if (pad2 & INPUT_STICK_UP) {
                         newY = y - ((s32)((pad2 >> 28) * 3) >> 1);
                     } else {
                         newY = y - (-(s32)(pad2 >> 28) * 3) / 2;
@@ -490,10 +460,10 @@ void edit_update_name_entry(Editor *editor, s32 flags)
                 }
                 e->nameCursorY = newY;
             }
-            if (PRESSED(PAD_D_UP)) {
+            if (PRESSED(INPUT_D_UP)) {
                 gEditor->nameCursorY -= EDIT_KEY_H;
             }
-            if (PRESSED(PAD_D_DOWN)) {
+            if (PRESSED(INPUT_D_DOWN)) {
                 gEditor->nameCursorY += EDIT_KEY_H;
             }
             {
@@ -506,7 +476,7 @@ void edit_update_name_entry(Editor *editor, s32 flags)
                 }
             }
             gEditor->nameKey = gEditor->nameCursorX / EDIT_KEY_W + (gEditor->nameCursorY / EDIT_KEY_H) * EDIT_KEYS_PER_ROW;
-        } else if (PRESSED(PAD_STICK_LEFT) || PRESSED(PAD_D_LEFT) || PRESSED(PAD_STICK_RIGHT) || PRESSED(PAD_D_RIGHT)) {
+        } else if (PRESSED(INPUT_STICK_LEFT) || PRESSED(INPUT_D_LEFT) || PRESSED(INPUT_STICK_RIGHT) || PRESSED(INPUT_D_RIGHT)) {
             /* the name is full: left and right swap between Del and OK */
             Editor *e = gEditor;
             if (e->nameKey == EDIT_KEY_OK) {
@@ -531,7 +501,7 @@ void edit_update_name_entry(Editor *editor, s32 flags)
         gEditor->nameBuf[gEditor->nameLen] = 0;
     }
     if (oldKey != gEditor->nameKey) {
-        snd_play_menu_sound(MENU_SFX_MOVE);
+        snd_play_menu_sound(MENU_SOUND_MOVE);
     }
 }
 
@@ -554,27 +524,27 @@ void edit_update_main_menu(void)
     s32 i, j, k, n;
 
     if (flags & EDIT_MESSAGE) {
-        if ((gPadInput_2[0] & PAD_A) && !(gPadInputPrev_2[0] & PAD_A)) {
-            gPadInputPrev_2[0] |= PAD_A;
+        if ((gPadInput_2[0] & INPUT_A) && !(gPadInputPrev_2[0] & INPUT_A)) {
+            gPadInputPrev_2[0] |= INPUT_A;
             gEditor->flags &= ~EDIT_MESSAGE;
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
-            snd_play_menu_sound(MENU_SFX_SELECT);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
         }
     } else if (flags & EDIT_DIALOG) {
-        if ((gPadInput_2[0] & PAD_B) && !(gPadInputPrev_2[0] & PAD_B)) {
-            gPadInputPrev_2[0] |= PAD_B;
+        if ((gPadInput_2[0] & INPUT_B) && !(gPadInputPrev_2[0] & INPUT_B)) {
+            gPadInputPrev_2[0] |= INPUT_B;
             gEditor->flags &= ~EDIT_DIALOG;
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
-            snd_play_menu_sound(MENU_SFX_BACK);
-        } else if ((gPadInput_2[0] & PAD_A) && !(gPadInputPrev_2[0] & PAD_A)) {
-            gPadInputPrev_2[0] |= PAD_A;
-            snd_play_menu_sound(MENU_SFX_SELECT);
+            snd_play_menu_sound(MENU_SOUND_BACK);
+        } else if ((gPadInput_2[0] & INPUT_A) && !(gPadInputPrev_2[0] & INPUT_A)) {
+            gPadInputPrev_2[0] |= INPUT_A;
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             if (gEditor->dialogChoice) {
                 /* OK, or the left answer */
                 switch (gEditor->dialog) {
                 case EDIT_ASK_LOAD_DISCARD:
                     gEditor->dialog = EDIT_ASK_LOAD;
-                    if (gSaveData_16.options & SAVE_HAS_USER_TRACK) {
+                    if (gSaveData_16.options & SAVE_OPT_USER_TRACK) {
                         gEditor->dialogChoice = 1;
                     } else {
                         gEditor->dialogChoice = 0;
@@ -582,7 +552,7 @@ void edit_update_main_menu(void)
                     break;
                 case EDIT_ASK_LOAD:
                     /* from the Game Pak */
-                    if (gSaveData_16.options & SAVE_HAS_USER_TRACK) {
+                    if (gSaveData_16.options & SAVE_OPT_USER_TRACK) {
                         for (j = 0; j < gEditor->gridSize[1]; j++) {
                             for (i = 0; i < gEditor->gridSize[0]; i++) {
                                 arned_set_cell(i, j, 0, 0, 0, 0, 0, 0, 0);
@@ -614,7 +584,7 @@ void edit_update_main_menu(void)
                     break;
                 case EDIT_ASK_SAVE:
                     /* to the Game Pak */
-                    if (gSaveData_16.options & SAVE_HAS_USER_TRACK) {
+                    if (gSaveData_16.options & SAVE_OPT_USER_TRACK) {
                         gEditor->dialog = EDIT_ASK_OVERWRITE;
                         gEditor->dialogChoice = 0;
                     } else {
@@ -698,24 +668,24 @@ void edit_update_main_menu(void)
                     break;
                 }
             }
-        } else if (((gPadInput_2[0] & PAD_D_UP) && !(gPadInputPrev_2[0] & PAD_D_UP)) ||
-                   ((gPadInput_2[0] & PAD_D_DOWN) && !(gPadInputPrev_2[0] & PAD_D_DOWN))) {
+        } else if (((gPadInput_2[0] & INPUT_D_UP) && !(gPadInputPrev_2[0] & INPUT_D_UP)) ||
+                   ((gPadInput_2[0] & INPUT_D_DOWN) && !(gPadInputPrev_2[0] & INPUT_D_DOWN))) {
             /* the Game Pak answers are locked: loading needs a saved track, saving goes to the Controller Pak */
-            if ((gEditor->dialog != EDIT_ASK_LOAD || (gSaveData_16.options & SAVE_HAS_USER_TRACK)) && gEditor->dialog != EDIT_ASK_SAVE) {
+            if ((gEditor->dialog != EDIT_ASK_LOAD || (gSaveData_16.options & SAVE_OPT_USER_TRACK)) && gEditor->dialog != EDIT_ASK_SAVE) {
                 gEditor->dialogChoice ^= 1;
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             }
         }
     } else {
         /* D-pad left and right step along the pieces (swapped when the view is reversed) */
         if (ed->cur != NULL && ed->mode != EDIT_MODE_NAME) {
-            if (((gPadInput_2[0] & PAD_D_LEFT) && !(gPadInputPrev_2[0] & PAD_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) ||
-                ((gPadInput_2[0] & PAD_D_RIGHT) && !(gPadInputPrev_2[0] & PAD_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
+            if (((gPadInput_2[0] & INPUT_D_LEFT) && !(gPadInputPrev_2[0] & INPUT_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) ||
+                ((gPadInput_2[0] & INPUT_D_RIGHT) && !(gPadInputPrev_2[0] & INPUT_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
                 if (gEditor->cur->prev) {
                     gEditor->cur = gEditor->cur->prev;
                 }
-            } else if (((gPadInput_2[0] & PAD_D_RIGHT) && !(gPadInputPrev_2[0] & PAD_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) ||
-                       ((gPadInput_2[0] & PAD_D_LEFT) && !(gPadInputPrev_2[0] & PAD_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
+            } else if (((gPadInput_2[0] & INPUT_D_RIGHT) && !(gPadInputPrev_2[0] & INPUT_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) ||
+                       ((gPadInput_2[0] & INPUT_D_LEFT) && !(gPadInputPrev_2[0] & INPUT_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
                 if (gEditor->cur->next) {
                     gEditor->cur = gEditor->cur->next;
                 }
@@ -764,7 +734,7 @@ void edit_update_main_menu(void)
                     gEditor->dialogChoice = 0;
                 } else {
                     gEditor->dialog = EDIT_ASK_LOAD;
-                    if (gSaveData_16.options & SAVE_HAS_USER_TRACK) {
+                    if (gSaveData_16.options & SAVE_OPT_USER_TRACK) {
                         gEditor->dialogChoice = 1;
                     } else {
                         gEditor->dialogChoice = 0;
@@ -811,16 +781,16 @@ void edit_update_main_menu(void)
                 if (gGame.difficulty == 0) {
                     gGame.difficulty = 1;
                 }
-                /* the test ride: mode 13 round a closed track, 14 along an open one */
+                /* the test ride: round a closed track, or along an open one */
                 if (gEditor->first->prev == gEditor->last) {
-                    gGame.mode = 0xD;
+                    gGame.mode = GAME_MODE_TEST_LOOP;
                 } else {
-                    gGame.mode = 0xE;
+                    gGame.mode = GAME_MODE_TEST_OPEN;
                 }
                 gGame.numPlayers = 1;
-                gGame.flags &= ~2; /* on to a race, not back to the front end */
+                gGame.flags &= ~GAME_FLAG_EDITOR_TO_SHELL; /* on to a race, not back to the front end */
                 gEditor->flags &= ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE);
-                gGame.flags |= 0x4000000;
+                gGame.flags |= GAME_FLAG_LOW_RES;
                 gEditor->flags |= (EDIT_TEST_TRACK | EDIT_EXIT);
                 gEditor->exitTimer = 0;
                 gEditor->flags &= ~EDIT_DIALOG;
@@ -986,22 +956,22 @@ void edit_update_track_menu(void) {
         gui_menu_fix_cursor(gEditor->menu);
     }
     if (gEditor->flags & EDIT_MESSAGE) {
-        if (PRESSED_2(PAD_A)) {
-            gPadInputPrev_3[0] |= PAD_A;
+        if (PRESSED_2(INPUT_A)) {
+            gPadInputPrev_3[0] |= INPUT_A;
             gEditor->flags &= ~EDIT_MESSAGE;
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
         }
     } else {
         if (gEditor->mode == EDIT_MODE_WARN_MULTI || gEditor->mode == EDIT_MODE_WARN_LOCKED) {
-            if (PRESSED_2(PAD_A)) {
+            if (PRESSED_2(INPUT_A)) {
                 gEditor->mode = EDIT_MODE_USER_PIECE;
-            } else if (PRESSED_2(PAD_B)) {
+            } else if (PRESSED_2(INPUT_B)) {
                 gEditor->menu->flags |= GUI_MENU_ACTIVE;
                 gEditor->mode = EDIT_MODE_PLACE;
                 gEditor->flags &= ~EDIT_DIALOG;
             }
         } else if (gEditor->mode == EDIT_MODE_PLACE || gEditor->mode == EDIT_MODE_USER_PIECE) {
-            if (PRESSED_2(PAD_B)) {
+            if (PRESSED_2(INPUT_B)) {
                 if (gEditor->mode == EDIT_MODE_PLACE) {
                     edit_remove_preview_pieces(gEditor->cur);
                     gEditor->mode = EDIT_MODE_IDLE;
@@ -1013,7 +983,7 @@ void edit_update_track_menu(void) {
         } else if (gEditor->mode == EDIT_MODE_MOVE_TRACK) {
             /* B puts the track back, A keeps it, the D-pad moves it a cell where there is room */
             moved = 0;
-            if (PRESSED_2(PAD_B)) {
+            if (PRESSED_2(INPUT_B)) {
                 delta[0] = gEditor->first->x - gEditor->moveFromX;
                 delta[1] = gEditor->first->y - gEditor->moveFromY;
                 piece = gEditor->first;
@@ -1025,42 +995,42 @@ void edit_update_track_menu(void) {
                 gEditor->mode = EDIT_MODE_IDLE;
                 gEditor->menu->flags |= GUI_MENU_ACTIVE;
                 moved = 1;
-                snd_play_menu_sound(MENU_SFX_BACK);
-            } else if (PRESSED_2(PAD_A)) {
+                snd_play_menu_sound(MENU_SOUND_BACK);
+            } else if (PRESSED_2(INPUT_A)) {
                 gEditor->mode = EDIT_MODE_IDLE;
                 gEditor->menu->flags |= GUI_MENU_ACTIVE;
-                snd_play_menu_sound(MENU_SFX_SELECT);
-            } else if ((gEditor->flags & EDIT_ROOM_X_NEG) && PRESSED_2(PAD_D_LEFT)) {
+                snd_play_menu_sound(MENU_SOUND_SELECT);
+            } else if ((gEditor->flags & EDIT_ROOM_X_NEG) && PRESSED_2(INPUT_D_LEFT)) {
                 piece = gEditor->first;
                 do {
                     piece->x--;
                     piece = piece->next;
                 } while (piece != NULL && piece != gEditor->first);
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
                 moved = 1;
-            } else if ((gEditor->flags & EDIT_ROOM_X_POS) && PRESSED_2(PAD_D_RIGHT)) {
+            } else if ((gEditor->flags & EDIT_ROOM_X_POS) && PRESSED_2(INPUT_D_RIGHT)) {
                 piece = gEditor->first;
                 do {
                     piece->x++;
                     piece = piece->next;
                 } while (piece != NULL && piece != gEditor->first);
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
                 moved = 1;
-            } else if ((gEditor->flags & EDIT_ROOM_Y_POS) && PRESSED_2(PAD_D_UP)) {
+            } else if ((gEditor->flags & EDIT_ROOM_Y_POS) && PRESSED_2(INPUT_D_UP)) {
                 piece = gEditor->first;
                 do {
                     piece->y++;
                     piece = piece->next;
                 } while (piece != NULL && piece != gEditor->first);
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
                 moved = 1;
-            } else if ((gEditor->flags & EDIT_ROOM_Y_NEG) && PRESSED_2(PAD_D_DOWN)) {
+            } else if ((gEditor->flags & EDIT_ROOM_Y_NEG) && PRESSED_2(INPUT_D_DOWN)) {
                 piece = gEditor->first;
                 do {
                     piece->y--;
                     piece = piece->next;
                 } while (piece != NULL && piece != gEditor->first);
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
                 moved = 1;
             }
             if (moved) {
@@ -1124,7 +1094,7 @@ void edit_update_track_menu(void) {
                 }
                 break;
             case EDIT_ITEM_MAIN_MENU:
-                snd_play_menu_sound(MENU_SFX_BACK);
+                snd_play_menu_sound(MENU_SOUND_BACK);
                 if (gEditor->menu != &sEditMainMenu) {
                     switch (gEditor->slideState) {
                     case EDIT_SLIDE_IN:
@@ -1153,7 +1123,7 @@ void edit_update_track_menu(void) {
                 }
                 break;
             }
-        } else if (PRESSED_2(PAD_B)) {
+        } else if (PRESSED_2(INPUT_B)) {
             /* B deletes too */
             ed = gEditor;
             if (ed->flags & EDIT_CAN_DELETE) {
@@ -1179,12 +1149,12 @@ void edit_update_track_menu(void) {
             }
         }
         if (gEditor->mode == EDIT_MODE_IDLE && gEditor->cur != NULL) {
-            if ((PRESSED_2(PAD_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_2(PAD_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
+            if ((PRESSED_2(INPUT_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_2(INPUT_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
                 if (gEditor->cur->prev != NULL) {
                     gEditor->cur = gEditor->cur->prev;
                 }
-            } else if ((PRESSED_2(PAD_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) ||
-                       (PRESSED_2(PAD_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
+            } else if ((PRESSED_2(INPUT_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) ||
+                       (PRESSED_2(INPUT_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
                 if (gEditor->cur->next != NULL) {
                     gEditor->cur = gEditor->cur->next;
                 }
@@ -1236,22 +1206,22 @@ void edit_update_place_piece(void) {
     mark = gEditor->markStart;
     /* a lone piece: the D-pad moves where it goes on the grid */
     if (cur != NULL && cur->prev == NULL && cur->next == NULL) {
-        if ((PRESSED_3(PAD_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_3(INPUT_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(INPUT_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollX >= -30) {
                 gEditor->scrollX--;
             }
         }
-        if ((PRESSED_3(PAD_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_3(INPUT_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(INPUT_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollX < 31) {
                 gEditor->scrollX++;
             }
         }
-        if ((PRESSED_3(PAD_D_DOWN) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_UP) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_3(INPUT_D_DOWN) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(INPUT_D_UP) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollY >= -30) {
                 gEditor->scrollY--;
             }
         }
-        if ((PRESSED_3(PAD_D_UP) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_DOWN) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_3(INPUT_D_UP) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(INPUT_D_DOWN) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollY < 31) {
                 gEditor->scrollY++;
             }
@@ -1263,11 +1233,11 @@ void edit_update_place_piece(void) {
             mark = mark->next;
         } while (mark->prev != gEditor->markEnd);
     }
-    if (PRESSED_3(PAD_R)) {
+    if (PRESSED_3(INPUT_R)) {
         /* R flips the piece if it fits both ways (PIECE_FITS | PIECE_FITS_FLIPPED, the flags tested as a word) */
         if ((*(u32 *)&gEditor->cur->type->flags & ((PIECE_FITS | PIECE_FITS_FLIPPED) << 16)) == ((PIECE_FITS | PIECE_FITS_FLIPPED) << 16)) {
-            gPadInput &= PAD_R; /* clears all but R */
-            snd_play_menu_sound(MENU_SFX_MOVE);
+            gPadInput &= INPUT_R; /* clears all but R */
+            snd_play_menu_sound(MENU_SOUND_MOVE);
             for (i = 0; i < gEditor->cur->type->dim[(gEditor->cur->rot + 1) & 1]; i++) {
                 for (j = 0; j < gEditor->cur->type->dim[gEditor->cur->rot & 1]; j++) {
                     if (gEditor->cur->x + j >= 0 && gEditor->cur->x + j < gEditor->gridSize[0] &&
@@ -1290,7 +1260,7 @@ void edit_update_place_piece(void) {
                 mark = mark->next;
             } while (mark != NULL && mark != gEditor->first);
         }
-    } else if (PRESSED_3(PAD_Z)) {
+    } else if (PRESSED_3(INPUT_Z)) {
         /* Z edits a user piece's heights (after a warning when it is used twice or locked) */
         if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_USER)) {
             gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
@@ -1577,22 +1547,22 @@ void edit_update(void) {
         ed->lastCur = ed->cur;
     }
     /* the stick pushed far enough counts as the D-pad */
-    if ((gPadInput & PAD_STICK_LEFT) && ABS(STICK_X(gPadInput)) >= 3) {
-        gPadInput |= PAD_D_LEFT;
+    if ((gPadInput & INPUT_STICK_LEFT) && ABS(STICK_X(gPadInput)) >= 3) {
+        gPadInput |= INPUT_D_LEFT;
     }
-    if ((gPadInput & PAD_STICK_RIGHT) && ABS(STICK_X(gPadInput)) >= 3) {
-        gPadInput |= PAD_D_RIGHT;
+    if ((gPadInput & INPUT_STICK_RIGHT) && ABS(STICK_X(gPadInput)) >= 3) {
+        gPadInput |= INPUT_D_RIGHT;
     }
-    if ((gPadInput & PAD_STICK_UP) && ABS(STICK_Y(gPadInput)) >= 3) {
-        gPadInput |= PAD_D_UP;
+    if ((gPadInput & INPUT_STICK_UP) && ABS(STICK_Y(gPadInput)) >= 3) {
+        gPadInput |= INPUT_D_UP;
     }
-    if ((gPadInput & PAD_STICK_DOWN) && ABS(STICK_Y(gPadInput)) >= 3) {
-        gPadInput |= PAD_D_DOWN;
+    if ((gPadInput & INPUT_STICK_DOWN) && ABS(STICK_Y(gPadInput)) >= 3) {
+        gPadInput |= INPUT_D_DOWN;
     }
-    if ((gPadInput & PAD_A) && !(gPadInputPrev & PAD_A)) {
+    if ((gPadInput & INPUT_A) && !(gPadInputPrev & INPUT_A)) {
         gEditor->flags |= EDIT_A_HELD;
     } else if (gEditor->flags & EDIT_A_HELD) {
-        if (((gPadInput & PAD_B) && !(gPadInputPrev & PAD_B)) || !(gPadInput & PAD_A)) {
+        if (((gPadInput & INPUT_B) && !(gPadInputPrev & INPUT_B)) || !(gPadInput & INPUT_A)) {
             gEditor->flags &= ~EDIT_A_HELD;
         }
     }
@@ -1603,7 +1573,7 @@ void edit_update(void) {
         CAM_CALC_HEIGHT(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
         CAM_CALC_PITCH(cam[1].height, cam[1].pitch);
     } else if (gEditor->cur != 0) {
-        if (gPadInput & PAD_C_UP) {
+        if (gPadInput & INPUT_C_UP) {
             if (gEditor->mode == EDIT_MODE_USER_PIECE) {
                 gEditor->cam[1].dist -= 600;
                 if (gEditor->cam[1].dist < 20000) {
@@ -1620,7 +1590,7 @@ void edit_update(void) {
                 CAM_CALC_PITCH(cam[0].height, cam[0].pitch);
             }
         }
-        if (gPadInput & PAD_C_DOWN) {
+        if (gPadInput & INPUT_C_DOWN) {
             if (gEditor->mode == EDIT_MODE_USER_PIECE) {
                 gEditor->cam[1].dist += 600;
                 if (gEditor->cam[1].dist > 120000) {
@@ -1640,7 +1610,7 @@ void edit_update(void) {
     }
     if (gEditor->cur != 0) {
         /* C left and right turn the view round */
-        if ((gPadInput & PAD_C_LEFT) && !(gPadInputPrev & PAD_C_LEFT)) {
+        if ((gPadInput & INPUT_C_LEFT) && !(gPadInputPrev & INPUT_C_LEFT)) {
             if (gEditor->flags & EDIT_TURN_LEFT) {
                 gEditor->flags &= ~EDIT_TURN_LEFT;
             } else if (gEditor->flags & EDIT_TURN_RIGHT) {
@@ -1649,7 +1619,7 @@ void edit_update(void) {
                 gEditor->flags |= EDIT_TURN_LEFT;
             }
         }
-        if ((gPadInput & PAD_C_RIGHT) && !(gPadInputPrev & PAD_C_RIGHT)) {
+        if ((gPadInput & INPUT_C_RIGHT) && !(gPadInputPrev & INPUT_C_RIGHT)) {
             if (gEditor->flags & EDIT_TURN_RIGHT) {
                 gEditor->flags &= ~EDIT_TURN_RIGHT;
             } else if (gEditor->flags & EDIT_TURN_LEFT) {
@@ -1724,7 +1694,7 @@ void edit_update(void) {
             if (gEditor->flags & EDIT_TEST_TRACK) {
                 usrtrk_layout_from_editor();
             }
-            gCurGameState->mode = 3; /* exit requested */
+            gCurGameState->mode = STATE_EXIT;
         }
     } else {
         switch (gEditor->page) {
@@ -2652,7 +2622,7 @@ Gfx *edit_draw_track_view(s32 ctx, s32 fb, Gfx *gdl) {
             gdl = gui_draw_prompt(gdl, ctx, fb, "Save The Track To...", "Game Pak", "Controller Pak", 0, 1);
             break;
         case EDIT_ASK_LOAD:
-            /* Game Pak enabled when a track is saved there (SAVE_HAS_USER_TRACK) */
+            /* Game Pak enabled when a track is saved there (SAVE_OPT_USER_TRACK) */
             gdl = gui_draw_prompt(gdl, ctx, fb, "Load A Track From...", "Game Pak", "Controller Pak",
                                 (gSaveData.options >> 3) & 1, 1);
             break;
@@ -3606,8 +3576,6 @@ int edit_user_piece_height_max_prev(int point, u16 *slopes)
 #define CE_LIM() ((gPieceTypes[CE_ROW() + PIECE_TYPE_USER].dim[1]) << 1)
 #define GETA(i) (((i) + 1 > 0 && (i) + 1 < CE_LIM()) ? gUserPieceHeights[CE_ROW()][i] : 0)
 #define ANG(p, i) (((i) + 1 < CE_LIM()) ? 0x2000 - (p)[(i) + 1] : 0x2000)
-#define COS16(x) gCosTable[((x) >> 4) & 0xFFF]
-#define SIN16(x) gCosTable[(((x) >> 4) - 0x400) & 0xFFF]
 
 /* ... and from the one after. */
 s32 edit_user_piece_height_max_next(s32 point, s16 *slopes)
@@ -3790,7 +3758,7 @@ void edit_user_piece_adjust_height(void)
     s32 nearLimit;
     s32 height, newHeight;
 
-    zHeld = gPadInput >> 17; /* PAD_Z */
+    zHeld = gPadInput >> 17; /* INPUT_Z */
     zHeld &= 1;
     /* at most 140 from the neighbouring points, 450 from the ground */
     hi = MIN_2(HEIGHT_AT(SEL_POINT + 1) + 0x8C, HEIGHT_AT(SEL_POINT - 1) + 0x8C);
@@ -3803,26 +3771,26 @@ void edit_user_piece_adjust_height(void)
     }
     *(volatile s16 *)&gEditor->heightState = EDIT_HEIGHT_FREE;
     /* the D-pad moves the point 20 a press, the stick by how far it is pushed */
-    if (gPadInput & PAD_STICK_UP) {
+    if (gPadInput & INPUT_STICK_UP) {
         goto body;
     }
-    if (gPadInput & PAD_STICK_DOWN) {
+    if (gPadInput & INPUT_STICK_DOWN) {
         goto body;
     }
-    if ((gPadInput & PAD_D_UP) && !(gPadInputPrev & PAD_D_UP)) {
+    if ((gPadInput & INPUT_D_UP) && !(gPadInputPrev & INPUT_D_UP)) {
         goto body;
     }
-    if ((gPadInput & PAD_D_DOWN) && !(gPadInputPrev & PAD_D_DOWN)) {
+    if ((gPadInput & INPUT_D_DOWN) && !(gPadInputPrev & INPUT_D_DOWN)) {
     body:
-        if ((gPadInput & PAD_D_UP) && !(gPadInputPrev & PAD_D_UP)) {
+        if ((gPadInput & INPUT_D_UP) && !(gPadInputPrev & INPUT_D_UP)) {
             *(u16 *)&SEL_HEIGHT += 0x14;
-        } else if ((gPadInput & PAD_D_DOWN) && !(gPadInputPrev & PAD_D_DOWN)) {
+        } else if ((gPadInput & INPUT_D_DOWN) && !(gPadInputPrev & INPUT_D_DOWN)) {
             *(u16 *)&SEL_HEIGHT -= 0x14;
         } else {
             s16 *p = &SEL_HEIGHT;
             s32 w = *p;
-            if (gPadInput & (PAD_STICK_UP | PAD_STICK_DOWN)) {
-                if (gPadInput & PAD_STICK_UP) {
+            if (gPadInput & (INPUT_STICK_UP | INPUT_STICK_DOWN)) {
+                if (gPadInput & INPUT_STICK_UP) {
                     newHeight = w + (gPadInput >> 28);
                 } else {
                     newHeight = w - (gPadInput >> 28);
@@ -3865,12 +3833,12 @@ void edit_update_user_piece(void)
     s32 i;
 
     if (gEditor->flags & EDIT_DIALOG) {
-        if (PRESSED_4(PAD_B)) {
-            gPadInputPrev_3[0] |= PAD_B;
+        if (PRESSED_4(INPUT_B)) {
+            gPadInputPrev_3[0] |= INPUT_B;
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
             gEditor->flags &= ~EDIT_DIALOG;
-        } else if (PRESSED_4(PAD_A)) {
-            gPadInputPrev_3[0] |= PAD_A;
+        } else if (PRESSED_4(INPUT_A)) {
+            gPadInputPrev_3[0] |= INPUT_A;
             if (gEditor->dialogChoice != 0) {
                 switch (gEditor->dialog) {
                 case EDIT_ASK_ADD_SEGMENT:
@@ -3894,11 +3862,11 @@ void edit_update_user_piece(void)
             }
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
             gEditor->flags &= ~EDIT_DIALOG;
-        } else if (PRESSED_4(PAD_D_UP) || PRESSED_4(PAD_D_DOWN)) {
+        } else if (PRESSED_4(INPUT_D_UP) || PRESSED_4(INPUT_D_DOWN)) {
             gEditor->dialogChoice ^= 1;
-            snd_play_menu_sound(MENU_SFX_MOVE);
+            snd_play_menu_sound(MENU_SOUND_MOVE);
         }
-    } else if (PRESSED_4(PAD_A)) {
+    } else if (PRESSED_4(INPUT_A)) {
         /* A: done, back to placing pieces */
         gEditor->mode = EDIT_MODE_PLACE;
         gEditor->menu->flags |= GUI_MENU_ACTIVE;
@@ -3908,7 +3876,7 @@ void edit_update_user_piece(void)
         sEditTrackMenu.items[EDIT_ITEM_USER].valueMask |= 1 << (gEditor->userPieceCount - 1);
     } else {
         /* R at either end deletes a segment (down to 4, not when the size is locked) */
-        if (PRESSED_4(PAD_R)) {
+        if (PRESSED_4(INPUT_R)) {
             PieceType *types = gPieceTypes;
             s32 typeIdx = gEditor->userPiece + PIECE_TYPE_USER;
             PieceType *type;
@@ -3924,10 +3892,10 @@ void edit_update_user_piece(void)
             }
         }
         /* left and right move along the points; past either end, a segment can be added */
-        if ((PRESSED_4(PAD_D_RIGHT) && (gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(PAD_D_LEFT) && !(gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_4(INPUT_D_RIGHT) && (gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(INPUT_D_LEFT) && !(gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->heightSel >= 2) {
                 gEditor->heightSel--;
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             } else {
                 PieceType *types = gPieceTypes;
                 s32 typeIdx = gEditor->userPiece + PIECE_TYPE_USER;
@@ -3941,14 +3909,14 @@ void edit_update_user_piece(void)
                 }
             }
         }
-        if ((PRESSED_4(PAD_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(PAD_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_4(INPUT_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(INPUT_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
             PieceType *types = gPieceTypes;
             s32 typeIdx = gEditor->userPiece + PIECE_TYPE_USER;
             PieceType *type;
             type = &types[typeIdx];
             if (gEditor->heightSel < type->dim[1] * 2 - 1) {
                 gEditor->heightSel++;
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             } else if (type->dim[1] < gEditor->maxSegments && !(type->flags & PIECE_SIZE_LOCKED)) {
                 gEditor->dialog = EDIT_ASK_ADD_SEGMENT;
                 gEditor->flags |= EDIT_DIALOG;

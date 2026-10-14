@@ -642,11 +642,11 @@ void path_init(u32 *resSet)
     s32 resId;
     u32 handle;
 
-    if (gGame.mode == 6 /* Excite 3D */) {
+    if (gGame.mode == GAME_MODE_EXCITE_3D) {
         path_generate_straight();
         goto end;
     }
-    if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0 /* the user track */) {
+    if ((*(u32 *)(gCurTrack + 0x50) & TRACK_FLAG_USER) != 0) {
         sPathRawData = gUserTrackData.path;
         path_load(gUserTrackData.path);
         path_calc_widths_and_progress();
@@ -656,12 +656,12 @@ void path_init(u32 *resSet)
         mem_free((s32)sPathRawData);
         goto end;
     }
-    if (*(s32 *)(gCurTrack + 0x2c) != 2 /* not the desert */) {
-        if (gGame.mode == 9 /* tutorial */ && (gTutorialLessons[gSeason->round].flags & 2)) {
+    if (*(s32 *)(gCurTrack + 0x2c) != TRACK_ENV_DESERT) {
+        if (gGame.mode == GAME_MODE_TUTORIAL && (gTutorialLessons[gSeason->round].flags & LESSON_TRICKS)) {
             resId = sTutorialPathResId;
             goto load;
         }
-        if (*(volatile s32 *)&gGame.mode == 7 /* hill climb */ && (gCheatFlags & 8)) {
+        if (*(volatile s32 *)&gGame.mode == GAME_MODE_HILL_CLIMB && (gCheatFlags & CHEAT_DOWN_HILL)) {
             resId = sDownhillPathResId;
             goto load;
         }
@@ -851,30 +851,32 @@ void path_update_bike(Rider *rider)
     s32 progress;
 
     oldSeg = rider->segment;
-    if ((rider->rearWheel.surface->flags & 0x80) && rider->rearWheel.airTicks <= 0) {
+    if ((rider->rearWheel.surface->flags & SURFACE_CRASH_ON_TOUCH) && rider->rearWheel.airTicks <= 0) {
         bike_crash_begin(rider, 0x19);
     }
-    if ((rider->frontWheel.surface->flags & 0x80) && rider->frontWheel.airTicks <= 0) {
+    if ((rider->frontWheel.surface->flags & SURFACE_CRASH_ON_TOUCH) && rider->frontWheel.airTicks <= 0) {
         bike_crash_begin(rider, 0x1C);
     }
-    if (gCurTrack_26->env == 1 /* outdoor */) {
+    if (gCurTrack_26->env == TRACK_ENV_OUTDOOR) {
         height_get_ground(rider->drawPos.x, rider->drawPos.y, rider->drawPos.z);
         if (gGroundFound == 0) {
             bike_respawn(rider);
         }
     }
     if (rider->rearWheel.airTicks <= 0 && rider->frontWheel.airTicks <= 0 && rider->crashState == 0) {
-        if (!(rider->rearWheel.surface->flags & 0x100) && !(rider->frontWheel.surface->flags & 0x100)) {
+        if (!(rider->rearWheel.surface->flags & SURFACE_OUT_OF_BOUNDS)
+            && !(rider->frontWheel.surface->flags & SURFACE_OUT_OF_BOUNDS)) {
             rider->prevSegment = oldSeg;
             rider->crashTimer = 0;
-        } else if (gGame.mode != 0xE && (rider->rearWheel.surface->flags & 0x100) && (rider->frontWheel.surface->flags & 0x100)) {
+        } else if (gGame.mode != GAME_MODE_TEST_OPEN && (rider->rearWheel.surface->flags & SURFACE_OUT_OF_BOUNDS)
+                   && (rider->frontWheel.surface->flags & SURFACE_OUT_OF_BOUNDS)) {
             /* both wheels on such ground for 10 frames (not in the editor's test ride) */
             if (++rider->crashTimer > 10) {
                 bike_respawn(rider);
             }
         }
     }
-    if (gEvent.state < 5 && gGame.mode != 9 /* tutorial */) {
+    if (gEvent.state < EVENT_STATE_GO && gGame.mode != GAME_MODE_TUTORIAL) {
         gPathSegmentT = 0.0f;
         rider->segment = ((s16 *)&gPathStartNode)[1]; /* the low half */
     } else {
@@ -907,7 +909,8 @@ void path_update_bike(Rider *rider)
                     remove_walls_trigger(gCurTrack_26->wallEvents[i].wall);
                 }
             }
-            if (gGame.mode == 7 /* hill climb: a node past the best so far cools the engine; node 120 finishes */) {
+            /* hill climb: a node past the best so far cools the engine; node 120 finishes */
+            if (gGame.mode == GAME_MODE_HILL_CLIMB) {
                 if (rider->segment == gPathNodes->prev) {
                     rider->segment = 0;
                 }

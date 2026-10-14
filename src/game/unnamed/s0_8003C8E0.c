@@ -177,9 +177,6 @@ void rider_apply_ik(Bone *bones)
 
 /* the rider being posed */
 #define RIDER (gRiders[idx])
-/* gCosTable: 1.0 = 0x4000, 16-bit angles */
-#define COSS(a) gCosTable[((a) >> 4) & 0xFFF]
-#define SINS(a) gCosTable[(((a) >> 4) - 0x400) & 0xFFF]
 
 /* gRiderGfx entries (0xA80 bytes per rider): the ponytail's part */
 typedef struct {
@@ -292,7 +289,7 @@ void rider_update_pose(RiderSkeleton *skel, s32 idx)
             f32 spread;
 
             if (RIDER.wheelieTimer != 0) {
-                f32 side = SINS((gRaceFrame << 11) + 0x4000) * 0.00390625f + 128.0f;
+                f32 side = SIN16((gRaceFrame << 11) + 0x4000) * 0.00390625f + 128.0f;
                 x = RIDER.bike.right.x * side + RIDER.bike.fwd.x * 128.0f;
                 y = RIDER.bike.right.y * side + RIDER.bike.fwd.y * 128.0f;
                 y += 100;
@@ -312,8 +309,8 @@ void rider_update_pose(RiderSkeleton *skel, s32 idx)
                         step = (0x4000 - RIDER.walkPhase) / 64;
                         lift = 0;
                     } else {
-                        step = COSS(RIDER.walkPhase) / 64;
-                        lift = -SINS(RIDER.walkPhase) / 256;
+                        step = COS16(RIDER.walkPhase) / 64;
+                        lift = -SIN16(RIDER.walkPhase) / 256;
                     }
                     {
                         f32 stepF;
@@ -338,7 +335,7 @@ void rider_update_pose(RiderSkeleton *skel, s32 idx)
             f32 spread;
 
             if (RIDER.wheelieTimer != 0) {
-                f32 side = -SINS(gRaceFrame << 11) * 0.00390625f - 128.0f;
+                f32 side = -SIN16(gRaceFrame << 11) * 0.00390625f - 128.0f;
                 x = RIDER.bike.right.x * side + RIDER.bike.fwd.x * 128.0f;
                 y = RIDER.bike.right.y * side + RIDER.bike.fwd.y * 128.0f;
                 y += 100;
@@ -359,8 +356,8 @@ void rider_update_pose(RiderSkeleton *skel, s32 idx)
                         step = -(RIDER.walkPhase + 0x4000) / 64;
                         lift = 0;
                     } else {
-                        step = -COSS(RIDER.walkPhase) / 64;
-                        lift = SINS(RIDER.walkPhase) / 256;
+                        step = -COS16(RIDER.walkPhase) / 64;
+                        lift = SIN16(RIDER.walkPhase) / 256;
                     }
                     {
                         f32 stepF;
@@ -389,15 +386,15 @@ void rider_update_pose(RiderSkeleton *skel, s32 idx)
         yaw = RIDER.headYaw;
         if (sRiderLookBack[idx] == 0) {
             if (yaw < 0) {
-                yaw = COSS(yaw * 2) / 2 - 0x2000;
+                yaw = COS16(yaw * 2) / 2 - 0x2000;
             } else {
-                yaw = -COSS(yaw * 2) / 2 + 0x2000;
+                yaw = -COS16(yaw * 2) / 2 + 0x2000;
             }
         }
         tmp = yaw;
         if (tmp < 0) tmp = -tmp;
         yaw = (yaw * 12000) >> 14;
-        mtx3i_from_angles(sRiderIkTargets.head.m, (0x4000 - COSS(tmp * 4)) >> 4, 0, RIDER.drawRot[2] + yaw);
+        mtx3i_from_angles(sRiderIkTargets.head.m, (0x4000 - COS16(tmp * 4)) >> 4, 0, RIDER.drawRot[2] + yaw);
         rider_apply_ik(skel->bones);
         /* the fist pump: the PUMP clip on the left arm, fading in and out over 8 frames (the fade is unused) */
         tmp = RIDER.fistPump;

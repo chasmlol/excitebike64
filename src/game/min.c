@@ -11,24 +11,24 @@ void race_init_replay(void)
     sDemoActive = 0;
     gDemoPlayback = 0;
     gReplayPlayback = 0;
-    if (gGame.mode == MODE_TIME_TRIAL && (gGame.flags & GAME_GHOST) != 0) {
-        if ((gGame.flags & GAME_TRACK_INTRO) != 0) {
+    if (gGame.mode == GAME_MODE_TIME_TRIAL && (gGame.flags & GAME_FLAG_GHOST_LOADED) != 0) {
+        if ((gGame.flags & GAME_FLAG_TRACK_INTRO) != 0) {
             race_load_ghost_setup((s32)(gActiveReplay_2 + 0x1900)); /* the ghost, 0x6400 bytes in */
         }
     }
-    if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == 0 && gGame.mode == MODE_TIME_TRIAL) {
+    if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) == 0 && gGame.mode == GAME_MODE_TIME_TRIAL) {
         gGhostRace = 1;
-        if ((gGame.flags & GAME_GHOST) != 0) {
+        if ((gGame.flags & GAME_FLAG_GHOST_LOADED) != 0) {
             sGhostData = gActiveReplay_2 + 0x1900;
         } else {
             sGhostData = 0;
         }
-    } else if ((gGame.flags & GAME_REPLAY) != 0) {
+    } else if ((gGame.flags & GAME_FLAG_REPLAY) != 0) {
         gReplayPlayback = 1;
         sReplayRequest = 0;
         replay_play_start_2((s32)gActiveReplay_2);
     } else {
-        if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == 0 && gGame.mode == MODE_TUTORIAL &&
+        if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) == 0 && gGame.mode == GAME_MODE_TUTORIAL &&
             gTutorialLessons[gSeason->round].demo != 0 && (gEvent.flags & EVENT_NO_DEMO) == 0) {
             gEvent.flags = gEvent.flags & ~EVENT_NO_DEMO;
             gGhostRace = 0;
@@ -57,9 +57,9 @@ void race_init_replay(void)
             gRiderAlpha[gGhostSlot] = 0x80;
         }
     }
-    if (gGame.mode == MODE_TUTORIAL || gGhostRace != 0 || gDemoPlayback != 0 ||
-        (gGame.flags & (0x4000 | GAME_FRONTEND_RACE)) != 0 || gGame.mode == MODE_TEST_RIDE ||
-        gGame.mode == MODE_TEST_RIDE_OPEN || (gGame.flags & GAME_TRACK_INTRO) != 0) {
+    if (gGame.mode == GAME_MODE_TUTORIAL || gGhostRace != 0 || gDemoPlayback != 0 ||
+        (gGame.flags & (0x4000 | GAME_FLAG_FRONT_END_RACE)) != 0 || gGame.mode == GAME_MODE_TEST_LOOP ||
+        gGame.mode == GAME_MODE_TEST_OPEN || (gGame.flags & GAME_FLAG_TRACK_INTRO) != 0) {
         gReplayRecording = 0;
     } else {
         gReplayRecording = 1;
@@ -74,8 +74,8 @@ void race_init_replay(void)
 void race_finish_replay(s32 reloadFrontend)
 {
     Game *game = &gGame;
-    if ((game->flags & (GAME_FRONTEND_RACE | GAME_REPEAT_STATE | GAME_TRACK_INTRO)) != 0) {
-        if ((game->flags & GAME_TRACK_INTRO) == 0) {
+    if ((game->flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_REPEAT_STATE | GAME_FLAG_TRACK_INTRO)) != 0) {
+        if ((game->flags & GAME_FLAG_TRACK_INTRO) == 0) {
             return;
         }
         if (gRaceExitCode != RACE_EXIT_BACK) {
@@ -89,13 +89,13 @@ void race_finish_replay(s32 reloadFrontend)
             goto reload;
         }
         /* no recording to finish after backing out, in the tutorial, soccer and the test rides */
-        if (gRaceExitCode == RACE_EXIT_BACK || game->mode == MODE_TUTORIAL) goto reload;
-        if (game->mode < MODE_STUNT) goto check_soccer;
-        if (game->mode >= MODE_TEST_RIDE_OPEN + 1) goto finish;
-        if (game->mode < MODE_TEST_RIDE) goto finish;
+        if (gRaceExitCode == RACE_EXIT_BACK || game->mode == GAME_MODE_TUTORIAL) goto reload;
+        if (game->mode < GAME_MODE_STUNT_COURSE) goto check_soccer;
+        if (game->mode >= GAME_MODE_TEST_OPEN + 1) goto finish;
+        if (game->mode < GAME_MODE_TEST_LOOP) goto finish;
         goto reload;
 check_soccer:
-        if (game->mode == MODE_SOCCER) goto reload;
+        if (game->mode == GAME_MODE_SOCCER) goto reload;
     }
 finish:
     replay_record_finish();
@@ -111,10 +111,10 @@ void race_update_replay(void)
 {
     if (gReplayRecording != 0) {
         if (gReplayPlayback == 0) {
-            if (gGame.mode == MODE_TUTORIAL || gEvent.allFinished == 0) {
+            if (gGame.mode == GAME_MODE_TUTORIAL || gEvent.allFinished == 0) {
                 replay_record_frame(gPlayerInputs);
             }
-        } else if (gGame.mode == MODE_TUTORIAL || gEvent.allFinished == 0) {
+        } else if (gGame.mode == GAME_MODE_TUTORIAL || gEvent.allFinished == 0) {
             replay_play_frame(gPlayerInputs);
         }
         if (sReplayRequest != 0 && sClearFrames < 5) {
@@ -170,9 +170,9 @@ void race_init(s32 arg)
     s32 i;
     s32 alpha;
 
-    if (!(gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) && (gSaveData.options & SAVE_OPT_HIGH_RES) &&
-        gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
-        gCurTrack_14->envType != TRACK_ENV_DESERT && !(gGame.flags & (GAME_LOW_RES | GAME_PODIUM))) {
+    if (!(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) && (gSaveData.options & SAVE_OPT_HIGH_RES) &&
+        gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == GAME_MODE_TIME_TRIAL) &&
+        gCurTrack_14->envType != TRACK_ENV_DESERT && !(gGame.flags & (GAME_FLAG_LOW_RES | GAME_FLAG_PODIUM))) {
         gViModeRequest = VI_MODE_HI_RES;
     } else {
         gViModeRequest = VI_MODE_MED_RES;
@@ -181,8 +181,8 @@ void race_init(s32 arg)
     }
     render_update_screen_layout();
 
-    if ((gGame.mode == MODE_EXHIBITION || gGame.mode == MODE_SEASON || gGame.mode == MODE_TIME_TRIAL) &&
-        (gCheatFlags & 2) /* Mirror */ && !(gGame.flags & (GAME_PODIUM | GAME_FRONTEND_RACE))) {
+    if ((gGame.mode == GAME_MODE_EXHIBITION || gGame.mode == GAME_MODE_SEASON || gGame.mode == GAME_MODE_TIME_TRIAL) &&
+        (gCheatFlags & CHEAT_MIRROR) && !(gGame.flags & (GAME_FLAG_PODIUM | GAME_FLAG_FRONT_END_RACE))) {
         gMirrorMode = 1;
     } else {
         gMirrorMode = 0;
@@ -194,7 +194,7 @@ void race_init(s32 arg)
     gPauseScreen.clearFrames = 0;
     gPauseScreen.loaded = 0;
     gSchedFrameLimit = 1;
-    gGame.flags |= GAME_IN_RACE;
+    gGame.flags |= GAME_FLAG_IN_RACE;
     race_load_frontend_code(0);
     if (gReplayPlayback != 0) {
         gCamTargetOverride = gEvent.camTarget;
@@ -221,62 +221,62 @@ void race_init(s32 arg)
         gCurTrack_14->followZones = NULL;
         gCurTrack_14->dollyZones = NULL;
     }
-    if (gGame.flags & (GAME_PODIUM | GAME_TRACK_INTRO)) {
+    if (gGame.flags & (GAME_FLAG_PODIUM | GAME_FLAG_TRACK_INTRO)) {
         font_load_menu_set(gResourceSet);
-    } else if (!(gGame.flags & GAME_FRONTEND_RACE)) {
+    } else if (!(gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
         font_load_race_set(gResourceSet);
     }
 
-    if (gGame.mode == 4 || gGame.mode == MODE_DESERT) {
+    if (gGame.mode == 4 || gGame.mode == GAME_MODE_DESERT) {
         gNumRiders = 6;
-    } else if (gGame.mode == MODE_TUTORIAL) {
+    } else if (gGame.mode == GAME_MODE_TUTORIAL) {
         if (gTutorialLessons[gSeason->round].flags & LESSON_TAKEDOWN) {
             gNumRiders = 2;
         } else {
             gNumRiders = 1;
         }
-    } else if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == GAME_TRACK_INTRO) {
+    } else if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) == GAME_FLAG_TRACK_INTRO) {
         gNumRiders = 1;
-    } else if (gGame.mode == MODE_EXHIBITION && gGame.numPlayers == 2) {
+    } else if (gGame.mode == GAME_MODE_EXHIBITION && gGame.numPlayers == 2) {
         gNumRiders = gGame.twoPlayerCpuRiders + 2;
-    } else if (gGame.mode == MODE_TEST_RIDE || gGame.mode == MODE_TEST_RIDE_OPEN) {
+    } else if (gGame.mode == GAME_MODE_TEST_LOOP || gGame.mode == GAME_MODE_TEST_OPEN) {
         gNumRiders = 1;
-    } else if (gGame.flags & GAME_FRONTEND_RACE) {
+    } else if (gGame.flags & GAME_FLAG_FRONT_END_RACE) {
         gNumRiders = 6;
         D_800E3704 = 0;
-    } else if (gGame.mode == MODE_EXCITE_3D) {
+    } else if (gGame.mode == GAME_MODE_EXCITE_3D) {
         gNumRiders = 4;
         gGame.numPlayers = 1;
-    } else if (gGame.mode == MODE_SOCCER || gGame.mode == MODE_STUNT) {
+    } else if (gGame.mode == GAME_MODE_SOCCER || gGame.mode == GAME_MODE_STUNT_COURSE) {
         gNumRiders = gGame.numPlayers;
     } else {
         gNumRiders = gGame.numPlayers + gGame.numCpuRiders;
     }
 
-    if (gGame.mode == MODE_TIME_TRIAL && !(gGame.flags & GAME_FRONTEND_RACE)) {
+    if (gGame.mode == GAME_MODE_TIME_TRIAL && !(gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
         gNumRiders = 1;
     }
     alpha = 0xFF;
     for (i = 7; i >= 0; i--) {
         gRiderAlpha[i] = alpha;
     }
-    if (gGame.flags & GAME_RIDER_SELECT) {
+    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
         gNumRiders = 6;
     }
     race_init_replay();
-    if (gGame.flags & GAME_PODIUM) {
+    if (gGame.flags & GAME_FLAG_PODIUM) {
         gNumRiders = gGame.numPlayers;
         gGame.numPlayers = 1;
     }
     event_init(gNumRiders, gGame.numLaps);
-    if (!(gGame.flags & (GAME_REPLAY | GAME_TRACK_INTRO | GAME_FRONTEND_RACE))) {
+    if (!(gGame.flags & (GAME_FLAG_REPLAY | GAME_FLAG_TRACK_INTRO | GAME_FLAG_FRONT_END_RACE))) {
         race_randomize_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
         race_set_grid_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     }
     gPhysDeltaTime = 0.016666668f;
     engine_init_dial_vtx();
     mem_fill(gPlayerInputsPrev_2, 0, 0x18);
-    palmod_init((gGame.flags >> 18) & 1); /* GAME_PODIUM */
+    palmod_init((gGame.flags >> 18) & 1); /* GAME_FLAG_PODIUM */
     gTrackSections = 0;
     gTrackObjects = 0;
     gWaterModels = 0;
@@ -315,25 +315,25 @@ void race_init(s32 arg)
     decal_init();
     rain_init();
     snow_init();
-    if (gGame.mode == MODE_TUTORIAL) {
+    if (gGame.mode == GAME_MODE_TUTORIAL) {
         event_stop_sounds_rumble();
     }
     if (gPodiumMode != 0) {
         podium_init();
         race_alloc_text_objs();
     }
-    if (gGame.flags & GAME_TRACK_INTRO) {
+    if (gGame.flags & GAME_FLAG_TRACK_INTRO) {
         gRacePhase = RACE_PHASE_INTRO_FADE_IN;
         gRacePhaseTimer = PHASE_TIMER_START;
         race_intro_load();
-    } else if (gGame.flags & GAME_FRONTEND_RACE) {
+    } else if (gGame.flags & GAME_FLAG_FRONT_END_RACE) {
         gRacePhase = RACE_PHASE_RACING;
     } else {
         gRacePhase = RACE_PHASE_FADE_IN;
         gRacePhaseTimer = PHASE_TIMER_START;
     }
     gTimeTrialPlayer = 0;
-    if (gGame.mode == MODE_TIME_TRIAL && !(gGame.flags & GAME_TRACK_INTRO) && gGhostSlot == 0) {
+    if (gGame.mode == GAME_MODE_TIME_TRIAL && !(gGame.flags & GAME_FLAG_TRACK_INTRO) && gGhostSlot == 0) {
         gTimeTrialPlayer = 1;
     }
 }
@@ -346,11 +346,11 @@ void race_exit(void)
     u32 frontendRace;
 
     rumble_stop_all();
-    if ((gCurTrack_14->flags & TRACK_FLAG_USER) != 0 && (gGame.mode - MODE_TEST_RIDE) < 2) {
+    if ((gCurTrack_14->flags & TRACK_FLAG_USER) != 0 && (gGame.mode - GAME_MODE_TEST_LOOP) < 2) {
         mem_free(gUserTrackLayout);
         gUserTrackLayout = 0;
     }
-    gGame.flags = gGame.flags & ~GAME_IN_RACE;
+    gGame.flags = gGame.flags & ~GAME_FLAG_IN_RACE;
     hacks_exit();
     decal_free();
     rider_anims_unload();
@@ -375,7 +375,7 @@ void race_exit(void)
         race_free_text_objs();
     }
     cleared = gGame.flags & 0xFFFFBFFF;
-    frontendRace = gGame.flags & GAME_FRONTEND_RACE;
+    frontendRace = gGame.flags & GAME_FLAG_FRONT_END_RACE;
     gGame.flags = cleared;
     if (frontendRace == 0) {
         font_unload_set();
@@ -385,7 +385,7 @@ void race_exit(void)
     gSchedMinRetraces = 1;
     if (gPodiumMode != 0) {
         gRaceExitCode = RACE_EXIT_PODIUM;
-        flags[0x13] = 0; /* gGame.mode = MODE_EXHIBITION */
+        flags[0x13] = 0; /* gGame.mode = GAME_MODE_EXHIBITION */
     }
 }
 
@@ -401,18 +401,18 @@ void race_begin(void)
         gNumViews = gGame.numPlayers;
     }
     gNumScreens = gNumViews;
-    if (gGame.mode == MODE_TUTORIAL) {
+    if (gGame.mode == GAME_MODE_TUTORIAL) {
         path_init(gResourceSet);
     }
-    if ((gGame.flags & (GAME_REPLAY | GAME_TRACK_INTRO | GAME_REPEAT_STATE | GAME_FRONTEND_RACE)) == 0 &&
-        (gGame.mode != MODE_SEASON || gSeason->round == 0)) {
+    if ((gGame.flags & (GAME_FLAG_REPLAY | GAME_FLAG_TRACK_INTRO | GAME_FLAG_REPEAT_STATE | GAME_FLAG_FRONT_END_RACE)) == 0 &&
+        (gGame.mode != GAME_MODE_SEASON || gSeason->round == 0)) {
         race_randomize_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
         race_set_grid_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     }
     gPauseMenu = PAUSE_NONE;
-    if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == 0 && (gSaveData.options & SAVE_OPT_HIGH_RES) != 0 &&
-        gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
-        gCurTrack_14->envType != TRACK_ENV_DESERT && (gGame.flags & (GAME_LOW_RES | GAME_PODIUM)) == 0) {
+    if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) == 0 && (gSaveData.options & SAVE_OPT_HIGH_RES) != 0 &&
+        gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == GAME_MODE_TIME_TRIAL) &&
+        gCurTrack_14->envType != TRACK_ENV_DESERT && (gGame.flags & (GAME_FLAG_LOW_RES | GAME_FLAG_PODIUM)) == 0) {
         gViModeRequest = VI_MODE_HI_RES;
     } else {
         gViModeRequest = VI_MODE_MED_RES;
@@ -449,7 +449,7 @@ void race_begin(void)
     snow_init();
     announce_reset();
     gTimeTrialPlayer = 0;
-    if (gGame.mode == MODE_TIME_TRIAL && (gGame.flags & GAME_TRACK_INTRO) == 0 && gGhostSlot == 0) {
+    if (gGame.mode == GAME_MODE_TIME_TRIAL && (gGame.flags & GAME_FLAG_TRACK_INTRO) == 0 && gGhostSlot == 0) {
         gTimeTrialPlayer = 1;
     }
     sky_reset_clip();
@@ -501,7 +501,7 @@ void race_update_intro(void)
     pressB = (input & INPUT_B) && !(gPadInputPrev & INPUT_B);
     pressStart = (input & INPUT_START) && !(gPadInputPrev & INPUT_START);
 
-    if (gGame.mode == MODE_EXHIBITION && gGame.numPlayers >= 2) {
+    if (gGame.mode == GAME_MODE_EXHIBITION && gGame.numPlayers >= 2) {
         if (left && gGame.numLaps >= 2) gGame.numLaps--;
         if (right && gGame.numLaps < 6) gGame.numLaps++;
     }
@@ -544,31 +544,31 @@ void race_update_intro(void)
             map_free();
             rain_free();
             snow_free();
-            if (gGame.mode == MODE_TUTORIAL) path_free();
+            if (gGame.mode == GAME_MODE_TUTORIAL) path_free();
             if (gDrawFlags & DRAW_HUD) event_hud_free();
             race_intro_unload();
-            gGame.flags &= ~GAME_TRACK_INTRO;
+            gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
             gNumRiders = gGame.numPlayers + gGame.numCpuRiders;
-            if (gGame.mode == MODE_TIME_TRIAL && !(gGame.flags & GAME_FRONTEND_RACE)) {
+            if (gGame.mode == GAME_MODE_TIME_TRIAL && !(gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
                 gNumRiders = 1;
-            } else if (gGame.mode == MODE_EXHIBITION && gGame.numPlayers == 2) {
+            } else if (gGame.mode == GAME_MODE_EXHIBITION && gGame.numPlayers == 2) {
                 gNumRiders = gGame.twoPlayerCpuRiders + 2;
             }
             race_init_replay();
             event_init(gNumRiders, gGame.numLaps);
             race_begin();
-            if (gGame.mode == MODE_TUTORIAL) event_stop_sounds_rumble();
+            if (gGame.mode == GAME_MODE_TUTORIAL) event_stop_sounds_rumble();
         }
         break;
     case RACE_PHASE_INTRO:
-        if (pressB && (gGame.mode != MODE_SEASON || gSeason->round == 0)) {
-            snd_play_menu_sound(MENU_SFX_BACK);
+        if (pressB && (gGame.mode != GAME_MODE_SEASON || gSeason->round == 0)) {
+            snd_play_menu_sound(MENU_SOUND_BACK);
             gRacePhase_2 = RACE_PHASE_INTRO_FADE_OUT;
             gRacePhaseTimer = 20;
             gRaceExitCode = RACE_EXIT_BACK;
-            gGame.flags &= ~GAME_REPEAT_STATE;
+            gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
         } else if (pressA || pressStart) {
-            snd_play_menu_sound(MENU_SFX_SELECT);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             gRaceExitCode = RACE_EXIT_NONE;
             gRacePhase_2 = RACE_PHASE_INTRO_FADE_OUT;
             gRacePhaseTimer = 20;
@@ -593,7 +593,7 @@ void race_intro_load(void)
     gRaceTextObjs->introImages = (u8 *)res;
     res = res_load(gResourceSet, sIntroPicResId);
     gRaceTextObjs->introPic = (Pic *)res;
-    if (gGame.mode == MODE_SEASON) {
+    if (gGame.mode == GAME_MODE_SEASON) {
         i = 0;
         do {
             res = res_load(gResourceSet, *(s32 *)sIntroTrackPicResIds[gSeason->cup->tracks[i]]);
@@ -616,7 +616,7 @@ void race_intro_unload(void) {
     res_unload(&gResourceSet->handles[sIntroImagesResId]);
     res_unload(&gResourceSet->handles[sIntroPicResId]);
     res_unload(&gResourceSet->handles[sLapArrowsResId]);
-    if (gGame.mode == MODE_SEASON) {
+    if (gGame.mode == GAME_MODE_SEASON) {
         for (i = 0; i < 5; i++) {
             res_unload(&gResourceSet->handles[*sIntroTrackPicResIds_2[gSeason->cup->tracks[i]]]);
         }
@@ -624,7 +624,7 @@ void race_intro_unload(void) {
     mem_free(gRaceTextObjs);
     gRaceTextObjs = NULL;
     if (gRaceExitCode != RACE_EXIT_BACK) {
-        gGame.flags &= ~GAME_TRACK_INTRO;
+        gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
     }
     font_load_race_set(gResourceSet);
 }
@@ -666,9 +666,9 @@ void race_pause_update_options(void) {
         gPadInput_2[PAUSE_PAD] |= INPUT_D_DOWN;
     }
     if (OPTION_PRESSED(INPUT_B)) {
-        snd_set_volume(SND_VOL_EFFECTS, 0);
-        snd_set_volume(SND_VOL_MUSIC, 0);
-        snd_set_volume(SND_VOL_SPEECH, 0);
+        snd_set_volume(SND_VOLUME_SFX, 0);
+        snd_set_volume(SND_VOLUME_MUSIC, 0);
+        snd_set_volume(SND_VOLUME_SPEECH, 0);
         save_write(5, 0);
         gPauseMenu = PAUSE_MAIN;
         gPauseScreen.timer = 3;
@@ -681,11 +681,11 @@ void race_pause_update_options(void) {
         case OPTION_MUSIC:
             break;
         case OPTION_STEREO:
-            snd_play_menu_sound(MENU_SFX_SELECT);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             gSaveData.options ^= SAVE_OPT_STEREO;
             return;
         case OPTION_EFFECTS:
-            sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_EFFECTS], 7, 1, 1);
+            sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
             return;
         case OPTION_SPEECH:
             if (sOptionsPreviewDelay == 0) {
@@ -694,7 +694,7 @@ void race_pause_update_options(void) {
             }
             return;
         case 4:
-            snd_play_menu_sound(MENU_SFX_ERROR);
+            snd_play_menu_sound(MENU_SOUND_ERROR);
             return;
         }
         return;
@@ -738,7 +738,7 @@ void race_pause_update_options(void) {
             sOptionsPreviewDelay = 0x34;
             break;
         case OPTION_EFFECTS:
-            sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_EFFECTS], 7, 1, 1);
+            sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
             break;
         }
     }
@@ -763,7 +763,7 @@ void race_pause_update_options(void) {
         if (step != 0 && sOptionsPreviewDelay == 0) {
             switch (gOptionsCursor) {
             case OPTION_EFFECTS:
-                sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_EFFECTS], 7, 1, 1);
+                sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
                 sOptionsPreviewDelay = 0x28;
                 break;
             case OPTION_SPEECH:
@@ -775,10 +775,10 @@ void race_pause_update_options(void) {
         if (step < 0) {
             switch (gOptionsCursor) {
             case OPTION_EFFECTS:
-                if (gSaveData.volumes[VOLUME_EFFECTS] >= -step) {
-                    gSaveData.volumes[VOLUME_EFFECTS] += step;
+                if (gSaveData.volumes[VOLUME_SFX] >= -step) {
+                    gSaveData.volumes[VOLUME_SFX] += step;
                 } else {
-                    gSaveData.volumes[VOLUME_EFFECTS] = 0;
+                    gSaveData.volumes[VOLUME_SFX] = 0;
                 }
                 break;
             case OPTION_MUSIC:
@@ -800,11 +800,11 @@ void race_pause_update_options(void) {
             s32 vol;
             switch (gOptionsCursor) {
             case OPTION_EFFECTS:
-                vol = gSaveData.volumes[VOLUME_EFFECTS] + step;
+                vol = gSaveData.volumes[VOLUME_SFX] + step;
                 if (vol >= 0x100) {
-                    gSaveData.volumes[VOLUME_EFFECTS] = 0xFF;
+                    gSaveData.volumes[VOLUME_SFX] = 0xFF;
                 } else {
-                    gSaveData.volumes[VOLUME_EFFECTS] = vol;
+                    gSaveData.volumes[VOLUME_SFX] = vol;
                 }
                 break;
             case OPTION_MUSIC:
@@ -827,22 +827,22 @@ void race_pause_update_options(void) {
         }
     }
     /* only the chosen channel is heard */
-    snd_set_volume(SND_VOL_EFFECTS, 0);
-    snd_set_volume(SND_VOL_MUSIC, 0);
-    snd_set_volume(SND_VOL_SPEECH, 0);
+    snd_set_volume(SND_VOLUME_SFX, 0);
+    snd_set_volume(SND_VOLUME_MUSIC, 0);
+    snd_set_volume(SND_VOLUME_SPEECH, 0);
     switch (gOptionsCursor) {
     case OPTION_EFFECTS:
-        snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+        snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
         break;
     case OPTION_MUSIC:
-        snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+        snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
         break;
     case OPTION_SPEECH:
-        snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+        snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
         break;
     }
     if (gOptionsCursor != prevCursor) {
-        snd_play_menu_sound(MENU_SFX_MOVE);
+        snd_play_menu_sound(MENU_SOUND_MOVE);
     }
 }
 
@@ -866,7 +866,7 @@ void race_pause_update_controller(void)
             if (3 < (s8)layout) {
                 gGame.padConfig[gGame.playerPad[gPausePlayer]] -= 4;
             }
-            snd_play_menu_sound(MENU_SFX_MOVE);
+            snd_play_menu_sound(MENU_SOUND_MOVE);
         }
     }
 }
@@ -944,9 +944,9 @@ void race_update(u32 *pads)
         if (gRiders[i].isCpu != 0) j = 0;
         if (gGhostRace != 0 && i == gGhostSlot) j = 0;
         if (gReplayPlayback != 0) j = 0;
-        if (gGame.fadeState != 3) j = 0;
-        if (gGame.flags & GAME_FRONTEND_RACE) j = 0;
-        if (gGame.mode == MODE_TUTORIAL && gEvent.state == EVENT_STATE_FREE_RIDE) j = 0;
+        if (gGame.fadeState != FADE_DONE) j = 0;
+        if (gGame.flags & GAME_FLAG_FRONT_END_RACE) j = 0;
+        if (gGame.mode == GAME_MODE_TUTORIAL && gEvent.state == EVENT_STATE_FREE_RIDE) j = 0;
         t = gGame.playerPad[i];
         if (j) rumble_start(t, 1);
     }
@@ -1014,9 +1014,9 @@ void race_update(u32 *pads)
             while (1) {
             }
         }
-        if (!(gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) && (gSaveData.options & SAVE_OPT_HIGH_RES) &&
-            gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
-            gCurTrack_14->envType != TRACK_ENV_DESERT && !(gGame.flags & (GAME_LOW_RES | GAME_PODIUM))) {
+        if (!(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) && (gSaveData.options & SAVE_OPT_HIGH_RES) &&
+            gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == GAME_MODE_TIME_TRIAL) &&
+            gCurTrack_14->envType != TRACK_ENV_DESERT && !(gGame.flags & (GAME_FLAG_LOW_RES | GAME_FLAG_PODIUM))) {
             gViModeRequest = VI_MODE_HI_RES;
         } else {
             gViModeRequest = VI_MODE_MED_RES;
@@ -1028,13 +1028,13 @@ void race_update(u32 *pads)
         gPauseScreen.timer = -1;
     }
     /* C-right on controller 1 cycles the HUD's levels of detail */
-    if (gGame.mode != MODE_TUTORIAL && !(gGame.flags & (GAME_REPLAY | GAME_RIDER_SELECT)) &&
+    if (gGame.mode != GAME_MODE_TUTORIAL && !(gGame.flags & (GAME_FLAG_REPLAY | GAME_FLAG_RIDER_SELECT)) &&
         (gPadInput_3[0] & INPUT_C_RIGHT) && !(gPadInputPrev_3[0] & INPUT_C_RIGHT)) {
         gHudLevel = (gHudLevel + 1) & 3;
     }
     particles_emit_bike_dirt();
     tube_animate_textures();
-    if (!(gGame.flags & GAME_TRACK_INTRO)) {
+    if (!(gGame.flags & GAME_FLAG_TRACK_INTRO)) {
         /* A or START ends a replay */
         if (gReplayPlayback != 0 && gRacePhase_2 == RACE_PHASE_RACING &&
             ((gPlayerInputs_3.w[0] | gPlayerInputs_3.w[1] | gPlayerInputs_3.w[2] | gPlayerInputs_3.w[3]) &
@@ -1042,8 +1042,8 @@ void race_update(u32 *pads)
             gRacePhase_2 = RACE_PHASE_FADE_OUT;
             gRacePhaseTimer = PHASE_TIMER_START;
             gRaceExitCode = RACE_EXIT_FINISHED;
-            gGame.flags &= ~GAME_REPEAT_STATE;
-            snd_play_menu_sound(MENU_SFX_SELECT);
+            gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
         }
     } else {
@@ -1062,19 +1062,19 @@ void race_update(u32 *pads)
         if (gRacePhase_2 == RACE_PHASE_RACING && gPauseScreen.timer == -1) {
             if (PAUSE_PRESSED(INPUT_B)) {
                 gPauseMenu = PAUSE_NONE;
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
-                snd_play_menu_sound(MENU_SFX_BACK);
+                snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+                snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+                snd_play_menu_sound(MENU_SOUND_BACK);
             } else if (PAUSE_PRESSED(INPUT_A) || PAUSE_PRESSED(INPUT_START)) {
-                snd_play_menu_sound(MENU_SFX_SELECT);
+                snd_play_menu_sound(MENU_SOUND_SELECT);
                 menuChosen = 1;
                 switch (gPauseMenuCursor) {
                 case TEST_RIDE_ITEM_CONTINUE:
                     gPauseMenu = PAUSE_NONE;
-                    snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
-                    snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
-                    snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+                    snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+                    snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                    snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                     break;
                 case TEST_RIDE_ITEM_RESET:
                     bikes_free();
@@ -1082,9 +1082,9 @@ void race_update(u32 *pads)
                     bikes_init();
                     gPauseMenu = PAUSE_NONE;
                     gEvent.flags |= EVENT_CAM_RESET;
-                    snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
-                    snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
-                    snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+                    snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+                    snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                    snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                     break;
                 case TEST_RIDE_ITEM_EDITOR:
                     gRacePhase_2 = RACE_PHASE_FADE_OUT;
@@ -1094,10 +1094,10 @@ void race_update(u32 *pads)
                 }
             } else if (PAUSE_PRESSED(INPUT_STICK_UP) || PAUSE_PRESSED(INPUT_D_UP)) {
                 gPauseMenuCursor = (gPauseMenuCursor + 2) % 3;
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             } else if (PAUSE_PRESSED(INPUT_STICK_DOWN) || PAUSE_PRESSED(INPUT_D_DOWN)) {
                 gPauseMenuCursor = (gPauseMenuCursor + 1) % 3;
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             }
         }
         if (gPauseMenu == PAUSE_NONE) {
@@ -1107,12 +1107,12 @@ void race_update(u32 *pads)
         if (gRacePhase_2 == RACE_PHASE_RACING && gPauseScreen.timer == -1) {
             if (PAUSE_PRESSED(INPUT_B) && gTutorialMenuForced_2 == 0 && gTutorialResult == 0) {
                 gPauseMenu = PAUSE_NONE;
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
-                snd_play_menu_sound(MENU_SFX_BACK);
+                snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+                snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+                snd_play_menu_sound(MENU_SOUND_BACK);
             } else if (PAUSE_PRESSED(INPUT_A) || PAUSE_PRESSED(INPUT_START)) {
-                snd_play_menu_sound(MENU_SFX_SELECT);
+                snd_play_menu_sound(MENU_SOUND_SELECT);
                 menuChosen = 1;
                 switch (gPauseMenuCursor) {
                 case TUTORIAL_ITEM_PREV:
@@ -1139,7 +1139,7 @@ void race_update(u32 *pads)
                     gRacePhase_2 = RACE_PHASE_FADE_OUT;
                     gRacePhaseTimer = PHASE_TIMER_START;
                     gRaceExitCode = RACE_EXIT_FINISHED;
-                    gGame.flags &= ~GAME_REPEAT_STATE;
+                    gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
                     break;
                 }
             } else if (PAUSE_PRESSED(INPUT_STICK_UP) || PAUSE_PRESSED(INPUT_D_UP)) {
@@ -1149,14 +1149,14 @@ void race_update(u32 *pads)
                 } while ((gPauseMenuCursor == TUTORIAL_ITEM_NEXT && tutorial_next_lesson_unlocked() == 0) ||
                          (gPauseMenuCursor == TUTORIAL_ITEM_DEMO && tutorial_lesson_has_demo() == 0) ||
                          (gPauseMenuCursor == TUTORIAL_ITEM_PREV && tutorial_has_prev_lesson() == 0));
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             } else if (PAUSE_PRESSED(INPUT_STICK_DOWN) || PAUSE_PRESSED(INPUT_D_DOWN)) {
                 do {
                     gPauseMenuCursor = (gPauseMenuCursor + 1) % 5;
                 } while ((gPauseMenuCursor == TUTORIAL_ITEM_NEXT && tutorial_next_lesson_unlocked() == 0) ||
                          (gPauseMenuCursor == TUTORIAL_ITEM_DEMO && tutorial_lesson_has_demo() == 0) ||
                          (gPauseMenuCursor == TUTORIAL_ITEM_PREV && tutorial_has_prev_lesson() == 0));
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             }
             if (gPauseMenu == PAUSE_NONE) {
                 sfx_unmute();
@@ -1168,13 +1168,13 @@ void race_update(u32 *pads)
     } else if (gPauseMenu == PAUSE_MAIN) {
         if (gRacePhase_2 == RACE_PHASE_RACING && gPauseScreen.timer == -1) {
             if (PAUSE_PRESSED(INPUT_B)) {
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+                snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+                snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                 gPauseMenu = PAUSE_NONE;
-                snd_play_menu_sound(MENU_SFX_BACK);
+                snd_play_menu_sound(MENU_SOUND_BACK);
             } else if (PAUSE_PRESSED(INPUT_A) || PAUSE_PRESSED(INPUT_START)) {
-                snd_play_menu_sound(MENU_SFX_SELECT);
+                snd_play_menu_sound(MENU_SOUND_SELECT);
                 menuChosen = 1;
                 switch (gPauseMenuCursor) {
                 case PAUSE_ITEM_CONTROLLER:
@@ -1191,8 +1191,8 @@ void race_update(u32 *pads)
                 case PAUSE_ITEM_RESTART:
                     gRacePhase_2 = RACE_PHASE_FADE_OUT;
                     gRacePhaseTimer = PHASE_TIMER_START;
-                    gGame.flags |= GAME_REPEAT_STATE;
-                    if (gGame.mode == MODE_SEASON) {
+                    gGame.flags |= GAME_FLAG_REPEAT_STATE;
+                    if (gGame.mode == GAME_MODE_SEASON) {
                         event_clear_season_race_points();
                     }
                     break;
@@ -1207,17 +1207,17 @@ void race_update(u32 *pads)
                 }
             } else if (PAUSE_PRESSED(INPUT_STICK_UP) || PAUSE_PRESSED(INPUT_D_UP)) {
                 /* the season's menu has no Restart Race */
-                gPauseMenuCursor = (gPauseMenuCursor + (gGame.mode == MODE_SEASON ? 3 : 4)) % (gGame.mode == MODE_SEASON ? 4 : 5);
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                gPauseMenuCursor = (gPauseMenuCursor + (gGame.mode == GAME_MODE_SEASON ? 3 : 4)) % (gGame.mode == GAME_MODE_SEASON ? 4 : 5);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             } else if (PAUSE_PRESSED(INPUT_STICK_DOWN) || PAUSE_PRESSED(INPUT_D_DOWN)) {
-                gPauseMenuCursor = (gPauseMenuCursor + 1) % (gGame.mode == MODE_SEASON ? 4 : 5);
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                gPauseMenuCursor = (gPauseMenuCursor + 1) % (gGame.mode == GAME_MODE_SEASON ? 4 : 5);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             }
             if (gPauseMenu == PAUSE_NONE) {
                 sfx_unmute();
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+                snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+                snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
             }
         }
         if (gPauseMenu == PAUSE_NONE) {
@@ -1227,34 +1227,34 @@ void race_update(u32 *pads)
         if (gRacePhase_2 == RACE_PHASE_RACING && gPauseScreen.timer == -1) {
             if (PAUSE_PRESSED(INPUT_B)) {
                 gPauseMenu = PAUSE_NONE;
-                snd_play_menu_sound(MENU_SFX_BACK);
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
+                snd_play_menu_sound(MENU_SOUND_BACK);
+                snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
+                snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
             } else if (PAUSE_PRESSED(INPUT_A)) {
                 switch (gPauseMenuCursor) {
                 case 0: /* Really Quit */
                     gRacePhase_2 = RACE_PHASE_FADE_OUT;
                     gRacePhaseTimer = PHASE_TIMER_START;
                     gRaceExitCode = RACE_EXIT_QUIT;
-                    gGame.flags &= ~GAME_REPEAT_STATE;
-                    snd_play_menu_sound(MENU_SFX_SELECT);
-                    if (gGame.mode == MODE_SEASON) {
+                    gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
+                    snd_play_menu_sound(MENU_SOUND_SELECT);
+                    if (gGame.mode == GAME_MODE_SEASON) {
                         event_clear_season_race_points();
                     }
                     break;
                 case 1: /* Just Kidding */
-                    snd_play_menu_sound(MENU_SFX_SELECT);
+                    snd_play_menu_sound(MENU_SOUND_SELECT);
                     gPauseMenu = PAUSE_MAIN;
                     gPauseMenuCursor = PAUSE_ITEM_CONTINUE;
                     break;
                 }
             } else if (PAUSE_PRESSED(INPUT_STICK_UP) || PAUSE_PRESSED(INPUT_D_UP)) {
                 gPauseMenuCursor = 0;
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             } else if (PAUSE_PRESSED(INPUT_STICK_DOWN) || PAUSE_PRESSED(INPUT_D_DOWN)) {
                 gPauseMenuCursor = 1;
-                snd_play_menu_sound(MENU_SFX_MOVE);
+                snd_play_menu_sound(MENU_SOUND_MOVE);
             }
         }
         if (gPauseMenu == PAUSE_NONE) {
@@ -1264,15 +1264,15 @@ void race_update(u32 *pads)
         if (gEvent.flags & EVENT_MESSAGE) {
             /* a tutorial message holds the game until it times out; A ends it */
             event_update(0);
-            snd_set_volume(SND_VOL_EFFECTS, 0);
+            snd_set_volume(SND_VOLUME_SFX, 0);
             if (gEvent.tutorialTimeout != 0) {
                 if ((gPlayerInputs_3.w[0] & INPUT_A) && !(gPlayerInputsPrev_4.w[0] & INPUT_A)) {
-                    snd_play_menu_sound(MENU_SFX_SELECT);
+                    snd_play_menu_sound(MENU_SOUND_SELECT);
                     gEvent.tutorialTimeout = 1;
                 }
                 if (--gEvent.tutorialTimeout == 0) {
                     gEvent.flags &= ~(EVENT_CAM_UPDATE | EVENT_INTRO_MESSAGE | EVENT_MESSAGE);
-                    snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                    snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[VOLUME_SFX]);
                 }
             }
             if (gEvent.flags & EVENT_CAM_UPDATE) {
@@ -1283,7 +1283,7 @@ void race_update(u32 *pads)
         } else {
             D_800E3750 = gPlayerInputs_3;
             race_update_replay();
-            if (gReplayPlayback != 0 && gCamTargetOverride != -1 && !(gGame.flags & GAME_TRACK_INTRO)) {
+            if (gReplayPlayback != 0 && gCamTargetOverride != -1 && !(gGame.flags & GAME_FLAG_TRACK_INTRO)) {
                 /* replays: C-right on any controller follows the next player */
                 for (j = 0; j < 4; j++) {
                     if ((gPadInput_3[j] & INPUT_C_RIGHT) && !(gPadInputPrev_3[j] & INPUT_C_RIGHT)) break;
@@ -1301,7 +1301,7 @@ void race_update(u32 *pads)
             } else {
                 podium_update();
             }
-            if (gGame.flags & GAME_RIDER_SELECT) {
+            if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
                 for (gCamView = 0; gCamView < 4; gCamView++) {
                     cam_update();
                 }
@@ -1336,21 +1336,21 @@ void race_update(u32 *pads)
 
     /* START pauses (in the tutorial, START on any controller) */
     if (gReplayPlayback == 0 && gEvent.allFinished == 0 && gPauseMenu == PAUSE_NONE &&
-        !(gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO))) {
+        !(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO))) {
         for (j = 0; j < gEvent.numRiders; j++) {
             if (((gPlayerInputs_3.w[j] & INPUT_START) && !(gPlayerInputsPrev_4.w[j] & INPUT_START)) ||
-                (gGame.mode == MODE_TUTORIAL && (gPadInput_3[j] & INPUT_START) && !(gPadInputPrev_3[j] & INPUT_START))) {
+                (gGame.mode == GAME_MODE_TUTORIAL && (gPadInput_3[j] & INPUT_START) && !(gPadInputPrev_3[j] & INPUT_START))) {
                 if (menuChosen == 0 && gRacePhase_2 == RACE_PHASE_RACING) {
                     gPlayerInputsPrev_4.w[j] |= INPUT_START;
                     if (gPodiumMode != 0) {
                         gRacePhase_2 = RACE_PHASE_FADE_OUT;
                         gRacePhaseTimer = PHASE_TIMER_START;
                         gRaceExitCode = RACE_EXIT_QUIT;
-                        gGame.flags &= ~GAME_REPEAT_STATE;
-                    } else if (gGame.mode == MODE_TEST_RIDE || gGame.mode == MODE_TEST_RIDE_OPEN) {
+                        gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
+                    } else if (gGame.mode == GAME_MODE_TEST_LOOP || gGame.mode == GAME_MODE_TEST_OPEN) {
                         gPauseMenu = PAUSE_TEST_RIDE;
                         gPauseMenuCursor = TEST_RIDE_ITEM_CONTINUE;
-                    } else if (gGame.mode == MODE_TUTORIAL) {
+                    } else if (gGame.mode == GAME_MODE_TUTORIAL) {
                         gPauseMenu = gRacePhase_2; /* RACE_PHASE_RACING, which is PAUSE_TUTORIAL */
                         gPauseMenuCursor = TUTORIAL_ITEM_RETRY;
                     } else {
@@ -1359,9 +1359,9 @@ void race_update(u32 *pads)
                     }
                     gPausePlayer = j;
                     snd_stop_all_riders();
-                    snd_set_volume(SND_VOL_EFFECTS, 0);
-                    snd_set_volume(SND_VOL_MUSIC, 0);
-                    snd_set_volume(SND_VOL_SPEECH, 0);
+                    snd_set_volume(SND_VOLUME_SFX, 0);
+                    snd_set_volume(SND_VOLUME_MUSIC, 0);
+                    snd_set_volume(SND_VOLUME_SPEECH, 0);
                     tunes_stop_speech();
                     rumble_stop_all();
                     break;
@@ -1380,7 +1380,7 @@ void race_update(u32 *pads)
         break;
     case RACE_PHASE_FADE_OUT:
         if (gRacePhaseTimer == PHASE_TIMER_FADED) {
-            if ((gGame.flags & GAME_REPEAT_STATE) || (gGame.mode == MODE_TUTORIAL && gRaceExitCode == RACE_EXIT_NONE)) {
+            if ((gGame.flags & GAME_FLAG_REPEAT_STATE) || (gGame.mode == GAME_MODE_TUTORIAL && gRaceExitCode == RACE_EXIT_NONE)) {
                 /* restart */
                 gRacePhase_2 = RACE_PHASE_DONE;
                 gRacePhaseTimer = 2;
@@ -1412,9 +1412,9 @@ void race_update(u32 *pads)
             map_free();
             rain_free();
             snow_free();
-            if (gGame.mode == MODE_TUTORIAL) path_free();
+            if (gGame.mode == GAME_MODE_TUTORIAL) path_free();
             if (gDrawFlags & DRAW_HUD) event_hud_free();
-            if (gGame.mode == MODE_TUTORIAL) {
+            if (gGame.mode == GAME_MODE_TUTORIAL) {
                 switch (gEvent.tutorialAction) {
                 case TUTORIAL_PREV:
                     gSeason->round--;
@@ -1443,23 +1443,23 @@ void race_update(u32 *pads)
                 } else {
                     gNumRiders = 1;
                 }
-            } else if (gGame.mode == MODE_EXCITE_3D) {
+            } else if (gGame.mode == GAME_MODE_EXCITE_3D) {
                 gNumRiders = 4;
                 gGame.numPlayers = 1;
-            } else if (gGame.mode == MODE_STUNT || gGame.mode == MODE_SOCCER) {
+            } else if (gGame.mode == GAME_MODE_STUNT_COURSE || gGame.mode == GAME_MODE_SOCCER) {
                 gNumRiders = gGame.numPlayers;
-            } else if (gGame.mode == MODE_EXHIBITION && gGame.numPlayers == 2) {
+            } else if (gGame.mode == GAME_MODE_EXHIBITION && gGame.numPlayers == 2) {
                 gNumRiders = gGame.twoPlayerCpuRiders + 2;
             } else {
                 gNumRiders = gGame.numPlayers + gGame.numCpuRiders;
-                if (gGame.mode == MODE_TIME_TRIAL && !(gGame.flags & GAME_FRONTEND_RACE)) {
+                if (gGame.mode == GAME_MODE_TIME_TRIAL && !(gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
                     gNumRiders = 1;
                 }
             }
             race_init_replay();
             event_init(gNumRiders, gGame.numLaps);
             race_begin();
-            if (gGame.mode == MODE_TUTORIAL) event_stop_sounds_rumble();
+            if (gGame.mode == GAME_MODE_TUTORIAL) event_stop_sounds_rumble();
         }
         break;
     }
@@ -1570,7 +1570,7 @@ void race_load_frontend_code(s32 load)
     u8 *usrTrkStart;
     u8 *usrTrkEnd;
 
-    if (load == sFrontendLoaded || (gGame.flags & GAME_FRONTEND_RACE)) {
+    if (load == sFrontendLoaded || (gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
         return;
     }
     frontendStart = gFrontendOvlStart;
@@ -1659,7 +1659,7 @@ void race_init_ghost_replay(s32 ghostData)
     }
     if (gGhostRace != 0) {
         Game *game = &gGame;
-        if (game->flags & GAME_GHOST) {
+        if (game->flags & GAME_FLAG_GHOST_LOADED) {
             game->numPlayers = 1;
             replay_play_start_keep_setup(gActiveReplay + 0x6400);
             game->numPlayers = 2;
@@ -1682,7 +1682,7 @@ void race_teardown(void)
     map_free();
     rain_free();
     snow_free();
-    if (gGame.mode == MODE_TUTORIAL) {
+    if (gGame.mode == GAME_MODE_TUTORIAL) {
         path_free();
     }
     if (gDrawFlags & DRAW_HUD) {
@@ -1694,9 +1694,9 @@ void race_teardown(void)
 void race_apply_volumes(void)
 {
     u8 *save = &gSaveData_4[0];
-    snd_set_volume(SND_VOL_EFFECTS, save[0x2C6]);
-    snd_set_volume(SND_VOL_MUSIC, save[0x2C5]);
-    snd_set_volume(SND_VOL_SPEECH, save[0x2C7]);
+    snd_set_volume(SND_VOLUME_SFX, save[0x2C6]);
+    snd_set_volume(SND_VOLUME_MUSIC, save[0x2C5]);
+    snd_set_volume(SND_VOLUME_SPEECH, save[0x2C7]);
 }
 
 /* The time trial's ghost from a replay: its header sets the riders up; the player keeps their rider, controller and
@@ -1735,9 +1735,9 @@ void race_load_ghost_setup(s32 replay)
 /* Waits for the video mode the race uses (race_init's test). Not called. */
 void race_set_video_mode(void)
 {
-    if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == 0 && (gSaveData.options & SAVE_OPT_HIGH_RES) != 0 &&
-        gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
-        gCurTrack_14->envType != TRACK_ENV_DESERT && (gGame.flags & (GAME_LOW_RES | GAME_PODIUM)) == 0) {
+    if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) == 0 && (gSaveData.options & SAVE_OPT_HIGH_RES) != 0 &&
+        gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == GAME_MODE_TIME_TRIAL) &&
+        gCurTrack_14->envType != TRACK_ENV_DESERT && (gGame.flags & (GAME_FLAG_LOW_RES | GAME_FLAG_PODIUM)) == 0) {
         gViModeRequest = VI_MODE_HI_RES;
     } else {
         gViModeRequest = VI_MODE_MED_RES;
@@ -1779,7 +1779,7 @@ void race_free_text_objs(void)
 /* Not called. */
 void race_mute_volumes(void)
 {
-    snd_set_volume(SND_VOL_EFFECTS, 0);
-    snd_set_volume(SND_VOL_MUSIC, 0);
-    snd_set_volume(SND_VOL_SPEECH, 0);
+    snd_set_volume(SND_VOLUME_SFX, 0);
+    snd_set_volume(SND_VOLUME_MUSIC, 0);
+    snd_set_volume(SND_VOLUME_SPEECH, 0);
 }

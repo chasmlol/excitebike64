@@ -8,73 +8,6 @@
 #include "structs/shell.h"
 #include "structs/race.h"
 
-/* gGame.flags */
-#define GAME_FRONTEND_RACE      0x00000001 /* a race the front end runs behind its screens (title, rider select) */
-#define GAME_EDITOR_TO_SHELL    0x00000002 /* leaving the editor returns to the front end, not to a test ride */
-#define GAME_REPEAT_STATE       0x00000004 /* run the same game state again (restart the race) */
-#define GAME_RIDER_SELECT       0x00000010
-#define GAME_EDITOR             0x00000020 /* the front end hands over to the track editor */
-#define GAME_NES                0x00000040 /* ... or to the NES emulator */
-#define GAME_TRACK_INTRO        0x00000080 /* the race opens on the track intro (set when a track is chosen) */
-#define GAME_REPLAY             0x00008000 /* replay playback */
-#define GAME_IN_RACE            0x00010000 /* from race_init to race_exit */
-#define GAME_PODIUM             0x00040000 /* the podium ceremony (gPodiumMode) */
-#define GAME_GHOST              0x00080000 /* time trial: a recorded ghost rides along */
-#define GAME_ROUND_WON          0x00100000 /* season unlock messages: the next round is open */
-#define GAME_NEW_UNLOCKS        0x00200000 /* ... something new is unlocked (newUnlocks) */
-#define GAME_DIFFICULTY_UP      0x00400000 /* ... the next difficulty is open */
-#define GAME_SEASON_COMPLETE    0x00800000 /* ... the last one is won: the next race is the credits run */
-#define GAME_CREDITS_SKIPPABLE  0x01000000 /* credits started from the options: START ends them */
-#define GAME_LOW_RES            0x04000000 /* the race may not use the high resolution mode */
-#define GAME_DEBUG              0x20000000 /* the Debug cheat */
-
-/* gGame.mode. Modes 3, 4 and 11 are not identified. */
-#define MODE_EXHIBITION     0
-#define MODE_SEASON         1
-#define MODE_SOCCER         2
-#define MODE_DESERT         5   /* ten checkpoint gates */
-#define MODE_EXCITE_3D      6
-#define MODE_HILL_CLIMB     7
-#define MODE_TIME_TRIAL     8
-#define MODE_TUTORIAL       9
-#define MODE_STUNT          10  /* stunt course */
-#define MODE_NES            12  /* Original Excitebike */
-#define MODE_TEST_RIDE      13  /* the editor's test ride of a closed track */
-#define MODE_TEST_RIDE_OPEN 14  /* ... of a track that is not closed into a loop */
-
-/* The game input word (gPadInput, gPlayerInputs, Rider.input) main_convert_pad_input makes of an OSContPad. */
-#define INPUT_STICK_UP      0x00000001
-#define INPUT_STICK_DOWN    0x00000002
-#define INPUT_STICK_LEFT    0x00000004
-#define INPUT_STICK_RIGHT   0x00000008
-#define INPUT_A             0x00000010
-#define INPUT_B             0x00000020
-#define INPUT_START         0x00000040
-#define INPUT_C_UP          0x00000080
-#define INPUT_C_DOWN        0x00000100
-#define INPUT_C_LEFT        0x00000200
-#define INPUT_C_RIGHT       0x00000400
-#define INPUT_D_UP          0x00000800
-#define INPUT_D_DOWN        0x00001000
-#define INPUT_D_LEFT        0x00002000
-#define INPUT_D_RIGHT       0x00004000
-#define INPUT_L             0x00008000
-#define INPUT_R             0x00010000
-#define INPUT_Z             0x00020000
-#define INPUT_STICK_X_SHIFT 24          /* bits 24-27: the stick's x magnitude (0-15; the direction bits give the sign) */
-#define INPUT_STICK_Y_SHIFT 28          /* bits 28-31: its y magnitude */
-#define INPUT_STICK_X_MAX   0x0F000000  /* full x magnitude */
-#define INPUT_STICK_Y_MAX   0xF0000000  /* full y magnitude */
-
-/* gViModeRequest, gViMode: the scheduler's video modes. */
-#define VI_MODE_LO_RES      0   /* 320x240 */
-#define VI_MODE_MED_RES     1   /* 512x240 */
-#define VI_MODE_HI_RES      2   /* 640x480 (SAVE_OPT_HIGH_RES, with the Expansion Pak) */
-
-/* gDrawFlags bits (the debug menu's switches) the game code tests. */
-#define DRAW_HUD            0x0800
-#define DRAW_DITHER_FILTER  0x1000  /* the VI's dither filter */
-
 /* The entries of gGameStates. */
 #define GAME_STATE_SHELL    0   /* the front end (shell.c) */
 #define GAME_STATE_RACE     1   /* a race (min.c) */
@@ -88,29 +21,10 @@
 #define STATE_EXITING       4   /* its exit function runs */
 #define STATE_WAIT_GPU      5   /* waiting for the graphics tasks to drain (wait frames) */
 
-/* SaveData.options */
-#define SAVE_OPT_STEREO     0x01
-#define SAVE_OPT_HIGH_RES   0x02
-#define SAVE_OPT_NO_DRONES  0x10
-
-/* SaveData.volumes */
-#define VOLUME_MUSIC        0
-#define VOLUME_EFFECTS      1
-#define VOLUME_SPEECH       2
-
-/* snd_set_volume's channels */
-#define SND_VOL_EFFECTS     0
-#define SND_VOL_MUSIC       1
-#define SND_VOL_SPEECH      2
-
-/* snd_play_menu_sound's sounds */
-#define MENU_SFX_MOVE       0
-#define MENU_SFX_SELECT     1
-#define MENU_SFX_BACK       2
-#define MENU_SFX_ERROR      3
+#define MENU_NUM_TEXTS      48  /* gGame.texts: the front end's screens and the pause menu's create them */
 
 typedef struct Game {
-    /* 0x000 */ u32 flags;              /* GAME_* */
+    /* 0x000 */ u32 flags;              /* GAME_FLAG_* */
     /* The front end's cursors (a screen's item list points at its own: sScreens +0x20) */
     /* 0x004 */ s32 mainMenuSel;
     /* 0x008 */ s32 specialTracksSel;
@@ -124,7 +38,7 @@ typedef struct Game {
     /* 0x044 */ s32 numCpuRiders;
     /* 0x048 */ s16 sponsorLogo;        /* list screens: the sponsor logo crossing the screen (0-9) */
     /* 0x04A */ s16 unk_04A;
-    /* 0x04C */ u32 mode;               /* MODE_* */
+    /* 0x04C */ u32 mode;               /* GAME_MODE_* */
     /* 0x050 */ u8 padConfig[4];        /* the button layout of each controller (A-D) */
     /* 0x054 */ u32 fadeState;          /* front end fade: 0 out, 1 swap, 2 in, 3 done */
     /* 0x058 */ s16 fadeLevel;
@@ -134,7 +48,7 @@ typedef struct Game {
     /* 0x068 */ s32 cupPreviewTrack;
     /* 0x06C */ s32 roundSel;
     /* 0x070 */ u32 seasonMenuState;
-    /* 0x074 */ TextObj *texts[48];     /* text objects (font_text_create) */
+    /* 0x074 */ TextObj *texts[MENU_NUM_TEXTS]; /* text objects (font_text_create) */
     /* 0x134 */ s16 customTrackSel;     /* custom cup: the track picker */
     /* 0x136 */ s16 unk_136;
     /* 0x138 */ s16 customTrackPrev;

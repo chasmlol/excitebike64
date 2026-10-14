@@ -1,11 +1,5 @@
 #include "game.h"
 
-/* gSkyMode, chosen by render_init from the track's resources. */
-#define SKY_FILL        0   /* no sky: the views are cleared to the fog colour */
-#define SKY_IMAGE       1   /* the 2D backdrop drawn here (GID_PkgSky) */
-#define SKY_MODEL       2   /* a sky model (GID_ArnSky) */
-#define SKY_MODEL_IMAGE 3   /* a sky model textured with the sky image */
-
 /* The sky image is 256 x 256 CI8 texels, loaded and drawn in strips of 8 rows; this is the last strip's row. */
 #define SKY_LAST_STRIP  0xF8
 
@@ -30,7 +24,7 @@ void sky_scan_zbuffer(s32 frame)
     Rect *rect2;
     ClipStore *clip;
 
-    if ((gGame.flags & 0x10000) == 0) {
+    if ((gGame.flags & GAME_FLAG_IN_RACE) == 0) {
         return;
     }
     layout = gNumViews - 1;

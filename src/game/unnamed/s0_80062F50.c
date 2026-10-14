@@ -51,10 +51,10 @@ void race_spawn_extra_rider(Spawn *spawn)
     f32 y, k;
     Vec3f unused;
 
-    if (gSaveData.options & OPTION_DRONES_OFF) {
+    if (gSaveData.options & SAVE_OPT_NO_DRONES) {
         return;
     }
-    if (gEvent.flags & 0x200) {
+    if (gEvent.flags & EVENT_DUEL) {
         return;
     }
 
@@ -565,7 +565,7 @@ void race_update_riders(void)
                 } else {
                     trackScale = gCurTrack_33->cpuSpeed[gGame.difficulty - 1];
                     scale *= trackScale;
-                    if (gEvent.flags & 0x200) {
+                    if (gEvent.flags & EVENT_DUEL) {
                         scale = trackScale * 1.15f;
                     }
                 }
