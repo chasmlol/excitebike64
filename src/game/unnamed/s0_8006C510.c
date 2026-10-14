@@ -15,13 +15,13 @@ Gfx *soccer_ball_draw(Gfx *param_1, s32 param_2, s32 param_3)
     Gfx *gA, *gB, *gC, *gD, *gE, *gF;
     Gfx *gP, *gQ, *gT, *gU, *gV;
 
-    quat_to_mtx3i(aiStack_e0, gSoccerBall_2 + 12);
+    quat_to_mtx3i(aiStack_e0, gSoccerBall.quat);
     aux[0] = 0;
     aux[1] = 0;
     aux[2] = 0;
     mtx_from_rot3i_pos(aiStack_e0, (u16 *)aux, auStack_68);
-    mtx_from_angles_pos_scale(asStack_a8, 0, 0, 0, (s32)(gSoccerBall_2[0] * 1000.0f), (s32)(gSoccerBall_2[1] * 1000.0f),
-                  (s32)(gSoccerBall_2[2] * 1000.0f), 8);
+    mtx_from_angles_pos_scale(asStack_a8, 0, 0, 0, (s32)(gSoccerBall.pos.x * 1000.0f), (s32)(gSoccerBall.pos.y * 1000.0f),
+                  (s32)(gSoccerBall.pos.z * 1000.0f), 8);
     tbl = (u32)sPropMtx + (param_3 << 8);
     mtx_mul(auStack_68, asStack_a8, tbl);
 

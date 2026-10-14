@@ -27,130 +27,97 @@ void desert_export_checkpoints(void) {
     }
 }
 
-typedef struct {
-    u8 pad0[0x34];
-    s16 ang;            /* 0x34 */
-    u8 pad36[0x48 - 0x36];
-    f32 x;              /* 0x48 */
-    f32 y;              /* 0x4C */
-    f32 z;              /* 0x50 */
-    u8 pad54[0x3FF - 0x54];
-    u8 f3FF;            /* 0x3FF */
-    u8 pad400[2];
-    u8 wp;              /* 0x402 */
-    u8 pad403;
-    f32 dist;           /* 0x404 */
-    u8 pad408[0x44C - 0x408];
-    f32 f44C;           /* 0x44C */
-    u8 pad450[0x620 - 0x450];
-    u8 f620;            /* 0x620 */
-    u8 f621;            /* 0x621 */
-    u8 pad622[0x630 - 0x622];
-    f32 f630;           /* 0x630 */
-    u8 pad634[0x662 - 0x634];
-    s16 f662;           /* 0x662 */
-    u8 pad664[4];
-    s16 f668;           /* 0x668 */
-    u8 pad66A[0x7A4 - 0x66A];
-    u8 f7A4;            /* 0x7A4 */
-    u8 f7A5;            /* 0x7A5 */
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Bike_27;
-
-extern Bike_27 gRiders_50[];
-extern Bike_27 *gRiderStandings_2[];
-
 void desert_update_race(void)
 {
-    Bike_27 *b;
-    Bike_27 *a;
-    Bike_27 *c;
+    Rider *b;
+    Rider *a;
+    Rider *c;
     f32 dx, dz, d, ang, e, f, gx, gz;
     s32 i;
     u8 swapped;
     s32 pad[4];
 
     d = 0.0f;
-    for (b = gRiders_50; b < &gRiders_50[gEvent.numRiders]; b++) {
-        b->f44C = 1.0f;
-        if (b->f7A5 != 0) {
+    for (b = gRiders; b < &gRiders[gEvent.numRiders]; b++) {
+        b->timeScale = 1.0f;
+        if (b->inactive != 0) {
             continue;
         }
-        if (b == gRiders_50) {
-            dx = sDesertCheckpoints[b->wp].x - b->x;
-            ang = math_atan2f(sDesertCheckpoints[b->wp].z - b->z, -dx);
+        if (b == gRiders) {
+            dx = sDesertCheckpoints[b->checkpoint].x - b->bike.pos.x;
+            ang = math_atan2f(sDesertCheckpoints[b->checkpoint].z - b->bike.pos.z, -dx);
             des_set_arrow_angle((s32)(ang * 32768.0f / 3.1415927f) - gCamYaw[0] & 0xFFFF);
         }
         {
-            gx = b->x - gRiders_50[0].x;
-            gz = b->z - gRiders_50[0].z;
+            gx = b->bike.pos.x - gRiders[0].bike.pos.x;
+            gz = b->bike.pos.z - gRiders[0].bike.pos.z;
             e = __builtin_sqrtf(gx * gx + gz * gz);
         }
-        if (b->f7A4 != 0) {
+        if (b->frozen != 0) {
             if (e < 100.0f) {
-                b->f7A4 = 0;
+                b->frozen = 0;
                 bike_respawn(b);
-                b->f620 = 1;
-                b->f621 = 1;
+                b->blinkCount = 1;
+                b->blinkTimer = 1;
             } else {
-                dx = sDesertCheckpoints[b->wp].x - b->x;
-                dz = sDesertCheckpoints[b->wp].z - b->z;
+                dx = sDesertCheckpoints[b->checkpoint].x - b->bike.pos.x;
+                dz = sDesertCheckpoints[b->checkpoint].z - b->bike.pos.z;
                 d = __builtin_sqrtf(dx * dx + dz * dz);
                 ang = math_atan2f(dz, dx);
-                b->ang = ang * 32768.0f / 3.1415927f;
-                b->x += dx / d * 0.16666667f;
-                b->z += dz / d * 0.16666667f;
+                b->heading = ang * 32768.0f / 3.1415927f;
+                b->bike.pos.x += dx / d * 0.16666667f;
+                b->bike.pos.z += dz / d * 0.16666667f;
             }
         } else if (120.0f < e) {
-            b->f7A4 = 1;
+            b->frozen = 1;
         }
-        dx = b->x - sDesertCheckpoints[b->wp].x;
-        dz = b->z - sDesertCheckpoints[b->wp].z;
+        dx = b->bike.pos.x - sDesertCheckpoints[b->checkpoint].x;
+        dz = b->bike.pos.z - sDesertCheckpoints[b->checkpoint].z;
         f = __builtin_sqrtf(dx * dx + dz * dz);
-        b->dist = f;
+        b->checkpointDist = f;
         if (f < 1.0f) {
-            if (++b->wp == 10) {
-                b->wp = 0;
-                if (b->f3FF == 0) {
-                    event_rider_finished(b - gRiders_50);
-                    if (b == gRiders_50) {
+            if (++b->checkpoint == 10) {
+                b->checkpoint = 0;
+                if (b->finishState == 0) {
+                    event_rider_finished(b - gRiders);
+                    if (b == gRiders) {
                         gEvent.allFinished = 1;
                     }
                 }
             } else {
-                gx = b->x - sDesertCheckpoints[b->wp].x;
-                gz = b->z - sDesertCheckpoints[b->wp].z;
-                b->dist = gx * gx + gz * gz;
+                gx = b->bike.pos.x - sDesertCheckpoints[b->checkpoint].x;
+                gz = b->bike.pos.z - sDesertCheckpoints[b->checkpoint].z;
+                b->checkpointDist = gx * gx + gz * gz;
             }
-            if (b == gRiders_50) {
-                des_set_waypoint(b->wp);
+            if (b == gRiders) {
+                des_set_waypoint(b->checkpoint);
             }
         }
-        b->f630 = sDesertCheckpointDist[b->wp] - b->dist;
+        b->distToGo = sDesertCheckpointDist[b->checkpoint] - b->checkpointDist;
     }
-    if (D_800E3EA8 == 0) {
+    if (gRiders[0].isCpu == 0) {
         do {
             swapped = 0;
             for (i = 0; i < gEvent.numRiders - 1; i++) {
-                a = gRiderStandings_2[i];
-                if (a->f668 < 0) {
-                    c = gRiderStandings_2[i + 1];
-                    if (a->wp < c->wp || (a->wp == c->wp && a->dist > c->dist)) {
+                a = gRiderStandings[i];
+                if (a->race.finishPlace < 0) {
+                    c = gRiderStandings[i + 1];
+                    if (a->checkpoint < c->checkpoint || (a->checkpoint == c->checkpoint && a->checkpointDist > c->checkpointDist)) {
                         swapped = 1;
-                        gRiderStandings_2[i] = c;
-                        gRiderStandings_2[i + 1] = a;
+                        gRiderStandings[i] = c;
+                        gRiderStandings[i + 1] = a;
                     }
                 }
             }
         } while (swapped);
         for (i = 0; i < gEvent.numRiders; i++) {
-            gRiderStandings_2[i]->f662 = i;
+            gRiderStandings[i]->race.place = i;
         }
         race_announce_position_changes();
     }
 }
 
-void desert_ai_steer(u8 *s)
+void desert_ai_steer(Rider *s)
 {
     f32 v[3];
     f32 o[3];
@@ -159,17 +126,17 @@ void desert_ai_steer(u8 *s)
     s8 *cp;
     u32 uVar;
 
-    v[0] = sDesertCheckpoints_2[s[0x402] * 3] - *(f32 *)(s + 0x48);
-    tp = &sDesertCheckpoints_2[s[0x402] * 3];
-    v[1] = tp[1] - *(f32 *)(s + 0x4C);
-    tp = &sDesertCheckpoints_2[s[0x402] * 3];
-    v[2] = tp[2] - *(f32 *)(s + 0x50);
-    mtx3f_mul_vec3(v, (f32 *)(s + 0xA0), o);
+    v[0] = sDesertCheckpoints_2[s->checkpoint * 3] - s->bike.pos.x;
+    tp = &sDesertCheckpoints_2[s->checkpoint * 3];
+    v[1] = tp[1] - s->bike.pos.y;
+    tp = &sDesertCheckpoints_2[s->checkpoint * 3];
+    v[2] = tp[2] - s->bike.pos.z;
+    mtx3f_mul_vec3(v, &s->bike.right.x, o);
     f3 = math_atan2f(o[2], o[0]);
     sum = o[0] * o[0] + o[1] * o[1] + o[2] * o[2];
     f5 = __builtin_sqrtf(sum);
 
-    cp = (s8 *)(s + 0x5D0);
+    cp = &s->stickX;
     *cp = (s8)(s32)(-f3 * 14.0f);
     if (*cp > 14) *cp = 14;
     if (*cp < -14) *cp = -14;
@@ -185,8 +152,8 @@ void desert_ai_steer(u8 *s)
             if (f3 < 1.0f) f4 = 40.0f;
         }
     }
-    if (s[0x3FF] == 1) goto zero;
-    if (s[0x3FF] == 2) goto five;
+    if (s->finishState == 1) goto zero;
+    if (s->finishState == 2) goto five;
     goto after;
 zero:
     f4 = 0.0f;
@@ -195,22 +162,22 @@ five:
     f4 = 5.0f;
 after:
 
-    d = *(f32 *)(s + 0x420) - f4;
+    d = s->speed - f4;
     if (0.5f < d) {
         uVar = 6;
-        *(s16 *)(s + 0x55C) = uVar;
-        *(s16 *)(s + 0x4B8) = uVar;
+        s->frontWheel.brakeRamp = uVar;
+        s->rearWheel.brakeRamp = uVar;
         uVar = 0x20;
         goto store;
     }
-    if (!(d < -0.5f) || *(s32 *)(s + 0x744) >= 3 || s[0x7A6] != 0) goto done;
+    if (!(d < -0.5f) || s->airFrames >= 3 || s->laneBlocked != 0) goto done;
     uVar = 0x10;
     if (!(d < -5.0f)) goto store;
     uVar = 0x20000;
-    if (*(f32 *)(s + 0x648) < 9500.0f) goto store;
+    if (s->engine.heat < 9500.0f) goto store;
     uVar = 0x10;
 store:
-    *(u32 *)(s + 0x5B0) = uVar;
+    s->input = uVar;
 done:
     bike_update_steering(s, 1);
 }

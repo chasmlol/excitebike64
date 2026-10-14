@@ -216,26 +216,13 @@ void snd_race_exit(void)
     }
 }
 
-typedef struct Ent_8 {
-    s32 x, y, z;
-    u8 pad0C[0x5AA - 0xC];
-    s16 f5AA;
-    u8 pad5AC[0x6E8 - 0x5AC];
-    u8 f6E8;
-    u8 pad6E9[0x7A5 - 0x6E9];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Ent_8;
-
-extern Ent_8 gRiders_11[];
-
 void snd_update_riders(void)
 {
     Vec *pts;
     Vec *pt;
     RiderSound *sl;
-    Ent_8 *e;
-    Ent_8 *base;
+    Rider *e;
+    Rider *base;
     s32 i, bi, dist, n, k, j, best, bv;
     f32 z, t, kk, d, bd, ex, ey, ez, v;
 
@@ -249,12 +236,12 @@ void snd_update_riders(void)
     if (gSfxVolume >= 0x100) {
         gSfxVolume = 0xFF;
     }
-    base = gRiders_11;
+    base = gRiders;
     pts = gCamPos;
     sl = sRiderSounds;
     e = base;
 loop:
-    if (e->f7A5 != 0) {
+    if (e->inactive != 0) {
         sl->distanceDelta = 0;
         sl->view = 0;
         sl->distance = 0;
@@ -267,10 +254,10 @@ loop:
             do {
                 pt = &pts[n];
                 d = pt->x;
-                d -= (f32)e->x;
+                d -= (f32)e->drawPos.x;
                 d *= d;
-                d += ((f32)pt->y - (f32)e->y) * ((f32)pt->y - (f32)e->y);
-                d += ((f32)pt->z - (f32)e->z) * ((f32)pt->z - (f32)e->z);
+                d += ((f32)pt->y - (f32)e->drawPos.y) * ((f32)pt->y - (f32)e->drawPos.y);
+                d += ((f32)pt->z - (f32)e->drawPos.z) * ((f32)pt->z - (f32)e->drawPos.z);
                 if (d < bd || n == 0) {
                     bd = d;
                     bi = n;
@@ -280,7 +267,7 @@ loop:
             } while (0);
         }
         bd = __builtin_sqrtf(bd);
-        if (gCurTrack_7 - gTracks_3 == 20 && ((s32)e ^ (s32)base) == 0 && base->f5AA == 4) {
+        if (gCurTrack_7 - gTracks_3 == 20 && ((s32)e ^ (s32)base) == 0 && base->camMode == 4) {
             bd = 10000.0f;
         }
         v = bd;
@@ -322,9 +309,9 @@ loop:
         bv = -1;
         best = 0;
         for (i = 0; i < 8; i++) {
-            if (gRiders_11[i].f7A5 == 0 && sRiderSounds[i].hasVoice == 0) {
+            if (gRiders[i].inactive == 0 && sRiderSounds[i].hasVoice == 0) {
                 if (bv < sRiderSounds[i].volume ||
-                    (gRiders_11[i].f6E8 == 0 && gRiders_11[best].f6E8 != 0)) {
+                    (gRiders[i].isCpu == 0 && gRiders[best].isCpu != 0)) {
                     bv = sRiderSounds[i].volume;
                     best = i;
                 }
@@ -343,45 +330,6 @@ loop:
     }
 }
 
-typedef struct {
-    u8 pad0[0x38];
-    s32 f38;
-    s32 f3C;
-} Surf;
-
-typedef struct {
-    u8 pad0[0x44];
-    u8 f44;
-    u8 pad45[0x420 - 0x45];
-    f32 f420;
-    u8 pad424[0x4E4 - 0x424];
-    Surf *f4E4;
-    u8 pad4E8[0x4F0 - 0x4E8];
-    f32 f4F0;
-    u8 pad4F4[0x5B0 - 0x4F4];
-    u32 f5B0;
-    u8 pad5B4[0x644 - 0x5B4];
-    f32 f644;
-    f32 f648;
-    u8 pad64C[0x654 - 0x64C];
-    u8 f654;
-    u8 f655;
-    u8 f656;
-    u8 pad657[0x6E8 - 0x657];
-    u8 f6E8;
-    u8 pad6E9[0x744 - 0x6E9];
-    s32 f744;
-    u8 pad748[0x764 - 0x748];
-    u8 f764;
-    u8 pad765[3];
-    s32 f768;
-    u8 pad76C[0x7A5 - 0x76C];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Bike_3;
-
-extern Bike_3 gRiders_12[];
-
 void snd_update_rider(s32 arg0) {
     RiderSound *s;
     s32 vol;
@@ -396,13 +344,13 @@ void snd_update_rider(s32 arg0) {
 
     if (sSndEnabled != 0 && sSndRaceLoaded != 0 && sEngineSamplesLoaded != 0) {
         s = &sRiderSounds[arg0];
-        if (gRiders_12[arg0].f656 != 0) {
+        if (gRiders[arg0].engine.throttle != 0) {
             s->throttleFrames = 10;
         }
         if (s->throttleFrames != 0) {
             s->throttleFrames--;
         }
-        if (gRiders_12[arg0].f5B0 & 0x20000) {
+        if (gRiders[arg0].input & 0x20000) {
             s->turboFrames = 20;
             s->turboCount++;
         }
@@ -412,10 +360,10 @@ void snd_update_rider(s32 arg0) {
             }
         }
         if (s->throttleFrames != 0 && gPauseMenu == 0) {
-            if (gRiders_12[arg0].f654 != 0 && (random_byte_2() & 7) == 0) {
+            if (gRiders[arg0].engine.overheated != 0 && (random_byte_2() & 7) == 0) {
                 particles_start_exhaust_puff(arg0);
             }
-            if ((gRiders_12[arg0].f5B0 & 0x20000) && (random_byte_2() & 7) == 0) {
+            if ((gRiders[arg0].input & 0x20000) && (random_byte_2() & 7) == 0) {
                 particles_start_exhaust_puff(arg0);
             }
         }
@@ -445,17 +393,17 @@ void snd_update_rider(s32 arg0) {
                 sfx_stop(s->surfaceHandle);
                 s->surfaceHandle = -1;
             }
-            if ((random_byte_2() & 0x3F) == 0 && gRiders_12[arg0].f7A5 == 0) {
+            if ((random_byte_2() & 0x3F) == 0 && gRiders[arg0].inactive == 0) {
                 particles_start_exhaust_puff(arg0);
             }
             return;
         }
 
-        if (gRiders_12[arg0].f764 & 1) {
-            v = gRiders_12[arg0].f768;
+        if (gRiders[arg0].impactFlags & 1) {
+            v = gRiders[arg0].landingImpact;
             v = (v * vol) >> 8;
             v = v * 2 / 3;
-            gRiders_12[arg0].f764 &= 0xFE;
+            gRiders[arg0].impactFlags &= 0xFE;
             if (v > 255) {
                 v = 255;
             }
@@ -482,9 +430,9 @@ void snd_update_rider(s32 arg0) {
         }
 
         v = 0;
-        if (gRiders_12[arg0].f654 == 0) {
-            x = gRiders_12[arg0].f648;
-            if (x > 10000.0f && gRiders_12[arg0].f6E8 == 0 && (gGame.mode != 8 || arg0 != gGhostSlot)) {
+        if (gRiders[arg0].engine.overheated == 0) {
+            x = gRiders[arg0].engine.heat;
+            if (x > 10000.0f && gRiders[arg0].isCpu == 0 && (gGame.mode != 8 || arg0 != gGhostSlot)) {
                 v = (s32)((x - 10000.0f) * 70.0f / 2000.0f) + 64;
                 v = (v * vol) >> 8;
                 if (v < 0) {
@@ -505,8 +453,8 @@ void snd_update_rider(s32 arg0) {
         }
 
         v = 0;
-        if (gRiders_12[arg0].f44 == 0) {
-            v = (s32)(gRiders_12[arg0].f4F0 * 128.0f * 0.5f);
+        if (gRiders[arg0].crashState == 0) {
+            v = (s32)(gRiders[arg0].rearWheel.slip * 128.0f * 0.5f);
             if (v > 192) {
                 v = 192;
             }
@@ -540,7 +488,7 @@ void snd_update_rider(s32 arg0) {
         if (k != 0 && gRaceFrame - s->impactFrame < 30) {
             if (s->impactHandle == -1) {
                 s->impactHandle = sfx_play(sRiderSfx[5].sample, 0x2B11, k, 7, 0, 1);
-                if (gRiders_12[arg0].f44 != 0) {
+                if (gRiders[arg0].crashState != 0) {
                     sfx_get_sample_info(sRiderSfx[5].sample, buf);
                     sfx_set_position(s->impactHandle, buf[1]);
                 }
@@ -552,7 +500,7 @@ void snd_update_rider(s32 arg0) {
             s->impactHandle = -1;
         }
 
-        v = gRiders_12[arg0].f655;
+        v = gRiders[arg0].engine.gear;
         if (v < 0) {
             v = 0;
         }
@@ -608,12 +556,12 @@ void snd_update_rider(s32 arg0) {
                     goto end;
                 }
             }
-            k = (s32)(gRiders_12[arg0].f644 - 5000.0f);
+            k = (s32)(gRiders[arg0].engine.rpm - 5000.0f);
             k = sEngineSamples[s->engineSample].rateLow + (sEngineSamples[s->engineSample].rateHigh - sEngineSamples[s->engineSample].rateLow) * k / 7000;
             k += random_byte_2() * 500 / 256 - 250;
             n = vol2;
             if (s->turboFrames != 0) {
-                if (gRiders_12[arg0].f6E8 == 0) {
+                if (gRiders[arg0].isCpu == 0) {
                     k = 32000;
                 }
                 n = vol2 * 2;
@@ -621,7 +569,7 @@ void snd_update_rider(s32 arg0) {
                 s32 m = 300;
                 k = k * m / 256;
             }
-            if (gRiders_12[arg0].f654 != 0) {
+            if (gRiders[arg0].engine.overheated != 0) {
                 k /= 2;
                 n *= 2;
             }
@@ -667,23 +615,23 @@ void snd_update_rider(s32 arg0) {
                     t = 255;
                 }
                 sfx_set_volume(s->idleHandle, t * vol2 / 256);
-                k = (s32)(gRiders_12[arg0].f644 - 1000.0f);
+                k = (s32)(gRiders[arg0].engine.rpm - 1000.0f);
                 k = sEngineSamples[5].rateLow + (sEngineSamples[5].rateHigh - sEngineSamples[5].rateLow) * k / 7000;
                 sfx_set_rate(s->idleHandle, (s32)(k * f) * 16 / 22);
             }
         }
 end:
         s->gear = v;
-        v = (s32)(gRiders_12[arg0].f420 * 255.0f / 15.0f);
+        v = (s32)(gRiders[arg0].speed * 255.0f / 15.0f);
         if (v > 255) {
             v = 255;
         }
         if (v < 0) {
             v = 0;
         }
-        if (gRiders_12[arg0].f4E4->f38 != 0 && v != 0 && gRiders_12[arg0].f744 < 6) {
+        if (gRiders[arg0].rearWheel.surface->unk_38 != 0 && v != 0 && gRiders[arg0].airFrames < 6) {
             if (s->surfaceHandle == -1) {
-                s->surfaceHandle = sfx_play(gRiders_12[arg0].f4E4->f3C, 0x2B11, (vol * v) >> 8, 7, 0, 1);
+                s->surfaceHandle = sfx_play(gRiders[arg0].rearWheel.surface->unk_3C, 0x2B11, (vol * v) >> 8, 7, 0, 1);
             } else {
                 sfx_set_volume(s->surfaceHandle, (vol * v) >> 8);
             }

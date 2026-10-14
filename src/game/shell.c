@@ -1,15 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    u8 pad[0x669];
-    u8 f669;
-    u8 pad66A[0x68C - 0x66A];
-    s32 f68C;
-    u8 pad690[0x7E0 - 0x690];
-} Ent_3;
-
-extern Ent_3 gRiders_3[];
-
 s32 shell_format_pak_file_label(u8 *src, char *dst, s32 flag)
 {
     s32 trk, q, w, ret;
@@ -820,8 +810,8 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
                     gGame.resultsNumRiders = gEvent.numRiders;
                     for (i = 0; i < 6; i++) {
                         gGame.resultsOrder[i] = gEvent.finishOrder[i];
-                        gGame.resultsTimes[i] = gRiders_3[i].f68C;
-                        gGame.resultsCelebration[i] = gRiders_3[i].f669;
+                        gGame.resultsTimes[i] = gRiders[i].race.finishTime;
+                        gGame.resultsCelebration[i] = (u8)gRiders[i].race.finishPlace;
                         if (gSeason != 0) {
                             gGame.resultsSeasonOrder[i] = gSeason->standings[i];
                         }
@@ -937,8 +927,8 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
                 gGame.resultsNumRiders = gEvent.numRiders;
                 for (i = 0; i < 6; i++) {
                     gGame.resultsOrder[i] = gEvent.finishOrder[i];
-                    gGame.resultsTimes[i] = gRiders_3[i].f68C;
-                    gGame.resultsCelebration[i] = gRiders_3[i].f669;
+                    gGame.resultsTimes[i] = gRiders[i].race.finishTime;
+                    gGame.resultsCelebration[i] = (u8)gRiders[i].race.finishPlace;
                     if (gSeason != 0) {
                         gGame.resultsSeasonOrder[i] = gSeason->standings[i];
                     }
@@ -1907,8 +1897,6 @@ void shell_filter_stick_dirs(u32 *p)
         p++;
     }
 }
-
-typedef struct { u8 pad0[8]; s16 h8[1]; } Trk_13;
 
 void shell_update(Pad16 *pad) {
     u32 buf[4];
@@ -3164,10 +3152,6 @@ Gfx *shell_draw_results_menu(Gfx *gdl, s32 p2, s32 sel, char **strs)
                          &gGame.cursorImg[gGame.menuAnimTimer / 2 % 30 + 1], gdl, p2, 1, 1, 3, 0);
 }
 
-typedef struct {
-    u8 b[8];
-} Ent8_2;
-
 Gfx *shell_draw_players_difficulty_popup(Gfx *gdl, s32 p2, s32 p3)
 {
     s32 dx, dy, dz;
@@ -3410,26 +3394,9 @@ typedef struct {
     u8 vol[3];
 } Save_5;
 
-typedef struct {
-    u8 pad0[0x14];
-    void *f14;
-    char *f18;
-    u8 pad1C[0x3C - 0x1C];
-} BikeDef;
-
-typedef struct {
-    u8 pad0[0x668];
-    s16 h668;
-    u8 pad66A[0x68C - 0x66A];
-    s32 f68C;
-    u8 pad690[0x7E0 - 0x690];
-} Racer_3;
-
 extern Track_17 *gCurTrack_41;
 extern Save_5 gSaveData_13;
 extern Track_17 gTracks_16[];
-extern BikeDef gRiderAnims_17[];
-extern Racer_3 gRiders_91[];
 
 static inline s32 avail8(s32 n)
 {
@@ -4702,7 +4669,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
             img = (Img *)((r < gGame.numPlayers || gGame.mode == 8) ? ((gGame.mode == 8) ? ((r == D_800C8CE0) ? 4 : 2) : 4) : 2);
             font_text_create(gGame.texts[j * 4 + 5], 0x20, 1, (s32)img, 0x20);
             pl = j;
-            while (pl > 0 && s->type == SCREEN_TYPE_RACE_RESULT && gRiders_91[gEvent.finishOrder[pl]].f68C == gRiders_91[gEvent.finishOrder[pl - 1]].f68C) {
+            while (pl > 0 && s->type == SCREEN_TYPE_RACE_RESULT && gRiders[gEvent.finishOrder[pl]].race.finishTime == gRiders[gEvent.finishOrder[pl - 1]].race.finishTime) {
                 s32 d0;
 
                 pl--;
@@ -4729,7 +4696,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
             if (s->type == SCREEN_TYPE_STANDINGS && !CHAMP4) {
                 int_to_str(gSeason->points[r], buf);
             } else {
-                event_format_time(gRiders_91[r].f68C, buf);
+                event_format_time(gRiders[r].race.finishTime, buf);
             }
             font_text_add(gGame.texts[j * 4 + 7], buf);
             switch (s->type) {
@@ -4780,7 +4747,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                 buf[1] = '\0';
                 font_text_add(gGame.texts[gEvent.numRiders * 4 + 5 + j], buf);
                 font_draw_text(gGame.texts[gEvent.numRiders * 4 + 5 + j], wid[j] + 5 + img->w * 4,
-                              (img->h >> 1) + 0x37 + gRiders_91[j].h668 * 25 + ((s->type != SCREEN_TYPE_STANDINGS) ? 7 : 0));
+                              (img->h >> 1) + 0x37 + gRiders[j].race.finishPlace * 25 + ((s->type != SCREEN_TYPE_STANDINGS) ? 7 : 0));
             } else {
                 gDPLoadTLUT_pal256(gdl++, gGame.unk_39C->addr);
             }
@@ -4793,7 +4760,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
             }
             px = 5 + wid[j + D_800C8CE0] + rx;
             if (s->type != SCREEN_TYPE_STANDINGS || CHAMP4) {
-                y = 0x3E + rowh * gRiders_91[j + D_800C8CE0].h668 + ry;
+                y = 0x3E + rowh * gRiders[j + D_800C8CE0].race.finishPlace + ry;
             } else {
                 y = 0x3E + rowh * k + ry;
             }
@@ -4990,12 +4957,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                         img = &gGame.unk_390[2];
                         DRAWV(VP[0][0].x, VP[0][0].y - img->h + yo, img, 6);
                         for (j = 0; j < 16; j++) {
-                            if (str_icmp(sRiderBios[gGame.riders[i]].text[2], gRiderAnims_17[j].f18) == 0) {
+                            if (str_icmp(sRiderBios[gGame.riders[i]].text[2], gRiderAnims[j].name) == 0) {
                                 break;
                             }
                         }
-                        if (gRiderAnims_17[j].f14 != NULL) {
-                            gdl = event_draw_glyph_string(gdl, fb, gRiderAnims_17[j].f14, 0x8C, yo + VP[0][0].y - 0x48);
+                        if (gRiderAnims[j].inputGlyphs != NULL) {
+                            gdl = event_draw_glyph_string(gdl, fb, gRiderAnims[j].inputGlyphs, 0x8C, yo + VP[0][0].y - 0x48);
                         }
                     }
                     gDPSetTextureLUT(gdl++, G_TT_NONE);
@@ -5482,16 +5449,6 @@ s32 shell_pak_track_invalid(u32 *p, s32 n)
     return r != *p;
 }
 
-typedef struct {
-    u8 p0[0x669];
-    u8 f669;
-    u8 p66A[0x68C - 0x66A];
-    u32 f68C;
-    u8 pad[0x7E0 - 0x690];
-} EntE;
-
-extern EntE gRiders_92[];
-
 void shell_backup_race_results(void)
 {
     s32 i = 0;
@@ -5499,24 +5456,14 @@ void shell_backup_race_results(void)
     gGame.resultsNumRiders = gEvent.numRiders;
     do {
         gGame.resultsOrder[i] = gEvent.finishOrder[i];
-        gGame.resultsTimes[i] = gRiders_92[i].f68C;
-        gGame.resultsCelebration[i] = gRiders_92[i].f669;
+        gGame.resultsTimes[i] = gRiders[i].race.finishTime;
+        gGame.resultsCelebration[i] = (u8)gRiders[i].race.finishPlace;
         if (gSeason != 0) {
             gGame.resultsSeasonOrder[i] = gSeason->standings[i];
         }
         i++;
     } while (i < 6);
 }
-
-typedef struct {
-    u8 pad0[0x668];
-    u16 h668;
-    u8 pad1[0x68C - 0x66A];
-    u32 w68C;
-    u8 pad2[0x7E0 - 0x690];
-} Elem_4;
-
-extern Elem_4 gRiders_93[];
 
 void shell_restore_race_results(void)
 {
@@ -5525,8 +5472,8 @@ void shell_restore_race_results(void)
     gEvent.numRiders = gGame.resultsNumRiders;
     for (i = 0; i < 6; i++) {
         gEvent.finishOrder[i] = gGame.resultsOrder[i];
-        gRiders_93[i].w68C = gGame.resultsTimes[i];
-        gRiders_93[i].h668 = gGame.resultsCelebration[i];
+        gRiders[i].race.finishTime = gGame.resultsTimes[i];
+        gRiders[i].race.finishPlace = gGame.resultsCelebration[i];
         if (gSeason != 0) {
             gSeason->standings[i] = gGame.resultsSeasonOrder[i];
         }

@@ -101,14 +101,6 @@ T:
     }
 }
 
-typedef struct Ent_11 {
-    u8 pad0[0x668];
-    s16 f668;
-    u8 pad66A[0x7E0 - 0x66A];
-} Ent_11;
-
-extern Ent_11 gRiders_13[];
-
 void race_update_replay(void)
 {
     if (gReplayRecording != 0) {
@@ -132,7 +124,7 @@ void race_update_replay(void)
             replay_play_frame(gPlayerInputs);
         }
     } else if (gGhostRace != 0) {
-        if (gRiders_13[gGhostSlot ^ 1].f668 == -1) {
+        if (gRiders[gGhostSlot ^ 1].race.finishPlace == -1) {
             if (gMirrorMode != 0) {
                 gPlayerInputs[gGhostSlot ^ 1] ^= 0xC;
             }
@@ -148,7 +140,7 @@ void race_update_replay(void)
         if ((gEvent.flags & 0x40) && replay_play_frame(gPlayerInputs) != 0) {
             bikes_free();
             decal_clear_all();
-            mem_fill((u8 *)gRiders_13, 0, 0x3F00);
+            mem_fill((u8 *)gRiders, 0, 0x3F00);
             tutorial_init_lesson(0);
             bikes_init();
             gEvent.flags = (gEvent.flags | 0x80) & ~0x2000;
@@ -172,19 +164,7 @@ typedef struct {
     s32 *p80;       /* 0x80 */
 } Obj_6;
 
-typedef struct {
-    s32 data[0x1E0];
-} Blk_6;
-
-typedef struct {
-    u8 pad[0x65C];
-    Blk_6 *p;
-    u8 pad660[0x180];
-} Slot_4;
-
 extern Obj_6 *gCurTrack_14;
-extern Blk_6 *gRiderSkelTemplate_3;
-extern Slot_4 gRiders_14[8];
 
 void race_init(s32 arg)
 {
@@ -331,7 +311,7 @@ void race_init(s32 arg)
     rider_anims_load(D_800E7728);
     bikes_init();
     for (i = 0; i < 8; i++) {
-        *gRiders_14[i].p = *gRiderSkelTemplate_3;
+        *gRiders[i].riderSkel = *gRiderSkelTemplate;
     }
     snd_race_init(gSurfaceTable);
     race_apply_volumes();
@@ -885,33 +865,6 @@ typedef struct {
 } Cfg64;
 
 typedef struct {
-    u8 pad0[0x38];
-    s32 f38;
-} Obj4E4;
-
-typedef struct {
-    u8 pad0[0x420];
-    f32 f420;           /* 0x420 */
-    u8 pad424[0x4E4 - 0x424];
-    Obj4E4 *f4E4;       /* 0x4E4 */
-    u8 pad4E8[0x5AC - 0x4E8];
-    s32 f5AC;           /* 0x5AC */
-    u8 pad5B0[0x5CD - 0x5B0];
-    u8 b5CD;            /* 0x5CD */
-    u8 pad5CE[0x656 - 0x5CE];
-    u8 b656;            /* 0x656 */
-    u8 pad657[0x6E8 - 0x657];
-    u8 b6E8;            /* 0x6E8 */
-    u8 pad6E9[0x768 - 0x6E9];
-    s32 f768;           /* 0x768 */
-    u8 pad76C[0x774 - 0x76C];
-    s32 f774;           /* 0x774 */
-    u8 pad778[0x7A5 - 0x778];
-    u8 b7A5;            /* 0x7A5 */
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Player_7;
-
-typedef struct {
     u8 pad0[0x2C4];
     u8 b2C4;
     u8 b2C5;
@@ -933,7 +886,6 @@ extern Pad24 gPlayerInputs_3;
 extern Pad24 gPlayerInputsPrev_4;
 extern Pad24 D_800E3750;
 extern Pad24 D_800E3718;
-extern Player_7 gRiders_15[8];
 extern Opt_2 gSaveData_3;
 
 void race_update(u32 *arg)
@@ -972,17 +924,17 @@ void race_update(u32 *arg)
         gPlayerInputs_3.w[i] &= ~0x7800;
     }
     for (i = 0; i < 4; i++) {
-        t = gRaceFrame - gRiders_15[i].f774 + 4;
+        t = gRaceFrame - gRiders[i].landingFrame + 4;
         j = 0;
-        if (gRiders_15[i].b5CD) {
+        if (gRiders[i].roughLanding) {
             t = t * 2 / 3;
         }
-        if (t < gRiders_15[i].f768 / 20) j = 1;
+        if (t < gRiders[i].landingImpact / 20) j = 1;
         if (gTireTrackTimers[i] != 0 && !(gFrameCounter & 7)) j = 1;
-        if (gRiders_15[i].f4E4 != NULL && gRiders_15[i].f4E4->f38 != 0 &&
-            gRiders_15[i].f420 > 8.0f && gFrameCounter % 6 == 0) j = 1;
+        if (gRiders[i].rearWheel.surface != NULL && gRiders[i].rearWheel.surface->unk_38 != 0 &&
+            gRiders[i].speed > 8.0f && gFrameCounter % 6 == 0) j = 1;
         if (gPauseMenu != 0) j = 0;
-        if (gRiders_15[i].b6E8 != 0) j = 0;
+        if (gRiders[i].isCpu != 0) j = 0;
         if (gGhostRace != 0 && i == gGhostSlot) j = 0;
         if (gReplayPlayback != 0) j = 0;
         if (gGame.fadeState != 3) j = 0;
@@ -1114,7 +1066,7 @@ void race_update(u32 *arg)
                     break;
                 case 1:
                     bikes_free();
-                    mem_fill((u8 *)gRiders_15, 0, 0x3F00);
+                    mem_fill((u8 *)gRiders, 0, 0x3F00);
                     bikes_init();
                     gPauseMenu = 0;
                     gEvent.flags |= 0x80;
@@ -1353,12 +1305,12 @@ void race_update(u32 *arg)
                 event_update(0);
             }
             for (j = 0; j < 8; j++) {
-                if (gRiders_15[j].b7A5 == 0) {
-                    if (gRiders_15[j].b656 != 0 && gRiders_15[j].f5AC >= -0xFFF) {
-                        gRiders_15[j].f5AC -= 0x200;
+                if (gRiders[j].inactive == 0) {
+                    if (gRiders[j].engine.throttle != 0 && gRiders[j].throttleTwist >= -0xFFF) {
+                        gRiders[j].throttleTwist -= 0x200;
                     }
-                    if (gRiders_15[j].b656 == 0 && gRiders_15[j].f5AC < 0) {
-                        gRiders_15[j].f5AC += 0x200;
+                    if (gRiders[j].engine.throttle == 0 && gRiders[j].throttleTwist < 0) {
+                        gRiders[j].throttleTwist += 0x200;
                     }
                 }
             }
@@ -1514,15 +1466,6 @@ typedef struct {
 } Src;
 
 typedef struct {
-    char name[0x10];
-    f32 v[6];
-    s32 f28;
-    B12 b;
-    s32 f38;
-    s32 pad3C;
-} Dst;
-
-typedef struct {
     s32 n;
     Src e[1];
 } File;
@@ -1532,7 +1475,6 @@ struct Res_3 {
     u32 *arr;
 };
 
-extern Dst gSurfaceTable_3[];
 
 void race_load_surface_table(Res_3 *r, s32 idx)
 {
@@ -1543,29 +1485,29 @@ void race_load_surface_table(Res_3 *r, s32 idx)
     tab = res_load(gSfxResSet_3, D_800D123C);
     f = res_load(r, idx);
     for (i = 0; i < 16; i++) {
-        str_copy(gSurfaceTable_3[i].name, f->e[i].name);
+        str_copy(gSurfaceTable[i].name, f->e[i].name);
         for (j = 0; j < 6; j++) {
-            ((f32 *)&gSurfaceTable_3[i])[j + 4] = (f32)f->e[i].v[j] / 1000.0f;
+            ((f32 *)&gSurfaceTable[i])[j + 4] = (f32)f->e[i].v[j] / 1000.0f;
         }
-        gSurfaceTable_3[i].f28 = f->e[i].f28;
-        gSurfaceTable_3[i].b.b[0] = f->e[i].b.b[0];
-        gSurfaceTable_3[i].b.b[1] = f->e[i].b.b[1];
-        gSurfaceTable_3[i].b.b[2] = f->e[i].b.b[2];
-        gSurfaceTable_3[i].b.b[3] = f->e[i].b.b[3];
-        gSurfaceTable_3[i].b.b[4] = f->e[i].b.b[4];
-        gSurfaceTable_3[i].b.b[5] = f->e[i].b.b[5];
-        gSurfaceTable_3[i].b.b[6] = f->e[i].b.b[6];
-        gSurfaceTable_3[i].b.b[7] = f->e[i].b.b[7];
-        gSurfaceTable_3[i].b.b[8] = f->e[i].b.b[8];
-        gSurfaceTable_3[i].b.b[9] = f->e[i].b.b[9];
-        gSurfaceTable_3[i].b.b[10] = f->e[i].b.b[10];
-        gSurfaceTable_3[i].b.b[11] = f->e[i].b.b[11];
+        gSurfaceTable[i].flags = f->e[i].f28;
+        gSurfaceTable[i].color[0] = f->e[i].b.b[0];
+        gSurfaceTable[i].color[1] = f->e[i].b.b[1];
+        gSurfaceTable[i].color[2] = f->e[i].b.b[2];
+        gSurfaceTable[i].color[3] = f->e[i].b.b[3];
+        gSurfaceTable[i].color[4] = f->e[i].b.b[4];
+        gSurfaceTable[i].color[5] = f->e[i].b.b[5];
+        gSurfaceTable[i].color[6] = f->e[i].b.b[6];
+        gSurfaceTable[i].color[7] = f->e[i].b.b[7];
+        gSurfaceTable[i].color[8] = f->e[i].b.b[8];
+        gSurfaceTable[i].color[9] = f->e[i].b.b[9];
+        gSurfaceTable[i].color[10] = f->e[i].b.b[10];
+        gSurfaceTable[i].color[11] = f->e[i].b.b[11];
         for (j = 0; tab[j].key != 0; j++) {
             if (tab[j].key == f->e[i].key) {
                 break;
             }
         }
-        gSurfaceTable_3[i].f38 = tab[j].val;
+        gSurfaceTable[i].unk_38 = tab[j].val;
     }
     res_unload(&r->arr[idx]);
     res_unload(&gSfxResSet_3->arr[D_800D123C]);

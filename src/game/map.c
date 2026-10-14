@@ -1,16 +1,6 @@
 #include "game.h"
 
 typedef struct {
-    u8 pad0[0x44];
-    u8 f44;
-    u8 pad45[0x6E8 - 0x45];
-    u8 f6E8;
-    u8 pad6E9[0x7A5 - 0x6E9];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Racer;
-
-typedef struct {
     u8 unk0[0x21C];
     u8 r;
     u8 g;
@@ -18,7 +8,6 @@ typedef struct {
     u8 unk21F[0xA80 - 0x21F];
 } Player;
 
-extern Racer gRiders_2[];
 extern Player gRiderGfx[];
 
 void map_init(void)
@@ -132,18 +121,18 @@ Gfx *map_draw_progress_bar(Gfx *gdl)
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
 
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 == 0) {
-            if (gRiders_2[i].f44 == 0 || gRaceFrame % 8 >= 4) {
-                if (gRiders_2[i].f6E8 != 0) {
+        if (gRiders[i].inactive == 0) {
+            if (gRiders[i].crashState == 0 || gRaceFrame % 8 >= 4) {
+                if (gRiders[i].isCpu != 0) {
                     gdl = map_draw_progress_marker(gdl, i, 0);
                 }
             }
         }
     }
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 == 0) {
-            if (gRiders_2[i].f44 == 0 || gRaceFrame % 8 >= 4) {
-                if (gRiders_2[i].f6E8 == 0) {
+        if (gRiders[i].inactive == 0) {
+            if (gRiders[i].crashState == 0 || gRaceFrame % 8 >= 4) {
+                if (gRiders[i].isCpu == 0) {
                     gdl = map_draw_progress_marker(gdl, i, 1);
                 }
             }
@@ -203,18 +192,10 @@ Gfx *map_draw_rider_dot(Gfx *gdl, s32 player, s32 big)
     return g;
 }
 
-typedef struct {
-    u8 pad0[0x628];
-    s16 node;
-    u8 pad62A[0x63C - 0x62A];
-    f32 frac;
-    u8 pad640[0x7E0 - 0x640];
-} Rider_5;
-
 Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 {
-    Rider_5 *r;
-    Rider_5 *rb;
+    Rider *r;
+    Rider *rb;
     PathNode *a;
     PathNode *b;
     s32 v;
@@ -224,13 +205,13 @@ Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 
     rb = gRiders;
     r = &rb[idx];
-    k = r->node;
+    k = r->segment;
     a = &gPathNodes[k];
     v = a->lapProgress;
     k = a->next;
     b = &gPathNodes[k];
     if (b->lapProgress < a->lapProgress) {
-        f = r->frac;
+        f = r->segmentT;
         if (f < 0.0f) {
             f = 0.0f;
         }
@@ -289,7 +270,7 @@ Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 #define WD(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
 Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
-    Racer *e;
+    Rider *e;
     s32 i;
 
     if (gHudLevel != 0 || sMapImage == 0 || (gGame.flags & 0x81) || gInsetViewActive != 0) {
@@ -319,19 +300,19 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     WD(gdl++, 0xE200001C, 0x0C084000);
     WD(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
 
-    e = gRiders_2;
+    e = gRiders;
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 != 0) continue;
-        if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
-        if (gRiders_2[i].f6E8 != 0 || (gGame.mode == 8 && i != D_800C8CE0)) {
+        if (gRiders[i].inactive != 0) continue;
+        if (gRiders[i].crashState != 0 && gRaceFrame % 8 < 4) continue;
+        if (gRiders[i].isCpu != 0 || (gGame.mode == 8 && i != D_800C8CE0)) {
             gdl = map_draw_rider_dot(gdl, i, 0);
         }
     }
-    e = gRiders_2;
+    e = gRiders;
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 != 0) continue;
-        if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
-        if (gRiders_2[i].f6E8 != 0) continue;
+        if (gRiders[i].inactive != 0) continue;
+        if (gRiders[i].crashState != 0 && gRaceFrame % 8 < 4) continue;
+        if (gRiders[i].isCpu != 0) continue;
         if (gGame.mode == 8 && i != D_800C8CE0) continue;
         gdl = map_draw_rider_dot(gdl, i, 1);
     }
@@ -340,12 +321,11 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
 }
 
 typedef struct { f32 x, y; } V2;
-typedef struct { u8 pad[0x628]; s16 obj; u8 pad2[0x63C - 0x62A]; f32 t; u8 pad3[0x7E0 - 0x640]; } Player_25;
 
 void map_get_rider_pos(s32 player, s32 *px, s32 *py)
 {
-    Player_25 *pl;
-    Player_25 *base;
+    Rider *pl;
+    Rider *base;
     PathNode *o;
     PathNode *o2;
     V2 a, b;
@@ -358,11 +338,11 @@ void map_get_rider_pos(s32 player, s32 *px, s32 *py)
     pl = &base[player];
     cx = (sMapBoundsMin.x + sMapBoundsMax.x) * 0.5f;
     cy = (sMapBoundsMin.z + sMapBoundsMax.z) * 0.5f;
-    o = &gPathNodes[pl->obj];
+    o = &gPathNodes[pl->segment];
     o2 = &gPathNodes[o->next];
     map_get_node_pos(o, &a.x, &a.y);
     map_get_node_pos(o2, &b.x, &b.y);
-    t = pl->t;
+    t = pl->segmentT;
     if (t < 0.0f) {
         t = 0.0f;
     }

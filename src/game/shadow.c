@@ -29,7 +29,7 @@ Blk_2 *shadow_clear_texture(Blk_2 *gdl, s32 unused, s32 n)
     p6 = gdl++;
     p6->w0 = 0xF607C07C;
     p6->w1 = 0;
-    if (gRiders[k * 0x7E0 + 0x44] != 0) {
+    if (gRiders[k].crashState != 0) {
         q0 = gdl++;
         q0->w0 = 0xE7000000;
         q0->w1 = 0;
@@ -63,20 +63,13 @@ typedef struct {
     void *mtx23C[(0xA80 - 0x23C) / 4];
 } Plr_4;
 
-typedef struct {
-    u8 pad[0x44];
-    u8 f44;
-    u8 pad45[0x7E0 - 0x45];
-} Blk_9;
-
-extern Blk_9 gRiders_37[];
 extern Plr_4 gRiderGfx_9[];
 
 Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
 {
     f32 mf[4][4];
     s16 rot[64];
-    Blk_9 *blk;
+    Rider *blk;
     Gfx **tab;
     s32 i;
 
@@ -84,7 +77,7 @@ Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
     gSPViewport(gdl++, &sShadowViewport);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 1, 1, 31, 31);
     gSPClipRatio(gdl++, FRUSTRATIO_6);
-    blk = &gRiders_37[idx];
+    blk = &gRiders[idx];
     guOrtho(mf, -15.0f, 15.0f, -15.0f, 15.0f, 50.0f, 4192.0f, 1.0f);
     mtx_from_angles_pos_scale(rot, -0x4000, 0, 0, 0, 0, 0, 4);
     mtx_mul(rot, (s16 *)mf, (s16 *)&sShadowProjMtx);
@@ -103,7 +96,7 @@ Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
         gSPDisplayList(gdl++, D_800E16C0[i]);
         gSPPopMatrix(gdl++, G_MTX_MODELVIEW);
     }
-    if (blk->f44) {
+    if (blk->crashState) {
         gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, sShadowTextures + (idx + 8) * 0x400);
     }
     gSPSegment(gdl++, 1, gRiderGfx_9[0].seg22C);
@@ -231,14 +224,6 @@ Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl)
     return gdl;
 }
 
-typedef struct {
-    s32 x, y, z;
-    s32 x2, y2, z2;
-    u8 pad[0x7E0 - 0x18];
-} Player_11;
-
-extern Player_11 gRiders_38[];
-
 void shadow_build_mesh(s32 n)
 {
     s32 x, y, z;
@@ -248,15 +233,15 @@ void shadow_build_mesh(s32 n)
     Vec3i *src;
 
     if (n < 8) {
-        x = gRiders_38[n].x;
-        y = gRiders_38[n].y;
-        z = gRiders_38[n].z;
+        x = gRiders[n].drawPos.x;
+        y = gRiders[n].drawPos.y;
+        z = gRiders[n].drawPos.z;
     } else {
-        x = gRiders_38[n % 8].x2;
-        y = gRiders_38[n % 8].y2;
-        z = gRiders_38[n % 8].z2;
+        x = gRiders[n % 8].drawBodyPos.x;
+        y = gRiders[n % 8].drawBodyPos.y;
+        z = gRiders[n % 8].drawBodyPos.z;
     }
-    height_collect_ground_tris(x - 1000, z - 1000, x + 1000, z + 1000, gRiders_38[n].y + 1000);
+    height_collect_ground_tris(x - 1000, z - 1000, x + 1000, z + 1000, gRiders[n].drawPos.y + 1000);
     if (gGroundTriCount == 0) return;
     sShadowVtxCount = 0;
     sShadowTriCount = 0;

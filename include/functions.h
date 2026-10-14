@@ -161,7 +161,7 @@ f32 math_exp(f32 x);
 u8 r250_next(void);
 u32 math_sin_rand(f32 *p);
 void mtx_from_rot3i_pos(s32 *src, u16 *aux, s16 *dst);
-void mtx_from_bones(Obj_5 *src, MtxS_2 *dst, s32 n);
+void mtx_from_bones(Bone *src, MtxS_2 *dst, s32 n);
 void quat_mul(f32 *o, f32 *p, f32 *q);
 f32 func_80013D3C(f32 x);
 
@@ -211,41 +211,41 @@ void race_mute_volumes(void);
 
 /* src/game/bikenew.c */
 void bikes_init(void);
-void bike_apply_rider_stats(u8 *a0, s32 a1);
-f32 bike_wheel_ground_bisect(Obj_7 *o, f32 *p, f32 p3);
-void bike_wheel_find_ground(Bike_4 *b, Wheel *w, f32 dt, u8 flag);
-void bike_update_wheel_contacts(Bike_5 *b);
-void bike_wheel_spring_force(Rec_9 *p, f32 x);
-void bike_update_suspension(u8 *s);
-void bike_rear_tire_force(Bike_6 *a, Cam *b);
-f32 bike_raycast_ground(V3 *a, V3 *b, f32 t, f32 d, f32 *e);
-void bike_place_on_ground(Bike_7 *b);
-void bike_wheel_surface_bumps(Obj_8 *a0, f32 *a1);
-void bike_update_brakes(u8 *p);
-void bike_update_drive_force(Bike_8 *p);
-void bike_process_input(Obj_9 *o, s32 a1);
-void bike_update_tire_forces(Bike_42 *b);
-void bike_solve_tire_constraints(Bike_9 *b);
-f32 bike_calc_lean_torque(u8 *p);
-void bike_compute_forces(Bike_10 *b);
-void bike_integrate_velocity(u8 *param_1);
-void bike_integrate_position(Bike_11 *b);
-void bike_update_render_pose(Bike_42 *b);
-void bike_handle_landing(void *a0);
-f32 bike_predict_landing(Body *p, f32 g, f32 t, f32 *out);
-void bike_align_to_ground(Bike_12 *b);
-void bike_update_wheelie(Ent_12 *e);
-void bike_update_jump(Bike_13 *b);
-void bike_update_alpha(u8 *a2);
-void bike_update(Bike_14 *b, s32 n);
+void bike_apply_rider_stats(Rider *a0, s32 a1);
+f32 bike_wheel_ground_bisect(Rider *o, f32 *p, f32 p3);
+void bike_wheel_find_ground(Rider *b, Wheel *w, f32 dt, u8 flag);
+void bike_update_wheel_contacts(Rider *b);
+void bike_wheel_spring_force(Wheel *p, f32 x);
+void bike_update_suspension(Rider *s);
+void bike_rear_tire_force(Rider *a, Wheel *b);
+f32 bike_raycast_ground(Vec3f *a, Vec3f *b, f32 t, f32 d, f32 *e);
+void bike_place_on_ground(Rider *b);
+void bike_wheel_surface_bumps(Wheel *a0, f32 *a1);
+void bike_update_brakes(Rider *p);
+void bike_update_drive_force(Rider *p);
+void bike_process_input(Rider *o, s32 a1);
+void bike_update_tire_forces(Rider *b);
+void bike_solve_tire_constraints(Rider *b);
+f32 bike_calc_lean_torque(Rider *p);
+void bike_compute_forces(Rider *b);
+void bike_integrate_velocity(Rider *param_1);
+void bike_integrate_position(Rider *b);
+void bike_update_render_pose(Rider *b);
+void bike_handle_landing(Rider *a0);
+f32 bike_predict_landing(Rider *p, f32 g, f32 t, f32 *out);
+void bike_align_to_ground(Rider *b);
+void bike_update_wheelie(Rider *e);
+void bike_update_jump(Rider *b);
+void bike_update_alpha(Rider *a2);
+void bike_update(Rider *b, s32 n);
 u32 bike_remap_buttons(u32 a0, s32 a1);
 void bikes_update(s32 n);
 float bike_get_ground_height(float *p);
-void func_80022908(Obj_10 *p);
+void func_80022908(Rider *p);
 void bikes_free(void);
-void bike_apply_surface_bumps(u8 *p);
-void bike_update_finish_celebration(u8 *p);
-void bike_update_dirt_spray(Obj_11 *o);
+void bike_apply_surface_bumps(Rider *p);
+void bike_update_finish_celebration(Rider *p);
+void bike_update_dirt_spray(Rider *o);
 
 /* src/game/arngfx.c */
 void arn_init(void);
@@ -288,26 +288,26 @@ Gfx *tube_tex_mode_callback(Gfx *gdl, s32 flag);
 void cam_init(s32 arg0);
 void cam_build_segment_order(void);
 void cam_update(void);
-f32 cam_calc_ground_pitch(Obj_13 *self);
-f32 cam_calc_air_pitch(u8 *p);
-void cam_update_rider_select(Obj_14 *p, CamOut *out, s32 arg2);
-int cam_calc_bike_yaw(u8 *s);
-s32 cam_mode_soccer(Bike_16 *bike, CamOut *out);
-f32 cam_calc_hill_climb_pitch(u8 *param_1);
-void cam_mode_hill_climb(Obj_15 *p, CamOut *out);
-void cam_update_chase(Bike_17 *p, CamOut *out, s32 z);
-s32 cam_update_chase_2(Bike_16 *p, CamOut *out, s32 z);
-void cam_mode_fall_view(Ent_23 *e, CamOut *r);
-void cam_start_fall_view(Ent_24 *p);
-void cam_mode_stunt_pip(Bike_18 *p, CamOut *out);
+f32 cam_calc_ground_pitch(Rider *self);
+f32 cam_calc_air_pitch(Rider *p);
+void cam_update_rider_select(Rider *p, CamOut *out, s32 arg2);
+int cam_calc_bike_yaw(Rider *s);
+s32 cam_mode_soccer(Rider *bike, CamOut *out);
+f32 cam_calc_hill_climb_pitch(Rider *param_1);
+void cam_mode_hill_climb(Rider *p, CamOut *out);
+void cam_update_chase(Rider *p, CamOut *out, s32 z);
+s32 cam_update_chase_2(Rider *p, CamOut *out, s32 z);
+void cam_mode_fall_view(Rider *e, CamOut *r);
+void cam_start_fall_view(Rider *p);
+void cam_mode_stunt_pip(Rider *p, CamOut *out);
 void cam_smooth_to(CamOut *p);
 void cam_snap_to(CamOut *src);
 s32 cam_snap_to_2(CamOut *src);
 void cam_snap_to_moving(CamOut *p, f32 *v);
 s32 cam_find_zone(void);
-f32 cam_zone_get_progress(Obj_17 *p, s32 a, s32 b);
-void cam_zone_update_follow(Obj_18 *param_1, CamOut *param_2);
-void cam_zone_update_dolly(Actor *act, CamOut *out);
+f32 cam_zone_get_progress(Rider *p, s32 a, s32 b);
+void cam_zone_update_follow(Rider *rider, CamOut *out);
+void cam_zone_update_dolly(Rider *rider, CamOut *out);
 void cam_get_track_heading(s16 p1, f32 p2, u16 *p3);
 void cam_get_track_pos(s16 param_1, f32 param_2, f32 *param_3, f32 *param_4, f32 *param_5);
 void cam_collide_walls(s32 a, s32 b, s32 c);
@@ -315,16 +315,16 @@ void cam_shift_xz(s32 p1, s32 p2, s32 p3, s32 p4);
 void cam_clamp_to_track(s32 m, s32 n);
 void cam_keep_above_ground(s32 param_1, s32 param_2);
 void cam_shift_z(s32 p, s32 q);
-void cam_mode_chase_7m(int param_1, CamOut *param_2);
-void cam_mode_chase_far_alt(s32 a, CamOut *b);
-void cam_mode_side_view(Obj_20 *param_1, CamOut *param_2);
-void func_8002D528(Obj_21 *o, CamOut *out);
-void cam_mode_chase_near(u8 *p, CamOut *p2);
-void cam_mode_chase_mid(s32 param_1, CamOut *param_2);
-void cam_mode_chase_far(s32 a, CamOut *b);
-void cam_mode_celebration(Obj_22 *o, CamOut *out);
-void cam_mode_first_person(s32 *p1, CamOut *p2);
-void func_8002D888(Player_10 *arg0, CamOut *arg1);
+void cam_mode_chase_7m(Rider *param_1, CamOut *param_2);
+void cam_mode_chase_far_alt(Rider *a, CamOut *b);
+void cam_mode_side_view(Rider *param_1, CamOut *param_2);
+void func_8002D528(Rider *o, CamOut *out);
+void cam_mode_chase_near(Rider *p, CamOut *p2);
+void cam_mode_chase_mid(Rider *param_1, CamOut *param_2);
+void cam_mode_chase_far(Rider *a, CamOut *b);
+void cam_mode_celebration(Rider *o, CamOut *out);
+void cam_mode_first_person(Rider *p1, CamOut *p2);
+void func_8002D888(Rider *arg0, CamOut *arg1);
 void func_8002D890(void);
 void func_8002D898(void);
 void cam_free(void);
@@ -380,18 +380,18 @@ Gfx *sky_texrect(Gfx *gdl, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, s32 du, s32
 
 /* src/game/unnamed/s0_800358C0.c */
 void func_800358C0(void);
-void engine_update_heat(Obj_27 *o);
+void engine_update_heat(Rider *o);
 void engine_update(s32 idx, s32 dt);
 f32 engine_torque_at_rpm(f32 x);
-void engine_reset(Vec3f *p);
+void engine_reset(RiderEngine *p);
 
 /* src/game/mud2.c */
 void particles_update(void);
 void particle_spawn(s32 type, s32 surface, Vec3f *pos, Vec3f *vel, u8 *color);
-void particles_emit_sparks(Obj_29 *rider);
+void particles_emit_sparks(Rider *rider);
 void particles_load_textures(void *file);
 void particles_emit_bike_dirt(void);
-void particles_emit_water_splash(u8 *p);
+void particles_emit_water_splash(Rider *p);
 void particles_emit_dust_cloud(void);
 Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2);
 Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf);
@@ -400,7 +400,7 @@ void particles_free(void);
 void particles_start_dust_cloud(Vec3f *pos, s32 rider);
 void rain_init(void);
 void rain_free(void);
-void particles_start_sparks(u8 *p);
+void particles_start_sparks(Rider *p);
 void particles_project_point(f32 *v, s32 *a1, s32 *a2, s32 *a3, s32 *a4, s32 a5, s32 idx);
 void particles_start_exhaust_puff(s32 rider);
 
@@ -416,28 +416,28 @@ void shadow_free(void);
 
 /* src/game/skel.c */
 void *skel_load(u32 *param_1, s32 param_2);
-void skel_update_world_transforms(Node_6 *n, s32 count);
-s32 func_8003C588(Rec_20 *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx);
-void skel_make_verts_bone_local(Blk_10 *tbl, List_6 *list);
-void skel_reset_pose(s32 *param_1, s32 param_2);
+void skel_update_world_transforms(Bone *n, s32 count);
+s32 func_8003C588(Bone *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx);
+void skel_make_verts_bone_local(Bone *tbl, List_6 *list);
+void skel_reset_pose(Bone *param_1, s32 param_2);
 void skel_assign_parents(Ent_35 *base, s32 val, s32 n);
 
 /* src/game/unnamed/s0_8003C8E0.c */
-void rider_ik_arm(Joint *j, s32 idx, Vec3i *tgt, Obj_30 *o);
-void rider_ik_leg(Joint_2 *j, s32 idx, Vec3i *tgt, s32 *arg3);
-void rider_apply_ik(s32 *param_1);
-void rider_update_pose(Model_4 *m, s32 i);
+void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Mtx3 *o);
+void rider_ik_leg(Bone *j, s32 idx, Vec3i *tgt, s32 *arg3);
+void rider_apply_ik(Bone *b);
+void rider_update_pose(RiderSkeleton *m, s32 i);
 void rider_anims_load(u8 *param_1);
-void rider_anim_apply(Bone_2 *bones, s32 param_2, s32 param_3);
-void bike_update_trick_offset(u8 *param_1);
-void bike_skel_update(s32 *p1, s32 p2);
+void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3);
+void bike_update_trick_offset(Rider *param_1);
+void bike_skel_update(BikeSkeleton *p1, s32 p2);
 void rider_update_head_look(void);
-void rider_update_input_history(Obj_31 *p, s32 n);
+void rider_update_input_history(Rider *p, s32 n);
 void func_8003F128(void);
 void rider_update_fist_pump(void);
-void rider_anim_overlay_limb(Row_4 *p1, s32 param_2, s32 p3, s32 p4, s32 arg4);
+void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4);
 s32 rider_anim_get_length(s32 a0, s32 *a1);
-void rider_pose_snapshot(Ent_39 *p, s32 n);
+void rider_pose_snapshot(Bone *p, s32 n);
 s32 rider_ik_split_len(s32 a, s32 b, s32 c);
 void rider_anims_unload(void);
 
@@ -476,24 +476,23 @@ u8 fractal_rand_byte(void);
 s32 fractal_tile_seed(s32 param_1, s32 param_2);
 
 /* src/game/unnamed/s0_800445B0.c */
-void bike_crash_begin(Bike_23 *b, s32 n);
-void bike_crash_update(Bike_24 *b);
-s32 phys_body_step(Body_3 *b, Pt_4 *t, s32 n, u8 m);
-void phys_contact_impulse(Body_4 *b, Vec3f *n, Vec3f *p, f32 maxr, Vec3f *c, f32 fr);
+void bike_crash_begin(Rider *b, s32 n);
+void bike_crash_update(Rider *b);
+s32 phys_body_step(RigidBody *b, Pt_4 *t, s32 n, u8 m);
+void phys_contact_impulse(RigidBody *b, Vec3f *n, Vec3f *p, f32 maxr, Vec3f *c, f32 fr);
 f32 phys_check_resting(f32 *a, f32 *b, f32 *h, Vec3f *v, s32 n, f32 thr);
-void bike_respawn(Bike_26 *b);
+void bike_respawn(Rider *b);
 void bike_set_contact_friction(f32 x);
-void bike_queue_crash(u8 *p, u8 v);
-void bike_queue_crash_2(Bike_5 *b, s32 arg1);
-void bike_queue_crash_3(Obj_57 *p, s32 v);
+void bike_queue_crash(Rider *p, u8 v);
+void bike_queue_crash_2(Rider *b, s32 arg1);
 f32 body_time_to_ground(f32 *p);
-void rider_change_anim(Obj_35 *o, s32 b);
+void rider_change_anim(Rider *o, s32 b);
 
 /* src/game/unnamed/desert.c */
 void desert_init(void);
 void desert_export_checkpoints(void);
 void desert_update_race(void);
-void desert_ai_steer(u8 *s);
+void desert_ai_steer(Rider *s);
 
 /* src/game/unnamed/s0_80048230.c */
 void font_load_race_set(void *arc);
@@ -519,8 +518,8 @@ void path_init(u32 *param_1);
 s32 path_find_nearest_node(Vec3f *pos, s32 start, s32 count, u8 mode);
 f32 path_get_lateral_offset(Vec3f *pos, s32 idx);
 void path_get_segment_and_t(Vec3f *pos, s32 *area, f32 *t, s32 p4);
-void path_update_bike(Bike_28 *b);
-void path_check_lap(Ent_47 *p, s32 a1);
+void path_update_bike(Rider *b);
+void path_check_lap(Rider *p, s32 a1);
 s32 path_find_segment(Vec3f *pos, s32 start, s32 count, u8 mode);
 void path_calc_corner_speeds(s32 param_1, s32 param_2);
 void path_free(void);
@@ -575,7 +574,7 @@ void tutorial_init_lesson(s32 a0);
 void tutorial_check_lesson_skip(void);
 void tutorial_update(void);
 void event_init(s32 a0, s32 a1);
-s32 event_check_record_time(s32 *p);
+s32 event_check_record_time(Rider *p);
 u32 event_rider_finished(s32 p0);
 void event_rider_lap_completed(s32 p);
 void event_update_countdown(void);
@@ -626,10 +625,10 @@ s32 track_res_find(s32 key);
 void func_8005B5E0(void);
 
 /* src/game/unnamed/s0_8005B5F0.c */
-void ai_update_throttle(u8 *p);
-void ai_set_steering(Bike_33 *b, f32 maxv);
-void ai_update_steering(Bike_34 *b);
-void bike_update_steering(u8 *p, s32 m);
+void ai_update_throttle(Rider *p);
+void ai_set_steering(Rider *b, f32 maxv);
+void ai_update_steering(Rider *b);
+void bike_update_steering(Rider *p, s32 m);
 void func_8005C8F4(void);
 void func_8005C8FC(void);
 
@@ -673,18 +672,18 @@ s32 replay_read_bit(void);
 s32 replay_read_bits(s32 n);
 
 /* src/game/collide.c */
-Node_16 *collide_build_sphere_tree(Param *p);
-s32 collide_spheres_overlap(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2);
-s32 collide_find_deepest_overlap(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2);
-s32 collide_resolve_rider_hit(void *p1, void *p2);
-s32 collide_apply_impulse(Obj_42 *a, Obj_42 *b);
-s32 collide_bodies(u8 *p1, u8 *p2);
-void collide_tree_clear_cache(Node_17 *p);
+CollideNode *collide_build_sphere_tree(CollideSphereDesc *p);
+s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *x1, Vec3f *x2, Vec3f *o1, Vec3f *o2);
+s32 collide_find_deepest_overlap(CollideNode *p1, CollideNode *p2, Vec3f *m1, Vec3f *m2, Vec3f *v1, Vec3f *v2);
+s32 collide_resolve_rider_hit(Rider *p1, Rider *p2);
+s32 collide_apply_impulse(RigidBody *a, RigidBody *b);
+s32 collide_bodies(RigidBody *p1, RigidBody *p2);
+void collide_tree_clear_cache(CollideNode *p);
 void collide_free_node_pool(void);
 void collide_init_node_pool(void);
-void collide_reset_body(u8 *p);
-void collide_update_bike_speeds(u8 *p);
-void collide_reset_tree(Node_18 *p);
+void collide_reset_body(RigidBody *p);
+void collide_update_bike_speeds(Rider *p);
+void collide_reset_tree(CollideNode *p);
 
 /* src/game/unnamed/s0_80061F80.c */
 s32 ai_route_lap_ge(s8 *p, s16 v);
@@ -715,13 +714,13 @@ s32 hack_gravel_pit_draw_pass1(s32 x);
 
 /* src/game/unnamed/s0_80062F50.c */
 void race_spawn_extra_rider(Spawn *sp);
-s32 race_try_despawn_extra_rider(Player_21 *p, Player_21 *q);
-void race_update_extra_riders(Player_22 *p);
+s32 race_try_despawn_extra_rider(Rider *p, Rider *q);
+void race_update_extra_riders(Rider *p);
 void race_announce_position_changes(void);
 void race_sort_positions(void);
-void race_queue_rider_behind(Ent_65 *p, Ent_65 *p2, s32 p3);
-void race_queue_rider_ahead(u8 *a, u8 *b, s32 n);
-void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4);
+void race_queue_rider_behind(Rider *p, Rider *p2, s32 p3);
+void race_queue_rider_ahead(Rider *a, Rider *b, s32 n);
+void race_reinsert_queued_rider(Rider *p1, s16 *p2, f32 p3, s32 *p4);
 void race_update_riders(void);
 void ai_update_lanes(void);
 void race_init_ai_skills(s32 arg0, s32 count);
@@ -732,8 +731,8 @@ void race_set_grid_order(s32 a, s32 b);
 void race_reset_grid_order(void);
 void race_randomize_ai_order(s32 arg0, s32 count);
 void race_init_standings(s32 arg0);
-void race_update_rider_queues(u8 *p);
-s32 ai_lane_is_blocked(Obj_47 **p, f32 x);
+void race_update_rider_queues(Rider *p);
+s32 ai_lane_is_blocked(Rider **p, f32 x);
 void race_restore_grid_order(void);
 void race_apply_grid_order(void);
 void race_grid_from_standings(void);
@@ -801,12 +800,12 @@ void flash_start(s32 x);
 
 /* src/game/unnamed/s0_8006B1A0.c */
 void excite3d_init(void);
-void excite3d_cpu_steer(u8 *p);
+void excite3d_cpu_steer(Rider *p);
 void excite3d_update(void);
-void excite3d_player_steer(Obj_52 *p);
-s32 excite3d_lane_is_clear(Obj_53 *o, s32 n);
-u8 excite3d_lane_is_clear_2(Obj_52 *p, s32 a1);
-void excite3d_update_progress(Obj_54 *o);
+void excite3d_player_steer(Rider *p);
+s32 excite3d_lane_is_clear(Rider *o, s32 n);
+u8 excite3d_lane_is_clear_2(Rider *p, s32 a1);
+void excite3d_update_progress(Rider *o);
 void excite3d_find_segment(Obj_55 *o);
 
 /* src/game/unnamed/s0_8006BFC0.c */
@@ -832,20 +831,20 @@ void save_write(s32 x, s32 arg1);
 
 /* src/game/unnamed/s0_8006F620.c */
 void stunt_init_input_tables(void);
-void stunt_read_input(Ent_78 *e);
-void stunt_update(Obj_56 *o);
-void stunt_start(Ent_79 *o, s32 n);
-s32 stunt_animate(Obj_57 *p, s32 k);
+void stunt_read_input(Rider *e);
+void stunt_update(Rider *o);
+void stunt_start(Rider *o, s32 n);
+s32 stunt_animate(Rider *p, s32 k);
 void stunt_add_points(Obj_58 *o);
 s32 stunt_seq_less(u8 *a, u8 *b);
-void func_80070560(s32 arg0);
-s32 stunt_record_done(Obj_59 *p);
+void func_80070560(Rider *b);
+s32 stunt_record_done(Rider *p);
 
 /* src/game/ponytail.c */
-void ponytail_simulate(s32 idx, Obj_60 *o);
+void ponytail_simulate(s32 idx, RiderSkeleton *o);
 void ponytail_init(s32 n);
 void ponytail_free(s32 a0);
-void ponytail_update(s32 a0, s32 a1, s32 a2, void *a3);
+void ponytail_update(s32 a0, RiderSkeleton *a1, Bone *a2, void *a3);
 
 /* src/game/unnamed/s0_800716C0.c */
 void ambient_update(void);

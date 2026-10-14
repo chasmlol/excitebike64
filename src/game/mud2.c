@@ -82,42 +82,31 @@ void particle_spawn(s32 type, s32 surface, Vec3f *pos, Vec3f *vel, u8 *color)
     }
 }
 
-struct Obj_29 {
-    u8 pad0[0x48];
-    f32 v48[3];
-    f32 v54[3];
-    u8 pad60[0x40];
-    f32 vA0[3];
-    u8 padAC[0x2A4];
-    s32 cnt350;
-    f32 v354[3];
-};
-
-void particles_emit_sparks(Obj_29 *rider)
+void particles_emit_sparks(Rider *rider)
 {
     f32 o[3];
     f32 t[3];
     u32 r;
     s32 iv;
 
-    if (gNumScreens == 1 && rider->cnt350 != 0) {
-        rider->cnt350 = rider->cnt350 - 1;
-        if ((void *)rider == (void *)gRiders) {
-            vec3_mul_mtx3f(rider->v354, rider->vA0, o);
-            o[0] = rider->v48[0] + o[0];
-            o[1] = rider->v48[1] + o[1];
-            o[2] = rider->v48[2] + o[2];
-            t[0] = rider->v54[0] * 0.016666668f;
-            t[1] = rider->v54[1] * 0.016666668f;
-            t[2] = rider->v54[2] * 0.016666668f;
+    if (gNumScreens == 1 && rider->sparkTimer != 0) {
+        rider->sparkTimer = rider->sparkTimer - 1;
+        if (rider == gRiders) {
+            vec3_mul_mtx3f(&rider->sparkDir.x, &rider->bike.right.x, o);
+            o[0] = rider->bike.pos.x + o[0];
+            o[1] = rider->bike.pos.y + o[1];
+            o[2] = rider->bike.pos.z + o[2];
+            t[0] = rider->bike.vel.x * 0.016666668f;
+            t[1] = rider->bike.vel.y * 0.016666668f;
+            t[2] = rider->bike.vel.z * 0.016666668f;
             r = random_byte();
-            if (0.0f < rider->v354[0]) {
+            if (0.0f < rider->sparkDir.x) {
                 iv = r + 0x80;
             } else {
                 iv = r - 0x80;
             }
-            t[0] = t[0] + rider->vA0[0] * ((f32)iv * 0.00012207031f);
-            t[2] = t[2] + rider->vA0[2] * ((f32)iv * 0.00012207031f);
+            t[0] = t[0] + rider->bike.right.x * ((f32)iv * 0.00012207031f);
+            t[2] = t[2] + rider->bike.right.z * ((f32)iv * 0.00012207031f);
             r = random_byte();
             t[1] = t[1] + (f32)(s32)(r - 0x40) * 0.02f * 0.0078125f;
             particle_spawn(PARTICLE_SPARK, 0, (Vec3f *)o, (Vec3f *)t, gParticleWhite);
@@ -183,55 +172,16 @@ void particles_load_textures(void *file)
 }
 
 typedef struct {
-    u8 pad0[4];
-    s32 f458;
-    u8 pad8[0x40 - 8];
-    V3 pos;
-} Sub_9;
-
-typedef struct {
-    u8 pad0[0x34];
-    u16 ang;
-    u8 pad36[0x44 - 0x36];
-    u8 f44;
-    u8 pad45[0x54 - 0x45];
-    V3 f54;
-    V3 vel;
-    u8 pad6C[0xB8 - 0x6C];
-    V3 fB8;
-    u8 padC4[0x420 - 0xC4];
-    f32 f420;
-    u8 pad424[0x454 - 0x424];
-    Sub_9 sub;
-    u8 pad4A0[0x4E4 - 0x4A0];
-    Trk *model;
-    u8 pad4E8[0x5B0 - 0x4E8];
-    u32 f5B0;
-    u8 pad5B4[4];
-    s32 f5B8;
-    u8 pad5BC[0x5CF - 0x5BC];
-    u8 f5CF;
-    u8 pad5D0[0x6E8 - 0x5D0];
-    u8 f6E8;
-    u8 pad6E9[0x774 - 0x6E9];
-    s32 f774;
-    u8 pad778[0x7A5 - 0x778];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Bike_20;
-
-typedef struct {
     u8 b[4];
 } Col;
 
-extern Bike_20 gRiders_35[];
 extern Col D_800E1B50_2[];
 
 void particles_emit_bike_dirt(void)
 {
     V3 pad0;
-    V3 A;
-    V3 B;
+    Vec3f A;
+    Vec3f B;
     V3 pad1;
     V3 pad2;
     s32 i, j;
@@ -249,31 +199,31 @@ void particles_emit_bike_dirt(void)
     }
     kr = 12800.0f;
     for (i = 0; i < 8; i++) {
-        Bike_20 *b = &gRiders_35[i];
-        if (b->f7A5 != 0) continue;
+        Rider *b = &gRiders[i];
+        if (b->inactive != 0) continue;
         if (gRiderViewLod[i] == 0) continue;
         bA = D_800E1B50_2[i].b[3] >> 4;
-        if (b->f44 != 0) continue;
-        if (b->sub.f458 <= 0 && (b->model->flags & 2)) {
+        if (b->crashState != 0) continue;
+        if (b->rearWheel.airTicks <= 0 && (b->rearWheel.surface->flags & 2)) {
             A.x = 0.0f;
             A.y = 0.0f;
             A.z = 0.0f;
-            B = b->sub.pos;
+            B = b->rearWheel.contact;
             B.y += 0.3f;
-            if (b->f420 < 8.0f) {
-                B.x -= (8.0f - b->f420) * b->fB8.x * 0.125f;
-                B.z -= (8.0f - b->f420) * b->fB8.z * 0.125f;
+            if (b->speed < 8.0f) {
+                B.x -= (8.0f - b->speed) * b->bike.fwd.x * 0.125f;
+                B.z -= (8.0f - b->speed) * b->bike.fwd.z * 0.125f;
             }
             bC = 0;
             bB = 0;
-            if ((b->f5B0 & 0x20000) || b->f5CF == 1) {
+            if ((b->input & 0x20000) || b->dirtSpray == 1) {
                 bB = 1;
             }
-            if (gRaceFrame - b->f774 < 15) {
+            if (gRaceFrame - b->landingFrame < 15) {
                 bC = 1;
-            } else if (gRaceFrame - b->f5B8 < 10) {
+            } else if (gRaceFrame - b->turboPressFrame < 10) {
                 bC = 1;
-            } else if (b->f5CF == 2) {
+            } else if (b->dirtSpray == 2) {
                 bC = 1;
             }
             if (bB && (gCamZoneState[0].flags & 1)) {
@@ -284,10 +234,10 @@ void particles_emit_bike_dirt(void)
                     A.y = 0.07f;
                     A.z += (s32)(random_byte() - 0x80) / kr;
                     A.x += (s32)(random_byte() - 0x80) / kr;
-                    ang = (s16)b->ang >> 4;
+                    ang = (s16)b->heading >> 4;
                     s = -gCosTable[(ang - 0x400) & 0xFFF] * 6.1035156e-05f;
                     c = gCosTable[ang & 0xFFF] * 6.1035156e-05f;
-                    d = b->vel.x * c - b->vel.z * s;
+                    d = b->bike.acc.x * c - b->bike.acc.z * s;
                     A.x -= c * d / 250.0f;
                     A.z += s * d / 250.0f;
                     particle_spawn(PARTICLE_DUST, bA, (Vec3f *)&B, (Vec3f *)&A, sRiderLightColor[i]);
@@ -296,23 +246,23 @@ void particles_emit_bike_dirt(void)
                 particle_spawn(PARTICLE_DUST, bA, (Vec3f *)&B, (Vec3f *)&A, sRiderLightColor[i]);
             }
         }
-        if (((b->f5B0 & 0x20000) || gRaceFrame - b->f774 < 10) && (b->model->flags & 4)) {
-            if (b->f6E8 == 0 || (random_byte() & 1)) {
+        if (((b->input & 0x20000) || gRaceFrame - b->landingFrame < 10) && (b->rearWheel.surface->flags & 4)) {
+            if (b->isCpu == 0 || (random_byte() & 1)) {
                 for (j = 0; j < 2; j++) {
-                    Sub_9 *sp;
-                    A = gRiders_35[i].f54;
+                    Wheel *sp;
+                    A = gRiders[i].bike.vel;
                     A.x = A.x / 80.0f + (((s32)random_byte() - 128.0f) * 0.01f) * 0.0078125f;
                     A.y = ((s32)random_byte() / 50.0f + 5.0f) / 100.0f;
                     A.z = A.z / 80.0f + (((s32)random_byte() - 128.0f) * 0.01f) * 0.0078125f;
-                    sp = &gRiders_35[i].sub;
-                    particle_spawn(PARTICLE_MUD, bA, (Vec3f *)&sp->pos, (Vec3f *)&A, sRiderLightColor[i]);
+                    sp = &gRiders[i].rearWheel;
+                    particle_spawn(PARTICLE_MUD, bA, (Vec3f *)&sp->contact, (Vec3f *)&A, sRiderLightColor[i]);
                 }
             }
         }
     }
 }
 
-void particles_emit_water_splash(u8 *p)
+void particles_emit_water_splash(Rider *p)
 {
     volatile s32 pad[4];
     f32 pt[3];
@@ -325,40 +275,40 @@ void particles_emit_water_splash(u8 *p)
     f32 lim;
     f32 t;
 
-    if (p[0x7a5] != 0) goto done;
-    idx = ((s32)p - (s32)gRiders) * -0x41041041 >> 5;
-    mv = *(s32 *)(p + 0x780);
-    if (!(1.0f < *(f32 *)(p + 0x420))) goto done;
-    if (!(gSurfaceTable_2[mv].flags & 8)) goto done;
+    if (p->inactive != 0) goto done;
+    idx = p - gRiders;
+    mv = p->surfaceIdx;
+    if (!(1.0f < p->speed)) goto done;
+    if (!(gSurfaceTable[mv].flags & 8)) goto done;
 
-    *(T3 *)pt = *(T3 *)(p + 0x48);
+    *(Vec3f *)pt = p->bike.pos;
     if (!tube_get_water_level((s32)(pt[0] * 1000.0f), (s32)(pt[2] * 1000.0f), loc)) goto done;
 
     lim = (f32)loc[0] / 1000.0f;
     A[0] = 0.0f;
     A[1] = 0.8f;
     A[2] = 1.0f;
-    vec3_mul_mtx3f(A, (f32 *)(p + 0xA0), B);
-    B[0] = B[0] + *(f32 *)(p + 0x48);
-    B[1] = B[1] + *(f32 *)(p + 0x4C);
-    B[2] = B[2] + *(f32 *)(p + 0x50);
+    vec3_mul_mtx3f(A, &p->bike.right.x, B);
+    B[0] = B[0] + p->bike.pos.x;
+    B[1] = B[1] + p->bike.pos.y;
+    B[2] = B[2] + p->bike.pos.z;
     if (B[1] < lim) goto done;
 
     A[0] = 0.0f;
     A[1] = -0.3f;
     A[2] = 1.0f;
-    vec3_mul_mtx3f(A, (f32 *)(p + 0xA0), C);
-    C[0] = C[0] + *(f32 *)(p + 0x48);
-    C[1] = C[1] + *(f32 *)(p + 0x4C);
-    C[2] = C[2] + *(f32 *)(p + 0x50);
+    vec3_mul_mtx3f(A, &p->bike.right.x, C);
+    C[0] = C[0] + p->bike.pos.x;
+    C[1] = C[1] + p->bike.pos.y;
+    C[2] = C[2] + p->bike.pos.z;
     if (lim < C[1]) {
         A[0] = 0.0f;
         A[1] = -0.3f;
         A[2] = -1.0f;
-        vec3_mul_mtx3f(A, (f32 *)(p + 0xA0), B);
-        B[0] = B[0] + *(f32 *)(p + 0x48);
-        B[1] = B[1] + *(f32 *)(p + 0x4C);
-        B[2] = B[2] + *(f32 *)(p + 0x50);
+        vec3_mul_mtx3f(A, &p->bike.right.x, B);
+        B[0] = B[0] + p->bike.pos.x;
+        B[1] = B[1] + p->bike.pos.y;
+        B[2] = B[2] + p->bike.pos.z;
         if (lim < B[1]) goto done;
     }
 
@@ -368,22 +318,22 @@ void particles_emit_water_splash(u8 *p)
     pt[2] = C[2] + t * (B[2] - C[2]);
 
     if (gRiderViewLod[idx] != 0 && (gRaceFrame & 3) == 0) {
-        A[0] = (f32)*(s16 *)((u8 *)gCosTable + ((*(s32 *)(p + 0x20) >> 3) & 0x1FFE)) / 655360.0f;
+        A[0] = (f32)*(s16 *)((u8 *)gCosTable + ((p->drawRot[2] >> 3) & 0x1FFE)) / 655360.0f;
         A[1] = 0.0f;
-        A[2] = (f32)*(s16 *)((u8 *)gCosTable + ((((*(s32 *)(p + 0x20) >> 4) - 0x400) & 0xFFF) << 1)) / 655360.0f;
+        A[2] = (f32)*(s16 *)((u8 *)gCosTable + ((((p->drawRot[2] >> 4) - 0x400) & 0xFFF) << 1)) / 655360.0f;
         particle_spawn(PARTICLE_SPLASH, mv, (Vec3f *)pt, (Vec3f *)A, gParticleWhite);
-        A[0] = -(f32)*(s16 *)((u8 *)gCosTable + ((*(s32 *)(p + 0x20) >> 3) & 0x1FFE)) / 655360.0f;
+        A[0] = -(f32)*(s16 *)((u8 *)gCosTable + ((p->drawRot[2] >> 3) & 0x1FFE)) / 655360.0f;
         A[1] = 0.0f;
-        A[2] = -(f32)*(s16 *)((u8 *)gCosTable + ((((*(s32 *)(p + 0x20) >> 4) - 0x400) & 0xFFF) << 1)) / 655360.0f;
+        A[2] = -(f32)*(s16 *)((u8 *)gCosTable + ((((p->drawRot[2] >> 4) - 0x400) & 0xFFF) << 1)) / 655360.0f;
         particle_spawn(PARTICLE_SPLASH, mv, (Vec3f *)pt, (Vec3f *)A, gParticleWhite);
     }
 
-    if ((gSurfaceTable_2[mv].flags & 0x180) != 0) {
+    if ((gSurfaceTable[mv].flags & 0x180) != 0) {
         if (gRiderViewLod[idx] != 0) {
             tube_spawn_splash(idx, (s32)(pt[0] * 1000.0f), loc[0], (s32)(pt[2] * 1000.0f));
         }
-        if (*(s8 *)(p + 0x45) == 0) {
-            *(s8 *)(p + 0x45) = 0x1c;
+        if (p->pendingCrash == 0) {
+            p->pendingCrash = 0x1c;
             cam_set_frozen(idx, 1);
         }
     } else {
@@ -430,27 +380,6 @@ void particles_emit_dust_cloud(void)
     }
 }
 
-typedef struct {
-    u8 pad[0x2C];
-    u8 r1, g1, b1, a1; /* 0x2C */
-    u8 r2, g2, b2;     /* 0x30 */
-    u8 pad33[0xD];
-} ColDef;
-
-typedef struct {
-    s32 x, y, z;
-    u8 pad0C[0xC];
-    s32 rx, ry, rz; /* 0x18 */
-    u8 pad24[0x5B0 - 0x24];
-    u32 flags; /* 0x5B0 */
-    u8 pad5B4[0x654 - 0x5B4];
-    u8 f654;
-    u8 pad655[0x7E0 - 0x655];
-} Bike_21;
-
-extern Bike_21 gRiders_36[];
-extern ColDef gSurfaceTable_6[];
-
 static inline s32 project(Vec3f *p, s32 view, s32 arg2, s32 *sx, s32 *sy, s32 *sz, s32 *w) {
     if (gCurTrack_4->f2C == 0) {
         return project_to_screen(p->x * 1000.0f * 0.0625f, p->y * 1000.0f * 0.0625f, p->z * 1000.0f * 0.0625f, sx, sy,
@@ -469,7 +398,7 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
     Vec3f pos;
     s32 sx, sy, sz, w;
     s32 i, size, k, hh, dsdx, dtdy, alpha, a, f, last;
-    Bike_21 *b;
+    Rider *b;
 
     if (gNumScreens >= 4) {
         return gdl;
@@ -527,12 +456,12 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 dsdx = (sPuffTextures->tex[0].width << 13) / size;
                 a = sParticles[i].surface;
                 hh = size * 2 / 3;
-                alpha = 0xFF - gSurfaceTable_6[a].a1;
+                alpha = 0xFF - gSurfaceTable[a].color[3];
                 alpha = (((sParticles[i].life << 7) / sParticles[i].maxLife + 0x7F) * alpha) >> 8;
                 dtdy = (sPuffTextures->tex[0].height << 10) / hh;
                 if (alpha != 0) {
-                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r1 * sParticles[i].r) >> 8,
-                                    (gSurfaceTable_6[a].g1 * sParticles[i].g) >> 8, (gSurfaceTable_6[a].b1 * sParticles[i].b) >> 8,
+                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable[a].color[0] * sParticles[i].r) >> 8,
+                                    (gSurfaceTable[a].color[1] * sParticles[i].g) >> 8, (gSurfaceTable[a].color[2] * sParticles[i].b) >> 8,
                                     alpha);
                     gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                     gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
@@ -638,15 +567,15 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
             }
             gDPLoadTextureBlock(gdl++, sExhaustTextures->tex[k].data, G_IM_FMT_IA, G_IM_SIZ_8b, sExhaustTextures->tex[k].width * 8,
                                 sExhaustTextures->tex[k].height, 0, G_TX_CLAMP, G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
-            b = &gRiders_36[i / 2];
-            mtx3i_from_angles(mtx, b->rx, b->ry, b->rz);
+            b = &gRiders[i / 2];
+            mtx3i_from_angles(mtx, b->drawRot[0], b->drawRot[1], b->drawRot[2]);
             v[0] = 100;
             v[1] = 700;
             v[2] = (sExhaustPuffTimers[i] - 15) * 40 - 650;
             vec3i_mul_mtx3i(v, mtx, out);
-            pos.x = (f32)(out[0] + b->x) / 1000.0f;
-            pos.y = (f32)(out[1] + b->y) / 1000.0f;
-            pos.z = (f32)(out[2] + b->z) / 1000.0f;
+            pos.x = (f32)(out[0] + b->drawPos.x) / 1000.0f;
+            pos.y = (f32)(out[1] + b->drawPos.y) / 1000.0f;
+            pos.z = (f32)(out[2] + b->drawPos.z) / 1000.0f;
             if (project(&pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                 if (gNumViews == 1) {
                     sParticles[i].life = -1;
@@ -669,12 +598,12 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 if (size < 3) {
                     size = 3;
                 }
-                if (gRiders_36[i / 2].f654 != 0) {
+                if (gRiders[i / 2].engine.overheated != 0) {
                     size = size * 3 / 2;
                     k = (sExhaustPuffTimers[i] * 63) / 15 + 0xC0;
                     gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, k);
                 } else {
-                    if (gRiders_36[i / 2].flags & 0x20000) {
+                    if (gRiders[i / 2].input & 0x20000) {
                         size = size * 3 / 2;
                     }
                     k = (sExhaustPuffTimers[i] * 127) / 15 + 0x80;
@@ -725,8 +654,8 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                     hh = size * 2 / 3;
                     dtdy = (sClodTextures->tex[0].height << 10) / hh;
                     a = sParticles[i].surface;
-                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r2 * sParticles[i].r) >> 8,
-                                    (gSurfaceTable_6[a].g2 * sParticles[i].g) >> 8, (gSurfaceTable_6[a].b2 * sParticles[i].b) >> 8,
+                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable[a].color[4] * sParticles[i].r) >> 8,
+                                    (gSurfaceTable[a].color[5] * sParticles[i].g) >> 8, (gSurfaceTable[a].color[6] * sParticles[i].b) >> 8,
                                     (sParticles[i].life << 7) / sParticles[i].maxLife + 0x40);
                     gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                     gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
@@ -1006,16 +935,16 @@ void rain_free(void)
     }
 }
 
-void particles_start_sparks(u8 *p)
+void particles_start_sparks(Rider *p)
 {
     f32 buf[8];
 
     if (gNumScreens == 1) {
-        buf[0] = gCollidePoint.x - *(f32 *)(p + 0x48);
-        buf[1] = gCollidePoint.y - *(f32 *)(p + 0x4C);
-        buf[2] = gCollidePoint.z - *(f32 *)(p + 0x50);
-        mtx3f_mul_vec3(buf, (f32 *)(p + 0xA0), (f32 *)(p + 0x354));
-        *(s32 *)(p + 0x350) = 0xF;
+        buf[0] = gCollidePoint.x - p->bike.pos.x;
+        buf[1] = gCollidePoint.y - p->bike.pos.y;
+        buf[2] = gCollidePoint.z - p->bike.pos.z;
+        mtx3f_mul_vec3(buf, &p->bike.right.x, &p->sparkDir.x);
+        p->sparkTimer = 0xF;
     }
 }
 

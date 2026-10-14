@@ -485,10 +485,6 @@ void tunes_set_ambient(s32 param_1, s32 param_2, s32 arg2)
     gAmbientVolume = param_2;
 }
 
-typedef struct { u8 pad[0x662]; s16 f; u8 rest[0x7E0 - 0x664]; } Tbl7E0;
-
-extern Tbl7E0 gRiders_52[];
-
 void tunes_update_speech(void)
 {
     s32 v;
@@ -512,7 +508,7 @@ void tunes_update_speech(void)
         t = (v >> 16) & 0xFF;
         if (t == 1) {
             n = (v >> 8) & 0xFF;
-            n = gRiders_52[n].f;
+            n = gRiders[n].race.place;
             lo = v & 0xFF;
             if (lo < n) {
                 n = lo;
@@ -523,7 +519,7 @@ void tunes_update_speech(void)
             }
         } else if (t == 2) {
             n = (v >> 8) & 0xFF;
-            n = gRiders_52[n].f;
+            n = gRiders[n].race.place;
             lo = v & 0xFF;
             if (n < lo) {
                 n = lo;
@@ -649,9 +645,6 @@ void announce_leader_lap(s32 param_1, s32 param_2)
     sLastLeader = param_1;
 }
 
-typedef struct { u8 pad[0x668]; s16 f668; u8 pad2[0x7E0 - 0x66A]; } Plr_6;
-extern Plr_6 gRiders_53[];
-
 static inline s32 check_3(u32 *p)
 {
     if (gGhostRace != 0 && *p == gGhostSlot) return 1;
@@ -667,7 +660,7 @@ void announce_place(u32 a, u32 b)
 {
     if (gEvent.time < 0x168) return;
     if (sSpeechQueueCount >= 6) return;
-    if (gRiders_53[a].f668 >= 0) return;
+    if (gRiders[a].race.finishPlace >= 0) return;
     if (check_3(&a)) return;
     push_2(sRiderNameClips[a + 12]);
     if (b == 1) {

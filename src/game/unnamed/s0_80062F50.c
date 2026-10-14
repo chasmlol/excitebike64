@@ -1,30 +1,8 @@
 #include "game.h"
 
 typedef struct {
-    u8 pad0[0x62C];
-    f32 f62C;
-    f32 f630;
-    u8 pad1[0x662 - 0x634];
-    s16 h662;
-    u8 pad2[0x668 - 0x664];
-    s16 h668;
-    u8 pad3[0x7A5 - 0x66A];
-    u8 b7A5;
-} Bike_39;
-
-struct Ent_65 {
-    u8 pad0[0x630];
-    f32 f630;
-    u8 pad634[0x6E8 - 0x634];
-    u8 f6E8;
-    u8 pad6E9[0x7A5 - 0x6E9];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-};
-
-typedef struct {
     s16 idx;
-    Ent_65 *e;
+    Rider *e;
     f32 d;
 } Rec_35;
 
@@ -38,7 +16,7 @@ typedef struct {
     u8 b[6];
 } Blob6;
 
-extern Bike_39 *sRidersByLapPos[];
+extern Rider *sRidersByLapPos[];
 extern Rec_35 sRiderQueueBehind[];
 extern Rec_36 sRiderQueueAhead[];
 extern Blob6 sGridOrderSaved;
@@ -53,76 +31,9 @@ struct Spawn {
     u16 spd;
 };
 
-typedef struct {
-    u8 pad0[0x44];
-    u8 b44;
-    u8 b45;
-    u8 pad46[2];
-    Vec3f pos;          /* 0x48 */
-    f32 sx, sy, sz;     /* 0x54 */
-    f32 v60, v64, v68;  /* 0x60 */
-    u8 pad6C[0xC];
-    Quat quat;          /* 0x78 */
-    f32 f88, f8C, f90, f94; /* 0x88 */
-    u8 pad98[8];
-    f32 mtx[6];         /* 0xA0 */
-    f32 mx, my, mz;     /* 0xB8 */
-    u8 padC4[4];
-    Vec3f hist[20];     /* 0xC8 */
-    f32 f1B8;           /* 0x1B8 */
-    u8 pad1BC[8];
-    u8 b1C4;
-    u8 pad1C5[0x36C - 0x1C5];
-    u8 b36C;
-    u8 pad36D[3];
-    Quat quat2;         /* 0x370 */
-    u8 pad380[0x3D0 - 0x380];
-    s8 b3D0;
-    s8 b3D1;
-    u8 pad3D2[0x416 - 0x3D2];
-    s16 h416;
-    u8 pad418[0x42C - 0x418];
-    f32 f42C;
-    f32 f430, f434, f438;
-    u8 pad43C[0x44C - 0x43C];
-    f32 f44C;
-    u8 pad450[8];
-    s32 w458;
-    u8 pad45C[0x478 - 0x45C];
-    f32 f478;
-    u8 pad47C[0x4FC - 0x47C];
-    s32 w4FC;
-    u8 pad500[0x51C - 0x500];
-    f32 f51C;
-    u8 pad520[0x5CD - 0x520];
-    u8 b5CD;
-    u8 pad5CE[0x624 - 0x5CE];
-    s16 h624;
-    u8 pad626[2];
-    s16 h628;
-    u8 pad62A[0x63C - 0x62A];
-    f32 f63C;
-    u8 pad640[8];
-    s32 w648;
-    u8 pad64C[8];
-    u8 b654;
-    u8 pad655[0x6E8 - 0x655];
-    u8 b6E8;
-    u8 pad6E9[0x744 - 0x6E9];
-    s32 w744;
-    s32 w748;
-    u8 pad74C[0x7A5 - 0x74C];
-    u8 b7A5;
-    u8 pad7A6[0x7B0 - 0x7A6];
-    s32 w7B0;
-    u8 pad7B4[0x7E0 - 0x7B4];
-} Bike_38;
-
-extern Bike_38 gRiders_79[8];
-
 void race_spawn_extra_rider(Spawn *sp)
 {
-    Bike_38 *b;
+    Rider *b;
     s32 track;
     s32 i, idx;
     f32 f;
@@ -133,81 +44,81 @@ void race_spawn_extra_rider(Spawn *sp)
     if (D_800F1BC4 & 0x10) return;
     if (gEvent.flags & 0x200) return;
 
-    b = &gRiders_79[6];
+    b = &gRiders[6];
     track = sp->track;
     sp->track = -1;
-    for (; b < &gRiders_79[8]; b++) {
-        if (b->b7A5 != 0) break;
+    for (; b < &gRiders[8]; b++) {
+        if (b->inactive != 0) break;
     }
-    if (b == &gRiders_79[8]) return;
+    if (b == &gRiders[8]) return;
 
-    b->b3D1 = -1;
-    b->b7A5 = 0;
-    b->b36C = 0;
-    b->b5CD = 0;
-    b->b45 = 0;
-    b->b44 = 0;
-    b->b654 = 0;
-    b->w748 = 0;
-    b->w744 = 0;
-    b->h416 = 0;
-    b->h624 = 0;
-    b->w648 = 0;
-    b->w4FC = 0;
-    b->w458 = 0;
-    b->w7B0 = gRaceFrame;
-    b->pos.x = (f32)sp->x / 1000.0f;
-    b->pos.z = (f32)sp->z / 1000.0f;
-    b->pos.y = 0.0f;
-    b->pos.y = bike_get_ground_height(&b->pos);
+    b->prevAnim = -1;
+    b->inactive = 0;
+    b->crashPhase = 0;
+    b->roughLanding = 0;
+    b->pendingCrash = 0;
+    b->crashState = 0;
+    b->engine.overheated = 0;
+    b->jumpState = 0;
+    b->airFrames = 0;
+    b->wheelieTimer = 0;
+    b->crashTimer = 0;
+    b->engine.heat = 0.0f;
+    b->frontWheel.airTicks = 0;
+    b->rearWheel.airTicks = 0;
+    b->spawnFrame = gRaceFrame;
+    b->bike.pos.x = (f32)sp->x / 1000.0f;
+    b->bike.pos.z = (f32)sp->z / 1000.0f;
+    b->bike.pos.y = 0.0f;
+    b->bike.pos.y = bike_get_ground_height(&b->bike.pos);
     for (i = 0; i < 20; i++) {
-        b->hist[i] = b->pos;
+        b->bike.contacts[i] = b->bike.pos;
     }
-    b->h628 = path_find_segment(&b->pos, track, 15, 0);
-    b->f42C = path_get_lateral_offset(&b->pos, b->h628);
-    b->f63C = gPathSegmentT;
-    f = path_get_lateral_offset(&b->pos, b->h628);
-    b->f42C = f;
-    sExtraRiderLanes[b - &gRiders_79[6]] = f;
-    quat_from_euler(&b->quat, 0.0f, 0.0f, -math_atan2f(gPathTangentZ, gPathTangentX));
+    b->segment = path_find_segment(&b->bike.pos, track, 15, 0);
+    b->laneOffset = path_get_lateral_offset(&b->bike.pos, b->segment);
+    b->segmentT = gPathSegmentT;
+    f = path_get_lateral_offset(&b->bike.pos, b->segment);
+    b->laneOffset = f;
+    sExtraRiderLanes[b - &gRiders[6]] = f;
+    quat_from_euler(b->bike.quat, 0.0f, 0.0f, -math_atan2f(gPathTangentZ, gPathTangentX));
     bike_place_on_ground(b);
-    quat_to_mtx3f(b->mtx, &b->quat);
-    b->sx = b->mx * ((f32)sp->scale / 1000.0f);
-    b->sy = b->my * ((f32)sp->scale / 1000.0f);
-    b->sz = b->mz * ((f32)sp->scale / 1000.0f);
-    b->f51C = 0.0f;
-    b->f478 = 0.0f;
-    b->f90 = 0.0f;
-    b->f8C = 0.0f;
-    b->f88 = 0.0f;
-    b->f94 = 0.0f;
-    b->v68 = 0.0f;
-    b->v64 = 0.0f;
-    b->v60 = 0.0f;
-    b->f430 = 0.0f;
-    b->f434 = 0.0f;
-    b->f438 = 0.0f;
-    b->f1B8 = 1.0f;
-    b->b3D0 = -1;
-    b->quat2 = b->quat;
-    b->pos.y = bike_get_ground_height(&b->pos) + 0.0f + 0.5f
+    quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
+    b->bike.vel.x = b->bike.fwd.x * ((f32)sp->scale / 1000.0f);
+    b->bike.vel.y = b->bike.fwd.y * ((f32)sp->scale / 1000.0f);
+    b->bike.vel.z = b->bike.fwd.z * ((f32)sp->scale / 1000.0f);
+    b->frontWheel.suspLength = 0.0f;
+    b->rearWheel.suspLength = 0.0f;
+    b->bike.angVel.z = 0.0f;
+    b->bike.angVel.y = 0.0f;
+    b->bike.angVel.x = 0.0f;
+    b->bike.angAcc.x = 0.0f;
+    b->bike.acc.z = 0.0f;
+    b->bike.acc.y = 0.0f;
+    b->bike.acc.x = 0.0f;
+    b->localAngVel.x = 0.0f;
+    b->localAngVel.y = 0.0f;
+    b->localAngVel.z = 0.0f;
+    b->bike.unk_170 = 1.0f;
+    b->anim = -1;
+    *(Blk *)b->drawQuat = *(Blk *)b->bike.quat;
+    b->bike.pos.y = bike_get_ground_height(&b->bike.pos) + 0.0f + 0.5f
         - (gGame.mode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
-    b->w744 = 4;
+    b->airFrames = 4;
     bike_update_wheel_contacts(b);
     bike_update_wheel_contacts(b);
     bike_update_suspension(b);
-    idx = b - gRiders_79;
+    idx = b - gRiders;
     decal_end_track(idx);
     cam_set_frozen(idx, 0);
     spd = sp->spd;
-    b->b6E8 = 2;
-    b->b1C4 = 1;
-    b->f44C = (f32)spd / 29491.0f;
+    b->isCpu = 2;
+    b->bike.type = 1;
+    b->timeScale = (f32)spd / 29491.0f;
     bike_update_render_pose(b);
     bike_apply_rider_stats(b, 0);
 }
 
-s32 race_try_despawn_extra_rider(Player_21 *p, Player_21 *q)
+s32 race_try_despawn_extra_rider(Rider *p, Rider *q)
 {
     s16 ang;
     s32 ratio;
@@ -218,10 +129,10 @@ s32 race_try_despawn_extra_rider(Player_21 *p, Player_21 *q)
     f32 dx;
     f32 dz;
 
-    if (q->f7A5 != 0) {
+    if (q->inactive != 0) {
         goto fail;
     }
-    dt = gRaceFrame - q->f7B0;
+    dt = gRaceFrame - q->spawnFrame;
     if (dt >= 0xB4) {
         goto ok;
     }
@@ -229,115 +140,91 @@ fail:
     return 0;
 ok:
     if (dt >= 0x385) {
-        q->f7D8 = 0.2f;
+        q->power = 0.2f;
     }
-    dy = q->f62C - p->f62C;
+    dy = q->segmentDist - p->segmentDist;
     if (dy < 20.0f && -50.0f < dy) {
         goto fail;
     }
-    dx = q->x - p->x;
-    dz = q->z - p->z;
+    dx = q->bike.pos.x - p->bike.pos.x;
+    dz = q->bike.pos.z - p->bike.pos.z;
     if (dx * dx + dz * dz < 225.0f) {
         goto fail;
     }
     math_to_polar((s32)(-dx * 1024.0f), (s32)(dz * 1024.0f), &ang, &ratio);
-    ang -= p->ang;
+    ang -= p->heading;
     if ((ang < 0 ? -ang : ang) < 0x1800) {
         goto fail;
     }
     ret = 1;
-    q->f7A5 = ret;
+    q->inactive = ret;
     return ret;
 }
 
 typedef struct { s16 key; s16 id; u8 pad[12]; } Ent_63;
 typedef struct { s32 count; Ent_63 e[1]; } Tbl_4;
 
-struct Player_22 {
-    u8 pad[0x628];
-    s16 f628;
-    u8 pad2[0x660 - 0x62A];
-    s16 f660;
-    s16 f662;
-    u8 pad3[0x7E0 - 0x664];
-};
-
 extern Tbl_4 *sExtraRiderSpawns_2;
-extern Player_22 sExtraRiders[2];
+extern Rider sExtraRiders[2];
 
-void race_update_extra_riders(Player_22 *p)
+void race_update_extra_riders(Rider *p)
 {
-    Player_22 *q;
+    Rider *q;
 
     if (gGame.mode == 8) return;
-    if (sExtraRiderSpawns_2 != NULL && p->f662 < 2) {
+    if (sExtraRiderSpawns_2 != NULL && p->race.place < 2) {
         Ent_63 *e = sExtraRiderSpawns_2->e;
-        while (e->key < p->f660) e++;
-        while (e->key == p->f660) {
+        while (e->key < p->race.lap) e++;
+        while (e->key == p->race.lap) {
             if (e >= &sExtraRiderSpawns_2->e[sExtraRiderSpawns_2->count]) break;
-            if (e->id == p->f628) race_spawn_extra_rider(e);
+            if (e->id == p->segment) race_spawn_extra_rider(e);
             e++;
         }
     }
     for (q = sExtraRiders; q < &sExtraRiders[2]; q++) race_try_despawn_extra_rider(p, q);
 }
 
-typedef struct {
-    u8 pad0[0x662];
-    s16 f662;
-    s16 f664;
-    s16 f666;
-    s16 f668;
-    u8 pad66A[0x6E8 - 0x66A];
-    u8 f6E8;
-    u8 pad6E9[0x7E0 - 0x6E9];
-} Ent_64;
-
-extern Ent_64 gRiders_80[];
-
 void race_announce_position_changes(void)
 {
-    Ent_64 *p;
+    Rider *p;
     s32 v;
     s32 idx;
 
     if (gEvent.time < 0x78) return;
-    for (p = gRiders_80; p < gRiders_80 + gGame.numPlayers; p++) {
-        v = p->f668 >= 0 ? p->f668 : p->f662;
-        if (v != p->f664) {
-            if (p->f666 > 0x180) {
-                p->f666 = 0x300 - p->f666;
+    for (p = gRiders; p < gRiders + gGame.numPlayers; p++) {
+        v = p->race.finishPlace >= 0 ? p->race.finishPlace : p->race.place;
+        if (v != p->race.prevPlace) {
+            if (p->race.placeAnim > 0x180) {
+                p->race.placeAnim = 0x300 - p->race.placeAnim;
             }
-            p->f666 -= 0x20;
-            if (p->f666 <= 0) {
-                if (p->f6E8 == 0 && p->f668 < 0) {
-                    if (gRaceFrame - gAnnounceTimes[p - gRiders_80] > 300 && gEvent.time > 600) {
-                        announce_place_change(p - gRiders_80, v, p->f664);
+            p->race.placeAnim -= 0x20;
+            if (p->race.placeAnim <= 0) {
+                if (p->isCpu == 0 && p->race.finishPlace < 0) {
+                    if (gRaceFrame - gAnnounceTimes[p - gRiders] > 300 && gEvent.time > 600) {
+                        announce_place_change(p - gRiders, v, p->race.prevPlace);
                     }
                 }
-                p->f666 = 1;
-                p->f664 = v;
+                p->race.placeAnim = 1;
+                p->race.prevPlace = v;
             }
         } else {
-            if (p->f666 < 0x200) {
-                p->f666 += 0x10;
+            if (p->race.placeAnim < 0x200) {
+                p->race.placeAnim += 0x10;
             }
         }
     }
 }
 
-extern Bike_39 *gRiderStandings_4[];
-
 void race_sort_positions(void)
 {
     u8 swapped;
     s32 i;
-    Bike_39 *t;
+    Rider *t;
 
     do {
         swapped = 0;
         for (i = 0; i < 7; i++) {
-            if (sRidersByLapPos[i]->f62C > sRidersByLapPos[i + 1]->f62C) {
+            if (sRidersByLapPos[i]->segmentDist > sRidersByLapPos[i + 1]->segmentDist) {
                 swapped = 1;
                 t = sRidersByLapPos[i];
                 sRidersByLapPos[i] = sRidersByLapPos[i + 1];
@@ -349,88 +236,72 @@ void race_sort_positions(void)
     do {
         swapped = 0;
         for (i = 0; i < gEvent.numRiders - 1; i++) {
-            if (gRiderStandings_4[i]->f630 < gRiderStandings_4[i + 1]->f630
-                && (gRiderStandings_4[i]->b7A5 | gRiderStandings_4[i + 1]->b7A5) == 0
-                && gRiderStandings_4[i]->h668 < 0) {
+            if (gRiderStandings[i]->distToGo < gRiderStandings[i + 1]->distToGo
+                && (gRiderStandings[i]->inactive | gRiderStandings[i + 1]->inactive) == 0
+                && gRiderStandings[i]->race.finishPlace < 0) {
                 swapped = 1;
-                t = gRiderStandings_4[i];
-                gRiderStandings_4[i] = gRiderStandings_4[i + 1];
-                gRiderStandings_4[i + 1] = t;
+                t = gRiderStandings[i];
+                gRiderStandings[i] = gRiderStandings[i + 1];
+                gRiderStandings[i + 1] = t;
             }
         }
     } while (swapped);
 
     for (i = 0; i < gEvent.numRiders; i++) {
-        gRiderStandings_4[i]->h662 = i;
+        gRiderStandings[i]->race.place = i;
     }
     if (gEvent.time > 120) {
         race_announce_position_changes();
     }
 }
 
-extern Ent_65 gRiders_81[];
-
-void race_queue_rider_behind(Ent_65 *p, Ent_65 *p2, s32 p3)
+void race_queue_rider_behind(Rider *p, Rider *p2, s32 p3)
 {
     s32 i;
 
-    if (p->f6E8 == 2) {
-        p->f7A5 = 1;
+    if (p->isCpu == 2) {
+        p->inactive = 1;
         return;
     }
-    if (gRiderStandings_5[p3 - 1]->f6E8 == 1 && gRiderStandings_5[p3 - 1]->f7A5 == 0) {
-        p->f7A5 = 1;
-        p->f630 = -1000000.0f;
+    if (gRiderStandings[p3 - 1]->isCpu == 1 && gRiderStandings[p3 - 1]->inactive == 0) {
+        p->inactive = 1;
+        p->distToGo = -1000000.0f;
         for (i = sRiderQueueBehindCount; i > 0; i--) {
             sRiderQueueBehind[i] = sRiderQueueBehind[i - 1];
         }
-        sRiderQueueBehind[0].idx = p - gRiders_81;
-        sRiderQueueBehind[0].e = gRiderStandings_5[p3 - 1];
-        sRiderQueueBehind[0].d = p2->f630 - gRiderStandings_5[p3 - 1]->f630 - 20.0f;
+        sRiderQueueBehind[0].idx = p - gRiders;
+        sRiderQueueBehind[0].e = gRiderStandings[p3 - 1];
+        sRiderQueueBehind[0].d = p2->distToGo - gRiderStandings[p3 - 1]->distToGo - 20.0f;
         sRiderQueueBehindCount++;
     }
 }
 
-void race_queue_rider_ahead(u8 *a, u8 *b, s32 n)
+void race_queue_rider_ahead(Rider *a, Rider *b, s32 n)
 {
-    u8 *p;
+    Rider *p;
     s32 i;
 
-    if (a[0x6E8] == 2) {
-        a[0x7A5] = 1;
+    if (a->isCpu == 2) {
+        a->inactive = 1;
         return;
     }
     p = gRiderStandings[n + 1];
-    if (p[0x6E8] == 1 && p[0x7A5] == 0) {
-        a[0x7A5] = 1;
+    if (p->isCpu == 1 && p->inactive == 0) {
+        a->inactive = 1;
         i = sRiderQueueAheadCount;
-        *(f32 *)(a + 0x630) = 1000000.0f;
+        a->distToGo = 1000000.0f;
         while (i > 0) {
             sRiderQueueAhead[i] = sRiderQueueAhead[i - 1];
             i = i - 1;
         }
         *(s16 *)&sRiderQueueAhead[0] = (s16)(((s32)a - (s32)gRiders) * -0x41041041 >> 5);
         sRiderQueueAhead[0].w1 = (s32)gRiderStandings[n + 1];
-        sRiderQueueAhead[0].f2 = (*(f32 *)(gRiderStandings[n + 1] + 0x630) - *(f32 *)(b + 0x630)) - 20.0f;
+        sRiderQueueAhead[0].f2 = (gRiderStandings[n + 1]->distToGo - b->distToGo) - 20.0f;
         sRiderQueueAheadCount = sRiderQueueAheadCount + 1;
     }
 }
 
-typedef struct {
-    u8 p0[0x626];
-    s16 f626;
-    u8 p1[0x660 - 0x628];
-    s16 f660;
-    u8 p2[0x6ED - 0x662];
-    u8 f6ED;
-    u8 p3[0x7A5 - 0x6EE];
-    u8 f7A5;
-    u8 p4[0x7E0 - 0x7A6];
-} Ent_66;
-
-extern Ent_66 gRiders_82[];
-
-void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
+void race_reinsert_queued_rider(Rider *p1, s16 *p2, f32 p3, s32 *p4)
 {
     s32 v4;
     s32 idx;
@@ -439,9 +310,9 @@ void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
     s32 lim;
     PathNode *r;
 
-    v4 = *(s8 *)(p1 + 0x6ED) + *(s16 *)(p1 + 0x660);
+    v4 = p1->lapAdjust + p1->race.lap;
     if (0.0f < p3) {
-        idx = *(s16 *)(p1 + 0x628);
+        idx = p1->segment;
         while (0.0f < p3) {
             {
                 s32 off = idx * 0x6c;
@@ -454,7 +325,7 @@ void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
             }
         }
     } else {
-        idx = *(s16 *)(p1 + 0x628);
+        idx = p1->segment;
         while (p3 < 0.0f) {
             {
                 s32 off = idx * 0x6c;
@@ -467,11 +338,11 @@ void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
             }
         }
     }
-    gRiders_82[*p2].f660 = v4;
-    gRiders_82[*p2].f6ED = 0;
-    gRiders_82[*p2].f7A5 = 0;
-    gRiders_82[*p2].f626 = idx;
-    bike_respawn(&gRiders_82[*p2]);
+    gRiders[*p2].race.lap = v4;
+    gRiders[*p2].lapAdjust = 0;
+    gRiders[*p2].inactive = 0;
+    gRiders[*p2].prevSegment = idx;
+    bike_respawn(&gRiders[*p2]);
     cnt = *p4 - 1;
     *p4 = cnt;
     for (i = 0; i < *p4; i++) {
@@ -480,38 +351,17 @@ void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
 }
 
 typedef struct {
-    u8 pad0[0x3FF];
-    u8 b3FF;
-    u8 pad400[0x44C - 0x400];
-    f32 f44C;
-    f32 f450;
-    u8 pad454[0x62C - 0x454];
-    f32 f62C;
-    f32 f630;
-    u8 pad634[0x660 - 0x634];
-    s16 h660;
-    s16 h662;
-    u8 pad664[0x6E8 - 0x664];
-    u8 b6E8;
-    u8 pad6E9[0x7A5 - 0x6E9];
-    u8 b7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Player_23;
-
-typedef struct {
     u8 pad0[0x20];
     f32 f20[4];
 } Tune;
 
-extern Player_23 gRiders_83[];
 extern Tune *gCurTrack_33;
-extern Player_23 *gRiderStandings_6[];
 
 void race_update_riders(void)
 {
-    Player_23 *list[4];
-    Player_23 **lp;
-    Player_23 *pl;
+    Rider *list[4];
+    Rider **lp;
+    Rider *pl;
     s32 n1;
     s32 n0;
     f32 sum0;
@@ -532,16 +382,16 @@ void race_update_riders(void)
     sum0 = 0.0f;
     sum1 = 0.0f;
     for (i = 0; i < gEvent.numRiders; i++) {
-        if (gRiders_83[i].b7A5 == 0) {
-            switch (gRiders_83[i].b6E8) {
+        if (gRiders[i].inactive == 0) {
+            switch (gRiders[i].isCpu) {
             case 0:
-                list[n0] = &gRiders_83[i];
+                list[n0] = &gRiders[i];
                 n0++;
-                sum0 += gRiders_83[i].f630;
+                sum0 += gRiders[i].distToGo;
                 break;
             case 1:
                 n1++;
-                sum1 += gRiders_83[i].f630;
+                sum1 += gRiders[i].distToGo;
                 break;
             }
         }
@@ -559,24 +409,24 @@ void race_update_riders(void)
                     }
                 }
                 if (idx >= 0) {
-                    if (gRiders_83[idx].f62C > 150.0f || (gRiders_83[idx].h662 != 0 && gRiders_83[idx].h660 != gEvent.numLaps - 1)) {
-                        announce_place(idx, gRiders_83[idx].h662 + 1);
+                    if (gRiders[idx].segmentDist > 150.0f || (gRiders[idx].race.place != 0 && gRiders[idx].race.lap != gEvent.numLaps - 1)) {
+                        announce_place(idx, gRiders[idx].race.place + 1);
                     }
                 }
             } else {
-                pl = gRiders_83;
-                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->f62C > 150.0f || (pl->h662 != 0 && pl->h660 != gEvent.numLaps - 1)))) {
-                    if (pl->h662 != 0) {
-                        pl = gRiderStandings_6[pl->h662 - 1];
+                pl = gRiders;
+                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->segmentDist > 150.0f || (pl->race.place != 0 && pl->race.lap != gEvent.numLaps - 1)))) {
+                    if (pl->race.place != 0) {
+                        pl = gRiderStandings[pl->race.place - 1];
                     } else {
-                        pl = gRiderStandings_6[pl->h662 + 1];
+                        pl = gRiderStandings[pl->race.place + 1];
                     }
                 }
-                announce_place(pl - gRiders_83, pl->h662 + 1);
+                announce_place(pl - gRiders, pl->race.place + 1);
             }
         }
         if (gEvent.time == 300) {
-            announce_early_leader(gRiderStandings_6[0] - gRiders_83);
+            announce_early_leader(gRiderStandings[0] - gRiders);
         }
     }
     if (n1 != 0) {
@@ -593,9 +443,9 @@ void race_update_riders(void)
     if (gGame.flags & 0x10) {
         k = 0;
         for (i = 0; i < gEvent.numRiders; i++) {
-            pl = gRiderStandings_6[i];
-            if (pl->b6E8 == 1) {
-                e = pl->f630 - sum1;
+            pl = gRiderStandings[i];
+            if (pl->isCpu == 1) {
+                e = pl->distToGo - sum1;
                 e += (gPathLapLength / n1) * (k - (n1 - 1) * 0.5f);
                 f = 1.0f - e / 100.0f;
                 if (f < 0.9f) {
@@ -604,21 +454,21 @@ void race_update_riders(void)
                 if (f > 1.1f) {
                     f = 1.1f;
                 }
-                if (f < pl->f44C) {
-                    pl->f44C = pl->f44C - 0.001f;
+                if (f < pl->timeScale) {
+                    pl->timeScale = pl->timeScale - 0.001f;
                 } else {
-                    pl->f44C = pl->f44C + 0.001f;
+                    pl->timeScale = pl->timeScale + 0.001f;
                 }
-                pl->f44C = f;
+                pl->timeScale = f;
                 k++;
             }
         }
     } else if (n0 == 0) {
         k = 0;
         for (i = 0; i < gEvent.numRiders; i++) {
-            pl = gRiderStandings_6[i];
-            if (pl->b6E8 == 1) {
-                e = pl->f630 - sum1;
+            pl = gRiderStandings[i];
+            if (pl->isCpu == 1) {
+                e = pl->distToGo - sum1;
                 e -= (k - (n1 - 1) * 0.5f) * 0.01f;
                 f = 1.0f - e * 0.00390625f;
                 if (f < 0.9f) {
@@ -627,12 +477,12 @@ void race_update_riders(void)
                 if (f > 1.1f) {
                     f = 1.1f;
                 }
-                if (f < pl->f44C) {
-                    pl->f44C = pl->f44C - 0.001f;
+                if (f < pl->timeScale) {
+                    pl->timeScale = pl->timeScale - 0.001f;
                 } else {
-                    pl->f44C = pl->f44C + 0.001f;
+                    pl->timeScale = pl->timeScale + 0.001f;
                 }
-                pl->f44C = f;
+                pl->timeScale = f;
                 k++;
             }
         }
@@ -644,18 +494,18 @@ void race_update_riders(void)
             d = -0.15f;
         }
         for (i = 0; i < gEvent.numRiders; i++) {
-            pl = &gRiders_83[i];
-            if (pl->b6E8 != 0) {
+            pl = &gRiders[i];
+            if (pl->isCpu != 0) {
                 f = 0.0f;
                 if (n1 >= 2) {
-                    f = pl->f450;
+                    f = pl->aiSkill;
                 }
-                e = pl->f630 - sum1;
+                e = pl->distToGo - sum1;
                 if (e > 64.0f) {
                     f -= 0.1f;
                 }
                 f += 1.0f - d;
-                if (pl->b3FF) {
+                if (pl->finishState) {
                     f = 1.0f;
                 } else if (gCheatFlags & 0x1000) {
                     f *= gCurTrack_33->f20[2] + 0.05f;
@@ -666,13 +516,13 @@ void race_update_riders(void)
                         f = g * 1.15f;
                     }
                 }
-                if (f < pl->f44C) {
-                    pl->f44C = pl->f44C - 0.0002f;
+                if (f < pl->timeScale) {
+                    pl->timeScale = pl->timeScale - 0.0002f;
                 } else {
-                    pl->f44C = pl->f44C + 0.0002f;
+                    pl->timeScale = pl->timeScale + 0.0002f;
                 }
             } else {
-                e = sum0 - pl->f630;
+                e = sum0 - pl->distToGo;
                 if (e > 2.0f) {
                     e += 16.0f;
                 } else if (e < -2.0f) {
@@ -684,51 +534,28 @@ void race_update_riders(void)
                 } else if (f < 0.95f) {
                     f = 0.95f;
                 }
-                if (f < pl->f44C) {
-                    pl->f44C = pl->f44C - 0.001f;
+                if (f < pl->timeScale) {
+                    pl->timeScale = pl->timeScale - 0.001f;
                 } else {
-                    pl->f44C = pl->f44C + 0.001f;
+                    pl->timeScale = pl->timeScale + 0.001f;
                 }
             }
         }
     }
     if (gGame.numPlayers == 1 && n0 == 1) {
-        race_update_extra_riders((u8 *)list[0]);
+        race_update_extra_riders(list[0]);
     }
     ai_update_lanes();
 }
 
-#define NEAR(r, x, top, done)                           {                                                       Player_24 *q_;                                         f32 v_, k_;                                     top:                                                    q_ = *l;                                            if (q_->human != 0) { v_ = q_->lane; k_ = 0.999f; } else { v_ = q_->f638; k_ = 0.999f; } v_ = v_ - (x);                                      l++;                                                if (v_ < k_ && (k_ = -k_) < v_) {                              r = 1;                                              goto done;                                      }                                                   if (*l != NULL) {                                       goto top;                                       }                                                   r = 0;                                          done:;                                              }
-
-typedef struct Player_24 {
-    u8 pad0[0x48];
-    f32 x;          /* 0x48 */
-    f32 y;          /* 0x4C */
-    f32 z;          /* 0x50 */
-    u8 pad54[0x42C - 0x54];
-    f32 lane;       /* 0x42C */
-    u8 pad430[0x628 - 0x430];
-    s16 node;       /* 0x628 */
-    s16 pad62A;
-    f32 prog;       /* 0x62C */
-    u8 pad630[0x638 - 0x630];
-    f32 f638;       /* 0x638 */
-    u8 pad63C[0x6E8 - 0x63C];
-    u8 human;       /* 0x6E8 */
-    u8 pad6E9[0x7A5 - 0x6E9];
-    u8 f7A5;        /* 0x7A5 */
-    u8 f7A6;        /* 0x7A6 */
-    u8 pad7A7[0x7E0 - 0x7A7];
-} Player_24;
-
-extern Player_24 sExtraRiders_2[];
+#define NEAR(r, x, top, done)                           {                                                       Rider *q_;                                         f32 v_, k_;                                     top:                                                    q_ = *l;                                            if (q_->isCpu != 0) { v_ = q_->laneOffset; k_ = 0.999f; } else { v_ = q_->lateral; k_ = 0.999f; } v_ = v_ - (x);                                      l++;                                                if (v_ < k_ && (k_ = -k_) < v_) {                              r = 1;                                              goto done;                                      }                                                   if (*l != NULL) {                                       goto top;                                       }                                                   r = 0;                                          done:;                                              }
 
 void ai_update_lanes(void)
 {
-    Player_24 *list[8];
-    Player_24 *p;
-    Player_24 *q;
-    Player_24 **out;
+    Rider *list[8];
+    Rider *p;
+    Rider *q;
+    Rider **out;
     PathNode *t;
     s32 i;
     s32 j;
@@ -749,20 +576,20 @@ void ai_update_lanes(void)
     f32 diff;
     u8 hit;
     f32 w;
-    Player_24 **l;
+    Rider **l;
     f32 x;
 
     for (i = 0; i < 8; i++) {
         p = sRidersByLapPos[i];
-        if (p->human == 0 || p->f7A5 != 0) {
+        if (p->isCpu == 0 || p->inactive != 0) {
             continue;
         }
-        if (p >= sExtraRiders_2) {
-            p->lane = sExtraRiderLanes[p - sExtraRiders_2];
+        if (p >= sExtraRiders) {
+            p->laneOffset = sExtraRiderLanes[p - sExtraRiders];
         }
         lo = -20.0f;
         hi = 20.0f;
-        node = p->node;
+        node = p->segment;
         j = 6;
         do {
             t = (PathNode *)(node * sizeof(PathNode) + (u32)gPathNodes);
@@ -775,32 +602,32 @@ void ai_update_lanes(void)
             j--;
             node = t->next;
         } while (j != 0);
-        if (hi < p->lane) {
-            p->lane = hi;
+        if (hi < p->laneOffset) {
+            p->laneOffset = hi;
         }
-        if (p->lane < lo) {
-            p->lane = lo;
+        if (p->laneOffset < lo) {
+            p->laneOffset = lo;
         }
         n = 0;
         j = 0;
-        p->f7A6 = 0;
+        p->laneBlocked = 0;
         for (; j < 8; j++) {
             if (i == j) {
                 continue;
             }
             q = sRidersByLapPos[j];
-            if (q->f7A5 != 0) {
+            if (q->inactive != 0) {
                 continue;
             }
-            d = p->prog - q->prog + 1.0f;
+            d = p->segmentDist - q->segmentDist + 1.0f;
             if (d < 0.0f) {
                 d += gPathLapLength;
             }
             if (d > 5.0f) {
                 continue;
             }
-            dx = q->x - p->x;
-            dz = q->z - p->z;
+            dx = q->bike.pos.x - p->bike.pos.x;
+            dz = q->bike.pos.z - p->bike.pos.z;
             dist = dx * dx + dz * dz;
             if (d * d + 100.0f < dist) {
                 continue;
@@ -810,8 +637,8 @@ void ai_update_lanes(void)
             if (dist > 2.25f) {
                 continue;
             }
-            w = q->f638;
-            diff = w - p->f638;
+            w = q->lateral;
+            diff = w - p->lateral;
             if (d < 2.0f && dist < 2.25f) {
                 if (diff > 0.0f) {
                     if (w < hi) {
@@ -827,38 +654,38 @@ void ai_update_lanes(void)
         list[n] = NULL;
         if (n != 0) {
             l = list;
-            x = p->lane;
+            x = p->laneOffset;
             NEAR(hit, x, n1, d1);
             if (hit) {
                 best = 2.0f;
                 for (n--; n >= 0; n--) {
                     q = list[n];
-                    if (q->human != 0) {
-                        v = q->lane;
+                    if (q->isCpu != 0) {
+                        v = q->laneOffset;
                     } else {
-                        v = q->f638;
+                        v = q->lateral;
                     }
                     c = v - 1.0f;
-                    e = p->lane - c;
+                    e = p->laneOffset - c;
                     if ((e > 0.0f ? e : -e) < best && c < hi && lo < c) {
                         l = list;
                         NEAR(hit, c, n2, d2);
                         if (!hit) {
                             target = c;
-                            best = p->lane - target;
+                            best = p->laneOffset - target;
                             if (!(best > 0.0f)) {
                                 best = -best;
                             }
                         }
                     }
                     c = v + 1.0f;
-                    e = p->lane - c;
+                    e = p->laneOffset - c;
                     if ((e > 0.0f ? e : -e) < best && c < hi && lo < c) {
                         l = list;
                         NEAR(hit, c, n3, d3);
                         if (!hit) {
                             target = c;
-                            best = p->lane - target;
+                            best = p->laneOffset - target;
                             if (!(best > 0.0f)) {
                                 best = -best;
                             }
@@ -866,45 +693,36 @@ void ai_update_lanes(void)
                     }
                 }
                 if (best < 2.0f) {
-                    p->lane = target;
+                    p->laneOffset = target;
                 }
                 continue;
             }
         }
-        if (p < sExtraRiders_2) {
-            if (p->lane > 0.0f) {
-                p->lane -= 0.02f;
+        if (p < sExtraRiders) {
+            if (p->laneOffset > 0.0f) {
+                p->laneOffset -= 0.02f;
             } else {
-                p->lane += 0.02f;
+                p->laneOffset += 0.02f;
             }
         }
     }
 }
-
-typedef struct {
-    u8 unk0[0x44C];
-    f32 unk44C;
-    f32 unk450;
-    u8 unk454[0x7E0 - 0x454];
-} Racer_2;
-
-extern Racer_2 gRiders_84[];
 
 void race_init_ai_skills(s32 arg0, s32 count) {
     s32 i;
 
     for (i = 0; i < count; i++) {
         if (count == 1) {
-            gRiders_84[sAiRiderOrder[i]].unk450 = 0.0f;
+            gRiders[sAiRiderOrder[i]].aiSkill = 0.0f;
         } else {
-            gRiders_84[sAiRiderOrder[i]].unk450 = (i - (count - 1) * 0.5f) / ((count - 1) * 5.0f);
+            gRiders[sAiRiderOrder[i]].aiSkill = (i - (count - 1) * 0.5f) / ((count - 1) * 5.0f);
         }
-        if (gRiders_84[sAiRiderOrder[i]].unk450 == 0.1f) {
-            gRiders_84[sAiRiderOrder[i]].unk450 += 0.01f;
+        if (gRiders[sAiRiderOrder[i]].aiSkill == 0.1f) {
+            gRiders[sAiRiderOrder[i]].aiSkill += 0.01f;
         } else {
-            gRiders_84[sAiRiderOrder[i]].unk450 -= 0.01f;
+            gRiders[sAiRiderOrder[i]].aiSkill -= 0.01f;
         }
-        gRiders_84[sAiRiderOrder[i]].unk44C = 1.03f - gRiders_84[sAiRiderOrder[i]].unk450;
+        gRiders[sAiRiderOrder[i]].timeScale = 1.03f - gRiders[sAiRiderOrder[i]].aiSkill;
     }
 }
 
@@ -1029,9 +847,9 @@ void race_init_standings(s32 arg0) {
     s16 m1 = -1;
     Ent12 *p0 = sRiderQueueAhead;
     Ent12 *p1 = sRiderQueueBehind;
-    u8 **p2 = gRiderStandings;
-    u8 **p3 = sRidersByLapPos;
-    u8 *v = gRiders;
+    Rider **p2 = gRiderStandings;
+    Rider **p3 = sRidersByLapPos;
+    Rider *v = gRiders;
     do {
         *p3 = v;
         *p2 = v;
@@ -1041,9 +859,9 @@ void race_init_standings(s32 arg0) {
         p1++;
         p2++;
         p3++;
-        v[0x7A7] = i;
+        v->standing = i;
         i++;
-        v += 0x7E0;
+        v++;
     } while (i < 8);
     sRiderQueueAheadCount = 0;
     sRiderQueueBehindCount = 0;
@@ -1051,27 +869,27 @@ void race_init_standings(s32 arg0) {
 
 typedef struct {
     s32 unk0;
-    u8 *obj;
+    Rider *obj;
     f32 thr;
 } Ent_67;
 
 extern Ent_67 sRiderQueueAhead_2;
 extern Ent_67 sRiderQueueBehind_2;
 
-void race_update_rider_queues(u8 *p)
+void race_update_rider_queues(Rider *p)
 {
     f32 a, b, d;
     if (sRiderQueueAheadCount > 0) {
-        b = *(f32 *)(sRiderQueueAhead_2.obj + 0x630);
-        a = *(f32 *)(p + 0x630);
+        b = sRiderQueueAhead_2.obj->distToGo;
+        a = p->distToGo;
         d = b - a;
         if (d < sRiderQueueAhead_2.thr) {
             race_reinsert_queued_rider(p, &sRiderQueueAhead_2, 70.0f, &sRiderQueueAheadCount);
         }
     }
     if (sRiderQueueBehindCount > 0) {
-        b = *(f32 *)(p + 0x630);
-        a = *(f32 *)(sRiderQueueBehind_2.obj + 0x630);
+        b = p->distToGo;
+        a = sRiderQueueBehind_2.obj->distToGo;
         d = b - a;
         if (d < sRiderQueueBehind_2.thr) {
             race_reinsert_queued_rider(p, &sRiderQueueBehind_2, -30.0f, &sRiderQueueBehindCount);
@@ -1079,28 +897,19 @@ void race_update_rider_queues(u8 *p)
     }
 }
 
-struct Obj_47 {
-    u8 pad[0x42C];
-    f32 f42C;
-    u8 pad2[0x638 - 0x430];
-    f32 f638;
-    u8 pad3[0x6E8 - 0x63C];
-    u8 b6E8;
-};
-
-s32 ai_lane_is_blocked(Obj_47 **p, f32 x)
+s32 ai_lane_is_blocked(Rider **p, f32 x)
 {
     f32 d, k;
-    Obj_47 *o;
+    Rider *o;
 
     do {
         o = *p;
-        if (o->b6E8 != 0) {
-            d = o->f42C;
+        if (o->isCpu != 0) {
+            d = o->laneOffset;
             k = 0.999f;
             d = d - x;
         } else {
-            d = o->f638;
+            d = o->lateral;
             k = 0.999f;
             d = d - x;
         }
