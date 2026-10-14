@@ -1375,7 +1375,6 @@ mem_report                            game  0x800BC3D0  func    0x29c
 mem_report_2                          game  0x800BC3D0  func        -  mem_report
 mem_report_totals                     game  0x800BC66C  func    0x29c
 mem_alloc_dbg                         game  0x800BC908  func    0x1fc
-mem_alloc_dbg_2                       game  0x800BC908  func        -  mem_alloc_dbg
 mem_free                              game  0x800BCB04  func    0x1ec
 mem_free_2                            game  0x800BCB04  func        -  mem_free
 mem_alloc_at_dbg                      game  0x800BCCF0  func    0x1c8
@@ -4176,9 +4175,6 @@ gSaveData_15                          game  0x800F1900  data        -  gSaveData
 gSaveData_16                          game  0x800F1900  data        -  gSaveData
 gSaveData_2                           game  0x800F1900  data        -  gSaveData
 gSaveData_4                           game  0x800F1900  data        -  gSaveData
-gSaveData_5                           game  0x800F1900  data        -  gSaveData
-gSaveData_6                           game  0x800F1900  data        -  gSaveData
-gSaveData_7                           game  0x800F1900  data        -  gSaveData
 gSaveData_8                           game  0x800F1900  data        -  gSaveData
 gSaveData_9                           game  0x800F1900  data        -  gSaveData
 sStuntSeqByDir                        game  0x800F2110  data        -

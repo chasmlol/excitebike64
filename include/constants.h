@@ -30,8 +30,8 @@
 #define INPUT_STICK_X_MAX       0x0F000000  /* full x magnitude */
 #define INPUT_STICK_Y_MAX       0xF0000000  /* full y magnitude */
 
-/* gGame.mode, set by the menu items' callbacks. Modes 3, 4 and 11 are not identified (shell_cb_desert_unused
-   sets 4). */
+/* gGame.mode, set by the menu items' callbacks. Modes 3, 4, 11 and 15 are not identified (shell_cb_desert_unused
+   sets 4; the rider code tests 15). */
 #define GAME_MODE_EXHIBITION    0
 #define GAME_MODE_SEASON        1
 #define GAME_MODE_SOCCER        2

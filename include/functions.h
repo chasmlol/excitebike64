@@ -1323,7 +1323,6 @@ void mem_report(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void mem_report_2(void);
 void mem_report_totals(void);
 void *mem_alloc_dbg(s32 size, u32 flags, s32 owner, s32 line);
-s32 *mem_alloc_dbg_2(s32 a, s32 b, void *c, s32 d);
 void mem_free(void *ptr);
 s32 mem_free_2(void *ptr);
 void *mem_alloc_at_dbg(void *ptr, s32 size, s32 owner, s32 line);

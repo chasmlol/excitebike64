@@ -90,7 +90,7 @@ screenshot dump to `e:\log\scr*.raw` whose file writes are gone.
 
 ## Input
 
-The game input word (`gPadInput[4]`, and per rider in `Rider.input`):
+The game input word (`gPadInput[4]`, and per rider in `Rider.input`; `INPUT_*` in include/constants.h):
 
 | bits | meaning |
 |---|---|
@@ -101,28 +101,29 @@ The game input word (`gPadInput[4]`, and per rider in `Rider.input`):
 | 0x8000 0x10000 0x20000 | L, R, Z |
 | 24-27, 28-31 | stick x and y magnitude (the direction bits give the signs) |
 
-In a race, B brakes, Z is the turbo (Z with the stick back starts a wheelie, Z at take-off boosts), R is used for
-air tricks and, with B, a power slide. `bike_remap_buttons` applies the controller layout chosen in the options (it
-swaps B, R and Z). `race_update` maps controllers to players into `gPlayerInputs`.
+In a race, A is the throttle, B brakes, Z is the turbo (Z with the stick back starts a wheelie, Z at take-off
+boosts), R with the stick does the air turns and, with B, a power slide. Tricks are sequences of stick moves, read
+while C-down is held (unnamed/s0_8006F620.c). `bike_remap_buttons` applies the controller layout chosen in the
+options (it swaps B, R and Z). `race_update` maps controllers to players into `gPlayerInputs`.
 
 ## Main data
 
 **`gGame`** (`Game`, include/structs/game.h; 0x7B0 bytes, cleared by `shell_init`) is the setup that carries across
 states:
 
-- +0x00 flags: 0x2 editor back to shell, 0x4 run the same state again, 0x20 editor, 0x40 NES, 0x80 track chosen,
-  0x8000 replay playback, 0x40000 podium ceremony (`gPodiumMode`), 0x100000/0x400000/0x800000 unlock messages,
-  0x20000000 debug cheat;
+- +0x00 flags (`GAME_FLAG_*`): 0x2 editor back to shell, 0x4 run the same state again, 0x20 editor, 0x40 NES,
+  0x80 track intro (a track was just chosen), 0x8000 replay playback, 0x40000 podium ceremony (`gPodiumMode`),
+  0x100000/0x400000/0x800000 unlock messages, 0x20000000 debug cheat;
 - +0x0C cup, +0x10 track, +0x1C rider per racer, +0x3C number of players, +0x40 laps;
 - +0x4C game mode (`mode`, below), +0x54 front-end fade state (0 out, 1 swap, 2 in, 3 active);
 - +0x2C8 controller-to-player map, +0x2E8 screen sub-state, +0x410 difficulty, +0x488 Controller Pak screen mode,
   +0x730 HUD glyphs, +0x740 idle frames (the front end times out after 0xE10).
 
-**Game modes** (`gGame.mode`): 0 exhibition, 1 season (`gSeason`, a `Season` of the cups `gCups`; points `gRacePoints`
-5/3/2/1), 2 soccer,
-5 desert (ten checkpoints shown as campfires), 6 Excite 3D, 7 hill climb (stage time limits), 8 time trial (ghost),
-9 tutorial (`gTutorialLessons`, 17 lessons and tests), 10 stunt course, 12 Original Excitebike (the NES game),
-13 and 14 the editor's test ride. Modes 3 and 4 are not identified.
+**Game modes** (`gGame.mode`, `GAME_MODE_*`): 0 exhibition, 1 season (`gSeason`, a `Season` of the cups `gCups`;
+points `gRacePoints` 5/3/2/1), 2 soccer, 5 desert (ten checkpoints shown as campfires), 6 Excite 3D, 7 hill climb
+(stage time limits), 8 time trial (ghost), 9 tutorial (`gTutorialLessons`, 17 lessons and tests), 10 stunt course,
+12 Original Excitebike (the NES game), 13 and 14 the editor's test ride. Modes 3, 4, 11 and 15 are not
+identified.
 
 **Tracks**: `gTracks` holds 27 records of 0xA0 bytes, the name at +0, the environment type at +0x2C (0 stadium,
 drawn by arngfx.c; 1 outdoor, tubegfx.c; 2 desert, desgfx.c) and the replay camera zones at +0x74/+0x78.
@@ -154,7 +155,8 @@ the running event:
 - +0x04 the track's three best times and initials, +0x10 best lap, +0x20 laps, +0x22 riders,
   +0x24 next finishing place, +0x26 countdown;
 - +0x2C race time in frames, +0x40 all finished, +0x50 finishing order;
-- +0x58 flags (0x10 timer paused, 0x800 message, 0x1000 takedown required, 0x2000 lesson done);
+- +0x58 flags (`EVENT_*`: 0xF the soccer team that scored, 0x10 clock stopped, 0x200 duel, 0x800 tutorial message,
+  0x1000 takedown still to do, 0x2000 rider 0 finished and stopped);
 - +0x68/+0x6A soccer scores, +0x70 tutorial action.
 
 Other shared globals: `gFrameCounter` (retraces), `gRaceFrame` (frames of the race), `gPhysDeltaTime` (ticks times
@@ -171,7 +173,9 @@ Entering a code in the front end toggles a bit of `sCheatMask`; Debug Mode sets 
 Mud, ClrScrn, Collision, Vtx Wind, Hud.
 
 **Structures**: include/structs.h declares the types several source files share; the named structures of the game's
-subsystems are in include/structs/ (136 structs in 33 headers, which structs.h includes):
+subsystems are in include/structs/ (138 structs in 34 headers, which structs.h includes); include/constants.h holds
+the values the whole game shares (`INPUT_*`, `GAME_MODE_*`, `GAME_FLAG_*`, `CHEAT_*`, `CUP_*`, `TRACK_FLAG_*`,
+`SAVE_OPT_*`, `MENU_SOUND_*`, `FADE_*`, `VI_MODE_*`, `GRAVITY`, `RACE_EXIT_*`):
 
 - the riders: rider.h (`Rider` and its parts, the skeletons, the sphere trees, the animations, the ponytail; the
   section below) and surface.h (`Surface`, the ground surfaces);
@@ -186,9 +190,10 @@ subsystems are in include/structs/ (136 structs in 33 headers, which structs.h i
 - the front end: font.h (`Font`, `TextObj`), shell.h (`Screen`, `ScreenItem`, `Cheat`, `RiderBio`), gui.h (`Gui`,
   `GuiMenu`), hud.h (`RaceTexts`) and pak.h (`PakScreen`, `PakNote`, `PakMessage`);
 - sound, the NES emulator and files: nes.h (`Nes`), softmix.h, sfx.h, tunes.h, snd.h (`RiderSound`) and file.h
-  (`FileDirEntry`, `FileHandle`);
-- the game and the race: race.h (`Event`, `TrackRecord`, `Season`, `Cup`, `TutorialLesson`, `PauseScreen`,
-  `HudGlyphs`), game.h (`Game`, `GameState`, `SaveData`), hacks.h (`TrackHack`) and podium.h (the ceremony's clips).
+  (`FileDirEntry`, `FileHandle`); system.h (the scheduler, heap, DMA, SRAM, replay and save constants);
+- the game and the race: race.h (`TrackInfo`, `Event`, `TrackRecord`, `Season`, `Cup`, `TutorialLesson`,
+  `PauseScreen`, `HudGlyphs`), game.h (`Game`, `GameState`, `SaveData`), hacks.h (`TrackHack`, `GravelPitMover`) and
+  podium.h (the ceremony's clips).
 
 ## The rider struct
 
@@ -231,7 +236,9 @@ for `rider_apply_ik`. A body's `tree` is a bounding-sphere tree of `CollideNode`
 `anim`) gives each trick and animation its body and root `AnimClip`s, its button glyphs, name, riders, points and
 announcer clip. The ponytail is a chain of four `PonytailNode`s per rider, in `gRiderGfx`. The ground surfaces the
 wheels point at are `Surface`s (include/structs/surface.h): name, drag, grip, bumps, flags, three colours and a
-rolling sound.
+rolling sound. The flags (`SURFACE_*`): 0x1 tire tracks, 0x2 dust, 0x4 clods, 0x8 water (splashes where the bike
+crosses the water level), 0x10 camera shake, 0x80 crashes a wheel on it, 0x100 out of bounds (respawn), 0x200 cools
+the engine, 0x400 Excite 3D boost ramp, 0x800 a drop.
 
 ## Source files
 
@@ -321,8 +328,9 @@ their names say what they hold or where they start.
   corner speeds, braking limits and jump speeds are precomputed for the CPU riders. Per bike, `path_update_bike`
   tracks the segment, the lateral offset and progress, the lap (`path_check_lap` at `gPathFinishNode`), triggers and
   the respawn timer. `gPathStartNode` is the starting grid.
-- **unnamed/replay.c**: the input recorder and player behind replays and Controller Pak ghosts: a 16-byte header
-  (magic 0x7B, 24-bit checksum), then bit-packed blocks of 8 frames of input deltas.
+- **unnamed/replay.c**: the input recorder and player behind replays and Controller Pak ghosts: a 23-byte header
+  (magic 0x7B, a 24-bit checksum, the 16-byte race setup, a 24-bit frame count) before the first block, then
+  bit-packed blocks of 8 frames of input deltas.
 - **unnamed/desert.c**: the desert mode: ten checkpoints (exported to fractal.c, which places a campfire at each),
   the arrow to the next one, laps and order, CPU steering, and moving far-away CPU riders directly.
 - **unnamed/s0_8006B1A0.c**: Excite 3D: lanes, the CPU riders' lane changes and progress.
@@ -600,10 +608,10 @@ floor, the arena walls and the cursor, plus the camera, viewport and scissor set
   piece count, per user piece a segment count and heights, then 3 bytes per piece (x 5 bits, y 5, flags 6, rotation
   2, type 6). `usrtrk_load_layout` unpacks it into `gUserTrackLayout` (`UserTrackLayout`), `usrtrk_load_into_editor` into `gEditor`.
 - For a race, `usrtrk_load_pieces` and `usrtrk_build_track` (called from the stadium code) fill `gUserTrackData` (`UserTrackData`):
-  two mesh sets of 500x500 cells with rotated vertices and ground triangle grids (their 8x8 cell bits turned too),
-  the dirt texture, the racing line (`gUserTrackData.path`, header 0xAA000003) and the arena's and the pieces' wall
-  meshes merged into one `WallMesh` with its 16x16 hash (allocated one cell short of the struct: the cell lists also
-  set cells[256], past the end).
+  two mesh sets of 500x500 cells, each cell holding the piece's rotated vertices and its grid of ground triangles
+  (a `CollGrid`, its 8x8 cell bits turned with the piece), the dirt texture, the racing line (`gUserTrackData.path`,
+  header 0xAA000003) and the arena's and the pieces' wall meshes merged into one `WallMesh` with its 16x16 hash
+  (allocated one cell short of the struct: the cell lists also set cells[256], past the end).
 
 ## The LodgeNet build
 
