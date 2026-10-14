@@ -74,6 +74,32 @@
    while a motor runs. */
 #define RUMBLE_OFF              (-1)    /* a rumble_start duration that stops the motor */
 
+/* The heap (unnamed/lib_800BC3D0.c): blocks of 16-byte units, each starting with a one-unit header {next, prev,
+   size in units, check}. A used block's next is its owner (__FILE__), its prev (line << 16) | serial | MEM_USED. */
+#define MEM_UNIT_SHIFT          4
+#define MEM_UNIT_MASK           0xF
+#define MEM_CHECK_SUM           0xB562439F  /* next + prev + size + check of every header */
+#define MEM_USED                1           /* in a header's prev word */
+#define MEM_SERIAL_MASK         0xFFFE      /* the allocation serial in a used header's prev word, counting by 2 */
+#define MEM_ALLOC_TOP           1           /* mem_alloc_dbg flag: take the last block that fits, from its top */
+
+/* PI DMA requests (unnamed/lib_800BEC20.c): sDmaRequests, slots of 19 words {state, a message queue and its
+   message, the OSIoMesg, then dma_start's handle, RDRAM address, device address, size and direction}. */
+#define DMA_SLOT_COUNT          8
+#define DMA_SLOT_SIZE           0x4C
+#define DMA_SLOT_WORDS          19
+#define DMA_FREE                0
+#define DMA_RUNNING             1
+#define DMA_QUEUED              2       /* waits for dma_update to start it */
+#define DMA_DONE                3
+
+/* SRAM (unnamed/lib_800BF3C0.c): 32 KB at PI_DOM2_ADDR2, with these PI timings. */
+#define SRAM_SIZE               0x8000
+#define SRAM_LATENCY            5
+#define SRAM_PULSE              0x0C
+#define SRAM_PAGE_SIZE          0x0D
+#define SRAM_REL_DURATION       2
+
 /* Replays and Controller Pak ghosts (unnamed/replay.c): the magic byte, a 24-bit checksum of everything after the
    first four bytes (calc_checksum24), the 16-byte setup (players, CPU riders, track, laps, then a skin byte and a
    rider byte per racer), a 24-bit frame count, then for each block of 8 frames the bit-packed changes of each
