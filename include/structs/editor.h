@@ -6,7 +6,49 @@
 #include "common.h"
 #include "structs/gui.h"
 
-struct CollisionMesh;
+/* Collision geometry: walls (edges) and ground triangles, with a 16x16 hash of which are in each part of the
+   track (built for a user track by usrtrk_build_track from the arena's and the pieces'). */
+typedef struct CollisionVtx {
+    /* 0x00 */ s16 x;
+    /* 0x02 */ s16 z;
+    /* 0x04 */ s16 unk_04;
+    /* 0x06 */ s16 y;
+} CollisionVtx; /* size 0x8 */
+
+typedef struct CollisionEdge {
+    /* 0x00 */ s16 v0;              /* vertex indices */
+    /* 0x02 */ s16 v1;
+    /* 0x04 */ s16 nx;              /* normal */
+    /* 0x06 */ s16 nz;
+} CollisionEdge; /* size 0x8 */
+
+typedef struct CollisionTri {
+    /* 0x00 */ s16 v0;              /* vertex indices */
+    /* 0x02 */ s16 v1;
+    /* 0x04 */ s16 v2;
+    /* 0x06 */ s16 nx;              /* normal */
+    /* 0x08 */ s16 ny;
+    /* 0x0A */ s16 nz;
+} CollisionTri; /* size 0xC */
+
+typedef struct CollisionCell {
+    /* 0x00 */ s16 *tris;           /* indices; each list ends where the next cell's begins */
+    /* 0x04 */ s16 *edges;
+} CollisionCell; /* size 0x8 */
+
+typedef struct CollisionMesh {
+    /* 0x000 */ s32 xMin;
+    /* 0x004 */ s32 zMin;
+    /* 0x008 */ s32 xMax;
+    /* 0x00C */ s32 zMax;
+    /* 0x010 */ s32 vtxCount;
+    /* 0x014 */ CollisionVtx *vtx;
+    /* 0x018 */ s32 edgeCount;
+    /* 0x01C */ CollisionEdge *edges;
+    /* 0x020 */ s32 triCount;
+    /* 0x024 */ CollisionTri *tris;
+    /* 0x028 */ CollisionCell cells[256];
+} CollisionMesh; /* size 0x828 */
 
 /* A piece's meshes: one cell of 500x500 units per grid cell, in rows of dim[0] cells. */
 typedef struct PieceMesh {

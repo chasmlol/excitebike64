@@ -112,7 +112,6 @@ typedef struct Ctl_21 Ctl_21;
 typedef struct Obj_67 Obj_67;
 typedef struct Menu_5 Menu_5;
 typedef struct Set Set;
-typedef struct Mesh_8 Mesh_8;
 typedef struct Chan_6 Chan_6;
 typedef struct Ring_2 Ring_2;
 typedef struct Obj_80 Obj_80;
