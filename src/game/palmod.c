@@ -1,22 +1,25 @@
 #include "game.h"
 
+/* Registers a texture set's palette to be rewritten each frame: keeps its colours as 5-bit r, g, b (rotated with
+   the Odd Color cheat) and a second copy of the palette for the other frame. */
 void palmod_register(TexSet *set, s32 kind)
 {
     s32 i;
     s32 k;
-    s32 save;
+    s32 unused;
 
     if (set != NULL && set->pal != NULL) {
         if (sPalModCount >= sPalModMax) fatal_halt(1);
         sPalModEntries[sPalModCount].kind = kind;
         sPalModEntries[sPalModCount].set = set;
+        /* 256 r, g, b triples, then the copy of the palette */
         sPalModEntries[sPalModCount].rgb = mem_alloc_dbg(0x500, 0, sStrPalmodC, 0x8C);
         sPalModEntries[sPalModCount].pal[0] = set->pal;
         sPalModEntries[sPalModCount].pal[1] = (u16 *)(sPalModEntries[sPalModCount].rgb + 0x300);
         __builtin_memcpy(sPalModEntries[sPalModCount].pal[1], sPalModEntries[sPalModCount].pal[0], 0x200);
         k = 0;
         for (i = 0; i < 0x100; i++) {
-            if (gCheatFlags & 0x80) {
+            if (gCheatFlags & CHEAT_ODD_COLOR) {
                 sPalModEntries[sPalModCount].rgb[k++] = (set->pal[i] >> 6) & 0x1F;
                 sPalModEntries[sPalModCount].rgb[k++] = (set->pal[i] >> 1) & 0x1F;
                 sPalModEntries[sPalModCount].rgb[k++] = set->pal[i] >> 11;
@@ -35,42 +38,48 @@ void palmod_register(TexSet *set, s32 kind)
     }
 }
 
-static inline void put(u16 *d, s32 *r, s32 *g, s32 *b) {
-    *d = (*r << 11) | (*g << 6) | (*b << 1) | (*d & 1);
+/* Packs r, g, b into an RGBA5551 colour, keeping the colour's alpha bit. */
+static inline void put(u16 *dst, s32 *r, s32 *g, s32 *b) {
+    *dst = (*r << 11) | (*g << 6) | (*b << 1) | (*dst & 1);
 }
 
-static inline void sepia(s32 v, s32 *r, s32 *g, s32 *b) {
-    if (v > 128) {
-        v -= 128;
-        *r = v * 175 / 128 + 80;
-        *g = v * 185 / 128 + 70;
-        *b = v * 255 / 128;
+/* palmod_sepia written inline: a grey level (0-255) to a sepia tone. */
+static inline void sepia(s32 grey, s32 *r, s32 *g, s32 *b) {
+    if (grey > 128) {
+        grey -= 128;
+        *r = grey * 175 / 128 + 80;
+        *g = grey * 185 / 128 + 70;
+        *b = grey * 255 / 128;
     } else {
-        *r = v * 80 / 128;
-        *g = v * 70 / 128;
+        *r = grey * 80 / 128;
+        *g = grey * 70 / 128;
         *b = 0;
     }
 }
 
+/* Points each registered set at this frame's palette and rewrites it when the effect changes: lightning on
+   Rainforest Run, the podium's desaturation, the credits' sepia, or the sun glare's brightening on outdoor
+   tracks. */
 void palmod_update(void) {
     s32 i, j, k;
     u16 *dst;
     u8 *src;
-    s32 j1;
-    s32 r0, g0, b0;
-    s32 v;
+    s32 col;
+    s32 red, green, blue;
+    s32 flashing;
 
     for (i = 0; i < sPalModCount; i++) {
         sPalModEntries[i].set->pal = sPalModEntries[i].pal[gGfxFrameIndex];
     }
-    if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) == 11 && gNumScreens == 1 && gPauseMenu == 0) {
+    /* (gCurTrack_6 - gTracks) / 0xA0, the track index, as a multiplication */
+    if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) == TRACK_RAINFOREST_RUN && gNumScreens == 1 && gPauseMenu == 0) {
         if (gLightningFlash != 0) {
             gLightningFlash--;
         }
         if ((s32)random_byte() % 80 == 0 && sLightningFrame < 0) {
             sLightningFrame = 0;
             sLightningPattern = (s32)random_byte() % 2;
-            tunes_play_speech(0x67, -1, 1);
+            tunes_play_speech(0x67, -1, 1); /* the thunder, presumably */
         }
         if (sLightningFrame < 0) {
             gLightningFlash = 0;
@@ -85,26 +94,26 @@ void palmod_update(void) {
         if (gPauseMenu != 0) {
             gLightningFlash = 0;
         }
-        v = gLightningFlash != 0;
-        if (v != sPalModState[gGfxFrameIndex]) {
-            sPalModState[gGfxFrameIndex] = v;
+        flashing = gLightningFlash != 0;
+        if (flashing != sPalModState[gGfxFrameIndex]) {
+            sPalModState[gGfxFrameIndex] = flashing;
             for (i = 0; i < sPalModCount; i++) {
                 dst = sPalModEntries[i].pal[gGfxFrameIndex];
                 src = sPalModEntries[i].rgb;
                 for (k = 0; k < 256; k++) {
-                    r0 = *src++;
-                    g0 = *src++;
-                    b0 = *src++;
+                    red = *src++;
+                    green = *src++;
+                    blue = *src++;
                     if (gLightningFlash != 0) {
-                        r0 = (r0 + g0 + b0) / 3;
-                        r0 *= 3;
-                        if (r0 >= 32) {
-                            r0 = 31;
+                        red = (red + green + blue) / 3;
+                        red *= 3;
+                        if (red >= 32) {
+                            red = 31;
                         }
-                        b0 = r0;
-                        g0 = r0;
+                        blue = red;
+                        green = red;
                     }
-                    j = (r0 << 11) | (g0 << 6) | (b0 << 1);
+                    j = (red << 11) | (green << 6) | (blue << 1);
                     j |= *dst & 1;
                     *dst = j;
                     dst++;
@@ -117,7 +126,7 @@ void palmod_update(void) {
                 s32 r, g, b, a, dr, dg, db;
                 u16 *dst = sPalModEntries[i].pal[gGfxFrameIndex];
                 u8 *src = sPalModEntries[i].rgb;
-                for (j1 = 0; j1 < 256; j1++) {
+                for (col = 0; col < 256; col++) {
                     r = *src++;
                     g = *src++;
                     b = *src++;
@@ -132,26 +141,26 @@ void palmod_update(void) {
                 }
             }
         }
-    } else if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) != 20) {
+    } else if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) != TRACK_EXCITE_3D) {
         if (gCreditsMode != 0) {
-            k = -123;
+            k = -123; /* the state value of the sepia palettes */
             if (sPalModState[gGfxFrameIndex] != k) {
                 sPalModState[gGfxFrameIndex] = k;
                 for (i = 0; i < sPalModCount; i++) {
                     dst = sPalModEntries[i].pal[gGfxFrameIndex];
                     src = sPalModEntries[i].rgb;
                     for (j = 0; j < 256; j++) {
-                        r0 = *src++;
-                        g0 = *src++;
-                        b0 = *src++;
-                        r0 = (r0 + g0 + b0) / 3;
-                        sepia(r0, &r0, &g0, &b0);
-                        put(dst, &r0, &g0, &b0);
+                        red = *src++;
+                        green = *src++;
+                        blue = *src++;
+                        red = (red + green + blue) / 3;
+                        sepia(red, &red, &green, &blue);
+                        put(dst, &red, &green, &blue);
                         dst++;
                     }
                 }
             }
-        } else if (((Cfg *)gCurTrack_6)->f2C == 1) {
+        } else if (((Cfg *)gCurTrack_6)->f2C == TRACK_ENV_OUTDOOR) {
             k = (gSunGlare - 25) * 3;
             if (k < 0) {
                 k = 0;
@@ -166,13 +175,13 @@ void palmod_update(void) {
                     dst = sPalModEntries[i].pal[gGfxFrameIndex];
                     src = sPalModEntries[i].rgb;
                     for (j = 0; j < 256; j++) {
-                        r0 = *src++;
-                        g0 = *src++;
-                        b0 = *src++;
-                        r0 = r0 + (31 - r0) * k / 256;
-                        g0 = g0 + (31 - g0) * k / 256;
-                        b0 = b0 + (31 - b0) * k / 256;
-                        put(dst, &r0, &g0, &b0);
+                        red = *src++;
+                        green = *src++;
+                        blue = *src++;
+                        red = red + (31 - red) * k / 256;
+                        green = green + (31 - green) * k / 256;
+                        blue = blue + (31 - blue) * k / 256;
+                        put(dst, &red, &green, &blue);
                         dst++;
                     }
                 }
@@ -181,14 +190,15 @@ void palmod_update(void) {
     }
 }
 
-void palmod_init(s32 p)
+/* Resets the palette effects; the podium ceremony registers up to 16 sets, a race 8. */
+void palmod_init(s32 podium)
 {
     gPalBrightness = 0;
     sPalModCount = 0;
     sPalModState[0] = -1;
     sPalModState[1] = -1;
     sLightningFrame = -1;
-    if (p != 0) {
+    if (podium != 0) {
         sPalModMax = 0x10;
     } else {
         sPalModMax = 8;
@@ -196,6 +206,7 @@ void palmod_init(s32 p)
     sPalModEntries = mem_alloc_dbg(sPalModMax * sizeof(PalMod), 0, sStrPalmodC, 0x74);
 }
 
+/* Frees the registered sets' colour copies. */
 void palmod_free(void)
 {
     s32 i;
@@ -209,84 +220,87 @@ void palmod_free(void)
     mem_free(sPalModEntries);
 }
 
-void palmod_sepia(s32 a0, s32 *a1, s32 *a2, s32 *a3)
+/* A grey level (0-255) to the credits' sepia: dark browns up to 128, then towards white. */
+void palmod_sepia(s32 grey, s32 *r, s32 *g, s32 *b)
 {
     s32 t;
-    s32 d;
+    s32 above;
 
-    if (a0 > 0x80) {
-        d = a0 - 0x80;
-        t = d * 0xAF;
+    if (grey > 0x80) {
+        above = grey - 0x80;
+        t = above * 0xAF;
         if (t < 0) {
             t = t + 0x7F;
         }
-        *a1 = (t >> 7) + 0x50;
-        t = d * 0xB9;
+        *r = (t >> 7) + 0x50;
+        t = above * 0xB9;
         if (t < 0) {
             t = t + 0x7F;
         }
-        *a2 = (t >> 7) + 0x46;
-        t = d * 0xFF;
+        *g = (t >> 7) + 0x46;
+        t = above * 0xFF;
         if (t < 0) {
             t = t + 0x7F;
         }
-        *a3 = t >> 7;
+        *b = t >> 7;
         return;
     }
-    t = a0 * 0x50;
+    t = grey * 0x50;
     if (t < 0) {
         t = t + 0x7F;
     }
-    *a1 = t >> 7;
-    t = a0 * 0x46;
+    *r = t >> 7;
+    t = grey * 0x46;
     if (t < 0) {
         t = t + 0x7F;
     }
-    *a2 = t >> 7;
-    *a3 = 0;
+    *g = t >> 7;
+    *b = 0;
 }
 
+/* Writes 256 r, g, b triples (5 bits each) into a palette, moved towards their grey by gDesaturation / 256. */
 void palmod_desaturate_rgb(u16 *dst, u8 *src)
 {
     s32 i;
-    s32 r, g, b, c;
+    s32 r, g, b, grey;
 
     for (i = 0; i < 0x100; i++) {
         r = *src++;
         g = *src++;
         b = *src++;
-        c = (r + g + b) / 3;
-        r += ((c - r) * gDesaturation) >> 8;
-        g += ((c - g) * gDesaturation) >> 8;
-        b += ((c - b) * gDesaturation) >> 8;
-        c = (r << 11) | (g << 6) | (b << 1);
-        c |= *dst & 1;
-        *dst = c;
+        grey = (r + g + b) / 3;
+        r += ((grey - r) * gDesaturation) >> 8;
+        g += ((grey - g) * gDesaturation) >> 8;
+        b += ((grey - b) * gDesaturation) >> 8;
+        grey = (r << 11) | (g << 6) | (b << 1);
+        grey |= *dst & 1;
+        *dst = grey;
         dst++;
     }
 }
 
+/* Writes a 256-colour palette into another, moved towards grey by gDesaturation / 256. */
 void palmod_desaturate_pal(u16 *dst, u16 *src)
 {
     s32 i;
-    u32 v;
-    s32 g, b, avg;
+    u32 r;
+    s32 g, b, grey;
 
     for (i = 0; i < 0x100; i++) {
-        v = *src;
-        g = (v >> 3) & 0xF8;
-        b = (v << 2) & 0xF8;
-        v = (v >> 8) & 8;
-        avg = (s32)(v + g + b) / 3;
-        v += ((avg - (s32)v) * gDesaturation) >> 8;
-        v = (s32)v >> 3;
-        g += ((avg - g) * gDesaturation) >> 8;
+        r = *src;
+        g = (r >> 3) & 0xF8;
+        b = (r << 2) & 0xF8;
+        r = (r >> 8) & 8; /* an original bug: keeps one bit of red (0xF8 was meant) */
+        grey = (s32)(r + g + b) / 3;
+        r += ((grey - (s32)r) * gDesaturation) >> 8;
+        r = (s32)r >> 3;
+        g += ((grey - g) * gDesaturation) >> 8;
         g >>= 3;
-        b += ((avg - b) * gDesaturation) >> 8;
+        b += ((grey - b) * gDesaturation) >> 8;
         b >>= 3;
-        avg = (v << 11) | (g << 6) | (b << 1);
-        avg |= *dst & 1;
-        *dst = avg;
+        grey = (r << 11) | (g << 6) | (b << 1);
+        grey |= *dst & 1;
+        *dst = grey;
         dst++;
         src++;
     }

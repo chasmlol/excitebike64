@@ -7,6 +7,64 @@
 #include "common.h"
 #include "structs/model.h"
 
+/* The environment type of a track (gTracks +0x2C): which code draws it. */
+#define TRACK_ENV_STADIUM 0 /* arngfx.c */
+#define TRACK_ENV_OUTDOOR 1 /* tubegfx.c */
+#define TRACK_ENV_DESERT  2 /* desgfx.c and fractal.c */
+
+/* gDrawFlags: bit n is item n of the debug menu, all set in a normal race. */
+#define DRAW_BIKES        0x001
+#define DRAW_SKY          0x002
+#define DRAW_HI_ARN       0x004 /* the near track */
+#define DRAW_LO_ARN       0x008 /* the far track */
+#define DRAW_STAND        0x010
+#define DRAW_BALES        0x020
+#define DRAW_SHADOWS      0x040
+#define DRAW_MUD          0x080
+#define DRAW_CLEAR_SCREEN 0x100
+#define DRAW_COLLISION    0x200
+#define DRAW_VTX_WIND     0x400
+#define DRAW_HUD          0x800
+
+/* Values of the game's setup that the track and rendering code tests. */
+
+/* gGame.mode */
+#define GAME_MODE_EXHIBITION        0
+#define GAME_MODE_SEASON            1
+#define GAME_MODE_SOCCER            2
+#define GAME_MODE_DESERT            5
+#define GAME_MODE_EXCITE_3D         6
+#define GAME_MODE_HILL_CLIMB        7
+#define GAME_MODE_TIME_TRIAL        8
+#define GAME_MODE_TUTORIAL          9
+#define GAME_MODE_STUNT_COURSE      10
+#define GAME_MODE_ORIGINAL          12  /* Original Excitebike, the NES game */
+#define GAME_MODE_TEST_LOOP         13  /* the editor's test ride, closed track */
+#define GAME_MODE_TEST_OPEN         14  /* the editor's test ride, track not closed */
+
+/* gGame.flags */
+#define GAME_FLAG_FRONT_END_RACE    0x00000001 /* a race the front end runs behind the title or rider select */
+#define GAME_FLAG_RIDER_SELECT      0x00000010
+#define GAME_FLAG_TRACK_CHOSEN      0x00000080
+#define GAME_FLAG_REPLAY            0x00008000 /* replay playback */
+#define GAME_FLAG_PODIUM            0x00040000 /* the podium ceremony (gPodiumMode) */
+
+/* gCheatFlags: bit n is cheat n of sCheatTable */
+#define CHEAT_BIG_HEAD              0x0001
+#define CHEAT_MIRROR                0x0002
+#define CHEAT_DEBUG                 0x0004
+#define CHEAT_DOWN_HILL             0x0008
+#define CHEAT_STUNT_BONUS           0x0010
+#define CHEAT_INVISIBLE_RIDER       0x0020
+#define CHEAT_NIGHT                 0x0040
+#define CHEAT_ODD_COLOR             0x0080
+#define CHEAT_TRANSPARENT_RIDER     0x0100
+#define CHEAT_ALL_STUNTS            0x0200
+#define CHEAT_INVINCIBLE            0x0400
+#define CHEAT_TEAM_PHOTO            0x0800
+#define CHEAT_BEAT_THIS             0x1000
+#define CHEAT_PIN_HEAD              0x2000
+
 /* A ground triangle of a section, binned on the section's 8x8 grid of its bounding box. */
 typedef struct CollTri {
     /* 0x00 */ union {
