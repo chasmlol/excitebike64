@@ -1702,14 +1702,9 @@ sCamZoneOffset                        game  0x800C97E8  data     0x18
 gWallEdgeFlags                        game  0x800C9800  data     0x1c
 sDesertBoxNormals                     game  0x800C981C  data     0x24
 sStars                                game  0x800C9840  data      0x4
-sStars_2                              game  0x800C9840  data        -  sStars
 sFlareColors                          game  0x800C9844  data      0xc
 sFlareSizes                           game  0x800C9850  data     0x10
 sSunList                              game  0x800C9860  data      0x4
-sSunList_2                            game  0x800C9860  data        -  sSunList
-sSunList_3                            game  0x800C9860  data        -  sSunList
-sSunList_4                            game  0x800C9860  data        -  sSunList
-sSunList_5                            game  0x800C9860  data        -  sSunList
 sZDecodeShift                         game  0x800C9864  data     0x20
 sZDecodeAdd                           game  0x800C9884  data     0x2c
 gSkyMode                              game  0x800C98B0  data      0x4
@@ -3817,7 +3812,6 @@ sMarkerImage_2                        game  0x800DC140  data        -  sMarkerIm
 gSkyImage                             game  0x800DC144  data        -
 gSkyImage_2                           game  0x800DC144  data        -  gSkyImage
 gSkyImage_3                           game  0x800DC144  data        -  gSkyImage
-gSkyImage_4                           game  0x800DC144  data        -  gSkyImage
 sClearFrames                          game  0x800DC148  data        -
 gRiderGfx                             game  0x800DC150  data        -
 gRiderGfx_10                          game  0x800DC150  data        -  gRiderGfx
@@ -3853,13 +3847,11 @@ gViewRects_10                         game  0x800E1718  data        -  gViewRect
 gViewRects_11                         game  0x800E1718  data        -  gViewRects
 gViewRects_12                         game  0x800E1718  data        -  gViewRects
 gViewRects_2                          game  0x800E1718  data        -  gViewRects
-gViewRects_3                          game  0x800E1718  data        -  gViewRects
 gViewRects_4                          game  0x800E1718  data        -  gViewRects
 gViewRects_5                          game  0x800E1718  data        -  gViewRects
 gViewRects_6                          game  0x800E1718  data        -  gViewRects
 gViewRects_7                          game  0x800E1718  data        -  gViewRects
 gViewRects_8                          game  0x800E1718  data        -  gViewRects
-gViewRects_9                          game  0x800E1718  data        -  gViewRects
 D_800E171C                            game  0x800E171C  data        -
 D_800E1758                            game  0x800E1758  data        -
 D_800E1774                            game  0x800E1774  data        -
@@ -4255,10 +4247,7 @@ sSurfacePolys                         game  0x800E8E6C  data        -
 D_800E8E78                            game  0x800E8E78  data        -
 D_800E8E7C                            game  0x800E8E7C  data        -
 sFlareTextures                        game  0x800E8E80  data        -
-sFlareTextures_2                      game  0x800E8E80  data        -  sFlareTextures
 sSunVtxBufs                           game  0x800E8E88  data        -
-sSunVtxBufs_2                         game  0x800E8E88  data        -  sSunVtxBufs
-sSunVtxBufs_3                         game  0x800E8E88  data        -  sSunVtxBufs
 sSunVtxUsed                           game  0x800E8E90  data        -
 sStarTexture                          game  0x800E8E98  data        -
 gSunGlare                             game  0x800E8E9C  data        -
@@ -4267,7 +4256,6 @@ sSkyScrollY                           game  0x800E8EB0  data        -
 sSkyScaleX                            game  0x800E8EC0  data        -
 sSkyScaleY                            game  0x800E8ED0  data        -
 sSkyClipHeight                        game  0x800E8EE0  data        -
-D_800E8EE4                            game  0x800E8EE4  data        -
 D_800E8EF0                            game  0x800E8EF0  data        -
 D_800E9080                            game  0x800E9080  data        -
 sParticleLast                         game  0x800E9210  data        -

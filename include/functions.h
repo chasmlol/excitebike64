@@ -361,21 +361,21 @@ s32 func_8003207C(s32 p1, s32 p2, s32 p3);
 
 /* src/game/sun.c */
 void sun_init(void);
-void sun_update_screen_pos(s32 param_1, s32 param_2, s32 arg2);
+void sun_update_screen_pos(s32 mtx, s32 view, s32 arg2);
 void sun_check_occlusion(s32 a0);
 Gfx *sun_draw_flare(Gfx *gdl, u8 *mtx, s32 idx);
 Gfx *sun_draw_stars(Gfx *gdl, s32 arg);
 s32 project_to_screen(s32 x, s32 y, s32 z, s32 *p4, s32 *p5, s32 *p6, s32 *p7, s32 p8, s32 p9);
 void sun_free(void);
 s32 zbuffer_decode(s32 x);
-s32 sun_alloc_vtx(s32 a, s32 idx);
+Vtx *sun_alloc_vtx(s32 count, s32 view);
 
 /* src/game/unnamed/s0_80033E30.c */
 void sky_scan_zbuffer(s32 arg0);
 void sky_update_scroll(void);
 Gfx *sky_draw_strip(s32 a, s32 b, s32 *tex, Gfx *gdl);
-Gfx *sky_draw(Gfx *gdl, s32 unused, u8 *s);
-s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 p3, s32 p4);
+Gfx *sky_draw(Gfx *gdl, s32 unused, TexSet *sky);
+s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view);
 void func_80035630(void);
 void sky_reset_clip(void);
 Gfx *sky_texrect(Gfx *gdl, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, s32 du, s32 dv, s32 x0, s32 y0, s32 x1, s32 y1, u32 *flag);
