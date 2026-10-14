@@ -66,7 +66,7 @@ typedef struct PieceCell {
     /* 0x08 */ s32 y0;
     /* 0x0C */ s32 x1;
     /* 0x10 */ s32 y1;
-    /* 0x14 */ s16 *tex;            /* 1-bit texture: {?, size / 16, ...} */
+    /* 0x14 */ s16 *tex;            /* {flags (1: has a texture), size / 16, 1-bit rows of 8 bytes} */
     /* 0x18 */ s32 unk_18;
     /* 0x1C */ s32 unk_1C;
 } PieceCell; /* size 0x20 */
@@ -78,7 +78,7 @@ typedef struct PieceMeshSet {
 
 /* PieceType.flags */
 #define PIECE_START        0x0002 /* the track can start on it */
-#define PIECE_TURN_4       0x0004
+#define PIECE_TURN         0x0004 /* the four turns */
 #define PIECE_IN_MENU      0x0008 /* listed in the piece menus */
 #define PIECE_FITS         0x0010 /* fits at the open end (edit_update_fitting_pieces) */
 #define PIECE_FITS_FLIPPED 0x0020
@@ -105,7 +105,7 @@ typedef struct PieceType {
     /* 0x00 */ s16 dim[2];          /* cells across and along; a user piece's dim[1] is its segment count */
     /* 0x04 */ s16 dir[2];          /* sides of the connectors: [0] entry, [1] exit */
     /* 0x08 */ s16 off[2];          /* connector positions along their sides */
-    /* 0x0C */ s16 flags;           /* PIECE_* */
+    /* 0x0C */ s16 flags;           /* PIECE_* (signed as most of the code reads it) */
     /* 0x0E */ s16 cursorAngle;     /* direction of the cursor arrow, 1/8 turns */
     /* 0x10 */ s16 rot;             /* rotation of a first piece */
     /* 0x12 */ s16 unk_12;
@@ -118,7 +118,7 @@ typedef struct PieceType {
     /* 0x2C */ u32 *collisionId;
     /* 0x30 */ PieceMeshSet *meshA; /* textured ground */
     /* 0x34 */ PieceMeshSet *meshB; /* untextured */
-    /* 0x38 */ s32 *path;           /* {count, PathResNode[]}: the piece's part of the racing line */
+    /* 0x38 */ s32 *path;           /* {count, nodes of 0x2C bytes}: the piece's part of the racing line */
     /* 0x3C */ struct CollisionMesh *collision;
 } PieceType; /* size 0x40 */
 
@@ -167,7 +167,7 @@ typedef struct EditCam {
 #define EDIT_MODE_MOVE_TRACK    4
 #define EDIT_MODE_USER_PIECE    6   /* editing a user piece's heights */
 #define EDIT_MODE_NAME          7   /* name entry */
-#define EDIT_MODE_NAME_8        8
+#define EDIT_MODE_NAME_8        8   /* also name entry */
 #define EDIT_MODE_PLACE         9   /* choosing the next piece */
 #define EDIT_MODE_WARN_MULTI    10  /* "Warning": the user piece is used more than once */
 #define EDIT_MODE_WARN_LOCKED   11  /* "Warning": the user piece's size is locked */
