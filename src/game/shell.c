@@ -18,25 +18,25 @@ s32 shell_format_pak_file_label(u8 *header, char *dst, s32 compact)
     dst[0] = 0;
     if (replay_get_info(header, (u32 *)&track, (u32 *)&rider, (u32 *)&time) == 0) {
         /* a ghost */
-        time = time - 0x102;
+        time = time - FRAMES(0x102);
         __builtin_memcpy(dst, sStrGhostLabel, 8);
         str_cat(dst, gTracks_13 + track * 160);
         if (compact == 0) {
             str_cat(dst, sStrKeySpace);
-            part = time / 3600;
+            part = time / (60 * FRAME_RATE);
             if (part < 10) {
                 str_cat(dst, sStrKeyZero);
             }
             int_to_str(part, dst + strlen(dst));
             str_cat(dst, sStrGhostTimeColon);
             pos = strlen(dst);
-            part = time / 60 % 60;
+            part = time / FRAME_RATE % 60;
             dst[pos] = part / 10 + '0';
             pos++;
             dst[pos] = part % 10 + '0';
             pos++;
             dst[pos] = '.';
-            part = time % 60 * 100 / 60;
+            part = time % FRAME_RATE * 100 / FRAME_RATE;
             pos++;
             dst[pos] = part / 10 + '0';
             pos++;
@@ -429,16 +429,16 @@ void shell_splash_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *p
     skip = 0;
     type = screen->type;
     if (type == SCREEN_TYPE_SPLASH || type == SCREEN_TYPE_SPLASH_3) {
-        canSkip = gGame.screenTimer < 180 - 60;
+        canSkip = gGame.screenTimer < FRAMES(180) - FRAMES(60);
     } else if (type == SCREEN_TYPE_PAK_STATUS) {
-        canSkip = gGame.screenTimer < 1200 - 60;
+        canSkip = gGame.screenTimer < FRAMES(1200) - FRAMES(60);
     } else if (type == SCREEN_TYPE_BACKUP_LOST) {
-        canSkip = gGame.screenTimer < 600 - 60;
+        canSkip = gGame.screenTimer < FRAMES(600) - FRAMES(60);
     } else {
 #if VERSION == VERSION_LODGENET
         canSkip = gGame.screenTimer < 300 - 60;
 #else
-        canSkip = gGame.screenTimer < 3600 - 60;
+        canSkip = gGame.screenTimer < FRAMES(3600) - FRAMES(60);
 #endif
     }
     if (canSkip) {
@@ -1188,7 +1188,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
         case OPTION_SPEECH_VOLUME:
             if (gGame.repeatTimer == 0) {
                 tunes_queue_speech(SPEECH_SAMPLE);
-                gGame.repeatTimer = 52;
+                gGame.repeatTimer = FRAMES(52);
             }
             return;
 #if VERSION == VERSION_LODGENET
@@ -1307,7 +1307,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
         switch (gGame.optionsSel) {
         case OPTION_SPEECH_VOLUME:
             tunes_queue_speech(SPEECH_SAMPLE);
-            gGame.repeatTimer = 52;
+            gGame.repeatTimer = FRAMES(52);
             break;
         case OPTION_MUSIC_VOLUME:
             tunes_play_song(gReplaySongResId);
@@ -1347,11 +1347,11 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             switch (gGame.optionsSel) {
             case OPTION_SFX_VOLUME:
                 sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
-                gGame.repeatTimer = 40;
+                gGame.repeatTimer = FRAMES(40);
                 break;
             case OPTION_SPEECH_VOLUME:
                 tunes_queue_speech(SPEECH_SAMPLE);
-                gGame.repeatTimer = 52;
+                gGame.repeatTimer = FRAMES(52);
                 break;
             }
         }
@@ -4277,7 +4277,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                         shell_blend_palette_to_gray(0, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
                     } else {
-                        shell_blend_palette_to_gray((59 - gGame.screenTimer) * 0xFF / 59, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
+                        shell_blend_palette_to_gray((FRAMES(60) - 1 - gGame.screenTimer) * 0xFF / (FRAMES(60) - 1), gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
                     }
                 } else {
                     shell_blend_palette_to_gray(0xFF, NULL);
@@ -4311,8 +4311,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                             gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
                         } else {
-                            gDPSetPrimColor(gdl++, 0, 0, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59,
-                                            0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF);
+                            gDPSetPrimColor(gdl++, 0, 0, 0xFF - (FRAMES(60) - 1 - gGame.screenTimer) * 0x82 / (FRAMES(60) - 1), 0xFF - (FRAMES(60) - 1 - gGame.screenTimer) * 0x82 / (FRAMES(60) - 1),
+                                            0xFF - (FRAMES(60) - 1 - gGame.screenTimer) * 0x82 / (FRAMES(60) - 1), 0xFF);
                         }
                         gDPLoadTLUT_pal256(gdl++, gGame.greyPalette);
                         gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
@@ -4592,7 +4592,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                 FONT_FADE_ALPHA = 0;
             } else {
-                FONT_FADE_ALPHA = (59 - gGame.screenTimer) * 0xFF / 59;
+                FONT_FADE_ALPHA = (FRAMES(60) - 1 - gGame.screenTimer) * 0xFF / (FRAMES(60) - 1);
             }
             font_reset_queue();
             if (track->flags & TRACK_FLAG_SCORES) {

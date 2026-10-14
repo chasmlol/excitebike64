@@ -298,6 +298,10 @@ extern volatile s32 gViMode;
 extern s32 gViMode_2;
 extern s32 sViModeWidths[];
 extern s32 sViModeHeights[];
+#if VERSION == VERSION_EU
+extern s32 sViModeVStart[];
+extern s32 sViModeYScale[];
+#endif
 extern s32 sSchedRetraceCount;
 extern s32 sSchedSwapDeferred;
 extern s32 gSchedFrameLimit;

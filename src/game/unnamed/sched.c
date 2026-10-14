@@ -133,12 +133,16 @@ void sched_thread(void)
             }
             osSendMesg(sSchedCurTask_2.cur->msgQ, sSchedCurTask_2.cur->msg, OS_MESG_NOBLOCK);
         } else if (msg == SCHED_MSG_PRENMI) {
+#if VERSION == VERSION_EU
+            osViSetMode(sched_get_os_vi_mode(VI_MODE_LO_RES));
+#else
             osViBlack(TRUE);
             sched_set_vi_mode(VI_MODE_LO_RES);
+#endif
             osViBlack(TRUE);
 #if VERSION != VERSION_LODGENET
-            /* wait for line 100 three times: three frames */
-            for (i = 0; i < 3; i++) {
+            /* wait for line 100 three times: three frames (Europe: two) */
+            for (i = 0; i < FRAMES(3); i++) {
                 while (osViGetCurrentLine() > 100) {
                 }
                 while (osViGetCurrentLine() < 100) {
@@ -177,22 +181,28 @@ void sched_thread(void)
 
 /* libultra's OSViMode as words (0x50 bytes), with the fields the game changes named. */
 typedef struct {
+    /* 0x00 */ s32 origin;          /* byte offset of the first line shown */
+    /* 0x04 */ s32 yScale;          /* 2.10 fixed point */
+    /* 0x08 */ s32 vStart;
+    /* 0x0C */ s32 vBurst;
+    /* 0x10 */ s32 vIntr;
+} ViFieldRegs;
+
+typedef struct {
     /* 0x00 */ s32 typeAndCtrl[2];  /* type, comRegs.ctrl */
     /* 0x08 */ s32 width;           /* comRegs.width */
     /* 0x0C */ s32 comRegs0C[5];    /* burst, vSync, hSync, leap, hStart */
     /* 0x20 */ s32 xScale;          /* 2.10 fixed point */
     /* 0x24 */ s32 vCurrent;
-    /* 0x28 */ s32 origin0;         /* fldRegs[0].origin: byte offset of the first line shown */
-    /* 0x2C */ s32 fldRegs0[4];     /* yScale, vStart, vBurst, vIntr */
-    /* 0x3C */ s32 origin1;         /* fldRegs[1].origin */
-    /* 0x40 */ s32 fldRegs1[4];
+    /* 0x28 */ ViFieldRegs fldRegs[2];
 } ViMode;
 
 extern ViMode sViModes[];
 
 /* Builds sViModes[mode] from libultra's mode for the TV type (NTSC or MPAL; anything else hangs): the high-resolution
    interlaced mode for VI_MODE_HI_RES, else the low-resolution one with its width and x scale set for
-   sViModeWidths[mode]. */
+   sViModeWidths[mode]. Europe takes the PAL modes (other TV types hang) and sets both fields' vertical start and
+   scale from sViModeVStart and sViModeYScale, which stretch the 240 lines over PAL's 288. */
 void sched_init_vi_mode(s32 mode)
 {
     ViMode *osMode;
@@ -200,6 +210,16 @@ void sched_init_vi_mode(s32 mode)
     s32 off;
     ViMode *base;
 
+#if VERSION == VERSION_EU
+    if (osTvType != OS_TV_PAL) {
+        main_hang();
+    }
+    if (mode == VI_MODE_HI_RES) {
+        osMode = &osViModePalHpf1;
+    } else {
+        osMode = &osViModePalLpn1;
+    }
+#else
     if (osTvType == OS_TV_NTSC) {
         if (mode == VI_MODE_HI_RES) {
             osMode = &osViModeNtscHpf1;
@@ -215,6 +235,7 @@ void sched_init_vi_mode(s32 mode)
     } else {
         main_hang();
     }
+#endif
     sViModes[mode] = *osMode;
     off = mode * 0x50;      /* sizeof(OSViMode) */
     base = sViModes;
@@ -222,9 +243,14 @@ void sched_init_vi_mode(s32 mode)
         vm = (ViMode *)(off + (s32)base);
         vm->width = sViModeWidths[mode];
         vm->xScale = (sViModeWidths[mode] << 9) / 320;    /* 0x200 (1.0) for 320 pixels */
-        vm->origin0 = sViModeWidths[mode] << 1;
-        vm->origin1 = sViModeWidths[mode] << 1;
+        vm->fldRegs[0].origin = sViModeWidths[mode] << 1;
+        vm->fldRegs[1].origin = sViModeWidths[mode] << 1;
     }
+#if VERSION == VERSION_EU
+    sViModes[mode].fldRegs[0].vStart = sViModeVStart[mode];
+    sViModes[mode].fldRegs[0].yScale = sViModeYScale[mode];
+    __builtin_memcpy(&sViModes[mode].fldRegs[1], &sViModes[mode].fldRegs[0], sizeof(ViFieldRegs));
+#endif
 }
 
 /* Registers a queue to be sent sSchedRetraceMsg on each retrace, in the first free of the four slots; nothing
@@ -324,15 +350,28 @@ void fault_draw_hex(s32 x, s32 y, u32 value)
     }
 }
 
+#if VERSION != VERSION_EU
 /* Empty. */
 void func_80065A5C(void)
 {
 }
+#endif
 
-/* libultra's VI mode behind one of the game's modes for the TV type (NTSC or MPAL; anything else hangs). */
+/* libultra's VI mode behind one of the game's modes for the TV type (NTSC or MPAL, Europe PAL; anything else
+   hangs). */
 void *sched_get_os_vi_mode(s32 mode)
 {
     void *osMode;
+#if VERSION == VERSION_EU
+    if (osTvType != OS_TV_PAL) {
+        main_hang();
+    }
+    if (mode == VI_MODE_HI_RES) {
+        osMode = &osViModePalHpf1;
+    } else {
+        osMode = &osViModePalLpn1;
+    }
+#else
     if (osTvType == OS_TV_NTSC) {
         if (mode == VI_MODE_HI_RES) {
             osMode = osViModeNtscHpf1_2;
@@ -348,5 +387,13 @@ void *sched_get_os_vi_mode(s32 mode)
     } else {
         main_hang();
     }
+#endif
     return osMode;
 }
+
+#if VERSION == VERSION_EU
+/* Empty. */
+void func_80065A5C(void)
+{
+}
+#endif

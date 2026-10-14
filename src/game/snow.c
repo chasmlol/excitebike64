@@ -66,7 +66,7 @@ Gfx *snow_draw(Gfx *gdl, s32 dyn, s32 unused)
         }
     }
     if (sSnowSplatTimer != 0) {
-        gDPSetColor(gdl++, G_SETPRIMCOLOR, (sSnowSplatTimer * 255 / 60) | 0xFFFFFF00);
+        gDPSetColor(gdl++, G_SETPRIMCOLOR, (sSnowSplatTimer * 255 / FRAMES(60)) | 0xFFFFFF00);
         gDPLoadTextureBlock(gdl++, sSnowTextures->tex[0].data, G_IM_FMT_IA, G_IM_SIZ_8b,
                             sSnowTextures->tex[0].width * 8, sSnowTextures->tex[0].height, 0,
                             G_TX_CLAMP, G_TX_CLAMP, 8, 8, G_TX_NOLOD, G_TX_NOLOD);

@@ -1228,11 +1228,11 @@ void event_format_time(s32 frames, char *out)
 {
     char buf[32];
 
-    if (frames > 3 * 60 * 60 * 60) {
+    if (frames > 3 * 60 * 60 * FRAME_RATE) {
         *(Str9 *)out = sStrOver3Hours;
         return;
     }
-    int_to_str(frames / (60 * 60), buf);
+    int_to_str(frames / (60 * FRAME_RATE), buf);
     if (strlen(buf) == 1) {
         *(Str2 *)out = *(Str2 *)sStrZero;
         str_cat(out, buf);
@@ -1240,7 +1240,7 @@ void event_format_time(s32 frames, char *out)
         str_copy(out, buf);
     }
     str_cat(out, sStrColon);
-    int_to_str((frames / 60) % 60, buf);
+    int_to_str((frames / FRAME_RATE) % 60, buf);
     if (strlen(buf) == 1) {
         str_cat(out, sStrZero);
         str_cat(out, buf);
@@ -1248,7 +1248,7 @@ void event_format_time(s32 frames, char *out)
         str_cat(out, buf);
     }
     str_cat(out, sStrDot);
-    int_to_str(((frames % 60) * 100) / 60, buf);
+    int_to_str(((frames % FRAME_RATE) * 100) / FRAME_RATE, buf);
     if (strlen(buf) == 1) {
         str_cat(out, sStrZero);
         str_cat(out, buf);
@@ -1264,18 +1264,18 @@ void event_format_time_short(s32 frames, char *out)
     char buf[32];
 
     *out = 0;
-    if (frames > 60 * 60 - 1) {
-        int_to_str(frames / (60 * 60), out);
+    if (frames > 60 * FRAME_RATE - 1) {
+        int_to_str(frames / (60 * FRAME_RATE), out);
         str_cat(out, sStrColon);
     }
-    int_to_str((frames / 60) % 60, buf);
+    int_to_str((frames / FRAME_RATE) % 60, buf);
     len = strlen(buf);
-    if ((len == 1) && (frames > 60 * 60 - 1)) {
+    if ((len == 1) && (frames > 60 * FRAME_RATE - 1)) {
         str_cat(out, sStrZero);
     }
     str_cat(out, buf);
     str_cat(out, sStrDot);
-    int_to_str(((frames % 60) * 100) / 60, buf);
+    int_to_str(((frames % FRAME_RATE) * 100) / FRAME_RATE, buf);
     len = strlen(buf);
     if (len == 1) {
         str_cat(out, sStrZero);
@@ -1766,6 +1766,13 @@ extern CountdownImages *sCountdownTextures_2;
 
 /* Draws the countdown's image in the middle of the view: READY fades in and out at half height, 3, 2 and 1 shrink
    and fade, GO grows and fades. */
+/* The READY sign shrinks as (countdown + 10) / COUNTDOWN_READY_SCALE * 2 */
+#if VERSION == VERSION_EU
+#define COUNTDOWN_READY_SCALE 85.0f
+#else
+#define COUNTDOWN_READY_SCALE 100.0f
+#endif
+
 Gfx *event_draw_countdown(Gfx *gdl, s32 view)
 {
     f32 scale;
@@ -1787,7 +1794,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 view)
         color = sCountdownTextures_2->colors[4];
         img = &sCountdownTextures_2->img[4];
         scale = gEvent.countdown + 10;
-        scale /= 100.0f;
+        scale /= COUNTDOWN_READY_SCALE;
         scale *= 2.0f;
         if (scale > 1.0f)
             v = 100.0f - (scale - 1.0f) * 100.0f;
@@ -1802,7 +1809,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 view)
     case EVENT_STATE_COUNT_3: {
         f32 v;
         scale = gEvent.countdown + 10;
-        scale /= 46.0f;
+        scale /= FRAMES(36) + 10.0f;
         img = &sCountdownTextures_2->img[2];
         v = scale * 100.0f;
         v += 0.0f;
@@ -1814,7 +1821,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 view)
     case EVENT_STATE_COUNT_2: {
         f32 v;
         scale = gEvent.countdown + 10;
-        scale /= 46.0f;
+        scale /= FRAMES(36) + 10.0f;
         img = &sCountdownTextures_2->img[1];
         v = scale * 100.0f;
         v += 0.0f;
@@ -1826,7 +1833,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 view)
     case EVENT_STATE_COUNT_1: {
         f32 v;
         scale = gEvent.countdown + 10;
-        scale /= 46.0f;
+        scale /= FRAMES(36) + 10.0f;
         img = &sCountdownTextures_2->img[0];
         v = scale * 100.0f;
         v += 0.0f;
@@ -1839,7 +1846,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 view)
     case EVENT_STATE_FREE_RIDE:
     case EVENT_STATE_TIMED:
         scale = gEvent.countdown + 1;
-        scale *= 0.0625f;
+        scale /= FRAMES(15) + 1.0f;
         img = &sCountdownTextures_2->img[3];
         color = sCountdownTextures_2->colors[3];
         alpha = scale * 120.0f;

@@ -11,6 +11,9 @@ void snd_init(void)
     softmix_set_decompressor(decoder_decode_sample);
     gSfxDriver = &gN64SndDriver;
     sfx_get_driver_caps(&caps[0], &caps[1], &caps[2], &caps[3]);
+#if VERSION == VERSION_EU
+    caps[3] = caps[3] * 70 / 50;    /* PAL: 28 ms of output per audio frame instead of the driver's 20 */
+#endif
     {
         s32 voices, modes, rate, frameMs;
         voices = caps[0];

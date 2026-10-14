@@ -51,7 +51,7 @@ enum ScreenState {
 #define BIO_CLOSING 3
 
 /* The idle frames after which the main menu returns to the title and the title starts the attract race */
-#define SHELL_IDLE_TIMEOUT 0xE10
+#define SHELL_IDLE_TIMEOUT FRAMES(3600)
 
 typedef struct Screen Screen;
 

@@ -502,7 +502,6 @@ s32 cam_mode_soccer(Rider *rider, CamOut *out) {
     u16 a1;
     s32 ratio;
     u16 a2;
-    f32 mm;
     f32 fz;
     s32 goal;
     s32 z;
@@ -515,31 +514,29 @@ s32 cam_mode_soccer(Rider *rider, CamOut *out) {
     if (scorer == ((rider - gRiders) >> ((gGame.numPlayers - 1) >> 1))) {
         switch (goal) {
         case 1:
-            mm = 1000.0f;
-            q = gEvent.goalTimer * 10500 / 180;
+            q = gEvent.goalTimer * 10500 / FRAMES(180);
             { s32 r = 0x4844; s16 *tb = gCosTable;
-            ang = gEvent.goalTimer * 15000 / 180 - 8000;
-            out->x = gSoccerBall.pos.x * mm + (f32)(((r - q) * tb[(((ang) >> 4) - 0x400) & 0xFFF]) >> 14); }
-            out->y = 6000.0f - (f32)gEvent.goalTimer * mm * 3.0f / 180.0f;
-            fz = gSoccerBall.pos.z * mm - (f32)(((0x4844 - gEvent.goalTimer * 10500 / 180) * COS16(gEvent.goalTimer * 15000 / 180 - 8000)) >> 14);
+            ang = gEvent.goalTimer * 15000 / FRAMES(180) - 8000;
+            out->x = gSoccerBall.pos.x * 1000.0f + (f32)(((r - q) * tb[(((ang) >> 4) - 0x400) & 0xFFF]) >> 14); }
+            out->y = 6000.0f - (f32)gEvent.goalTimer * 1000.0f * 3.0f / (f32)FRAMES(180);
+            fz = gSoccerBall.pos.z * 1000.0f - (f32)(((0x4844 - gEvent.goalTimer * 10500 / FRAMES(180)) * COS16(gEvent.goalTimer * 15000 / FRAMES(180) - 8000)) >> 14);
             out->z = z = fz;
-            math_to_polar(gSoccerBall.pos.x * mm - (f32)out->x, gSoccerBall.pos.z * mm - (f32)z, &a1, &ratio);
-            math_to_polar(ratio, gSoccerBall.pos.y * mm - (f32)out->y, &a2, &ratio);
+            math_to_polar(gSoccerBall.pos.x * 1000.0f - (f32)out->x, gSoccerBall.pos.z * 1000.0f - (f32)z, &a1, &ratio);
+            math_to_polar(ratio, gSoccerBall.pos.y * 1000.0f - (f32)out->y, &a2, &ratio);
             out->roll = 0;
             out->pitch = a2 - 0x4000;
             out->yaw = -a1;
             break;
         case 2:
-            mm = 1000.0f;
-            q3 = gEvent.goalTimer * 10500 / 180;
+            q3 = gEvent.goalTimer * 10500 / FRAMES(180);
             { s32 r = 0x4844; s16 *tb = gCosTable;
-            ang3 = gEvent.goalTimer * 15000 / 180 - 8000;
-            out->x = gSoccerBall.pos.x * mm - (f32)(((r - q3) * tb[(((ang3) >> 4) - 0x400) & 0xFFF]) >> 14); }
-            out->y = 6000.0f - (f32)gEvent.goalTimer * mm * 3.0f / 180.0f;
-            fz = gSoccerBall.pos.z * mm + (f32)(((0x4844 - gEvent.goalTimer * 10500 / 180) * COS16(gEvent.goalTimer * 15000 / 180 - 8000)) >> 14);
+            ang3 = gEvent.goalTimer * 15000 / FRAMES(180) - 8000;
+            out->x = gSoccerBall.pos.x * 1000.0f - (f32)(((r - q3) * tb[(((ang3) >> 4) - 0x400) & 0xFFF]) >> 14); }
+            out->y = 6000.0f - (f32)gEvent.goalTimer * 1000.0f * 3.0f / (f32)FRAMES(180);
+            fz = gSoccerBall.pos.z * 1000.0f + (f32)(((0x4844 - gEvent.goalTimer * 10500 / FRAMES(180)) * COS16(gEvent.goalTimer * 15000 / FRAMES(180) - 8000)) >> 14);
             out->z = z = fz;
-            math_to_polar(gSoccerBall.pos.x * mm - (f32)out->x, gSoccerBall.pos.z * mm - (f32)z, &a1, &ratio);
-            math_to_polar(ratio, gSoccerBall.pos.y * mm - (f32)out->y, &a2, &ratio);
+            math_to_polar(gSoccerBall.pos.x * 1000.0f - (f32)out->x, gSoccerBall.pos.z * 1000.0f - (f32)z, &a1, &ratio);
+            math_to_polar(ratio, gSoccerBall.pos.y * 1000.0f - (f32)out->y, &a2, &ratio);
             out->roll = 0;
             out->pitch = a2 - 0x4000;
             out->yaw = -a1;
@@ -550,20 +547,20 @@ s32 cam_mode_soccer(Rider *rider, CamOut *out) {
     } else switch (goal) {
     case 1: {
         Rider *p = &gRiders[scorer];
-        out->x = p->bike.pos.x * 1000.0f + (f32)((SIN16(gEvent.goalTimer * 14000 / 180 - 7000) * 625) >> 11);
+        out->x = p->bike.pos.x * 1000.0f + (f32)((SIN16(gEvent.goalTimer * 14000 / FRAMES(180) - 7000) * 625) >> 11);
         out->y = 1000;
-        out->z = p->bike.pos.z * 1000.0f - (f32)((COS16(gEvent.goalTimer * 14000 / 180 - 7000) * 625) >> 11);
+        out->z = p->bike.pos.z * 1000.0f - (f32)((COS16(gEvent.goalTimer * 14000 / FRAMES(180) - 7000) * 625) >> 11);
         out->pitch = 1000;
-        out->yaw = gEvent.goalTimer * 14000 / 180 - 7000;
+        out->yaw = gEvent.goalTimer * 14000 / FRAMES(180) - 7000;
         out->roll = 0;
         break; }
     case 2: {
         Rider *p = &gRiders[scorer];
-        out->x = p->bike.pos.x * 1000.0f + (f32)((SIN16(7000 - gEvent.goalTimer * 14000 / 180) * 625) >> 11);
+        out->x = p->bike.pos.x * 1000.0f + (f32)((SIN16(7000 - gEvent.goalTimer * 14000 / FRAMES(180)) * 625) >> 11);
         out->y = 1000;
-        out->z = p->bike.pos.z * 1000.0f + (f32)((COS16(7000 - gEvent.goalTimer * 14000 / 180) * 625) >> 11);
+        out->z = p->bike.pos.z * 1000.0f + (f32)((COS16(7000 - gEvent.goalTimer * 14000 / FRAMES(180)) * 625) >> 11);
         out->pitch = 1000;
-        out->yaw = gEvent.goalTimer * 14000 / 180 + 0x64A8;
+        out->yaw = gEvent.goalTimer * 14000 / FRAMES(180) + 0x64A8;
         out->roll = 0;
         break; }
     }

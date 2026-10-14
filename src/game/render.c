@@ -1650,10 +1650,10 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             case RACE_PHASE_INTRO_FADE_IN:
             case RACE_PHASE_FADE_IN:
                 if (gRacePhaseTimer == PHASE_TIMER_START) {
-                    gRacePhaseTimer = 20;
+                    gRacePhaseTimer = FRAMES(20);
                 }
+                alpha = gRacePhaseTimer * 255 / FRAMES(20);
                 gGame.fadeState = FADE_IN;
-                alpha = gRacePhaseTimer * 255 / 20;
                 gGame.fadeLevel = alpha;
                 break;
             case RACE_PHASE_INTRO_FADE_OUT:
@@ -1662,10 +1662,10 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                     gRacePhaseTimer = PHASE_TIMER_FADED;
                     alpha = 255;
                 } else if (gRacePhaseTimer == PHASE_TIMER_START) {
-                    gRacePhaseTimer = 20;
+                    gRacePhaseTimer = FRAMES(20);
                     alpha = 0;
                 } else {
-                    alpha = 255 - gRacePhaseTimer * 255 / 20;
+                    alpha = 255 - gRacePhaseTimer * 255 / FRAMES(20);
                 }
                 gGame.fadeState = FADE_OUT;
                 gGame.fadeLevel = 255 - alpha;

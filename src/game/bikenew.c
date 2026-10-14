@@ -264,6 +264,12 @@ void bikes_init(void)
                              - (f32)gCosTable[(cosIdx - 0x400) & 0xFFF] * 1.5258789e-05f;
                     rider->bike.pos.z = gPathNodes[startNode].pos.z + (f32)gCosTable[(cosIdx - 0x400) & 0xFFF] * lateral * 6.1035156e-05f
                              + (f32)gCosTable[cosIdx & 0xFFF] * 1.5258789e-05f;
+#if VERSION == VERSION_EU
+                    /* Europe: lesson 6 starts a metre to the side */
+                    if (gGame.mode == GAME_MODE_TUTORIAL && gSeason->round == 6) {
+                        rider->bike.pos.x -= 1.0f;
+                    }
+#endif
                     rider->laneOffset = lateral;
                 } else {
                     rider->bike.pos.z = gPathNodes[startNode].pos.z;
