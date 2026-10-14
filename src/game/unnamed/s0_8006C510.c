@@ -514,6 +514,7 @@ void save_init_defaults(void)
         i--;
         p--;
     } while (i >= 0);
+#if VERSION == VERSION_LODGENET
     sum = 0;
     gSaveData.volumes[VOLUME_MUSIC] = 0x8C;
     gSaveData.volumes[VOLUME_SFX] = 200;
@@ -524,6 +525,21 @@ void save_init_defaults(void)
     gSaveData.tutorialProgress = 7;
     gSaveData.padConfigs = 0;
     gSaveData.topDifficulty = 3;
+#else
+    gSaveData.volumes[VOLUME_MUSIC] = 0x8C;
+    gSaveData.volumes[VOLUME_SFX] = 200;
+    gSaveData.volumes[VOLUME_SPEECH] = 0xA0;
+    gSaveData.options = SAVE_OPT_STEREO;
+    gSaveData.padConfigs = 0;
+    gSaveData.unlockedTrackCount = 1;
+    /* everything open only with L and R held and the Debug cheat on */
+    if ((gPadInput & (INPUT_L | INPUT_R)) == (INPUT_L | INPUT_R) && (gGame.flags & GAME_FLAG_DEBUG)) {
+        gSaveData.roundsDone = 0x1F;
+        gSaveData.tutorialProgress = 7;
+        gSaveData.topDifficulty = 3;
+    }
+    sum = 0;
+#endif
     gSaveData.magic = SAVE_MAGIC;
     words = (u32 *)&gSaveData;
     for (i = 0; i < SAVE_WORDS; i++) {
@@ -533,6 +549,11 @@ void save_init_defaults(void)
     }
     sum ^= SAVE_CHECKSUM_XOR;
     words[1] = sum;
+#if VERSION != VERSION_LODGENET
+    if (sEepromType == EEPROM_TYPE_16K) {
+        eeprom_write_verify(0, (u8 *)&gSaveData, SAVE_EEPROM_BLOCKS);
+    }
+#endif
 }
 
 /* Opens or locks the items of the track list and of the special tracks menu from the season progress in the save
@@ -604,12 +625,24 @@ s32 save_update_unlocks(void)
         gSpecialTracksItems[SPECIAL_TRACK_NES].flags |= SCREEN_ITEM_LOCKED;
     }
 
-    /* soccer is only ever locked here */
     gGame.difficulty = 1;
+#if VERSION == VERSION_LODGENET
+    /* soccer is only ever locked here */
     if (!(gGame.difficulty < gSaveData.topDifficulty
           || (gSaveData.topDifficulty == gGame.difficulty && (gSaveData.roundsDone & 4)))) {
         gSpecialTracksItems[SPECIAL_TRACK_SOCCER].flags |= SCREEN_ITEM_LOCKED;
     }
+#else
+    if ((gGame.difficulty < gSaveData.topDifficulty
+         || (gSaveData.topDifficulty == gGame.difficulty && (gSaveData.roundsDone & 4)))) {
+        if (gSpecialTracksItems[SPECIAL_TRACK_SOCCER].flags & SCREEN_ITEM_LOCKED) {
+            newUnlock = SPECIAL_TRACK_SOCCER;
+        }
+        gSpecialTracksItems[SPECIAL_TRACK_SOCCER].flags &= ~SCREEN_ITEM_LOCKED;
+    } else {
+        gSpecialTracksItems[SPECIAL_TRACK_SOCCER].flags |= SCREEN_ITEM_LOCKED;
+    }
+#endif
 
     gGame.difficulty = 2;
     if ((gGame.difficulty < gSaveData.topDifficulty
@@ -639,16 +672,48 @@ s32 save_update_unlocks(void)
 
 extern TrackInfoView gTracks_12[];
 
-/* Applies the save data after resetting it to the defaults (save_init_defaults: nothing is read from a save in this
-   build): the open tracks, the records, the controller layouts, the volumes, the cups' progress, the custom cup, the
-   tutorial level and the difficulty. */
-void save_load(s32 unused)
+/* Applies the save data: the open tracks, the records, the controller layouts, the volumes, the cups' progress, the
+   custom cup, the tutorial level and the difficulty. LodgeNet resets it to the defaults first (save_init_defaults:
+   nothing is read from a save). Retail reads it from the EEPROM unless `reset` (the options' "Reset Saved Data"),
+   and resets it if it is blank or fails its checksum (then the splash screen says the backup was lost). */
+void save_load(s32 reset)
 {
     s32 i, k;
     s32 j;
     u8 track;
+#if VERSION != VERSION_LODGENET
+    u32 *words;
+    s32 blank;
+    u32 sum;
 
+    if (reset == 0) {
+        if (sEepromType == EEPROM_TYPE_16K) {
+            pak_eeprom_read(0, (u8 *)&gSaveData, SAVE_EEPROM_BLOCKS);
+        }
+        sum = 0;
+        words = (u32 *)&gSaveData;
+        blank = 0;
+        if (words[0] == 0xFFFFFFFF || words[0] == 0 || words[0] == 0x10203) {
+            blank = 1;
+        }
+        for (i = 0; i < SAVE_WORDS; i++) {
+            if (i != 1) {
+                sum += words[i];
+            }
+        }
+        sum ^= SAVE_CHECKSUM_XOR;
+        if (!blank) {
+            if (sum == words[1]) {
+                goto apply;
+            }
+            gGame.flags |= GAME_FLAG_BACKUP_LOST;
+        }
+    }
     save_init_defaults();
+apply:
+#else
+    save_init_defaults();
+#endif
     do { gUnlockedTracks = 0; } while (0);
     j = 0;
     for (i = 0; i < TRACK_COUNT; i++) {
@@ -688,9 +753,10 @@ void save_load(s32 unused)
     save_update_unlocks();
 }
 
+#if VERSION == VERSION_LODGENET
 /* Called when part of the save data has changed (SAVE_SECTION_*; `track` for SAVE_SECTION_RECORDS). In this build
    nothing is written: only the tutorial level is copied into gSaveData. The unused buffer is what is left of the
-   frame of the removed code. */
+   frame of the removed code (retail's EEPROM writer). */
 void save_write(s32 section, s32 track)
 {
     u8 buf[0x50];
@@ -698,3 +764,96 @@ void save_write(s32 section, s32 track)
         gSaveData.tutorialProgress = gCups[CUP_TUTORIAL].progress[0];
     }
 }
+#else
+/* Called when part of the save data has changed (SAVE_SECTION_*; `track` for SAVE_SECTION_RECORDS): updates that part
+   of gSaveData, writes its blocks to the EEPROM, then the checksum and the first two blocks again. The high
+   resolution option is never saved. Without a 16 Kbit EEPROM only the tutorial level is copied into gSaveData. */
+void save_write(s32 section, s32 track)
+{
+    u8 buf[0x40];
+    s32 highRes;
+    s32 i, k, n, offset;
+    s32 first, numBlocks;
+    u8 *src;
+    u32 sum;
+    u32 *words;
+    u8 options;
+
+    if (sEepromType == EEPROM_TYPE_16K) {
+        options = gSaveData.options;
+        gSaveData.options = options & ~SAVE_OPT_HIGH_RES;
+        highRes = (options >> 1) & 1;
+        switch (section) {
+        case SAVE_SECTION_PROGRESS:
+            for (k = 0; k < 5; k++) {
+                for (i = 0; i < 3; i++) {
+                    gSaveData.cupProgress[k][i] = gCups[k].progress[i] << 5 | gCups[k].won[i];
+                }
+            }
+            gSaveData.tutorialProgress = gCups[CUP_TUTORIAL].progress[0];
+            first = 0x54;
+            src = (u8 *)&gSaveData + 0x2A0;
+            numBlocks = 6;
+            break;
+        case SAVE_SECTION_RECORDS:
+            n = 0;
+            for (i = 0; i < track; i++) {
+                if (gTracks_12[i].flags & TRACK_FLAG_RECORDS) {
+                    n++;
+                }
+            }
+            {
+                TrackRecord *dst = &gSaveData.records[n];
+                TrackRecord *rec = &gTracks_12[track].record;
+                *dst = *rec;
+            }
+            /* the 16-byte lines the record is in */
+            offset = n * sizeof(TrackRecord) + 8;
+            first = offset / 16 * 2;
+            src = (u8 *)&gSaveData + offset / 16 * 16;
+            numBlocks = (u32)(offset - offset / 16 * 16 + sizeof(TrackRecord) + 15) / 16 * 2;
+            break;
+        case SAVE_SECTION_NES_TRACK:
+            first = 0x5A;
+            src = (u8 *)&gSaveData.unlockedTrackCount;
+            numBlocks = 0x46;
+            break;
+        case SAVE_SECTION_USER_TRACK:
+            eeprom_write_verify(0x9E, (u8 *)&gSaveData + 0x4F0, 0x64);
+            gSaveData.options |= SAVE_OPT_USER_TRACK;
+            first = 0x58;
+            src = (u8 *)&gSaveData + 0x2C0;
+            numBlocks = 4;
+            break;
+        case SAVE_SECTION_OPTIONS:
+            gSaveData.padConfigs = 0;
+            for (i = 3; i >= 0; i--) {
+                gSaveData.padConfigs <<= 2;
+                gSaveData.padConfigs |= gGame.padConfig[i];
+            }
+            first = 0x58;
+            src = (u8 *)&gSaveData + 0x2C0;
+            numBlocks = 4;
+            break;
+        default:
+            goto checksum;
+        }
+        eeprom_write_verify(first, src, numBlocks);
+checksum:
+        sum = 0;
+        words = (u32 *)&gSaveData;
+        for (i = 0; i < SAVE_WORDS; i++) {
+            if (i != 1) {
+                sum += words[i];
+            }
+        }
+        words[1] = sum ^ SAVE_CHECKSUM_XOR;
+        eeprom_write_verify(0, (u8 *)&gSaveData, 2);
+        if (highRes) {
+            gSaveData.options |= SAVE_OPT_HIGH_RES;
+        }
+    } else if (section == SAVE_SECTION_PROGRESS) {
+        gSaveData.tutorialProgress = gCups[CUP_TUTORIAL].progress[0];
+    }
+}
+#endif

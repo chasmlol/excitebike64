@@ -78,9 +78,11 @@ void sched_thread(void)
     while (1) {
         osRecvMesg(&sSchedSysEventQueue, &msg, OS_MESG_BLOCK);
         if (msg == SCHED_MSG_RETRACE) {
+#if VERSION == VERSION_LODGENET
             if (gDebugPadFreeze != 0) {
                 continue;
             }
+#endif
             sSchedRetraceLine = osViGetCurrentLine();
             sSchedRetraceCount++;
             if (gViModeRequest != gViMode) {
@@ -134,6 +136,15 @@ void sched_thread(void)
             osViBlack(TRUE);
             sched_set_vi_mode(VI_MODE_LO_RES);
             osViBlack(TRUE);
+#if VERSION != VERSION_LODGENET
+            /* wait for line 100 three times: three frames */
+            for (i = 0; i < 3; i++) {
+                while (osViGetCurrentLine() > 100) {
+                }
+                while (osViGetCurrentLine() < 100) {
+                }
+            }
+#endif
             osViSetYScale(1.0f);
             cont_finish_read();
             for (i = 0; i < MAXCONTROLLERS; i++) {

@@ -652,10 +652,13 @@ void func_8000EA54(void)
 {
 }
 
-/* Checks two words of the cartridge's IPL3 (0x6C07 at 0x574, 0x8965 at 0x578). Never called. */
+/* Checks two words of the cartridge's IPL3 (0x6C07 at 0x574, 0x8965 at 0x578). LodgeNet never calls it; retail
+   calls it from shell_update. */
 s32 main_check_cart_ipl3(void)
 {
-    __asm__ volatile("addu $9, $30, $0" : : : "$9");
+#if VERSION == VERSION_LODGENET
+    __asm__ volatile("addu $9, $30, $0" : : : "$9");   /* a stray instruction LodgeNet's starts with */
+#endif
     while ((IO_READ(PI_STATUS_REG) & (PI_STATUS_DMA_BUSY | PI_STATUS_IO_BUSY)) != 0) {
     }
     if ((*(volatile u32 *)0xB0000574 & 0xFFFF) != 0x6C07) {

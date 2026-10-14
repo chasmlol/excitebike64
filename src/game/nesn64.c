@@ -593,7 +593,7 @@ void nes_audio_init(void)
     sNesAudioFreq = osAiSetFrequency(NES_AUDIO_RATE);
     sNesAudioFrameSamples = ((sNesAudioChunks * sNesAudioFreq) / 60 + 7) & -8;
     for (i = 0; i < 2; i++) {
-        buf = mem_alloc_dbg(sNesAudioFrameSamples << 2, 0, sStrNesn64C, 0x396);
+        buf = mem_alloc_dbg(sNesAudioFrameSamples << 2, 0, sStrNesn64C, SRC_LINE(0x396, 0x3AF));
         sNesAudioBufs[i] = (s32)buf;
         mem_fill(buf, 0, sNesAudioFrameSamples << 2);
     }

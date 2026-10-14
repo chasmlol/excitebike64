@@ -100,6 +100,7 @@
 #define SAVE_MAGIC              0x5748FB3A
 #define SAVE_CHECKSUM_XOR       0xFCB1121D  /* the checksum is the sum of the other words, xor this */
 #define SAVE_WORDS              0x200       /* words the checksum covers (the first 0x800 bytes) */
+#define SAVE_EEPROM_BLOCKS      0x100       /* retail: the image in a 16 Kbit EEPROM, 256 blocks of 8 bytes */
 /* save_write's sections: what has changed. */
 #define SAVE_SECTION_NES_TRACK  0       /* the NES design track */
 #define SAVE_SECTION_PROGRESS   1       /* season, custom cup and tutorial progress */

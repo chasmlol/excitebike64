@@ -163,6 +163,7 @@ void engine_update(s32 riderIdx, s32 ticks)
         if (rider->rearWheel.surface->flags & SURFACE_COOLS_ENGINE) {
             rider->engine.heat = 0.0f;
         }
+#if VERSION == VERSION_LODGENET
     } else if (rider->input & INPUT_Z) {
         rider->engine.rpm = rider->engine.rpm + (f32)(ticks * 10000 / 15);
     } else if (rider->input & INPUT_A) {
@@ -170,6 +171,15 @@ void engine_update(s32 riderIdx, s32 ticks)
     } else {
         rider->engine.rpm = rider->engine.rpm - (f32)(ticks * 10000 / 60);
     }
+#else
+    } else if (rider->input & INPUT_Z) {       /* retail divides in floating point */
+        rider->engine.rpm = rider->engine.rpm + (f32)(ticks * 10000) / 15.0f;
+    } else if (rider->input & INPUT_A) {
+        rider->engine.rpm = rider->engine.rpm + (f32)(ticks * 10000) / 30.0f;
+    } else {
+        rider->engine.rpm = rider->engine.rpm - (f32)(ticks * 10000) / 60.0f;
+    }
+#endif
     rider->engine.throttle = (rider->input & (INPUT_Z | INPUT_A)) != 0;
     if (rider->engine.rpm < 1000.0f) {
         rider->engine.rpm = 1000.0f;

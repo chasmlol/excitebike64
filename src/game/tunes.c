@@ -92,7 +92,7 @@ void tunes_init(s32 numChannels)
         sStreamDataEnd = sStreamDataBase + file->size;
         sStreamSampleTable = res_load(gSfxResSet, sStreamSampleTableResId);
         if (sStreamSampleTable != 0) {
-            sStreamMixBuf = mem_alloc_dbg(STREAM_MIX_BUF_BYTES, 0, sStrTunesC, 0xFC);
+            sStreamMixBuf = mem_alloc_dbg(STREAM_MIX_BUF_BYTES, 0, sStrTunesC, SRC_LINE(0xFC, 0x105));
             sStreamMixFill = 0;
             sStreamMixWritePos = 0;
             sStreamMixReadPos = 0;
@@ -100,7 +100,7 @@ void tunes_init(s32 numChannels)
             mem_fill(sStreamEchoBuf, 0, STREAM_ECHO_BUF_BYTES);
             sStreamEchoPos = 0;
             sStreamChannelCount = numChannels;
-            sStreamChannels = mem_alloc_dbg(STREAM_CHANNELS * sizeof(StreamChannel), 0, sStrTunesC, 0x10C);
+            sStreamChannels = mem_alloc_dbg(STREAM_CHANNELS * sizeof(StreamChannel), 0, sStrTunesC, SRC_LINE(0x10C, 0x115));
             mem_fill(sStreamChannels, 0, STREAM_CHANNELS * sizeof(StreamChannel));
             for (i = 0; i < sStreamChannelCount; i++) {
                 tunes_init_channel(&sStreamChannels[i]);
@@ -258,6 +258,79 @@ s32 tunes_mix_streams(void)
         }
         flags = ch->flags;
         vol = sStreamChannels[i].volume;
+#if VERSION != VERSION_LODGENET
+        /* retail wraps the mix ring's position with a modulo when it reaches the end */
+        if (!(flags & STREAM_HALF_RATE)) {
+            pos = sStreamMixWritePos;
+            if (!mixed) {
+                for (j = 0; j < STREAM_BLOCK_SAMPLES; j++) {
+                    sStreamMixBuf[pos++] = (*in++ * vol) >> 8;
+                    if (pos >= STREAM_MIX_RING) {
+                        pos %= STREAM_MIX_RING;
+                    }
+                }
+            } else {
+                for (j = 0; j < STREAM_BLOCK_SAMPLES; j++) {
+                    sStreamMixBuf[pos++] += (*in++ * vol) >> 8;
+                    if (pos >= STREAM_MIX_RING) {
+                        pos %= STREAM_MIX_RING;
+                    }
+                }
+            }
+            ch->block++;
+            ch->blocks--;
+        } else {
+            /* half rate: half a block, each sample twice (the first interpolated with the previous one) */
+            if (flags & STREAM_SECOND_HALF) {
+                in += STREAM_BLOCK_SAMPLES / 2;
+                ch->block++;
+                ch->blocks--;
+            }
+            pos = sStreamMixWritePos;
+            ch->flags ^= STREAM_SECOND_HALF;
+            /* `mixed` holds each scaled sample in these loops */
+            if (!mixed) {
+                for (j = 0; j < STREAM_BLOCK_SAMPLES / 2; j++) {
+                    mixed = (*in * vol) >> 8;
+                    sStreamMixBuf[pos++] = (mixed + ch->lastSample) / 2;
+                    if (pos >= STREAM_MIX_RING) {
+                        pos %= STREAM_MIX_RING;
+                    }
+                    sStreamMixBuf[pos++] = mixed;
+                    ch->lastSample = mixed;
+                    if (pos >= STREAM_MIX_RING) {
+                        pos %= STREAM_MIX_RING;
+                    }
+                    in++;
+                }
+            } else {
+                for (j = 0; j < STREAM_BLOCK_SAMPLES / 2; j++) {
+                    mixed = (*in * vol) >> 8;
+                    sStreamMixBuf[pos++] += (mixed + ch->lastSample) / 2;
+                    if (pos >= STREAM_MIX_RING) {
+                        pos %= STREAM_MIX_RING;
+                    }
+                    sStreamMixBuf[pos++] += mixed;
+                    ch->lastSample = mixed;
+                    if (pos >= STREAM_MIX_RING) {
+                        pos %= STREAM_MIX_RING;
+                    }
+                    in++;
+                }
+            }
+        }
+        mixed = 1;
+    }
+    if (!mixed) {
+        pos = sStreamMixWritePos;
+        for (j = 0; j < STREAM_BLOCK_SAMPLES; j++) {
+            sStreamMixBuf[pos++] = 0;
+            if (pos >= STREAM_MIX_RING) {
+                pos %= STREAM_MIX_RING;
+            }
+        }
+    }
+#else
         if (!(flags & STREAM_HALF_RATE)) {
             pos = sStreamMixWritePos;
             if (!mixed) {
@@ -322,6 +395,7 @@ s32 tunes_mix_streams(void)
             pos = (pos + 1) & STREAM_MIX_MASK;
         }
     }
+#endif
     sStreamMixWritePos = pos;
     sStreamMixFill += STREAM_BLOCK_SAMPLES;
     sSongTick += 1;
@@ -459,6 +533,31 @@ void tunes_stop_song(void)
         sCurrentSong = 0;
     }
 }
+
+#if VERSION != VERSION_LODGENET
+/* n64snd's post-mix callback: adds up to `count` mixed samples to both channels of the output. Retail's is here
+   (LodgeNet's, further down, wraps the read position with a mask). */
+void tunes_mix_callback(s32 *out, s32 count)
+{
+    if (sStreamMixFill < count) {
+        count = sStreamMixFill;
+    }
+    if (sStreamLock == 0) {
+        sStreamMixFill = sStreamMixFill - count;
+        while (count != 0) {
+            *out = *out + sStreamMixBuf[sStreamMixReadPos];
+            out++;
+            *out = *out + sStreamMixBuf[sStreamMixReadPos];
+            out++;
+            sStreamMixReadPos++;
+            if (sStreamMixReadPos >= STREAM_MIX_RING) {
+                sStreamMixReadPos = sStreamMixReadPos % STREAM_MIX_RING;
+            }
+            count--;
+        }
+    }
+}
+#endif
 
 /* Counts down the first crowd reaction (sCrowdQueue: clip, frames, clip, frames) and plays it on the ambience
    channel when due. */
@@ -1254,6 +1353,7 @@ void announce_race_start(s32 lastRace)
     }
 }
 
+#if VERSION == VERSION_LODGENET
 /* n64snd's post-mix callback: adds up to `count` mixed samples to both channels of the output. */
 void tunes_mix_callback(s32 *out, s32 count)
 {
@@ -1272,13 +1372,14 @@ void tunes_mix_callback(s32 *out, s32 count)
         }
     }
 }
+#endif
 
 /* Allocates a channel's buffers once. */
 void tunes_init_channel(StreamChannel *ch)
 {
     if (ch->dmaBuf == 0) {
-        ch->dmaBuf = mem_alloc_dbg(STREAM_DMA_BYTES, 0, (s32)&sStrTunesC, 0x128);
-        ch->pcm = mem_alloc_dbg(STREAM_PCM_BYTES, 0, (s32)&sStrTunesC, 0x129);
+        ch->dmaBuf = mem_alloc_dbg(STREAM_DMA_BYTES, 0, (s32)&sStrTunesC, SRC_LINE(0x128, 0x131));
+        ch->pcm = mem_alloc_dbg(STREAM_PCM_BYTES, 0, (s32)&sStrTunesC, SRC_LINE(0x129, 0x132));
         ch->unk_00 = 0;
         ch->dmaHandle = -1;
         ch->sample = -1;

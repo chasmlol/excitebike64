@@ -649,6 +649,11 @@ end:
 
         /* the ground: louder with speed, while the rear wheel is down */
         v = (s32)(gRiders[riderIdx].speed * 255.0f / 15.0f);
+#if VERSION != VERSION_LODGENET
+        if (gRiders[riderIdx].isCpu) {
+            v = 0;      /* not for the CPU riders */
+        }
+#endif
         if (v > 255) {
             v = 255;
         }
@@ -859,6 +864,15 @@ music:
     p[1] = volume;
     goto end;
 speech:
+#if VERSION != VERSION_LODGENET
+    if (sEepromType != EEPROM_TYPE_16K) {
+        /* no 16 Kbit EEPROM: not the cartridge (a copier). Spoil the cosine table. */
+        s32 i;
+        for (i = 0; i < 0x1000; i++) {
+            gCosTable[i] = random_byte() * random_byte();
+        }
+    }
+#endif
     gSpeechVolume = volume;
 end:
     tunes_update_volumes();

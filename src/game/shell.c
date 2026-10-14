@@ -2732,7 +2732,7 @@ void shell_build_player_palettes(void)
     s32 i;
     s32 level;
 
-    gGame.playerPalettes = (u16 *)mem_alloc_dbg(4 * 0x100 * sizeof(u16), 0, sStrShellFile, 0x174F);
+    gGame.playerPalettes = (u16 *)mem_alloc_dbg(4 * 0x100 * sizeof(u16), 0, sStrShellFile, SRC_LINE(0x174F, 0x1743));
     gGame.playerPalettes[0] = 0;
     gGame.playerPalettes[0x100] = 0;
     gGame.playerPalettes[0x200] = 0;
@@ -2909,7 +2909,11 @@ void shell_load_screen(Screen *screen)
         gGame.screenTimer = 600;
         break;
     case SCREEN_TYPE_SPLASH_2:
-        gGame.screenTimer = 300;
+#if VERSION == VERSION_LODGENET
+        gGame.screenTimer = 300;    /* 5 seconds */
+#else
+        gGame.screenTimer = 3600;   /* a minute */
+#endif
         gGame.titleBar = LOAD(sExpansionPakDetectedResId);
         break;
     case SCREEN_TYPE_TITLE:
@@ -3086,7 +3090,7 @@ void shell_load_screen(Screen *screen)
             if (gGame.userTrack != NULL) {
                 mem_free(gGame.userTrack);
             }
-            gGame.userTrack = mem_alloc_dbg(USER_TRACK_NOTE_SIZE, 0, sStrShellFile, 0x18E6);
+            gGame.userTrack = mem_alloc_dbg(USER_TRACK_NOTE_SIZE, 0, sStrShellFile, SRC_LINE(0x18E6, 0x18DA));
             gPakScreen.data = gGame.userTrack;
             gPakScreen.pages = USER_TRACK_NOTE_SIZE / PAK_PAGE_SIZE;
             gPakScreen.mode = PAK_MODE_LOAD;

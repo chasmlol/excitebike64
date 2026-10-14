@@ -2266,9 +2266,16 @@ void bike_update_jump(Rider *rider)
                         rider->bike.vel.y *= speed;
                         rider->bike.vel.z *= speed;
                         if (rider->rot[0] >= -0x17FF) {
+#if VERSION == VERSION_LODGENET
                             rider->bike.angVel.x -= rider->bike.right.x * 3.0f;
                             rider->bike.angVel.y -= rider->bike.right.y * 3.0f;
                             rider->bike.angVel.z -= rider->bike.right.z * 3.0f;
+#else
+                            /* retail pitches the bike less */
+                            rider->bike.angVel.x -= rider->bike.right.x * 2.0f;
+                            rider->bike.angVel.y -= rider->bike.right.y * 2.0f;
+                            rider->bike.angVel.z -= rider->bike.right.z * 2.0f;
+#endif
                         }
                         snd_play_rider_sfx_pitch(7, rider - gRiders, 0xC0, 0xC0, 1);
                     }

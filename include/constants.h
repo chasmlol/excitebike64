@@ -75,6 +75,7 @@
 #define GAME_FLAG_NO_CONTROLLER     0x08000000  /* no controller in socket 1 */
 #define GAME_FLAG_SPLASH_3          0x10000000  /* SCREEN_SPLASH_3 is up: screen_draw_wipe draws at full level */
 #define GAME_FLAG_DEBUG             0x20000000  /* the Debug cheat */
+#define GAME_FLAG_BACKUP_LOST       0x40000000  /* retail: the saved data failed its checksum (save_load) */
 
 /* gCheatFlags and sCheatMask: bit n is the cheat of sCheatTable[n], entered on the cheat screen */
 #define CHEAT_BIG_HEAD              0x0001

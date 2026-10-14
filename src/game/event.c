@@ -382,7 +382,7 @@ void event_init(s32 numRiders, s32 numLaps)
     mem_fill_2(gRiders, 0, sizeof(Rider) * 8);
     gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
     if (gRaceSeries_2.count > 0 && gRaceSeries_2.done == 0) {
-        gRaceSeries_2.buf = mem_calloc_dbg(gRaceSeries_2.count * 4, 0, (s32)sStrEventFile, 0x6D9);
+        gRaceSeries_2.buf = mem_calloc_dbg(gRaceSeries_2.count * 4, 0, (s32)sStrEventFile, SRC_LINE(0x6D9, 0x80B));
     }
     switch (gGame.mode) {
     case GAME_MODE_SOCCER:
@@ -1178,7 +1178,7 @@ void event_hud_init(void)
 
     if (gGame.mode == GAME_MODE_TUTORIAL) {
         /* a palette of 256 greys (RGBA5551) */
-        sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, sStrEventFile, 0xB4B);
+        sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, sStrEventFile, SRC_LINE(0xB4B, 0xC7D));
         *sGreyPalette = 0;
         dst = sGreyPalette + 1;
         i = 1;
@@ -1202,8 +1202,8 @@ void event_hud_init(void)
     }
     res_register_type(sStrEventN64, prim_n64_relocate);
     if (game->numPlayers == 1) {
-        D_800F0730[0] = mem_alloc_dbg(0x1c0, 0, sStrEventFile, 0xB6B);
-        D_800F0730[1] = mem_alloc_dbg(0x1c0, 0, sStrEventFile, 0xB6C);
+        D_800F0730[0] = mem_alloc_dbg(0x1c0, 0, sStrEventFile, SRC_LINE(0xB6B, 0xC9D));
+        D_800F0730[1] = mem_alloc_dbg(0x1c0, 0, sStrEventFile, SRC_LINE(0xB6C, 0xC9E));
     }
     /* only the perspective's normalization (sHudPerspNorm) is kept */
     height = *(volatile s32 *)&gScreenHeight;

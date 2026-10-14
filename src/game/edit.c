@@ -326,8 +326,8 @@ void edit_exit(void)
         memcpy(gZBuffer + USER_TRACK_BUF_SIZE, gUserTrackLayout, layoutSize);
         mem_free(gUserTrackLayout);
         mem_free(gGame.userTrack);
-        gUserTrackLayout = mem_alloc_dbg(layoutSize, 0, sStrEditFile, 0x651);
-        gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, sStrEditFile, 0x652);
+        gUserTrackLayout = mem_alloc_dbg(layoutSize, 0, sStrEditFile, SRC_LINE(0x651, 0x658));
+        gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, sStrEditFile, SRC_LINE(0x652, 0x659));
         memcpy(gUserTrackLayout, gZBuffer + USER_TRACK_BUF_SIZE, layoutSize);
         __builtin_memcpy(gGame.userTrack, gZBuffer, USER_TRACK_BUF_SIZE);
     }
@@ -3299,8 +3299,8 @@ void edit_init_user_pieces(void)
     for (i = 0; i < USER_PIECE_COUNT; i++) {
         /* 4 segments, with room for the most */
         gPieceTypes[i + PIECE_TYPE_USER].dim[1] = 4;
-        gPieceTypes[i + PIECE_TYPE_USER].meshA = mem_alloc_dbg((tmplA->count << 8) | 4, 0, sStrEditFile, 0x1D73);
-        gPieceTypes[i + PIECE_TYPE_USER].meshB = mem_alloc_dbg((tmplB->count << 8) | 4, 0, sStrEditFile, 0x1D74);
+        gPieceTypes[i + PIECE_TYPE_USER].meshA = mem_alloc_dbg((tmplA->count << 8) | 4, 0, sStrEditFile, SRC_LINE(0x1D73, 0x1D7A));
+        gPieceTypes[i + PIECE_TYPE_USER].meshB = mem_alloc_dbg((tmplB->count << 8) | 4, 0, sStrEditFile, SRC_LINE(0x1D74, 0x1D7B));
         usrtrk_clone_piece_meshes(gPieceTypes[i + PIECE_TYPE_USER].meshA, gPieceTypes[i + PIECE_TYPE_USER].meshB, USER_PIECE_MAX_SEGMENTS);
         for (j = 0; j < USER_PIECE_HEIGHTS; j++) {
             gUserPieceHeights[i][j] = 0;
@@ -4159,7 +4159,7 @@ typedef struct { u8 b[USER_TRACK_MAX_SIZE]; } UserTrackBlock;
 /* Packs the track into the save data. Not called (edit_update_main_menu has it written out). */
 void edit_save_track_to_game_pak(void)
 {
-    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, sStrEditFile, 0x6FE);
+    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, sStrEditFile, SRC_LINE(0x6FE, 0x705));
     usrtrk_pack_track(gGame.userTrack);
     *(UserTrackBlock *)gSaveData.userTrack = *(UserTrackBlock *)gGame.userTrack;
     save_write(4, 0); /* the user track's section */
