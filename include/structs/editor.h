@@ -209,6 +209,8 @@ typedef struct EditCam {
 
 #define EDIT_MAX_PIECES  150
 #define EDIT_CAM_STEPS   35         /* camera moves are eased over this many frames */
+#define EDIT_MAX_LINES   60         /* the height editor's lines per frame (Editor.lineVtx: 4 vertices each) */
+#define EDIT_DIRT_TYPES  3
 
 /* Editor.flags */
 #define EDIT_REVERSED       0x00000001 /* the view is turned around: left/right swap */
@@ -228,6 +230,7 @@ typedef struct EditCam {
 #define EDIT_PAK_SAVE       0x00004000 /* ... to save the track */
 #define EDIT_CAN_DELETE     0x00008000
 #define EDIT_A_HELD         0x00010000
+#define EDIT_ROOM_ANY       (EDIT_ROOM_X_NEG | EDIT_ROOM_X_POS | EDIT_ROOM_Y_POS | EDIT_ROOM_Y_NEG)
 
 /* The editor's state, gEditor (allocated by edit_init). */
 typedef struct Editor {
@@ -277,7 +280,7 @@ typedef struct Editor {
     /* 0x172C */ EditCam cam[2];    /* track view, user piece view */
     /* 0x1744 */ EditPiece *lastCur; /* cur as of the last frame */
     /* 0x1748 */ EditPiece *prevCur; /* the one before it */
-    /* 0x174C */ Vtx *lineVtx[2];   /* the height editor's lines, per frame buffer (0xF00 bytes) */
+    /* 0x174C */ Vtx *lineVtx[2];   /* the height editor's lines, per frame buffer (EDIT_MAX_LINES quads) */
     /* 0x1754 */ s32 lineCount;
     /* 0x1758 */ s32 camZoomFrames; /* the user piece camera moves for these frames ... */
     /* 0x175C */ s32 camZoomStep;   /* ... by this / 50 each */
@@ -286,7 +289,7 @@ typedef struct Editor {
     /* 0x17B0 */ PieceType *selType; /* the type chosen in the piece menu */
     /* 0x17B4 */ u8 unk_17B4[4];
     /* 0x17B8 */ Vp views[4];       /* sEditViewRects */
-    /* 0x17F8 */ s32 dirtType;      /* 0-2 */
+    /* 0x17F8 */ s32 dirtType;      /* 0 to EDIT_DIRT_TYPES - 1 */
     /* 0x17FC */ s16 dialog;        /* which OK/Cancel box: EDIT_ASK_* */
     /* 0x17FE */ s16 dialogChoice;  /* 1 the left answer */
     /* 0x1800 */ s16 message;       /* which message box: EDIT_MSG_* */

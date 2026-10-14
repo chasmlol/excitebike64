@@ -1,5 +1,35 @@
 #include "game.h"
 
+/* The game's pad word (main_convert_pad_input): the stick's directions, the buttons, and the stick's magnitudes
+   (0-15) in bits 24-27 (x) and 28-31 (y). */
+#define PAD_STICK_UP    0x00000001
+#define PAD_STICK_DOWN  0x00000002
+#define PAD_STICK_LEFT  0x00000004
+#define PAD_STICK_RIGHT 0x00000008
+#define PAD_A           0x00000010
+#define PAD_B           0x00000020
+#define PAD_START       0x00000040
+#define PAD_C_UP        0x00000080
+#define PAD_C_DOWN      0x00000100
+#define PAD_C_LEFT      0x00000200
+#define PAD_C_RIGHT     0x00000400
+#define PAD_D_UP        0x00000800
+#define PAD_D_DOWN      0x00001000
+#define PAD_D_LEFT      0x00002000
+#define PAD_D_RIGHT     0x00004000
+#define PAD_L           0x00008000
+#define PAD_R           0x00010000
+#define PAD_Z           0x00020000
+
+/* snd_play_menu_sound */
+#define MENU_SFX_MOVE   0
+#define MENU_SFX_SELECT 1
+#define MENU_SFX_BACK   2
+#define MENU_SFX_ERROR  3
+
+/* SaveData.options: a user track is saved on the Game Pak */
+#define SAVE_HAS_USER_TRACK 8
+
 extern EditCamPos sEditCamDelta;
 extern EditCamPos sEditCamPosFixed; /* 1/1024 */
 extern EditCamPos sEditCamPos;
@@ -11,33 +41,35 @@ extern GuiMenuItem sEditTrackMenuItems[];
 
 /* Makes the first piece that can start the track the start piece, if there is none. */
 static inline void edit_pick_start_piece(void) {
-    EditPiece *n;
+    EditPiece *piece;
 
     if (gEditor->start == NULL) {
-        n = gEditor->first;
-        while (n != NULL) {
-            if (n->type->flags & PIECE_START) {
-                gEditor->start = n;
+        piece = gEditor->first;
+        while (piece != NULL) {
+            if (piece->type->flags & PIECE_START) {
+                gEditor->start = piece;
                 break;
             }
-            n = n->next;
-            if (n == gEditor->first) {
+            piece = piece->next;
+            if (piece == gEditor->first) {
                 break;
             }
         }
     }
 }
 
+/* One frame of the camera's eased move to sEditCamTarget (in 1/1024 units); at the end it lands there, the yaw rounded
+   to an eighth turn. Declared s32 with no return value, as the original's code needs. */
 s32 edit_cam_step(void)
 {
-    sEditCamPosFixed.x += edit_ease_delta(1, sEditCamDelta.x, 0x23, sEditCamStep);
-    sEditCamPosFixed.z += edit_ease_delta(1, sEditCamDelta.z, 0x23, sEditCamStep);
-    sEditCamPosFixed.yaw += edit_ease_delta(2, sEditCamDelta.yaw, 0x23, sEditCamStep);
+    sEditCamPosFixed.x += edit_ease_delta(1, sEditCamDelta.x, EDIT_CAM_STEPS, sEditCamStep);
+    sEditCamPosFixed.z += edit_ease_delta(1, sEditCamDelta.z, EDIT_CAM_STEPS, sEditCamStep);
+    sEditCamPosFixed.yaw += edit_ease_delta(2, sEditCamDelta.yaw, EDIT_CAM_STEPS, sEditCamStep);
     sEditCamPos.x = sEditCamPosFixed.x >> 10;
     sEditCamPos.z = sEditCamPosFixed.z >> 10;
     sEditCamPos.yaw = (u16)(sEditCamPosFixed.yaw >> 10);
     sEditCamStep++;
-    if (sEditCamStep == 0x23) {
+    if (sEditCamStep == EDIT_CAM_STEPS) {
         sEditCamMoving = 0;
         sEditCamPos.x = sEditCamTarget.x;
         sEditCamPos.z = sEditCamTarget.z;
@@ -45,37 +77,40 @@ s32 edit_cam_step(void)
     }
 }
 
+/* Aims the camera at the current piece (the piece next to a preview piece), its yaw along the piece's cursor angle
+   (eighths of a turn, turned round when reversed or for a C button turn), and starts the move if anything changed. */
 void edit_cam_update_target(void)
 {
-    EditPiece *obj;
-    EditPiece *o;
-    s32 a;
-    EditCamPos *p;
-    s32 fl;
+    EditPiece *cur;
+    EditPiece *piece;
+    s32 angle;
+    EditCamPos *target;
+    s32 flipped;
 
-    obj = gEditor->cur;
-    if (obj != NULL && (obj->flags & EDIT_PIECE_PREVIEW) && (obj->next != NULL || obj->prev != NULL) && gEditor->mode != EDIT_MODE_USER_PIECE) {
-        o = obj->next;
-        if (o == NULL) {
-            o = obj->prev;
+    cur = gEditor->cur;
+    if (cur != NULL && (cur->flags & EDIT_PIECE_PREVIEW) && (cur->next != NULL || cur->prev != NULL) && gEditor->mode != EDIT_MODE_USER_PIECE) {
+        piece = cur->next;
+        if (piece == NULL) {
+            piece = cur->prev;
         }
     } else {
-        o = gEditor->cur;
+        piece = gEditor->cur;
     }
-    if (o != NULL && (gEditor->mode == EDIT_MODE_USER_PIECE || !(o->flags & 4))) {
-        a = o->type->cursorAngle;
-        a -= o->rot << 1;
-        if (fl = o->flags & 2, p = &sEditCamTarget, fl) {
-            a += 4;
+    if (piece != NULL && (gEditor->mode == EDIT_MODE_USER_PIECE || !(piece->flags & EDIT_PIECE_PREVIEW))) {
+        angle = piece->type->cursorAngle;
+        angle -= piece->rot << 1;
+        if (flipped = piece->flags & EDIT_PIECE_FLIPPED, target = &sEditCamTarget, flipped) {
+            angle += 4;
         }
         if (gEditor->flags & EDIT_REVERSED) {
-            a += 4;
+            angle += 4;
         }
-        p->yaw = a & 7;
+        target->yaw = angle & 7;
     } else {
         sEditCamTarget.yaw = (gEditor->flags & EDIT_REVERSED) << 2;
     }
     sEditCamTarget.yaw = (sEditCamTarget.yaw - (sEditCamPos.yaw >> 13)) & 7;
+    /* the shorter way round */
     switch (sEditCamTarget.yaw) {
     case 5:
         sEditCamTarget.yaw = -3;
@@ -89,15 +124,15 @@ void edit_cam_update_target(void)
     }
     if (gEditor->flags & EDIT_TURN_LEFT) {
         sEditCamTarget.yaw -= 4;
-        gEditor->flags ^= 3;
+        gEditor->flags ^= EDIT_TURN_LEFT | EDIT_REVERSED;
     }
     if (gEditor->flags & EDIT_TURN_RIGHT) {
         sEditCamTarget.yaw += 4;
-        gEditor->flags ^= 5;
+        gEditor->flags ^= EDIT_TURN_RIGHT | EDIT_REVERSED;
     }
     if (gEditor->cur != NULL) {
-        sEditCamTarget.x = o->x * 8000 + o->type->dim[o->rot & 1] * 4000 - gEditor->gridSize[0] * 4000;
-        sEditCamTarget.z = o->y * 8000 + o->type->dim[(o->rot + 1) & 1] * 4000 - gEditor->gridSize[1] * 4000;
+        sEditCamTarget.x = piece->x * CELL_MM + piece->type->dim[piece->rot & 1] * (CELL_MM / 2) - gEditor->gridSize[0] * (CELL_MM / 2);
+        sEditCamTarget.z = piece->y * CELL_MM + piece->type->dim[(piece->rot + 1) & 1] * (CELL_MM / 2) - gEditor->gridSize[1] * (CELL_MM / 2);
     } else {
         sEditCamTarget.x = -4000;
         sEditCamTarget.z = -4000;
@@ -114,20 +149,23 @@ void edit_cam_update_target(void)
     }
 }
 
+/* Game state 2: allocates the editor (kept when back from the Controller Pak screen), loads the "Pieces" resources and
+   the piece types' meshes, sets up the grid, the views, the cameras and the user pieces, and takes a track handed
+   over in gGame.userTrack. */
 void edit_init(void)
 {
     s32 i, j;
-    u32 k, n;
-    PieceType *o;
-    PieceMesh *vl;
+    u32 cell, vtx;
+    PieceMesh *mesh;
     s32 v;
-    s32 c, q, x, y, w, f, d;
+    s32 idx, view, x, y, roundUp, quot;
 
     gCurTrack = &gTracks[TRACK_USER];
     if (gEditor == NULL || !(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
-        gEditor = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
-        mem_fill((u8 *)gEditor, 0, 0x1810);
+        gEditor = mem_alloc_dbg(sizeof(Editor), 0, sStrEditFile, 0x50A);
+        mem_fill((u8 *)gEditor, 0, sizeof(Editor));
     } else {
+        /* back from the Controller Pak screen */
         gGame.flags &= ~2;
         gEditor->flags &= ~EDIT_EXIT;
     }
@@ -143,8 +181,8 @@ void edit_init(void)
     gEditor->start = 0;
     gEditor->scrollX = 0;
     gEditor->scrollY = 0;
-    for (c = 149; c >= 0; c--) {
-        gEditor->pieces[c].used = 0;
+    for (idx = EDIT_MAX_PIECES - 1; idx >= 0; idx--) {
+        gEditor->pieces[idx].used = 0;
     }
     strcpy(gEditor->name, "<NONE>");
     res_register_type(sStrEditArn, arn_relocate);
@@ -161,20 +199,20 @@ void edit_init(void)
             gUserTrackLayout = NULL;
         }
     }
-    for (q = 0; q < 4; q++) {
-        gEditor->views[q].vp.vscale[0] = sEditViewRects[q].w * 2;
-        gEditor->views[q].vp.vscale[1] = sEditViewRects[q].h * 2;
-        gEditor->views[q].vp.vtrans[0] = (sEditViewRects[q].x + sEditViewRects[q].w / 2) * 4;
-        gEditor->views[q].vp.vtrans[1] = (sEditViewRects[q].y + sEditViewRects[q].h / 2) * 4;
+    for (view = 0; view < 4; view++) {
+        gEditor->views[view].vp.vscale[0] = sEditViewRects[view].w * 2;
+        gEditor->views[view].vp.vscale[1] = sEditViewRects[view].h * 2;
+        gEditor->views[view].vp.vtrans[0] = (sEditViewRects[view].x + sEditViewRects[view].w / 2) * 4;
+        gEditor->views[view].vp.vtrans[1] = (sEditViewRects[view].y + sEditViewRects[view].h / 2) * 4;
     }
     gEditor->screenVp.vp.vscale[0] = 1000;
     gEditor->screenVp.vp.vscale[1] = 320;
-    gEditor->screenVp.vp.vscale[2] = 0x1FF;
+    gEditor->screenVp.vp.vscale[2] = G_MAXZ / 2;
     gEditor->screenVp.vp.vtrans[0] = (gScreenWidth / 2) * 4;
     gEditor->screenVp.vp.vtrans[1] = (gScreenHeight / 2) * 4;
-    gEditor->screenVp.vp.vtrans[2] = 0x1FF;
+    gEditor->screenVp.vp.vtrans[2] = G_MAXZ / 2;
     if (!(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
-        gEditor->slideState = 1;
+        gEditor->slideState = EDIT_SLIDE_SHOWN;
         gEditor->slideTimer = 0;
         gEditor->menu = &sEditMainMenu;
         gEditor->mode = EDIT_MODE_IDLE;
@@ -190,13 +228,13 @@ void edit_init(void)
     gEditor->bigText = font_text_create(0, 0x40, 2, 2, 0x21);
     gEditor->text = font_text_create(0, 0x20, 2, 2, 0x21);
     edit_update_piece_ports(gEditor->cur);
-    gEditor->page = 0;
-    for (i = 0; i < 29; i++) {
-        gPieceTypes[i].flags |= 0x10;
-        if (gPieceTypes[i].flags & 0x100) {
-            gPieceTypes[i].flags |= 0x20;
+    gEditor->page = EDIT_PAGE_MAIN;
+    for (i = 0; i < PIECE_TYPE_COUNT; i++) {
+        gPieceTypes[i].flags |= PIECE_FITS;
+        if (gPieceTypes[i].flags & PIECE_FLIPPABLE) {
+            gPieceTypes[i].flags |= PIECE_FITS_FLIPPED;
         } else {
-            gPieceTypes[i].flags &= ~0x20;
+            gPieceTypes[i].flags &= ~PIECE_FITS_FLIPPED;
         }
         if (gPieceTypes[i].meshAId == NULL) continue;
         gPieceTypes[i].meshA = (PieceMeshSet *)res_load(gEditor->pieceRes, *gPieceTypes[i].meshAId);
@@ -205,14 +243,15 @@ void edit_init(void)
         } else {
             gPieceTypes[i].meshB = NULL;
         }
-        for (k = 0; k < gPieceTypes[i].meshA->count; k++) {
-            vl = gPieceTypes[i].meshA->cells[k].mesh;
-            for (n = 0; n < vl->vtxCount; n++) {
+        /* the ground's vertices snapped to multiples of 50, rounding up from a remainder of 15 */
+        for (cell = 0; cell < gPieceTypes[i].meshA->count; cell++) {
+            mesh = gPieceTypes[i].meshA->cells[cell].mesh;
+            for (vtx = 0; vtx < mesh->vtxCount; vtx++) {
                 for (j = 0; j < 3; j += 2) {
-                    v = (s16)vl->vtx[n].v.ob[j];
-                    if (v < 0) { s32 w2 = -v; s32 d2 = w2 / 50; s32 f2 = w2 - d2 * 50 >= 15; v = d2 + f2; v = -(v * 50); }
-                    else { d = v / 50; f = v - d * 50 >= 15; v = d + f; v = v * 50; }
-                    vl->vtx[n].v.ob[j] = v;
+                    v = (s16)mesh->vtx[vtx].v.ob[j];
+                    if (v < 0) { s32 neg = -v; s32 quot2 = neg / 50; s32 roundUp2 = neg - quot2 * 50 >= 15; v = quot2 + roundUp2; v = -(v * 50); }
+                    else { quot = v / 50; roundUp = v - quot * 50 >= 15; v = quot + roundUp; v = v * 50; }
+                    mesh->vtx[vtx].v.ob[j] = v;
                 }
             }
         }
@@ -223,44 +262,45 @@ void edit_init(void)
             arned_set_cell(x, y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
-    arned_set_viewport(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1);
+    arned_set_viewport(sEditViewRects[EDIT_VIEW_TRACK].x, sEditViewRects[EDIT_VIEW_TRACK].y, sEditViewRects[EDIT_VIEW_TRACK].w - 1,
+                       sEditViewRects[EDIT_VIEW_TRACK].h - 1);
     gEditor->cam[0].dist = 90000;
     gEditor->cam[1].dist = 45000;
     sEditCamTarget.yaw = 0;
     sEditCamPos.yaw = 0;
     {
         s32 fl = gEditor->flags;
-        s32 m6 = fl & 0x6000;
-        if (m6 != 0) {
-            gEditor->flags = m6;
-            if (fl & 0x2000) {
-                sEditMainMenu.choice = 2;
-                sEditMainMenu.cursor = 2;
+        s32 pak = fl & (EDIT_PAK_LOAD | EDIT_PAK_SAVE);
+        if (pak != 0) {
+            gEditor->flags = pak;
+            if (fl & EDIT_PAK_LOAD) {
+                sEditMainMenu.choice = EDIT_MAIN_LOAD;
+                sEditMainMenu.cursor = EDIT_MAIN_LOAD;
             } else {
-                sEditMainMenu.choice = 3;
-                sEditMainMenu.cursor = 3;
+                sEditMainMenu.choice = EDIT_MAIN_SAVE;
+                sEditMainMenu.cursor = EDIT_MAIN_SAVE;
             }
         } else {
-            sEditMainMenu.choice = 1;
-            sEditMainMenu.cursor = 1;
+            sEditMainMenu.choice = EDIT_MAIN_EDIT;
+            sEditMainMenu.cursor = EDIT_MAIN_EDIT;
             gEditor->flags = 0;
         }
     }
     edit_calc_track_cam_elevation();
     edit_calc_piece_cam_elevation();
-    gEditor->userPieceCount = 8;
-    gEditor->lineVtx[0] = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E1);
-    gEditor->lineVtx[1] = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E2);
+    gEditor->userPieceCount = USER_PIECE_COUNT;
+    gEditor->lineVtx[0] = mem_alloc_dbg(EDIT_MAX_LINES * 4 * sizeof(Vtx), 0, sStrEditFile, 0x5E1);
+    gEditor->lineVtx[1] = mem_alloc_dbg(EDIT_MAX_LINES * 4 * sizeof(Vtx), 0, sStrEditFile, 0x5E2);
     gEditor->userPiece = 0;
     edit_init_user_pieces();
     edit_user_piece_reset_cursor(0);
-    gEditor->userPieceCount = 8;
+    gEditor->userPieceCount = USER_PIECE_COUNT;
     gui_init();
     gEditor->warnFrame = res_load(gGuiRes, gWarnFrameResId);
     gEditor->warnIcon = res_load(gGuiRes, gWarnTitleBarResId);
     if (gGame.userTrack != NULL) {
         gEditor->flags &= ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE);
-        usrtrk_load_into_editor((u8 *)gGame.userTrack + 4);
+        usrtrk_load_into_editor((u8 *)gGame.userTrack + 4); /* after the checksum */
         mem_free(gGame.userTrack);
         gGame.userTrack = NULL;
         edit_try_close_loop(gEditor->last);
@@ -271,18 +311,20 @@ void edit_init(void)
     sEditCamPos.yaw = ((u32)(sEditCamPos.yaw + 0x800) >> 13) << 13;
     sEditCamMoving = 0;
     arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
-    osViSetSpecialFeatures(0xAA);
+    osViSetSpecialFeatures(OS_VI_GAMMA_OFF | OS_VI_GAMMA_DITHER_OFF | OS_VI_DIVOT_OFF | OS_VI_DITHER_FILTER_OFF);
 }
 
+/* Frees the editor's resources (the editor itself unless it is coming back from the Controller Pak screen); when
+   leaving to test the track, keeps its layout and packed copy for the race. */
 void edit_exit(void)
 {
-    s32 iVar7;
-    s32 n;
+    s32 testPieces;
+    s32 layoutSize;
 
     if (gEditor->flags & EDIT_TEST_TRACK) {
-        iVar7 = gUserTrackLayout->pieceCount;
+        testPieces = gUserTrackLayout->pieceCount;
     } else {
-        iVar7 = -1;
+        testPieces = -1;
     }
     res_close_set(gResourceSet);
     prim_exit();
@@ -300,17 +342,18 @@ void edit_exit(void)
     }
     shell_free_gui_res();
     gui_free();
-    osViSetSpecialFeatures(0xAA);
-    if (iVar7 >= 0) {
-        __builtin_memcpy(gZBuffer, gGame.userTrack, 0x400);
-        n = (iVar7 - 1) * 0xc + 0x110;
-        memcpy(gZBuffer + 0x400, gUserTrackLayout, n);
+    osViSetSpecialFeatures(OS_VI_GAMMA_OFF | OS_VI_GAMMA_DITHER_OFF | OS_VI_DIVOT_OFF | OS_VI_DITHER_FILTER_OFF);
+    if (testPieces >= 0) {
+        /* the packed track and the layout move through the z-buffer to fresh allocations */
+        __builtin_memcpy(gZBuffer, gGame.userTrack, USER_TRACK_BUF_SIZE);
+        layoutSize = (testPieces - 1) * 0xc + 0x110; /* sizeof(UserTrackLayout) with testPieces pieces */
+        memcpy(gZBuffer + 0x400, gUserTrackLayout, layoutSize);
         mem_free(gUserTrackLayout);
         mem_free(gGame.userTrack);
-        gUserTrackLayout = mem_alloc_dbg(n, 0, sStrEditFile, 0x651);
-        gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x652);
-        memcpy(gUserTrackLayout, gZBuffer + 0x400, n);
-        __builtin_memcpy(gGame.userTrack, gZBuffer, 0x400);
+        gUserTrackLayout = mem_alloc_dbg(layoutSize, 0, sStrEditFile, 0x651);
+        gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, sStrEditFile, 0x652);
+        memcpy(gUserTrackLayout, gZBuffer + 0x400, layoutSize);
+        __builtin_memcpy(gGame.userTrack, gZBuffer, USER_TRACK_BUF_SIZE);
     }
     font_unload_set();
 }
