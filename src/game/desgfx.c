@@ -1,5 +1,7 @@
 #include "game.h"
 
+/* Loads the desert: textures, object models, the patch cache, the height map and its tiles, the 16 seam display
+   lists, the arrow and the checkpoint marker. */
 void des_init(void)
 {
     s32 i;
@@ -10,24 +12,24 @@ void des_init(void)
         sDesObjModels[i].model = (PrimModel *)res_load(gResourceSet, *sDesObjModels[i].res);
     }
     gObjectTexSet = res_load(gResourceSet, sDesObjTexResId);
-    sDesPatches = mem_alloc_dbg(250 * sizeof(DesPatch), 0, sStrDesgfxC, 0xe9);
-    for (i = 0; i < 250; i++) {
+    sDesPatches = mem_alloc_dbg(DES_NUM_PATCHES * sizeof(DesPatch), 0, sStrDesgfxC, 0xe9);
+    for (i = 0; i < DES_NUM_PATCHES; i++) {
         sDesPatches[i].life = 0;
     }
-    gDesertHeightMap = mem_alloc_dbg(0x40000, 0, sStrDesgfxC, 0xed);
+    gDesertHeightMap = mem_alloc_dbg(DESERT_MAP_SIZE * DESERT_MAP_SIZE, 0, sStrDesgfxC, 0xed);
     fractal_init((u8 *)gDesertHeightMap);
     fractal_reset();
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < 16; i++) { /* one per combination of seams */
         sDesPatchDLs[i] = des_build_patch_dl(i);
     }
     mem_fill_2(sDesPatchGrid, -1, sizeof(sDesPatchGrid));
     mem_fill_2(sDesPatchGridOrigin, 0, sizeof(sDesPatchGridOrigin));
-    sDesFreePatchCount = 250;
-    for (i = 249; i >= 0; i--) {
+    sDesFreePatchCount = DES_NUM_PATCHES;
+    for (i = DES_NUM_PATCHES - 1; i >= 0; i--) {
         sDesFreePatches[i] = i;
     }
-    sDesObjMtx[0] = mem_alloc_dbg(16 * sizeof(Mtx), 0, sStrDesgfxC, 0xfe);
-    sDesObjMtx[1] = mem_alloc_dbg(16 * sizeof(Mtx), 0, sStrDesgfxC, 0xff);
+    sDesObjMtx[0] = mem_alloc_dbg(DES_MAX_OBJECTS * sizeof(Mtx), 0, sStrDesgfxC, 0xfe);
+    sDesObjMtx[1] = mem_alloc_dbg(DES_MAX_OBJECTS * sizeof(Mtx), 0, sStrDesgfxC, 0xff);
     sDesArrowTex = (TexSet *)res_load(gResourceSet, sDesArrowTexResId);
     sDesArrowModel = (PrimModel *)res_load(gResourceSet, sDesArrowModelResId);
     sDesArrowMtx = mem_alloc_dbg(2 * sizeof(Mtx), 0, sStrDesgfxC, 0x104);
@@ -35,25 +37,27 @@ void des_init(void)
     D_800EA98C = res_load(gResourceSet, D_800D0BC8);
 }
 
-void des_update_view(s32 arg0)
+/* A frame of the desert: generates more terrain, picks the patches of each ring around the camera, makes the
+   matrices of the blocks they lie in and of the visible objects, the arrow and the marker. */
+void des_update_view(s32 view)
 {
     s32 i;
     s32 j;
-    Mtx m1;
-    Mtx m2;
+    Mtx rot;
+    Mtx place;
 
     sDesMarkerFrame = gRaceFrame / 4;
     fractal_generate_step(100);
     sDesCamX = gCamPos[0].x;
     sDesCamY = gCamPos[0].y;
     sDesCamZ = gCamPos[0].z;
-    divmod_floor(sDesCamX, 0x1F400, &sDesCamBlockX, &sDesCamBlockOffX);
-    divmod_floor(sDesCamZ, 0x1F400, &sDesCamBlockZ, &sDesCamBlockOffZ);
+    divmod_floor(sDesCamX, DES_BLOCK_MM, &sDesCamBlockX, &sDesCamBlockOffX);
+    divmod_floor(sDesCamZ, DES_BLOCK_MM, &sDesCamBlockZ, &sDesCamBlockOffZ);
     fractal_update_tiles(sDesCamX, sDesCamZ);
     des_calc_lod_grid();
     des_update_patches();
     sDesBlockCount = 0;
-    for (i = 0; i < 250; i++) {
+    for (i = 0; i < DES_NUM_PATCHES; i++) {
         if (sDesPatches[i].visible != 0) {
             for (j = 0; j < sDesBlockCount; j++) {
                 if (gDesBlockX[j] == sDesPatches[i].blockX && gDesBlockZ[j] == sDesPatches[i].blockZ) {
@@ -65,39 +69,41 @@ void des_update_view(s32 arg0)
                 gDesBlockX[j] = sDesPatches[i].blockX;
                 gDesBlockZ[j] = sDesPatches[i].blockZ;
                 mtx_from_angles_pos_scale(&sDesBlockMtx[gGfxFrameIndex][j], 0, 0, 0,
-                              (sDesPatches[i].blockX - sDesCamBlockX) * 0x1F400 - sDesCamBlockOffX + 64000,
+                              (sDesPatches[i].blockX - sDesCamBlockX) * DES_BLOCK_MM - sDesCamBlockOffX + 64000,
                               -sDesCamY,
-                              (sDesPatches[i].blockZ - sDesCamBlockZ) * 0x1F400 - sDesCamBlockOffZ + 64000,
+                              (sDesPatches[i].blockZ - sDesCamBlockZ) * DES_BLOCK_MM - sDesCamBlockOffZ + 64000,
                               0x100);
                 sDesPatches[i].block = sDesBlockCount;
                 sDesBlockCount++;
             }
         }
     }
-    sDesObjectCount = fractal_get_visible_objects(sDesCamX, sDesCamZ, gCamYaw[0], 0x1F400, sDesObjects, 16);
+    sDesObjectCount = fractal_get_visible_objects(sDesCamX, sDesCamZ, gCamYaw[0], 128000, sDesObjects, DES_MAX_OBJECTS);
     for (i = 0; i < sDesObjectCount; i++) {
         mtx_from_angles_pos_scale(&sDesObjMtx[gGfxFrameIndex][i], 0, 0, 0,
                       sDesObjects[i].x - sDesCamX, sDesObjects[i].y - sDesCamY, sDesObjects[i].z - sDesCamZ, 0x10);
     }
     if (sDesArrowAngle >= 0) {
-        mtx_from_angles_pos_scale(&m1, 0, 0, sDesArrowAngle, 0, 0, 0, 0x10);
-        mtx_from_angles_pos_scale(&m2, -0x1000, 0, 0, -70, -55, 300, 10);
-        mtx_mul(&m1, &m2, &sDesArrowMtx[gGfxFrameIndex]);
+        /* the arrow turned to the checkpoint, tilted, at the bottom left of the view */
+        mtx_from_angles_pos_scale(&rot, 0, 0, sDesArrowAngle, 0, 0, 0, 0x10);
+        mtx_from_angles_pos_scale(&place, -0x1000, 0, 0, -70, -55, 300, 10);
+        mtx_mul(&rot, &place, &sDesArrowMtx[gGfxFrameIndex]);
     }
     mtx_from_angles_pos_scale(&sDesMarkerMtx[gGfxFrameIndex], 0, 0, gCamYaw[0], 0, 0, 1000, 0x100);
 }
 
-Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
+/* Draws the patches of the inner ring close to the camera, without fog. */
+Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *dyn, s32 fb, s32 view)
 {
     s32 i, j;
     s16 id;
-    DesPatch *p;
+    DesPatch *patch;
 
     gDPPipeSync(gdl++);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
-    gSPSetGeometryMode(gdl++, 0x200004);
+    gSPSetGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
     gDPSetRenderMode(gdl++, 0x552230, 0);
     gDPLoadTLUT_pal256(gdl++, gTerrainTexSet->pal);
@@ -105,22 +111,22 @@ Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
     gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP, G_TX_WRAP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     for (j = 0; j < 1; j++) {
-        for (i = 0; i < 0x400; i++) {
+        for (i = 0; i < DES_GRID_SIZE * DES_GRID_SIZE; i++) {
             id = sDesPatchGrid[j][i];
             if (id != -1) {
-                p = (DesPatch *)(id * sizeof(DesPatch) + (s32)sDesPatches);
-                if (p->near == 1) {
-                    if (p->block != sDesCurBlock) {
-                        gSPMatrix(gdl++, &sDesBlockMtx[gGfxFrameIndex][p->block], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-                        sDesCurBlock = p->block;
+                patch = (DesPatch *)(id * sizeof(DesPatch) + (s32)sDesPatches);
+                if (patch->near == 1) {
+                    if (patch->block != sDesCurBlock) {
+                        gSPMatrix(gdl++, &sDesBlockMtx[gGfxFrameIndex][patch->block], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+                        sDesCurBlock = patch->block;
                     }
-                    gSPVertex(gdl++, p->vtx, 25, 0);
-                    gSPDisplayList(gdl++, sDesPatchDLs[p->seams]);
+                    gSPVertex(gdl++, patch->vtx, 25, 0);
+                    gSPDisplayList(gdl++, sDesPatchDLs[patch->seams]);
                 }
             }
         }
     }
-    gSPMatrix(gdl++, &m[16], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, &dyn[16] /* Dyn.m4 */, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
     return gdl;
@@ -128,14 +134,16 @@ Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
 
 #define RAW(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
+/* gCurTrack as this file sees it: the fog range per number of views */
 typedef struct { u8 pad[0x58]; u16 fmin[4]; u16 fmax[4]; } FogCfg;
 
-Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
+/* Draws the rest of the terrain, block by block with fog and the far viewport, then the visible objects. */
+Gfx *des_draw_terrain(Gfx *gdl, s32 dyn, s32 fb, s32 view)
 {
-    FogCfg *fc;
-    s32 i, k, j;
-    s16 v;
-    DesPatch *o;
+    FogCfg *track;
+    s32 i, ring, j;
+    s16 id;
+    DesPatch *patch;
 
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -144,29 +152,29 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
     gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPSetGeometryMode(gdl++, G_FOG);
     gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
-    fc = gCurTrack;
-    gSPFogPosition(gdl++, fc->fmin[gNumViews - 1], fc->fmax[gNumViews - 1]);
+    track = gCurTrack;
+    gSPFogPosition(gdl++, track->fmin[gNumViews - 1], track->fmax[gNumViews - 1]);
     RAW(gdl++, 0xFC127E24, 0xFFFFF9FC);
     RAW(gdl++, 0xE200001C, 0xC8004030);
     sDesCurBlock = -1;
     gDPLoadTLUT_pal256(gdl++, gTerrainTexSet->pal);
     gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP | G_TX_NOMIRROR, G_TX_WRAP | G_TX_NOMIRROR, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
-    gSPViewport(gdl++, &gViewports[a3 + 4]);
+    gSPViewport(gdl++, &gViewports[view + 4]);
     for (j = 0; j < sDesBlockCount; j++) {
         sDesCurBlock = 0;
-        for (k = 0; k < 3; k++) {
-            for (i = 0; i < 0x400; i++) {
-                v = sDesPatchGrid[k][i];
-                if (v != -1) {
-                    o = (DesPatch *)(v * sizeof(DesPatch) + (u32)sDesPatches);
-                    if (o->block == j && (k != 0 || o->near == 0)) {
+        for (ring = 0; ring < DES_NUM_RINGS; ring++) {
+            for (i = 0; i < DES_GRID_SIZE * DES_GRID_SIZE; i++) {
+                id = sDesPatchGrid[ring][i];
+                if (id != -1) {
+                    patch = (DesPatch *)(id * sizeof(DesPatch) + (u32)sDesPatches);
+                    if (patch->block == j && (ring != 0 || patch->near == 0)) {
                         if (sDesCurBlock == 0) {
                             gSPMatrix(gdl++, &sDesBlockMtx[gGfxFrameIndex][j], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
                             sDesCurBlock = 1;
                         }
-                        gSPVertex(gdl++, o->vtx, 25, 0);
-                        { Gfx **dl = sDesPatchDLs; gSPDisplayList(gdl++, dl[o->seams]); }
+                        gSPVertex(gdl++, patch->vtx, 25, 0);
+                        { Gfx **dl = sDesPatchDLs; gSPDisplayList(gdl++, dl[patch->seams]); }
                     }
                 }
             }
@@ -180,7 +188,7 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
     RAW(gdl++, 0xE200001C, 0x00442230);
     gDPLoadTLUT_pal256(gdl++, gObjectTexSet->pal);
     for (i = 0; i < sDesObjectCount; i++) {
-        gSPMatrix(gdl++, &sDesObjMtx[a2][i], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        gSPMatrix(gdl++, &sDesObjMtx[fb][i], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         gdl = prim_build_dl(0, sDesObjModels[sDesObjects[i].kind].model, &gObjectTexSet, gdl);
     }
     prim_set_tex_mode_callback(0);
@@ -190,14 +198,15 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
 
 #define PKT(p, a, b) { Gfx *_g = (Gfx *)(p++); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
+/* Draws the animated marker over the campfire of the next checkpoint, tinted by the frame's palette colour. */
+Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 dyn, s32 fb, s32 view)
 {
-    Gfx *w;
-    s32 n;
+    Gfx *p;
+    s32 count;
     s32 i;
     TexSet *anim;
     u32 frame;
-    u32 c;
+    u32 pix;
     u8 r, g;
     u32 col;
 
@@ -207,36 +216,36 @@ Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
     PKT(gdl, 0xE3001001, 0);
     PKT(gdl, 0xFC30B261, 0xFF67FFFF);
 
-    n = sDesObjectCount;
+    count = sDesObjectCount;
     i = 0;
-    if (n > 0) {
-        w = gdl;
+    if (count > 0) {
+        p = gdl;
         do {
             /* the campfire of the next checkpoint */
-            if (sDesObjects[i].kind == 2 && sDesObjects[i].ref == gDesWaypoint) {
-                PKT(w, 0xDA380003, (u32)&sDesObjMtx[idx][i]);
-                PKT(w, 0xDA380001, (u32)&sDesMarkerMtx[idx]);
+            if (sDesObjects[i].kind == DESERT_OBJ_CAMPFIRE && sDesObjects[i].ref == gDesWaypoint) {
+                PKT(p, 0xDA380003, (u32)&sDesObjMtx[fb][i]);
+                PKT(p, 0xDA380001, (u32)&sDesMarkerMtx[fb]);
                 /* each frame of the animation has its colour in the palette */
                 frame = sDesMarkerFrame % (anim = sDesMarkerAnim)->count;
-                c = frame * 2 + (u32)anim->pal;
-                c = *(u16 *)c;
-                r = (c >> 11) << 3;
-                g = ((c >> 6) & 0x1F) << 3;
-                c <<= 2;
+                pix = frame * 2 + (u32)anim->pal;
+                pix = *(u16 *)pix;
+                r = (pix >> 11) << 3;
+                g = ((pix >> 6) & 0x1F) << 3;
+                pix <<= 2;
                 col = (r << 24) | (g << 16);
-                c &= 0xF8;
-                col |= c << 8;
-                PKT(w, 0xFA000000, col | 0xFF);
-                PKT(w, 0xFD700000, (u32)anim->tex[frame].data);
-                PKT(w, 0xF5700000, 0x07098250);
-                PKT(w, 0xE6000000, 0);
-                PKT(w, 0xF3000000, 0x073FF200);
-                PKT(w, 0xE7000000, 0);
-                PKT(w, 0xF5680800, 0x00098250);
-                PKT(w, 0xF2000000, 0x0007C0FC);
-                PKT(w, 0x01004008, (u32)sDesMarkerVtx);
-                gdl = gdl + 12;
-                PKT(w, 0x06000204, 0x406);
+                pix &= 0xF8;
+                col |= pix << 8;
+                PKT(p, 0xFA000000, col | 0xFF);
+                PKT(p, 0xFD700000, (u32)anim->tex[frame].data);
+                PKT(p, 0xF5700000, 0x07098250);
+                PKT(p, 0xE6000000, 0);
+                PKT(p, 0xF3000000, 0x073FF200);
+                PKT(p, 0xE7000000, 0);
+                PKT(p, 0xF5680800, 0x00098250);
+                PKT(p, 0xF2000000, 0x0007C0FC);
+                PKT(p, 0x01004008, (u32)sDesMarkerVtx);
+                gdl = gdl + 12; /* the 12 packets written through p */
+                PKT(p, 0x06000204, 0x406);
             }
             i = i + 1;
         } while (i < sDesObjectCount);
@@ -246,9 +255,10 @@ Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
 
 #define PKT_2(a, b) { Blk_2 *_g = gdl++; _g->w0 = (a); _g->w1 = (b); }
 
-Blk_2 *des_draw_arrow(Blk_2 *gdl, s32 p2, s32 arg2, s32 arg3)
+/* Draws the arrow that points to the next checkpoint, with the HUD's perspective. */
+Blk_2 *des_draw_arrow(Blk_2 *gdl, s32 dyn, s32 fb, s32 view)
 {
-    s32 off;
+    s32 mtxOff;
 
     if (sDesArrowAngle < 0) {
         return gdl;
@@ -266,74 +276,78 @@ Blk_2 *des_draw_arrow(Blk_2 *gdl, s32 p2, s32 arg2, s32 arg3)
         PKT_2(0xE6000000, 0)
         PKT_2(0xF0000000, 0x073FC000)
         PKT_2(0xE7000000, 0)
-        off = gGfxFrameIndex * 0x40;
-        PKT_2(0xDA380003, (u32)((u8 *)sDesArrowMtx + off))
-        PKT_2(0xDA380007, (u32)((u8 *)gHudPerspMtx + off))
+        mtxOff = gGfxFrameIndex * 0x40;
+        PKT_2(0xDA380003, (u32)((u8 *)sDesArrowMtx + mtxOff))
+        PKT_2(0xDA380007, (u32)((u8 *)gHudPerspMtx + mtxOff))
         gdl = (Blk_2 *)prim_build_dl(0, sDesArrowModel, &sDesArrowTex, (Gfx *)gdl);
-        PKT_2(0xDA380003, p2 + 0x400)
+        PKT_2(0xDA380003, dyn + 0x400) /* back to Dyn.m4 */
         return gdl;
     }
 }
 
 #define G sDesLodGrid
 
+/* Fills the 32x32 grid of patch cells around the camera with the rings that cover each (bit r: ring r), from the
+   distance ahead and the field of view, keeps one ring per place, and marks in sDesSeamFlags where a ring meets a
+   coarser one. */
 void des_calc_lod_grid(void) {
-    s32 i, j, a, k;
-    s32 x, z, u, v, h;
-    s32 s, c, n, xx;
-    s32 d = 4000;
-    s32 w, m;
+    s32 i, j, camX, k;
+    s32 x, z, side, ahead, camZ;
+    s32 cosYaw, sinYaw, idx, xx;
+    s32 cell = 4000;
+    s32 yaw, parent;
 
-    a = sDesCamX >> 4;
-    h = sDesCamZ >> 4;
-    sDesLodCellX = xx = a / d;
-    sDesLodOffX = a - sDesLodCellX * d + (((u32)a & 1) >> 1);
-    w = (u16)gCamYaw[0];
-    w >>= 4;
-    s = gCosTable[w] + (((u32)&gCosTable[w] & 1) >> 1);
-    c = gCosTable[(w - 0x400) & 0xFFF];
+    camX = sDesCamX >> 4;
+    camZ = sDesCamZ >> 4;
+    sDesLodCellX = xx = camX / cell;
+    sDesLodOffX = camX - sDesLodCellX * cell + (((u32)camX & 1) >> 1);
+    yaw = (u16)gCamYaw[0];
+    yaw >>= 4;
+    /* + 0, written as an expression of the address in the original */
+    cosYaw = gCosTable[yaw] + (((u32)&gCosTable[yaw] & 1) >> 1);
+    sinYaw = gCosTable[(yaw - 0x400) & 0xFFF];
     if (sDesLodOffX < 0) {
-        sDesLodOffX += d;
+        sDesLodOffX += cell;
         sDesLodCellX -= 1;
     }
-    sDesLodCellZ = h / d;
-    xx = sDesLodCellZ * d;
-    sDesLodOffZ = h - xx + (((u32)h & 1) >> 1);
+    sDesLodCellZ = camZ / cell;
+    xx = sDesLodCellZ * cell;
+    sDesLodOffZ = camZ - xx + (((u32)camZ & 1) >> 1);
     if (sDesLodOffZ < 0) {
-        sDesLodOffZ += d;
+        sDesLodOffZ += cell;
         sDesLodCellZ -= 1;
     }
-    n = 0;
-    for (i = 0; i < 32; i++) {
-        for (j = 0; j < 32; j++) {
-            G[n] = 0;
+    idx = 0;
+    for (i = 0; i < DES_GRID_SIZE; i++) {
+        for (j = 0; j < DES_GRID_SIZE; j++) {
+            G[idx] = 0;
             x = ((j - 15) * 8000 - 4000) >> 4;
             k = ((u32)(sDesLodOffX >> 31) & 1) >> 1;
             z = (i * 8000 - 0x1E460) >> 4;
             x -= sDesLodOffX % 500;
             z -= sDesLodOffZ % 500;
-            k = s * x;
-            v = (s * z - c * x) >> 14;
-            u = (k + c * z) >> 14;
-            if (v < 5000) G[n] = 3;
-            if (v < 4000) G[n] |= 4;
-            if (i < 8 || i >= 24 || j < 8 || j >= 24) G[n] &= 0xFB;
-            if (v < 1500) G[n] &= 0xF1;
-            if (v >= -359 && u >= -359 && u < 360 && v < 360) {
-                G[n] |= 1;
-            } else if (v < 0) {
-                G[n] = 0;
+            k = cosYaw * x;
+            ahead = (cosYaw * z - sinYaw * x) >> 14;
+            side = (k + sinYaw * z) >> 14;
+            if (ahead < 5000) G[idx] = 3;
+            if (ahead < 4000) G[idx] |= 4;
+            if (i < 8 || i >= 24 || j < 8 || j >= 24) G[idx] &= 0xFB;
+            if (ahead < 1500) G[idx] &= 0xF1;
+            if (ahead >= -359 && side >= -359 && side < 360 && ahead < 360) {
+                G[idx] |= 1;
+            } else if (ahead < 0) {
+                G[idx] = 0;
             } else {
-                v = v / 2;
-                if (u < 0) {
-                    if (u + 360 < -v) G[n] &= 0xFE;
-                    if (u + 720 < -v) G[n] &= 0xF1;
+                ahead = ahead / 2;
+                if (side < 0) {
+                    if (side + 360 < -ahead) G[idx] &= 0xFE;
+                    if (side + 720 < -ahead) G[idx] &= 0xF1;
                 } else {
-                    if (v < u - 360) G[n] &= 0xFE;
-                    if (v < u - 720) G[n] &= 0xF1;
+                    if (ahead < side - 360) G[idx] &= 0xFE;
+                    if (ahead < side - 720) G[idx] &= 0xF1;
                 }
             }
-            n++;
+            idx++;
         }
     }
     sDesLodOffX /= 500;
@@ -348,63 +362,64 @@ void des_calc_lod_grid(void) {
     sDesLod2ShiftZ /= 4;
     for (i = 2; i < 32; i += 2) {
         for (j = 2; j < 32; j += 2) {
-            s32 r, kb, kc;
-            r = ((i / 2 + 8) << 5) + 8;
-            m = r + j / 2;
-            n = ((i - sDesLod0ShiftZ) << 5) + (j - sDesLod0ShiftX);
-            kb = ((i - sDesLod1ShiftZ) << 5) + (j - sDesLod1ShiftX);
-            kc = ((i - sDesLod2ShiftZ) << 5) + (j - sDesLod2ShiftX);
-            if (G[n] & G[n + 1] & G[n + 32] & G[n + 33] & 1) G[m] &= 0xFD;
-            if (G[kb] & G[kb + 1] & G[kb + 32] & G[kb + 33] & 2) G[m] &= 0xFB;
-            if (G[kc] & G[kc + 1] & G[kc + 32] & G[kc + 33] & 4) G[m] &= 0xF7;
-            if (G[m] & 2) { G[n] &= 0xFE; G[n + 1] &= 0xFE; G[n + 32] &= 0xFE; G[n + 33] &= 0xFE; }
-            if (G[m] & 4) { G[kb] &= 0xFD; G[kb + 1] &= 0xFD; G[kb + 32] &= 0xFD; G[kb + 33] &= 0xFD; }
-            if (G[m] & 8) { G[kc] &= 0xFB; G[kc + 1] &= 0xFB; G[kc + 32] &= 0xFB; G[kc + 33] &= 0xFB; }
+            s32 row, idx1, idx2;
+            row = ((i / 2 + 8) << 5) + 8;
+            parent = row + j / 2;
+            idx = ((i - sDesLod0ShiftZ) << 5) + (j - sDesLod0ShiftX);
+            idx1 = ((i - sDesLod1ShiftZ) << 5) + (j - sDesLod1ShiftX);
+            idx2 = ((i - sDesLod2ShiftZ) << 5) + (j - sDesLod2ShiftX);
+            if (G[idx] & G[idx + 1] & G[idx + 32] & G[idx + 33] & 1) G[parent] &= 0xFD;
+            if (G[idx1] & G[idx1 + 1] & G[idx1 + 32] & G[idx1 + 33] & 2) G[parent] &= 0xFB;
+            if (G[idx2] & G[idx2 + 1] & G[idx2 + 32] & G[idx2 + 33] & 4) G[parent] &= 0xF7;
+            if (G[parent] & 2) { G[idx] &= 0xFE; G[idx + 1] &= 0xFE; G[idx + 32] &= 0xFE; G[idx + 33] &= 0xFE; }
+            if (G[parent] & 4) { G[idx1] &= 0xFD; G[idx1 + 1] &= 0xFD; G[idx1 + 32] &= 0xFD; G[idx1 + 33] &= 0xFD; }
+            if (G[parent] & 8) { G[idx2] &= 0xFB; G[idx2 + 1] &= 0xFB; G[idx2 + 32] &= 0xFB; G[idx2 + 33] &= 0xFB; }
         }
     }
     mem_fill(sDesSeamFlags, 0, 0x400);
     for (i = 2; i < 32; i += 2) {
         for (j = 2; j < 32; j += 2) {
-            s32 r = (((i >> 1) + 8) << 5) + 8;
-            m = r + (j >> 1);
-            n = (i - sDesLod0ShiftZ) * 32 + (j - sDesLod0ShiftX);
-            if (sDesLodGrid[m + 32] & 2) {
-                if (sDesLodGrid[n + 32] & 1) sDesSeamFlags[n + 32] |= 0x10;
-                if (sDesLodGrid[n + 33] & 1) sDesSeamFlags[n + 33] |= 0x10;
+            s32 row = (((i >> 1) + 8) << 5) + 8;
+            parent = row + (j >> 1);
+            idx = (i - sDesLod0ShiftZ) * 32 + (j - sDesLod0ShiftX);
+            if (sDesLodGrid[parent + 32] & 2) {
+                if (sDesLodGrid[idx + 32] & 1) sDesSeamFlags[idx + 32] |= 0x10;
+                if (sDesLodGrid[idx + 33] & 1) sDesSeamFlags[idx + 33] |= 0x10;
             }
-            if (sDesLodGrid[m - 32] & 2) {
-                if (sDesLodGrid[n] & 1) sDesSeamFlags[n] |= 0x20;
-                if (sDesLodGrid[n + 1] & 1) sDesSeamFlags[n + 1] |= 0x20;
+            if (sDesLodGrid[parent - 32] & 2) {
+                if (sDesLodGrid[idx] & 1) sDesSeamFlags[idx] |= 0x20;
+                if (sDesLodGrid[idx + 1] & 1) sDesSeamFlags[idx + 1] |= 0x20;
             }
-            if (sDesLodGrid[m + 1] & 2) {
-                if (sDesLodGrid[n + 1] & 1) sDesSeamFlags[n + 1] |= 0x40;
-                if (sDesLodGrid[n + 33] & 1) sDesSeamFlags[n + 33] |= 0x40;
+            if (sDesLodGrid[parent + 1] & 2) {
+                if (sDesLodGrid[idx + 1] & 1) sDesSeamFlags[idx + 1] |= 0x40;
+                if (sDesLodGrid[idx + 33] & 1) sDesSeamFlags[idx + 33] |= 0x40;
             }
-            if (sDesLodGrid[m - 1] & 2) {
-                if (sDesLodGrid[n] & 1) sDesSeamFlags[n] |= 0x80;
-                if (sDesLodGrid[n + 32] & 1) sDesSeamFlags[n + 32] |= 0x80;
+            if (sDesLodGrid[parent - 1] & 2) {
+                if (sDesLodGrid[idx] & 1) sDesSeamFlags[idx] |= 0x80;
+                if (sDesLodGrid[idx + 32] & 1) sDesSeamFlags[idx + 32] |= 0x80;
             }
-            n = (i - sDesLod1ShiftZ) * 32 + (j - sDesLod1ShiftX);
-            if (sDesLodGrid[m + 32] & 4) {
-                if (sDesLodGrid[n + 32] & 2) sDesSeamFlags[n + 32] |= 1;
-                if (sDesLodGrid[n + 33] & 2) sDesSeamFlags[n + 33] |= 1;
+            idx = (i - sDesLod1ShiftZ) * 32 + (j - sDesLod1ShiftX);
+            if (sDesLodGrid[parent + 32] & 4) {
+                if (sDesLodGrid[idx + 32] & 2) sDesSeamFlags[idx + 32] |= 1;
+                if (sDesLodGrid[idx + 33] & 2) sDesSeamFlags[idx + 33] |= 1;
             }
-            if (sDesLodGrid[m - 32] & 4) {
-                if (sDesLodGrid[n] & 2) sDesSeamFlags[n] |= 2;
-                if (sDesLodGrid[n + 1] & 2) sDesSeamFlags[n + 1] |= 2;
+            if (sDesLodGrid[parent - 32] & 4) {
+                if (sDesLodGrid[idx] & 2) sDesSeamFlags[idx] |= 2;
+                if (sDesLodGrid[idx + 1] & 2) sDesSeamFlags[idx + 1] |= 2;
             }
-            if (sDesLodGrid[m + 1] & 4) {
-                if (sDesLodGrid[n + 1] & 2) sDesSeamFlags[n + 1] |= 4;
-                if (sDesLodGrid[n + 33] & 2) sDesSeamFlags[n + 33] |= 4;
+            if (sDesLodGrid[parent + 1] & 4) {
+                if (sDesLodGrid[idx + 1] & 2) sDesSeamFlags[idx + 1] |= 4;
+                if (sDesLodGrid[idx + 33] & 2) sDesSeamFlags[idx + 33] |= 4;
             }
-            if (sDesLodGrid[m - 1] & 4) {
-                if (sDesLodGrid[n] & 2) sDesSeamFlags[n] |= 8;
-                if (sDesLodGrid[n + 32] & 2) sDesSeamFlags[n + 32] |= 8;
+            if (sDesLodGrid[parent - 1] & 4) {
+                if (sDesLodGrid[idx] & 2) sDesSeamFlags[idx] |= 8;
+                if (sDesLodGrid[idx + 32] & 2) sDesSeamFlags[idx + 32] |= 8;
             }
         }
     }
 }
 
+/* divmod_floor written inline */
 static inline void divmod(s32 v, s32 d, s32 *q, s32 *r)
 {
     *q = v / d;
@@ -415,105 +430,108 @@ static inline void divmod(s32 v, s32 d, s32 *q, s32 *r)
     }
 }
 
+/* Assigns a cached patch to each cell of each ring that the LOD grid marks, building the patches that moved or
+   are new (until the cache runs out), and sets each patch's seams. */
 void des_update_patches(void)
 {
-    s32 qx0, rx, qz0, rz, qx, qz;
-    s32 i, j, h, s3, wx, wz, b, dr, dc;
+    s32 camCellX, rx, camCellZ, rz, ringX, ringZ;
+    s32 i, j, patch, slot, patchX, patchZ, b, rowDist, colDist;
 
-    divmod(sDesCamX >> 4, 500, &qx0, &rx);
-    divmod(sDesCamZ >> 4, 500, &qz0, &rz);
+    divmod(sDesCamX >> 4, 500, &camCellX, &rx);
+    divmod(sDesCamZ >> 4, 500, &camCellZ, &rz);
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < DES_NUM_RINGS; i++) {
         j = 1 << i;
-        sDesPatchGridOrigin[i] = ((qz0 / j) * 0x20 + qx0 / j) & 0x3ff;
+        sDesPatchGridOrigin[i] = ((camCellZ / j) * 0x20 + camCellX / j) & 0x3ff;
     }
-    sDesCamCellX = qx0;
-    sDesCamCellZ = qz0;
+    sDesCamCellX = camCellX;
+    sDesCamCellZ = camCellZ;
 
-    for (i = 0; i < 250; i++) {
+    for (i = 0; i < DES_NUM_PATCHES; i++) {
         if (sDesPatches[i].life > 0)
             sDesPatches[i].life--;
         sDesPatches[i].visible = 0;
     }
 
-    for (i = 0; i < 3; i++) {
-        for (j = 0; j < 0x400; j++) {
-            h = sDesPatchGrid[i][j];
-            if (h != -1 && sDesPatches[h].life <= 0)
+    for (i = 0; i < DES_NUM_RINGS; i++) {
+        for (j = 0; j < DES_GRID_SIZE * DES_GRID_SIZE; j++) {
+            patch = sDesPatchGrid[i][j];
+            if (patch != -1 && sDesPatches[patch].life <= 0)
                 sDesPatchGrid[i][j] = -1;
         }
     }
 
     sDesFreePatchCount = 0;
-    for (i = 0; i < 250; i++) {
+    for (i = 0; i < DES_NUM_PATCHES; i++) {
         if (sDesPatches[i].life <= 0) {
             sDesFreePatches[sDesFreePatchCount++] = i;
         }
     }
 
-    for (i = 0; i < 3; i++) {
-        divmod(sDesCamX >> 4, 500 << i, &qx, &rx);
-        divmod(sDesCamZ >> 4, 500 << i, &qz, &rz);
-        s3 = sDesPatchGridOrigin[i];
-        wz = (qz - 16) * (500 << i);
+    for (i = 0; i < DES_NUM_RINGS; i++) {
+        divmod(sDesCamX >> 4, 500 << i, &ringX, &rx);
+        divmod(sDesCamZ >> 4, 500 << i, &ringZ, &rz);
+        slot = sDesPatchGridOrigin[i];
+        patchZ = (ringZ - 16) * (500 << i);
         for (j = 0; j < 0x20; j++) {
             s32 k;
-            wx = (qx - 16) * (500 << i);
+            patchX = (ringX - 16) * (500 << i);
             for (k = 0; k < 0x20; k++) {
                 if ((sDesLodGrid[j * 32 + k] >> i) & 1) {
-                    s32 t = sDesPatchGrid[i][s3];
+                    s32 t = sDesPatchGrid[i][slot];
                     s32 n;
                     if (t == -1) {
-                        if (sDesFreePatchCount == 0) goto out; h = sDesFreePatches[--sDesFreePatchCount]; sDesPatchGrid[i][s3] = h; des_build_patch(h, wx, wz, i);
+                        if (sDesFreePatchCount == 0) goto out; patch = sDesFreePatches[--sDesFreePatchCount]; sDesPatchGrid[i][slot] = patch; des_build_patch(patch, patchX, patchZ, i);
                     } else {
-                        h = t;
-                        if (sDesPatches[h].x != wx || sDesPatches[h].z != wz) {
-                            if (sDesFreePatchCount == 0) goto out; h = sDesFreePatches[--sDesFreePatchCount]; sDesPatchGrid[i][s3] = h; des_build_patch(h, wx, wz, i);
+                        patch = t;
+                        if (sDesPatches[patch].x != patchX || sDesPatches[patch].z != patchZ) {
+                            if (sDesFreePatchCount == 0) goto out; patch = sDesFreePatches[--sDesFreePatchCount]; sDesPatchGrid[i][slot] = patch; des_build_patch(patch, patchX, patchZ, i);
                         } else {
-                            sDesPatches[h].life = 2;
+                            sDesPatches[patch].life = 2;
                         }
                     }
-                    sDesPatches[h].visible = 1;
-                    dr = j - 16;
-                    if (dr < 0)
-                        dr = -dr;
-                    dc = k - 16;
-                    if (dc < 0)
-                        dc = -dc;
-                    if (dc + dr < 7)
-                        sDesPatches[h].near = 1;
+                    sDesPatches[patch].visible = 1;
+                    rowDist = j - 16;
+                    if (rowDist < 0)
+                        rowDist = -rowDist;
+                    colDist = k - 16;
+                    if (colDist < 0)
+                        colDist = -colDist;
+                    if (colDist + rowDist < 7)
+                        sDesPatches[patch].near = 1;
                     else
-                        sDesPatches[h].near = 0;
+                        sDesPatches[patch].near = 0;
                 } else {
-                    sDesPatchGrid[i][s3] = -1;
+                    sDesPatchGrid[i][slot] = -1;
                 }
-                s3 = (s3 + 1) & 0x3ff;
-                wx += 500 << i;
+                slot = (slot + 1) & 0x3ff;
+                patchX += 500 << i;
             }
-            wz += 500 << i;
+            patchZ += 500 << i;
         }
     }
 out:
-    for (i = 0; i < 250; i++)
+    for (i = 0; i < DES_NUM_PATCHES; i++)
         sDesPatches[i].seams = 0;
 
     for (i = 0; i < 2; i++) {
-        s3 = sDesPatchGridOrigin[i];
-        for (j = 0; j < 0x400; j++) {
-            h = sDesPatchGrid[i][s3];
-            if (h != -1) {
-                DesPatch *r = (DesPatch *)(h * sizeof(DesPatch) + (u32)sDesPatches);
+        slot = sDesPatchGridOrigin[i];
+        for (j = 0; j < DES_GRID_SIZE * DES_GRID_SIZE; j++) {
+            patch = sDesPatchGrid[i][slot];
+            if (patch != -1) {
+                DesPatch *r = (DesPatch *)(patch * sizeof(DesPatch) + (u32)sDesPatches);
                 u8 x = sDesSeamFlags[j];
                 if (i == 0)
                     r->seams = x >> 4;
                 else
                     r->seams = x & 0xf;
             }
-            s3 = (s3 + 1) % 0x400;
+            slot = (slot + 1) % 0x400;
         }
     }
 }
 
+/* divmod_floor written inline again */
 static __inline__ void fdiv(s32 x, s32 d, s32 *q, s32 *r)
 {
     *q = x / d;
@@ -524,61 +542,65 @@ static __inline__ void fdiv(s32 x, s32 d, s32 *q, s32 *r)
     }
 }
 
-void des_build_patch(s32 n, s32 x, s32 z, s32 lod)
+/* Builds patch `index` at (x, z) (16 mm units) for a ring: 5x5 vertices from the height map every 1 << lod cells,
+   shaded by the slope towards +z. */
+void des_build_patch(s32 index, s32 x, s32 z, s32 lod)
 {
-    s32 a, b, c, d;
-    s32 tx, tz, px, pz, col, row, k;
-    s32 h, s;
+    s32 q, r, blockX, blockZ;
+    s32 mapCol, mapRow, px, vz, col, row, k;
+    s32 h, shade;
     Vtx *v;
 
-    sDesPatches[n].x = x;
-    sDesPatches[n].z = z;
-    fdiv(x, 125, &a, &b);
-    tx = a;
-    fdiv(z, 125, &a, &b);
-    tz = a;
-    c = 0;
-    d = 0;
-    fdiv(x, 8000, &c, &a);
-    x = a - 4000;
-    fdiv(z, 8000, &d, &a);
-    pz = a - 4000;
+    sDesPatches[index].x = x;
+    sDesPatches[index].z = z;
+    fdiv(x, 125, &q, &r);
+    mapCol = q;
+    fdiv(z, 125, &q, &r);
+    mapRow = q;
+    blockX = 0;
+    blockZ = 0;
+    fdiv(x, 8000, &blockX, &q);
+    x = q - 4000;
+    fdiv(z, 8000, &blockZ, &q);
+    vz = q - 4000;
     k = 0;
-    sDesPatches[n].lod = lod;
-    sDesPatches[n].life = 2;
-    sDesPatches[n].blockX = c;
-    sDesPatches[n].blockZ = d;
-    row = tz;
-    for (a = 0; a < 5; a++) {
+    sDesPatches[index].lod = lod;
+    sDesPatches[index].life = 2;
+    sDesPatches[index].blockX = blockX;
+    sDesPatches[index].blockZ = blockZ;
+    row = mapRow;
+    for (q = 0; q < 5; q++) {
         s32 xx = x;
-        col = tx;
-        for (b = 0; b < 5; b++) {
-            sDesPatches[n].vtx[k].v.ob[0] = xx;
-            sDesPatches[n].vtx[k].v.ob[1] = gDesertHeightMap[((row & 0x1FF) << 9) | (col & 0x1FF)] * 4;
-            sDesPatches[n].vtx[k].v.ob[2] = pz;
-            s = gDesertHeightMap[((row & 0x1FF) << 9) | (col & 0x1FF)];
-            s = (gDesertHeightMap[(((row + 1) & 0x1FF) << 9) | (col & 0x1FF)] - s) * 8 + 0x80;
-            if (s < 0) s = 0;
-            if (s > 255) s = 255;
-            sDesPatches[n].vtx[k].v.cn[0] = s * 245 / 256 + 10;
-            sDesPatches[n].vtx[k].v.cn[1] = s * 230 / 256 + 25;
-            sDesPatches[n].vtx[k].v.cn[2] = s * 170 / 256 + 85;
-            sDesPatches[n].vtx[k].v.tc[0] = (b << 10) << lod;
-            sDesPatches[n].vtx[k].v.tc[1] = (a << 10) << lod;
-            sDesPatches[n].vtx[k].v.cn[3] = 255;
+        col = mapCol;
+        for (r = 0; r < 5; r++) {
+            sDesPatches[index].vtx[k].v.ob[0] = xx;
+            sDesPatches[index].vtx[k].v.ob[1] = gDesertHeightMap[((row & 0x1FF) << 9) | (col & 0x1FF)] * 4;
+            sDesPatches[index].vtx[k].v.ob[2] = vz;
+            shade = gDesertHeightMap[((row & 0x1FF) << 9) | (col & 0x1FF)];
+            shade = (gDesertHeightMap[(((row + 1) & 0x1FF) << 9) | (col & 0x1FF)] - shade) * 8 + 0x80;
+            if (shade < 0) shade = 0;
+            if (shade > 255) shade = 255;
+            sDesPatches[index].vtx[k].v.cn[0] = shade * 245 / 256 + 10;
+            sDesPatches[index].vtx[k].v.cn[1] = shade * 230 / 256 + 25;
+            sDesPatches[index].vtx[k].v.cn[2] = shade * 170 / 256 + 85;
+            sDesPatches[index].vtx[k].v.tc[0] = (r << 10) << lod;
+            sDesPatches[index].vtx[k].v.tc[1] = (q << 10) << lod;
+            sDesPatches[index].vtx[k].v.cn[3] = 255;
             k++;
             xx += 125 << lod;
             col += 1 << lod;
         }
-        pz += 125 << lod;
+        vz += 125 << lod;
         row += 1 << lod;
     }
 }
 
-Gfx *des_build_patch_dl(s32 mask)
+/* The triangles of a 5x5 patch: the inner 3x3 vertices, then each side either full or, where it meets a coarser
+   ring (its bit in seams), with every other edge vertex skipped. Built in the Z buffer and copied. */
+Gfx *des_build_patch_dl(s32 seams)
 {
     Gfx *gdl = gZBuffer;
-    s32 i, j, k, b, c;
+    s32 i, j, k, step, inward;
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 2; j++) {
@@ -589,17 +611,17 @@ Gfx *des_build_patch_dl(s32 mask)
     }
 
     for (i = 0; i < 4; i++) {
-        if ((mask >> i) & 1) {
+        if ((seams >> i) & 1) {
             j = sDesSeamStartVtx[i];
-            b = sDesSeamStep[i];
-            c = sDesSeamInward[i];
-            gSP2Triangles(gdl++, j, j + b + c, j + 2 * b, 0, j + 2 * b, j + 3 * b + c, j + 4 * b, 0);
+            step = sDesSeamStep[i];
+            inward = sDesSeamInward[i];
+            gSP2Triangles(gdl++, j, j + step + inward, j + 2 * step, 0, j + 2 * step, j + 3 * step + inward, j + 4 * step, 0);
         } else {
             j = sDesSeamStartVtx[i];
-            b = sDesSeamStep[i];
-            c = sDesSeamInward[i];
-            gSP2Triangles(gdl++, j, j + b + c, j + b, 0, j + b, j + b + c, j + 2 * b, 0);
-            gSP2Triangles(gdl++, j + 2 * b, j + 3 * b + c, j + 3 * b, 0, j + 3 * b, j + 3 * b + c, j + 4 * b, 0);
+            step = sDesSeamStep[i];
+            inward = sDesSeamInward[i];
+            gSP2Triangles(gdl++, j, j + step + inward, j + step, 0, j + step, j + step + inward, j + 2 * step, 0);
+            gSP2Triangles(gdl++, j + 2 * step, j + 3 * step + inward, j + 3 * step, 0, j + 3 * step, j + 3 * step + inward, j + 4 * step, 0);
         }
     }
 
@@ -610,10 +632,11 @@ Gfx *des_build_patch_dl(s32 mask)
     return gdl;
 }
 
+/* Frees the desert's buffers and display lists. */
 void des_free(void)
 {
     s32 i;
-    Gfx **p;
+    Gfx **dls;
 
     mem_free(sDesPatches);
     mem_free(gDesertHeightMap);
@@ -622,49 +645,53 @@ void des_free(void)
     i = 0;
     mem_free(gDesertTiles);
     mem_free(sDesArrowMtx);
-    p = sDesPatchDLs;
+    dls = sDesPatchDLs;
     do {
-        Gfx *v = *p;
-        p++;
+        Gfx *dl = *dls;
+        dls++;
         i++;
-        mem_free(v);
+        mem_free(dl);
     } while (i < 16);
 }
 
-void des_set_arrow_angle(s32 a0)
+/* Sets the arrow's angle on screen (0x10000 per turn; negative hides it). */
+void des_set_arrow_angle(s32 angle)
 {
-    sDesArrowAngle = a0;
+    sDesArrowAngle = angle;
 }
 
-void divmod_floor(s32 a, s32 b, s32 *q, s32 *r)
+/* Division rounding down: num = q * den + r with 0 <= r < den. */
+void divmod_floor(s32 num, s32 den, s32 *q, s32 *r)
 {
-    s32 quo = a / b;
+    s32 quot = num / den;
     s32 rem;
-    *q = quo;
-    rem = a - quo * b;
+    *q = quot;
+    rem = num - quot * den;
     *r = rem;
     if (rem < 0) {
-        *r = rem + b;
+        *r = rem + den;
         *q = *q - 1;
     }
 }
 
-void des_bbox_add(s32 param_1, s32 param_2)
+/* Grows a bounding box by a point; not called. */
+void des_bbox_add(s32 x, s32 z)
 {
-    if (param_1 < sDesBBoxMinX) {
-        sDesBBoxMinX = param_1;
+    if (x < sDesBBoxMinX) {
+        sDesBBoxMinX = x;
     }
-    if (param_2 < sDesBBoxMinZ) {
-        sDesBBoxMinZ = param_2;
+    if (z < sDesBBoxMinZ) {
+        sDesBBoxMinZ = z;
     }
-    if (sDesBBoxMaxX < param_1) {
-        sDesBBoxMaxX = param_1;
+    if (sDesBBoxMaxX < x) {
+        sDesBBoxMaxX = x;
     }
-    if (sDesBBoxMaxZ < param_2) {
-        sDesBBoxMaxZ = param_2;
+    if (sDesBBoxMaxZ < z) {
+        sDesBBoxMaxZ = z;
     }
 }
 
+/* Empties the bounding box; not called. */
 void des_bbox_reset(void)
 {
     sDesBBoxMinZ = 999;
@@ -675,12 +702,14 @@ void des_bbox_reset(void)
 
 #define PKT_3(a, b) { Gfx *_g = (Gfx *)(gdl++); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-Gfx *des_tex_mode_callback(Gfx *gdl, s32 x)
+/* prim_build_dl's texture mode callback for the desert's objects: the render mode and combiner for cut-out
+   (alpha-tested) or opaque textures. */
+Gfx *des_tex_mode_callback(Gfx *gdl, s32 cutout)
 {
     Gfx *p0;
     Gfx *p1;
 
-    if (x != 0) {
+    if (cutout != 0) {
         p0 = gdl++;
         p1 = gdl++;
         p0->words.w0 = 0xE7000000;
@@ -699,7 +728,8 @@ Gfx *des_tex_mode_callback(Gfx *gdl, s32 x)
     return gdl;
 }
 
-void des_set_waypoint(s32 x)
+/* Sets the checkpoint the marker and the smoke show. */
+void des_set_waypoint(s32 checkpoint)
 {
-    gDesWaypoint = x;
+    gDesWaypoint = checkpoint;
 }

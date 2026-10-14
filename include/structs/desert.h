@@ -72,6 +72,13 @@ typedef struct DesObjModel {
     /* 0x04 */ PrimModel *model;
 } DesObjModel; /* size 0x8 */
 
+/* desgfx.c's patch cache */
+#define DES_NUM_PATCHES 250
+#define DES_NUM_RINGS   3      /* of detail: ring r has patches of 1 << r cells */
+#define DES_GRID_SIZE   32     /* patches per side of a ring (sDesPatchGrid) */
+#define DES_BLOCK_MM    128000 /* a block, the unit of the patches' matrices: 8000 units of 16 mm */
+#define DES_MAX_OBJECTS 16     /* objects drawn (sDesObjects) */
+
 /* A cached patch of the desert ground: 5x5 vertices, every 1 << lod cells of the height map. 250 of them serve the
    three rings of sDesPatchGrid (32x32 patches each, 500 << lod units apart); a patch not used for two frames is
    free again. Units are 16 mm. */
