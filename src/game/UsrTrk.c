@@ -456,6 +456,7 @@ void usrtrk_unload(void)
     height_free_walls();
 }
 
+/* Frees the meshes of a cell of a user piece's two mesh sets */
 static inline void free_cell_meshes(PieceType *type, s32 cell)
 {
     PieceMesh **meshA;

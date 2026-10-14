@@ -30,6 +30,12 @@
 /* SaveData.options: a user track is saved on the Game Pak */
 #define SAVE_HAS_USER_TRACK 8
 
+/* edit_ease_delta's curves */
+#define EASE_IN     0
+#define EASE_OUT    1
+#define EASE_BOTH   2
+#define EASE_LINEAR 3
+
 extern EditCamPos sEditCamDelta;
 extern EditCamPos sEditCamPosFixed; /* 1/1024 */
 extern EditCamPos sEditCamPos;
@@ -62,9 +68,9 @@ static inline void edit_pick_start_piece(void) {
    to an eighth turn. Declared s32 with no return value, as the original's code needs. */
 s32 edit_cam_step(void)
 {
-    sEditCamPosFixed.x += edit_ease_delta(1, sEditCamDelta.x, EDIT_CAM_STEPS, sEditCamStep);
-    sEditCamPosFixed.z += edit_ease_delta(1, sEditCamDelta.z, EDIT_CAM_STEPS, sEditCamStep);
-    sEditCamPosFixed.yaw += edit_ease_delta(2, sEditCamDelta.yaw, EDIT_CAM_STEPS, sEditCamStep);
+    sEditCamPosFixed.x += edit_ease_delta(EASE_OUT, sEditCamDelta.x, EDIT_CAM_STEPS, sEditCamStep);
+    sEditCamPosFixed.z += edit_ease_delta(EASE_OUT, sEditCamDelta.z, EDIT_CAM_STEPS, sEditCamStep);
+    sEditCamPosFixed.yaw += edit_ease_delta(EASE_BOTH, sEditCamDelta.yaw, EDIT_CAM_STEPS, sEditCamStep);
     sEditCamPos.x = sEditCamPosFixed.x >> 10;
     sEditCamPos.z = sEditCamPosFixed.z >> 10;
     sEditCamPos.yaw = (u16)(sEditCamPosFixed.yaw >> 10);
@@ -812,13 +818,14 @@ void edit_update_main_menu(void)
                     gGame.mode = 0xE;
                 }
                 gGame.numPlayers = 1;
-                gGame.flags &= ~2;
+                gGame.flags &= ~2; /* on to a race, not back to the front end */
                 gEditor->flags &= ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE);
                 gGame.flags |= 0x4000000;
                 gEditor->flags |= (EDIT_TEST_TRACK | EDIT_EXIT);
                 gEditor->exitTimer = 0;
                 gEditor->flags &= ~EDIT_DIALOG;
                 if (gGame.userTrack == NULL) {
+                    /* the packed track goes with it, after a checksum word */
                     gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, 0x88C);
                     for (n = usrtrk_pack_track_2(gGame.userTrack + 4) + 4; n < USER_TRACK_BUF_SIZE; n++) {
                         gGame.userTrack[n] = 0;
@@ -4045,8 +4052,8 @@ void edit_calc_piece_cam_elevation(void) {
     gEditor->cam[1].pitch = math_asini((gEditor->cam[1].height << 14) / (s32)len & 0x3FFF) & 0xFFFF;
 }
 
-/* The part of a move of delta (in 1/1024) to make at step `step` of `steps`, along a sine curve over `arc` from
-   `start`: mode 0 easing in, 1 easing out, 2 both, 3 linear. */
+/* The part of a move of delta to make at step `step` of `steps`, in 1/1024 units, along a sine curve over `arc` from
+   `start`: EASE_IN, EASE_OUT, EASE_BOTH or EASE_LINEAR. */
 s32 edit_ease_delta(s32 mode, s32 delta, s32 steps, s32 step)
 {
     s32 arc;
@@ -4061,16 +4068,16 @@ s32 edit_ease_delta(s32 mode, s32 delta, s32 steps, s32 step)
 
     res = 0;
     if (delta != 0) {
-        if (mode == 1) {
+        if (mode == EASE_OUT) {
             goto ease_out;
         }
-        if (mode == 0) {
+        if (mode == EASE_IN) {
             goto ease_in;
         }
-        if (mode == 2) {
+        if (mode == EASE_BOTH) {
             goto ease_both;
         }
-        if (mode == 3) {
+        if (mode == EASE_LINEAR) {
             goto linear;
         }
         arc = 0;

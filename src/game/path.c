@@ -1044,6 +1044,7 @@ void path_calc_corner_speeds(s32 first, s32 last)
 
 extern TrackPathInfo *gCurTrack_27;
 
+/* Frees the racing line after a race. */
 void path_free(void)
 {
     if (gCurTrack_27->env != 2 /* the desert has no path */) {
