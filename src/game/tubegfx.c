@@ -818,7 +818,7 @@ void tube_load_pvs(void)
         }
     }
     idx = 0;
-    res_unload((u32 *)(D_800E7728_2[1] + track_res_find(D_800D1514) * 4));
+    res_unload(&D_800E7728->handles[track_res_find(D_800D1514)]);
     i = dst - gZBuffer;
     sPvsData = mem_alloc_dbg(i, idx, D_800D6A50, 0x61B);
     memcpy(sPvsData, gZBuffer, i);

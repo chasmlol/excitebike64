@@ -4152,10 +4152,6 @@ sStandTextures                        game  0x800E771C  data        -
 sStandModels                          game  0x800E7720  data        -
 sSectionDrawOrderLen                  game  0x800E7724  data        -
 D_800E7728                            game  0x800E7728  data        -
-D_800E7728_2                          game  0x800E7728  data        -  D_800E7728
-D_800E7728_3                          game  0x800E7728  data        -  D_800E7728
-D_800E7728_4                          game  0x800E7728  data        -  D_800E7728
-D_800E7728_5                          game  0x800E7728  data        -  D_800E7728
 D_800E7730                            game  0x800E7730  data        -
 sTubeFogNear                          game  0x800E7770  data        -
 sTubeFogFar                           game  0x800E7780  data        -
@@ -4895,8 +4891,6 @@ sPrevScreen                           game  0x800F47A4  data        -
 sPrevScreen_2                         game  0x800F47A4  data        -  sPrevScreen
 sPrevPadButtons                       game  0x800F47B0  data        -
 gGuiRes                               game  0x800F47C0  data        -
-gGuiRes_2                             game  0x800F47C0  data        -  gGuiRes
-gGuiRes_3                             game  0x800F47C0  data        -  gGuiRes
 sCurScreen                            game  0x800F47C4  data        -
 sCurScreen_2                          game  0x800F47C4  data        -  sCurScreen
 sCurScreen_3                          game  0x800F47C4  data        -  sCurScreen

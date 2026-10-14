@@ -95,7 +95,7 @@ void race_finish_replay(s32 param_1)
     if (gGhostRace == 0) {
         if (gDemoPlayback != 0) {
             gActiveReplay = 0;
-            res_unload((u32 *)((s32 *)D_800E7728_2[1] + gTutorialLessons_4[gSeason_3->idx].ptr[0]));
+            res_unload(&D_800E7728->handles[gTutorialLessons_4[gSeason_3->idx].ptr[0]]);
             goto T;
         }
         if (gRaceExitCode == 3 || g[19] == 9) goto T;
@@ -686,16 +686,10 @@ void race_intro_load(void)
 }
 
 typedef struct {
-    s32 unk0;
-    s32 *unk4;
-} Unk7728;
-
-typedef struct {
     u8 pad[8];
     s16 a[5];
 } Row_2;
 
-extern Unk7728 *D_800E7728_3;
 extern Row_2 **gSeason_7;
 
 void race_intro_unload(void) {
@@ -707,12 +701,12 @@ void race_intro_unload(void) {
         func_800C204C(*(void **)((s32)gRaceTextObjs + off));
         mem_free(*(void **)((s32)gRaceTextObjs + off));
     }
-    res_unload(&D_800E7728_3->unk4[D_800D088C]);
-    res_unload(&D_800E7728_3->unk4[D_800D09B0]);
-    res_unload(&D_800E7728_3->unk4[D_800D085C]);
+    res_unload(&D_800E7728->handles[D_800D088C]);
+    res_unload(&D_800E7728->handles[D_800D09B0]);
+    res_unload(&D_800E7728->handles[D_800D085C]);
     if (gGameMode == 1) {
         for (i = 0; i < 5; i++) {
-            res_unload(&D_800E7728_3->unk4[*D_800C8D68_2[(*gSeason_7)->a[i]]]);
+            res_unload(&D_800E7728->handles[*D_800C8D68_2[(*gSeason_7)->a[i]]]);
         }
     }
     mem_free(gRaceTextObjs);
@@ -720,7 +714,7 @@ void race_intro_unload(void) {
     if (gRaceExitCode != 3) {
         gGame &= ~0x80;
     }
-    font_load_race_set(D_800E7728_3);
+    font_load_race_set(D_800E7728);
 }
 
 #define PAD (gGame_22.f2C8[gPausePlayer])
@@ -1066,11 +1060,6 @@ typedef struct {
 } Gui;
 
 typedef struct {
-    u8 pad0[4];
-    s32 *f4;
-} Res_2;
-
-typedef struct {
     u8 pad0[0x64];
     s16 h64;
 } S930;
@@ -1099,7 +1088,6 @@ extern Pad24 D_800E3718;
 extern Player_7 gRiders_15[8];
 extern Sess gEvent_10;
 extern Gui D_800E3730_6;
-extern Res_2 *D_800E7728_4;
 extern Opt_2 gSaveData_3;
 extern S930 *gSeason_8;
 extern Trk_6 gTutorialLessons_6[];
@@ -1179,16 +1167,16 @@ void race_update(u32 *arg)
             mem_free(gZBuffer);
             D_800E3730_6.b3 = 1;
             if (gPauseMenu == 2) {
-                font_load_menu_set(D_800E7728_4);
+                font_load_menu_set(D_800E7728);
             }
             res_open_set("guires", &gGuiRes);
             for (j = 0; j < 0x30; j++) {
                 gGame_23.f74[j] = font_text_create(0, 0x40, 4, 2, 0x20);
             }
             if (gPauseMenu == 2) {
-                D_800E3730_6.w4 = res_load((s32)D_800E7728_4, D_800D0C24);
+                D_800E3730_6.w4 = res_load(D_800E7728, D_800D0C24);
             } else {
-                D_800E3730_6.w8 = res_load((s32)D_800E7728_4, D_800D108C);
+                D_800E3730_6.w8 = res_load(D_800E7728, D_800D108C);
                 D_800E3730_6.w4 = res_load(gGuiRes, D_800D1488);
                 D_800E3730_6.w10 = res_load(gGuiRes, D_800D1428);
                 D_800E3730_6.w14 = res_load(gGuiRes, D_800D1424);
@@ -1210,10 +1198,10 @@ void race_update(u32 *arg)
             mem_free(gGame_23.f74[j]);
         }
         res_close_set(gGuiRes);
-        res_unload(&D_800E7728_4->f4[D_800D0C24]);
-        res_unload(&D_800E7728_4->f4[D_800D1080]);
-        res_unload(&D_800E7728_4->f4[D_800D0724]);
-        res_unload(&D_800E7728_4->f4[D_800D108C]);
+        res_unload(&D_800E7728->handles[D_800D0C24]);
+        res_unload(&D_800E7728->handles[D_800D1080]);
+        res_unload(&D_800E7728->handles[D_800D0724]);
+        res_unload(&D_800E7728->handles[D_800D108C]);
         font_unload_set();
         gZBuffer = mem_alloc_at_dbg(gZBuffer, gFbAllocWidth * gFbAllocHeight * 2, "min.c", 0x799);
         if (gZBuffer == 0) {
@@ -1231,7 +1219,7 @@ void race_update(u32 *arg)
         while (gViMode != gViModeRequest) {
         }
         render_update_screen_layout();
-        font_load_race_set(D_800E7728_4);
+        font_load_race_set(D_800E7728);
         D_800E3730_6.h0 = -1;
     }
     if (gGame_23.f4C != 9 && !(gGame_23.f0 & 0x8010) && (gPadInput_3[0] & 0x400) &&

@@ -2,7 +2,7 @@
 
 /* Loads the instances of a track: each item is binned to its nearest section and gets a matrix relative to that
    section's centre (or to the origin with flags & 1), then the items are sorted by section. */
-s32 instances_load(u32 *resSet, s32 resIndex, s32 flags, TrackModelList *sections, TexSet *texSet)
+s32 instances_load(ResSet *resSet, s32 resIndex, s32 flags, TrackModelList *sections, TexSet *texSet)
 {
     s32 ret;
     u32 i, j;
@@ -25,7 +25,7 @@ s32 instances_load(u32 *resSet, s32 resIndex, s32 flags, TrackModelList *section
         sInstanceZoneBoxes = sections;
         gInstanceHeader = (InstanceRes *)res_load(resSet, resIndex);
         if (gInstanceHeader->numModels == 0 || gInstanceHeader->numItems == 0) {
-            ret = res_unload_2((u32 *)(resSet[1] + resIndex * 4));
+            ret = res_unload_2(&resSet->handles[resIndex]);
             gInstanceHeader = NULL;
         } else {
             gInstanceItems = (Instance *)&gInstanceHeader->modelIds[gInstanceHeader->numModels];
