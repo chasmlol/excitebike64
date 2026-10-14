@@ -148,18 +148,18 @@ u32 sn_pc_init(void);
 u32 sn_pc_close(u32 fd);
 
 /* the boot loader's copies of game functions (built from the game's C) */
-void boot_debug_printf(s32 a, ...);
-u16 boot_isqrt_u32(u32 r);
-s32 boot_char_to_upper(s32 a0);
-s32 boot_char_to_lower(s32 a0);
-void boot_mem_fill(u8 *a0, u8 a1, s32 a2);
+void boot_debug_printf(s32 fmt, ...);
+u16 boot_isqrt_u32(u32 x);
+s32 boot_char_to_upper(s32 c);
+s32 boot_char_to_lower(s32 c);
+void boot_mem_fill(u8 *dst, u8 value, s32 len);
 void boot_str_cat(char *dst, char *src);
-void boot_str_copy_n(u8 *d, u8 *s, s32 n);
-s32 boot_str_icmp(u8 *param_1, u8 *param_2);
+void boot_str_copy_n(u8 *dst, u8 *src, s32 size);
+s32 boot_str_icmp(u8 *a, u8 *b);
 void boot_func_80000814(void);
 void boot_func_8000081C(void);
 void boot_str_upper(u8 *s);
-void boot_str_copy(char *a0, char *a1);
+void boot_str_copy(char *dst, char *src);
 s32 boot_dma_start(s32 handle, s32 direction, s32 devAddr, s32 dramAddr, s32 size);
 s32 boot_dma_get_status(s32 slot);
 void boot_dma_release(s32 slot);
