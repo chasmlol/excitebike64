@@ -212,6 +212,11 @@ typedef struct EditCam {
 #define EDIT_MAX_LINES   60         /* the height editor's lines per frame (Editor.lineVtx: 4 vertices each) */
 #define EDIT_DIRT_TYPES  3
 
+/* Editor.heightState: the colour of the selected height point */
+#define EDIT_HEIGHT_AT_LIMIT   0
+#define EDIT_HEIGHT_NEAR_LIMIT 1
+#define EDIT_HEIGHT_FREE       2
+
 /* Editor.flags */
 #define EDIT_REVERSED       0x00000001 /* the view is turned around: left/right swap */
 #define EDIT_TURN_LEFT      0x00000002 /* C buttons: turn the view around (toggles EDIT_REVERSED) */
@@ -266,7 +271,7 @@ typedef struct Editor {
     /* 0x16F4 */ s32 userPieceCount;
     /* 0x16F8 */ s32 heightSel;     /* selected height point of the user piece (1 .. 2 * segments - 1) */
     /* 0x16FC */ s32 userPiece;     /* the user piece being edited (0-7) */
-    /* 0x1700 */ s16 heightState;   /* colour of the selected point: 0 at a limit, 1 near it, 2 free */
+    /* 0x1700 */ s16 heightState;   /* EDIT_HEIGHT_* */
     /* 0x1702 */ s16 maxSegments;   /* the longest user piece that fits */
     /* 0x1704 */ u8 unk_1704[8];
     /* 0x170C */ void *res170C;     /* loaded from the "Pieces" resource set */

@@ -2213,54 +2213,58 @@ s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *
     return 0;
 }
 
-#define gDPRaw(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
-#define SINT(i) ((s16)gCosTable[(i) & 0xFFF] >> 4)
+/* cos(i / 0x1000 turns) in 1/1024 */
+#define COS_1024(i) ((s16)gCosTable[(i) & 0xFFF] >> 4)
 /* The mesh sets advanced by k cells: ->cells[0] is cells[k] */
-#define CellAt(d, k) ((PieceMeshSet *)((u8 *)(d)->meshA + ((k) << 5)))
-#define EntAt(d, k) ((PieceMeshSet *)((u8 *)(d)->meshB + ((k) << 5)))
-#define W (o->type->dim[0])
-#define H (o->type->dim[1])
-#define K0 (j * W + i)
-#define K1 (i * W + W - 1 - j)
-#define K2 ((H - 1 - j) * W + W - 1 - i)
-#define K3 ((H - 1 - i) * W + j)
-#define XB(a, b) (gEditor->cur->x * 8000 - gEditor->gridSize[a] * 4000)
-#define ZB(a) (gEditor->cur->y * 8000 - gEditor->gridSize[a] * 4000)
+#define MESH_A_AT(type, k) ((PieceMeshSet *)((u8 *)(type)->meshA + ((k) << 5)))
+#define MESH_B_AT(type, k) ((PieceMeshSet *)((u8 *)(type)->meshB + ((k) << 5)))
+#define TYPE_W (piece->type->dim[0])
+#define TYPE_H (piece->type->dim[1])
+/* The cell of the piece at (col, row) of the grid, for each rotation */
+#define CELL_ROT0 (row * TYPE_W + col)
+#define CELL_ROT1 (col * TYPE_W + TYPE_W - 1 - row)
+#define CELL_ROT2 ((TYPE_H - 1 - row) * TYPE_W + TYPE_W - 1 - col)
+#define CELL_ROT3 ((TYPE_H - 1 - col) * TYPE_W + row)
+/* The current piece's corner on the grid in mm; the turned cases take gridSize[1] for x and gridSize[0] for z */
+#define CUR_X0(axis) (gEditor->cur->x * CELL_MM - gEditor->gridSize[axis] * (CELL_MM / 2))
+#define CUR_Z0(axis) (gEditor->cur->y * CELL_MM - gEditor->gridSize[axis] * (CELL_MM / 2))
 
-Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
+/* Draws the 3D view: lays every piece's cells on the grid (the view's camera follows the mode), draws it with the
+   start cursor and, in the height editor, the user piece's height lines; then the message or OK/Cancel box. */
+Gfx *edit_draw_track_view(s32 ctx, s32 fb, Gfx *gdl) {
     s32 p0[3];
     s32 p1[3];
     s32 p2[3];
     s32 p3[3];
-    EditPiece *o;
-    s32 flag;
-    s32 sel;
-    s32 i;
-    s32 j;
-    s32 k;
-    s32 n;
-    s32 x;
-    s32 y;
+    EditPiece *piece;
+    s32 inMark;
+    s32 cellFlags;
+    s32 col;
+    s32 row;
+    s32 point;
+    s32 revPoint;
     s16 rot;
-    s32 fl;
-    u32 a;
-    s32 r;
+    s32 flags;
+    u32 yaw;
+    s32 cursorYaw;
 
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
     gDPPipeSync(gdl++);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].x + sEditViewRects[1].w - 1,
-                  sEditViewRects[1].y + sEditViewRects[1].h - 1);
-    gSPViewport(gdl++, &gEditor->views[1]);
-    gSPClearGeometryMode(gdl, G_ZBUFFER);
-    gDPRaw(gdl++, 0xE200001C, 0x0C084000);
-    gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[EDIT_VIEW_TRACK].x, sEditViewRects[EDIT_VIEW_TRACK].y,
+                  sEditViewRects[EDIT_VIEW_TRACK].x + sEditViewRects[EDIT_VIEW_TRACK].w - 1,
+                  sEditViewRects[EDIT_VIEW_TRACK].y + sEditViewRects[EDIT_VIEW_TRACK].h - 1);
+    gSPViewport(gdl++, &gEditor->views[EDIT_VIEW_TRACK]);
+    gSPClearGeometryMode(gdl, G_ZBUFFER); /* gdl not advanced: the next packet overwrites it, as in the original */
+    gDPSetRenderMode(gdl++, 0x0C084000, 0);
+    gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
     gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 1);
-    gDPFillRectangle(gdl++, sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].x + sEditViewRects[1].w - 1,
-                     sEditViewRects[1].y + sEditViewRects[1].h - 1);
+    gDPFillRectangle(gdl++, sEditViewRects[EDIT_VIEW_TRACK].x, sEditViewRects[EDIT_VIEW_TRACK].y,
+                     sEditViewRects[EDIT_VIEW_TRACK].x + sEditViewRects[EDIT_VIEW_TRACK].w - 1,
+                     sEditViewRects[EDIT_VIEW_TRACK].y + sEditViewRects[EDIT_VIEW_TRACK].h - 1);
     gDPPipeSync(gdl++);
-    gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
-    gDPRaw(gdl++, 0xE200001C, 0x004041C8);
+    gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
+    gDPSetRenderMode(gdl++, 0x004041C8, 0);
     gSPClearGeometryMode(gdl++, G_ZBUFFER);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -2268,507 +2272,520 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     gDPPipeSync(gdl++);
     gDPSetTexturePersp(gdl++, G_TP_PERSP);
 
+    /* the camera: straight down while moving the track, else orbiting the target at its distance */
     if (gEditor->mode == EDIT_MODE_MOVE_TRACK) {
-        arned_set_camera_2(arg1, 0, 250000, 0, 0, 0x4000);
+        arned_set_camera_2(fb, 0, 250000, 0, 0, 0x4000);
     } else if (gEditor->mode == EDIT_MODE_USER_PIECE) {
-        a = sEditCamPos.yaw;
-        arned_set_camera_2(arg1, sEditCamPos.x + ((SINT((a >> 4) - 0x400) * gEditor->cam[1].dist) >> 10), gEditor->cam[1].height,
-                      sEditCamPos.z - ((SINT(a >> 4) * gEditor->cam[1].dist) >> 10), a, gEditor->cam[1].pitch);
+        yaw = sEditCamPos.yaw;
+        arned_set_camera_2(fb, sEditCamPos.x + ((COS_1024((yaw >> 4) - 0x400) * gEditor->cam[1].dist) >> 10), gEditor->cam[1].height,
+                      sEditCamPos.z - ((COS_1024(yaw >> 4) * gEditor->cam[1].dist) >> 10), yaw, gEditor->cam[1].pitch);
     } else {
-        a = sEditCamPos.yaw;
-        arned_set_camera_2(arg1, sEditCamPos.x + ((SINT((a >> 4) - 0x400) * gEditor->cam[0].dist) >> 10), gEditor->cam[0].height,
-                      sEditCamPos.z - ((SINT(a >> 4) * gEditor->cam[0].dist) >> 10), a, gEditor->cam[0].pitch);
+        yaw = sEditCamPos.yaw;
+        arned_set_camera_2(fb, sEditCamPos.x + ((COS_1024((yaw >> 4) - 0x400) * gEditor->cam[0].dist) >> 10), gEditor->cam[0].height,
+                      sEditCamPos.z - ((COS_1024(yaw >> 4) * gEditor->cam[0].dist) >> 10), yaw, gEditor->cam[0].pitch);
     }
 
-    o = gEditor->first;
-    if (o != NULL) {
+    /* editing a user piece shows only the pieces round it up to the corners on either side */
+    piece = gEditor->first;
+    if (piece != NULL) {
         do {
             if (gEditor->cur != NULL && gEditor->mode == EDIT_MODE_USER_PIECE && (gEditor->cur->type->flags & PIECE_USER)) {
-                fl = o->flags & ~8;
+                flags = piece->flags & ~EDIT_PIECE_VISIBLE;
             } else {
-                fl = o->flags | 8;
+                flags = piece->flags | EDIT_PIECE_VISIBLE;
             }
-            o->flags = fl;
-            o = o->next;
-        } while (o != NULL && o != gEditor->first);
+            piece->flags = flags;
+            piece = piece->next;
+        } while (piece != NULL && piece != gEditor->first);
     }
     if (gEditor->cur != NULL && gEditor->mode == EDIT_MODE_USER_PIECE && (gEditor->cur->type->flags & PIECE_USER)) {
-        for (o = gEditor->cur->next; o != NULL; o = o->next) {
-            o->flags |= 8;
-            if (o->type->flags & PIECE_CORNER) {
+        for (piece = gEditor->cur->next; piece != NULL; piece = piece->next) {
+            piece->flags |= EDIT_PIECE_VISIBLE;
+            if (piece->type->flags & PIECE_CORNER) {
                 break;
             }
         }
-        for (o = gEditor->cur; o != NULL; o = o->prev) {
-            o->flags |= 8;
-            if (o->type->flags & PIECE_CORNER) {
+        for (piece = gEditor->cur; piece != NULL; piece = piece->prev) {
+            piece->flags |= EDIT_PIECE_VISIBLE;
+            if (piece->type->flags & PIECE_CORNER) {
                 break;
             }
         }
     }
 
-    o = gEditor->first;
-    flag = 0;
-    if (o != NULL) {
+    /* each piece's cells into the 3D view's grid */
+    piece = gEditor->first;
+    inMark = 0;
+    if (piece != NULL) {
         do {
             if (gEditor->markStart != NULL && gEditor->markEnd != NULL) {
-                if (flag != 0 && o->prev == gEditor->markEnd) {
-                    flag = 0;
+                if (inMark != 0 && piece->prev == gEditor->markEnd) {
+                    inMark = 0;
                 }
-                if (o == gEditor->markStart) {
-                    flag = 1;
+                if (piece == gEditor->markStart) {
+                    inMark = 1;
                 }
             }
-            sel = 0;
-            if ((o->flags & 4) || o == gEditor->cur) {
-                sel = 1;
+            cellFlags = 0;
+            if ((piece->flags & EDIT_PIECE_PREVIEW) || piece == gEditor->cur) {
+                cellFlags = ARNED_CELL_SELECTED;
             }
-            sel |= 2;
-            for (j = 0; j < o->type->dim[(o->rot + 1) & 1]; j++) {
-                for (i = 0; i < o->type->dim[(rot = o->rot) & 1]; i++) {
-                    if (o->x + i < 0 || o->x + i >= gEditor->gridSize[0]) {
+            cellFlags |= ARNED_CELL_REBUILD;
+            for (row = 0; row < piece->type->dim[(piece->rot + 1) & 1]; row++) {
+                for (col = 0; col < piece->type->dim[(rot = piece->rot) & 1]; col++) {
+                    if (piece->x + col < 0 || piece->x + col >= gEditor->gridSize[0]) {
                         continue;
                     }
-                    if (o->y + j < 0 || o->y + j >= gEditor->gridSize[1]) {
+                    if (piece->y + row < 0 || piece->y + row >= gEditor->gridSize[1]) {
                         continue;
                     }
-                    if (o->flags & 8) {
+                    if (piece->flags & EDIT_PIECE_VISIBLE) {
                         switch (rot) {
                         case 0:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K0)->cells[0].mesh, rot,
-                                          o->type->meshB ? EntAt(o->type, K0)->cells[0].mesh : 0, o->rot, sel,
-                                          o->type->meshB ? (EntAt(o->type, K0)->cells[0].x0 + EntAt(o->type, K0)->cells[0].x1) / 2 - 250 - i * 500 : 0,
-                                          o->type->meshB ? (EntAt(o->type, K0)->cells[0].y0 + EntAt(o->type, K0)->cells[0].y1) / 2 - 250 - j * 500 : 0);
+                            arned_set_cell(piece->x + col, piece->y + row, MESH_A_AT(piece->type, CELL_ROT0)->cells[0].mesh, rot,
+                                          piece->type->meshB ? MESH_B_AT(piece->type, CELL_ROT0)->cells[0].mesh : 0, piece->rot, cellFlags,
+                                          piece->type->meshB ? (MESH_B_AT(piece->type, CELL_ROT0)->cells[0].x0 + MESH_B_AT(piece->type, CELL_ROT0)->cells[0].x1) / 2 - 250 - col * 500 : 0,
+                                          piece->type->meshB ? (MESH_B_AT(piece->type, CELL_ROT0)->cells[0].y0 + MESH_B_AT(piece->type, CELL_ROT0)->cells[0].y1) / 2 - 250 - row * 500 : 0);
                             break;
                         case 1:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K1)->cells[0].mesh, rot,
-                                          o->type->meshB ? EntAt(o->type, K1)->cells[0].mesh : 0, o->rot, sel,
-                                          o->type->meshB ? (EntAt(o->type, K1)->cells[0].y0 + EntAt(o->type, K1)->cells[0].y1) / 2 - 250 - i * 500 : 0,
-                                          o->type->meshB ? (o->h - j - 1) * 500 + (250 - (EntAt(o->type, K1)->cells[0].x0 + EntAt(o->type, K1)->cells[0].x1) / 2) : 0);
+                            arned_set_cell(piece->x + col, piece->y + row, MESH_A_AT(piece->type, CELL_ROT1)->cells[0].mesh, rot,
+                                          piece->type->meshB ? MESH_B_AT(piece->type, CELL_ROT1)->cells[0].mesh : 0, piece->rot, cellFlags,
+                                          piece->type->meshB ? (MESH_B_AT(piece->type, CELL_ROT1)->cells[0].y0 + MESH_B_AT(piece->type, CELL_ROT1)->cells[0].y1) / 2 - 250 - col * 500 : 0,
+                                          piece->type->meshB ? (piece->h - row - 1) * 500 + (250 - (MESH_B_AT(piece->type, CELL_ROT1)->cells[0].x0 + MESH_B_AT(piece->type, CELL_ROT1)->cells[0].x1) / 2) : 0);
                             break;
                         case 2:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K2)->cells[0].mesh, rot,
-                                          o->type->meshB ? EntAt(o->type, K2)->cells[0].mesh : 0, o->rot, sel,
-                                          o->type->meshB ? (o->w - i - 1) * 500 + (250 - (EntAt(o->type, K2)->cells[0].x0 + EntAt(o->type, K2)->cells[0].x1) / 2) : 0,
-                                          o->type->meshB ? (o->h - j - 1) * 500 + (250 - (EntAt(o->type, K2)->cells[0].y0 + EntAt(o->type, K2)->cells[0].y1) / 2) : 0);
+                            arned_set_cell(piece->x + col, piece->y + row, MESH_A_AT(piece->type, CELL_ROT2)->cells[0].mesh, rot,
+                                          piece->type->meshB ? MESH_B_AT(piece->type, CELL_ROT2)->cells[0].mesh : 0, piece->rot, cellFlags,
+                                          piece->type->meshB ? (piece->w - col - 1) * 500 + (250 - (MESH_B_AT(piece->type, CELL_ROT2)->cells[0].x0 + MESH_B_AT(piece->type, CELL_ROT2)->cells[0].x1) / 2) : 0,
+                                          piece->type->meshB ? (piece->h - row - 1) * 500 + (250 - (MESH_B_AT(piece->type, CELL_ROT2)->cells[0].y0 + MESH_B_AT(piece->type, CELL_ROT2)->cells[0].y1) / 2) : 0);
                             break;
                         case 3:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K3)->cells[0].mesh, rot,
-                                          o->type->meshB ? EntAt(o->type, K3)->cells[0].mesh : 0, o->rot, sel,
-                                          o->type->meshB ? (o->w - i - 1) * 500 + (250 - (EntAt(o->type, K3)->cells[0].y0 + EntAt(o->type, K3)->cells[0].y1) / 2) : 0,
-                                          o->type->meshB ? (EntAt(o->type, K3)->cells[0].x0 + EntAt(o->type, K3)->cells[0].x1) / 2 - 250 - j * 500 : 0);
+                            arned_set_cell(piece->x + col, piece->y + row, MESH_A_AT(piece->type, CELL_ROT3)->cells[0].mesh, rot,
+                                          piece->type->meshB ? MESH_B_AT(piece->type, CELL_ROT3)->cells[0].mesh : 0, piece->rot, cellFlags,
+                                          piece->type->meshB ? (piece->w - col - 1) * 500 + (250 - (MESH_B_AT(piece->type, CELL_ROT3)->cells[0].y0 + MESH_B_AT(piece->type, CELL_ROT3)->cells[0].y1) / 2) : 0,
+                                          piece->type->meshB ? (MESH_B_AT(piece->type, CELL_ROT3)->cells[0].x0 + MESH_B_AT(piece->type, CELL_ROT3)->cells[0].x1) / 2 - 250 - row * 500 : 0);
                             break;
                         }
                     } else {
-                        arned_set_cell(o->x + i, o->y + j, 0, 0, 0, 0, 0, 0, 0);
+                        arned_set_cell(piece->x + col, piece->y + row, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
             }
-            o = o->next;
-        } while (o != NULL && o != gEditor->first);
+            piece = piece->next;
+        } while (piece != NULL && piece != gEditor->first);
     }
 
     arned_set_scissor(0, 0, gScreenWidth, gScreenHeight);
+    /* the 3D view with the start cursor; in the height editor, the user piece's height lines over it */
     if (gEditor->start != NULL) {
-        r = ((-gEditor->start->rot * 2 - gEditor->start->type->cursorAngle) & 7) << 13;
-        gdl = arned_draw(arg1, gdl, gEditor->cur->x, gEditor->cur->y, gEditor->cur->w, gEditor->cur->h,
+        cursorYaw = ((-gEditor->start->rot * 2 - gEditor->start->type->cursorAngle) & 7) << 13;
+        gdl = arned_draw(fb, gdl, gEditor->cur->x, gEditor->cur->y, gEditor->cur->w, gEditor->cur->h,
                             (gEditor->start->x * 2 + gEditor->start->w) * 4000 - 60000, (gEditor->start->y * 2 + gEditor->start->h) * 4000 - 60000,
-                            (gEditor->start->type->flags & PIECE_START) ? r : -1, 1);
+                            (gEditor->start->type->flags & PIECE_START) ? cursorYaw : -1, 1);
         if (gEditor->mode == EDIT_MODE_USER_PIECE) {
             gEditor->lineCount = 0;
-            guMtxL2F(gEditor->camMtx, &gArnedCamMtx[arg1]);
-            mem_fill(gEditor->lineVtx[arg1], 0, 0xF00);
+            guMtxL2F(gEditor->camMtx, &gArnedCamMtx[fb]);
+            mem_fill(gEditor->lineVtx[fb], 0, EDIT_MAX_LINES * 4 * sizeof(Vtx));
             if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_USER)) {
+                /* a line across the piece at each height point, and lines along it between them */
                 switch (gEditor->cur->rot) {
                 case 0:
-                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
-                        edit_project_to_screen(XB(0, 0) + 2000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
-                                      ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(0, 0) + 14000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
-                                      ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (gEditor->heightSel == k) {
+                    for (point = 0; point < gEditor->cur->type->dim[1] * 2 + 1; point++) {
+                        edit_project_to_screen(CUR_X0(0) + 2000, point != 0 ? gUserPieceHeights[gEditor->userPiece][point - 1] * 16 : 0,
+                                      CUR_Z0(1) + point * 4000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                        edit_project_to_screen(CUR_X0(0) + 14000, point != 0 ? gUserPieceHeights[gEditor->userPiece][point - 1] * 16 : 0,
+                                      CUR_Z0(1) + point * 4000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                        if (gEditor->heightSel == point) {
                             switch (gEditor->heightState) {
-                            case 0:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
+                            case EDIT_HEIGHT_AT_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
-                            case 1:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
+                            case EDIT_HEIGHT_NEAR_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
                                 break;
-                            case 2:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
+                            case EDIT_HEIGHT_FREE:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
                                 break;
                             }
                         } else {
-                            edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                            edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (k > 0) {
-                            edit_project_to_screen(XB(0, 0) + 2000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
-                                          ZB(1) + (k - 1) * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(0, 0) + 2000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
-                                          ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(0, 0) + 14000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
-                                          ZB(1) + (k - 1) * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(0, 0) + 14000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
-                                          ZB(1) + k * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (gEditor->heightSel == k || gEditor->heightSel == k - 1) {
+                        if (point > 0) {
+                            edit_project_to_screen(CUR_X0(0) + 2000, point != 1 ? gUserPieceHeights[gEditor->userPiece][point - 2] * 16 : 0,
+                                          CUR_Z0(1) + (point - 1) * 4000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(0) + 2000, gUserPieceHeights[gEditor->userPiece][point - 1] * 16,
+                                          CUR_Z0(1) + point * 4000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(0) + 14000, point != 1 ? gUserPieceHeights[gEditor->userPiece][point - 2] * 16 : 0,
+                                          CUR_Z0(1) + (point - 1) * 4000, &p2[0], &p2[1], &p2[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(0) + 14000, gUserPieceHeights[gEditor->userPiece][point - 1] * 16,
+                                          CUR_Z0(1) + point * 4000, &p3[0], &p3[1], &p3[2], NULL, ctx, fb);
+                            if (gEditor->heightSel == point || gEditor->heightSel == point - 1) {
                                 switch (gEditor->heightState) {
-                                case 0:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
+                                case EDIT_HEIGHT_AT_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
                                     break;
-                                case 1:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
+                                case EDIT_HEIGHT_NEAR_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
                                     break;
-                                case 2:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
+                                case EDIT_HEIGHT_FREE:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
                                     break;
                                 }
                             } else {
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
-                                edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
                             }
                         }
                     }
                     break;
                 case 1:
-                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
-                        edit_project_to_screen(XB(1, 0) + k * 4000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
-                                      ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(1, 0) + k * 4000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
-                                      ZB(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (gEditor->heightSel == k) {
+                    for (point = 0; point < gEditor->cur->type->dim[1] * 2 + 1; point++) {
+                        edit_project_to_screen(CUR_X0(1) + point * 4000, point != 0 ? gUserPieceHeights[gEditor->userPiece][point - 1] * 16 : 0,
+                                      CUR_Z0(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                        edit_project_to_screen(CUR_X0(1) + point * 4000, point != 0 ? gUserPieceHeights[gEditor->userPiece][point - 1] * 16 : 0,
+                                      CUR_Z0(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                        if (gEditor->heightSel == point) {
                             switch (gEditor->heightState) {
-                            case 0:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
+                            case EDIT_HEIGHT_AT_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
-                            case 1:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
+                            case EDIT_HEIGHT_NEAR_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
                                 break;
-                            case 2:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
+                            case EDIT_HEIGHT_FREE:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
                                 break;
                             }
                         } else {
-                            edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                            edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (k > 0) {
-                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
-                                          ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(1, 0) + k * 4000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
-                                          ZB(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
-                                          ZB(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(1, 0) + k * 4000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
-                                          ZB(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (gEditor->heightSel == k || gEditor->heightSel == k - 1) {
+                        if (point > 0) {
+                            edit_project_to_screen(CUR_X0(1) + (point - 1) * 4000, point != 1 ? gUserPieceHeights[gEditor->userPiece][point - 2] * 16 : 0,
+                                          CUR_Z0(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(1) + point * 4000, gUserPieceHeights[gEditor->userPiece][point - 1] * 16,
+                                          CUR_Z0(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(1) + (point - 1) * 4000, point != 1 ? gUserPieceHeights[gEditor->userPiece][point - 2] * 16 : 0,
+                                          CUR_Z0(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(1) + point * 4000, gUserPieceHeights[gEditor->userPiece][point - 1] * 16,
+                                          CUR_Z0(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, ctx, fb);
+                            if (gEditor->heightSel == point || gEditor->heightSel == point - 1) {
                                 switch (gEditor->heightState) {
-                                case 0:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
+                                case EDIT_HEIGHT_AT_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
                                     break;
-                                case 1:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
+                                case EDIT_HEIGHT_NEAR_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
                                     break;
-                                case 2:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
+                                case EDIT_HEIGHT_FREE:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
                                     break;
                                 }
                             } else {
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
-                                edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
                             }
                         }
                     }
                     break;
                 case 2:
-                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
-                        n = gEditor->cur->type->dim[1] * 2 - k;
-                        edit_project_to_screen(XB(0, 0) + 2000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                      ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(0, 0) + 14000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                      ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (gEditor->heightSel == n) {
+                    for (point = 0; point < gEditor->cur->type->dim[1] * 2 + 1; point++) {
+                        revPoint = gEditor->cur->type->dim[1] * 2 - point;
+                        edit_project_to_screen(CUR_X0(0) + 2000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                      CUR_Z0(1) + point * 4000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                        edit_project_to_screen(CUR_X0(0) + 14000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                      CUR_Z0(1) + point * 4000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                        if (gEditor->heightSel == revPoint) {
                             switch (gEditor->heightState) {
-                            case 0:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
+                            case EDIT_HEIGHT_AT_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
-                            case 1:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
+                            case EDIT_HEIGHT_NEAR_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
                                 break;
-                            case 2:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
+                            case EDIT_HEIGHT_FREE:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
                                 break;
                             }
                         } else {
-                            edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                            edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (n < gEditor->cur->type->dim[1] * 2) {
-                            edit_project_to_screen(XB(0, 0) + 2000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                          ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(0, 0) + 2000, gUserPieceHeights[gEditor->userPiece][n] * 16,
-                                          ZB(1) + (k - 1) * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(0, 0) + 14000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                          ZB(1) + k * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(0, 0) + 14000, gUserPieceHeights[gEditor->userPiece][n] * 16,
-                                          ZB(1) + (k - 1) * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (gEditor->heightSel == n || gEditor->heightSel == n + 1) {
+                        if (revPoint < gEditor->cur->type->dim[1] * 2) {
+                            edit_project_to_screen(CUR_X0(0) + 2000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                          CUR_Z0(1) + point * 4000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(0) + 2000, gUserPieceHeights[gEditor->userPiece][revPoint] * 16,
+                                          CUR_Z0(1) + (point - 1) * 4000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(0) + 14000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                          CUR_Z0(1) + point * 4000, &p2[0], &p2[1], &p2[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(0) + 14000, gUserPieceHeights[gEditor->userPiece][revPoint] * 16,
+                                          CUR_Z0(1) + (point - 1) * 4000, &p3[0], &p3[1], &p3[2], NULL, ctx, fb);
+                            if (gEditor->heightSel == revPoint || gEditor->heightSel == revPoint + 1) {
                                 switch (gEditor->heightState) {
-                                case 0:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
+                                case EDIT_HEIGHT_AT_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
                                     break;
-                                case 1:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
+                                case EDIT_HEIGHT_NEAR_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
                                     break;
-                                case 2:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
+                                case EDIT_HEIGHT_FREE:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
                                     break;
                                 }
                             } else {
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
-                                edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
                             }
                         }
                     }
                     break;
                 case 3:
-                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
-                        n = gEditor->cur->type->dim[1] * 2 - k;
-                        edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                      ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                      ZB(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (gEditor->heightSel == n) {
+                    for (point = 0; point < gEditor->cur->type->dim[1] * 2 + 1; point++) {
+                        revPoint = gEditor->cur->type->dim[1] * 2 - point;
+                        edit_project_to_screen(CUR_X0(1) + point * 4000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                      CUR_Z0(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                        edit_project_to_screen(CUR_X0(1) + point * 4000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                      CUR_Z0(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                        if (gEditor->heightSel == revPoint) {
                             switch (gEditor->heightState) {
-                            case 0:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
+                            case EDIT_HEIGHT_AT_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
-                            case 1:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
+                            case EDIT_HEIGHT_NEAR_LIMIT:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0x8C, 0);
                                 break;
-                            case 2:
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
+                            case EDIT_HEIGHT_FREE:
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0xFF, 0);
                                 break;
                             }
                         } else {
-                            edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                            edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (n < gEditor->cur->type->dim[1] * 2) {
-                            edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                          ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, gUserPieceHeights[gEditor->userPiece][n] * 16,
-                                          ZB(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
-                                          ZB(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, gUserPieceHeights[gEditor->userPiece][n] * 16,
-                                          ZB(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (gEditor->heightSel == n || gEditor->heightSel == n + 1) {
+                        if (revPoint < gEditor->cur->type->dim[1] * 2) {
+                            edit_project_to_screen(CUR_X0(1) + point * 4000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                          CUR_Z0(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(1) + (point - 1) * 4000, gUserPieceHeights[gEditor->userPiece][revPoint] * 16,
+                                          CUR_Z0(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(1) + point * 4000, revPoint != 0 ? gUserPieceHeights[gEditor->userPiece][revPoint - 1] * 16 : 0,
+                                          CUR_Z0(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, ctx, fb);
+                            edit_project_to_screen(CUR_X0(1) + (point - 1) * 4000, gUserPieceHeights[gEditor->userPiece][revPoint] * 16,
+                                          CUR_Z0(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, ctx, fb);
+                            if (gEditor->heightSel == revPoint || gEditor->heightSel == revPoint + 1) {
                                 switch (gEditor->heightState) {
-                                case 0:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
+                                case EDIT_HEIGHT_AT_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
                                     break;
-                                case 1:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
+                                case EDIT_HEIGHT_NEAR_LIMIT:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0x46, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0x46, 0);
                                     break;
-                                case 2:
-                                    edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
-                                    edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
+                                case EDIT_HEIGHT_FREE:
+                                    edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 100, 0);
+                                    edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 100, 0);
                                     break;
                                 }
                             } else {
-                                edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
-                                edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
+                                edit_add_overlay_line_2(fb, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 0, 0, 0);
                             }
                         }
                     }
                     break;
                 }
             }
-            gdl = edit_draw_overlay_lines(arg0, arg1, gdl);
+            gdl = edit_draw_overlay_lines(ctx, fb, gdl);
         }
     } else {
-        gdl = arned_draw(arg1, gdl, 0, 0, 0, 0, 0, 0, -1, 1);
+        gdl = arned_draw(fb, gdl, 0, 0, 0, 0, 0, 0, -1, 1);
     }
 
     if (gEditor->flags & EDIT_MESSAGE) {
         switch (gEditor->message) {
-        case 0:
-            gdl = gui_draw_message(gdl, arg0, arg1, "No Track Found On Game Pak");
+        case EDIT_MSG_NO_TRACK:
+            gdl = gui_draw_message(gdl, ctx, fb, "No Track Found On Game Pak");
             break;
-        case 1:
-            gdl = gui_draw_message(gdl, arg0, arg1, "Save Canceled");
+        case EDIT_MSG_SAVE_CANCELED:
+            gdl = gui_draw_message(gdl, ctx, fb, "Save Canceled");
             break;
-        case 2:
-            gdl = gui_draw_message(gdl, arg0, arg1, "Track Complete!");
+        case EDIT_MSG_TRACK_COMPLETE:
+            gdl = gui_draw_message(gdl, ctx, fb, "Track Complete!");
             break;
-        case 3:
-            gdl = gui_draw_message(gdl, arg0, arg1, "You Ran Out Of Room!");
+        case EDIT_MSG_OUT_OF_ROOM:
+            gdl = gui_draw_message(gdl, ctx, fb, "You Ran Out Of Room!");
             break;
-        case 4:
-            gdl = gui_draw_message(gdl, arg0, arg1, "Name Your Track Before Saving!");
+        case EDIT_MSG_NAME_FIRST:
+            gdl = gui_draw_message(gdl, ctx, fb, "Name Your Track Before Saving!");
             break;
         }
     } else if (gEditor->flags & EDIT_DIALOG) {
         switch (gEditor->dialog) {
-        case 0:
-            gdl = gui_draw_prompt(gdl, arg0, arg1, "Add Segment?", "OK", "Cancel", 1, 1);
+        case EDIT_ASK_ADD_SEGMENT:
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Add Segment?", "OK", "Cancel", 1, 1);
             break;
-        case 1:
-            gdl = gui_draw_prompt(gdl, arg0, arg1, "Delete Will Reset The Piece", "OK", "Cancel", 1, 1);
+        case EDIT_ASK_DELETE_SEGMENT:
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Delete Will Reset The Piece", "OK", "Cancel", 1, 1);
             break;
-        case 3:
-        case 7:
-            gdl = gui_draw_prompt(gdl, arg0, arg1, "Lose Changes?", "OK", "Cancel", 1, 1);
+        case EDIT_ASK_EXIT:
+        case EDIT_ASK_LOAD_DISCARD:
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Lose Changes?", "OK", "Cancel", 1, 1);
             break;
-        case 4:
-            gdl = gui_draw_prompt(gdl, arg0, arg1, "Really Clear Track?", "OK", "Cancel", 1, 1);
+        case EDIT_ASK_CLEAR:
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Really Clear Track?", "OK", "Cancel", 1, 1);
             break;
-        case 5:
-            gdl = gui_draw_prompt(gdl, arg0, arg1, "Save The Track To...", "Game Pak", "Controller Pak", 0, 1);
+        case EDIT_ASK_SAVE:
+            /* Game Pak greyed out */
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Save The Track To...", "Game Pak", "Controller Pak", 0, 1);
             break;
-        case 6:
-            gdl = gui_draw_prompt(gdl, arg0, arg1, "Load A Track From...", "Game Pak", "Controller Pak",
+        case EDIT_ASK_LOAD:
+            /* Game Pak enabled when a track is saved there (SAVE_HAS_USER_TRACK) */
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Load A Track From...", "Game Pak", "Controller Pak",
                                 (gSaveData.options >> 3) & 1, 1);
             break;
-        case 8:
-            gdl = gui_draw_prompt(gdl, arg0, arg1, "Overwrite Track On Game Pak?", "OK", "Cancel", 1, 1);
+        case EDIT_ASK_OVERWRITE:
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Overwrite Track On Game Pak?", "OK", "Cancel", 1, 1);
             break;
         }
     }
     return gdl;
 }
 
-EditPiece *edit_insert_piece(EditPiece *a, EditPiece *b, PieceType *type)
+/* Takes a free piece node of the given type and links it after prev and before next (either may be NULL), placed
+   against them. */
+EditPiece *edit_insert_piece(EditPiece *prev, EditPiece *next, PieceType *type)
 {
-    EditPiece *n;
+    EditPiece *piece;
     s32 i;
-    s32 idx;
-    Editor *g;
+    s32 rot;
+    Editor *ed;
 
-    n = gEditor->pieces;
-    for (i = 0; i < 150; i++, n++) {
-        if (n->used == 0) break;
+    piece = gEditor->pieces;
+    for (i = 0; i < EDIT_MAX_PIECES; i++, piece++) {
+        if (piece->used == 0) break;
     }
-    g = gEditor;
-    n->used = 1;
-    if (g->flags & EDIT_FLIP) {
-        if (type->flags & 0x20) {
-            n->flags = 2;
+    ed = gEditor;
+    piece->used = 1;
+    /* flipped as the last piece was, if the type fits that way */
+    if (ed->flags & EDIT_FLIP) {
+        if (type->flags & PIECE_FITS_FLIPPED) {
+            piece->flags = EDIT_PIECE_FLIPPED;
         } else {
-            n->flags = 0;
-            g->flags &= ~EDIT_FLIP;
+            piece->flags = 0;
+            ed->flags &= ~EDIT_FLIP;
         }
-    } else if (type->flags & 0x10) {
-        n->flags = 0;
+    } else if (type->flags & PIECE_FITS) {
+        piece->flags = 0;
     } else {
-        n->flags = 2;
-        g->flags |= EDIT_FLIP;
+        piece->flags = EDIT_PIECE_FLIPPED;
+        ed->flags |= EDIT_FLIP;
     }
-    n->next = b;
-    n->prev = a;
-    n->type = type;
-    if (b == NULL && a == NULL) {
-        gEditor->first = n;
-        gEditor->last = n;
-        idx = type->rot;
-        if (gEditor->flags & EDIT_FLIP) idx += 2;
-        n->rot = idx;
-        n->x = gEditor->gridSize[0] / 2 - type->dim[idx & 1] / 2;
-        n->y = gEditor->gridSize[1] / 2 - type->dim[(n->rot + 1) & 1] / 2;
-        n->x += gEditor->scrollX;
-        n->y += gEditor->scrollY;
-        if (n->x < 0) {
-            n->x = 0;
-            gEditor->scrollX = type->dim[n->rot & 1] / 2 - gEditor->gridSize[0] / 2;
+    piece->next = next;
+    piece->prev = prev;
+    piece->type = type;
+    if (next == NULL && prev == NULL) {
+        /* the first piece: in the middle of the grid, moved by the scroll, which is held to the grid */
+        gEditor->first = piece;
+        gEditor->last = piece;
+        rot = type->rot;
+        if (gEditor->flags & EDIT_FLIP) rot += 2;
+        piece->rot = rot;
+        piece->x = gEditor->gridSize[0] / 2 - type->dim[rot & 1] / 2;
+        piece->y = gEditor->gridSize[1] / 2 - type->dim[(piece->rot + 1) & 1] / 2;
+        piece->x += gEditor->scrollX;
+        piece->y += gEditor->scrollY;
+        if (piece->x < 0) {
+            piece->x = 0;
+            gEditor->scrollX = type->dim[piece->rot & 1] / 2 - gEditor->gridSize[0] / 2;
         }
-        if (n->x + n->type->dim[n->rot & 1] > gEditor->gridSize[0]) {
-            n->x = gEditor->gridSize[0] - n->type->dim[n->rot & 1];
-            gEditor->scrollX = n->x - (gEditor->gridSize[0] / 2 - type->dim[n->rot & 1] / 2);
+        if (piece->x + piece->type->dim[piece->rot & 1] > gEditor->gridSize[0]) {
+            piece->x = gEditor->gridSize[0] - piece->type->dim[piece->rot & 1];
+            gEditor->scrollX = piece->x - (gEditor->gridSize[0] / 2 - type->dim[piece->rot & 1] / 2);
         }
-        if (n->y < 0) {
-            n->y = 0;
-            gEditor->scrollY = type->dim[~n->rot & 1] / 2 - gEditor->gridSize[1] / 2;
+        if (piece->y < 0) {
+            piece->y = 0;
+            gEditor->scrollY = type->dim[~piece->rot & 1] / 2 - gEditor->gridSize[1] / 2;
         }
-        if (n->y + n->type->dim[~n->rot & 1] > gEditor->gridSize[1]) {
-            n->y = gEditor->gridSize[1] - n->type->dim[~n->rot & 1];
-            gEditor->scrollY = n->y - (gEditor->gridSize[1] / 2 - type->dim[~n->rot & 1] / 2);
+        if (piece->y + piece->type->dim[~piece->rot & 1] > gEditor->gridSize[1]) {
+            piece->y = gEditor->gridSize[1] - piece->type->dim[~piece->rot & 1];
+            gEditor->scrollY = piece->y - (gEditor->gridSize[1] / 2 - type->dim[~piece->rot & 1] / 2);
         }
     } else {
-        if (a != NULL) {
-            gEditor->last = n;
-            a->next = n;
-            edit_place_piece_after(a, n);
+        if (prev != NULL) {
+            gEditor->last = piece;
+            prev->next = piece;
+            edit_place_piece_after(prev, piece);
         }
-        if (b != NULL) {
-            gEditor->first = n;
-            b->prev = n;
-            edit_place_piece_before(b, n);
+        if (next != NULL) {
+            gEditor->first = piece;
+            next->prev = piece;
+            edit_place_piece_before(next, piece);
         }
     }
-    return n;
+    return piece;
 }
 
-void edit_delete_piece(EditPiece *p)
+/* Unlinks a piece (opening a closed track), frees its node and clears its cells in the 3D view. */
+void edit_delete_piece(EditPiece *piece)
 {
-    s16 *grid;
-    s32 ix;
-    s32 iy;
+    s16 *size;
+    s32 col;
+    s32 row;
     s32 x;
     s32 y;
 
-    if (p->next != NULL) {
-        if (p->prev != NULL) {
-            p->prev->next = NULL;
-            p->next->prev = NULL;
-            if ((p->flags & EDIT_PIECE_PREVIEW) == 0) {
-                gEditor->first = p->next;
-                gEditor->last = p->prev;
+    if (piece->next != NULL) {
+        if (piece->prev != NULL) {
+            /* from the middle of a closed track: it opens there */
+            piece->prev->next = NULL;
+            piece->next->prev = NULL;
+            if ((piece->flags & EDIT_PIECE_PREVIEW) == 0) {
+                gEditor->first = piece->next;
+                gEditor->last = piece->prev;
             }
-            goto L_d4;
+            goto free_node;
         }
-        goto L_c;
+        goto unlink_next;
     }
-    if (p->prev != NULL) {
-        p->prev->next = NULL;
-        goto L_8c;
+    if (piece->prev != NULL) {
+        piece->prev->next = NULL;
+        goto update_ends;
     }
-L_c:
-    if (p->next != NULL) {
-        p->next->prev = p->prev;
+unlink_next:
+    if (piece->next != NULL) {
+        piece->next->prev = piece->prev;
     }
-L_8c:
-    if ((p->flags & EDIT_PIECE_PREVIEW) == 0) {
-        if (gEditor->first == p) {
-            gEditor->first = p->next;
+update_ends:
+    if ((piece->flags & EDIT_PIECE_PREVIEW) == 0) {
+        if (gEditor->first == piece) {
+            gEditor->first = piece->next;
         }
-        if (gEditor->last == p) {
-            gEditor->last = p->prev;
+        if (gEditor->last == piece) {
+            gEditor->last = piece->prev;
         }
     }
-L_d4:
+free_node:
     {
         Editor *ed = gEditor;
-        p->used = 0;
-        if (ed->start == p) {
+        piece->used = 0;
+        if (ed->start == piece) {
             ed->start = NULL;
         }
     }
-    for (iy = 0; iy < p->type->dim[(p->rot + 1) & 1]; iy++) {
-        for (ix = 0; ix < p->type->dim[p->rot & 1]; ix++) {
-            x = p->x + ix;
+    for (row = 0; row < piece->type->dim[(piece->rot + 1) & 1]; row++) {
+        for (col = 0; col < piece->type->dim[piece->rot & 1]; col++) {
+            x = piece->x + col;
             if (x >= 0) {
-                grid = gEditor->gridSize;
-                if (x < grid[0]) {
-                    y = p->y + iy;
-                    if (y >= 0 && y < grid[1]) {
+                size = gEditor->gridSize;
+                if (x < size[0]) {
+                    y = piece->y + row;
+                    if (y >= 0 && y < size[1]) {
                         arned_set_cell(x, y, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
@@ -2777,81 +2794,81 @@ L_d4:
     }
 }
 
-/* Where a piece's connector is along an x side of the piece (0 when it is on a y side). P[s], P[s + 2] and
-   P[s + 4] are the type's dim[s], dir[s] and off[s]. */
-s32 edit_get_port_x(EditPiece *b, s32 s)
+/* Where a piece's connector `end` (0 entry, 1 exit) is along an x side of the piece (0 when it is on a y side).
+   fields[end], fields[end + 2] and fields[end + 4] are the type's dim[end], dir[end] and off[end]. */
+s32 edit_get_port_x(EditPiece *piece, s32 end)
 {
-    s16 *P = b->type->dim;
-    s16 *Q = &P[s];
-    s32 t = Q[2];
+    s16 *fields = piece->type->dim;
+    s16 *port = &fields[end];
+    s32 side = port[2];
 
-    switch ((t + b->rot) & 3) {
-    case 1:
-    case 3:
+    switch ((side + piece->rot) & 3) {
+    case SIDE_POS_X:
+    case SIDE_NEG_X:
         return 0;
-    case 0:
-        switch (t) {
-        case 0:
-        case 3:
-            return Q[4];
-        case 2:
-            return P[0] - Q[4] - 2;
-        case 1:
-            return P[1] - Q[4] - 2;
+    case SIDE_POS_Y:
+        switch (side) {
+        case SIDE_POS_Y:
+        case SIDE_NEG_X:
+            return port[4];
+        case SIDE_NEG_Y:
+            return fields[0] - port[4] - 2;
+        case SIDE_POS_X:
+            return fields[1] - port[4] - 2;
         }
-    case 2: {
-        s16 *R = b->type->dim;
-        s16 *Q2 = &R[s];
+    case SIDE_NEG_Y: {
+        s16 *fields2 = piece->type->dim;
+        s16 *port2 = &fields2[end];
 
-        switch (Q2[2]) {
-        case 0:
-            return R[0] - Q2[4] - 2;
-        case 1:
-            return Q2[4];
-        case 2:
-            return Q2[4];
-        case 3:
-            return R[1] - Q2[4] - 2;
+        switch (port2[2]) {
+        case SIDE_POS_Y:
+            return fields2[0] - port2[4] - 2;
+        case SIDE_POS_X:
+            return port2[4];
+        case SIDE_NEG_Y:
+            return port2[4];
+        case SIDE_NEG_X:
+            return fields2[1] - port2[4] - 2;
         }
     }
     }
 }
 
 /* ... along a y side. */
-s32 edit_get_port_y(EditPiece *p, s32 k)
+s32 edit_get_port_y(EditPiece *piece, s32 end)
 {
-    s16 *P = p->type->dim;
-    s16 *Q = P + k;
-    s32 a = Q[2];
+    s16 *fields = piece->type->dim;
+    s16 *port = fields + end;
+    s32 side = port[2];
 
-    switch ((a + p->rot) & 3) {
-    case 0:
+    switch ((side + piece->rot) & 3) {
+    case SIDE_POS_Y:
         return 0;
-    case 2:
+    case SIDE_NEG_Y:
         return 0;
-    case 3:
-        switch (a) {
-        case 2:
-            return P[0] - Q[4] - 2;
-        case 0:
-        case 3:
-            return Q[4];
-        case 1:
-            return P[1] - Q[4] - 2;
+    case SIDE_NEG_X:
+        switch (side) {
+        case SIDE_NEG_Y:
+            return fields[0] - port[4] - 2;
+        case SIDE_POS_Y:
+        case SIDE_NEG_X:
+            return port[4];
+        case SIDE_POS_X:
+            return fields[1] - port[4] - 2;
         }
-    case 1: {
-        s16 *R = p->type->dim;
-        s16 *S = R + k;
+    case SIDE_POS_X: {
+        s16 *fields2 = piece->type->dim;
+        s16 *port2 = fields2 + end;
 
-        switch (S[2]) {
-        case 2:
-            return S[4];
-        case 0:
-            return R[0] - S[4] - 2;
-        case 3:
-            return R[1] - S[4] - 2;
-        case 1:
-            return S[4];
+        switch (port2[2]) {
+        case SIDE_NEG_Y:
+            return port2[4];
+        case SIDE_POS_Y:
+            return fields2[0] - port2[4] - 2;
+        case SIDE_NEG_X:
+            return fields2[1] - port2[4] - 2;
+        case SIDE_POS_X:
+            return port2[4];
         }
     }
     }
@@ -2860,144 +2877,145 @@ s32 edit_get_port_y(EditPiece *p, s32 k)
 #define SX16(v) ((s32)((u32)(v) << 16))
 #define HALF(v, s) ((s32)((SX16(v) >> 16) + (s32)((u32)SX16(v) >> 31)) >> (s))
 
-/* Puts c after p: c's entry connector against p's exit (with no p, c goes in the middle of the grid). Some reads
-   are unsigned or volatile as the original has them. */
-void edit_place_piece_after(EditPiece *p, EditPiece *c)
+/* Puts piece after prev: its entry connector against prev's exit (with no prev, in the middle of the grid). Some
+   reads are unsigned or volatile as the original has them. */
+void edit_place_piece_after(EditPiece *prev, EditPiece *piece)
 {
-    EditPiece *q = p;
-    s32 k = 1;
-    s32 m = 0;
-    s32 t, t2, r, v, ka, ma;
+    EditPiece *prevPiece = prev;
+    s32 exitEnd = 1;
+    s32 entryEnd = 0;
+    s32 rot, rotMasked, side, ofs;
 
-    if (q == 0) {
-        u16 *tg = (u16 *)gEditor->gridSize;
-        c->x = HALF(tg[0], k) - HALF((u16)c->type->dim[0], k);
-        tg = (u16 *)gEditor->gridSize;
-        c->y = HALF(tg[1], k) - HALF((u16)c->type->dim[1], k);
+    if (prevPiece == 0) {
+        u16 *grid = (u16 *)gEditor->gridSize;
+        piece->x = HALF(grid[0], exitEnd) - HALF((u16)piece->type->dim[0], exitEnd);
+        grid = (u16 *)gEditor->gridSize;
+        piece->y = HALF(grid[1], exitEnd) - HALF((u16)piece->type->dim[1], exitEnd);
         return;
     }
-    if (q->flags & EDIT_PIECE_FLIPPED) k = 0;
-    if (c->flags & EDIT_PIECE_FLIPPED) m = 1;
-    c->x = q->x;
-    *(volatile s16 *)&c->y = q->y;
-    t = (u16)q->rot + ((u16)q->type->dir[k] - (u16)(*(PieceType *volatile *)&c->type)->dir[m]) + 2;
-    t2 = t & 3;
-    c->rot = t2;
-    r = (q->type->dir[k] + q->rot) & 3;
-    switch (r) {
-    case 0:
-        c->y += q->type->dim[(q->rot + 1) & 1];
-        v = edit_get_port_x(q, k);
-        c->x += v;
-        v = edit_get_port_x(c, m);
-        c->x -= v;
+    if (prevPiece->flags & EDIT_PIECE_FLIPPED) exitEnd = 0;
+    if (piece->flags & EDIT_PIECE_FLIPPED) entryEnd = 1;
+    piece->x = prevPiece->x;
+    *(volatile s16 *)&piece->y = prevPiece->y;
+    rot = (u16)prevPiece->rot + ((u16)prevPiece->type->dir[exitEnd] - (u16)(*(PieceType *volatile *)&piece->type)->dir[entryEnd]) + 2;
+    rotMasked = rot & 3;
+    piece->rot = rotMasked;
+    side = (prevPiece->type->dir[exitEnd] + prevPiece->rot) & 3;
+    switch (side) {
+    case SIDE_POS_Y:
+        piece->y += prevPiece->type->dim[(prevPiece->rot + 1) & 1];
+        ofs = edit_get_port_x(prevPiece, exitEnd);
+        piece->x += ofs;
+        ofs = edit_get_port_x(piece, entryEnd);
+        piece->x -= ofs;
         break;
-    case 2:
-        c->y -= c->type->dim[(t2 + 1) & 1];
-        v = edit_get_port_x(q, k);
-        c->x += v;
-        v = edit_get_port_x(c, m);
-        c->x -= v;
+    case SIDE_NEG_Y:
+        piece->y -= piece->type->dim[(rotMasked + 1) & 1];
+        ofs = edit_get_port_x(prevPiece, exitEnd);
+        piece->x += ofs;
+        ofs = edit_get_port_x(piece, entryEnd);
+        piece->x -= ofs;
         break;
-    case 3:
-        c->x -= c->type->dim[t & 1];
-        v = edit_get_port_y(q, k);
-        c->y += v;
-        v = edit_get_port_y(c, m);
-        c->y -= v;
+    case SIDE_NEG_X:
+        piece->x -= piece->type->dim[rot & 1];
+        ofs = edit_get_port_y(prevPiece, exitEnd);
+        piece->y += ofs;
+        ofs = edit_get_port_y(piece, entryEnd);
+        piece->y -= ofs;
         break;
-    case 1:
-        c->x += q->type->dim[q->rot & 1];
-        v = edit_get_port_y(q, k);
-        c->y += v;
-        v = edit_get_port_y(c, m);
-        c->y -= v;
+    case SIDE_POS_X:
+        piece->x += prevPiece->type->dim[prevPiece->rot & 1];
+        ofs = edit_get_port_y(prevPiece, exitEnd);
+        piece->y += ofs;
+        ofs = edit_get_port_y(piece, entryEnd);
+        piece->y -= ofs;
         break;
     }
 }
 
-/* Puts b before a: b's exit connector against a's entry. */
-void edit_place_piece_before(EditPiece *a, EditPiece *b)
+/* Puts piece before next: its exit connector against next's entry. */
+void edit_place_piece_before(EditPiece *next, EditPiece *piece)
 {
-    s32 fa, fb;
-    u16 n;
-    s32 f; u32 g;
+    s32 entryEnd, exitEnd;
+    u16 rot;
+    s32 flipA; u32 flipB;
 
-    f = a->flags & EDIT_PIECE_FLIPPED; fa = f != 0;
-    b->x = a->x;
-    b->y = a->y;
-    g = b->flags & EDIT_PIECE_FLIPPED; fb = g < 1;
-    n = a->rot + (a->type->dir[fa] - b->type->dir[fb]) + 2;
-    b->rot = n & 3;
-    switch ((a->type->dir[fa] + a->rot) & 3) {
-    case 0:
-        b->y += a->type->dim[(a->rot + 1) & 1];
-        b->x += edit_get_port_x(a, fa);
-        b->x -= edit_get_port_x(b, fb);
+    flipA = next->flags & EDIT_PIECE_FLIPPED; entryEnd = flipA != 0;
+    piece->x = next->x;
+    piece->y = next->y;
+    flipB = piece->flags & EDIT_PIECE_FLIPPED; exitEnd = flipB < 1;
+    rot = next->rot + (next->type->dir[entryEnd] - piece->type->dir[exitEnd]) + 2;
+    piece->rot = rot & 3;
+    switch ((next->type->dir[entryEnd] + next->rot) & 3) {
+    case SIDE_POS_Y:
+        piece->y += next->type->dim[(next->rot + 1) & 1];
+        piece->x += edit_get_port_x(next, entryEnd);
+        piece->x -= edit_get_port_x(piece, exitEnd);
         break;
-    case 2:
-        b->y -= b->type->dim[(b->rot + 1) & 1];
-        b->x += edit_get_port_x(a, fa);
-        b->x -= edit_get_port_x(b, fb);
+    case SIDE_NEG_Y:
+        piece->y -= piece->type->dim[(piece->rot + 1) & 1];
+        piece->x += edit_get_port_x(next, entryEnd);
+        piece->x -= edit_get_port_x(piece, exitEnd);
         break;
-    case 3:
-        b->x -= b->type->dim[b->rot & 1];
-        b->y += edit_get_port_y(a, fa);
-        b->y -= edit_get_port_y(b, fb);
+    case SIDE_NEG_X:
+        piece->x -= piece->type->dim[piece->rot & 1];
+        piece->y += edit_get_port_y(next, entryEnd);
+        piece->y -= edit_get_port_y(piece, exitEnd);
         break;
-    case 1:
-        b->x += a->type->dim[a->rot & 1];
-        b->y += edit_get_port_y(a, fa);
-        b->y -= edit_get_port_y(b, fb);
+    case SIDE_POS_X:
+        piece->x += next->type->dim[next->rot & 1];
+        piece->y += edit_get_port_y(next, entryEnd);
+        piece->y -= edit_get_port_y(piece, exitEnd);
         break;
     }
 }
 
+/* With no track yet: only the types that can start a track fit; the add items offer those. */
 void edit_set_start_piece_choices(void)
 {
     s32 i;
     s32 k;
-    s32 t0;
-    s32 v;
-    PieceType *p;
-    s32 w;
-    s32 r;
+    s32 base;
+    s32 flags;
+    PieceType *type;
+    s32 withFit;
+    s32 newFlags;
 
-    for (k = 0; k < 0x1D; k++) {
-        p = &gPieceTypes[k];
-        v = (u16)p->flags; /* read unsigned here */
-        if (v & 2) {
-            w = v | 0x10;
-            p->flags = w;
-            if (w & 0x100) {
-                r = w | 0x20;
+    for (k = 0; k < PIECE_TYPE_COUNT; k++) {
+        type = &gPieceTypes[k];
+        flags = (u16)type->flags; /* read unsigned here */
+        if (flags & PIECE_START) {
+            withFit = flags | PIECE_FITS;
+            type->flags = withFit;
+            if (withFit & PIECE_FLIPPABLE) {
+                newFlags = withFit | PIECE_FITS_FLIPPED;
             } else {
-                r = w & ~0x20;
+                newFlags = withFit & ~PIECE_FITS_FLIPPED;
             }
         } else {
-            r = v & ~0x10;
-            r &= ~0x20;
+            newFlags = flags & ~PIECE_FITS;
+            newFlags &= ~PIECE_FITS_FLIPPED;
         }
-        p->flags = r;
+        type->flags = newFlags;
     }
     for (i = 0; i < 4; i++) {
         switch (i) {
-        case 0:
-            t0 = 0;
+        case EDIT_ITEM_STRAIGHT:
+            base = PIECE_TYPE_STRAIGHT;
             break;
-        case 1:
-            t0 = 2;
+        case EDIT_ITEM_TURN:
+            base = PIECE_TYPE_TURN;
             break;
-        case 2:
-            t0 = 6;
+        case EDIT_ITEM_JUMP:
+            base = PIECE_TYPE_JUMP;
             break;
-        case 3:
-            t0 = 0x12;
+        case EDIT_ITEM_USER:
+            base = PIECE_TYPE_USER;
             break;
         }
         sEditTrackMenu.items[i].valueMask = 0;
         for (k = 0; k < sEditTrackMenu.items[i].numValues; k++) {
-            if (gPieceTypes[t0 + k].flags & (PIECE_FITS | PIECE_FITS_FLIPPED)) {
+            if (gPieceTypes[base + k].flags & (PIECE_FITS | PIECE_FITS_FLIPPED)) {
                 sEditTrackMenu.items[i].valueMask |= 1 << k;
             }
         }
@@ -3010,140 +3028,144 @@ void edit_set_start_piece_choices(void)
     gui_menu_fix_cursor(&sEditTrackMenu);
 }
 
-typedef struct Grid_3 {
+/* The 30 x 30 cells round an open end, turned so that the end faces +y (g[x][y]): 1 taken or off the grid */
+typedef struct FitGrid {
     u8 g[30][30];
-} Grid_3;
+} FitGrid;
 
-typedef struct Rect_4 {
+typedef struct FitRect {
     s32 x0, y0, x1, y1;
-} Rect_4;
+} FitRect;
 
-extern Grid_3 sEditFitGrid;
+extern FitGrid sEditFitGrid;
 
-s32 edit_update_fitting_pieces(EditPiece *o)
+/* Works out which piece types fit at the track's open end next to piece `end` (PIECE_FITS, PIECE_FITS_FLIPPED) and
+   sets the add items' choices; returns whether anything fits. */
+s32 edit_update_fitting_pieces(EditPiece *end)
 {
-    Grid_3 grid;
-    Rect_4 r;
-    s16 k;
-    s16 other;
+    FitGrid grid;
+    FitRect area;
+    s16 openEnd;
+    s16 otherEnd;
     s32 i, j;
-    s32 n, m, lo, hi, best;
-    s16 s;
-    s32 ret;
-    EditPiece *p;
-    PieceType *e;
+    s32 typeIdx, len, lo, hi, bestLen;
+    s16 ofs;
+    s32 anyFit;
+    EditPiece *piece;
+    PieceType *type;
 
-    k = 1;
-    if (o->next == NULL || (o->next->flags & 4)) {
-        other = 0;
+    /* the open end: after the piece, or before it */
+    openEnd = 1;
+    if (end->next == NULL || (end->next->flags & EDIT_PIECE_PREVIEW)) {
+        otherEnd = 0;
     } else {
-        k = 0;
-        other = 1;
+        openEnd = 0;
+        otherEnd = 1;
     }
-    switch (o->dir[k]) {
-    case 0:
+    switch (end->dir[openEnd]) {
+    case SIDE_POS_Y:
         {
             s32 t, u;
-            t = o->x + o->off[k];
-            r.x0 = t - 14;
-            u = o->y + o->h;
-            r.x1 = t + 16;
-            r.y0 = u - 15;
-            r.y1 = u + 15;
+            t = end->x + end->off[openEnd];
+            area.x0 = t - 14;
+            u = end->y + end->h;
+            area.x1 = t + 16;
+            area.y0 = u - 15;
+            area.y1 = u + 15;
         }
         break;
-    case 1:
+    case SIDE_POS_X:
         {
             s32 t, u;
-            t = o->x + o->w;
-            r.x0 = t - 15;
-            u = o->y + o->off[k];
-            r.x1 = t + 15;
-            r.y0 = u - 14;
-            r.y1 = u + 16;
+            t = end->x + end->w;
+            area.x0 = t - 15;
+            u = end->y + end->off[openEnd];
+            area.x1 = t + 15;
+            area.y0 = u - 14;
+            area.y1 = u + 16;
         }
         break;
-    case 2:
+    case SIDE_NEG_Y:
         {
             s32 t, u;
-            t = o->x + o->off[k];
-            r.x0 = t - 14;
-            u = o->y;
-            r.x1 = t + 16;
-            r.y0 = u - 15;
-            r.y1 = u + 15;
+            t = end->x + end->off[openEnd];
+            area.x0 = t - 14;
+            u = end->y;
+            area.x1 = t + 16;
+            area.y0 = u - 15;
+            area.y1 = u + 15;
         }
         break;
-    case 3:
+    case SIDE_NEG_X:
         {
             s32 t, u;
-            t = o->x;
-            r.x0 = t - 15;
-            u = o->y + o->off[k];
-            r.x1 = t + 15;
-            r.y0 = u - 14;
-            r.y1 = u + 16;
+            t = end->x;
+            area.x0 = t - 15;
+            u = end->y + end->off[openEnd];
+            area.x1 = t + 15;
+            area.y0 = u - 14;
+            area.y1 = u + 16;
         }
         break;
     }
-    mem_fill((u8 *)&grid, 0, 0x384);
-    for (j = 0; j < r.y1 - r.y0; j++) {
-        for (i = 0; i < r.x1 - r.x0; i++) {
-            if (i + r.x0 < 0 || i + r.x0 >= gEditor->gridSize[0]
-                || j + r.y0 < 0 || j + r.y0 >= gEditor->gridSize[1]) {
-                switch (o->dir[k]) {
-                case 0:
+    mem_fill((u8 *)&grid, 0, sizeof(FitGrid));
+    for (j = 0; j < area.y1 - area.y0; j++) {
+        for (i = 0; i < area.x1 - area.x0; i++) {
+            if (i + area.x0 < 0 || i + area.x0 >= gEditor->gridSize[0]
+                || j + area.y0 < 0 || j + area.y0 >= gEditor->gridSize[1]) {
+                switch (end->dir[openEnd]) {
+                case SIDE_POS_Y:
                     grid.g[i][j] = 1;
                     break;
-                case 2:
+                case SIDE_NEG_Y:
                     grid.g[29 - i][29 - j] = 1;
                     break;
-                case 3:
+                case SIDE_NEG_X:
                     grid.g[j][29 - i] = 1;
                     break;
-                case 1:
+                case SIDE_POS_X:
                     grid.g[29 - j][i] = 1;
                     break;
                 }
             }
         }
     }
-    p = gEditor->first;
-    if (p != NULL) {
+    piece = gEditor->first;
+    if (piece != NULL) {
         do {
-            if (!(p->flags & 4) && p->x < r.x1 && r.x0 < p->x + p->w
-                && p->y < r.y1 && r.y0 < p->y + p->h) {
-                switch (o->dir[k]) {
-                case 0:
-                    for (j = p->y - r.y0; j < p->y - r.y0 + p->h; j++) {
-                        for (i = p->x - r.x0; i < p->x - r.x0 + p->w; i++) {
+            if (!(piece->flags & EDIT_PIECE_PREVIEW) && piece->x < area.x1 && area.x0 < piece->x + piece->w
+                && piece->y < area.y1 && area.y0 < piece->y + piece->h) {
+                switch (end->dir[openEnd]) {
+                case SIDE_POS_Y:
+                    for (j = piece->y - area.y0; j < piece->y - area.y0 + piece->h; j++) {
+                        for (i = piece->x - area.x0; i < piece->x - area.x0 + piece->w; i++) {
                             if (i >= 0 && j >= 0 && i < 30 && j < 30) {
                                 grid.g[i][j] = 1;
                             }
                         }
                     }
                     break;
-                case 2:
-                    for (j = p->y - r.y0; j < p->y - r.y0 + p->h; j++) {
-                        for (i = p->x - r.x0; i < p->x - r.x0 + p->w; i++) {
+                case SIDE_NEG_Y:
+                    for (j = piece->y - area.y0; j < piece->y - area.y0 + piece->h; j++) {
+                        for (i = piece->x - area.x0; i < piece->x - area.x0 + piece->w; i++) {
                             if (i >= 0 && j >= 0 && i < 30 && j < 30) {
                                 grid.g[29 - i][29 - j] = 1;
                             }
                         }
                     }
                     break;
-                case 3:
-                    for (j = p->y - r.y0; j < p->y - r.y0 + p->h; j++) {
-                        for (i = p->x - r.x0; i < p->x - r.x0 + p->w; i++) {
+                case SIDE_NEG_X:
+                    for (j = piece->y - area.y0; j < piece->y - area.y0 + piece->h; j++) {
+                        for (i = piece->x - area.x0; i < piece->x - area.x0 + piece->w; i++) {
                             if (i >= 0 && j >= 0 && i < 30 && j < 30) {
                                 grid.g[j][29 - i] = 1;
                             }
                         }
                     }
                     break;
-                case 1:
-                    for (j = p->y - r.y0; j < p->y - r.y0 + p->h; j++) {
-                        for (i = p->x - r.x0; i < p->x - r.x0 + p->w; i++) {
+                case SIDE_POS_X:
+                    for (j = piece->y - area.y0; j < piece->y - area.y0 + piece->h; j++) {
+                        for (i = piece->x - area.x0; i < piece->x - area.x0 + piece->w; i++) {
                             if (i >= 0 && j >= 0 && i < 30 && j < 30) {
                                 grid.g[29 - j][i] = 1;
                             }
@@ -3152,136 +3174,139 @@ s32 edit_update_fitting_pieces(EditPiece *o)
                     break;
                 }
             }
-            p = p->next;
-        } while (p != NULL && p != gEditor->first);
+            piece = piece->next;
+        } while (piece != NULL && piece != gEditor->first);
     }
     sEditFitGrid = grid;
 
-    for (n = 0; n < 29; n++) {
-        e = &gPieceTypes[n];
-        if (!(e->flags & PIECE_IN_MENU)) {
+    /* each type in the menus fits if its cells are free (flipped too, if it can flip); a New User Piece takes the
+       longest length that fits */
+    for (typeIdx = 0; typeIdx < PIECE_TYPE_COUNT; typeIdx++) {
+        type = &gPieceTypes[typeIdx];
+        if (!(type->flags & PIECE_IN_MENU)) {
             continue;
         }
-        best = 0;
-        if (e->flags & PIECE_VAR_LENGTH) {
+        bestLen = 0;
+        if (type->flags & PIECE_VAR_LENGTH) {
             lo = 1;
-            hi = 8;
+            hi = USER_PIECE_MAX_SEGMENTS;
         } else {
-            hi = e->dim[(e->dir[k] + 1) & 1];
+            hi = type->dim[(type->dir[openEnd] + 1) & 1];
             lo = hi;
         }
-        for (m = lo; m <= hi; m++) {
-            if ((u32)(n - 18) < 8 && n - 18 >= gEditor->userPieceCount) {
-                e->flags &= ~(PIECE_FITS | PIECE_FITS_FLIPPED);
+        for (len = lo; len <= hi; len++) {
+            if ((u32)(typeIdx - PIECE_TYPE_USER) < USER_PIECE_COUNT && typeIdx - PIECE_TYPE_USER >= gEditor->userPieceCount) {
+                type->flags &= ~(PIECE_FITS | PIECE_FITS_FLIPPED);
             } else {
-                switch (e->dir[other]) {
-                case 0:
-                    s = e->dim[0] - e->off[other] - 2;
+                switch (type->dir[otherEnd]) {
+                case SIDE_POS_Y:
+                    ofs = type->dim[0] - type->off[otherEnd] - 2;
                     break;
-                case 3:
-                    s = e->dim[1] - e->off[other] - 2;
+                case SIDE_NEG_X:
+                    ofs = type->dim[1] - type->off[otherEnd] - 2;
                     break;
-                case 1:
-                    s = e->off[other];
+                case SIDE_POS_X:
+                    ofs = type->off[otherEnd];
                     break;
-                case 2:
-                    s = e->off[other];
+                case SIDE_NEG_Y:
+                    ofs = type->off[otherEnd];
                     break;
                 }
-                e->flags |= PIECE_FITS;
-                for (j = 0; j < m; j++) {
-                    for (i = 0; i < e->dim[e->dir[k] & 1]; i++) {
-                        if (grid.g[i + (14 - s)][j + 15]) {
-                            e->flags &= ~PIECE_FITS;
+                type->flags |= PIECE_FITS;
+                for (j = 0; j < len; j++) {
+                    for (i = 0; i < type->dim[type->dir[openEnd] & 1]; i++) {
+                        if (grid.g[i + (14 - ofs)][j + 15]) {
+                            type->flags &= ~PIECE_FITS;
                             break;
                         }
                     }
-                    if (!(e->flags & PIECE_FITS)) {
+                    if (!(type->flags & PIECE_FITS)) {
                         break;
                     }
                 }
-                if (e->flags & PIECE_FLIPPABLE) {
-                    switch (e->dir[k]) {
-                    case 0:
-                        s = e->dim[0] - e->off[k] - 2;
+                if (type->flags & PIECE_FLIPPABLE) {
+                    switch (type->dir[openEnd]) {
+                    case SIDE_POS_Y:
+                        ofs = type->dim[0] - type->off[openEnd] - 2;
                         break;
-                    case 3:
-                        s = e->dim[1] - e->off[k] - 2;
+                    case SIDE_NEG_X:
+                        ofs = type->dim[1] - type->off[openEnd] - 2;
                         break;
-                    case 1:
-                        s = e->off[k];
+                    case SIDE_POS_X:
+                        ofs = type->off[openEnd];
                         break;
-                    case 2:
-                        s = e->off[k];
+                    case SIDE_NEG_Y:
+                        ofs = type->off[openEnd];
                         break;
                     }
-                    e->flags |= PIECE_FITS_FLIPPED;
+                    type->flags |= PIECE_FITS_FLIPPED;
                     j = 0;
-                    if (m > 0) {
+                    if (len > 0) {
                         do {
-                            for (i = 0; i < e->dim[e->dir[k] & 1]; i++) {
-                                if (grid.g[i + (14 - s)][j + 15]) {
-                                    e->flags &= ~PIECE_FITS_FLIPPED;
+                            for (i = 0; i < type->dim[type->dir[openEnd] & 1]; i++) {
+                                if (grid.g[i + (14 - ofs)][j + 15]) {
+                                    type->flags &= ~PIECE_FITS_FLIPPED;
                                     break;
                                 }
                             }
                             j++;
-                        } while ((e->flags & PIECE_FITS_FLIPPED) && j < m);
+                        } while ((type->flags & PIECE_FITS_FLIPPED) && j < len);
                     }
                 } else {
-                    e->flags &= ~PIECE_FITS_FLIPPED;
+                    type->flags &= ~PIECE_FITS_FLIPPED;
                 }
             }
-            if (e->flags & PIECE_FITS) {
-                best = m;
-            } else if (e->flags & PIECE_VAR_LENGTH) {
-                if (m != lo) {
-                    e->flags |= PIECE_FITS;
+            if (type->flags & PIECE_FITS) {
+                bestLen = len;
+            } else if (type->flags & PIECE_VAR_LENGTH) {
+                if (len != lo) {
+                    type->flags |= PIECE_FITS;
                 }
                 break;
             }
         }
-        if (e->flags & PIECE_VAR_LENGTH) {
+        if (type->flags & PIECE_VAR_LENGTH) {
             if (gEditor->mode != EDIT_MODE_USER_PIECE) {
-                e->dim[1] = (best < e->dim[1]) ? best : e->dim[1];
+                type->dim[1] = (bestLen < type->dim[1]) ? bestLen : type->dim[1];
             }
-            gEditor->maxSegments = best;
+            gEditor->maxSegments = bestLen;
         }
     }
 
-    ret = 0;
+    /* the add items offer the types that fit */
+    anyFit = 0;
     for (i = 0; i < 6; i++) {
         switch (i) {
-        case 0:
-            j = 0;
+        case EDIT_ITEM_STRAIGHT:
+            j = PIECE_TYPE_STRAIGHT;
             break;
-        case 1:
-            j = 2;
+        case EDIT_ITEM_TURN:
+            j = PIECE_TYPE_TURN;
             break;
-        case 2:
-            j = 6;
+        case EDIT_ITEM_JUMP:
+            j = PIECE_TYPE_JUMP;
             break;
-        case 3:
-            j = 0x12;
+        case EDIT_ITEM_USER:
+            j = PIECE_TYPE_USER;
             break;
         default:
             continue;
         }
         sEditTrackMenu.items[i].valueMask = 0;
-        for (n = 0; n < sEditTrackMenu.items[i].numValues; n++) {
-            if (gPieceTypes[j + n].flags & 0x30) {
-                sEditTrackMenu.items[i].valueMask |= 1 << n;
+        for (typeIdx = 0; typeIdx < sEditTrackMenu.items[i].numValues; typeIdx++) {
+            if (gPieceTypes[j + typeIdx].flags & (PIECE_FITS | PIECE_FITS_FLIPPED)) {
+                sEditTrackMenu.items[i].valueMask |= 1 << typeIdx;
             }
         }
         if (sEditTrackMenu.items[i].valueMask == 0) {
             sEditTrackMenu.items[i].flags &= ~GUI_ITEM_ENABLED;
         } else {
-            ret = 1;
+            anyFit = 1;
             sEditTrackMenu.items[i].flags |= GUI_ITEM_ENABLED;
         }
     }
     gui_menu_fix_cursor(&sEditTrackMenu);
-    return ret;
+    return anyFit;
 }
 
 void edit_init_user_pieces(void)
