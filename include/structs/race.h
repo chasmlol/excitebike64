@@ -65,10 +65,11 @@ enum TrackId {
 #define RACE_PHASE_FADE_OUT         6   /* event_request_exit */
 #define RACE_PHASE_DONE             7   /* a cleared frame, then leave or restart */
 
-/* gRacePhaseTimer during a fade: -1 to start one (render_draw_race sets 20), counts down to 0, then -2 and -3 when
-   the fade out is over. */
-#define PHASE_TIMER_START   -1
-#define PHASE_TIMER_FADED   -3
+/* gRacePhaseTimer during a fade: -1 to start one (render_draw_race sets 20 frames), counts down to 0; a fade out
+   then goes to -2, and to -3 once render_draw_race has drawn the black frame. */
+#define PHASE_TIMER_START   (-1)
+#define PHASE_TIMER_OVER    (-2)
+#define PHASE_TIMER_FADED   (-3)
 
 /* gRaceExitCode: how the last race ended, for shell_init. */
 #define RACE_EXIT_BOOT      0   /* none yet: the game just started */
@@ -78,6 +79,9 @@ enum TrackId {
 #define RACE_EXIT_NONE      6   /* the default while racing */
 #define RACE_EXIT_PODIUM    7   /* after the podium ceremony */
 #define RACE_EXIT_EDITOR    8   /* the test ride's "Return to Editor" */
+
+#define RACE_NUM_TEXTS      74  /* the text objects of gRaceTextObjs (RaceTexts.text) */
+#define MENU_NUM_TEXTS      48  /* gGame.texts, created for the pause menu's screens */
 
 /* gPauseMenu: the menu shown over the race (gPauseMenuCursor is its item). */
 #define PAUSE_NONE          0
