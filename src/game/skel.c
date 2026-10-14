@@ -50,12 +50,12 @@ void *skel_load(u32 *param_1, s32 param_2)
     sSkelWalkIndex = 0;
     walk(ents, -1, 1);
     for (i = 0; i < cnt; i++) {
-        sSkelLoadBuf[i].pos[0] = ents[i].f28;
-        sSkelLoadBuf[i].pos[1] = ents[i].f2C;
-        sSkelLoadBuf[i].pos[2] = ents[i].f30;
+        sSkelLoadBuf[i].pos.x = ents[i].f28;
+        sSkelLoadBuf[i].pos.y = ents[i].f2C;
+        sSkelLoadBuf[i].pos.z = ents[i].f30;
         sSkelLoadBuf[i].parent = ents[i].f0;
         for (sum = 0; sum < 9; sum++) {
-            sSkelLoadBuf[i].rot[sum] = ents[i].f4[sum];
+            sSkelLoadBuf[i].rot.m[sum] = ents[i].f4[sum];
         }
     }
     res_unload((u32 *)(param_1[1] + param_2 * 4));
@@ -70,16 +70,16 @@ void skel_update_world_transforms(Bone *n, s32 count)
     Bone *par;
     s32 v[3];
 
-    n[0].worldPos[0] = n[0].pos[0];
-    n[0].worldPos[1] = n[0].pos[1];
-    n[0].worldPos[2] = n[0].pos[2];
+    n[0].worldPos.x = n[0].pos.x;
+    n[0].worldPos.y = n[0].pos.y;
+    n[0].worldPos.z = n[0].pos.z;
     for (i = 1; i < count; i++) {
         par = &n[n[i].parent];
-        mtx3i_mul(n[i].rot, par->worldRot, n[i].worldRot);
-        vec3i_mul_mtx3i(n[i].pos, par->worldRot, n[i].worldPos);
-        n[i].worldPos[0] += par->worldPos[0];
-        n[i].worldPos[1] += par->worldPos[1];
-        n[i].worldPos[2] += par->worldPos[2];
+        mtx3i_mul(n[i].rot.m, par->worldRot.m, n[i].worldRot.m);
+        vec3i_mul_mtx3i(&n[i].pos.x, par->worldRot.m, &n[i].worldPos.x);
+        n[i].worldPos.x += par->worldPos.x;
+        n[i].worldPos.y += par->worldPos.y;
+        n[i].worldPos.z += par->worldPos.z;
     }
 }
 
@@ -101,16 +101,16 @@ s32 func_8003C588(Bone *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx)
     sum += d;
     if (sum > 0x8000) return 1;
     for (i = 0; i < n; i++) {
-        vec3i_mul_mtx3i(recs[i].worldPos, mat, wp);
+        vec3i_mul_mtx3i(&recs[i].worldPos.x, mat, wp);
         wp[0] += pos[0];
         wp[1] += pos[1];
         wp[2] += pos[2];
         rel[0] = (gCamPos[idx].x >> 6) - wp[0];
         rel[1] = (gCamPos[idx].y >> 6) - wp[1];
         rel[2] = (gCamPos[idx].z >> 6) - wp[2];
-        mtx3i_transpose(recs[i].worldRot);
-        vec3i_mul_mtx3i(rel, recs[i].worldRot, &out[i * 3]);
-        mtx3i_transpose(recs[i].worldRot);
+        mtx3i_transpose(recs[i].worldRot.m);
+        vec3i_mul_mtx3i(rel, recs[i].worldRot.m, &out[i * 3]);
+        mtx3i_transpose(recs[i].worldRot.m);
     }
     return 0;
 }
@@ -122,9 +122,9 @@ void skel_make_verts_bone_local(Bone *tbl, List_6 *list) {
     u32 i;
     for (i = 0; i < list->n; i++) {
         u16 k = list->e[i].idx;
-        list->e[i].a -= tbl[k].worldPos[0];
-        list->e[i].b -= tbl[k].worldPos[1];
-        list->e[i].c -= tbl[k].worldPos[2];
+        list->e[i].a -= tbl[k].worldPos.x;
+        list->e[i].b -= tbl[k].worldPos.y;
+        list->e[i].c -= tbl[k].worldPos.z;
     }
 }
 
@@ -137,8 +137,8 @@ void skel_reset_pose(Bone *param_1, s32 param_2)
     if (param_2 > 0) {
         p = param_1;
         do {
-            mtx3i_from_angles(p->rot, 0, 0, 0);
-            mtx3i_from_angles(p->worldRot, 0, 0, 0);
+            mtx3i_from_angles(p->rot.m, 0, 0, 0);
+            mtx3i_from_angles(p->worldRot.m, 0, 0, 0);
             i++;
             p++;
         } while (i < param_2);

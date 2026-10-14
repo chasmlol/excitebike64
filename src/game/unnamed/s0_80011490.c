@@ -919,47 +919,40 @@ void mtx_from_rot3i_pos(s32 *src, u16 *aux, s16 *dst)
     }
 }
 
-struct Obj_5 {
-    u8 pad0[0x34];
-    s32 pos[3];
-    s32 rot[3][3];
-    u8 pad64[0x80 - 0x64];
-};
-
-void mtx_from_bones(Obj_5 *src, MtxS_2 *dst, s32 n)
+void mtx_from_bones(Bone *src, MtxS_2 *dst, s32 n)
 {
     s32 i;
 
     for (i = 0; i < n; i++) {
-        dst->i[0][0] = src->rot[0][0] >> 14;
-        dst->f[0][0] = src->rot[0][0] << 2;
-        dst->i[0][1] = src->rot[0][1] >> 14;
-        dst->f[0][1] = src->rot[0][1] << 2;
-        dst->i[0][2] = src->rot[0][2] >> 14;
-        dst->f[0][2] = src->rot[0][2] << 2;
+        dst->i[0][0] = src->worldRot.m[0] >> 14;
+        dst->f[0][0] = src->worldRot.m[0] << 2;
+        dst->i[0][1] = src->worldRot.m[1] >> 14;
+        dst->f[0][1] = src->worldRot.m[1] << 2;
+        dst->i[0][2] = src->worldRot.m[2] >> 14;
+        dst->f[0][2] = src->worldRot.m[2] << 2;
         dst->i[0][3] = 0;
         dst->f[0][3] = 0;
-        dst->i[1][0] = src->rot[1][0] >> 14;
-        dst->f[1][0] = src->rot[1][0] << 2;
-        dst->i[1][1] = src->rot[1][1] >> 14;
-        dst->f[1][1] = src->rot[1][1] << 2;
-        dst->i[1][2] = src->rot[1][2] >> 14;
-        dst->f[1][2] = src->rot[1][2] << 2;
+        dst->i[1][0] = src->worldRot.m[3] >> 14;
+        dst->f[1][0] = src->worldRot.m[3] << 2;
+        dst->i[1][1] = src->worldRot.m[4] >> 14;
+        dst->f[1][1] = src->worldRot.m[4] << 2;
+        dst->i[1][2] = src->worldRot.m[5] >> 14;
+        dst->f[1][2] = src->worldRot.m[5] << 2;
         dst->i[1][3] = 0;
         dst->f[1][3] = 0;
-        dst->i[2][0] = src->rot[2][0] >> 14;
-        dst->f[2][0] = src->rot[2][0] << 2;
-        dst->i[2][1] = src->rot[2][1] >> 14;
-        dst->f[2][1] = src->rot[2][1] << 2;
-        dst->i[2][2] = src->rot[2][2] >> 14;
-        dst->f[2][2] = src->rot[2][2] << 2;
+        dst->i[2][0] = src->worldRot.m[6] >> 14;
+        dst->f[2][0] = src->worldRot.m[6] << 2;
+        dst->i[2][1] = src->worldRot.m[7] >> 14;
+        dst->f[2][1] = src->worldRot.m[7] << 2;
+        dst->i[2][2] = src->worldRot.m[8] >> 14;
+        dst->f[2][2] = src->worldRot.m[8] << 2;
         dst->i[2][3] = 0;
         dst->f[2][3] = 0;
-        dst->i[3][0] = src->pos[0];
+        dst->i[3][0] = src->worldPos.x;
         dst->f[3][0] = 0;
-        dst->i[3][1] = src->pos[1];
+        dst->i[3][1] = src->worldPos.y;
         dst->f[3][1] = 0;
-        dst->i[3][2] = src->pos[2];
+        dst->i[3][2] = src->worldPos.z;
         dst->f[3][2] = 0;
         dst->i[3][3] = 1;
         dst->f[3][3] = 0;

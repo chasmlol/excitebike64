@@ -3898,7 +3898,6 @@ D_800E1758                            game  0x800E1758  data        -
 D_800E1774                            game  0x800E1774  data        -
 sRiderTint                            game  0x800E1818  data        -
 gBikeSkelTemplate                     game  0x800E1878  data        -
-gBikeSkelTemplate_4                   game  0x800E1878  data        -  gBikeSkelTemplate
 D_800E1880                            game  0x800E1880  data        -
 gNumScreens                           game  0x800E1898  data        -
 gRiderViewLod                         game  0x800E18A0  data        -

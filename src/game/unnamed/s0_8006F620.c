@@ -303,7 +303,7 @@ void stunt_start(Rider *o, s32 n)
         return;
     }
     o->powerSlide = 0;
-    rider_pose_snapshot(o->riderSkel, 0xF);
+    rider_pose_snapshot(o->riderSkel->bones, 0xF);
     if (n == 0xF) {
         if (o->airFrames < 3) {
             return;

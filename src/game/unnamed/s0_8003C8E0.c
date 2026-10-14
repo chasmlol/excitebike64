@@ -2,22 +2,12 @@
 
 typedef struct { s32 w[9]; } M9;
 
-struct Joint {
-    u8 pad0[8];
-    s32 len;
-    s32 len2;
-    Mtx3 rot;
-    Vec3i pos;
-    Mtx3 wrot;
-    u8 pad64[0x1C];
-};
-
 struct Obj_30 {
     u8 pad0[0x18];
     Vec3i v;
 };
 
-void rider_ik_arm(Joint *j, s32 idx, Vec3i *tgt, Obj_30 *o)
+void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Obj_30 *o)
 {
     Mtx3 m;
     Mtx3 m2;
@@ -31,10 +21,10 @@ void rider_ik_arm(Joint *j, s32 idx, Vec3i *tgt, Obj_30 *o)
     t.x = -(o->v.x * 80) / 16384 + tgt->x;
     t.y = -(o->v.y * 80) / 16384 + tgt->y;
     t.z = -(o->v.z * 80) / 16384 + tgt->z;
-    d.x = t.x - j[idx].pos.x;
-    d.y = t.y - j[idx].pos.y;
-    d.z = t.z - j[idx].pos.z;
-    m = j[1].wrot;
+    d.x = t.x - j[idx].worldPos.x;
+    d.y = t.y - j[idx].worldPos.y;
+    d.z = t.z - j[idx].worldPos.z;
+    m = j[1].worldRot;
     mtx3i_transpose(&m);
     vec3i_mul_mtx3i(&d, &m, &t);
     if (idx == 3) {
@@ -46,15 +36,15 @@ void rider_ik_arm(Joint *j, s32 idx, Vec3i *tgt, Obj_30 *o)
     mtx3i_from_angles(&m, 0, rot, 0);
     vec3i_mul_mtx3i(&t, &m, &d);
     dist = isqrt_u32_3(d.x * d.x + d.y * d.y + d.z * d.z);
-    n = j[idx + 1].len2 + j[idx + 2].len2;
+    n = j[idx + 1].pos.z + j[idx + 2].pos.z;
     if (n < dist) {
         d.x = d.x * n / dist;
         d.y = d.y * n / dist;
         d.z = d.z * n / dist;
         dist = n;
     }
-    l1 = j[idx + 1].len2;
-    l2 = j[idx + 2].len2;
+    l1 = j[idx + 1].pos.z;
+    l2 = j[idx + 2].pos.z;
     x = (l1 + l2) * (l1 - l2);
     x = x / (dist * 2) + dist / 2;
     {
@@ -78,17 +68,7 @@ void rider_ik_arm(Joint *j, s32 idx, Vec3i *tgt, Obj_30 *o)
     mtx3i_from_angles(&j[idx + 1].rot, 0, 0, -(a1 + a2));
 }
 
-struct Joint_2 {
-    u8 pad0[8];
-    s32 len;
-    s32 pad0C;
-    Mtx3 rot;
-    Vec3i pos;
-    Mtx3 wrot;
-    u8 pad64[0x1C];
-};
-
-void rider_ik_leg(Joint_2 *j, s32 idx, Vec3i *tgt, s32 *arg3)
+void rider_ik_leg(Bone *j, s32 idx, Vec3i *tgt, s32 *arg3)
 {
     Mtx3 m;
     Mtx3 m2;
@@ -102,10 +82,10 @@ void rider_ik_leg(Joint_2 *j, s32 idx, Vec3i *tgt, s32 *arg3)
     t.x = tgt->x;
     t.y = tgt->y;
     t.z = tgt->z;
-    d.x = t.x - j[idx].pos.x;
-    d.y = t.y - j[idx].pos.y;
-    d.z = t.z - j[idx].pos.z;
-    m = j->wrot;
+    d.x = t.x - j[idx].worldPos.x;
+    d.y = t.y - j[idx].worldPos.y;
+    d.z = t.z - j[idx].worldPos.z;
+    m = j->worldRot;
     mtx3i_transpose(&m);
     vec3i_mul_mtx3i(&d, &m, &t);
     if (idx == 9) {
@@ -116,16 +96,16 @@ void rider_ik_leg(Joint_2 *j, s32 idx, Vec3i *tgt, s32 *arg3)
     mtx3i_from_angles(&m, 0, 0, rot);
     vec3i_mul_mtx3i(&t, &m, &d);
     dist = isqrt_u32_3(d.x * d.x + d.y * d.y + d.z * d.z);
-    n = -(j[idx + 1].len + j[idx + 2].len);
+    n = -(j[idx + 1].pos.y + j[idx + 2].pos.y);
     if (n < dist) {
         d.x = d.x * n / dist;
         d.y = d.y * n / dist;
         d.z = d.z * n / dist;
         dist = n;
     }
-    l1 = j[idx + 1].len;
+    l1 = j[idx + 1].pos.y;
     n1 = -l1;
-    n2 = -j[idx + 2].len;
+    n2 = -j[idx + 2].pos.y;
     x = (n1 + n2) * (n1 - n2);
     x = x / (dist * 2) + dist / 2;
     {
@@ -145,49 +125,49 @@ void rider_ik_leg(Joint_2 *j, s32 idx, Vec3i *tgt, s32 *arg3)
     mtx3i_from_angles(&j[idx + 1].rot, a1 + a2, 0, 0);
 }
 
-void rider_apply_ik(s32 *param_1)
+void rider_apply_ik(Bone *b)
 {
     s32 *p;
     s32 *q;
     s32 *o;
     volatile s32 pad[10];
 
-    p = param_1 + 0x10;
-    q = param_1 + 0x30;
-    mtx3i_mul(param_1 + 0x24, p, q);
-    vec3i_mul_mtx3i(param_1 + 0x21, p, param_1 + 0x2d);
-    param_1[0x2d] = param_1[0x2d] + param_1[0xd];
-    param_1[0x2e] = param_1[0x2e] + param_1[0xe];
-    param_1[0x2f] = param_1[0x2f] + param_1[0xf];
-    vec3i_mul_mtx3i(param_1 + 0x61, q, param_1 + 0x6d);
-    param_1[0x6d] = param_1[0x6d] + param_1[0x2d];
-    param_1[0x6e] = param_1[0x6e] + param_1[0x2e];
-    param_1[0x6f] = param_1[0x6f] + param_1[0x2f];
-    vec3i_mul_mtx3i(param_1 + 0xc1, q, param_1 + 0xcd);
-    param_1[0xcd] = param_1[0xcd] + param_1[0x2d];
-    param_1[0xce] = param_1[0xce] + param_1[0x2e];
-    param_1[0xcf] = param_1[0xcf] + param_1[0x2f];
-    vec3i_mul_mtx3i(param_1 + 0x121, p, param_1 + 0x12d);
-    param_1[0x12d] = param_1[0x12d] + param_1[0xd];
-    param_1[0x12e] = param_1[0x12e] + param_1[0xe];
-    param_1[0x12f] = param_1[0x12f] + param_1[0xf];
-    vec3i_mul_mtx3i(param_1 + 0x181, p, param_1 + 0x18d);
-    param_1[0x18d] = param_1[0x18d] + param_1[0xd];
-    param_1[0x18e] = param_1[0x18e] + param_1[0xe];
-    param_1[0x18f] = param_1[0x18f] + param_1[0xf];
+    p = b[0].worldRot.m;
+    q = b[1].worldRot.m;
+    mtx3i_mul(b[1].rot.m, p, q);
+    vec3i_mul_mtx3i(&b[1].pos.x, p, &b[1].worldPos.x);
+    b[1].worldPos.x = b[1].worldPos.x + b[0].worldPos.x;
+    b[1].worldPos.y = b[1].worldPos.y + b[0].worldPos.y;
+    b[1].worldPos.z = b[1].worldPos.z + b[0].worldPos.z;
+    vec3i_mul_mtx3i(&b[3].pos.x, q, &b[3].worldPos.x);
+    b[3].worldPos.x = b[3].worldPos.x + b[1].worldPos.x;
+    b[3].worldPos.y = b[3].worldPos.y + b[1].worldPos.y;
+    b[3].worldPos.z = b[3].worldPos.z + b[1].worldPos.z;
+    vec3i_mul_mtx3i(&b[6].pos.x, q, &b[6].worldPos.x);
+    b[6].worldPos.x = b[6].worldPos.x + b[1].worldPos.x;
+    b[6].worldPos.y = b[6].worldPos.y + b[1].worldPos.y;
+    b[6].worldPos.z = b[6].worldPos.z + b[1].worldPos.z;
+    vec3i_mul_mtx3i(&b[9].pos.x, p, &b[9].worldPos.x);
+    b[9].worldPos.x = b[9].worldPos.x + b[0].worldPos.x;
+    b[9].worldPos.y = b[9].worldPos.y + b[0].worldPos.y;
+    b[9].worldPos.z = b[9].worldPos.z + b[0].worldPos.z;
+    vec3i_mul_mtx3i(&b[12].pos.x, p, &b[12].worldPos.x);
+    b[12].worldPos.x = b[12].worldPos.x + b[0].worldPos.x;
+    b[12].worldPos.y = b[12].worldPos.y + b[0].worldPos.y;
+    b[12].worldPos.z = b[12].worldPos.z + b[0].worldPos.z;
 
-    rider_ik_arm(param_1, 3, sRiderIkTargets, sRiderIkTargets + 3);
-    rider_ik_arm(param_1, 6, sRiderIkTargets + 12, sRiderIkTargets + 15);
-    rider_ik_leg(param_1, 9, sRiderIkTargets + 24, sRiderIkTargets + 27);
-    rider_ik_leg(param_1, 12, sRiderIkTargets + 36, sRiderIkTargets + 39);
-    skel_update_world_transforms(param_1, 15);
+    rider_ik_arm(b, 3, sRiderIkTargets, sRiderIkTargets + 3);
+    rider_ik_arm(b, 6, sRiderIkTargets + 12, sRiderIkTargets + 15);
+    rider_ik_leg(b, 9, sRiderIkTargets + 24, sRiderIkTargets + 27);
+    rider_ik_leg(b, 12, sRiderIkTargets + 36, sRiderIkTargets + 39);
+    skel_update_world_transforms(b, 15);
 
-    *(M9 *)(param_1 + 0xb0) = *(M9 *)(sRiderIkTargets + 3);
-    *(M9 *)(param_1 + 0x110) = *(M9 *)D_800EA6CC;
-    *(M9 *)(param_1 + 0x170) = *(M9 *)D_800EA6FC;
-    *(M9 *)(param_1 + 0x1d0) = *(M9 *)D_800EA72C;
-    o = param_1 + 0x50;
-    *(M9 *)o = *(M9 *)D_800EA750;
+    b[5].worldRot = *(Mtx3 *)(sRiderIkTargets + 3);
+    b[8].worldRot = *(Mtx3 *)D_800EA6CC;
+    b[11].worldRot = *(Mtx3 *)D_800EA6FC;
+    b[14].worldRot = *(Mtx3 *)D_800EA72C;
+    o = b[2].worldRot.m;
+    *(Mtx3 *)o = *(Mtx3 *)D_800EA750;
 }
 
 #define B (gRiders[i])
@@ -203,16 +183,6 @@ typedef struct {
 } Cam_3;
 
 typedef struct {
-    Vec3i p;
-    u8 pad[0x74];
-} Node80;
-
-typedef struct {
-    u8 pad[0x234];
-    Node80 n[6];
-} Skel_2;
-
-typedef struct {
     s32 f0;
     u8 pad4[0x8];
     struct { u8 pad[4]; s32 f4; } *fC;
@@ -222,16 +192,15 @@ typedef struct {
 typedef struct {
     u8 pad[0xA4C];
     u8 *fA4C;
-    s32 fA50;
+    Bone *fA50;
     u8 padA54[0x2C];
 } Slot_7;
 
 extern Ent_36 gRiderAnims_2[];
 extern Cam_3 sRiderIkTargets_2;
-extern Skel_2 *gBikeSkelTemplate_4;
 extern Slot_7 gRiderGfx_10[];
 
-void rider_update_pose(Model_4 *m, s32 i) {
+void rider_update_pose(RiderSkeleton *m, s32 i) {
     s32 v[3];
     Mtx3 mtx;
     s32 out[3];
@@ -273,7 +242,7 @@ void rider_update_pose(Model_4 *m, s32 i) {
         B.anim = B.prevAnim;
         B.animFrame = B.prevAnimFrame;
         rider_anim_apply(m, i, 0x100);
-        rider_pose_snapshot(m, 0xF);
+        rider_pose_snapshot(m->bones, 0xF);
         B.anim = st;
         B.animFrame = t;
     } else if (B.anim == -1 || scale != 0x100) {
@@ -306,17 +275,17 @@ void rider_update_pose(Model_4 *m, s32 i) {
         if (sRiderIkTargets_2.fE4 < 0) sRiderIkTargets_2.fE4 = 0;
         mtx3i_from_angles(&mtx, B.drawRot[0], (B.drawRot[1] * 7) / 8, B.drawRot[2]);
         vec3i_mul_mtx3i(v, mtx.m, out);
-        m->pos.x = m->pos2.x = out[0];
-        m->pos.y = m->pos2.y = out[1];
-        m->pos.z = m->pos2.z = out[2];
-        mtx3i_from_angles(&m->rot, B.drawRot[0] + 4000, 0, B.drawRot[2]);
-        m->rot2 = m->rot;
+        m->bones[0].pos.x = m->bones[0].worldPos.x = out[0];
+        m->bones[0].pos.y = m->bones[0].worldPos.y = out[1];
+        m->bones[0].pos.z = m->bones[0].worldPos.z = out[2];
+        mtx3i_from_angles(&m->bones[0].rot, B.drawRot[0] + 4000, 0, B.drawRot[2]);
+        m->bones[0].worldRot = m->bones[0].rot;
         r = s3 * 128 - 4000;
-        mtx3i_from_angles(&m->rot3, D_800F2140[i] = d - r, 0, 0);
-        sRiderIkTargets_2.j[0].pos = gBikeSkelTemplate_4->n[0].p;
-        sRiderIkTargets_2.j[1].pos = gBikeSkelTemplate_4->n[1].p;
-        sRiderIkTargets_2.j[2].pos = gBikeSkelTemplate_4->n[2].p;
-        sRiderIkTargets_2.j[3].pos = gBikeSkelTemplate_4->n[5].p;
+        mtx3i_from_angles(&m->bones[1].rot, D_800F2140[i] = d - r, 0, 0);
+        sRiderIkTargets_2.j[0].pos = gBikeSkelTemplate->bones[4].worldPos;
+        sRiderIkTargets_2.j[1].pos = gBikeSkelTemplate->bones[5].worldPos;
+        sRiderIkTargets_2.j[2].pos = gBikeSkelTemplate->bones[6].worldPos;
+        sRiderIkTargets_2.j[3].pos = gBikeSkelTemplate->bones[9].worldPos;
 
         if (B.leftFootOut != 0) {
             s32 x, y, z, p, q, n;
@@ -426,7 +395,7 @@ void rider_update_pose(Model_4 *m, s32 i) {
         if (st < 0) st = -st;
         h = (h * 12000) >> 14;
         mtx3i_from_angles(&sRiderIkTargets_2.rot, (0x4000 - SINS(st * 4)) >> 4, 0, B.drawRot[2] + h);
-        rider_apply_ik(m);
+        rider_apply_ik(m->bones);
         st = B.award;
         if (st != 0) {
             s32 o;
@@ -443,7 +412,7 @@ void rider_update_pose(Model_4 *m, s32 i) {
             rider_anim_overlay_limb(m, 0x12, 3, st, o);
         }
         if (B.anim >= 0) {
-            rider_pose_snapshot(m, 0xF);
+            rider_pose_snapshot(m->bones, 0xF);
         }
     }
     if (B.anim >= 0) {
@@ -504,7 +473,7 @@ void rider_anims_load(u8 *param_1)
     }
 }
 
-#define LERPROT(b, x, y, z, t)                                              {                                                                           u16 cx = (b)->rot[0];                                                   u16 cy;                                                                 u16 cz;                                                                 cx += (s16)((x) - cx) * (t) / 256;                                      cy = (b)->rot[1];                                                       cy += (s16)((y) - cy) * (t) / 256;                                      cz = (b)->rot[2];                                                       cz += (s16)((z) - cz) * (t) / 256;                                      mtx3i_from_angles((b)->mtx.w, (s16)cx, (s16)cy, (s16)cz);               }
+#define LERPROT(b, x, y, z, t)                                              {                                                                           u16 cx = (b)->angles[0];                                                u16 cy;                                                                 u16 cz;                                                                 cx += (s16)((x) - cx) * (t) / 256;                                      cy = (b)->angles[1];                                                    cy += (s16)((y) - cy) * (t) / 256;                                      cz = (b)->angles[2];                                                    cz += (s16)((z) - cz) * (t) / 256;                                      mtx3i_from_angles((b)->rot.m, (s16)cx, (s16)cy, (s16)cz);               }
 
 typedef struct Anim {
     u8 p00[4];
@@ -523,17 +492,17 @@ typedef struct Tab_4 {
 
 extern Tab_4 gRiderAnims_4[];
 
-static inline void lerpRot(Bone_2 *b, s32 x, s32 y, s32 z, s32 t)
+static inline void lerpRot(Bone *b, s32 x, s32 y, s32 z, s32 t)
 {
-    u16 cx = b->rot[0];
+    u16 cx = b->angles[0];
     u16 cy;
     u16 cz;
     cx += (s16)(x - cx) * t / 256;
-    cy = b->rot[1];
+    cy = b->angles[1];
     cy += (s16)(y - cy) * t / 256;
-    cz = b->rot[2];
+    cz = b->angles[2];
     cz += (s16)(z - cz) * t / 256;
-    mtx3i_from_angles(b->mtx.w, (s16)cx, (s16)cy, (s16)cz);
+    mtx3i_from_angles(&b->rot.m, (s16)cx, (s16)cy, (s16)cz);
 }
 
 static inline s16 *getFrame(s16 *d, s32 n, s32 size)
@@ -541,7 +510,7 @@ static inline s16 *getFrame(s16 *d, s32 n, s32 size)
     return d + n * size;
 }
 
-void rider_anim_apply(Bone_2 *bones, s32 param_2, s32 param_3)
+void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3)
 {
     s32 m0[10];
     s32 m1[10];
@@ -588,7 +557,7 @@ void rider_anim_apply(Bone_2 *bones, s32 param_2, s32 param_3)
 
     if (param_3 == 0x100) {
         for (i = 1; i < 15; i++) {
-            mtx3i_from_angles(bones[i].mtx.w, rot0[i * 3] << 8, rot0[i * 3 + 1] << 8, rot0[i * 3 + 2] << 8);
+            mtx3i_from_angles(bones[i].rot.m, rot0[i * 3] << 8, rot0[i * 3 + 1] << 8, rot0[i * 3 + 2] << 8);
         }
     } else {
         w = param_3;
@@ -623,7 +592,7 @@ void rider_anim_apply(Bone_2 *bones, s32 param_2, s32 param_3)
     if (((Rider *)((u8 *)base + off))->crashState == 0) {
         mtx3i_from_angles(m0, gRiders[param_2].drawRot[0], gRiders[param_2].drawRot[1], gRiders[param_2].drawRot[2]);
         vec3i_mul_mtx3i(v2, m0, v0);
-        mtx3i_mul(m2, m0, bones->mtx.w);
+        mtx3i_mul(m2, m0, &bones->rot.m);
     } else {
         if (param_3 == 0) {
             w = 1;
@@ -633,31 +602,31 @@ void rider_anim_apply(Bone_2 *bones, s32 param_2, s32 param_3)
             i = 4;
         }
         quat_to_mtx3i(m1, ((Rider *)((u8 *)base + off))->body.quat);
-        mtx3i_mul(m2, m1, bones->mtx.w);
+        mtx3i_mul(m2, m1, &bones->rot.m);
         vec3i_mul_mtx3i(v2, m1, v0);
     }
 
     if (param_3 != 0x100 && gRiders[param_2].crashPhase != 1) {
         for (i = 0; i < 3; i++) {
-            bones->pos.w[i] = (v0[i] * param_3 + bones->base[i] * (0x100 - param_3)) / 256;
+            (&bones->pos.x)[i] = (v0[i] * param_3 + bones->baseAngles[i] * (0x100 - param_3)) / 256;
         }
-        mtx3i_to_angles(bones->mtx.w, &rx, &ry, &rz);
+        mtx3i_to_angles(&bones->rot.m, &rx, &ry, &rz);
         w = param_3;
         LERPROT(bones, rx, ry, rz, w);
     } else {
-        bones->pos.w[0] = v0[0];
-        bones->pos.w[1] = v0[1];
-        bones->pos.w[2] = v0[2];
+        bones->pos.x = v0[0];
+        bones->pos.y = v0[1];
+        bones->pos.z = v0[2];
     }
 
     if (gRiders[param_2].crashState != 0) {
-        bones->pos.w[0] = 0;
-        bones->pos.w[1] = 0;
-        bones->pos.w[2] = 0;
+        bones->pos.x = 0;
+        bones->pos.y = 0;
+        bones->pos.z = 0;
     }
-    bones->pmtx = bones->mtx;
-    bones->ppos = bones->pos;
-    skel_update_world_transforms((s32 *)bones, 0xf);
+    bones->worldRot = bones->rot;
+    bones->worldPos = bones->pos;
+    skel_update_world_transforms(bones, 0xf);
 }
 
 typedef struct { u8 pad[0x10]; u8 *anim; u8 rest[0x28]; } Slot_8;
@@ -730,7 +699,7 @@ typedef struct {
 
 extern EbRow gRiderAnims_6[];
 
-void bike_skel_update(s32 *p1, s32 p2)
+void bike_skel_update(BikeSkeleton *p1, s32 p2)
 {
     Rider *blk;
     Rider *gp;
@@ -754,7 +723,7 @@ void bike_skel_update(s32 *p1, s32 p2)
         blk = &gp[p2];
         v = blk->drawSuspFront;
         n = blk->drawSuspRear;
-        quat_to_mtx3i(p1 + 0x10, gRiders[p2].drawQuat);
+        quat_to_mtx3i(p1->bones[0].worldRot.m, gRiders[p2].drawQuat);
         v = v - 0x32;
         if (v > 200) {
             v = 200;
@@ -762,14 +731,14 @@ void bike_skel_update(s32 *p1, s32 p2)
         if (v < -0x3c) {
             v = -0x3c;
         }
-        p1[0x42] = v - 0x222;
-        p1[0x43] = 0x106 - (v * 2) / 5;
-        mtx3i_from_angles(p1 + 0xe4, n * 0x18, 0, 0);
+        p1->bones[2].pos.y = v - 0x222;
+        p1->bones[2].pos.z = 0x106 - (v * 2) / 5;
+        mtx3i_from_angles(p1->bones[7].rot.m, n * 0x18, 0, 0);
         mtx3i_from_angles(a88, 4000, 0, blk->drawSteer);
         mtx3i_from_angles(a60, -4000, 0, 0);
-        mtx3i_mul(a88, a60, p1 + 0x24);
-        mtx3i_from_angles(p1 + 100, (s16)blk->rearSpinAngle, 0, 0);
-        mtx3i_from_angles(p1 + 0x104, (s16)blk->frontSpinAngle, 0, 0);
+        mtx3i_mul(a88, a60, p1->bones[1].rot.m);
+        mtx3i_from_angles(p1->bones[3].rot.m, (s16)blk->frontSpinAngle, 0, 0);
+        mtx3i_from_angles(p1->bones[8].rot.m, (s16)blk->rearSpinAngle, 0, 0);
         if (blk->anim != -1) {
             e = gRiderAnims_6[blk->anim].seq;
             if (e != 0) {
@@ -784,11 +753,11 @@ void bike_skel_update(s32 *p1, s32 p2)
                 k = 6;
                 for (i = 1; i < 2; i++) {
                     bp = d + idx * k * 2 + k + i * 3;
-                    mtx3i_from_angles(p1 + i * 0x20 + 4, bp[0] << 8, bp[1] << 8, bp[2] << 8);
+                    mtx3i_from_angles(p1->bones[i].rot.m, bp[0] << 8, bp[1] << 8, bp[2] << 8);
                 }
             }
         }
-        skel_update_world_transforms(p1, 10);
+        skel_update_world_transforms(p1->bones, 10);
         dst = (Quad *)gRiders[p2].bikeSkel;
         src = (Quad *)p1;
         end = src + 0x50;
@@ -946,17 +915,6 @@ void rider_update_fist_pump(void)
 
 typedef struct { s8 v[3]; } B3;
 
-struct Row_4 {
-    s32 f0;
-    V3_2 pos;          /* 0x04 */
-    M9 m;            /* 0x10 */
-    u8 pad34[0x0C];  /* 0x34 */
-    M9 m2;           /* 0x40 */
-    u16 c[3];        /* 0x64 */
-    u16 c2[3];       /* 0x6A */
-    u8 pad70[0x10];
-};
-
 typedef struct {
     u8 pad[0xC];
     s32 *tbl;
@@ -965,7 +923,7 @@ typedef struct {
 
 extern TEnt gRiderAnims_8[];
 
-void rider_anim_overlay_limb(Row_4 *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
+void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
 {
     s32 *tbl;
     s32 half;
@@ -974,7 +932,7 @@ void rider_anim_overlay_limb(Row_4 *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
     s32 sc;
     s32 j; s32 t;
     u16 a, b, c;
-    V3_2 save;
+    Vec3i save;
 
     tbl = gRiderAnims_8[param_2].tbl;
     half = (tbl[0] * 3 + 7) / 2;
@@ -983,37 +941,37 @@ void rider_anim_overlay_limb(Row_4 *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
     pb = (B3 *)((u8 *)tbl[4] + half * p4 * 2 + 6);
 
     for (k = 0; k < 15; k++) {
-        mtx3i_to_angles((s32 *)&p1[k].m, &a, &b, &c);
-        p1[k].c[0] = a;
-        p1[k].c[1] = b;
-        p1[k].c[2] = c;
+        mtx3i_to_angles(p1[k].rot.m, &a, &b, &c);
+        p1[k].angles[0] = a;
+        p1[k].angles[1] = b;
+        p1[k].angles[2] = c;
     }
     k = 0x100;
-    p1[0].c2[0] = *(u16 *)((u8 *)p1 + 6);
-    p1[0].c2[1] = *(u16 *)((u8 *)p1 + 0xA);
-    p1[0].c2[2] = *(u16 *)((u8 *)p1 + 0xE);
+    p1[0].baseAngles[0] = (u16)p1[0].pos.x;
+    p1[0].baseAngles[1] = (u16)p1[0].pos.y;
+    p1[0].baseAngles[2] = (u16)p1[0].pos.z;
     save = p1[p3].pos;
     for (j = 0; j < 3; j++) {
 
-        u16 c0 = p1[p3 + j].c[0];
+        u16 c0 = p1[p3 + j].angles[0];
         s8 x = pb[p3 + j].v[0];
         s8 y;
         s8 z;
         t = (s16)((x << 8) - c0) * k; if (t) p4 = 1; else p4 = 2;
         y = pb[p3 + j].v[1];
-        t = (s16)((y << 8) - p1[p3 + j].c[1]) * k; if (t) p4 = 3; else p4 = 4;
+        t = (s16)((y << 8) - p1[p3 + j].angles[1]) * k; if (t) p4 = 3; else p4 = 4;
         z = pb[p3 + j].v[2];
-        t = (s16)((z << 8) - p1[p3 + j].c[2]) * k; if (t) p4 = 5; else p4 = 6;
-        mtx3i_from_angles((s32 *)&p1[p3 + j].m, (s16)(x << 8), (s16)(y << 8), (s16)(z << 8));
+        t = (s16)((z << 8) - p1[p3 + j].angles[2]) * k; if (t) p4 = 5; else p4 = 6;
+        mtx3i_from_angles(p1[p3 + j].rot.m, (s16)(x << 8), (s16)(y << 8), (s16)(z << 8));
     }
-    mtx3i_mul((s32 *)&p1[p3].m, (s32 *)((u8 *)p1 + 0xC0), (s32 *)&p1[p3].m2);
-    p1[p3].m = p1[p3].m2;
-    *(M9 *)&p1[p3].pos = *(M9 *)p1[p3].pad34;
-    p1[p3 + 1].f0 = 0;
-    p1[p3 + 2].f0 = 1;
-    skel_update_world_transforms((s32 *)&p1[p3], 3);
-    p1[p3 + 1].f0 = p3;
-    p1[p3 + 2].f0 = p3 + 1;
+    mtx3i_mul(p1[p3].rot.m, p1[1].worldRot.m, p1[p3].worldRot.m);
+    p1[p3].rot = p1[p3].worldRot;
+    *(M9 *)&p1[p3].pos = *(M9 *)&p1[p3].worldPos;
+    p1[p3 + 1].parent = 0;
+    p1[p3 + 2].parent = 1;
+    skel_update_world_transforms(&p1[p3], 3);
+    p1[p3 + 1].parent = p3;
+    p1[p3 + 2].parent = p3 + 1;
     p1[p3].pos = save;
 }
 
@@ -1028,20 +986,20 @@ s32 rider_anim_get_length(s32 a0, s32 *a1)
     return *(s32 *)(*(u8 **)(rec + 0xC) + 4);
 }
 
-void rider_pose_snapshot(Ent_39 *p, s32 n)
+void rider_pose_snapshot(Bone *p, s32 n)
 {
     s32 i;
     u16 x, y, z;
 
     for (i = 0; i < n; i++) {
-        mtx3i_to_angles(&p[i].f10, &x, &y, &z);
-        p[i].f64 = x;
-        p[i].f66 = y;
-        p[i].f68 = z;
+        mtx3i_to_angles(p[i].rot.m, &x, &y, &z);
+        p[i].angles[0] = x;
+        p[i].angles[1] = y;
+        p[i].angles[2] = z;
     }
-    p->f6A = p->f06;
-    p->f6C = p->f0A;
-    p->f6E = p->f0E;
+    p->baseAngles[0] = (u16)p->pos.x;
+    p->baseAngles[1] = (u16)p->pos.y;
+    p->baseAngles[2] = (u16)p->pos.z;
 }
 
 s32 rider_ik_split_len(s32 a, s32 b, s32 c) {

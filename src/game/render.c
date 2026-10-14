@@ -402,8 +402,8 @@ void render_init(void) {
     p = skel_load(D_800E7728, D_800D0DA4);
     gRiderSkelTemplate = p;
     for (i = 0; i < 15; i++) {
-        mtx3i_from_angles(gRiderSkelTemplate->bones[i].rot, 0, 0, 0);
-        mtx3i_from_angles(gRiderSkelTemplate->bones[i].worldRot, 0, 0, 0);
+        mtx3i_from_angles(gRiderSkelTemplate->bones[i].rot.m, 0, 0, 0);
+        mtx3i_from_angles(gRiderSkelTemplate->bones[i].worldRot.m, 0, 0, 0);
     }
     skel_update_world_transforms(gRiderSkelTemplate->bones, 15);
     if (gCurTrack_9->f2C == 0) {
@@ -1390,7 +1390,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                 if (gPodiumMode == 0) {
                     for (k = 0; k < 6; k++) {
                         Bone *bn = &gRiders[i].bikeSkel->bones[D_800C25CC[k]];
-                        mtx_from_rot3i_pos(bn->worldRot, bn->worldPos, gRiderGfx_5[i].p23C[fb] + k);
+                        mtx_from_rot3i_pos(bn->worldRot.m, (u16 *)&bn->worldPos, gRiderGfx_5[i].p23C[fb] + k);
                     }
                 }
             }
@@ -1399,7 +1399,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                     ((gRiderViewLod[i] >> 4) & 0xF) == 3 || gRiders[i].crashState != 0 || (gGame_15.flags & 1)) {
                     rider_update_pose(gRiders[i].riderSkel, i);
                 }
-                mtx_from_bones(gRiders[i].riderSkel, gRiderGfx_5[i].p234[fb], 0xF);
+                mtx_from_bones(gRiders[i].riderSkel->bones, gRiderGfx_5[i].p234[fb], 0xF);
                 if (gPodiumMode == 0 && (sBigHeadCheat != 0 || sPinHeadCheat != 0)) {
                     u16 *m = (u16 *)&gRiderGfx_5[i].p234[fb][2];
 

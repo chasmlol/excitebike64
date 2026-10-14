@@ -12,10 +12,10 @@ struct Rider;
 /* A bone of a skeleton (skel.c): resources of 0x38-byte entries become these. */
 typedef struct Bone {
     /* 0x00 */ s32 parent;
-    /* 0x04 */ s32 pos[3];          /* relative to the parent */
-    /* 0x10 */ s32 rot[9];          /* local rotation, 1.0 = 0x4000 */
-    /* 0x34 */ s32 worldPos[3];
-    /* 0x40 */ s32 worldRot[9];
+    /* 0x04 */ Vec3i pos;           /* relative to the parent */
+    /* 0x10 */ Mtx3 rot;            /* local rotation, 1.0 = 0x4000 */
+    /* 0x34 */ Vec3i worldPos;
+    /* 0x40 */ Mtx3 worldRot;
     /* 0x64 */ u16 angles[3];
     /* 0x6A */ s16 baseAngles[3];
     /* 0x70 */ u8 unk_70[0x10];
@@ -28,6 +28,20 @@ typedef struct BikeSkeleton {
 typedef struct RiderSkeleton {
     /* 0x000 */ Bone bones[15];     /* gRiderSkelTemplate */
 } RiderSkeleton; /* size 0x780 */
+
+/* A node of a ponytail's spring chain (ponytail.c): four per rider, anchored on the rider's head bone. */
+typedef struct PonytailNode {
+    /* 0x00 */ Vec3f pos;
+    /* 0x0C */ Vec3f chainPos;      /* pos along the bone chain, for the bone matrices */
+    /* 0x18 */ Vec3f vel;
+    /* 0x24 */ Vec3f acc;
+    /* 0x30 */ s32 unk_30;
+    /* 0x34 */ s32 unk_34;
+    /* 0x38 */ struct PonytailNode *prev;
+    /* 0x3C */ struct PonytailNode *next;
+    /* 0x40 */ f32 prevLen;         /* rest length to prev */
+    /* 0x44 */ f32 nextLen;         /* rest length to next */
+} PonytailNode; /* size 0x48 */
 
 /* A rigid body: the bike, the thrown rider, the soccer ball (phys_body_step). */
 typedef struct RigidBody {
@@ -122,8 +136,8 @@ typedef struct Rider {
     /* 0x036 */ s16 yawLag;       /* cam_calc_bike_yaw */
     /* 0x038 */ s32 drawSuspFront;  /* mm */
     /* 0x03C */ s32 drawSuspRear;
-    /* 0x040 */ u16 rearSpinAngle;
-    /* 0x042 */ u16 frontSpinAngle;
+    /* 0x040 */ u16 frontSpinAngle;
+    /* 0x042 */ u16 rearSpinAngle;
     /* 0x044 */ u8 crashState;      /* 0 riding, 1 crashed, 2 rider clear of the bike */
     /* 0x045 */ s8 pendingCrash;    /* > 0 crash on landing, < 0 crash now: 0x19 backwards, 0x1C forwards, 0x1F/0x22 side */
     /* 0x046 */ u8 unk_046[2];

@@ -184,14 +184,14 @@ void engine_update(s32 idx, s32 dt)
     if (a1 > 0x1000) {
         a1 = random_byte() << 8;
     }
-    o->rearSpinAngle += a1;
+    o->frontSpinAngle += a1;
     if ((o->input & 0x20010) != 0 || 1000.0f < o->engine.rpm) {
         a1 = o->engine.rpm / sGearRatios[o->engine.gear] * 65536.0f / 188.49556f;
         if (a1 > 0x1000) {
             a1 = random_byte() << 8;
         }
     }
-    o->frontSpinAngle += a1;
+    o->rearSpinAngle += a1;
 }
 
 f32 engine_torque_at_rpm(f32 x)

@@ -44,7 +44,7 @@ void bike_crash_begin(Rider *b, s32 n)
     b->crashDir = (n - 0x19) / 3;
     bike_skel_update(b->bikeSkel, idx);
     rider_update_pose(b->riderSkel, idx);
-    mtx3i_to_angles(b->riderSkel->bones[0].worldRot, (u16 *)&rx, (u16 *)&ry, (u16 *)&rz);
+    mtx3i_to_angles(b->riderSkel->bones[0].worldRot.m, (u16 *)&rx, (u16 *)&ry, (u16 *)&rz);
     quat_from_euler(b->body.quat, (f32)rx * 3.1415927f * 3.0517578e-05f,
                   (f32)ry * 3.1415927f * 3.0517578e-05f,
                   (f32)rz * 3.1415927f * 3.0517578e-05f);
@@ -77,9 +77,9 @@ void bike_crash_begin(Rider *b, s32 n)
         b->bike.angVel.y += s * b->bike.fwd.y;
         b->bike.angVel.z += s * b->bike.fwd.z;
     }
-    b->body.pos.x = (f32)(b->riderSkel->bones[0].worldPos[0] + b->drawPos.x) / 1000.0f;
-    b->body.pos.y = (f32)(b->riderSkel->bones[0].worldPos[1] + b->drawPos.y) / 1000.0f;
-    b->body.pos.z = (f32)(b->riderSkel->bones[0].worldPos[2] + b->drawPos.z) / 1000.0f;
+    b->body.pos.x = (f32)(b->riderSkel->bones[0].worldPos.x + b->drawPos.x) / 1000.0f;
+    b->body.pos.y = (f32)(b->riderSkel->bones[0].worldPos.y + b->drawPos.y) / 1000.0f;
+    b->body.pos.z = (f32)(b->riderSkel->bones[0].worldPos.z + b->drawPos.z) / 1000.0f;
     s = __builtin_sqrtf(b->bike.vel.x * b->bike.vel.x + b->bike.vel.y * b->bike.vel.y + b->bike.vel.z * b->bike.vel.z) / 5.0f;
     if (s < 1.0f) {
         s = 1.0f;

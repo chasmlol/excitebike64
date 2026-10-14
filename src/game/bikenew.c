@@ -587,8 +587,8 @@ void bike_update_wheel_contacts(Rider *b) {
             b->rearWheel.groundDist = 0.0f;
         }
     }
-    bike_wheel_find_ground(b, &b->frontWheel.groundArea, 0.6f, diff > 1.5f);
-    bike_wheel_find_ground(b, &b->rearWheel.groundArea, -0.65f, diff > 1.5f);
+    bike_wheel_find_ground(b, &b->frontWheel, 0.6f, diff > 1.5f);
+    bike_wheel_find_ground(b, &b->rearWheel, -0.65f, diff > 1.5f);
     if (b->frontWheel.surface->flags & 0x800) {
         b->pendingCrash = 0x1C;
         b->crashVel = b->bike.vel;
@@ -815,7 +815,7 @@ void bike_rear_tire_force(Rider *a, Wheel *b)
     }
 }
 
-static inline f32 getHeight(V3 *p)
+static inline f32 getHeight(Vec3f *p)
 {
     s32 k;
     if (((s32)p + 1) * 2 != (s32)p->x) k = ((s32 *)p)[12]; else k = ((s32 *)p)[13];
@@ -823,10 +823,10 @@ static inline f32 getHeight(V3 *p)
     return (f32)k / 1000.0f;
 }
 
-f32 bike_raycast_ground(V3 *a, V3 *b, f32 t, f32 d, f32 *e)
+f32 bike_raycast_ground(Vec3f *a, Vec3f *b, f32 t, f32 d, f32 *e)
 {
-    V3 pos;
-    V3 ofs;
+    Vec3f pos;
+    Vec3f ofs;
     f32 h, diff, olddiff, oldt, slope, thr;
     s32 n;
 
@@ -2306,9 +2306,9 @@ void bike_update_jump(Rider *b) {
             b->airFrames += gPhysTicks;
         }
         if (b->airFrames >= 4) {
-            b->landingTime2 = bike_predict_landing(b, -19.29375f, b->landingTime2, &b->landingPos2);
+            b->landingTime2 = bike_predict_landing(b, -19.29375f, b->landingTime2, &b->landingPos2.x);
             height_get_ground_normal(&b->landingNormal2.x);
-            b->landingTime1 = bike_predict_landing(b, -10.106251f, b->landingTime1, &b->landingPos1);
+            b->landingTime1 = bike_predict_landing(b, -10.106251f, b->landingTime1, &b->landingPos1.x);
             height_get_ground_normal(&b->landingNormal1.x);
             b->landingTime = (b->landingTime1 + b->landingTime2) * 0.5f;
             if (b->input & 0x10000) {

@@ -177,14 +177,6 @@ typedef struct { s32 f0; s32 f4; Clip *f8; Clip *fC; } Seg_2;
 typedef struct { s16 x, y, z; Rgb c[15]; u8 pad; } Rec34;
 typedef struct { s16 x, y, z; u8 c[3]; u8 pad[3]; } Rec12;
 
-typedef struct {
-    u8 pad0[4];
-    s32 f4, f8, fC;
-    u8 pad10[0x134 - 0x10];
-    s32 pos[3];
-    Mtx3 rot;
-} Bike_2;
-
 extern Seg_2 *sPodiumRiderClips_2[];
 
 static inline void rot(s32 *px, s32 *pz, s32 ang)
@@ -205,7 +197,7 @@ void podium_update(void)
     s32 i, j, k, t, ang, c, s;
     Spot *e;
     Rider *p;
-    Bike_2 *b;
+    RiderSkeleton *b;
     Rec34 *r;
     u8 *cp;
     u16 *cam;
@@ -248,24 +240,24 @@ void podium_update(void)
         }
         { s32 off = t * sizeof(Rec34); r = (Rec34 *)((u8 *)sPodiumRiderClips_2[i][k].f8->data + off); }
         { Rgb *cc = r->c; for (j = 0; j < 15; j++) {
-            s32 *dst = (s32 *)((u8 *)b + j * 0x80 + 0x10);
+            s32 *dst = b->bones[j].rot.m;
             s32 x, y, z;
-            if (j == 0) dst = (s32 *)((u8 *)b + 0x40);
+            if (j == 0) dst = b->bones[0].worldRot.m;
             x = cc[j].r << 8; y = cc[j].g << 8; z = cc[j].b << 8;
             if (j == 0) z += sPodiumYaw;
             mtx3i_from_angles(dst, x, y, z);
         } }
         ang = (s32)(LO9C << 16) >> 20;
-        b->f4 = 0;
-        b->f8 = 0;
-        b->fC = 0;
+        b->bones[0].pos.x = 0;
+        b->bones[0].pos.y = 0;
+        b->bones[0].pos.z = 0;
         vx = r->x;
         vz = r->z;
         rot(&vx, &vz, ang);
         gRiders[i].drawPos.x = gRiders[i].drawBodyPos.x = sPodiumPos[0] + vx;
         gRiders[i].drawPos.y = gRiders[i].drawBodyPos.y = sPodiumPos[1] + r->y;
         gRiders[i].drawPos.z = gRiders[i].drawBodyPos.z = sPodiumPos[2] + vz;
-        skel_update_world_transforms((s32 *)b, 15);
+        skel_update_world_transforms(b->bones, 15);
         if (k != 0) {
             k = 1;
             t = sPodiumFrame;
@@ -309,16 +301,16 @@ void podium_update(void)
             D_800E1B88[i][2] = cp[2] + LO9C;
         } else {
             s32 *q = D_800E1BC8[i];
-            q[0] = b->pos[0] + gRiders[i].drawBodyPos.x;
-            q[1] = b->pos[1] + gRiders[i].drawBodyPos.y;
-            q[2] = b->pos[2] + gRiders[i].drawBodyPos.z;
-            q[0] += (b->rot.m[3] * 200) >> 15;
-            q[1] += (b->rot.m[4] * 200) >> 15;
-            q[2] += (b->rot.m[5] * 200) >> 15;
-            q[0] += (b->rot.m[6] * 50) >> 15;
-            q[1] += (b->rot.m[7] * 50) >> 15;
-            q[2] += (b->rot.m[8] * 50) >> 15;
-            m = b->rot;
+            q[0] = b->bones[2].worldPos.x + gRiders[i].drawBodyPos.x;
+            q[1] = b->bones[2].worldPos.y + gRiders[i].drawBodyPos.y;
+            q[2] = b->bones[2].worldPos.z + gRiders[i].drawBodyPos.z;
+            q[0] += (b->bones[2].worldRot.m[3] * 200) >> 15;
+            q[1] += (b->bones[2].worldRot.m[4] * 200) >> 15;
+            q[2] += (b->bones[2].worldRot.m[5] * 200) >> 15;
+            q[0] += (b->bones[2].worldRot.m[6] * 50) >> 15;
+            q[1] += (b->bones[2].worldRot.m[7] * 50) >> 15;
+            q[2] += (b->bones[2].worldRot.m[8] * 50) >> 15;
+            m = b->bones[2].worldRot;
             mtx3i_to_angles(m.m, &o0, &o1, &o2);
             D_800E1B88[i][0] = o0;
             D_800E1B88[i][1] = o1;

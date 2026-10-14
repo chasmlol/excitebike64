@@ -1835,74 +1835,61 @@ void cam_shift_z(s32 p, s32 q)
     }
 }
 
-void cam_mode_chase_7m(int param_1, int *param_2)
+void cam_mode_chase_7m(Rider *param_1, int *param_2)
 {
     cam_update_chase(param_1, param_2, -7000);
 }
 
-void cam_mode_chase_far_alt(s32 a, s32 *b)
+void cam_mode_chase_far_alt(Rider *a, s32 *b)
 {
     cam_update_chase(a, b, -10000);
 }
 
-struct Obj_20 {
-    u8 pad[0x70];
-    f32 f70;
-    f32 f74;
-};
-
-void cam_mode_side_view(Obj_20 *param_1, s32 *param_2)
+void cam_mode_side_view(Rider *param_1, s32 *param_2)
 {
     f32 k = 1000.0f;
 
     param_2[0] = (s32)-sCamSideViewParams[0];
-    param_2[1] = (s32)(param_1->f70 * k + sCamSideViewParams[1]);
-    param_2[2] = (s32)(param_1->f74 * k - sCamSideViewParams[2]);
+    param_2[1] = (s32)(param_1->bike.smoothPos.y * k + sCamSideViewParams[1]);
+    param_2[2] = (s32)(param_1->bike.smoothPos.z * k - sCamSideViewParams[2]);
     param_2[3] = (s32)sCamSideViewParams[4];
     param_2[5] = (s32)-sCamSideViewParams[3];
     param_2[4] = 0;
     cam_snap_to(param_2);
 }
 
-struct Obj_21 {
-    u8 pad0[0x6C];
-    f32 f6c;
-    u8 pad1[4];
-    f32 f74;
-};
-
 struct Out_2 {
     s32 w0, w4, w8, wC, w10, w14;
 };
 
-void func_8002D528(Obj_21 *o, Out_2 *out) {
-    out->w0 = o->f6c * 1000.0f + -28000.0f;
+void func_8002D528(Rider *o, Out_2 *out) {
+    out->w0 = o->bike.smoothPos.x * 1000.0f + -28000.0f;
     out->w4 = 0x5BCC;
-    out->w8 = o->f74 * 1000.0f - 10000.0f;
+    out->w8 = o->bike.smoothPos.z * 1000.0f - 10000.0f;
     out->wC = 0x1800;
     out->w14 = -0x4000;
     out->w10 = 0;
     cam_smooth_to(out);
 }
 
-void cam_mode_chase_near(u8 *p, s32 *p2) {
+void cam_mode_chase_near(Rider *p, s32 *p2) {
     s32 v = -0x9C4;
 
-    if (p[0x44] != 0) {
+    if (p->crashState != 0) {
         v = -5000;
     }
-    if (*(f32 *)(p + 0x424) < 0.0f) {
-        v = (s32)((f32)v + *(f32 *)(p + 0x424) * 250.0f);
+    if (p->fwdSpeed < 0.0f) {
+        v = (s32)((f32)v + p->fwdSpeed * 250.0f);
     }
     cam_update_chase(p, p2, v);
 }
 
-void cam_mode_chase_mid(s32 param_1, s32 *param_2)
+void cam_mode_chase_mid(Rider *param_1, s32 *param_2)
 {
     cam_update_chase(param_1, param_2, -5000);
 }
 
-void cam_mode_chase_far(s32 a, s32 *b) {
+void cam_mode_chase_far(Rider *a, s32 *b) {
     cam_update_chase(a, b, -10000);
 }
 
@@ -1942,26 +1929,24 @@ void cam_mode_celebration(Rider *o, s32 *out)
     cam_snap_to(out);
 }
 
-void cam_mode_first_person(s32 *p1, s32 *p2)
+void cam_mode_first_person(Rider *p1, s32 *p2)
 {
     s32 t[4];
     s32 o[3];
     s32 a[10];
-    f32 *pf;
     s32 v;
 
-    mtx3i_from_angles(a, p1[6], p1[7], p1[8]);
+    mtx3i_from_angles(a, p1->drawRot[0], p1->drawRot[1], p1->drawRot[2]);
     t[0] = 0;
     t[1] = 400;
     t[2] = 0;
     vec3i_mul_mtx3i(t, a, o);
-    pf = (f32 *)p1;
-    p2[0] = (s32)((f32)o[0] + pf[27] * 1000.0f);
-    p2[1] = (s32)((f32)o[1] + pf[28] * 1000.0f);
-    p2[2] = (s32)((f32)o[2] + pf[29] * 1000.0f);
-    p2[3] = p1[6] / 2;
-    p2[5] = p1[8];
-    v = p1[7];
+    p2[0] = (s32)((f32)o[0] + p1->bike.smoothPos.x * 1000.0f);
+    p2[1] = (s32)((f32)o[1] + p1->bike.smoothPos.y * 1000.0f);
+    p2[2] = (s32)((f32)o[2] + p1->bike.smoothPos.z * 1000.0f);
+    p2[3] = p1->drawRot[0] / 2;
+    p2[5] = p1->drawRot[2];
+    v = p1->drawRot[1];
     if (v < 0) {
         v += 3;
     }

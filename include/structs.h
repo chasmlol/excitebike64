@@ -8,7 +8,6 @@
 typedef struct Dyn Dyn;
 typedef struct Slot_2 Slot_2;
 typedef struct MtxS_2 MtxS_2;
-typedef struct Obj_5 Obj_5;
 typedef struct Seg_3 Seg_3;
 typedef struct Model Model;
 typedef struct ImgSet ImgSet;
@@ -23,18 +22,13 @@ typedef struct Rec6 Rec6;
 typedef struct Rec_4 Rec_4;
 typedef struct Ent_2 Ent_2;
 typedef struct S S;
-typedef struct Obj_20 Obj_20;
-typedef struct Obj_21 Obj_21;
 typedef struct Out_2 Out_2;
 typedef struct Area_2 Area_2;
 typedef struct Hdr_5 Hdr_5;
 typedef struct Poly_2 Poly_2;
 typedef struct List_6 List_6;
 typedef struct Ent_35 Ent_35;
-typedef struct Joint Joint;
 typedef struct Obj_30 Obj_30;
-typedef struct Joint_2 Joint_2;
-typedef struct Row_4 Row_4;
 typedef struct Gen Gen;
 typedef struct Elem_2 Elem_2;
 typedef struct Pt_4 Pt_4;
@@ -48,7 +42,6 @@ typedef struct Mdl_2 Mdl_2;
 typedef struct Obj_53 Obj_53;
 typedef struct Obj_55 Obj_55;
 typedef struct Obj_58 Obj_58;
-typedef struct Obj_60 Obj_60;
 typedef struct Mdl2 Mdl2;
 typedef struct Obj2 Obj2;
 typedef struct Item_8 Item_8;
@@ -240,49 +233,7 @@ typedef struct Facet_2 {
     Vec v[3];
 } Facet_2;
 
-typedef struct Model_4 {
-    s32 f0;
-    Vec3i pos;    /* 0x04 */
-    Mtx3 rot;    /* 0x10 */
-    Vec3i pos2;   /* 0x34 */
-    Mtx3 rot2;   /* 0x40 */
-    u8 pad64[0x2C];
-    Mtx3 rot3;   /* 0x90 */
-} Model_4;
-
-typedef struct Iv3 { s32 w[3]; } Iv3;
-typedef struct Blk9 { s32 w[9]; } Blk9;
-
-typedef struct Bone_2 {
-    s32 f00;
-    Iv3 pos;
-    Blk9 mtx;
-    Iv3 ppos;
-    Blk9 pmtx;
-    u16 rot[3];
-    s16 base[3];
-    u8 p70[0x10];
-} Bone_2;
-
 typedef struct { s32 w[3]; } V3_2;
-
-typedef struct Ent_39 {
-    u8 p0[6];
-    u16 f06;
-    u8 p1[2];
-    u16 f0A;
-    u8 p2[2];
-    u16 f0E;
-    s32 f10;
-    u8 p3[0x50];
-    u16 f64;
-    u16 f66;
-    u16 f68;
-    u16 f6A;
-    u16 f6C;
-    u16 f6E;
-    u8 p4[0x10];
-} Ent_39;
 
 typedef struct Field {
     s32 x;

@@ -162,7 +162,7 @@ f32 math_exp(f32 x);
 u8 r250_next(void);
 u32 math_sin_rand(f32 *p);
 void mtx_from_rot3i_pos(s32 *src, u16 *aux, s16 *dst);
-void mtx_from_bones(Obj_5 *src, MtxS_2 *dst, s32 n);
+void mtx_from_bones(Bone *src, MtxS_2 *dst, s32 n);
 void quat_mul(f32 *o, f32 *p, f32 *q);
 f32 func_80013D3C(f32 x);
 
@@ -220,7 +220,7 @@ void bike_update_wheel_contacts(Rider *b);
 void bike_wheel_spring_force(Wheel *p, f32 x);
 void bike_update_suspension(Rider *s);
 void bike_rear_tire_force(Rider *a, Wheel *b);
-f32 bike_raycast_ground(V3 *a, V3 *b, f32 t, f32 d, f32 *e);
+f32 bike_raycast_ground(Vec3f *a, Vec3f *b, f32 t, f32 d, f32 *e);
 void bike_place_on_ground(Rider *b);
 void bike_wheel_surface_bumps(Wheel *a0, f32 *a1);
 void bike_update_brakes(Rider *p);
@@ -319,15 +319,15 @@ void cam_clamp_to_track(s32 m, s32 n);
 void cam_clamp_to_track_2(s32 a);
 void cam_keep_above_ground(s32 param_1, s32 param_2);
 void cam_shift_z(s32 p, s32 q);
-void cam_mode_chase_7m(int param_1, int *param_2);
-void cam_mode_chase_far_alt(s32 a, s32 *b);
-void cam_mode_side_view(Obj_20 *param_1, s32 *param_2);
-void func_8002D528(Obj_21 *o, Out_2 *out);
-void cam_mode_chase_near(u8 *p, s32 *p2);
-void cam_mode_chase_mid(s32 param_1, s32 *param_2);
-void cam_mode_chase_far(s32 a, s32 *b);
+void cam_mode_chase_7m(Rider *param_1, int *param_2);
+void cam_mode_chase_far_alt(Rider *a, s32 *b);
+void cam_mode_side_view(Rider *param_1, s32 *param_2);
+void func_8002D528(Rider *o, Out_2 *out);
+void cam_mode_chase_near(Rider *p, s32 *p2);
+void cam_mode_chase_mid(Rider *param_1, s32 *param_2);
+void cam_mode_chase_far(Rider *a, s32 *b);
 void cam_mode_celebration(Rider *o, s32 *out);
-void cam_mode_first_person(s32 *p1, s32 *p2);
+void cam_mode_first_person(Rider *p1, s32 *p2);
 void func_8002D888(Rider *arg0, s32 *arg1);
 void func_8002D890(void);
 void func_8002D898(void);
@@ -430,21 +430,21 @@ void skel_reset_pose(Bone *param_1, s32 param_2);
 void skel_assign_parents(Ent_35 *base, s32 val, s32 n);
 
 /* src/game/unnamed/s0_8003C8E0.c */
-void rider_ik_arm(Joint *j, s32 idx, Vec3i *tgt, Obj_30 *o);
-void rider_ik_leg(Joint_2 *j, s32 idx, Vec3i *tgt, s32 *arg3);
-void rider_apply_ik(s32 *param_1);
-void rider_update_pose(Model_4 *m, s32 i);
+void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Obj_30 *o);
+void rider_ik_leg(Bone *j, s32 idx, Vec3i *tgt, s32 *arg3);
+void rider_apply_ik(Bone *b);
+void rider_update_pose(RiderSkeleton *m, s32 i);
 void rider_anims_load(u8 *param_1);
-void rider_anim_apply(Bone_2 *bones, s32 param_2, s32 param_3);
+void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3);
 void bike_update_trick_offset(Rider *param_1);
-void bike_skel_update(s32 *p1, s32 p2);
+void bike_skel_update(BikeSkeleton *p1, s32 p2);
 void rider_update_head_look(void);
 void rider_update_input_history(Rider *p, s32 n);
 void func_8003F128(void);
 void rider_update_fist_pump(void);
-void rider_anim_overlay_limb(Row_4 *p1, s32 param_2, s32 p3, s32 p4, s32 arg4);
+void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4);
 s32 rider_anim_get_length(s32 a0, s32 *a1);
-void rider_pose_snapshot(Ent_39 *p, s32 n);
+void rider_pose_snapshot(Bone *p, s32 n);
 s32 rider_ik_split_len(s32 a, s32 b, s32 c);
 void rider_anims_unload(void);
 
@@ -849,10 +849,10 @@ void func_80070560(Rider *b);
 s32 stunt_record_done(Rider *p);
 
 /* src/game/ponytail.c */
-void ponytail_simulate(s32 idx, Obj_60 *o);
+void ponytail_simulate(s32 idx, RiderSkeleton *o);
 void ponytail_init(s32 n);
 void ponytail_free(s32 a0);
-void ponytail_update(s32 a0, s32 a1, s32 a2, void *a3);
+void ponytail_update(s32 a0, RiderSkeleton *a1, Bone *a2, void *a3);
 
 /* src/game/unnamed/s0_800716C0.c */
 void ambient_update(void);
