@@ -312,7 +312,10 @@ def main():
         for src, ob, msg in ex.map(compile_one, jobs):
             rel = Path(src).relative_to(ROOT).as_posix()
             if ob is None:
-                fails.append((rel, msg[:400]))
+                # the errors, without the warnings and their context lines
+                errs = [l for l in msg.splitlines() if "warning:" not in l and not l.startswith("In file included")
+                        and not l.lstrip().startswith("from ") and ": In function" not in l]
+                fails.append((rel, "\n".join(errs)[:400]))
             else:
                 objs[rel] = ob
     print(f"compiled {len(objs)} of {len(jobs)} source files" + (f"; failed: {fails[:5]}" if fails else ""))
