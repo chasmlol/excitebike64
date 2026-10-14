@@ -397,7 +397,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 c
     return gdl;
 }
 
-void arned_load_piece_textures(s32 set, TexSet *pieceTex2, TexSet *wallTex)
+void arned_load_piece_textures(s32 texSet, TexSet *pieceTex2, TexSet *wallTex)
 {
     s32 cur;
     s32 *w;
@@ -408,22 +408,22 @@ void arned_load_piece_textures(s32 set, TexSet *pieceTex2, TexSet *wallTex)
     cur = sArnedTexSetIdx;
     sArnedPieceTex2 = pieceTex2;
     sArnedWallTex = wallTex;
-    if (cur != set) {
+    if (cur != texSet) {
         if (cur == -1) {
-            sArnedPieceTex = res_load(*(ResSet **)(gEditor + 0x1720), *sArnedTexResIds[set]);
+            sArnedPieceTex = res_load(*(ResSet **)(gEditor + 0x1720), *sArnedTexResIds[texSet]);
         } else {
-            /* load over the previous set's textures */
+            /* load into the previous set's memory, which the new handle then owns */
             res_set_load_buffer(sArnedPieceTex);
-            res_load(*(ResSet **)(gEditor + 0x1720), *sArnedTexResIds[set]);
+            res_load(*(ResSet **)(gEditor + 0x1720), *sArnedTexResIds[texSet]);
             res_set_load_buffer(0);
             p = gEditor;
             (*(ResSet **)(p + 0x1720))->handles[*sArnedTexResIds[sArnedTexSetIdx]] = 0;
-            w = sArnedTexResIds[set];
+            w = sArnedTexResIds[texSet];
             q = *(ResSet **)(p + 0x1720);
             slot = (u32 *)(*w * 4 + (u32)q->handles);
             *slot = *slot & 0xFFFFFFFC;
         }
-        sArnedTexSetIdx = set;
+        sArnedTexSetIdx = texSet;
     }
 }
 

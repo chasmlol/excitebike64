@@ -970,7 +970,7 @@ void arned_set_cell(s32 x, s32 y, PrimModel *piece, s32 rot, PrimModel *piece2, 
 void arned_set_camera(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry);
 void arned_set_camera_2(s32 idx, s32 x, s32 y, s32 z, s32 rx, s32 ry);
 Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 cursorX, s32 cursorZ, s32 cursorRot, s32 drawGrid);
-void arned_load_piece_textures(s32 set, TexSet *pieceTex2, TexSet *wallTex);
+void arned_load_piece_textures(s32 texSet, TexSet *pieceTex2, TexSet *wallTex);
 void arned_set_object_view(s32 frame, s32 view, s32 x, s32 y, s32 w, s32 h, s32 camX, s32 camY, s32 camZ, s32 ry, s32 rx, s32 unk);
 void arned_add_object(s32 frame, s32 view, PrimModel *model, s32 x, s32 z);
 Vtx_t *arned_find_vertex(s32 x, s32 z);
