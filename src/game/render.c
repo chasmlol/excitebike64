@@ -845,7 +845,7 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
         }
         G(gdl++, 0xFA000000, 0xD2D2D2FF);
         img = &gPauseScreen.volumeBar[6];
-        /* centred; the width passes 0, written as an expression of the address in the original */
+        /* centred; the width argument is 0, written as an expression of the address in the original */
         gdl = render_draw_image(0x100 - ((u8 *)img)[0] * 4, 0x78 - (((u8 *)img)[1] >> 1), img, gdl, fb, 1, 1,
                                 IMG_8BIT | IMG_IA, ((u32)img & 1) >> 1);
         G(gdl++, 0xE3001001, 0x00008000);

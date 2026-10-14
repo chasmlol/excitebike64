@@ -77,7 +77,7 @@ Gfx *prim_build_dl(s32 flags, PrimModel *model, TexSet **sets, Gfx *gdl) {
                         gPrimTexAlphaMode = 1;
                     }
                 } else if (gPrimTexAlphaMode != 0) {
-                    /* passes 0, written as an expression of the command's address in the original */
+                    /* the argument is 0, written as an expression of the command's address in the original */
                     if (sPrimTexModeCallback != NULL) gdl = sPrimTexModeCallback(gdl, ((u32)&cmd[1] & 1) >> 1, c);
                     gPrimTexAlphaMode = 0;
                 }

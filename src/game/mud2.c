@@ -407,7 +407,7 @@ static inline s32 project(Vec3f *p, s32 view, s32 mtx, s32 *sx, s32 *sy, s32 *sz
     }
 }
 
-/* Draws the particles of a view, one pass per type, as sprites sized by distance and fading with age: dust, smoke,
+/* Draws the particles of a view, type by type, as sprites sized by distance and fading with age: dust, smoke,
    splashes, exhaust puffs, mud, sparkles; sparks are single pixels. Particles off the screen of the only view are
    killed. */
 Gfx *particles_draw(Gfx *gdl, s32 view, s32 dyn) {

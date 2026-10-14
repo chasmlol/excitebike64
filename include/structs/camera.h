@@ -93,7 +93,7 @@ typedef struct CamDollyZone {
 
 /* Flags of both kinds of zone */
 #define CAM_ZONE_DEMO_ONLY 0x02 /* used only while gEvent.noPlayers is set */
-#define CAM_ZONE_EARLY     0x40 /* also found from the alternative node (cam_find_zone's second pass) */
+#define CAM_ZONE_EARLY     0x40 /* also found from the alternative node (cam_find_zone's second search) */
 /* Dolly zone flags */
 #define CAM_DOLLY_MOVE     0x01 /* moves to (x1, y1, z1) across the zone */
 #define CAM_DOLLY_RELATIVE 0x04 /* the point is relative to the rider */
