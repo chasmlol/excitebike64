@@ -167,7 +167,9 @@ Mud, ClrScrn, Collision, Vtx Wind, Hud.
 ## The rider struct
 
 `gRiders`, 8 entries of 0x7E0 bytes. Positions are in millimetres (s32) for drawing and in metres (float) for the
-physics.
+physics. The C declares it as `Rider` in include/structs/rider.h, with `RigidBody`, `Wheel`, `RiderEngine`,
+`RiderRace`, the skeletons (`Bone`), the sphere trees (`CollideNode`), the animations (`RiderAnim`) and the
+ponytail (`PonytailNode`); include/structs/surface.h has the ground surfaces the wheels point at.
 
 | offset | field |
 |---|---|
