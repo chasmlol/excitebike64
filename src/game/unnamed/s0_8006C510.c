@@ -772,9 +772,8 @@ void save_write(s32 section, s32 track)
 {
     u8 buf[0x40];
     s32 highRes;
-    s32 i, k, n, offset;
-    s32 first, numBlocks;
-    u8 *src;
+    s32 i, k, n;
+    s32 offset;
     u32 sum;
     u32 *words;
     u8 options;
@@ -787,15 +786,14 @@ void save_write(s32 section, s32 track)
         case SAVE_SECTION_PROGRESS:
             for (k = 0; k < 5; k++) {
                 for (i = 0; i < 3; i++) {
-                    gSaveData.cupProgress[k][i] = gCups[k].progress[i] << 5 | gCups[k].won[i];
+                    gSaveData.cupProgress[0][k * 3 + i] = gCups[k].progress[i] << 5 | gCups[k].won[i];
                 }
             }
             gSaveData.tutorialProgress = gCups[CUP_TUTORIAL].progress[0];
-            first = 0x54;
-            src = (u8 *)&gSaveData + 0x2A0;
-            numBlocks = 6;
+            eeprom_write_verify(0x54, (u8 *)&gSaveData + 0x2A0, 6);
             break;
         case SAVE_SECTION_RECORDS:
+            /* the track's slot: the number of tracks with records before it */
             n = 0;
             for (i = 0; i < track; i++) {
                 if (gTracks_12[i].flags & TRACK_FLAG_RECORDS) {
@@ -803,27 +801,25 @@ void save_write(s32 section, s32 track)
                 }
             }
             {
-                TrackRecord *dst = &gSaveData.records[n];
-                TrackRecord *rec = &gTracks_12[track].record;
-                *dst = *rec;
+                /* both bases are loaded before the index is scaled */
+                TrackRecord *records = gSaveData.records;
+                TrackRecord *dst = &records[n];
+                u8 *recs = (u8 *)&gTracks_12[0].record;
+                TrackRecord *src = (TrackRecord *)(recs + track * sizeof(TrackInfoView));
+                *dst = *src;
             }
-            /* the 16-byte lines the record is in */
-            offset = n * sizeof(TrackRecord) + 8;
-            first = offset / 16 * 2;
-            src = (u8 *)&gSaveData + offset / 16 * 16;
-            numBlocks = (u32)(offset - offset / 16 * 16 + sizeof(TrackRecord) + 15) / 16 * 2;
+            /* the 16-byte lines (two 8-byte EEPROM blocks each) the record is in */
+            offset = (u8 *)&gSaveData.records[n] - (u8 *)&gSaveData;
+            eeprom_write_verify(offset / 16 * 2, (u8 *)&gSaveData + offset / 16 * 16,
+                                (offset % 16 + sizeof(TrackRecord) + 15) / 16 * 2);
             break;
         case SAVE_SECTION_NES_TRACK:
-            first = 0x5A;
-            src = (u8 *)&gSaveData.unlockedTrackCount;
-            numBlocks = 0x46;
+            eeprom_write_verify(0x5A, (u8 *)&gSaveData.unlockedTrackCount, 0x46);
             break;
         case SAVE_SECTION_USER_TRACK:
             eeprom_write_verify(0x9E, (u8 *)&gSaveData + 0x4F0, 0x64);
             gSaveData.options |= SAVE_OPT_USER_TRACK;
-            first = 0x58;
-            src = (u8 *)&gSaveData + 0x2C0;
-            numBlocks = 4;
+            eeprom_write_verify(0x58, (u8 *)&gSaveData + 0x2C0, 4);
             break;
         case SAVE_SECTION_OPTIONS:
             gSaveData.padConfigs = 0;
@@ -831,15 +827,9 @@ void save_write(s32 section, s32 track)
                 gSaveData.padConfigs <<= 2;
                 gSaveData.padConfigs |= gGame.padConfig[i];
             }
-            first = 0x58;
-            src = (u8 *)&gSaveData + 0x2C0;
-            numBlocks = 4;
+            eeprom_write_verify(0x58, (u8 *)&gSaveData + 0x2C0, 4);
             break;
-        default:
-            goto checksum;
         }
-        eeprom_write_verify(first, src, numBlocks);
-checksum:
         sum = 0;
         words = (u32 *)&gSaveData;
         for (i = 0; i < SAVE_WORDS; i++) {
@@ -847,7 +837,8 @@ checksum:
                 sum += words[i];
             }
         }
-        words[1] = sum ^ SAVE_CHECKSUM_XOR;
+        sum ^= SAVE_CHECKSUM_XOR;
+        words[1] = sum;
         eeprom_write_verify(0, (u8 *)&gSaveData, 2);
         if (highRes) {
             gSaveData.options |= SAVE_OPT_HIGH_RES;
