@@ -6,24 +6,7 @@ typedef struct {
     u8 ch;
 } Cmd;
 
-typedef struct {
-    u8 pad[0x1C];
-    s32 map[12];
-    s32 mode;
-} S70;
-
-typedef struct {
-    u8 pad0[0x1C];
-    u32 tab[12];
-    s32 mode;
-} Blk_3;
-
-typedef struct { u8 pad[0x1C]; u32 tab[12]; u32 mode; } Game;
-
 extern Cmd *sSongCursor;
-extern S70 gGame_6;
-extern Blk_3 gGame_7;
-extern Game gGame_3;
 
 static inline void push_2(s32 v)
 {
@@ -36,12 +19,12 @@ static inline void push_2(s32 v)
 static inline s32 check(u32 *p)
 {
     if (gGhostRace != 0 && *p == gGhostSlot) return 1;
-    if (gGame_6.mode == 2) return 1;
+    if (gGame.mode == 2) return 1;
     if (*p >= 6) return 1;
     gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame_6.map[*p];
+    *p = gGame.riders[*p];
     if (*p >= 6) return 1;
-    return (gGame_6.mode == 9) << 1;
+    return (gGame.mode == 9) << 1;
 }
 
 static inline void queue(s32 v)
@@ -65,18 +48,18 @@ static inline s32 chk(u32 *p)
     if (gGhostRace != 0 && *p == gGhostSlot) {
         return 1;
     }
-    if (gGame_3.mode == 2) {
+    if (gGame.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
     gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame_3.tab[*p];
+    *p = gGame.riders[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (gGame_3.mode == 9) * 2;
+    return (gGame.mode == 9) * 2;
 }
 
 static inline void push(u32 v)
@@ -708,7 +691,7 @@ void tunes_update_speech(void)
             if (lo < n) {
                 n = lo;
             }
-            lo = gEventNumRiders - 2;
+            lo = gEvent.numRiders - 2;
             if (lo < n) {
                 n = lo;
             }
@@ -762,19 +745,15 @@ ok:
     }
 }
 
-typedef struct { u32 pad[7]; u32 map[12]; u32 mode; } Ctl_9;
-
-extern Ctl_9 gGame_33;
-
 static inline s32 check_2(u32 *p)
 {
     if (gGhostRace != 0 && *p == gGhostSlot_2) return 1;
-    if (gGame_33.mode == 2) return 1;
+    if (gGame.mode == 2) return 1;
     if (*p >= 6) return 1;
     gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame_33.map[*p];
+    *p = gGame.riders[*p];
     if (*p >= 6) return 1;
-    return (gGame_33.mode == 9) * 2;
+    return (gGame.mode == 9) * 2;
 }
 
 void announce_lead_collision(u32 a, u32 b)
@@ -825,7 +804,7 @@ void announce_leader_lap(s32 param_1, s32 param_2)
     if (check((u32 *)&param_1)) {
         return;
     }
-    if (param_2 == D_800F05C8 - 2) {
+    if (param_2 == gEvent.numLaps - 2) {
         queue(sFinalLapClips[random_byte() & 1]);
     } else if (param_2 == 0) {
         queue(sLeaderFirstLapClips[random_byte() % 3]);
@@ -845,25 +824,22 @@ void announce_leader_lap(s32 param_1, s32 param_2)
 }
 
 typedef struct { u8 pad[0x668]; s16 f668; u8 pad2[0x7E0 - 0x66A]; } Plr_6;
-typedef struct { u32 pad[7]; u32 map[8]; u32 f3C; u32 f40; u32 f44; u32 f48; u32 mode; } Ctl_10;
-
 extern Plr_6 gRiders_53[];
-extern Ctl_10 gGame_34;
 
 static inline s32 check_3(u32 *p)
 {
     if (gGhostRace != 0 && *p == gGhostSlot) return 1;
-    if (gGame_34.mode == 2) return 1;
+    if (gGame.mode == 2) return 1;
     if (*p >= 6) return 1;
     gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame_34.map[*p];
+    *p = gGame.riders[*p];
     if (*p >= 6) return 1;
-    return (gGame_34.mode == 9) * 2;
+    return (gGame.mode == 9) * 2;
 }
 
 void announce_place(u32 a, u32 b)
 {
-    if (gEventTime < 0x168) return;
+    if (gEvent.time < 0x168) return;
     if (sSpeechQueueCount >= 6) return;
     if (gRiders_53[a].f668 >= 0) return;
     if (check_3(&a)) return;
@@ -875,7 +851,7 @@ void announce_place(u32 a, u32 b)
             push_2(0x8A);
         }
         sLastLeader_2 = a;
-    } else if (b == gGame_34.f3C + gGame_34.f44) {
+    } else if (b == gGame.numPlayers + gGame.numCpuRiders) {
         if (random_byte() & 1) {
             push_2(0x7F);
         } else {
@@ -940,18 +916,18 @@ static __inline__ s32 chk_2(u32 *p)
     if (gGhostRace != 0 && *p == gGhostSlot_2) {
         return 1;
     }
-    if (gGame_7.mode == 2) {
+    if (gGame.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
     gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame_7.tab[*p];
+    *p = gGame.riders[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (gGame_7.mode == 9) << 1;
+    return (gGame.mode == 9) << 1;
 }
 
 void announce_crash(u32 param_1)
@@ -977,18 +953,18 @@ static __inline__ s32 chk_3(u32 *p)
     if (gGhostRace != 0 && *p == gGhostSlot) {
         return 1;
     }
-    if (gGame_7.mode == 2) {
+    if (gGame.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
     gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame_7.tab[*p];
+    *p = gGame.riders[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (gGame_7.mode == 9) << 1;
+    return (gGame.mode == 9) << 1;
 }
 
 void announce_crash_landing(u32 param_1)
@@ -1033,28 +1009,20 @@ void announce_takeout(u32 a, u32 b)
     push(sRiderNameClips[b + 18]);
 }
 
-typedef struct {
-    s32 pad[7];
-    u32 map[12];
-    s32 mode;
-} Cfg_7;
-
-extern Cfg_7 gGame_35;
-
 static inline s32 check_4(u32 *p)
 {
-    if (gGame_35.mode == 2) {
+    if (gGame.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
     gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame_35.map[*p];
+    *p = gGame.riders[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (gGame_35.mode == 9) * 2;
+    return (gGame.mode == 9) * 2;
 }
 
 void announce_trick(u32 a, s32 b)
@@ -1077,7 +1045,7 @@ void announce_trick(u32 a, s32 b)
 
 void func_8004E3EC(u32 a, u32 b, s32 c)
 {
-    if (gEventTime < 0x168) {
+    if (gEvent.time < 0x168) {
         return;
     }
     if (sSpeechQueueCount >= 6) {
@@ -1103,18 +1071,18 @@ static inline s32 chk_4(u32 p, u32 *q)
     if (gGhostRace != 0 && p == gGhostSlot) {
         return 1;
     }
-    if (gGame_3.mode == 2) {
+    if (gGame.mode == 2) {
         return 1;
     }
     if (*q >= 6) {
         return 1;
     }
     gAnnounceTimes_2[*q] = gRaceFrame;
-    *q = gGame_3.tab[*q];
+    *q = gGame.riders[*q];
     if (*q >= 6) {
         return 1;
     }
-    return (gGame_3.mode == 9) * 2;
+    return (gGame.mode == 9) * 2;
 }
 
 void announce_place_change(u32 param_1, s32 param_2, u32 param_3)
@@ -1538,25 +1506,25 @@ void tunes_update_volumes(void)
 
 s32 announce_check_rider(u32 *p)
 {
-    u32 *base;
+    Game *base;
     u32 u;
     if (gGhostRace != 0) {
         if (*p == gGhostSlot) {
             return 1;
         }
     }
-    base = gGame_5;
-    if (base[19] == 2) {
+    base = &gGame;
+    if (base->mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
     gAnnounceTimes[*p] = gRaceFrame;
-    u = base[*p + 7];
+    u = base->riders[*p];
     *p = u;
     if (u < 6) {
-        return (base[19] == 9) << 1;
+        return (base->mode == 9) << 1;
     }
     return 1;
 }

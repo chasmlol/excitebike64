@@ -133,15 +133,6 @@ Gfx *finishline_draw_user_track(Gfx *gdl, Mtx *proj, s32 i, s32 j)
 typedef struct { s16 m[32]; } MtxS_4;
 
 typedef struct {
-    u8 pad0[0xC];
-    u8 fC;
-    u8 padD[0x18 - 0xD];
-    s16 f18;
-    s16 f1A;
-    u8 pad1C[0x28 - 0x1C];
-} Track_15;
-
-typedef struct {
     f32 x, y, z;
     u8 padC[0x14 - 0xC];
     f32 f14;
@@ -152,7 +143,6 @@ typedef struct {
 typedef struct { u8 pad[0x58]; u16 f58; u8 pad5A[6]; u16 f60; } Fog_2;
 typedef struct { Mtx m[4]; } MtxSet;
 
-extern Track_15 gTutorialLessons_13[];
 extern Node_21 *gPathNodes_33;
 extern MtxSet sPropMtx_3[];
 extern Fog_2 *gCurTrack_36;
@@ -164,23 +154,23 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
     s32 ratio;
     Node_21 *nd;
 
-    if (gTutorialLessons_13[gSeason_2->f64].f1A < gPathNodeCount) {
-        { u32 b = (u32)gPathNodes_33; nd = (Node_21 *)(gTutorialLessons_13[gSeason_2->f64].f1A * sizeof(Node_21) + b); }
+    if (gTutorialLessons[gSeason->round].goalNode < gPathNodeCount) {
+        { u32 b = (u32)gPathNodes_33; nd = (Node_21 *)(gTutorialLessons[gSeason->round].goalNode * sizeof(Node_21) + b); }
         math_to_polar(nd->f18 * 1024.0f, nd->f14 * 1024.0f, &ang, &ratio);
         mtx_from_angles_pos_scale(&m1, 0, 0, ang, 0, 0, 0, 0x100);
         mtx_from_angles_pos_scale(&m2, 0, 0, 0,
-                      gPathNodes_33[gTutorialLessons_13[gSeason_2->f64].f1A].x * 1000.0f,
-                      gPathNodes_33[gTutorialLessons_13[gSeason_2->f64].f1A].y * 1000.0f,
-                      gPathNodes_33[gTutorialLessons_13[gSeason_2->f64].f1A].z * 1000.0f, 0x10);
+                      gPathNodes_33[gTutorialLessons[gSeason->round].goalNode].x * 1000.0f,
+                      gPathNodes_33[gTutorialLessons[gSeason->round].goalNode].y * 1000.0f,
+                      gPathNodes_33[gTutorialLessons[gSeason->round].goalNode].z * 1000.0f, 0x10);
         mtx_mul(m1.m, m2.m, (s16 *)&sPropMtx_3[n].m[0]);
     }
-    nd = (Node_21 *)(gTutorialLessons_13[gSeason_2->f64].f18 * sizeof(Node_21) + (u32)gPathNodes_33);
+    nd = (Node_21 *)(gTutorialLessons[gSeason->round].startNode * sizeof(Node_21) + (u32)gPathNodes_33);
     math_to_polar(nd->f18 * 1024.0f, nd->f14 * 1024.0f, &ang, &ratio);
     mtx_from_angles_pos_scale(&m1, 0, 0, ang, 0, 0, 0, 0x100);
     mtx_from_angles_pos_scale(&m2, 0, 0, 0,
-                  gPathNodes_33[gTutorialLessons_13[gSeason_2->f64].f18].x * 1000.0f,
-                  gPathNodes_33[gTutorialLessons_13[gSeason_2->f64].f18].y * 1000.0f,
-                  gPathNodes_33[gTutorialLessons_13[gSeason_2->f64].f18].z * 1000.0f, 0x10);
+                  gPathNodes_33[gTutorialLessons[gSeason->round].startNode].x * 1000.0f,
+                  gPathNodes_33[gTutorialLessons[gSeason->round].startNode].y * 1000.0f,
+                  gPathNodes_33[gTutorialLessons[gSeason->round].startNode].z * 1000.0f, 0x10);
     mtx_mul(m1.m, m2.m, (s16 *)&sPropMtx_3[n].m[1]);
 
     gSPMatrix(gdl++, &sPropMtx_3[n].m[1], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
@@ -200,7 +190,7 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gPrimIATextures = 1;
     gdl = prim_build_dl(0, D_800F16E0, D_800EFD6C_3, gdl);
-    if (gTutorialLessons_13[gSeason_2->f64].fC & 2) {
+    if (gTutorialLessons[gSeason->round].flags & 2) {
         gPrimIATextures = 0;
     } else {
         gSPMatrix(gdl++, &sPropMtx_3[n].m[0], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
@@ -252,26 +242,6 @@ typedef struct {
 } Res_5;
 
 typedef struct {
-    u8 n;
-    u8 pad1[7];
-    s16 ids[14];        /* 0x08 */
-} List_7;
-
-typedef struct {
-    List_7 *list;
-    u8 pad4[0x60];
-    s16 sel;            /* 0x64 */
-} Sel_2;
-
-typedef struct {
-    u8 pad0[0x3C];
-    s32 f3C;
-    s32 f40;
-    u8 pad44[8];
-    s32 f4C;
-} Glob_3;
-
-typedef struct {
     char name[0x1E];
     s16 f1E;
     u8 pad20[0x14];
@@ -286,10 +256,7 @@ typedef struct {
 } Info_2;
 
 extern Res_5 *gRaceTextObjs_2;
-extern Sel_2 *gSeason_14;
-extern List_7 D_800CA9C8_2[];
 extern Info_2 *gCurTrack_37;
-extern Glob_3 gGame_48;
 
 Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
 {
@@ -300,7 +267,7 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     s32 x;
     s32 y;
     u8 *p;
-    Glob_3 *g;
+    Game *g;
 
     font_reset_queue();
     gDPPipeSync(gdl++);
@@ -314,15 +281,15 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetPrimColor(gdl++, 0, 0, 0xE6, 0xE6, 0xE6, 0xFF);
-    if (gGame_48.f4C == 1) {
+    if (gGame.mode == 1) {
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-        for (i = 0; i < gSeason_14->list->n; i++) {
+        for (i = 0; i < gSeason->cup->numRounds; i++) {
             gDPLoadTLUT_pal256(gdl++, gRaceTextObjs_2->f12C[i]->pal);
             p = gRaceTextObjs_2->f12C[i]->img;
-            if (i != gSeason_14->sel || (gFrameCounter & 0x20)) {
-                font_text_create(gRaceTextObjs_2->font0, 0x40, 2, (i == gSeason_14->sel) ? 7 : 2, (i != gSeason_14->sel) ? 0x20000021 : 0x21);
-                font_text_add(gRaceTextObjs_2->font0, gTracks_11[gSeason_14->list->ids[i]]);
+            if (i != gSeason->round || (gFrameCounter & 0x20)) {
+                font_text_create(gRaceTextObjs_2->font0, 0x40, 2, (i == gSeason->round) ? 7 : 2, (i != gSeason->round) ? 0x20000021 : 0x21);
+                font_text_add(gRaceTextObjs_2->font0, gTracks_11[gSeason->cup->tracks[i]]);
                 font_draw_text(gRaceTextObjs_2->font0, gViewRects_2.x + gViewRects_2.w - 0x69,
                               gViewRects_2.y + 0x15 + gRaceTextObjs_2->f128[0x21] * i);
             }
@@ -332,7 +299,7 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
         p = gRaceTextObjs_2->f128 + 0x20;
-        for (i = 0; i < gSeason_14->list->n; i++) {
+        for (i = 0; i < gSeason->cup->numRounds; i++) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - p[0] * 8, gViewRects_2.y + 6 + p[1] * i,
                                 p, gdl, arg2, 1, 1, 6, 0);
         }
@@ -344,15 +311,15 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     }
     if (gFrameCounter & 0x20) {
         y = 0xAA;
-        if (gGame_48.f4C == 1) y = 0x9E;
+        if (gGame.mode == 1) y = 0x9E;
         font_text_create(gRaceTextObjs_2->f10, 0x40, 2, 4, 0x21);
         font_text_add(gRaceTextObjs_2->f10, "Press the A Button to Race");
-        font_draw_text(gRaceTextObjs_2->f10, gScreenWidth / 2 - ((gGame_48.f4C == 1) ? 0x52 : 0), y);
+        font_draw_text(gRaceTextObjs_2->f10, gScreenWidth / 2 - ((gGame.mode == 1) ? 0x52 : 0), y);
     }
-    if (gGame_48.f4C == 1) {
+    if (gGame.mode == 1) {
         font_text_create(gRaceTextObjs_2->f10, 0x40, 2, 7, 0x21);
-        if (gSeason_14->list - D_800CA9C8_2 == 4) {
-            if (gSeason_14->sel == gSeason_14->list->n - 1) {
+        if (gSeason->cup - gCups == 4) {
+            if (gSeason->round == gSeason->cup->numRounds - 1) {
                 font_text_add(gRaceTextObjs_2->f10, D_800D8F58);
             } else {
                 font_text_add(gRaceTextObjs_2->f10, D_800D8F84);
@@ -365,15 +332,15 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y, p, gdl, arg2, 1, 1, 6, 0);
     p = gRaceTextObjs_2->f128 + 8;
     gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y + gViewRects_2.h - p[1], p, gdl, arg2, 1, 1, 6, 0);
-    if (gGame_48.f4C == 0 && gGame_48.f3C >= 2 && (gFrameCounter & 0x20)) {
+    if (gGame.mode == 0 && gGame.numPlayers >= 2 && (gFrameCounter & 0x20)) {
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
         gDPLoadTLUT_pal256(gdl++, gRaceTextObjs_2->f144->pal);
-        if (gGame_48.f40 >= 2) {
+        if (gGame.numLaps >= 2) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - 0x4B, gViewRects_2.y + gViewRects_2.h - 0xE,
                                 gRaceTextObjs_2->f144->img, gdl, arg2, 1, 1, 3, 0);
         }
-        if (gGame_48.f40 < 6) {
+        if (gGame.numLaps < 6) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - 0x28, gViewRects_2.y + gViewRects_2.h - 0xE,
                                 gRaceTextObjs_2->f144->img + 8, gdl, arg2, 1, 1, 3, 0);
         }
@@ -384,16 +351,16 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     font_text_create(gRaceTextObjs_2->f14, 0x40, 1, 4, 0x20);
     font_text_add(gRaceTextObjs_2->f14, "Best Lap:");
     font_draw_text(gRaceTextObjs_2->f14, SX(-7), SY(197));
-    g = &gGame_48;
+    g = &gGame;
     font_text_create(gRaceTextObjs_2->f14, 0x40, 1, 4, 0x20);
     font_text_add(gRaceTextObjs_2->f14, "Number of Laps:");
     font_draw_text(gRaceTextObjs_2->f14, SX(-2), SY(214));
-    font_text_create(gRaceTextObjs_2->f14, 0x40, 1, 2, (g->f4C == 0 && g->f3C >= 2) ? 0x21 : 0x22);
-    int_to_str(gGame_48.f40, buf);
+    font_text_create(gRaceTextObjs_2->f14, 0x40, 1, 2, (g->mode == 0 && g->numPlayers >= 2) ? 0x21 : 0x22);
+    int_to_str(gGame.numLaps, buf);
     font_text_add(gRaceTextObjs_2->f14, buf);
-    font_draw_text(gRaceTextObjs_2->f14, SX(-217) - ((gGame_48.f4C == 0 && gGame_48.f3C >= 2) ? 0x1E : 0), SY(214));
+    font_draw_text(gRaceTextObjs_2->f14, SX(-217) - ((gGame.mode == 0 && gGame.numPlayers >= 2) ? 0x1E : 0), SY(214));
     font_text_create(gRaceTextObjs_2->f1C, 0x40, 1, 2, 0x20);
-    if (gGame_48.f40 != gCurTrack_37->f1E) {
+    if (gGame.numLaps != gCurTrack_37->f1E) {
         font_text_create(gRaceTextObjs_2->f18, 0x40, 2, 2, 0x21);
         font_text_create(gRaceTextObjs_2->f28, 0x40, 2, 2, 0x21);
         font_text_create(gRaceTextObjs_2->f2C, 0x40, 2, 2, 0x21);
@@ -420,7 +387,7 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     event_format_time(gCurTrack_37->f40, buf);
     font_text_add(gRaceTextObjs_2->f1C, buf);
     font_draw_text(gRaceTextObjs_2->f1C, gScreenWidth / 2 + gScreenWidth * 111 / 512, SY(197));
-    if (gGame_48.f40 == gCurTrack_37->f1E) {
+    if (gGame.numLaps == gCurTrack_37->f1E) {
         font_text_create(gRaceTextObjs_2->f20, 0x40, 2, 2, 0x22);
         __builtin_memcpy(buf, gCurTrack_37->f44, 3);
         buf[3] = 0;
@@ -459,7 +426,7 @@ void hud_draw_congratulations(u32 *param_1, Dyn *arg1, s32 arg2)
 
     font_reset_queue();
     iVar4 = gScreenHeight_2 / 2 - 12;
-    if ((gGame & 0x200000) != 0) {
+    if ((gGame.flags & 0x200000) != 0) {
         iVar4 = gScreenHeight_2 / 2 - 24;
     }
     font_text_create((s32 *)*gRaceTextObjs, 0x40, 4, 7, 0x21);
@@ -471,22 +438,22 @@ void hud_draw_congratulations(u32 *param_1, Dyn *arg1, s32 arg2)
         font_draw_text((s32 *)*gRaceTextObjs, *(volatile s32 *)&gScreenWidth / 2, *(volatile s32 *)&gScreenHeight_2 * 7 / 8);
     }
     font_text_create((s32 *)*gRaceTextObjs, 0x40, 4, 2, 0x21);
-    if ((gGame & 0x400000) != 0) {
+    if ((gGame.flags & 0x400000) != 0) {
         font_text_add((s32 *)*gRaceTextObjs, D_800D9024);
         goto LAB_after;
     }
-    if ((gGame & 0x100000) != 0) {
+    if ((gGame.flags & 0x100000) != 0) {
         font_text_add((s32 *)*gRaceTextObjs, D_800D9044);
         goto LAB_after;
     }
-    if ((gGame & 0x800000) != 0) {
+    if ((gGame.flags & 0x800000) != 0) {
         font_text_add((s32 *)*gRaceTextObjs, D_800D9060);
         goto LAB_after;
     }
     font_text_add((s32 *)*gRaceTextObjs, D_800D9078);
 LAB_after:
     font_draw_text((s32 *)*gRaceTextObjs, gScreenWidth / 2, iVar4 + 0x18);
-    pf = (s32 *)&gGame;
+    pf = (s32 *)&gGame.flags;
     if ((pf[0] & 0x200000) != 0) {
         font_text_create((s32 *)*gRaceTextObjs, 0x40, 4, 4, 0x21);
         switch (pf[0x1D5]) {
@@ -549,7 +516,7 @@ typedef struct {
 typedef struct {
     u32 magic;
     u32 sum;
-    Rec_3 recs[24];
+    TrackRecord recs[24];
     u8 name[0x17];
     u8 f2BF;
     u8 f2C0;
@@ -569,8 +536,8 @@ extern Save gSaveData_5;
 
 void save_init_defaults(void)
 {
-    Rec_3 *pd;
-    Rec_3 *ps;
+    TrackRecord *pd;
+    TrackRecord *ps;
     Rider_6 *pc;
     u8 *q;
     u8 c;
@@ -583,7 +550,7 @@ void save_init_defaults(void)
     i = 0;
     pc = gTracks;
     pd = gSaveData_5.recs;
-    ps = D_800F0200;
+    ps = gGame.records;
     do {
         i++;
         if (pc->flags & 0x200) {
@@ -624,18 +591,16 @@ void save_init_defaults(void)
     p[1] = sum;
 }
 
-typedef struct { u8 pad[0x410]; s32 cur; } S70_2;
 typedef struct { u8 pad[0x2BF]; u8 bits; u8 cnt; } S19;
 typedef struct { u8 pad[8]; u16 flags; u8 pad2[6]; } Ent_76;
 
-extern S70_2 gGame_49;
 extern S19 gSaveData_6;
 extern Ent_76 gSpecialTracksItems[];
 extern Ent_76 sTrackListItems[];
 
 s32 save_update_unlocks(void)
 {
-    s32 saved = gGame_49.cur;
+    s32 saved = gGame.difficulty;
     s32 i, j, act, idx, k;
     s32 ret;
     u32 g;
@@ -648,19 +613,19 @@ s32 save_update_unlocks(void)
         switch (i) {
         case 0:
         case 1:
-            gGame_49.cur = 1;
+            gGame.difficulty = 1;
             break;
         case 2:
-            gGame_49.cur = 2;
+            gGame.difficulty = 2;
             break;
         case 3:
-            gGame_49.cur = 3;
+            gGame.difficulty = 3;
             break;
         }
         act = 0;
-        if (gGame_49.cur < gSaveData_6.cnt) {
+        if (gGame.difficulty < gSaveData_6.cnt) {
             act = 1;
-        } else if (gSaveData_6.cnt == gGame_49.cur) {
+        } else if (gSaveData_6.cnt == gGame.difficulty) {
             if (i == 0 || ((gSaveData_6.bits >> (i - 1)) & 1)) act = 1;
         }
         j = 0;
@@ -697,34 +662,34 @@ s32 save_update_unlocks(void)
         gSpecialTracksItems[2].flags |= 1;
     }
 
-    D_800F0180 = 1;
-    if (!(D_800F0180 < gSaveData_6.cnt || (gSaveData_6.cnt == D_800F0180 && (gSaveData_6.bits & 4)))) gSpecialTracksItems[3].flags |= 1;
+    gGame.difficulty = 1;
+    if (!(gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 4)))) gSpecialTracksItems[3].flags |= 1;
 
-    D_800F0180 = 2;
-    if ((D_800F0180 < gSaveData_6.cnt || (gSaveData_6.cnt == D_800F0180 && (gSaveData_6.bits & 8)))) {
+    gGame.difficulty = 2;
+    if ((gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 8)))) {
         if (gSpecialTracksItems[4].flags & 1) ret = 4;
         gSpecialTracksItems[4].flags &= ~1;
     } else {
         gSpecialTracksItems[4].flags |= 1;
     }
 
-    D_800F0180 = 3;
-    if ((D_800F0180 < gSaveData_6.cnt || (gSaveData_6.cnt == D_800F0180 && (gSaveData_6.bits & 16)))) {
+    gGame.difficulty = 3;
+    if ((gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 16)))) {
         if (gSpecialTracksItems[5].flags & 1) ret = 5;
         gSpecialTracksItems[5].flags &= ~1;
     } else {
         gSpecialTracksItems[5].flags |= 1;
     }
 
-    D_800F0180 = saved;
+    gGame.difficulty = saved;
     return ret;
 }
 
-typedef struct { u8 pad0[0x34]; Rec_3 b; s32 flags; u8 pad54[0xA0 - 0x54]; } Rec_42;
+typedef struct { u8 pad0[0x34]; TrackRecord b; s32 flags; u8 pad54[0xA0 - 0x54]; } Rec_42;
 
 typedef struct {
     u8 pad0[8];
-    Rec_3 blk[24];
+    TrackRecord blk[24];
     u8 a8[5];
     u8 tbl[5][3];
     u8 pad2BC[4];
@@ -735,22 +700,8 @@ typedef struct {
     s32 n;
 } Save_2;
 
-typedef struct { u8 p0; u8 a[3]; u8 b[3]; u8 pad[0x24 - 7]; } Ent_77;
-
-typedef struct {
-    Ent_77 e[5];
-    u8 count;
-    u8 padB5[7];
-    s16 x[7];
-    s16 y[5];
-} Cfg_10;
-
-typedef struct { u8 pad[0x50]; u8 b[4]; } Snd_3;
-
 extern Save_2 gSaveData_7;
 extern Rec_42 gTracks_12[];
-extern Cfg_10 D_800CA9C8_3;
-extern Snd_3 gGame_50;
 
 void save_load(s32 arg0)
 {
@@ -766,34 +717,34 @@ void save_load(s32 arg0)
             gUnlockedTracks |= 1 << i;
         }
         if (gTracks_12[i].flags & 0x200) {
-            Rec_3 *d = &gTracks_12[i].b;
-            Rec_3 *s = &gSaveData_7.blk[j];
+            TrackRecord *d = &gTracks_12[i].b;
+            TrackRecord *s = &gSaveData_7.blk[j];
             *d = *s;
             j++;
         }
     }
     gCustomRound = 0;
     for (i = 0; i < 4; i++) {
-        gGame_50.b[i] = (gSaveData_7.c8 >> i) & 3;
+        gGame.padConfig[i] = (gSaveData_7.c8 >> i) & 3;
     }
     snd_set_volume(0, gSaveData_7.c6);
     snd_set_volume(1, gSaveData_7.c5);
     snd_set_volume(2, gSaveData_7.c7);
     for (i = 0; i < 5; i++) {
         for (k = 0; k < 3; k++) {
-            D_800CA9C8_3.e[i].a[k] = gSaveData_7.tbl[0][i * 3 + k] >> 5;
-            D_800CA9C8_3.e[i].b[k] = gSaveData_7.tbl[0][i * 3 + k] & 0x1F;
+            gCups[i].progress[k] = gSaveData_7.tbl[0][i * 3 + k] >> 5;
+            gCups[i].won[k] = gSaveData_7.tbl[0][i * 3 + k] & 0x1F;
         }
     }
     for (i = 0; i < 5; i++) {
         v = gSaveData_7.a8[i] & 0x1F;
         if (v == 0x1F) break;
-        D_800CA9C8_3.x[i] = v;
-        D_800CA9C8_3.y[i] = gSaveData_7.a8[i] >> 5;
-        D_800CA9C8_3.count++;
+        gCups[5].tracks[i] = v;
+        gCups[5].laps[i] = gSaveData_7.a8[i] >> 5;
+        gCups[5].numRounds++;
     }
     D_800CAAA1 = gSaveData_7.c1;
-    D_800F0180 = gSaveData_7.c0;
+    gGame.difficulty = gSaveData_7.c0;
     save_update_unlocks();
 }
 

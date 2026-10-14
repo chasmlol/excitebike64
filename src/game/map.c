@@ -34,7 +34,7 @@ void map_init(void)
     s32 x, y;
 
     sMapImage = 0;
-    switch (gGameMode) {
+    switch (gGame.mode) {
     case 2:
     case 3:
     case 4:
@@ -46,7 +46,7 @@ void map_init(void)
     case 14:
         break;
     default:
-        if ((gGame & 0x8000) == 0) {
+        if ((gGame.flags & 0x8000) == 0) {
             for (i = 0; i < gPathNodeCount; i++) {
                 if (gPathNodes_2[i].x < sMapBoundsMin.x || i == 0) {
                     sMapBoundsMin.x = gPathNodes_2[i].x;
@@ -71,7 +71,7 @@ void map_init(void)
             sMapX = (x * wA) / 0x140;
             sMapH = (hB * 0x40) / 0xF0;
             sMapY = (y * hA) / 0xF0;
-            if (gGameMode == 7) {
+            if (gGame.mode == 7) {
                 sMapW = sMapW + sMapW / 2;
                 sMapH = sMapH + sMapH / 2;
             }
@@ -302,7 +302,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     Racer *e;
     s32 i;
 
-    if (gHudLevel != 0 || sMapImage == 0 || (gGame_8.f0 & 0x81) || gInsetViewActive != 0) {
+    if (gHudLevel != 0 || sMapImage == 0 || (gGame.flags & 0x81) || gInsetViewActive != 0) {
         return gdl;
     }
     if (gNumViews >= 2) {
@@ -333,7 +333,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     for (i = 0; i < 6; i++) {
         if (gRiders_2[i].f7A5 != 0) continue;
         if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
-        if (gRiders_2[i].f6E8 != 0 || (gGame_8.f4C == 8 && i != D_800C8CE0)) {
+        if (gRiders_2[i].f6E8 != 0 || (gGame.mode == 8 && i != D_800C8CE0)) {
             gdl = map_draw_rider_dot(gdl, i, 0);
         }
     }
@@ -342,7 +342,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
         if (gRiders_2[i].f7A5 != 0) continue;
         if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
         if (gRiders_2[i].f6E8 != 0) continue;
-        if (gGame_8.f4C == 8 && i != D_800C8CE0) continue;
+        if (gGame.mode == 8 && i != D_800C8CE0) continue;
         gdl = map_draw_rider_dot(gdl, i, 1);
     }
     gDPPipeSync(gdl++);
@@ -427,11 +427,8 @@ typedef struct {
 } Node_20;
 
 typedef struct { s32 sx, sy; u8 data[0x1000]; } MapImg;
-typedef struct { u8 pad[0x4C]; s32 f4C; } Race_6;
-
 extern MapImg *sMapImage_3;
 extern Node_20 *gPathNodes_29;
-extern Race_6 gGame_47;
 
 static inline void getpos(Node_20 *n, f32 *x, f32 *z) {
     f32 h = (n->f58 - n->f5C) * 0.5f;
@@ -509,7 +506,7 @@ void map_build_image(void) {
     for (i = 0; i < gPathNodeCount; i++) {
         n = (Node_20 *)(i * sizeof(Node_20) + (u32)gPathNodes_29);
         j = n->f46;
-        if (j == 0 && gGame_47.f4C == 7) break;
+        if (j == 0 && gGame.mode == 7) break;
         getpos(n, &px, &pz);
         x0 = (px - mx) * sx + 64.0f;
         y0 = 64.0f - (pz - my) * sy;

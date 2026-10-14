@@ -21,13 +21,7 @@ typedef struct {
     f32 f20[1];
 } Ply;
 
-typedef struct {
-    u8 pad0[0x410];
-    s32 f410;
-} Gm;
-
 extern Ply *gCurTrack_31;
-extern Gm gGame_44;
 extern Ent_58 gRiders_73[];
 
 void debug_update_value_display(void)
@@ -66,7 +60,7 @@ void debug_update_value_display(void)
         break;
     case 2:
         for (i = 0; i < 6; i++) {
-            debug_ftoa(buf, gRiders_73[i].f44C / gCurTrack_31->f20[gGame_44.f410 - 1], 4);
+            debug_ftoa(buf, gRiders_73[i].f44C / gCurTrack_31->f20[gGame.difficulty - 1], 4);
             debug_print_float(buf, gRiders_73[i].f450);
         }
         break;

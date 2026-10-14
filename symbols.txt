@@ -1546,9 +1546,7 @@ D_800C2800                            game  0x800C2800  data     0x40
 D_800C2840                            game  0x800C2840  data     0x40
 D_800C2880                            game  0x800C2880  data     0x40
 sPodiumRiderClips                     game  0x800C28C0  data      0xc
-sPodiumRiderClips_2                   game  0x800C28C0  data        -  sPodiumRiderClips
 sPodiumCameraClips                    game  0x800C28CC  data     0x54
-sPodiumCameraClips_2                  game  0x800C28CC  data        -  sPodiumCameraClips
 D_800C2920                            game  0x800C2920  data      0x4
 gRumbleResetRequest                   game  0x800C2924  data      0x4
 sEepromType                           game  0x800C2928  data      0x4
@@ -1570,9 +1568,6 @@ D_800C2954                            game  0x800C2954  data      0x4
 sGfxTasksPending                      game  0x800C2958  data      0x4
 gGameStates                           game  0x800C295C  data     0x70
 gCurGameState                         game  0x800C29CC  data      0xc
-gCurGameState_2                       game  0x800C29CC  data        -  gCurGameState
-gCurGameState_3                       game  0x800C29CC  data        -  gCurGameState
-gCurGameState_4                       game  0x800C29CC  data        -  gCurGameState
 gFramebuffers                         game  0x800C29D8  data      0x4
 gFramebuffers_2                       game  0x800C29D8  data        -  gFramebuffers
 gFramebuffers_3                       game  0x800C29D8  data        -  gFramebuffers
@@ -1839,44 +1834,11 @@ D_800CA924_3                          game  0x800CA924  data        -  D_800CA92
 D_800CA924_4                          game  0x800CA924  data        -  D_800CA924
 D_800CA924_5                          game  0x800CA924  data        -  D_800CA924
 gSeason                               game  0x800CA930  data      0x4
-gSeason_10                            game  0x800CA930  data        -  gSeason
-gSeason_11                            game  0x800CA930  data        -  gSeason
-gSeason_12                            game  0x800CA930  data        -  gSeason
-gSeason_13                            game  0x800CA930  data        -  gSeason
-gSeason_14                            game  0x800CA930  data        -  gSeason
-gSeason_15                            game  0x800CA930  data        -  gSeason
-gSeason_16                            game  0x800CA930  data        -  gSeason
-gSeason_17                            game  0x800CA930  data        -  gSeason
-gSeason_18                            game  0x800CA930  data        -  gSeason
-gSeason_19                            game  0x800CA930  data        -  gSeason
-gSeason_2                             game  0x800CA930  data        -  gSeason
-gSeason_20                            game  0x800CA930  data        -  gSeason
-gSeason_21                            game  0x800CA930  data        -  gSeason
-gSeason_22                            game  0x800CA930  data        -  gSeason
-gSeason_23                            game  0x800CA930  data        -  gSeason
-gSeason_24                            game  0x800CA930  data        -  gSeason
-gSeason_25                            game  0x800CA930  data        -  gSeason
-gSeason_3                             game  0x800CA930  data        -  gSeason
-gSeason_4                             game  0x800CA930  data        -  gSeason
-gSeason_5                             game  0x800CA930  data        -  gSeason
-gSeason_6                             game  0x800CA930  data        -  gSeason
-gSeason_7                             game  0x800CA930  data        -  gSeason
-gSeason_8                             game  0x800CA930  data        -  gSeason
-gSeason_9                             game  0x800CA930  data        -  gSeason
 gHudLevel                             game  0x800CA934  data      0x4
 gRacePoints                           game  0x800CA938  data     0x20
-gRacePoints_2                         game  0x800CA938  data        -  gRacePoints
-gRacePoints_3                         game  0x800CA938  data        -  gRacePoints
 sTrackPicIndex                        game  0x800CA958  data     0x6c
 gUnlockedTracks                       game  0x800CA9C4  data      0x4
-D_800CA9C8                            game  0x800CA9C8  data     0xb4
-D_800CA9C8_2                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_3                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_4                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_5                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_6                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_7                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_8                          game  0x800CA9C8  data        -  D_800CA9C8
+gCups                                 game  0x800CA9C8  data     0xb4
 gCustomRound                          game  0x800CAA7C  data     0x24
 sTutorialRound                        game  0x800CAAA0  data      0x1
 D_800CAAA1                            game  0x800CAAA1  data     0x23
@@ -1898,18 +1860,6 @@ D_800CACA4                            game  0x800CACA4  data     0x40
 D_800CACE4                            game  0x800CACE4  data     0x40
 D_800CAD24                            game  0x800CAD24  data     0xc0
 gTutorialLessons                      game  0x800CADE4  data    0x2b4
-gTutorialLessons_10                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_11                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_12                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_13                   game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_2                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_3                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_4                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_5                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_6                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_7                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_8                    game  0x800CADE4  data        -  gTutorialLessons
-gTutorialLessons_9                    game  0x800CADE4  data        -  gTutorialLessons
 sTutorialFailText                     game  0x800CB098  data     0x20
 sQuitConfirmItems                     game  0x800CB0B8  data      0x8
 sTutorialMenuItems                    game  0x800CB0C0  data     0x14
@@ -4043,12 +3993,7 @@ sOptionsPreviewDelay                  game  0x800E3708  data        -
 gNumRiders                            game  0x800E370C  data        -
 gPauseMenu                            game  0x800E3710  data        -
 D_800E3718                            game  0x800E3718  data        -
-D_800E3730                            game  0x800E3730  data        -
-D_800E3730_2                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_3                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_4                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_5                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_6                          game  0x800E3730  data        -  D_800E3730
+gPauseScreen                          game  0x800E3730  data        -
 gActiveReplaySize                     game  0x800E3748  data        -
 gRacePhaseTimer                       game  0x800E374C  data        -
 D_800E3750                            game  0x800E3750  data        -
@@ -4635,117 +4580,13 @@ D_800EFD6C                            game  0x800EFD6C  data        -
 D_800EFD6C_2                          game  0x800EFD6C  data        -  D_800EFD6C
 D_800EFD6C_3                          game  0x800EFD6C  data        -  D_800EFD6C
 gGame                                 game  0x800EFD70  data        -
-gGame_10                              game  0x800EFD70  data        -  gGame
-gGame_11                              game  0x800EFD70  data        -  gGame
-gGame_12                              game  0x800EFD70  data        -  gGame
-gGame_13                              game  0x800EFD70  data        -  gGame
-gGame_14                              game  0x800EFD70  data        -  gGame
-gGame_15                              game  0x800EFD70  data        -  gGame
-gGame_16                              game  0x800EFD70  data        -  gGame
-gGame_17                              game  0x800EFD70  data        -  gGame
-gGame_18                              game  0x800EFD70  data        -  gGame
-gGame_19                              game  0x800EFD70  data        -  gGame
-gGame_2                               game  0x800EFD70  data        -  gGame
-gGame_20                              game  0x800EFD70  data        -  gGame
-gGame_21                              game  0x800EFD70  data        -  gGame
-gGame_22                              game  0x800EFD70  data        -  gGame
-gGame_23                              game  0x800EFD70  data        -  gGame
-gGame_24                              game  0x800EFD70  data        -  gGame
-gGame_25                              game  0x800EFD70  data        -  gGame
-gGame_26                              game  0x800EFD70  data        -  gGame
-gGame_27                              game  0x800EFD70  data        -  gGame
-gGame_28                              game  0x800EFD70  data        -  gGame
-gGame_29                              game  0x800EFD70  data        -  gGame
-gGame_3                               game  0x800EFD70  data        -  gGame
-gGame_30                              game  0x800EFD70  data        -  gGame
-gGame_31                              game  0x800EFD70  data        -  gGame
-gGame_32                              game  0x800EFD70  data        -  gGame
-gGame_33                              game  0x800EFD70  data        -  gGame
-gGame_34                              game  0x800EFD70  data        -  gGame
-gGame_35                              game  0x800EFD70  data        -  gGame
-gGame_36                              game  0x800EFD70  data        -  gGame
-gGame_37                              game  0x800EFD70  data        -  gGame
-gGame_38                              game  0x800EFD70  data        -  gGame
-gGame_39                              game  0x800EFD70  data        -  gGame
-gGame_4                               game  0x800EFD70  data        -  gGame
-gGame_40                              game  0x800EFD70  data        -  gGame
-gGame_41                              game  0x800EFD70  data        -  gGame
-gGame_42                              game  0x800EFD70  data        -  gGame
-gGame_43                              game  0x800EFD70  data        -  gGame
-gGame_44                              game  0x800EFD70  data        -  gGame
-gGame_45                              game  0x800EFD70  data        -  gGame
-gGame_46                              game  0x800EFD70  data        -  gGame
-gGame_47                              game  0x800EFD70  data        -  gGame
-gGame_48                              game  0x800EFD70  data        -  gGame
-gGame_49                              game  0x800EFD70  data        -  gGame
-gGame_5                               game  0x800EFD70  data        -  gGame
-gGame_50                              game  0x800EFD70  data        -  gGame
-gGame_51                              game  0x800EFD70  data        -  gGame
-gGame_52                              game  0x800EFD70  data        -  gGame
-gGame_53                              game  0x800EFD70  data        -  gGame
-gGame_54                              game  0x800EFD70  data        -  gGame
-gGame_55                              game  0x800EFD70  data        -  gGame
-gGame_56                              game  0x800EFD70  data        -  gGame
-gGame_57                              game  0x800EFD70  data        -  gGame
-gGame_58                              game  0x800EFD70  data        -  gGame
-gGame_59                              game  0x800EFD70  data        -  gGame
-gGame_6                               game  0x800EFD70  data        -  gGame
-gGame_60                              game  0x800EFD70  data        -  gGame
-gGame_61                              game  0x800EFD70  data        -  gGame
-gGame_62                              game  0x800EFD70  data        -  gGame
-gGame_63                              game  0x800EFD70  data        -  gGame
-gGame_64                              game  0x800EFD70  data        -  gGame
-gGame_65                              game  0x800EFD70  data        -  gGame
-gGame_66                              game  0x800EFD70  data        -  gGame
-gGame_67                              game  0x800EFD70  data        -  gGame
-gGame_68                              game  0x800EFD70  data        -  gGame
-gGame_69                              game  0x800EFD70  data        -  gGame
-gGame_7                               game  0x800EFD70  data        -  gGame
-gGame_70                              game  0x800EFD70  data        -  gGame
-gGame_71                              game  0x800EFD70  data        -  gGame
-gGame_72                              game  0x800EFD70  data        -  gGame
-gGame_73                              game  0x800EFD70  data        -  gGame
-gGame_74                              game  0x800EFD70  data        -  gGame
-gGame_75                              game  0x800EFD70  data        -  gGame
-gGame_76                              game  0x800EFD70  data        -  gGame
-gGame_77                              game  0x800EFD70  data        -  gGame
-gGame_78                              game  0x800EFD70  data        -  gGame
-gGame_79                              game  0x800EFD70  data        -  gGame
-gGame_8                               game  0x800EFD70  data        -  gGame
-gGame_80                              game  0x800EFD70  data        -  gGame
-gGame_81                              game  0x800EFD70  data        -  gGame
-gGame_82                              game  0x800EFD70  data        -  gGame
-gGame_83                              game  0x800EFD70  data        -  gGame
-gGame_84                              game  0x800EFD70  data        -  gGame
-gGame_85                              game  0x800EFD70  data        -  gGame
-gGame_86                              game  0x800EFD70  data        -  gGame
-gGame_87                              game  0x800EFD70  data        -  gGame
-gGame_88                              game  0x800EFD70  data        -  gGame
-gGame_89                              game  0x800EFD70  data        -  gGame
-gGame_9                               game  0x800EFD70  data        -  gGame
-gGame_90                              game  0x800EFD70  data        -  gGame
 D_800EFD74                            game  0x800EFD74  data        -
 D_800EFD78                            game  0x800EFD78  data        -
 D_800EFD7C                            game  0x800EFD7C  data        -
 D_800EFD84                            game  0x800EFD84  data        -
-gNumPlayers                           game  0x800EFDAC  data        -
-gNumPlayers_2                         game  0x800EFDAC  data        -  gNumPlayers
 D_800EFDB4                            game  0x800EFDB4  data        -
-gGameMode                             game  0x800EFDBC  data        -
-gGameMode_2                           game  0x800EFDBC  data        -  gGameMode
-D_800EFDC4                            game  0x800EFDC4  data        -
-D_800EFDE0                            game  0x800EFDE0  data        -
-D_800F0128                            game  0x800F0128  data        -
 D_800F0154                            game  0x800F0154  data        -
-D_800F0158                            game  0x800F0158  data        -
-D_800F016C                            game  0x800F016C  data        -
-D_800F0180                            game  0x800F0180  data        -
-D_800F01B4                            game  0x800F01B4  data        -
-D_800F01BC                            game  0x800F01BC  data        -
 D_800F01C0                            game  0x800F01C0  data        -
-D_800F01F8                            game  0x800F01F8  data        -
-D_800F0200                            game  0x800F0200  data        -
-D_800F04E4                            game  0x800F04E4  data        -
 sRaceEndFrame                         game  0x800F0520  data        -
 sTempGaugeTextures                    game  0x800F0524  data        -
 sTempGaugeTextures_2                  game  0x800F0524  data        -  sTempGaugeTextures
@@ -4760,66 +4601,8 @@ D_800F0544                            game  0x800F0544  data        -
 D_800F0548                            game  0x800F0548  data        -
 D_800F054C                            game  0x800F054C  data        -
 gEvent                                game  0x800F05A8  data        -
-gEvent_10                             game  0x800F05A8  data        -  gEvent
-gEvent_11                             game  0x800F05A8  data        -  gEvent
-gEvent_12                             game  0x800F05A8  data        -  gEvent
-gEvent_13                             game  0x800F05A8  data        -  gEvent
-gEvent_14                             game  0x800F05A8  data        -  gEvent
-gEvent_15                             game  0x800F05A8  data        -  gEvent
-gEvent_16                             game  0x800F05A8  data        -  gEvent
-gEvent_17                             game  0x800F05A8  data        -  gEvent
-gEvent_18                             game  0x800F05A8  data        -  gEvent
-gEvent_19                             game  0x800F05A8  data        -  gEvent
-gEvent_2                              game  0x800F05A8  data        -  gEvent
-gEvent_20                             game  0x800F05A8  data        -  gEvent
-gEvent_21                             game  0x800F05A8  data        -  gEvent
-gEvent_22                             game  0x800F05A8  data        -  gEvent
-gEvent_23                             game  0x800F05A8  data        -  gEvent
-gEvent_24                             game  0x800F05A8  data        -  gEvent
-gEvent_25                             game  0x800F05A8  data        -  gEvent
-gEvent_26                             game  0x800F05A8  data        -  gEvent
-gEvent_27                             game  0x800F05A8  data        -  gEvent
-gEvent_28                             game  0x800F05A8  data        -  gEvent
-gEvent_29                             game  0x800F05A8  data        -  gEvent
-gEvent_3                              game  0x800F05A8  data        -  gEvent
-gEvent_30                             game  0x800F05A8  data        -  gEvent
-gEvent_31                             game  0x800F05A8  data        -  gEvent
-gEvent_32                             game  0x800F05A8  data        -  gEvent
-gEvent_33                             game  0x800F05A8  data        -  gEvent
-gEvent_34                             game  0x800F05A8  data        -  gEvent
-gEvent_35                             game  0x800F05A8  data        -  gEvent
-gEvent_36                             game  0x800F05A8  data        -  gEvent
-gEvent_37                             game  0x800F05A8  data        -  gEvent
-gEvent_38                             game  0x800F05A8  data        -  gEvent
-gEvent_39                             game  0x800F05A8  data        -  gEvent
-gEvent_4                              game  0x800F05A8  data        -  gEvent
-gEvent_40                             game  0x800F05A8  data        -  gEvent
-gEvent_41                             game  0x800F05A8  data        -  gEvent
-gEvent_42                             game  0x800F05A8  data        -  gEvent
-gEvent_5                              game  0x800F05A8  data        -  gEvent
-gEvent_6                              game  0x800F05A8  data        -  gEvent
-gEvent_7                              game  0x800F05A8  data        -  gEvent
-gEvent_8                              game  0x800F05A8  data        -  gEvent
-gEvent_9                              game  0x800F05A8  data        -  gEvent
-D_800F05AC                            game  0x800F05AC  data        -
-D_800F05BC                            game  0x800F05BC  data        -
-D_800F05C8                            game  0x800F05C8  data        -
-gEventNumRiders                       game  0x800F05CA  data        -
-D_800F05CC                            game  0x800F05CC  data        -
-D_800F05D0                            game  0x800F05D0  data        -
 gEventTime                            game  0x800F05D4  data        -
-gEventTime_2                          game  0x800F05D4  data        -  gEventTime
-gEventTime_3                          game  0x800F05D4  data        -  gEventTime
-D_800F05E4                            game  0x800F05E4  data        -
-gEventAllFinished                     game  0x800F05E8  data        -
-D_800F05EC                            game  0x800F05EC  data        -
-D_800F05F8                            game  0x800F05F8  data        -
 gEventFlags                           game  0x800F0600  data        -
-D_800F0616                            game  0x800F0616  data        -
-D_800F0618                            game  0x800F0618  data        -
-D_800F0624                            game  0x800F0624  data        -
-D_800F0624_2                          game  0x800F0624  data        -  D_800F0624
-D_800F0630                            game  0x800F0630  data        -
 D_800F0634                            game  0x800F0634  data        -
 sSeasonState                          game  0x800F0638  data        -
 gTutorialResult                       game  0x800F06AC  data        -
@@ -4899,9 +4682,6 @@ gAiRouteToggle                        game  0x800F0B30  data        -
 D_800F0B40                            game  0x800F0B40  data        -
 sGravelPitModels                      game  0x800F0B48  data        -
 sCurTrackHack                         game  0x800F0B58  data        -
-sCurTrackHack_2                       game  0x800F0B58  data        -  sCurTrackHack
-sCurTrackHack_3                       game  0x800F0B58  data        -  sCurTrackHack
-sCurTrackHack_4                       game  0x800F0B58  data        -  sCurTrackHack
 sMillObjCount                         game  0x800F0B5C  data        -
 sHackResources                        game  0x800F0B60  data        -
 sMillObjState                         game  0x800F0B64  data        -

@@ -7,97 +7,57 @@
     _g->words.w1 = (b); \
 }
 
-typedef struct {
-    u8 *f0;
-    u8 p04[0x60];
-    s16 f64;
-} Prof;
-
 typedef struct { s32 a, b; s16 f8; u8 pad[0x7E0-0xA]; } BikeX;
 
-typedef struct {
-    s32 w0;
-    u8 pad4[0x22];
-    s16 h26;
-} Mode;
-
-extern Prof *gSeason_5;
 extern BikeX D_800E3E20[];
-extern Mode gEvent_5;
 
-#define CUR (gTutorialLessons_8[*(s16 *)(gSeason + 0x64)])
+#define CUR (gTutorialLessons[gSeason->round])
 
-typedef struct {
-    s32 f00;
-    u8 p04[0x22];
-    s16 f26;
-    u8 p28[4];
-    s32 f2c;
-    u8 p30[0x28];
-    u32 f58;
-    u8 p5c[0x14];
-    s32 f70;
-    s32 f74;
-    s32 f78;
-    void *f7c;
-    s32 f80;
-} Blk_13;
-
-typedef struct {
-    u8 p0[0xC];
-    u8 fl;
-    u8 p1[7];
-    s32 w14;
-    u8 p2[0x28 - 0x18];
-} Ent_54;
-
-extern Blk_13 gEvent_18;
-extern Ent_54 gTutorialLessons_8[];
 
 void tutorial_init_lesson(s32 a0)
 {
-    Blk_13 *s;
+    Event *s;
 
     race_reset_grid_order();
-    s = &gEvent_18;
-    if (s->f7c == 0) {
-        s->f7c = mem_alloc_dbg(0x80, 0, (s32)D_800D7340, 0x16D);
+    s = &gEvent;
+    if (s->tutorialBuf == 0) {
+        s->tutorialBuf = mem_alloc_dbg(0x80, 0, (s32)D_800D7340, 0x16D);
     }
-    D_800F0180 = 1;
-    if (CUR.fl & 4) {
-        s->f2c = 0;
-        s->f58 |= 0x1000;
+    gGame.difficulty = 1;
+    if (CUR.flags & 4) {
+        s->time = 0;
+        s->flags |= 0x1000;
     } else {
-        s->f58 &= ~0x1000;
+        s->flags &= ~0x1000;
     }
-    if (CUR.fl & 8) {
-        gEvent_18.f26 = 0x3F;
-        gEvent_18.f00 = 1;
-        gEvent_18.f58 |= 0x10;
+    if (CUR.flags & 8) {
+        gEvent.countdown = 0x3F;
+        gEvent.state = 1;
+        gEvent.flags |= 0x10;
     } else {
-        gEvent_18.f58 &= ~0x10;
+        gEvent.flags &= ~0x10;
     }
-    gEvent_18.f58 &= ~0x4000;
-    if (CUR.fl & 8) {
-        gEvent_18.f58 |= 0x18800;
-        gEvent_18.f80 = 600;
-        if (CUR.fl & 2) {
-            gEvent_18.f2c = 0;
+    gEvent.flags &= ~0x4000;
+    if (CUR.flags & 8) {
+        gEvent.flags |= 0x18800;
+        gEvent.tutorialTimeout = 600;
+        if (CUR.flags & 2) {
+            gEvent.time = 0;
         } else if (gActiveReplay == 0) {
-            gEvent_18.f2c = CUR.w14;
+            gEvent.time = CUR.time;
         }
     } else {
-        gEvent_18.f00 = 0xE;
-        gEvent_18.f2c = 0;
+        gEvent.state = 0xE;
+        gEvent.time = 0;
     }
     if (gActiveReplay == 0) {
-        gEvent_18.f70 = 5;
-        gEvent_18.f58 &= ~0x40;
+        gEvent.tutorialAction = 5;
+        gEvent.flags &= ~0x40;
     } else {
-        gEvent_18.f26 = 0x3F;
-        gEvent_18.f70 = 0;
-        gEvent_18.f78 = 0x3C;
-        gEvent_18.f58 |= 0x40;
+        gEvent.countdown = 0x3F;
+        gEvent.tutorialAction = 0;
+        gEvent.tutorialTimer = 0x3C;
+        gEvent.flags |= 0x40;
     }
     D_800F0738 = 0;
     gTutorialResult = 0;
@@ -108,10 +68,10 @@ void tutorial_check_lesson_skip(void)
 {
     if (gRacePhase == 5) {
         if (((gPadInput & 0x200) != 0) && ((gPadInputPrev & 0x200) == 0)) {
-            if (*(s16 *)(gSeason + 0x64) < 1) {
+            if (gSeason->round < 1) {
                 return;
             }
-            D_800F0618 = 3;
+            gEvent.tutorialAction = 3;
             gRacePhase = 6;
             gRacePhaseTimer = -1;
             snd_play_menu_sound(1);
@@ -126,52 +86,15 @@ void tutorial_check_lesson_skip(void)
         if (tutorial_next_lesson_unlocked() == 0) {
             return;
         }
-        D_800F0618 = 4;
+        gEvent.tutorialAction = 4;
         gRacePhase = 6;
         gRacePhaseTimer = -1;
         snd_play_menu_sound(1);
     }
 }
 
-#define G_6 gEvent_19
-#define TB (gTutorialLessons_9[gSeason_5->f64])
+#define TB (gTutorialLessons[gSeason->round])
 #define SEG(i) ((Seg_13 *)((s32)((i) * 0x6C) + (s32)gPathNodes))
-
-typedef struct {
-    u32 state;      /* 0x00 */
-    u8 p04[0x22];
-    s16 f26;        /* 0x26 */
-    s16 f28;        /* 0x28 */
-    u8 p2A[2];
-    s32 f2c;        /* 0x2C */
-    u8 p30[0x10];
-    s32 f40;        /* 0x40 */
-    u8 p44[0x14];
-    u32 f58;        /* 0x58 */
-    u8 p5C[0x14];
-    s32 f70;        /* 0x70 */
-    s32 f74;
-    s32 f78;        /* 0x78 */
-    s32 f7c;
-    s32 f80;        /* 0x80 */
-} Race_2;
-
-typedef struct {
-    s32 v;
-    u8 pad[0xC];
-} Gate;
-
-typedef struct {
-    u8 p00[0xC];
-    u8 fl;          /* 0x0C */
-    u8 fD;          /* 0x0D */
-    u8 p0E[0xA];
-    s16 f18;        /* 0x18 */
-    s16 f1A;        /* 0x1A */
-    u8 p1C[4];
-    s32 n;          /* 0x20 */
-    Gate *list;     /* 0x24 */
-} Track_11;
 
 typedef struct {
     u8 p000[0x3D2];
@@ -191,8 +114,6 @@ typedef struct {
     u8 p4C[0x20];
 } Seg_13;
 
-extern Race_2 gEvent_19;
-extern Track_11 gTutorialLessons_9[];
 extern Bike_29 gRiders_54[];
 
 void tutorial_update(void)
@@ -200,100 +121,100 @@ void tutorial_update(void)
     s32 i;
 
     D_800E43EC = 1.0375f;
-    if (!(G_6.f58 & 0x800)) {
-        if ((TB.fl & 8) && (G_6.state < 5 || G_6.state == 15 || G_6.state == 14)) {
+    if (!(gEvent.flags & 0x800)) {
+        if ((TB.flags & 8) && (gEvent.state < 5 || gEvent.state == 15 || gEvent.state == 14)) {
             event_update_countdown();
         }
-        if (G_6.f26 == 0x2B && G_6.state == 1 && (G_6.f58 & 0x8000)) {
-            G_6.f80 = 300;
-            G_6.f58 |= 0x10800;
+        if (gEvent.countdown == 0x2B && gEvent.state == 1 && (gEvent.flags & 0x8000)) {
+            gEvent.tutorialTimeout = 300;
+            gEvent.flags |= 0x10800;
         }
     } else {
         snd_stop_all_riders();
     }
-    if (G_6.state == 5) {
-        G_6.f58 &= ~0x10;
+    if (gEvent.state == 5) {
+        gEvent.flags &= ~0x10;
         if (gActiveReplay != 0 && gRiderAlpha_2 != 0xFF) {
-            G_6.f70 = 1;
-            G_6.state = 14;
+            gEvent.tutorialAction = 1;
+            gEvent.state = 14;
         } else {
-            G_6.state = 15;
-            G_6.f70 = 5;
+            gEvent.state = 15;
+            gEvent.tutorialAction = 5;
         }
     }
-    if (G_6.state >= 5 && !(G_6.f58 & 0x800)) {
+    if (gEvent.state >= 5 && !(gEvent.flags & 0x800)) {
         if (gActiveReplay == 0) {
-            if (TB.fl & 2) {
-                G_6.f2c++;
+            if (TB.flags & 2) {
+                gEvent.time++;
             } else if (!(D_800E3E50 & 0x10)) {
-                G_6.f2c--;
+                gEvent.time--;
             }
         } else {
-            for (i = 0; i < TB.n; i++) {
-                if (G_6.f2c == TB.list[i].v) {
+            for (i = 0; i < TB.numSteps; i++) {
+                if (gEvent.time == TB.steps[i].value) {
                     snd_stop_all_riders();
                     rumble_stop_all();
-                    G_6.f80 = 1800;
-                    G_6.f58 |= 0x800;
+                    gEvent.tutorialTimeout = 1800;
+                    gEvent.flags |= 0x800;
                     break;
                 }
             }
-            G_6.f2c++;
+            gEvent.time++;
         }
-        if (G_6.f40 == 0) {
-            G_6.f28 = 180;
-        } else if (G_6.f28 != 0) {
-            G_6.f28--;
+        if (gEvent.allFinished == 0) {
+            gEvent.messageTimer = 180;
+        } else if (gEvent.messageTimer != 0) {
+            gEvent.messageTimer--;
         }
     }
-    if ((G_6.f70 == 0 || G_6.f70 == 2) && G_6.f78 != 0) {
-        G_6.f78--;
+    if ((gEvent.tutorialAction == 0 || gEvent.tutorialAction == 2) && gEvent.tutorialTimer != 0) {
+        gEvent.tutorialTimer--;
     }
-    if (G_6.state < 5) {
+    if (gEvent.state < 5) {
         tutorial_check_lesson_skip();
         return;
     }
-    switch (G_6.state) {
+    switch (gEvent.state) {
     case 13:
-        switch (G_6.f70) {
+        switch (gEvent.tutorialAction) {
         case 0:
             if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10)) {
-                G_6.f70 = 2;
-                G_6.f78 = 59 - G_6.f78;
-            } else if (G_6.f78 == 0) {
-                G_6.f70 = 1;
+                gEvent.tutorialAction = 2;
+                gEvent.tutorialTimer = 59 - gEvent.tutorialTimer;
+            } else if (gEvent.tutorialTimer == 0) {
+                gEvent.tutorialAction = 1;
             }
             break;
         case 1:
             if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10)) {
-                G_6.f70 = 2;
-                G_6.f78 = 60;
-                G_6.f58 = (G_6.f58 & ~0x10) | 0x40;
+                gEvent.tutorialAction = 2;
+                gEvent.tutorialTimer = 60;
+                gEvent.flags = (gEvent.flags & ~0x10) | 0x40;
             } else {
                 tutorial_check_lesson_skip();
             }
             break;
         case 2:
-            if (G_6.f78 == 0) {
-                G_6.state = 14;
-                G_6.f26 = 0x3F;
-                G_6.f70 = 0;
-                G_6.f78 = 60;
+            if (gEvent.tutorialTimer == 0) {
+                gEvent.state = 14;
+                gEvent.countdown = 0x3F;
+                gEvent.tutorialAction = 0;
+                gEvent.tutorialTimer = 60;
             }
             break;
         }
         break;
     case 14:
-        switch (G_6.f70) {
+        switch (gEvent.tutorialAction) {
         case 0:
-            if (G_6.f78 == 0) {
-                G_6.f70 = 1;
+            if (gEvent.tutorialTimer == 0) {
+                gEvent.tutorialAction = 1;
                 return;
             }
             break;
         case 1:
             if ((gPadInput & 0x40) && !(gPadInputPrev & 0x40)) {
-                G_6.f70 = 6;
+                gEvent.tutorialAction = 6;
                 gRacePhase = 6;
                 gRacePhaseTimer = -1;
                 gActiveReplay = 0;
@@ -302,34 +223,34 @@ void tutorial_update(void)
                 gReplayRecording = 0;
                 return;
             }
-            if (gRiders_54[0].f628 == TB.f1A) {
+            if (gRiders_54[0].f628 == TB.goalNode) {
                 if (gRiders_54[0].f690 & 0x10) {
-                    if (G_6.f58 & 0x2000) {
+                    if (gEvent.flags & 0x2000) {
                         bikes_free();
                         decal_clear_all();
                         mem_fill((u8 *)gRiders_54, 0, sizeof(Bike_29) * 8);
                         tutorial_init_lesson(0);
                         bikes_init();
                         replay_play_start(gActiveReplay);
-                        G_6.f58 = (G_6.f58 | 0x80) & ~0x2000;
+                        gEvent.flags = (gEvent.flags | 0x80) & ~0x2000;
                     }
                 } else {
                     gRiders_54[0].f690 |= 0x10;
-                    G_6.f58 &= ~0x2000;
+                    gEvent.flags &= ~0x2000;
                 }
                 return;
             }
-            if ((TB.fl & 4) && gRiders_54[1].f628 >= TB.f1A &&
-                (TB.f18 < TB.f1A || (gRiders_54[1].f628 < TB.f18 - 2 && TB.f1A < TB.f18))) {
+            if ((TB.flags & 4) && gRiders_54[1].f628 >= TB.goalNode &&
+                (TB.startNode < TB.goalNode || (gRiders_54[1].f628 < TB.startNode - 2 && TB.goalNode < TB.startNode))) {
                 gRiders_54[1].f690 |= 0x10;
                 return;
             }
             break;
         case 5:
-            if (gRiders_54[0].f628 == TB.f1A) {
+            if (gRiders_54[0].f628 == TB.goalNode) {
                 gRiders_54[0].f690 |= 0x10;
             }
-            if ((G_6.f58 & 0x2000) && gPauseMenu != 5) {
+            if ((gEvent.flags & 0x2000) && gPauseMenu != 5) {
                 gPauseMenuCursor = 0;
                 gPauseMenu = 5;
                 gTutorialMenuForced = 1;
@@ -339,27 +260,27 @@ void tutorial_update(void)
         tutorial_check_lesson_skip();
         break;
     case 15:
-        if (TB.fl & 2) {
-            if (G_6.f2c >= 3 && D_800F0738 == 0) {
+        if (TB.flags & 2) {
+            if (gEvent.time >= 3 && D_800F0738 == 0) {
                 D_800F0738 = 2;
             }
-            if (gRiders_54[0].f3FB == 0 && gRiders_54[0].f3D2 == TB.list[D_800F0738].v) {
+            if (gRiders_54[0].f3FB == 0 && gRiders_54[0].f3D2 == TB.steps[D_800F0738].value) {
                 D_800F0738++;
             }
             if (D_800F0738 >= 10) {
-                if (gEventFlags & 0x2000) {
+                if (gEvent.flags & 0x2000) {
                     gTutorialResult = 1;
                     if (((gPadInput & 0x40) && !(gPadInputPrev & 0x40)) ||
                         ((gPadInput & 0x10) && !(gPadInputPrev & 0x10))) {
                         if (D_800F0738 == 10) {
                             D_800F0738 = 11;
                         } else if (D_800F0738 == 11) {
-                            gSeason_5->f0[1] = TB.fD + 1;
+                            gSeason->cup->progress[0] = TB.level + 1;
                             D_800F1BC1 = D_800CAAA1;
                             event_request_exit();
                             gRaceExitCode = 2;
                             gPauseMenu = 0;
-                            gGame &= ~4;
+                            gGame.flags &= ~4;
                             return;
                         }
                     }
@@ -372,9 +293,9 @@ void tutorial_update(void)
             }
         }
         tutorial_check_lesson_skip();
-        if (D_800E3DE8 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
+        if (D_800E3DE8 == SEG(SEG(TB.startNode)->f4A)->f4A && !(TB.flags & 2)) {
             if (event_request_exit() != 0) {
-                D_800F0618 = 6;
+                gEvent.tutorialAction = 6;
                 gActiveReplay = 0;
                 gDemoPlayback = 0;
                 sDemoActive = 0;
@@ -382,18 +303,18 @@ void tutorial_update(void)
             }
             return;
         }
-        if ((u32)(gRiders_54[0].f628 - TB.f1A) < 10 || (G_6.f58 & 0x2000)) {
+        if ((u32)(gRiders_54[0].f628 - TB.goalNode) < 10 || (gEvent.flags & 0x2000)) {
             if (gRiders_54[0].f690 & 0x10) {
-                if (gSeason_5->f64 < 16 && TB.fD != gTutorialLessons_9[gSeason_5->f64 + 1].fD &&
+                if (gSeason->round < 16 && TB.level != gTutorialLessons[gSeason->round + 1].level &&
                     tutorial_lesson_passed_2()) {
-                    if (TB.fD == gSeason_5->f0[1]) {
-                        gSeason_5->f0[1] = TB.fD + 1;
+                    if (TB.level == gSeason->cup->progress[0]) {
+                        gSeason->cup->progress[0] = TB.level + 1;
                         D_800F1BC1 = D_800CAAA1;
                     }
                 }
-                if ((G_6.f58 & 0x2000) && D_800F0738 == 0) {
+                if ((gEvent.flags & 0x2000) && D_800F0738 == 0) {
                     snd_stop_all_riders();
-                    G_6.f58 &= ~0x2000;
+                    gEvent.flags &= ~0x2000;
                     gTutorialResult = tutorial_lesson_passed_2() ? 1 : -1;
                     gPauseMenu = 5;
                     gPauseMenuCursor = tutorial_lesson_passed_2() ? 3 : 0;
@@ -401,16 +322,16 @@ void tutorial_update(void)
             } else {
                 gRiders_54[0].f690 |= 0x10;
             }
-        } else if (gRiders_54[0].f628 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
-            G_6.f70 = 6;
+        } else if (gRiders_54[0].f628 == SEG(SEG(TB.startNode)->f4A)->f4A && !(TB.flags & 2)) {
+            gEvent.tutorialAction = 6;
             gRacePhase = 6;
             gRacePhaseTimer = -1;
             gActiveReplay = 0;
             gDemoPlayback = 0;
             sDemoActive = 0;
             gReplayRecording = 0;
-        } else if ((TB.fl & 4) && gRiders_54[1].f628 >= TB.f1A &&
-                   (TB.f18 < TB.f1A || (gRiders_54[1].f628 < TB.f18 - 2 && TB.f1A < TB.f18))) {
+        } else if ((TB.flags & 4) && gRiders_54[1].f628 >= TB.goalNode &&
+                   (TB.startNode < TB.goalNode || (gRiders_54[1].f628 < TB.startNode - 2 && TB.goalNode < TB.startNode))) {
             gRiders_54[1].f690 |= 0x10;
         }
         break;
@@ -418,54 +339,11 @@ void tutorial_update(void)
 }
 
 typedef struct {
-    s32 state;      /* 0x00 */
-    V7 v;           /* 0x04 */
-    s16 f20;        /* 0x20 */
-    s16 f22;        /* 0x22 */
-    s16 f24;        /* 0x24 */
-    s16 f26;        /* 0x26 */
-    s16 f28;        /* 0x28 */
-    s16 pad2A;
-    s32 f2C;        /* 0x2C */
-    s32 f30[3];     /* 0x30 */
-    s32 f3C;        /* 0x3C */
-    s32 f40;        /* 0x40 */
-    s32 f44;        /* 0x44 */
-    s32 f48;        /* 0x48 */
-    s32 f4C;        /* 0x4C */
-    s32 f50;
-    s32 f54;
-    s32 f58;        /* 0x58 */
-    s32 pad5C[3];
-    s16 f68;
-    s16 f6A;
-    s16 f6C;
-    u8 f6E;
-    u8 pad6F;
-    s32 pad70[6];
-    s32 f88;
-} Game_19;
-
-typedef struct {
-    s32 flags;      /* 0x00 */
-    s32 pad4[14];
-    s32 f3C;        /* 0x3C */
-    s32 pad40[3];
-    s32 mode;       /* 0x4C */
-} Cfg_8;
-
-typedef struct {
     u8 pad[0x34];
-    V7 v;           /* 0x34 */
+    TrackRecord record; /* 0x34 */
     s32 f50;        /* 0x50 */
     u8 pad54[0xA0 - 0x54];
 } Track_12;
-
-typedef struct {
-    Ent24 *p;
-    u8 pad4[0x62];
-    u8 b66[1];
-} Race_3;
 
 typedef struct {
     u8 pad[0x660];
@@ -478,10 +356,7 @@ typedef struct {
 
 typedef struct { s32 n; s32 f4; s32 *p; } Alloc;
 
-extern Game_19 gEvent_20;
-extern Cfg_8 gGame_36;
 extern Track_12 *gCurTrack_28;
-extern Race_3 *gSeason_9;
 extern Track_12 gTracks_10[];
 extern Alloc D_800CA924_2;
 extern Bike_30 gRiders_55[];
@@ -493,70 +368,70 @@ void event_init(s32 a0, s32 a1)
     s32 j;
 
     sRaceEndFrame = -1;
-    mem_fill_2(gEvent_20.f30, -1, 12);
-    if (gGame_36.mode == 1) {
-        for (i = 0; i < gEvent_20.f22; i++) {
-            gSeason_9->b66[i] = 0;
+    mem_fill_2(gEvent.lapLeaderTimes, -1, 12);
+    if (gGame.mode == 1) {
+        for (i = 0; i < gEvent.numRiders; i++) {
+            gSeason->racePoints[i] = 0;
         }
     }
     gRaceExitCode = 6;
-    *(V7 *)((u8 *)&gEvent_20 + 4) = gCurTrack_28->v;
+    *(TrackRecord *)&gEvent.record = gCurTrack_28->record; /* a copy through a pointer: the base register differs otherwise */
     gCurTrack_28->f50 &= ~0x180;
-    gEvent_20.f88 = -1;
-    gEvent_20.f58 = 0;
-    gEvent_20.f40 = 0;
-    gEvent_20.f28 = 0;
-    gEvent_20.f44 = 0;
-    gEvent_20.f4C = 0;
-    gEvent_20.f22 = a0;
-    gEvent_20.f20 = a1;
-    if (gGame_36.mode == 1 && !(gGame_36.flags & 0x81) &&
-        gSeason_9->p - D_800CA9C8 == 4) {
-        gEvent_20.f58 = 0x200;
-        gEvent_20.f22 = 2;
+    gEvent.finishTimer = -1;
+    gEvent.flags = 0;
+    gEvent.allFinished = 0;
+    gEvent.messageTimer = 0;
+    gEvent.camTarget = 0;
+    gEvent.idleFrames = 0;
+    gEvent.numRiders = a0;
+    gEvent.numLaps = a1;
+    if (gGame.mode == 1 && !(gGame.flags & 0x81) &&
+        gSeason->cup - gCups == 4) {
+        gEvent.flags = 0x200;
+        gEvent.numRiders = 2;
         gNumRiders = 2;
     }
-    gEvent_20.f26 = 0x96;
-    if (gCreditsMode != 0 || (gGame_36.flags & 0x81) ||
-        gGame_36.mode == 0xD || gGame_36.mode == 0xE) {
-        gEvent_20.state = 5;
+    gEvent.countdown = 0x96;
+    if (gCreditsMode != 0 || (gGame.flags & 0x81) ||
+        gGame.mode == 0xD || gGame.mode == 0xE) {
+        gEvent.state = 5;
     } else {
-        if ((gGame_36.mode == 0 || gGame_36.mode == 1) &&
+        if ((gGame.mode == 0 || gGame.mode == 1) &&
             gCurTrack_28 - gTracks_10 != 9) {
-            gEvent_20.state = 0;
-            gEvent_20.f26 = 0x100;
+            gEvent.state = 0;
+            gEvent.countdown = 0x100;
         } else {
-            gEvent_20.state = 1;
-            gEvent_20.f26 = 0x96;
+            gEvent.state = 1;
+            gEvent.countdown = 0x96;
         }
-        gEvent_20.f58 |= 0x10;
+        gEvent.flags |= 0x10;
     }
-    gEvent_20.f2C = 0;
-    gEvent_20.f3C = (gGame_36.flags & 0x81) != 0;
+    gEvent.time = 0;
+    gEvent.noPlayers = (gGame.flags & 0x81) != 0;
     mem_fill_2(gRiders_55, 0, 0x3F00);
-    gGame_36.flags &= ~4;
+    gGame.flags &= ~4;
     if (D_800CA924_2.n > 0 && D_800CA924_2.f4 == 0) {
         D_800CA924_2.p = mem_calloc_dbg(D_800CA924_2.n * 4, 0, (s32)D_800D7340, 0x6D9);
     }
-    switch (gGame_36.mode) {
+    switch (gGame.mode) {
     case 2:
-        gEvent_20.f26 = 0xB4;
-        gEvent_20.state = 6;
-        gEvent_20.f6E = 0;
-        gEvent_20.f68 = 0;
-        gEvent_20.f6A = 0;
-        gEvent_20.f6C = 0;
-        gEvent_20.f58 |= 0x10;
+        gEvent.countdown = 0xB4;
+        gEvent.state = 6;
+        gEvent.ballToucher = 0;
+        gEvent.goals[0] = 0;
+        gEvent.goals[1] = 0;
+        gEvent.goalTimer = 0;
+        gEvent.flags |= 0x10;
         break;
     case 5:
-        gEvent_20.f58 |= 0x10;
+        gEvent.flags |= 0x10;
         race_reset_grid_order();
         break;
     case 7:
-        gEvent_20.f48 = -1;
-        gEvent_20.f58 |= 0x10;
+        gEvent.unk_48 = -1;
+        gEvent.flags |= 0x10;
         race_reset_grid_order();
-        for (b = gRiders_55; b < &gRiders_55[gGame_36.f3C]; b++) {
+        for (b = gRiders_55; b < &gRiders_55[gGame.numPlayers]; b++) {
             b->f69C = 0x1C20;
         }
         break;
@@ -564,30 +439,24 @@ void event_init(s32 a0, s32 a1)
         tutorial_init_lesson(1);
         break;
     case 10:
-        gEvent_20.f2C = 0x1C20;
-        gEvent_20.f58 |= 0x10;
+        gEvent.time = 0x1C20;
+        gEvent.flags |= 0x10;
         race_reset_grid_order();
         break;
     case 0xD:
     case 0xE:
         break;
     default:
-        if (gEvent_20.state == 8) {
+        if (gEvent.state == 8) {
             race_set_grid_order(2, 0);
         }
-        gEvent_20.f24 = 0;
-        for (j = 0; j < gEvent_20.f22; j++) {
+        gEvent.numFinished = 0;
+        for (j = 0; j < gEvent.numRiders; j++) {
             D_800E3E20[j].f8 = -1;
         }
         break;
     }
 }
-
-#define S (&gEvent_21)
-
-typedef struct { s32 f0; s32 arr[4]; u8 b[4][3]; u8 pad20[0xC]; s32 val; } SS;
-
-extern SS gEvent_21;
 
 s32 event_check_record_time(s32 *p)
 {
@@ -599,29 +468,29 @@ s32 event_check_record_time(s32 *p)
 
     if (((u8 *)p)[0x6E8] != 0) goto done;
     if (gReplayPlayback != 0) goto done;
-    if (gGameMode == 1 && gSeason_4 != 0 && ((*gSeason_4 - (s32)D_800CA9C8) * 0x38E38E39 >> 2) == 5) goto done;
+    if (gGame.mode == 1 && gSeason != 0 && (((s32)gSeason->cup - (s32)gCups) * 0x38E38E39 >> 2) == 5) goto done;
     ch = gCurTrack_3;
     if (ch[0x14] & 2) goto done;
-    if (S->val >= S->arr[2]) goto done;
-    if (gGame_4[19] == 8 && p != gRiders_56 + D_800C8CE0 * 0x1f8) goto done;
-    if (gGame_4[16] != *(s16 *)((u8 *)ch + 0x1E)) goto done;
+    if (gEvent.time >= gEvent.record.times[2]) goto done;
+    if (gGame.mode == 8 && p != gRiders_56 + D_800C8CE0 * 0x1f8) goto done;
+    if (gGame.numLaps != *(s16 *)((u8 *)ch + 0x1E)) goto done;
 
-    ret = S->val < S->arr[0];
+    ret = gEvent.time < gEvent.record.times[0];
     for (i = 0; i < 3; i++) {
-        if (S->val <= S->arr[i]) {
+        if (gEvent.time <= gEvent.record.times[i]) {
             for (j = 1; j >= i; j--) {
-                S->arr[j + 1] = S->arr[j];
-                S->b[j + 1][0] = S->b[j][0];
-                S->b[j + 1][1] = S->b[j][1];
-                S->b[j + 1][2] = S->b[j][2];
+                gEvent.record.times[j + 1] = gEvent.record.times[j];
+                gEvent.record.initials[j + 1][0] = gEvent.record.initials[j][0];
+                gEvent.record.initials[j + 1][1] = gEvent.record.initials[j][1];
+                gEvent.record.initials[j + 1][2] = gEvent.record.initials[j][2];
             }
             break;
         }
     }
-    S->arr[i] = S->val;
-    S->b[i][0] = 0xFF;
-    S->b[i][1] = 0xFF;
-    S->b[i][2] = (gGameMode == 8) ? 0 : (u8)(((u32)((s32)p - (s32)gRiders_56) * 0xBEFBEFBFu) >> 5);
+    gEvent.record.times[i] = gEvent.time;
+    gEvent.record.initials[i][0] = 0xFF;
+    gEvent.record.initials[i][1] = 0xFF;
+    gEvent.record.initials[i][2] = (gGame.mode == 8) ? 0 : (u8)(((u32)((s32)p - (s32)gRiders_56) * 0xBEFBEFBFu) >> 5);
     gCurTrack_3[0x14] |= 0x100;
     if (ret) announce_record((((s32)p - (s32)gRiders_56) * -0x41041041) >> 5);
 done:
@@ -633,7 +502,7 @@ u32 event_rider_finished(s32 p0)
     s32 p = p0;
     u8 *s0;
     u8 *s2;
-    u8 *v;
+    Event *v;
     u8 *q;
     u8 *tb;
     s32 a0;
@@ -653,39 +522,38 @@ u32 event_rider_finished(s32 p0)
     if (rv >= 0) {
         return rv;
     }
-    v = gEvent_2;
-    *(u8 *)(v + *(s16 *)(v + 0x24) + 0x50) = p;
-    a0 = *(u16 *)(v + 0x24);
-    *(u16 *)(v + 0x24) = a0 + 1;
+    v = &gEvent;
+    v->finishOrder[v->numFinished] = p;
+    a0 = (u16)v->numFinished;
+    v->numFinished = a0 + 1;
     *(u16 *)(s0 + 8) = a0;
-    *(s32 *)(s0 + 0x2C) = *(s32 *)(v + 0x2C);
+    *(s32 *)(s0 + 0x2C) = v->time;
     if (*(u8 *)(D_800E3E20_2 + a1 + 0x88) == 0 && gReplayPlayback == 0) {
-        if ((gGameMode != 8 || p == D_800C8CE0) && gNumScreens == 1) {
+        if ((gGame.mode != 8 || p == D_800C8CE0) && gNumScreens == 1) {
             func_8001106C();
         }
     }
     s2 = gRiders + ((((p << 6) - p)) << 5);
     t1 = event_check_record_time(s2);
-    if ((*(s32 *)gGame_2 & 0x8000) == 0) {
-        a2 = *(s32 *)(gGame_2 + 0x4C);
+    if ((gGame.flags & 0x8000) == 0) {
+        a2 = gGame.mode;
         if (a2 == 1) {
-            { s32 ix = (p * 7 + *(s16 *)(gSeason + 0x64)) * 2; *(u16 *)(gSeason + ix + 0x10) = *(u16 *)(s0 + 8); }
+            gSeason->places[p][gSeason->round] = *(u16 *)(s0 + 8);
             ti = *(s16 *)(s0 + 8);
             ti = (s16)ti;
-            tb = (u8 *)(gRacePoints + ti * 4);
+            tb = (u8 *)&gRacePoints[ti];
             {
-                u8 *pp = gSeason + p;
-                pp[0x66] = tb[3];
+                gSeason->racePoints[p] = tb[3];
             }
             if (s2[0x6E8] != 0) {
                 goto L1fc;
             }
-            a1 = D_800F05CC;
+            a1 = gEvent.numFinished;
             if (a1 != a2) {
                 goto L19c;
             }
-            q = *(u8 **)gSeason + (*(s32 *)(gGame_2 + 0x410) - 1);
-            q[4] = q[4] | (a1 << *(s16 *)(gSeason + 0x64));
+            q = (u8 *)gSeason->cup + (gGame.difficulty - 1);
+            q[4] = q[4] | (a1 << gSeason->round);
         }
     }
 L19c:
@@ -694,9 +562,9 @@ L19c:
         w = bse + (((p << 6) - p) << 5);
     }
     if (w[0x6E8] == 0) {
-        u8 *vb = gEvent_2;
-        if (*(s16 *)(vb + 0x24) == 1) {
-            *(s32 *)(vb + 0x44) = p;
+        Event *vb = &gEvent;
+        if (vb->numFinished == 1) {
+            vb->camTarget = p;
         }
         do { do { do {
         *(u32 *)(s0 + 0x30) = *(u32 *)(s0 + 0x30) | 8;
@@ -739,35 +607,13 @@ typedef struct Bike_31 {
     Rec_31 r;
 } Bike_31;
 
-typedef struct Blk_14 {
-    u8 pad00[0x10];
-    s32 best;         /* 0x10 */
-    u8 pad14[0x1D - 0x14];
-    u8 f1D;
-    u8 f1E;
-    u8 f1F;
-    s16 nlaps;        /* 0x20 */
-    s16 f22;          /* 0x22 */
-    u8 pad24[0x2C - 0x24];
-    s32 f2C;          /* 0x2C */
-    s16 arr[1];       /* 0x30 */
-} Blk_14;
-
-typedef struct Ctl_11 {
-    u32 flags;
-    u8 pad04[0x3C - 4];
-    s32 n;            /* 0x3C */
-} Ctl_11;
-
 typedef struct G64 {
     u8 pad[0x50];
     u32 f50;
 } G64;
 
 extern G64 *gCurTrack_29;
-extern Ctl_11 gGame_37;
 extern Bike_31 gRiders_57[];
-extern Blk_14 gEvent_22;
 
 void event_rider_lap_completed(s32 p)
 {
@@ -777,7 +623,7 @@ void event_rider_lap_completed(s32 p)
     s32 i;
     s16 v;
 
-    switch (gGameMode) {
+    switch (gGame.mode) {
     case 2:
     case 3:
     case 4:
@@ -788,28 +634,28 @@ void event_rider_lap_completed(s32 p)
         return;
     }
     b = &gRiders_57[p].r;
-    if (b->cnt < gEvent_22.nlaps) {
-        if (gRiders_57[p].r.f6E8 == 0 && gReplayPlayback == 0 && gGameMode != 7 && gGameMode != 5 &&
-            !(gCurTrack_29->f50 & 2) && (t = b->times[b->cnt]) < gEvent_22.best &&
-            (gGameMode != 8 || p == D_800C8CE0)) {
-            gEvent_22.best = t;
-            gEvent_22.f1D = 0xFF;
-            gEvent_22.f1E = 0xFF;
-            gEvent_22.f1F = (gGameMode == 8) ? 0 : p;
+    if (b->cnt < gEvent.numLaps) {
+        if (gRiders_57[p].r.f6E8 == 0 && gReplayPlayback == 0 && gGame.mode != 7 && gGame.mode != 5 &&
+            !(gCurTrack_29->f50 & 2) && (t = b->times[b->cnt]) < gEvent.record.bestLap &&
+            (gGame.mode != 8 || p == D_800C8CE0)) {
+            gEvent.record.bestLap = t;
+            gEvent.record.initials[3][0] = 0xFF;
+            gEvent.record.initials[3][1] = 0xFF;
+            gEvent.record.initials[3][2] = (gGame.mode == 8) ? 0 : p;
             st = 3;
             gCurTrack_29->f50 |= 0x80;
         }
-        if (gGame_37.flags & 0x81) {
+        if (gGame.flags & 0x81) {
             goto end;
         }
-        v = gEvent_22.arr[b->cnt];
+        v = gEvent.lapLeaderTimes[b->cnt];
         if (v == -1) {
-            gEvent_22.arr[b->cnt] = ((u16 *)&gEvent_22.f2C)[1];
+            gEvent.lapLeaderTimes[b->cnt] = ((u16 *)&gEvent.time)[1];
         } else {
-            b->f670 = v - gEvent_22.f2C;
+            b->f670 = v - gEvent.time;
             b->f66C = 0x78;
             if (b->f662 == 1) {
-                for (i = 0; i < gGame_37.n; i++) {
+                for (i = 0; i < gGame.numPlayers; i++) {
                     if (b->cnt < gRiders_57[i].r.cnt + gRiders_57[i].r.f6ED) {
                         gRiders_57[i].r.f66C = 0x78;
                         gRiders_57[i].r.f670 = -b->f670;
@@ -820,9 +666,9 @@ void event_rider_lap_completed(s32 p)
         }
         b->f66A = 0x78;
         ((volatile Rec_31 *)b)->cnt++;
-        if (b->cnt != gEvent_22.nlaps) {
+        if (b->cnt != gEvent.numLaps) {
             if (st != 3) {
-                if (gGameMode == 8 && gRiderAlpha[p] == 0xFF) {
+                if (gGame.mode == 8 && gRiderAlpha[p] == 0xFF) {
                     st = 1;
                 } else if (b->f662 == 0) {
                     st = 2;
@@ -832,13 +678,13 @@ void event_rider_lap_completed(s32 p)
             }
         } else if ((u8)event_rider_finished(p)) {
             if (st != 3) {
-                if (b->f668 == 0 && gEvent_22.f22 >= 2 && st == 0) {
+                if (b->f668 == 0 && gEvent.numRiders >= 2 && st == 0) {
                     st = 4;
                 } else if (gRiders_57[p].r.f6E8 == 0) {
                     st = 5;
                 }
             }
-        } else if (p < gNumPlayers) {
+        } else if (p < gGame.numPlayers) {
             st = 6;
         }
     }
@@ -869,59 +715,38 @@ end:
     }
 }
 
-typedef struct {
-    s32 state;
-    u8 pad4[0x26 - 4];
-    s16 timer;
-    u8 pad28[0x58 - 0x28];
-    s32 flags;
-} Ctl_12;
-
-extern Ctl_12 gEvent_23;
-
 void event_update_countdown(void)
 {
-    if (gEvent_23.timer != 0 && --gEvent_23.timer == 0) {
-        switch (gEvent_23.state) {
+    if (gEvent.countdown != 0 && --gEvent.countdown == 0) {
+        switch (gEvent.state) {
         case 0:
-            gEvent_23.timer = 150;
-            gEvent_23.state = 1;
+            gEvent.countdown = 150;
+            gEvent.state = 1;
             break;
         case 1:
-            gEvent_23.timer = 36;
-            gEvent_23.state = 2;
+            gEvent.countdown = 36;
+            gEvent.state = 2;
             tunes_play_speech(0x6F, 5, 1);
             break;
         case 2:
-            gEvent_23.timer = 36;
-            gEvent_23.state = 3;
+            gEvent.countdown = 36;
+            gEvent.state = 3;
             tunes_play_speech(0x6D, 6, 1);
             break;
         case 3:
-            gEvent_23.timer = 36;
-            gEvent_23.state = 4;
+            gEvent.countdown = 36;
+            gEvent.state = 4;
             tunes_play_speech(0x6E, 7, 1);
             break;
         case 4:
-            gEvent_23.timer = 15;
-            gEvent_23.state = 5;
-            gEvent_23.flags &= ~0x10;
+            gEvent.countdown = 15;
+            gEvent.state = 5;
+            gEvent.flags &= ~0x10;
             tunes_play_speech(0x70, 8, 1);
             break;
         }
     }
 }
-
-typedef struct {
-    u8 pad0[0x22];
-    s16 count;
-    u8 pad24[0x2C - 0x24];
-    s32 tick;
-    u8 pad30[0x40 - 0x30];
-    s32 f40;
-    u8 pad44[0x58 - 0x44];
-    s32 flags;
-} Game_20;
 
 typedef struct {
     u8 pad0[0x3FF];
@@ -936,35 +761,33 @@ typedef struct {
     u8 pad6E9[0x7E0 - 0x6E9];
 } Rider_3;
 
-extern Game_20 gEvent_24;
 extern Rider_3 gRiders_58[];
 
 void event_update_hillclimb(void)
 {
-    Game_20 *g;
-    Game_20 *g2;
+    Event *g;
     Rider_3 *r;
     u8 flag;
 
     event_update_countdown();
-    g = &gEvent_24;
-    if (!(g->flags & 0x10) && g->f40 == 0) {
-        g->tick++;
+    g = &gEvent;
+    if (!(g->flags & 0x10) && g->allFinished == 0) {
+        g->time++;
     }
     flag = 1;
-    for (r = gRiders_58; r < &gRiders_58[gEvent_24.count]; r++) {
+    for (r = gRiders_58; r < &gRiders_58[gEvent.numRiders]; r++) {
         if (r->f66A != 0) {
             r->f66A--;
             r->f69C += 30;
         }
-        if (gEvent_24.tick == r->f69C && r->done == 0) {
+        if (gEvent.time == r->f69C && r->done == 0) {
             r->done = 1;
             r->f668 = 5;
             r->f6E8 = 1;
         }
         if (r->done == 0) flag = 0;
     }
-    gEventAllFinished = flag;
+    gEvent.allFinished = flag;
     if (flag) {
         if (((gPlayerInputs_2 & 0x40) && !(gPlayerInputsPrev & 0x40)) ||
             ((gPlayerInputs_2 & 0x10) && !(gPlayerInputsPrev & 0x10))) {
@@ -972,19 +795,6 @@ void event_update_hillclimb(void)
         }
     }
 }
-
-typedef struct {
-    s32 pad0;
-    s32 key[3];
-    u8 pad10[4];
-    u8 tri[3][3];
-    u8 pad1D[0x2C - 0x1D];
-    s32 timer;
-    u8 pad30[0x10];
-    s32 done;
-    u8 pad44[0x14];
-    s32 flags;
-} Rank;
 
 typedef struct {
     u8 pad0[0x3C8];
@@ -999,32 +809,21 @@ typedef struct {
 } Player_12;
 
 typedef struct {
-    u8 pad0[0x3C];
-    s32 n;
-    u8 pad40[0xC];
-    s32 mode;
-} Game_21;
-
-typedef struct {
     u8 pad[0x50];
     s32 flags;
 } Hud;
 
-extern Game_21 gGame_38;
 extern Hud *gCurTrack_30;
-extern Rank gEvent_25;
 extern Player_12 gRiders_59[];
 
 void event_update_stunt(void)
 {
-    Rank *q;
-    Game_21 *g;
     Player_12 *e;
     s32 i, j, k;
 
     event_update_countdown();
-    if (gEvent_25.flags & 0x10) return;
-    if (--gEvent_25.timer > 0) return;
+    if (gEvent.flags & 0x10) return;
+    if (--gEvent.time > 0) return;
     if (((gPlayerInputs_2 & 0x40) && !(gPlayerInputsPrev & 0x40)) ||
         ((gPlayerInputs_2 & 0x10) && !(gPlayerInputsPrev & 0x10))) {
         if (gRacePhase == 5) {
@@ -1032,39 +831,39 @@ void event_update_stunt(void)
             gRacePhaseTimer = 0x14;
         }
     }
-    gEvent_25.timer = 0;
-    if (gEvent_25.done) return;
-    for (i = 0; i < gGame_38.n; i++) {
+    gEvent.time = 0;
+    if (gEvent.allFinished) return;
+    for (i = 0; i < gGame.numPlayers; i++) {
         e = &gRiders_59[i];
         if (e->finished) continue;
         if (gReplayPlayback) continue;
-        if (gGame_38.mode == 1 && gSeason_10 != NULL && *gSeason_10 - D_800CA9C8 == 5) continue;
-        if (e->key > gEvent_25.key[2]) {
+        if (gGame.mode == 1 && gSeason != NULL && gSeason->cup - gCups == 5) continue;
+        if (e->key > gEvent.record.times[2]) {
             for (j = 0; j < 3; j++) {
-                if (e->key >= gEvent_25.key[j]) {
+                if (e->key >= gEvent.record.times[j]) {
                     for (k = 1; k >= j; k--) {
-                        gEvent_25.key[k + 1] = gEvent_25.key[k];
-                        gEvent_25.tri[k + 1][0] = gEvent_25.tri[k][0];
-                        gEvent_25.tri[k + 1][1] = gEvent_25.tri[k][1];
-                        gEvent_25.tri[k + 1][2] = gEvent_25.tri[k][2];
+                        gEvent.record.times[k + 1] = gEvent.record.times[k];
+                        gEvent.record.initials[k + 1][0] = gEvent.record.initials[k][0];
+                        gEvent.record.initials[k + 1][1] = gEvent.record.initials[k][1];
+                        gEvent.record.initials[k + 1][2] = gEvent.record.initials[k][2];
                     }
                     break;
                 }
             }
-            gEvent_25.key[j] = e->key;
-            gEvent_25.tri[j][2] = e - gRiders_59;
-            gEvent_25.tri[j][0] = 0xFF;
-            gEvent_25.tri[j][1] = 0xFF;
+            gEvent.record.times[j] = e->key;
+            gEvent.record.initials[j][2] = e - gRiders_59;
+            gEvent.record.initials[j][0] = 0xFF;
+            gEvent.record.initials[j][1] = 0xFF;
             gCurTrack_30->flags |= 0x100;
         }
     }
-    gEvent_25.done = 1;
-    for (j = 0; j < gGame_38.n; j++) {
+    gEvent.allFinished = 1;
+    for (j = 0; j < gGame.numPlayers; j++) {
         gRiders_59[j].finished = 1;
     }
     gRiders_59[0].f3FF = 1;
     *(volatile s16 *)&gRiders_59[0].f668 = 1;
-    if (gNumPlayers == 2) {
+    if (gGame.numPlayers == 2) {
         if (gRiders_59[0].key > gRiders_59[1].key) {
             gRiders_59[0].f668 = 0;
             gRiders_59[1].f668 = 5;
@@ -1082,34 +881,9 @@ void event_update_stunt(void)
 #define PRESSED(i, b) ((gPlayerInputs[i] & (b)) && !(gPlayerInputsPrev_3[i] & (b)))
 
 typedef struct {
-    s32 state;
-    u8 p04[0x26 - 0x04];
-    s16 t26;
-    s16 t28;
-    u8 p2A[2];
-    s32 t2C;
-    u8 p30[0x40 - 0x30];
-    s32 f40;
-    u8 p44[0x58 - 0x44];
-    s32 flags;
-    u8 p5C[0x68 - 0x5C];
-    s16 c68;
-    s16 c6A;
-    s16 t6C;
-    s8 f6E;
-} Game_22;
-
-typedef struct {
-    u8 p00[0x3C];
-    s32 nplayers;
-} Ctl_13;
-
-typedef struct {
     u8 b[0x7E0];
 } Ent_55;
 
-extern Game_22 gEvent_26;
-extern Ctl_13 gGame_39;
 extern Ent_55 gRiders_60[];
 
 void event_update_soccer(void)
@@ -1117,109 +891,109 @@ void event_update_soccer(void)
     s32 i;
     s32 j;
 
-    if (gEvent_26.f40 == 0) {
-        gEvent_26.t28 = 180;
-    } else if (gEvent_26.t28 != 0) {
-        gEvent_26.t28--;
+    if (gEvent.allFinished == 0) {
+        gEvent.messageTimer = 180;
+    } else if (gEvent.messageTimer != 0) {
+        gEvent.messageTimer--;
     }
-    if (gEvent_26.t6C != 0) {
-        if (--gEvent_26.t6C == 0) {
-            for (i = 0; i < gGame_39.nplayers; i++) {
+    if (gEvent.goalTimer != 0) {
+        if (--gEvent.goalTimer == 0) {
+            for (i = 0; i < gGame.numPlayers; i++) {
                 bike_respawn(&gRiders_60[i]);
             }
             soccer_ball_reset(0);
-            gEvent_26.flags &= ~0x1F;
+            gEvent.flags &= ~0x1F;
         }
         return;
     }
-    if (gEvent_26.state == 7 || gEvent_26.state == 9 || gEvent_26.state == 11) {
-        if (!(gEvent_26.flags & 0xF)) {
+    if (gEvent.state == 7 || gEvent.state == 9 || gEvent.state == 11) {
+        if (!(gEvent.flags & 0xF)) {
             if (gSoccerBall_2[0] >= -24.0f && gSoccerBall_2[0] < 23.0f && gSoccerBall_2[2] >= 79.0f && gSoccerBall_2[2] < 87.0f &&
                 gSoccerBall_2[1] >= 0.0f && gSoccerBall_2[1] < 6.2f) {
-                gEvent_26.t6C = 180;
-                gEvent_26.c68++;
+                gEvent.goalTimer = 180;
+                gEvent.goals[0]++;
                 announce_goal();
                 D_800E3F68 = 1;
-                gEvent_26.flags |= 0x11;
-                if ((gEvent_26.f6E >> ((gNumPlayers - 1) >> 1)) == 1) {
-                    gEvent_26.flags |= 0x20;
+                gEvent.flags |= 0x11;
+                if ((gEvent.ballToucher >> ((gGame.numPlayers - 1) >> 1)) == 1) {
+                    gEvent.flags |= 0x20;
                 } else {
-                    gEvent_26.flags &= ~0x20;
+                    gEvent.flags &= ~0x20;
                 }
             } else if (gSoccerBall_2[0] >= -24.0f && gSoccerBall_2[0] < 23.0f && gSoccerBall_2[2] >= -80.0f && gSoccerBall_2[2] < -73.0f &&
                        gSoccerBall_2[1] >= 0.0f && gSoccerBall_2[1] < 6.2f) {
-                gEvent_26.t6C = 180;
-                gEvent_26.c6A++;
+                gEvent.goalTimer = 180;
+                gEvent.goals[1]++;
                 announce_goal();
                 D_800E4748 = 1;
-                gEvent_26.flags |= 0x12;
-                if ((gEvent_26.f6E >> ((gNumPlayers - 1) >> 1)) == 0) {
-                    gEvent_26.flags |= 0x20;
+                gEvent.flags |= 0x12;
+                if ((gEvent.ballToucher >> ((gGame.numPlayers - 1) >> 1)) == 0) {
+                    gEvent.flags |= 0x20;
                 } else {
-                    gEvent_26.flags &= ~0x20;
+                    gEvent.flags &= ~0x20;
                 }
             }
         }
     }
-    switch (gEvent_26.state) {
+    switch (gEvent.state) {
     case 6:
-        if (--gEvent_26.t26 == 0) {
-            gEvent_26.state = 7;
-            gEvent_26.t2C = 0x2A30;
-            gEvent_26.flags &= ~0x10;
+        if (--gEvent.countdown == 0) {
+            gEvent.state = 7;
+            gEvent.time = 0x2A30;
+            gEvent.flags &= ~0x10;
         }
         break;
     case 7:
-        if (--gEvent_26.t2C == 0) {
+        if (--gEvent.time == 0) {
             j = 0;
-            gEvent_26.state = 8;
-            gEvent_26.t26 = 240;
-            gEvent_26.flags |= 0x10;
-            for (; j < gGame_39.nplayers; j++) {
+            gEvent.state = 8;
+            gEvent.countdown = 240;
+            gEvent.flags |= 0x10;
+            for (; j < gGame.numPlayers; j++) {
                 bike_respawn(&gRiders_60[j]);
             }
             soccer_ball_reset(0);
         }
         break;
     case 8:
-        if (--gEvent_26.t26 == 0) {
-            gEvent_26.state = 9;
-            gEvent_26.t2C = 0x2A30;
-            gEvent_26.flags &= ~0x10;
+        if (--gEvent.countdown == 0) {
+            gEvent.state = 9;
+            gEvent.time = 0x2A30;
+            gEvent.flags &= ~0x10;
         }
         break;
     case 9:
-        if (--gEvent_26.t2C == 0) {
-            gEvent_26.flags |= 0x10;
-            if (gEvent_26.c68 == gEvent_26.c6A) {
-                gEvent_26.state = 10;
-                gEvent_26.t26 = 240;
+        if (--gEvent.time == 0) {
+            gEvent.flags |= 0x10;
+            if (gEvent.goals[0] == gEvent.goals[1]) {
+                gEvent.state = 10;
+                gEvent.countdown = 240;
             } else {
-                gEvent_26.state = 12;
-                gEvent_26.t26 = 600;
-                gEvent_26.f40 = 1;
+                gEvent.state = 12;
+                gEvent.countdown = 600;
+                gEvent.allFinished = 1;
             }
-            for (i = 0; i < gGame_39.nplayers; i++) {
+            for (i = 0; i < gGame.numPlayers; i++) {
                 bike_respawn(&gRiders_60[i]);
             }
             soccer_ball_reset(0);
         }
         break;
     case 10:
-        if (--gEvent_26.t26 == 0) {
-            gEvent_26.state = 11;
-            gEvent_26.t2C = 0x1C20;
-            gEvent_26.flags &= ~0x10;
+        if (--gEvent.countdown == 0) {
+            gEvent.state = 11;
+            gEvent.time = 0x1C20;
+            gEvent.flags &= ~0x10;
         }
         break;
     case 11:
-        if (--gEvent_26.t2C == 0) {
+        if (--gEvent.time == 0) {
             j = 0;
-            gEvent_26.state = 12;
-            gEvent_26.f40 = 1;
-            gEvent_26.t26 = 600;
-            gEvent_26.flags |= 0x10;
-            for (; j < gGame_39.nplayers; j++) {
+            gEvent.state = 12;
+            gEvent.allFinished = 1;
+            gEvent.countdown = 600;
+            gEvent.flags |= 0x10;
+            for (; j < gGame.numPlayers; j++) {
                 bike_respawn(&gRiders_60[j]);
             }
             soccer_ball_reset(0);
@@ -1227,7 +1001,7 @@ void event_update_soccer(void)
         break;
     case 12:
         if (PRESSED(0, 0x40) || PRESSED(1, 0x40) || PRESSED(2, 0x40) || PRESSED(3, 0x40) ||
-            (D_800F05D0 == 0 &&
+            (gEvent.messageTimer == 0 &&
              (PRESSED(0, 0x10) || PRESSED(1, 0x10) || PRESSED(2, 0x10) || PRESSED(3, 0x10)))) {
             if (gRacePhase == 5) {
                 gRacePhase = 6;
@@ -1258,37 +1032,8 @@ typedef struct {
     u8 pad6E9[0x7E0 - 0x6E9];
 } Player_13;
 
-typedef struct {
-    s32 f0;
-    u8 pad4[0x1C];
-    s16 f20;
-    s16 f22;
-    s16 f24;
-    s16 pad26;
-    s16 f28;
-    s16 pad2A;
-    s32 f2C;
-    u8 pad30[0x10];
-    s32 f40;
-    u8 pad44[0xC];
-    s8 f50[8];
-    s32 f58;
-} Game_23;
-
-typedef struct {
-    u8 pad0[4];
-    s16 f4[6];
-    s16 f10[42];
-    s16 f64;
-    u8 f66[5];
-    u8 f6B;
-    u8 f6C[8];
-} Race_4;
-
-extern Game_23 gEvent_27;
 extern Player_13 gRiders_61[];
 extern Player_13 *gRiderStandings_3[];
-extern Race_4 *gSeason_11;
 
 void event_update_race(void) {
     s32 i, j, k, m;
@@ -1304,11 +1049,11 @@ void event_update_race(void) {
     event_update_countdown();
     n1 = 0;
     cnt = n1;
-    if (!(gEvent_27.f58 & 0x10)) {
-        gEvent_27.f2C++;
+    if (!(gEvent.flags & 0x10)) {
+        gEvent.time++;
     }
     *(s32 *)buf = 0;
-    for (m = 0; m < gEvent_27.f22; m++) {
+    for (m = 0; m < gEvent.numRiders; m++) {
         q = &gRiders_61[m].sub;
         if ((gRiders_61[m].f690 & 8) || (gGhostRace != 0 && gGhostSlot == m) || gRiders_61[m].f6E8 == 0) {
             cnt++;
@@ -1319,9 +1064,9 @@ void event_update_race(void) {
         if (q->f8 != -1 || gRiders_61[m].f6E8 != 0) {
             buf[m] = 1;
         }
-        if (gEvent_27.f0 == 5) {
+        if (gEvent.state == 5) {
             s32 k = q->f0;
-            if (k < gEvent_27.f20) {
+            if (k < gEvent.numLaps) {
                 q->f14[k]++;
             }
         }
@@ -1329,15 +1074,15 @@ void event_update_race(void) {
     for (m = 0; m < cnt; m++) {
         if (!buf[m]) break;
     }
-    if (!((m == cnt && n1 == 0 && gGame_8.f4C != 8) || (gGame_8.f4C == 8 && buf[D_800C8CE0]))) return;
-    if (gGame_8.f0 & 0x81) return;
+    if (!((m == cnt && n1 == 0 && gGame.mode != 8) || (gGame.mode == 8 && buf[D_800C8CE0]))) return;
+    if (gGame.flags & 0x81) return;
     if (gRaceExitCode == 3) return;
-    if (gEvent_27.f40 == 0) {
-        gEvent_27.f28 = 180;
-    } else if (gEvent_27.f28 != 0) {
-        gEvent_27.f28--;
+    if (gEvent.allFinished == 0) {
+        gEvent.messageTimer = 180;
+    } else if (gEvent.messageTimer != 0) {
+        gEvent.messageTimer--;
     }
-    gEventAllFinished = 1;
+    gEvent.allFinished = 1;
     gRaceExitCode = 2;
     if (sRaceEndFrame == -1) {
         sRaceEndFrame = gRaceFrame;
@@ -1347,8 +1092,8 @@ void event_update_race(void) {
         if ((gPadInput_2[1] & 0x40) && !(gPadInputPrev_2[1] & 0x40)) goto go;
         if ((gPadInput_2[2] & 0x40) && !(gPadInputPrev_2[2] & 0x40)) goto go;
         if ((gPadInput_2[3] & 0x40) && !(gPadInputPrev_2[3] & 0x40)) goto go;
-        if (gCreditsMode != 0 && (gGame_8.f0 & 0x01000000) && (gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) goto go;
-        if (D_800F05D0 != 0 && gCreditsMode == 0) goto end;
+        if (gCreditsMode != 0 && (gGame.flags & 0x01000000) && (gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) goto go;
+        if (gEvent.messageTimer != 0 && gCreditsMode == 0) goto end;
         if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) goto go;
         if ((gPadInput_2[1] & 0x10) && !(gPadInputPrev_2[1] & 0x10)) goto go;
         if ((gPadInput_2[2] & 0x10) && !(gPadInputPrev_2[2] & 0x10)) goto go;
@@ -1361,108 +1106,81 @@ void event_update_race(void) {
             gRacePhase = 6;
             gRacePhaseTimer = 20;
         }
-        for (k = 0; k < gEvent_27.f22; k++) {
+        for (k = 0; k < gEvent.numRiders; k++) {
             if (gRiders_61[k].sub.f8 == -1) {
-                f = gRiders_61[k].f630 / (gPathLapLength * gEvent_27.f20);
+                f = gRiders_61[k].f630 / (gPathLapLength * gEvent.numLaps);
                 if (f <= 0.1f) {
                     f = 0.1f;
                 } else if (f > 1.0f) {
                     f = 1.0f;
                 }
-                f = gEvent_27.f2C / f;
+                f = gEvent.time / f;
                 gRiders_61[k].sub.f2C = f;
             }
         }
-        for (k = 0; k < gEvent_27.f22; k++) {
+        for (k = 0; k < gEvent.numRiders; k++) {
             if (gRiders_61[k].sub.f8 == -1) {
                 gRiders_61[k].sub.f8 = 0;
-                for (j = 0; j < gEvent_27.f22; j++) {
+                for (j = 0; j < gEvent.numRiders; j++) {
                     if ((j != k && k < j && gRiders_61[j].sub.f2C < gRiders_61[k].sub.f2C) ||
                         (j < k && gRiders_61[j].sub.f2C <= gRiders_61[k].sub.f2C)) {
                         gRiders_61[k].sub.f8++;
                     }
                 }
-                if (gGame_8.f4C == 1) {
-                    gSeason_11->f66[k] += gRacePoints_2[gRiders_61[k].sub.f8].b3;
+                if (gGame.mode == 1) {
+                    gSeason->racePoints[k] += (u8)gRacePoints[gRiders_61[k].sub.f8];
                 }
             }
-            gEvent_27.f50[gRiders_61[k].sub.f8] = k;
+            gEvent.finishOrder[gRiders_61[k].sub.f8] = k;
         }
-        gEvent_27.f24 = gEvent_27.f22;
-        if (gGame_8.f4C == 1) {
-            for (i = 0; i < gEvent_27.f22; i++) {
-                gSeason_11->f4[i] += gSeason_11->f66[i];
-                gSeason_11->f6C[i] = i;
+        gEvent.numFinished = gEvent.numRiders;
+        if (gGame.mode == 1) {
+            for (i = 0; i < gEvent.numRiders; i++) {
+                gSeason->points[i] += gSeason->racePoints[i];
+                gSeason->standings[i] = i;
             }
-            for (i = 0; i < gEvent_27.f22; i++) {
+            for (i = 0; i < gEvent.numRiders; i++) {
                 j = i;
                 if (i != 0) {
-                    s = gSeason_11->f4[gSeason_11->f6C[i - 1]];
+                    s = gSeason->points[gSeason->standings[i - 1]];
                 }
-                t = gSeason_11->f4[gSeason_11->f6C[i]];
+                t = gSeason->points[gSeason->standings[i]];
                 while (j != 0 && s < t) {
-                    tmp = gSeason_11->f6C[j];
-                    gSeason_11->f6C[j] = gSeason_11->f6C[j - 1];
-                    gSeason_11->f6C[j - 1] = tmp;
+                    tmp = gSeason->standings[j];
+                    gSeason->standings[j] = gSeason->standings[j - 1];
+                    gSeason->standings[j - 1] = tmp;
                     j--;
                     if (j != 0) {
-                        s = gSeason_11->f4[gSeason_11->f6C[j - 1]];
+                        s = gSeason->points[gSeason->standings[j - 1]];
                     }
                 }
             }
         }
     }
 end:
-    if (gCurGameState->f10 == 3) {
+    if (gCurGameState->mode == 3) {
         s = -1;
-        for (i = gEvent_27.f24; i < gEvent_27.f22; i++) {
+        for (i = gEvent.numFinished; i < gEvent.numRiders; i++) {
             q = &gRiderStandings_3[i]->sub;
             if (q->f8 == s) {
-                gEvent_27.f50[gEvent_27.f24] = i;
-                q->f8 = gEvent_27.f24++;
-                q->f2C = (gEvent_27.f2C * gRiderStandings_3[0]->f630) / gRiders_61[i].f630;
-                if (gGame_8.f4C == 1 + (((u32)&gRiders_61 & 1) >> 1)) {
-                    gSeason_11->f10[(gRiderStandings_3[i] - gRiders_61) * 7 + gSeason_11->f64] = q->f8;
-                    gSeason_11->f66[gRiderStandings_3[i] - gRiders_61] = ((Pts *)((u32)gRacePoints_2 | (((u32)gRacePoints_2 & 1) >> 1)))[q->f8].b3;
+                gEvent.finishOrder[gEvent.numFinished] = i;
+                q->f8 = gEvent.numFinished++;
+                q->f2C = (gEvent.time * gRiderStandings_3[0]->f630) / gRiders_61[i].f630;
+                if (gGame.mode == 1 + (((u32)&gRiders_61 & 1) >> 1)) {
+                    gSeason->places[gRiderStandings_3[i] - gRiders_61][gSeason->round] = q->f8;
+                    gSeason->racePoints[gRiderStandings_3[i] - gRiders_61] = ((Pts *)((u32)gRacePoints | (((u32)gRacePoints & 1) >> 1)))[q->f8].b3;
                 }
             }
         }
     }
 }
 
-typedef struct {
-    s32 w00;
-    u8 p04[0x3C - 0x04];
-    s32 w3C;
-    u8 p40[0x4C - 0x40];
-    u32 w4C;
-} Ctl2;
-
-typedef struct {
-    u8 p00[0x24];
-    s16 w24;
-    u8 p26[0x2C - 0x26];
-    s32 w2C;
-    u8 p30[0x40 - 0x30];
-    s32 w40;
-    u8 p44[0x4C - 0x44];
-    s32 w4C;
-    u8 p50;
-    u8 p51[0x58 - 0x51];
-    s32 w58;
-    u8 p5C[0x88 - 0x5C];
-    s32 w88;
-} Ctl_14;
-
-extern Ctl2 gGame_40;
-extern Ctl_14 gEvent_28;
-
 void event_update(s32 arg0)
 {
     s32 i;
     s32 *p;
 
-    if ((gGame_40.w00 & 0x80) == 0) {
+    if ((gGame.flags & 0x80) == 0) {
         s32 bits;
         i = 0;
         bits = gContMask;
@@ -1470,23 +1188,23 @@ void event_update(s32 arg0)
             if (((bits >> i) & 1) != 0 && *p != 0) break;
         }
         if (i == 4) {
-            gEvent_28.w4C = gEvent_28.w4C + 1;
+            gEvent.idleFrames = gEvent.idleFrames + 1;
         } else {
-            gEvent_28.w4C = 0;
+            gEvent.idleFrames = 0;
         }
     }
-    switch (gGame_40.w4C) {
+    switch (gGame.mode) {
     case 2:
         event_update_soccer();
         break;
     case 5:
         event_update_countdown();
-        if (gEvent_28.w40 == 0) {
-            if ((gEvent_28.w58 & 0x10) != 0) break;
-            gEvent_28.w2C = gEvent_28.w2C + 1;
-            if (gEvent_28.w2C == 0x34bc0) {
+        if (gEvent.allFinished == 0) {
+            if ((gEvent.flags & 0x10) != 0) break;
+            gEvent.time = gEvent.time + 1;
+            if (gEvent.time == 0x34bc0) {
                 event_rider_finished(0);
-                gEvent_28.w40 = 1;
+                gEvent.allFinished = 1;
             }
         } else if ((gPlayerInputs[0] & 0x40) != 0) {
             if ((gPlayerInputsPrev & 0x40) == 0) {
@@ -1510,17 +1228,17 @@ void event_update(s32 arg0)
     case 0xe:
         break;
     }
-    if (gGame_40.w4C < 2 && gEvent_28.w24 > 0 && gEvent_28.p50 < gGame_40.w3C &&
-        gEvent_28.w88 != -2 && (gGame_40.w3C == 1 || gGame_40.w4C == 8)) {
-        gEvent_28.w88 = gEvent_28.w88 + 1;
-        if (gGame_40.w3C >= 3) {
-            if (gEvent_28.w88 >= 100) goto store;
-        } else if (gEvent_28.w88 >= 0x8c) {
+    if (gGame.mode < 2 && gEvent.numFinished > 0 && gEvent.finishOrder[0] < gGame.numPlayers &&
+        gEvent.finishTimer != -2 && (gGame.numPlayers == 1 || gGame.mode == 8)) {
+        gEvent.finishTimer = gEvent.finishTimer + 1;
+        if (gGame.numPlayers >= 3) {
+            if (gEvent.finishTimer >= 100) goto store;
+        } else if (gEvent.finishTimer >= 0x8c) {
             goto store;
         }
         return;
 store:
-        gEvent_28.w88 = -2;
+        gEvent.finishTimer = -2;
     }
     return;
 }
@@ -1533,9 +1251,9 @@ void event_hud_init(void)
     s32 auStack_50[16];
     s32 i;
     s32 t13;
-    u8 *s2;
+    Game *s2;
 
-    if (gGameMode == 9) {
+    if (gGame.mode == 9) {
         sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, D_800D7340, 0xB4B);
         *sGreyPalette = 0;
         puVar4 = sGreyPalette + 1;
@@ -1548,25 +1266,25 @@ void event_hud_init(void)
         } while (iVar3 < 0x100);
     }
     sCountdownTextures = res_load(D_800E7728, D_800D0D00);
-    s2 = gGame_2;
-    if (1 < *(s32 *)(s2 + 0x3C)) {
+    s2 = &gGame;
+    if (1 < s2->numPlayers) {
         sTempGaugeTextures = res_load(D_800E7728, D_800D11B0);
     }
-    if (*(s32 *)(s2 + 0x4C) == 9) {
-        *(s32 *)(s2 + 0x730) = res_load(D_800E7728, D_800D09F8);
+    if (s2->mode == 9) {
+        s2->hudGlyphs = (HudGlyphs *)res_load(D_800E7728, D_800D09F8);
         D_800F0740 = res_load(D_800E7728, D_800D10E8);
         D_800EFD6C = res_load(D_800E7728, D_800D0DEC);
         D_800EFD68 = res_load(D_800E7728, D_800D09D4);
     }
     res_register_type(D_800D8424, prim_n64_relocate);
-    if (*(s32 *)(s2 + 0x3C) == 1) {
+    if (s2->numPlayers == 1) {
         D_800F0730[0] = mem_alloc_dbg(0x1c0, 0, D_800D7340, 0xB6B);
         D_800F0730[1] = mem_alloc_dbg(0x1c0, 0, D_800D7340, 0xB6C);
     }
     t13 = *(volatile s32 *)&gScreenHeight;
     guPerspective(auStack_50, sHudPerspNorm, 33.0f, 320.0f / (f32)t13, 50.0f, 4192.0f, 1.0f);
     iVar3 = 0;
-    if (*(s32 *)(s2 + 0x4C) == 2) {
+    if (s2->mode == 2) {
         sSoccerMapTexture = res_load(D_800E7728, D_800D1084);
     }
     for (i = 0; i < 0x1E; i++) {
@@ -1647,7 +1365,7 @@ void event_set_place_text(u8 *p, s32 n, s32 arg2)
     s32 off;
     Quad *r;
 
-    if (gEventNumRiders >= 2) {
+    if (gEvent.numRiders >= 2) {
         buf[0] = n + 0x31;
         m = n;
         if (m > 3) {
@@ -1761,7 +1479,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         gdl = render_draw_temp_gauge(gdl, a1, a2, pl);
         font_text_create(gHudTextObjs[4], 0x40, 1, 2, 0x20);
         font_text_create(gHudTextObjs[5], 0x40, 1, 4, 0x20);
-        event_format_time(gRiders_63[pl].w69C - gEventTime, buf);
+        event_format_time(gRiders_63[pl].w69C - gEvent.time, buf);
         font_text_add(gHudTextObjs[4], "Time:");
         font_draw_text(gHudTextObjs[4], 0x23, gViMode == 2 ? 0x180 : 0xD6);
         font_text_add(gHudTextObjs[5], buf);
@@ -1769,7 +1487,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     } else {
         font_text_create(gHudTextObjs[4], 0x40, 2, 2, 0x20);
         font_text_create(gHudTextObjs[5], 0x40, 2, 4, 0x20);
-        t = -gEventTime + gRiders_63[pl].w69C;
+        t = -gEvent.time + gRiders_63[pl].w69C;
         if (gRiders_63[pl].b3FF) {
             t = gRiders_63[pl].w68C;
         }
@@ -1790,7 +1508,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                       gViewRects_5[gNumScreens - 1][pl][1] + gViewRects_5[gNumScreens - 1][pl][3] - 0xB);
         gdl = event_draw_temp_gauge(gdl, a1, a2, pl);
     }
-    if (gEvent_5.h26 != 0 && gEvent_5.w0 != 0 && (gEvent_5.w0 != 1 || gEvent_5.h26 < 0x5B)) {
+    if (gEvent.countdown != 0 && gEvent.state != 0 && (gEvent.state != 1 || gEvent.countdown < 0x5B)) {
         gdl = event_draw_countdown(gdl, pl);
     }
     if (gRiders_63[pl].h66A != 0 && gPauseMenu == 0) {
@@ -1802,7 +1520,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     }
     if (gRiders_63[pl].b3FF) {
         font_text_create(gHudTextObjs[7], 0x40, 1, 4, 0x21);
-        if (gEventAllFinished == 0 || pl != 0) {
+        if (gEvent.allFinished == 0 || pl != 0) {
             font_text_add(gHudTextObjs[7], "Game Over");
         } else {
             font_text_add(gHudTextObjs[7], D_800D84A8);
@@ -1811,7 +1529,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                       gViewRects_5[gNumScreens - 1][pl][0] + gViewRects_5[gNumScreens - 1][pl][2] / 2,
                       gViewRects_5[gNumScreens - 1][pl][1] + gViewRects_5[gNumScreens - 1][pl][3] / 2);
     }
-    if (gGame & 0x20000000) {
+    if (gGame.flags & 0x20000000) {
         s32 *p1;
         s32 *p2;
         s32 *p3;
@@ -1882,8 +1600,8 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     f32 v;
 
     font_reset_queue();
-    if (gNumPlayers >= 2) {
-        if (gEventAllFinished != 0) {
+    if (gGame.numPlayers >= 2) {
+        if (gEvent.allFinished != 0) {
             font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
             switch (p->h668) {
             case 0:
@@ -1906,7 +1624,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         idx = -1;
         do {
         } while (0);
-        event_format_time(gEventTime, buf);
+        event_format_time(gEvent.time, buf);
         font_text_add(gHudTextObjs_3[0], "Time:");
         font_draw_text(gHudTextObjs_3[0], 0x3C, yt);
         font_text_add(gHudTextObjs_3[1], buf);
@@ -1975,7 +1693,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         }
         font_text_create(gHudTextObjs_3[0], 0x40, 1, 2, 0x10);
         font_text_create(gHudTextObjs_3[1], 0x40, 1, 4, 0x10);
-        event_format_time(gEventTime, buf);
+        event_format_time(gEvent.time, buf);
         font_text_add(gHudTextObjs_3[0], "Time:");
         font_draw_text(gHudTextObjs_3[0], 0x23, gViMode == 2 ? 0x180 : 0xD6);
         font_text_add(gHudTextObjs_3[1], buf);
@@ -2059,7 +1777,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->s3EB[i]].name);
             font_draw_text(gHudTextObjs_3[i + 8], 0x23, by + i * dy);
         }
-        if (gEventAllFinished != 0) {
+        if (gEvent.allFinished != 0) {
             font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
             font_text_add(gHudTextObjs_3[7], D_800E3BBF >= 3 ? "Press START to Continue" : "Game Over");
             font_draw_text(gHudTextObjs_3[7],
@@ -2069,7 +1787,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     }
     gdl = font_render(gdl);
     gdl = render_draw_temp_gauge(gdl, a1, a2, pl);
-    if (gEvent_5.h26 != 0 && gEvent_5.w0 != 0 && (gEvent_5.w0 != 1 || gEvent_5.h26 < 0x5B)) {
+    if (gEvent.countdown != 0 && gEvent.state != 0 && (gEvent.state != 1 || gEvent.countdown < 0x5B)) {
         gdl = event_draw_countdown(gdl, pl);
     }
     return gdl;
@@ -2084,10 +1802,7 @@ typedef struct {
     u8 pad3[0x7E0 - 0x66A];
 } Rec37_3;
 
-typedef struct { s32 f0; u8 pad[0x22]; s16 f26; } Obj5A8;
-
 extern Rec37_3 gRiders_65[];
-extern Obj5A8 gEvent_29;
 
 Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
 {
@@ -2126,7 +1841,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
     if (gHudLevel <= 0) {
         font_text_create(gHudTextObjs[1], 0x40, 1, 2, 0x20);
         font_text_create(gHudTextObjs[2], 0x40, 1, 4, 0x20);
-        event_format_time(gEventTime, buf);
+        event_format_time(gEvent.time, buf);
         y = gViewRects_10[gNumScreens - 1][idx].b;
         font_text_add(gHudTextObjs[1], D_800D8484);
         z = y + 0x14;
@@ -2164,17 +1879,14 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
 
     gdl = event_draw_position(gdl, 0, font_text_create(D_800F0544, 0x20, 3, 2, 0x21));
     gdl = font_render(gdl);
-    if (gEvent_29.f26 != 0 && gEvent_29.f0 != 0 &&
-        (gEvent_29.f0 != 1 || gEvent_29.f26 < 0x5B)) {
+    if (gEvent.countdown != 0 && gEvent.state != 0 &&
+        (gEvent.state != 1 || gEvent.countdown < 0x5B)) {
         gdl = event_draw_countdown(gdl, idx);
     }
     return gdl;
 }
 
 typedef struct { s32 unk0; u16 *col; Img_2 img[5]; } Hud_3;
-typedef struct { s32 mode; u8 pad[0x22]; s16 t; } State_5;
-
-extern State_5 gEvent_30;
 extern Hud_3 *sCountdownTextures_2;
 
 Gfx *event_draw_countdown(Gfx *gdl, s32 a)
@@ -2186,18 +1898,18 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
     s32 sw, dsdx, th;
     s32 *r;
 
-    if (gEvent_30.mode == 5 && gEvent_30.t == 0)
+    if (gEvent.state == 5 && gEvent.countdown == 0)
         return gdl;
     if (D_800C8CE0 != 0)
         a = 0;
-    switch (gEvent_30.mode) {
+    switch (gEvent.state) {
     default:
         return gdl;
     case 1: {
         f32 v;
         col = sCountdownTextures_2->col[4];
         img = &sCountdownTextures_2->img[4];
-        scale = gEvent_30.t + 10;
+        scale = gEvent.countdown + 10;
         scale /= 100.0f;
         scale *= 2.0f;
         if (scale > 1.0f)
@@ -2212,7 +1924,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
     }
     case 2: {
         f32 v;
-        scale = gEvent_30.t + 10;
+        scale = gEvent.countdown + 10;
         scale /= 46.0f;
         img = &sCountdownTextures_2->img[2];
         v = scale * 100.0f;
@@ -2224,7 +1936,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
     }
     case 3: {
         f32 v;
-        scale = gEvent_30.t + 10;
+        scale = gEvent.countdown + 10;
         scale /= 46.0f;
         img = &sCountdownTextures_2->img[1];
         v = scale * 100.0f;
@@ -2236,7 +1948,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
     }
     case 4: {
         f32 v;
-        scale = gEvent_30.t + 10;
+        scale = gEvent.countdown + 10;
         scale /= 46.0f;
         img = &sCountdownTextures_2->img[0];
         v = scale * 100.0f;
@@ -2249,7 +1961,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
     case 5:
     case 14:
     case 15:
-        scale = gEvent_30.t + 1;
+        scale = gEvent.countdown + 1;
         scale *= 0.0625f;
         img = &sCountdownTextures_2->img[3];
         col = sCountdownTextures_2->col[3];
@@ -2260,7 +1972,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
 
     sw = scale * (img->w * 8.0f);
     dsdx = 1024.0f / scale;
-    if (gEvent_30.mode == 1)
+    if (gEvent.state == 1)
         th = scale * img->h * 0.5f;
     else
         th = scale * img->h;
@@ -2289,7 +2001,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
     gSPTextureRectangle(gdl++, (r[0] + r[2] / 2 - sw / 2) << 2, (r[1] + r[3] / 2 - th / 2) << 2,
                         (r[0] + r[2] / 2 + sw / 2) << 2, (r[1] + r[3] / 2 + th / 2) << 2,
                         G_TX_RENDERTILE, 0, (img->h - 1) << 5, dsdx,
-                        gEvent_30.mode == 1 ? -(dsdx * 2) : -dsdx);
+                        gEvent.state == 1 ? -(dsdx * 2) : -dsdx);
     gDPPipeSync(gdl++);
     return gdl;
 }
@@ -2372,30 +2084,7 @@ typedef struct {
     u8 pad7AE[0x7E0 - 0x7AE];
 } Player_17;
 
-typedef struct {
-    s32 w0;
-    u8 pad4[0x10 - 0x4];
-    s32 w10;
-    u8 pad14[0x20 - 0x14];
-    s16 h20;
-    s16 h22;
-    u8 pad24[2];
-    s16 h26;
-    u8 pad28[4];
-    s32 w2C;
-    u8 pad30[0x40 - 0x30];
-    s32 w40;
-} Mode_2;
-
-typedef struct {
-    u32 w0;
-    u8 pad4[0x4C - 4];
-    s32 w4C;
-} Game_24;
-
 extern Player_17 gRiders_66[];
-extern Mode_2 gEvent_31;
-extern Game_24 gGame_41;
 
 Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
 {
@@ -2436,12 +2125,12 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         tBest = font_text_create(gHudTextObjs[3], 0x20, 2, 2, 0x10);
         tRaceL = font_text_create(gHudTextObjs[4], 0x20, 2, 2, 0x10);
         tBestL = font_text_create(gHudTextObjs[5], 0x20, 2, 2, 0x10);
-        if (gEvent_31.h26 != 0 && gEvent_31.w0 == 5) {
+        if (gEvent.countdown != 0 && gEvent.state == 5) {
             tMsg = font_text_create(gHudTextObjs[6], 0x20, 1, 2, 0x21);
         } else {
             tMsg = font_text_create(gHudTextObjs[6], 0x20, 1, 4, 0x21);
         }
-        if (lp->hA != 0 || lp->h0 == gEvent_31.h20) {
+        if (lp->hA != 0 || lp->h0 == gEvent.numLaps) {
             if (lp->hA != 0) {
                 lp->hA--;
             }
@@ -2451,7 +2140,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             tLap = font_text_create(gHudTextObjs[7], 0x20, 2, 2, 0x10);
             tLapL = font_text_create(gHudTextObjs[8], 0x20, 2, 2, 0x10);
         }
-        if (gGame_41.w0 & 0x20000000) {
+        if (gGame.flags & 0x20000000) {
             Txt_2 *t1, *t2, *t3;
             t1 = font_text_create(gHudTextObjs[9], 0x20, 2, 2, 0x10);
             debug_ftoa(buf, gRiders_66[0].f48, 5);
@@ -2466,7 +2155,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             font_text_add(t3, buf);
             font_draw_text(t3, 0x28, 0x32);
         }
-        if (gGame_41.w4C == 6 && gEvent_31.w2C == 0) {
+        if (gGame.mode == 6 && gEvent.time == 0) {
             t = font_text_create(gHudTextObjs[19], 0x20, 2, 2, 0x11);
             font_text_add(t, "Press Up C Button for side view");
             font_draw_text(t, 0x100, 0x28);
@@ -2480,7 +2169,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         tBestL = font_text_create(gHudTextObjs[5], 0x20, 2, 2, 0x10);
         tLap = font_text_create(gHudTextObjs[6], 0x20, 2, 4, 0x10);
         tLapL = font_text_create(gHudTextObjs[7], 0x20, 2, 4, 0x10);
-        if (gEvent_31.h26 != 0 && gEvent_31.w0 == 5) {
+        if (gEvent.countdown != 0 && gEvent.state == 5) {
             tMsg = font_text_create(gHudTextObjs[8], 0x20, 1, 2, 0x21);
         } else {
             tMsg = font_text_create(gHudTextObjs[8], 0x20, 1, 4, 0x21);
@@ -2490,7 +2179,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         event_set_place_text(tMsg, lp->h8, pl);
     }
     if (gReplayPlayback == 0) {
-        if (gEvent_31.h26 != 0 && gEvent_31.w0 != 0 && (gEvent_31.w0 != 1 || gEvent_31.h26 < 0x5B)) {
+        if (gEvent.countdown != 0 && gEvent.state != 0 && (gEvent.state != 1 || gEvent.countdown < 0x5B)) {
             gdl = event_draw_countdown(gdl, pl);
         } else if (gPauseMenu == 0 && lp->h8 == -1) {
             if (gRiders_66[pl].lap.hC != 0) {
@@ -2522,7 +2211,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             gDPSetCycleType(gdl++, G_CYC_1CYCLE);
             gDPSetRenderMode(gdl++, 0x404240, 0);
             gDPPipeSync(gdl++);
-            if (gEvent_31.h22 >= 2) {
+            if (gEvent.numRiders >= 2) {
                 gdl = event_draw_position(gdl, pl, tPlace);
             }
             f = gRiders_66[pl].f420;
@@ -2537,10 +2226,10 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                 y = 0x180;
             }
             font_draw_text(tSpeed, x, y);
-            if (lp->h0 == gEvent_31.h20) {
+            if (lp->h0 == gEvent.numLaps) {
                 event_format_time(lp->w2C, buf);
             } else {
-                event_format_time(gEvent_31.w2C, buf);
+                event_format_time(gEvent.time, buf);
             }
             if (gHudLevel < 2) {
                 font_text_add(tRace, buf);
@@ -2562,20 +2251,20 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                 yy += dy;
                 __builtin_strcpy(buf, "Lap ");
                 p = buf;
-                if (lp->hA != 0 || lp->h0 == gEvent_31.h20) {
+                if (lp->hA != 0 || lp->h0 == gEvent.numLaps) {
                     int_to_str(lp->h0, p + strlen(p));
                 } else {
                     int_to_str(lp->h0 + 1, p + strlen(p));
                 }
                 str_cat(p, ": ");
                 font_text_add(tLapL, buf);
-                event_format_time(lp->w14[(lp->hA != 0 || lp->h0 == gEvent_31.h20) ? lp->h0 - 1 : lp->h0], buf);
+                event_format_time(lp->w14[(lp->hA != 0 || lp->h0 == gEvent.numLaps) ? lp->h0 - 1 : lp->h0], buf);
                 font_text_add(tLap, buf);
                 font_draw_text(tLapL, xb, yy);
                 font_draw_text(tLap, xa, yy);
                 yy += dy;
                 if (!(gCurTrack_8->w50 & 2)) {
-                    event_format_time(gEvent_31.w10, buf);
+                    event_format_time(gEvent.record.bestLap, buf);
                     font_text_add(tBestL, "Best: ");
                     font_text_add(tBest, buf);
                     font_draw_text(tBestL, xb, yy);
@@ -2602,10 +2291,10 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                 int_to_str((s32)(((0.0f < f) ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
                 font_text_add(tSpeed, buf);
                 font_draw_text(tSpeed, VP.x + VP.w - 0x2D, VP.y + VP.h - 0xB);
-                if (lp->h0 == gEvent_31.h20) {
+                if (lp->h0 == gEvent.numLaps) {
                     event_format_time(lp->w2C, buf);
                 } else {
-                    event_format_time(gEvent_31.w2C, buf);
+                    event_format_time(gEvent.time, buf);
                 }
                 font_text_add(tRace, buf);
                 font_text_add(tRaceL, "Race: ");
@@ -2614,7 +2303,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             }
             __builtin_strcpy(buf, "Lap ");
             p = buf;
-            if (lp->hA != 0 || lp->h0 == gEvent_31.h20) {
+            if (lp->hA != 0 || lp->h0 == gEvent.numLaps) {
                 int_to_str(lp->h0, p + strlen(p));
             } else {
                 int_to_str(lp->h0 + 1, p + strlen(p));
@@ -2622,7 +2311,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             str_cat(p, ": ");
             font_text_add(tLapL, buf);
             font_draw_text(tLapL, VP.x + 10, VP.y + VP.h - 8);
-            event_format_time(lp->w14[(lp->hA != 0 || lp->h0 == gEvent_31.h20) ? lp->h0 - 1 : lp->h0], buf);
+            event_format_time(lp->w14[(lp->hA != 0 || lp->h0 == gEvent.numLaps) ? lp->h0 - 1 : lp->h0], buf);
             font_text_add(tLap, buf);
             font_draw_text(tLap, VP.x + 0x43, VP.y + VP.h - 8);
             gdl = event_draw_temp_gauge(font_render(gdl), a1, a2, pl);
@@ -2647,7 +2336,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     } else {
         gdl = font_render(gdl);
     }
-    if (gEvent_31.w40 != 0 && gCurView == gNumScreens - 1) {
+    if (gEvent.allFinished != 0 && gCurView == gNumScreens - 1) {
         gDPSetScissor(gdl++, G_SC_NON_INTERLACE, gViewRects[0][0].x, gViewRects[0][0].y,
                       gViewRects[0][0].x + gViewRects[0][0].w - 1, gViewRects[0][0].y + gViewRects[0][0].h - 1);
         font_text_create(gMenuTextObjs[0], 0x40, 1, 2, 0x21);
@@ -2681,25 +2370,7 @@ typedef struct {
     u8 pad54[0x7E0 - 0x54];
 } Player_18;
 
-typedef struct {
-    u32 w0;
-    u8 pad4[0x2C - 0x4];
-    s32 w2C;
-    u8 pad30[0x58 - 0x30];
-    s32 w58;
-    u8 pad5C[0x68 - 0x5C];
-    s16 h68;
-    s16 h6A;
-} Mode_3;
-
-typedef struct {
-    u8 pad0[0x3C];
-    s32 w3C;
-} Game_25;
-
 extern Player_18 gRiders_67[];
-extern Mode_3 gEvent_32;
-extern Game_25 gGame_42;
 
 Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     char buf[32];
@@ -2713,7 +2384,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     if (p3 == 0) {
         gDPSetScissor(gdl++, G_SC_NON_INTERLACE, gViewRects[0][0].x, gViewRects[0][0].y,
                       gViewRects[0][0].x + gViewRects[0][0].w - 1, gViewRects[0][0].y + gViewRects[0][0].h - 1);
-        if (gEvent_32.w0 == 7 || gEvent_32.w0 == 9 || gEvent_32.w0 == 11) {
+        if (gEvent.state == 7 || gEvent.state == 9 || gEvent.state == 11) {
             gDPSetPrimColor(gdl++, 0, 0, 0xE6, 0xE6, 0xE6, 0xE6);
             gDPRaw(gdl++, 0xE3000C00, 0);
             gDPRaw(gdl++, 0xD7000002, 0x80008000);
@@ -2722,7 +2393,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             gDPRaw(gdl++, 0xE200001C, 0x404240);
             cx = 0x100;
             cy = 0x78;
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 cx = 0x13C;
             }
             gdl = render_draw_image((cx - sSoccerMapTexture_2[8] * 4) | 1, cy - (sSoccerMapTexture_2[9] >> 1) - 1, sSoccerMapTexture_2 + 8, gdl,
@@ -2736,7 +2407,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             gDPSetPrimColor(gdl++, 0, 0, 0xFA, 0xFA, 0x28, 0xFF);
             gDPFillRectangle(gdl++, cx + gRiders_67[1].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[1].f48 * 0.25f - 2.0f,
                              cx + gRiders_67[1].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[1].f48 * 0.25f + 2.0f);
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 gDPSetPrimColor(gdl++, 0, 0, 0x28, 0xFA, 0x28, 0xFF);
                 gDPFillRectangle(gdl++, cx + gRiders_67[2].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[2].f48 * 0.25f - 2.0f,
                                  cx + gRiders_67[2].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[2].f48 * 0.25f + 2.0f);
@@ -2748,10 +2419,10 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             gDPFillRectangle(gdl++, cx + gSoccerBall.z * 0.25f / 0.625f - 1.0f, cy + gSoccerBall.x * 0.25f - 1.0f,
                              cx + gSoccerBall.z * 0.25f / 0.625f + 1.0f, cy + gSoccerBall.x * 0.25f + 1.0f);
         }
-        switch (gEvent_32.w0) {
+        switch (gEvent.state) {
         case 6:
             font_text_create(gHudTextObjs[0], 0x40, 1, 4, 0x21);
-            if (gNumPlayers == 2) {
+            if (gGame.numPlayers == 2) {
                 font_text_add(gHudTextObjs[0], "One on One Soccer: First Half");
             } else {
                 font_text_add(gHudTextObjs[0], D_800D865C);
@@ -2762,7 +2433,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         case 10:
         case 12:
             font_text_create(gHudTextObjs[0], 0x40, 1, 6, 0x21);
-            switch (gEvent_32.w0) {
+            switch (gEvent.state) {
             case 10:
                 font_text_add(gHudTextObjs[0], "Full Time Draw : Overtime Required");
                 break;
@@ -2780,15 +2451,15 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             font_text_create(gHudTextObjs[4], 0x40, 1, 4, 0x20);
             font_text_add(gHudTextObjs[1], "Team 1:");
             font_text_add(gHudTextObjs[2], "Team 2:");
-            int_to_str(gEvent_32.h68, buf);
+            int_to_str(gEvent.goals[0], buf);
             font_text_add(gHudTextObjs[3], buf);
-            int_to_str(gEvent_32.h6A, buf);
+            int_to_str(gEvent.goals[1], buf);
             font_text_add(gHudTextObjs[4], buf);
             font_draw_text(gHudTextObjs[1], gScreenWidth / 2 - 45, gScreenHeight / 2);
             font_draw_text(gHudTextObjs[2], gScreenWidth / 2 - 45, gScreenHeight / 2 + 13);
             font_draw_text(gHudTextObjs[3], gScreenWidth / 2 + 39, gScreenHeight / 2);
             font_draw_text(gHudTextObjs[4], gScreenWidth / 2 + 39, gScreenHeight / 2 + 13);
-            if (gEvent_32.w0 == 12) {
+            if (gEvent.state == 12) {
                 font_text_create(gHudTextObjs[0], 0x40, 1, 4, 0x21);
                 font_text_add(gHudTextObjs[0], "Press START To Continue");
                 font_draw_text(gHudTextObjs[0], gScreenWidth / 2,
@@ -2805,11 +2476,11 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             font_text_create(gHudTextObjs[3], 0x40, 1, 4, 0x20);
             font_text_add(gHudTextObjs[0], "Team 1:");
             font_text_add(gHudTextObjs[1], "Team 2:");
-            int_to_str(gEvent_32.h68, buf);
+            int_to_str(gEvent.goals[0], buf);
             font_text_add(gHudTextObjs[2], buf);
-            int_to_str(gEvent_32.h6A, buf);
+            int_to_str(gEvent.goals[1], buf);
             font_text_add(gHudTextObjs[3], buf);
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 font_draw_text(gHudTextObjs[0], gScreenWidth / 2 - 45, 30);
                 font_draw_text(gHudTextObjs[1], gScreenWidth / 2 - 45, gScreenHeight - 30);
                 font_draw_text(gHudTextObjs[2], gScreenWidth / 2 + 39, 30);
@@ -2822,7 +2493,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             }
             font_text_create(gHudTextObjs[4], 0x40, 1, 2, 0x22);
             font_text_create(gHudTextObjs[5], 0x40, 1, 4, 0x22);
-            switch (gEvent_32.w0) {
+            switch (gEvent.state) {
             case 11:
                 font_text_add(gHudTextObjs[4], "Overtime");
                 break;
@@ -2833,9 +2504,9 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
                 font_text_add(gHudTextObjs[4], "Second Half");
                 break;
             }
-            event_format_time(gEvent_32.w2C, buf);
+            event_format_time(gEvent.time, buf);
             font_text_add(gHudTextObjs[5], buf);
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 font_draw_text(gHudTextObjs[4], gScreenWidth / 2 - 10, gScreenHeight / 2 - 7);
                 font_draw_text(gHudTextObjs[5], gScreenWidth / 2 - 10, gScreenHeight / 2 + 7);
             } else {
@@ -2845,12 +2516,12 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             break;
         }
     }
-    n = gEvent_32.w58 & 0xF;
+    n = gEvent.flags & 0xF;
     if (n != 0) {
         team = n - 1;
-        font_text_create(gHudTextObjs[7], 0x40, gGame_42.w3C == 4 ? 2 : 1, 4, 0x21);
-        if (team == (p3 >> ((gGame_42.w3C - 1) >> 1))) {
-            if (gEvent_32.w58 & 0x20) {
+        font_text_create(gHudTextObjs[7], 0x40, gGame.numPlayers == 4 ? 2 : 1, 4, 0x21);
+        if (team == (p3 >> ((gGame.numPlayers - 1) >> 1))) {
+            if (gEvent.flags & 0x20) {
                 font_text_add(gHudTextObjs[7], "Team ");
                 int_to_str((team ^ 1) + 1, buf);
                 font_text_add(gHudTextObjs[7], buf);
@@ -2859,7 +2530,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
                 font_text_add(gHudTextObjs[7], D_800D871C);
             }
         } else {
-            if (gEvent_32.w58 & 0x20) {
+            if (gEvent.flags & 0x20) {
                 strcpy(msg, "You helped team ");
                 int_to_str(n, msg + strlen(msg));
                 str_cat(msg, " score!");
@@ -2883,77 +2554,28 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         _g->words.w1 = (b); \
     }
 
-typedef struct {
-    u8 w;
-    u8 h;
-    u8 unk2[6];
-} Glyph;
-
-typedef struct {
-    s32 unk0;
-    u16 *palette;
-    Glyph glyphs[1];
-} Font;
-
-typedef struct {
-    u8 unk0[0x730];
-    Font *font;
-} Hud_4;
-
-extern Hud_4 gGame_43;
-
 Gfx *event_draw_glyph_string(Gfx *gdl, s32 arg1, u8 *str, s32 x, s32 y) {
     while (*str != 0) {
         s32 w; s32 hh;
 
         gDPWords(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPWords(gdl++, 0xE3001001, 0x8000);
-        gDPWords(gdl++, 0xFD100000, (u32)gGame_43.font->palette);
+        gDPWords(gdl++, 0xFD100000, (u32)gGame.hudGlyphs->palette);
         gDPWords(gdl++, 0xE8000000, 0);
         gDPWords(gdl++, 0xF5000100, 0x07000000);
         gDPWords(gdl++, 0xE6000000, 0);
         gDPWords(gdl++, 0xF0000000, 0x073FC000);
         gDPWords(gdl++, 0xE7000000, 0);
-        w = gGame_43.font->glyphs[*str].w << 3;
-        hh = gGame_43.font->glyphs[*str].h;
-        gdl = render_draw_image(x, y - (hh >> 1), &gGame_43.font->glyphs[*str], gdl, arg1, 1, 1, 3, 0);
+        w = gGame.hudGlyphs->glyphs[*str].w << 3;
+        hh = gGame.hudGlyphs->glyphs[*str].h;
+        gdl = render_draw_image(x, y - (hh >> 1), &gGame.hudGlyphs->glyphs[*str], gdl, arg1, 1, 1, 3, 0);
         str++;
         x += w;
     }
     return gdl;
 }
 
-#define CUR_FLAGS (gTutorialLessons_10[gSeason_5->f64].flags)
-
-typedef struct {
-    s32 val;
-    char *str[3];
-} Entry_4;
-
-typedef struct {
-    u8 pad0[0xC];
-    u8 flags;
-    u8 num;
-    u8 padE[2];
-    char *name;
-    u8 pad14[0xC];
-    u32 count;
-    Entry_4 *entries;
-} Track_13;
-
-typedef struct {
-    u32 state;
-    u8 pad4[0x22];
-    s16 f26;
-    u8 pad28[4];
-    s32 f2C;
-    u8 pad30[0x28];
-    s32 f58;
-    u8 pad5C[0x14];
-    s32 f70;
-    u8 pad74[4];
-    s32 f78;
-} Game_26;
+#define CUR_FLAGS (gTutorialLessons[gSeason->round].flags)
 
 typedef struct {
     u8 pad[0x420];
@@ -2961,14 +2583,12 @@ typedef struct {
     u8 pad2[0x3BC];
 } Bike_32;
 
-extern Track_13 gTutorialLessons_10[];
-extern Game_26 gEvent_33;
 extern Bike_32 gRiders_68[];
 
 Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
 {
-    Track_13 *trk;
-    Entry_4 *e;
+    TutorialLesson *trk;
+    TutorialStep *e;
     Gfx *p;
     u8 *img;
     u8 *img2;
@@ -2990,18 +2610,18 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     s32 cx;
     u8 *g;
 
-    trk = &gTutorialLessons_10[gSeason_5->f64];
+    trk = &gTutorialLessons[gSeason->round];
     font_reset_queue();
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
     gDPRaw(gdl++, 0xE200001C, 0x404240);
-    if (gEvent_33.state == 0xD) {
-        if (gEvent_33.f70 == 0) {
-            off = -(gEvent_33.f78 * 2);
+    if (gEvent.state == 0xD) {
+        if (gEvent.tutorialAction == 0) {
+            off = -(gEvent.tutorialTimer * 2);
         } else {
             off = 0;
-            if (gEvent_33.f70 == 2) {
-                off = -((60 - gEvent_33.f78) * 2);
+            if (gEvent.tutorialAction == 2) {
+                off = -((60 - gEvent.tutorialTimer) * 2);
             }
         }
         gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
@@ -3018,7 +2638,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         font_draw_text(gHudTextObjs[i], 0x4D - i * 3, i * 13 + 0x44 + off);
         font_text_create(gHudTextObjs[3], 0x40, 1, 2, 0x21);
         __builtin_memcpy(buf, D_800D88D0, 9);
-        buf[strlen(buf) - 1] += trk->num;
+        buf[strlen(buf) - 1] += trk->level;
         font_text_add(gHudTextObjs[3], buf);
         font_draw_text(gHudTextObjs[3], gScreenWidth / 2 + 3, off + 0x29);
     } else {
@@ -3032,7 +2652,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
             flags = CUR_FLAGS;
             if (flags & 4) {
                 font_text_create(gHudTextObjs[0], 0x40, 2, 6, 0x20);
-                if (gEvent_33.f58 & 0x1000) {
+                if (gEvent.flags & 0x1000) {
                     font_text_add(gHudTextObjs[0], "Takedown Required");
                 } else {
                     font_text_add(gHudTextObjs[0], "Takedown Complete");
@@ -3041,14 +2661,14 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
             } else if (flags & 8) {
               if (!(flags & 2)) {
                 font_text_create(gHudTextObjs[0], 0x40, 1, 6, 0x20);
-                v = gEvent_33.f2C;
+                v = gEvent.time;
                 if (v < 0) {
                     v = -v;
                 }
                 event_format_time_short(v, buf);
                 font_text_add(gHudTextObjs[0], "Time: ");
                 font_text_add(gHudTextObjs[0], buf);
-                if (gEvent_33.f2C < 0) {
+                if (gEvent.time < 0) {
                     gHudTextObjs[0][1] = 8;
                 }
                 font_draw_text(gHudTextObjs[0], 0x21, 0x2D);
@@ -3062,7 +2682,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         if ((CUR_FLAGS & 2) && D_800F0738 >= 2 && D_800F0738 < 10) {
             font_text_create(gHudTextObjs[2], 0x40, 2, 2, 0x20);
-            font_text_add(gHudTextObjs[2], trk->entries[D_800F0738].str[0]);
+            font_text_add(gHudTextObjs[2], trk->steps[D_800F0738].lines[0]);
             font_draw_text(gHudTextObjs[2], 0x140, 0x28);
             p = gdl;
             gDPSetTextureLUT(p++, G_TT_NONE);
@@ -3074,13 +2694,13 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
             for (m = 0; m < 27; m++) {
                 p = render_draw_image(x0 - (k - m) * g[0] * 8, 0x1C, g, p, arg2, 1, 1, 6, 0);
             }
-            gdl = event_draw_glyph_string(p, arg2, trk->entries[D_800F0738].str[1], 0x140, 0x40);
+            gdl = event_draw_glyph_string(p, arg2, trk->steps[D_800F0738].lines[1], 0x140, 0x40);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         } else {
             if (gTutorialResult == 1) {
                 if (D_800F0738 == 0) {
-                    i = trk->count - 1;
+                    i = trk->numSteps - 1;
                 } else {
                     i = D_800F0738;
                 }
@@ -3093,16 +2713,16 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
                     font_draw_text(gHudTextObjs[j + 2], 0x20, 0xB2 + j * 9);
                 }
             } else {
-                if (gActiveReplay == 0 && !(gEvent_33.f58 & 0x8000)) {
+                if (gActiveReplay == 0 && !(gEvent.flags & 0x8000)) {
                     goto skip;
                 }
-                if (!(gEvent_33.f58 & 0x800)) {
+                if (!(gEvent.flags & 0x800)) {
                     goto skip;
                 }
-                for (i = 0; i < trk->count; i++) {
-                    d = trk->entries[i].val - gEventTime;
+                for (i = 0; i < trk->numSteps; i++) {
+                    d = trk->steps[i].value - gEventTime;
                     if (d <= 0) {
-                        d = gEventTime - trk->entries[i].val;
+                        d = gEventTime - trk->steps[i].value;
                     }
                     if (d >= 3 && !(gEventFlags & 0x8000)) {
                         continue;
@@ -3110,15 +2730,15 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
                     {
                     show:
                         n = 3;
-                        if (trk->entries[i].str[2] == NULL) {
+                        if (trk->steps[i].lines[2] == NULL) {
                             n = 2;
-                            if (trk->entries[i].str[1] == NULL) {
+                            if (trk->steps[i].lines[1] == NULL) {
                                 n = 1;
                             }
                         }
                         for (j = 0; j < n; j++) {
                             font_text_create(gHudTextObjs[j + 2], 0x40, 2, 2, 0x20);
-                            font_text_add(gHudTextObjs[j + 2], trk->entries[i].str[j]);
+                            font_text_add(gHudTextObjs[j + 2], trk->steps[i].lines[j]);
                             font_draw_text(gHudTextObjs[j + 2], 0x20, 0xBB - (n - 1) * 9 / 2 + j * 9);
                         }
                         break;
@@ -3135,7 +2755,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
             gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         }
     skip:
-        if (gEvent_33.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
+        if (gEvent.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
             img = D_800EFD6C_2 + 0x30;
         } else {
             img = D_800EFD6C_2 + 0x40;
@@ -3143,7 +2763,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         for (i = 0; i < 9; i++) {
             gdl = render_draw_image(i * img[0] * 8 + 0x10, 0x14, img, gdl, arg2, 1, 1, 6, 0);
         }
-        if (gEvent_33.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
+        if (gEvent.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
             img2 = D_800EFD6C_2 + 0x38;
         } else {
             img2 = D_800EFD6C_2 + 0x48;
@@ -3154,13 +2774,13 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        if (gSeason_5->f64 > 0) {
+        if (gSeason->round > 0) {
             gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
         } else {
             gDPLoadTLUT_pal256(gdl++, sGreyPalette);
         }
         gdl = render_draw_image(0x21, 0x1B, D_800F0740 + 0x20, gdl, arg2, 1, 1, 3, 0);
-        if (gSeason_5->f64 < 16 && gTutorialLessons_10[gSeason_5->f64 + 1].num <= gSeason_5->f0[1]) {
+        if (gSeason->round < 16 && gTutorialLessons[gSeason->round + 1].level <= gSeason->cup->progress[0]) {
             gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
         } else {
             gDPLoadTLUT_pal256(gdl++, sGreyPalette);
@@ -3183,54 +2803,35 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         y = 0x180;
     }
     font_draw_text(gHudTextObjs[6], x, y);
-    if ((CUR_FLAGS & 8) && gEvent_33.f26 != 0
-        && (gEvent_33.state < 5 || gEvent_33.state == 15 || gEvent_33.state == 14)
-        && (gEvent_33.state != 1 || gEvent_33.f26 < 0x5B)) {
+    if ((CUR_FLAGS & 8) && gEvent.countdown != 0
+        && (gEvent.state < 5 || gEvent.state == 15 || gEvent.state == 14)
+        && (gEvent.state != 1 || gEvent.countdown < 0x5B)) {
         gdl = event_draw_countdown(gdl, arg3);
     }
     return font_render(gdl);
 }
 
-typedef struct {
-    u8 *hdr;
-    u8 pad[0x60];
-    s16 idx;
-} Ctl_15;
-
 s32 tutorial_next_lesson_unlocked(void) {
-    Ctl_15 *c = gSeason;
-    s32 a1 = c->idx;
+    Season *c = gSeason;
+    s32 a1 = c->round;
     s32 n = a1 + 1;
     u8 v1, v0;
 
     if (n > 16) {
         return 0;
     }
-    v1 = gTutorialLessons[a1 * 0x28 + 0xD];
-    v0 = gTutorialLessons[n * 0x28 + 0xD];
+    v1 = gTutorialLessons[a1].level;
+    v0 = gTutorialLessons[n].level;
     if (v1 == v0) {
         return 1;
     }
-    return v1 < c->hdr[1];
+    return v1 < c->cup->progress[0];
 }
 
-#define ROWS (gNumPlayers_2[0] >= 2 ? 6 : 9)
-#define COLS (gNumPlayers_2[0] >= 3 ? 8 : 12)
-#define RECT (gViewRects[gNumViews - 1][D_800F05F8])
+#define ROWS (gGame.numPlayers >= 2 ? 6 : 9)
+#define COLS (gGame.numPlayers >= 3 ? 8 : 12)
+#define RECT (gViewRects[gNumViews - 1][gEvent.finishOrder[0]])
 
-typedef struct Plr_7 {
-    u8 pad0[0x64];
-    s16 h64;
-} Plr_7;
-
-typedef struct Trk_10 {
-    u8 pad0[0x1C];
-    s32 f1C;
-    u8 pad20[0x28 - 0x20];
-} Trk_10;
-
-extern Plr_7 *gSeason_12;
-extern Trk_10 gTutorialLessons_11[];
 
 Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     int i;
@@ -3240,8 +2841,8 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     s32 sp;
     int n;
 
-    if (gHudLevel != 3 || gGameMode == 9) {
-        switch (gGameMode) {
+    if (gHudLevel != 3 || gGame.mode == 9) {
+        switch (gGame.mode) {
         case 2:
             if (gPauseMenu == 0) {
                 gdl = event_draw_hud_soccer(gdl, p1, p2, p3);
@@ -3270,7 +2871,7 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     } else if (gReplayPlayback == 0) {
         gdl = event_draw_countdown(gdl, p3);
     }
-    if (D_800F0630 >= 0 || D_800F0630 == -2) {
+    if (gEvent.finishTimer >= 0 || gEvent.finishTimer == -2) {
         gDPSetRenderMode(gdl++, 0x404240, 0);
         gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_OFF);
@@ -3279,10 +2880,10 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, prev);
         for (i = 0; i < ROWS; i++) {
             for (j = i & 1; j < COLS; j += 2) {
-                if (D_800F0630 == -2) {
+                if (gEvent.finishTimer == -2) {
                     a = 35;
                 } else {
-                    n = D_800F0630 - j * 10;
+                    n = gEvent.finishTimer - j * 10;
                     if (n < 0) {
                         a = 0;
                     } else if (n >= 30) {
@@ -3305,10 +2906,10 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         prev = 35;
         for (i = 0; i < ROWS; i++) {
             for (j = ~i & 1; j < COLS; j += 2) {
-                if (D_800F0630 == -2) {
+                if (gEvent.finishTimer == -2) {
                     a = 35;
                 } else {
-                    n = D_800F0630 - j * 10;
+                    n = gEvent.finishTimer - j * 10;
                     if (n < 0) {
                         a = 0;
                     } else if (n >= 30) {
@@ -3346,11 +2947,11 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         }
         break;
     case 1:
-        for (n = 0; n < (gGameMode == 1 ? 4 : 5); n++) {
+        for (n = 0; n < (gGame.mode == 1 ? 4 : 5); n++) {
             font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 0x11);
-            if (gGameMode == 1) {
+            if (gGame.mode == 1) {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItemsSeason[n]);
-            } else if (gGameMode == 2) {
+            } else if (gGame.mode == 2) {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItemsSoccer[n]);
             } else {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItems[n]);
@@ -3360,17 +2961,17 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         }
         break;
     case 5:
-        if (D_800F0618 != 6) {
+        if (gEvent.tutorialAction != 6) {
             s32 k;
             k = gViewRects[0][0].y + gViewRects[0][0].h / 2 - sp * 2;
             for (n = 0; n < 5; n++) {
-                if (n == 1 && gTutorialLessons_11[gSeason_12->h64].f1C == 0) {
+                if (n == 1 && gTutorialLessons[gSeason->round].demo == 0) {
                     continue;
                 }
                 if (n == 3 && tutorial_next_lesson_unlocked() == 0) {
                     continue;
                 }
-                if (n == 4 && gSeason_12->h64 == 0) {
+                if (n == 4 && gSeason->round == 0) {
                     continue;
                 }
                 font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 1);
@@ -3491,7 +3092,7 @@ Gfx *event_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
 
 s32 tutorial_has_prev_lesson(void)
 {
-    return *(s16 *)(gSeason + 0x64) != 0;
+    return gSeason->round != 0;
 }
 
 typedef struct {
@@ -3504,14 +3105,14 @@ extern Ctr_2 D_800CA924_3;
 
 void event_exit(void)
 {
-    if (0 < D_800CA924_3.limit && (gGame & 4) == 0) {
+    if (0 < D_800CA924_3.limit && (gGame.flags & 4) == 0) {
         D_800CA924_3.counter = D_800CA924_3.counter + 1;
         if (D_800CA924_3.counter == D_800CA924_3.limit) {
             mem_free(D_800CA924_3.arg);
         }
     }
-    if (gGameMode == 9 && D_800F0624 != 0) {
-        mem_free(D_800F0624);
+    if (gGame.mode == 9 && gEvent.tutorialBuf != 0) {
+        mem_free(gEvent.tutorialBuf);
     }
     save_write(1, 0);
 }
@@ -3548,16 +3149,16 @@ s32 track_res_load_map(s32 *p) {
 }
 
 u32 tutorial_lesson_passed(void) {
-    u8 *e = gTutorialLessons;
-    s16 idx = *(s16 *)(gSeason + 0x64);
-    e = e + idx * 40;
-    if (e[0xC] & 4) {
-        return ((gEventFlags >> 12) ^ 1) & 1;
+    TutorialLesson *e = gTutorialLessons;
+    s16 idx = gSeason->round;
+    e = e + idx;
+    if (e->flags & 4) {
+        return ((gEvent.flags >> 12) ^ 1) & 1;
     }
-    if (*(u32 *)(e + 0x1C) != 0) {
+    if (e->demo != 0) {
         return 0;
     }
-    return ~gEventTime_3 >> 31;
+    return (u32)~gEvent.time >> 31;
 }
 
 s32 event_request_exit(void)
@@ -3570,15 +3171,8 @@ s32 event_request_exit(void)
     return 0;
 }
 
-typedef struct {
-    u8 pad0[0x58];
-    s32 w58;
-} G_2;
-
-extern G_2 gEvent_34;
-
 void event_gates_init(void) {
-    gEvent_34.w58 |= 0x10;
+    gEvent.flags |= 0x10;
     race_reset_grid_order();
 }
 
@@ -3590,17 +3184,17 @@ void event_stop_sounds_rumble(void)
 
 void event_update_gates(void)
 {
-    s32 *g;
+    Event *g;
 
     event_update_countdown();
-    g = gEvent_3;
-    if (g[0x40 / 4] == 0) {
-        if ((g[0x58 / 4] & 0x10) == 0) {
-            s32 n = g[0x2C / 4] + 1;
-            g[0x2C / 4] = n;
+    g = &gEvent;
+    if (g->allFinished == 0) {
+        if ((g->flags & 0x10) == 0) {
+            s32 n = g->time + 1;
+            g->time = n;
             if (n == 0x34BC0) {
                 event_rider_finished(0);
-                g[0x40 / 4] = 1;
+                g->allFinished = 1;
             }
         }
     } else if ((gPlayerInputs_2 & 0x40) != 0 && (gPlayerInputsPrev & 0x40) == 0) {
@@ -3609,65 +3203,50 @@ void event_update_gates(void)
 }
 
 typedef struct {
-    u8 pad0[0x48];
-    s32 f48;
-    u8 pad1[0xC];
-    u32 f58;
-} Blk_15;
-
-typedef struct {
     u8 pad0[0x69C];
     s32 f69C;
     u8 pad1[0x7E0 - 0x6A0];
 } Ent_56;
 
-extern Blk_15 gEvent_35;
 extern Ent_56 gRiders_70[];
 
 void event_hillclimb_init(void) {
     Ent_56 *e;
 
-    gEvent_35.f48 = -1;
-    gEvent_35.f58 |= 0x10;
+    gEvent.unk_48 = -1;
+    gEvent.flags |= 0x10;
     race_reset_grid_order();
-    for (e = gRiders_70; e < &gRiders_70[gGame_9.count]; e++) {
+    for (e = gRiders_70; e < &gRiders_70[gGame.numPlayers]; e++) {
         e->f69C = 7200;
     }
 }
 
 void event_stunt_init(void)
 {
-    u32 *p = (u32 *)gEvent_2;
-    p[0x58 / 4] = p[0x58 / 4] | 0x10;
-    p[0x2C / 4] = 0x1C20;
+    Event *p = &gEvent;
+    p->flags = p->flags | 0x10;
+    p->time = 0x1C20;
     race_reset_grid_order();
 }
 
 void event_soccer_init(void)
 {
-    u8 *p;
+    Event *p;
     s32 w;
 
-    p = gEvent_2;
-    w = *(s32 *)(p + 0x58);
-    *(u16 *)(p + 0x26) = 0xB4;
-    *(s32 *)&gEvent_2 = 6;
-    *(u8 *)(p + 0x6E) = 0;
-    *(u16 *)(p + 0x68) = 0;
-    *(u16 *)(p + 0x6A) = 0;
-    *(u16 *)(p + 0x6C) = 0;
-    *(s32 *)(p + 0x58) = w | 0x10;
+    p = &gEvent;
+    w = p->flags;
+    p->countdown = 0xB4;
+    gEvent.state = 6;
+    p->ballToucher = 0;
+    p->goals[0] = 0;
+    p->goals[1] = 0;
+    p->goalTimer = 0;
+    p->flags = w | 0x10;
 }
 
-typedef struct {
-    s32 state;
-    u8 pad[0x1E];
-    s16 count;
-    s16 f24;
-} Ctl_16;
-
 void event_reset_places(void) {
-    Ctl_16 *c = &gEvent;
+    Event *c = &gEvent;
     s32 i;
     s16 *t;
 
@@ -3675,15 +3254,15 @@ void event_reset_places(void) {
         race_set_grid_order(2, 0);
     }
     i = 0;
-    c->f24 = 0;
-    if (c->count > 0) {
+    c->numFinished = 0;
+    if (c->numRiders > 0) {
         s16 neg = -1;
-        Ctl_16 *d = c;
+        Event *d = c;
         t = D_800E3E20;
         do {
             t[4] = neg;
             t += 0x3F0;
-        } while (++i < d->count);
+        } while (++i < d->numRiders);
     }
 }
 
@@ -3693,38 +3272,24 @@ typedef struct {
     u8 pad2[0x7E0 - 0x66A];
 } Rider_4;
 
-typedef struct {
-    u8 pad[0x66];
-    u8 a[1];
-} Thing;
-
 extern Rider_4 gRiders_71[];
-extern Thing *gSeason_13;
 
 void event_clear_season_race_points(void) {
     s32 i;
-    for (i = 0; i < gEvent.n; i++) {
+    for (i = 0; i < gEvent.numRiders; i++) {
         if (gRiders_71[i].x668 != -1) {
-            gSeason_13->a[i] = 0;
+            gSeason->racePoints[i] = 0;
         }
     }
 }
 
-typedef struct {
-    s32 state;
-    s32 pad[10];
-    s32 cnt;
-} Blk_16;
-
-extern Blk_16 gEvent_36;
-
 void func_8005B2E8(void)
 {
     event_update_countdown();
-    if (gEvent_36.state == 5) {
-        if (gEvent_36.cnt != 0) {
-            s32 r = gEvent_36.cnt - 1;
-            gEvent_36.cnt = r;
+    if (gEvent.state == 5) {
+        if (gEvent.time != 0) {
+            s32 r = gEvent.time - 1;
+            gEvent.time = r;
             if (r == 0) {
                 D_800E3E2A = 0x78;
             }
@@ -3738,10 +3303,10 @@ void event_hud_free(void)
     s32 *p1;
     s32 *p2;
 
-    if (gGame_4[0x13] == 9) {
+    if (gGame.mode == 9) {
         mem_free(sGreyPalette);
     }
-    if (gGame_4[0xF] == 1) {
+    if (gGame.numPlayers == 1) {
         mem_free(D_800F0730[0]);
         mem_free(D_800F0730[1]);
     }
@@ -3783,8 +3348,8 @@ Gfx *func_8005B404(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5)
 
 s32 tutorial_lesson_has_demo(void)
 {
-    s32 idx = *(s16 *)(gSeason + 0x64);
-    return gTutorialLessons_12[idx * 10 + 7] != 0;
+    s32 idx = gSeason->round;
+    return gTutorialLessons[idx].demo != 0;
 }
 
 typedef struct Ent_57 {

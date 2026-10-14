@@ -1,9 +1,5 @@
 #include "game.h"
 
-typedef struct { u8 pad[0x58]; u32 flags; } Ctl_7;
-
-extern Ctl_7 gEvent_15;
-
 void bike_crash_begin(Bike_23 *b, s32 n)
 {
     s16 rx, ry, rz;
@@ -24,7 +20,7 @@ void bike_crash_begin(Bike_23 *b, s32 n)
     b->x644 = 0;
     b->x655 = 0;
     if (b == &gRiders_46[1]) {
-        gEvent_15.flags &= ~0x1000;
+        gEvent.flags &= ~0x1000;
     }
     b->x3FB = 0;
     b->x7A8 = 0;
@@ -33,7 +29,7 @@ void bike_crash_begin(Bike_23 *b, s32 n)
         flash_start(0x3C);
         tunes_queue_crowd(0);
     }
-    if (gGameMode == 6) {
+    if (gGame.mode == 6) {
         b->x626 = path_find_segment(&b->pos, b->x628, 10, 1);
     }
     idx = b - gRiders_46;
@@ -116,14 +112,11 @@ void bike_crash_begin(Bike_23 *b, s32 n)
     collide_tree_clear_cache(b->x248);
 }
 
-#define DAMPR(x) { f32 r, k, v, w; k = (gGame_31.f4C == 6) ? gBikeTuneSpringRate * 20000.0f : 15000.0f; v = (x); w = v; if (gGame_31.f4C == 6) r = v - v * (k / ((gBikeTuneDamping * 2000.0f) / gPhysDeltaTime)); else r = w - w * (k / (2200.0f / gPhysDeltaTime)); (x) = r; }
+#define DAMPR(x) { f32 r, k, v, w; k = (gGame.mode == 6) ? gBikeTuneSpringRate * 20000.0f : 15000.0f; v = (x); w = v; if (gGame.mode == 6) r = v - v * (k / ((gBikeTuneDamping * 2000.0f) / gPhysDeltaTime)); else r = w - w * (k / (2200.0f / gPhysDeltaTime)); (x) = r; }
 #define CLAMP(b, p) { m = __builtin_sqrtf(b->p.vx * b->p.vx + b->p.vy * b->p.vy + b->p.vz * b->p.vz);     if (b->f428 < m) { b->p.vx *= b->f428 / m; b->p.vy *= b->f428 / m; b->p.vz *= b->f428 / m; } }
 
 typedef struct { u8 pad[0x28]; s32 flags; u8 pad2[0x40 - 0x2C]; } Track_9;
-typedef struct { u8 pad[0x3C]; s32 f3C; u8 pad2[0x4C - 0x40]; s32 f4C; } Game_15;
-
 extern Track_9 gSurfaceTable_7[];
-extern Game_15 gGame_31;
 
 static inline f32 airtime(Body_2 *p, f32 g)
 {
@@ -152,7 +145,7 @@ void bike_crash_update(Bike_24 *b)
     DAMPR(b->f51C);
     DAMPR(b->f478);
     b->f5A0 *= 0.9f;
-    if (b->f6E8 == 0 && (gGame_31.f3C == 1 || gGame_31.f4C == 8)) {
+    if (b->f6E8 == 0 && (gGame.numPlayers == 1 || gGame.mode == 8)) {
         gCrashSlowMotion = 1;
     }
     height_get_ground(b->b0.x * 1000.0f, b->b0.y * 1000.0f, b->b0.z * 1000.0f);
@@ -220,7 +213,7 @@ void bike_crash_update(Bike_24 *b)
     }
     ch = 0x78;
     if (gCrashSlowMotion != 0 && b->f6E8 == 0) ch = 0xF0;
-    if (gGame_31.f4C == 7) ch = 0x12C;
+    if (gGame.mode == 7) ch = 0x12C;
     if (ch < (s16)b->f624) bike_respawn(b);
 }
 
@@ -410,7 +403,7 @@ s32 phys_body_step(Body_3 *b, Pt_4 *t, s32 n, u8 m)
                     o->f45 = (t[k].v.z > 0.0f) ? -0x19 : -0x1C;
                     o->f43C = o->b0.vel;
                 } else if (a < -15.0f) {
-                    if (gCurTrack_25->f2C == 0 && gGameMode != 10 && gGameMode != 2) {
+                    if (gCurTrack_25->f2C == 0 && gGame.mode != 10 && gGame.mode != 2) {
                         sCrashAnnounceFrame = gRaceFrame;
                         if ((f32)height_get_ground((s32)(o->b0.pos.x * 1000.0f), (s32)(o->b0.pos.y * 1000.0f), (s32)(o->b0.pos.z * 1000.0f)) / 1000.0f - o->b0.pos.y > 2.0f) {
                             announce_crash(o - gRiders_48);
@@ -564,7 +557,7 @@ s32 phys_body_step(Body_3 *b, Pt_4 *t, s32 n, u8 m)
                 collide_bodies(b, &gRiders_48[i].b0);
             }
         }
-        if (gGameMode == 2) {
+        if (gGame.mode == 2) {
             collide_bodies(b, &gSoccerBall);
         }
     }
@@ -709,28 +702,13 @@ typedef struct {
     u8 pad60[0x6C - 0x60];
 } Node_7;
 
-typedef struct {
-    u8 pad0[0x3C];
-    s32 f3C;
-    u8 pad40[0x4C - 0x40];
-    u32 mode;
-} Game_17;
-
-typedef struct {
-    s32 f0;
-    u8 pad4[0x58 - 0x4];
-    s32 f58;
-} State_4;
-
-extern Game_17 gGame_32;
-extern State_4 gEvent_16;
 extern Node_7 *gPathNodes_11;
 
 void bike_respawn(Bike_26 *b) {
     s32 s;
     s32 v, i, k, idx;
     Node_7 *n;
-    Game_17 *g;
+    Game *g;
     Bike_26 *p;
     f32 z, r2, half, t, d, dx, dz, y;
 
@@ -769,13 +747,13 @@ void bike_respawn(Bike_26 *b) {
         }
     }
     s = -1;
-    g = &gGame_32;
+    g = &gGame;
     switch (g->mode) {
     case 2:
-        if ((gEvent_16.f58 & 0xF) || (gEvent_16.f0 != 7 && gEvent_16.f0 != 11 && gEvent_16.f0 != 9)) {
+        if ((gEvent.flags & 0xF) || (gEvent.state != 7 && gEvent.state != 11 && gEvent.state != 9)) {
         b->f620 = 0;
         b->f621 = 0;
-        if (g->f3C == 4) {
+        if (g->numPlayers == 4) {
             switch (b - gRiders_49) {
             case 0:
                 b->pos.x = -1.0f;
@@ -829,10 +807,10 @@ void bike_respawn(Bike_26 *b) {
         break;
     default:
         s = b->f626;
-        if (gGame_32.mode == 6 && s > 0) {
+        if (gGame.mode == 6 && s > 0) {
             s--;
         }
-        if (gGame_32.mode == 14) {
+        if (gGame.mode == 14) {
             s = 1;
         }
         while (gPathNodes_11[s].f44 > 0) {
@@ -860,7 +838,7 @@ void bike_respawn(Bike_26 *b) {
             v = gPathNodes_11[v].prev;
         }
         b->f628 = s;
-        if (gGame_32.mode == 6) {
+        if (gGame.mode == 6) {
             b->f7AA = 0;
             b->pos.x = (f32)b->f7A9 * 2.178f;
         } else {
@@ -928,7 +906,7 @@ void bike_respawn(Bike_26 *b) {
         b->pos.y = gPathNodes_11[s].pos.y + 1.0f;
     }
     y = (f32)height_get_ground(b->pos.x * 1000.0f, b->pos.y * 1000.0f, b->pos.z * 1000.0f) / 1000.0f + z + 0.5f;
-    b->pos.y = y - (gGame_32.mode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
+    b->pos.y = y - (gGame.mode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
     bike_update_wheel_contacts(b);
     bike_update_wheel_contacts(b);
     bike_update_suspension(b);

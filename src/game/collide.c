@@ -215,7 +215,7 @@ skip0:
 
     a = GU8(p1, 0x6E8);
     b = GU8(p2, 0x6E8);
-    if ((a & b) == 0 || gEventTime < 300) announce_takeout(IDX(p1), IDX(p2));
+    if ((a & b) == 0 || gEvent.time < 300) announce_takeout(IDX(p1), IDX(p2));
     GS8(p2, 0x45) = -0x19;
     goto L1c8;
 
@@ -224,7 +224,7 @@ L12c:
     if (GS32(p1, 0x744) >= 0) goto L1d8;
     a = GU8(p1, 0x6E8);
     b = GU8(p2, 0x6E8);
-    if ((a & b) == 0 || gEventTime < 300) announce_takeout(IDX(p2), IDX(p1));
+    if ((a & b) == 0 || gEvent.time < 300) announce_takeout(IDX(p2), IDX(p1));
     GS8(p1, 0x45) = -0x1C;
 
 L1c8:
@@ -232,7 +232,7 @@ L1c8:
     GS32(p1, 0x648) = 0;
 
 L1d8:
-    if (gGameMode == 6) {
+    if (gGame.mode == 6) {
         if (GF32(p1, 0x50) < GF32(p2, 0x50)) {
             if (GF32(p1, 0x48) < GF32(p2, 0x48)) {
                 GS8(p2, 0x45) = -0x1F;
@@ -527,7 +527,7 @@ s32 collide_apply_impulse(Obj_42 *a, Obj_42 *b) {
             pb->f43C = pb->f54;
             return 1;
         }
-        if (pa->f662 + pb->f662 == 1 && gEventTime < 360 && !(pa->f6E8 & pb->f6E8)) {
+        if (pa->f662 + pb->f662 == 1 && gEvent.time < 360 && !(pa->f6E8 & pb->f6E8)) {
             if (gRaceFrame - gAnnounceTimes[pa - gRiders_76] < 600) {
                 announce_place(pb - gRiders_76, pb->f662);
                 return 1;
@@ -584,13 +584,13 @@ s32 collide_bodies(u8 *p1, u8 *p2)
             }
             tb = (u8 *)D_800E3808_2;
             if (p1 == tb) {
-                D_800F0616 = 0;
+                gEvent.ballToucher = 0;
             } else if (p1 == tb + 0x7E0) {
-                D_800F0616 = 1;
+                gEvent.ballToucher = 1;
             } else if (p1 == tb + 0xFC0) {
-                D_800F0616 = 2;
+                gEvent.ballToucher = 2;
             } else if (p1 == tb + 0x17A0) {
-                D_800F0616 = 3;
+                gEvent.ballToucher = 3;
             }
             return 1;
         }

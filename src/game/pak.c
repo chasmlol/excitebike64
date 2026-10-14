@@ -530,7 +530,7 @@ void pak_screen_update(Pad16 *arg0) {
     sPakMessages[5].text = sPakModePrompts[gPakScreen_5.mode];
     if (gPakScreen_5.mode == 0) {
         sPakMessages[12].lines = D_800CDF64;
-    } else if (D_800F01F8 == 1) {
+    } else if (gGame.pakScreenMode == 1) {
         sPakMessages[12].lines = D_800CDF6C;
     } else {
         sPakMessages[12].lines = D_800CDF78;

@@ -112,14 +112,8 @@ typedef struct {
     u8 rest[0x1C];
 } Move;
 
-typedef struct {
-    u8 pad[0x1C];
-    s32 sh[1];
-} Cfg_11;
-
 extern Move gRiderAnims_12[];
 extern Ent_78 gRiders_89[];
-extern Cfg_11 gGame_51;
 
 void stunt_read_input(Ent_78 *e)
 {
@@ -166,7 +160,7 @@ void stunt_read_input(Ent_78 *e)
         do {
             for (i = 0; i < 7; i++) {
                 if (p[i + 1] == 0 &&
-                    (((gRiderAnims_12[p[0]].mask >> gGame_51.sh[e - gRiders_89]) & 1) ||
+                    (((gRiderAnims_12[p[0]].mask >> gGame.riders[e - gRiders_89]) & 1) ||
                      (gCheatFlags & 0x200))) {
                     e->f408 = gRaceFrame;
                     e->f3D3 = p[0];
@@ -239,7 +233,7 @@ void stunt_update(Obj_56 *o)
     stunt_read_input(o);
     if (o->b3FB != 0) {
         if (--o->b3FB == 0) {
-            if ((o->w744 < 0 || 30.0f < o->f6F4) && gEventAllFinished == 0) {
+            if ((o->w744 < 0 || 30.0f < o->f6F4) && gEvent.allFinished == 0) {
                 found = 0;
                 t = o->w3C4;
                 o->w3C4 = 0;

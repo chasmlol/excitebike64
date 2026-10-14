@@ -11,7 +11,7 @@ void ai_update_throttle(u8 *p)
     iVar1 = *(s16 *)(p + 0x628) + 1;
     fVar2 = *(f32 *)(gPathNodes + *(s16 *)(p + 0x628) * 0x6C + 0x10) * (1.0f - *(f32 *)(p + 0x63C))
           + *(f32 *)(gPathNodes + (iVar1 % gPathNodeCount) * 0x6C + 0x10) * *(f32 *)(p + 0x63C);
-    ev = gGameMode;
+    ev = gGame.mode;
     if (ev == 10) goto L_e4;
     if (ev < 11) {
         if (ev == 7) goto L_e4;
@@ -201,7 +201,7 @@ void ai_update_steering(Bike_34 *b) {
     Vec3f *pos;
     Node_15 *n;
 
-    switch (gGameMode_2) {
+    switch (gGame.mode) {
     case 6:
         excite3d_cpu_steer((u8 *)b);
         break;
@@ -295,7 +295,7 @@ void ai_update_steering(Bike_34 *b) {
                 cnt = k;
             }
         }
-    } else if (gGameMode_2 != 6) {
+    } else if (gGame.mode != 6) {
         pos = b->unk6EC ? &b->v6FC : &b->v71C;
         idx = b->unk6EC ? b->unk714 : b->unk734;
         r = path_get_lateral_offset(pos, idx);
@@ -516,7 +516,7 @@ void bike_update_steering(u8 *p, s32 m)
             T = w;
         }
     }
-    if (gGameMode == 7) {
+    if (gGame.mode == 7) {
         T += (FLD(f32, p, 0xb8) * FLD(f32, p, 0x56c) - FLD(f32, p, 0xc0) * FLD(f32, p, 0x564)) * 16.0f * S;
     }
     g = FLD(f32, p, 0x5a0);

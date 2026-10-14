@@ -203,7 +203,7 @@ void nes_update_input(volatile s32 *p)
     *(u8 *)0x80394120 = f;
     if ((*p & 0x28000) == 0x28000) {
         gRaceExitCode = 2;
-        gCurGameState_4[4] = 3;
+        gCurGameState->mode = 3;
     }
 }
 

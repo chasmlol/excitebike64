@@ -241,7 +241,7 @@ void excite3d_update(void)
 
     do {
         sw = 0;
-        for (i = 0; i < gEvent.n - 1; i++) {
+        for (i = 0; i < gEvent.numRiders - 1; i++) {
             a = gRiderStandings_7[i];
             b = gRiderStandings_7[i + 1];
             if (a->f630 < b->f630 && (a->f7A5 | b->f7A5) == 0) {
@@ -252,7 +252,7 @@ void excite3d_update(void)
         }
     } while (sw);
 
-    for (i = 0; i < gEvent.n; i++) {
+    for (i = 0; i < gEvent.numRiders; i++) {
         gRiderStandings_7[i]->f662 = i;
     }
 
@@ -380,7 +380,7 @@ void excite3d_update(void)
 
 void excite3d_player_steer(Obj_52 *p)
 {
-    if (gEventTime <= 0) {
+    if (gEvent.time <= 0) {
         return;
     }
     if ((s8)p->u7aa != 0) {

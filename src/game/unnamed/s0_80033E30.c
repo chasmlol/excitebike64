@@ -12,7 +12,7 @@ void sky_scan_zbuffer(s32 arg0)
     Rect *q;
     S1 *p;
 
-    if ((gGame & 0x10000) == 0) {
+    if ((gGame.flags & 0x10000) == 0) {
         return;
     }
     m = gNumViews - 1;

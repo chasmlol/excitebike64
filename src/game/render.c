@@ -16,8 +16,6 @@ typedef struct {
     Col16 *items;
 } ColList;
 
-typedef struct { u32 w0; u32 img; } TexHdr;
-
 struct Dyn {
     Mtx m0[4];  /* 0x000 */
     Mtx m1[4];  /* 0x100 */
@@ -53,17 +51,8 @@ typedef struct {
     u8 rest[0xA80 - 0x244];
 } Plr;
 
-typedef struct {
-    u32 flags;
-    u8 pad4[0x18];
-    s32 w1C[4];
-    u8 pad2C[0x43C - 0x2C];
-    u8 b43C[8];
-} Glob;
-
 extern Ent28 sRiderModelTable[];
 extern Plr gRiderGfx_2[];
-extern Glob gGame_10;
 
 void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg5)
 {
@@ -86,20 +75,20 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
         }
         gRiderGfx_2[n].f8 = res_load(r, *D_800C23C8[arg3]);
     }
-    if (gGame_10.flags & 0x10) {
+    if (gGame.flags & 0x10) {
         gRiderGfx_2[n].f18 = mem_alloc_dbg(0xC00, 0, D_800D5EBC, 0x1FF);
     } else {
         gRiderGfx_2[n].f14 = mem_alloc_dbg(0x200, 0, D_800D5EBC, 0x203);
     }
-    if (!(gGame_10.flags & 0x10)) {
-        c = gGame_10.b43C[n];
+    if (!(gGame.flags & 0x10)) {
+        c = gGame.riderSkins[n];
     } else {
-        c = gGame_10.w1C[n & 3] & 3;
+        c = gGame.riders[n & 3] & 3;
     }
     col = &gRiderGfx_2[n].col;
     mem_fill((u8 *)col, 0xFF, 3);
     k = res_get_size(r, *ids[c]);
-    if (gGame_10.flags & 0x10) {
+    if (gGame.flags & 0x10) {
         for (i = 0; i < 6; i++) {
             D_800E1600[n][i] = mem_alloc_dbg(k, 0, D_800D5EBC, 0x220);
             tmp = res_load(r, *ids[i]);
@@ -129,7 +118,7 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
             gRiderGfx_2[n].f4 = res_load(r, *sRiderModelTable[0].f4);
         }
     }
-    if (gGame_10.flags & 0x10) {
+    if (gGame.flags & 0x10) {
         for (i = 0; i < 6; i++) {
             gRiderGfx_2[n].f18[i] = *D_800E1600[n][i]->pal;
         }
@@ -234,17 +223,6 @@ void render_update_screen_layout(void)
 }
 
 typedef struct {
-    s32 flags;
-    u8 pad4[0x18];
-    s32 a1C[8];
-    s32 f3C;
-    u8 pad40[0xC];
-    u32 mode;
-    u8 pad50[0x7AA - 0x50];
-    u8 b7AA[6];
-} Game_4;
-
-typedef struct {
     u8 pad0[0x2C];
     s32 f2C;
     u8 pad30[0x20];
@@ -286,7 +264,6 @@ typedef struct {
     u16 *f4;
 } Res;
 
-extern Game_4 gGame_11;
 extern Track_3 *gCurTrack_9;
 extern Track_3 gTracks_4[];
 extern Ent28_2 D_800C26C8[];
@@ -305,7 +282,7 @@ void render_init(void) {
     s32 idx;
     s32 x, y, z;
 
-    if (gGame_11.flags & 0x40000) {
+    if (gGame.flags & 0x40000) {
         gPodiumMode = 1;
     } else {
         gPodiumMode = 0;
@@ -368,10 +345,10 @@ void render_init(void) {
     D_800DC0B4 = 8;
     sRiderColors = res_load(D_800E7728, D_800D0848);
     if (gCurTrack_9->f2C != 2) {
-        if (gReplayPlayback != 0 || (gGame_11.flags & 0x80) || gGhostRace != 0) {
+        if (gReplayPlayback != 0 || (gGame.flags & 0x80) || gGhostRace != 0) {
             gNumViews = 1;
         } else {
-            gNumViews = gGame_11.f3C;
+            gNumViews = gGame.numPlayers;
         }
     }
     if (gCurTrack_9->f2C == 2) {
@@ -392,7 +369,7 @@ void render_init(void) {
     prim_flip_images(sGaugeTextures);
     sGaugePalettes = mem_alloc_dbg(0x400, 0, D_800D5EBC, 0x38B);
     mem_fill(sGaugePalettes, 0, 0x400);
-    switch (gGame_11.mode) {
+    switch (gGame.mode) {
     case 2:
         soccer_ball_load_model();
         break;
@@ -421,14 +398,14 @@ void render_init(void) {
     mem_fill(sRiderModelCache, 0, 0x70);
     mem_fill((u8 *)gRiderGfx_3, 0, 0x5400);
     n = 8;
-    if (gGame_11.f3C >= 2 && !(gGame_11.flags & 0x10)) {
+    if (gGame.numPlayers >= 2 && !(gGame.flags & 0x10)) {
         n = 4;
     }
-    if ((gGame_11.flags & 1) && gEventNumRiders == 1) {
+    if ((gGame.flags & 1) && gEvent.numRiders == 1) {
         n = 2;
     }
     if (gPodiumMode != 0) {
-        n = gEventNumRiders;
+        n = gEvent.numRiders;
     }
     if (gCreditsMode != 0) {
         n = 1;
@@ -437,7 +414,7 @@ void render_init(void) {
         D_800E1880[i] = (s32)((Res *)res_load(D_800E7728, *D_800C23B0[i]))->f4;
     }
     for (j = 0; j < n; j++) {
-        if (gGame_11.flags & 0x10) {
+        if (gGame.flags & 0x10) {
             if (j >= 6) {
                 break;
             }
@@ -445,12 +422,12 @@ void render_init(void) {
         } else {
             i = 4;
             if (j < 6) {
-                i = gGame_11.a1C[j];
+                i = gGame.riders[j];
             }
         }
-        render_load_rider(D_800E7728, j, &D_800C26C8[i], gGame_11.b7AA[j % 6] & 1, gGame_11.b7AA[j % 6] >> 1, i);
+        render_load_rider(D_800E7728, j, &D_800C26C8[i], gGame.bikeSkins[j % 6] & 1, gGame.bikeSkins[j % 6] >> 1, i);
     }
-    if (!(gGame_11.flags & 0x81)) {
+    if (!(gGame.flags & 0x81)) {
         event_hud_init();
     }
     for (i = 0; i < 8; i++) {
@@ -561,7 +538,7 @@ void render_init(void) {
         gSkyMode = 0;
         mem_fill(gFogColor, 0, 3);
     }
-    if (D_800F05E4 != 0) {
+    if (gEvent.noPlayers != 0) {
         gDrawFlags &= ~0x800;
     } else {
         gDrawFlags |= 0x800;
@@ -571,11 +548,9 @@ void render_init(void) {
 }
 
 typedef struct { u8 pad0[0x14]; s32 f14; s32 f18; u8 pad1c[0x234 - 0x1C]; s32 a[2]; s32 b[2]; u8 rest[0xA80 - 0x244]; } Plr_2;
-typedef struct { s32 flags; u8 pad[0x48]; s32 mode; } State;
 typedef struct { u8 pad[0x2C]; s32 m; u8 pad30[0x20]; u32 f50; } Cfg_4;
 
 extern Cfg_4 *gCurTrack_10;
-extern State gGame_12;
 extern Plr_2 gRiderGfx_4[];
 
 void render_free(void)
@@ -600,10 +575,10 @@ void render_free(void)
     mem_free(gBikeSkelTemplate);
     mem_free(gRiderSkelTemplate);
     mem_free(sGaugePalettes);
-    if ((gGame_12.flags & 0x81) == 0) {
+    if ((gGame.flags & 0x81) == 0) {
         event_hud_free();
     }
-    switch (gGame_12.mode) {
+    switch (gGame.mode) {
     case 2:
         soccer_ball_free_model();
         break;
@@ -619,7 +594,7 @@ void render_free(void)
     }
     prim_exit();
     for (n = 0; n < 8; n++) {
-        if (gGame_12.flags & 0x10) {
+        if (gGame.flags & 0x10) {
             if (n >= 6) {
                 break;
             }
@@ -783,29 +758,10 @@ Gfx *render_begin_menu_frame(Gfx *gdl, s32 fb, u8 *mtx) {
 }
 
 typedef struct {
-    s16 cnt;
-    s16 pad;
-    TexHdr *tex;
-    u8 *bar;
-    TexHdr *tex2;
-    TexHdr *anim;
-    TexHdr *tex3;
-} EbState;
-
-typedef struct {
-    u8 pad0[0x74];
-    s32 *font;
-    u8 pad78[0x17C - 0x78];
-    s32 frame;
-} GState;
-
-typedef struct {
     u8 pad0[0x2C4];
     u8 flag;
 } Opts;
 
-extern EbState D_800E3730_2;
-extern GState gGame_13;
 extern Opts gSaveData_2;
 
 Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
@@ -814,32 +770,32 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
     s32 j;
     s32 x;
     s32 y;
-    TexHdr *t;
+    Img *t;
     s32 xi;
     u8 *p;
 
-    if (D_800E3730_2.cnt > 0) {
-        D_800E3730_2.cnt--;
+    if (gPauseScreen.timer > 0) {
+        gPauseScreen.timer--;
         gdl = render_begin_menu_frame_2(gdl, fb);
-    } else if (D_800E3730_2.cnt == -1) {
+    } else if (gPauseScreen.timer == -1) {
         gdl = render_begin_menu_frame_2(gdl, fb);
         G(gdl++, 0xE200001C, 0x0C084000);
         G(gdl++, 0xE3001001, 0x00008000);
         G(gdl++, 0xFCFFFFFF, 0xFFFCF279);
-        G(gdl++, 0xFD100000, D_800E3730_2.tex->img);
+        G(gdl++, 0xFD100000, gPauseScreen.background->addr);
         G(gdl++, 0xE8000000, 0);
         G(gdl++, 0xF5000100, 0x07000000);
         G(gdl++, 0xE6000000, 0);
         G(gdl++, 0xF0000000, 0x073FC000);
         G(gdl++, 0xE7000000, 0);
         G(gdl++, 0xE7000000, 0);
-        gdl = render_draw_image(0, 0, D_800E3730_2.tex + 1, gdl, fb, 1, 1, 3, 0);
+        gdl = render_draw_image(0, 0, &gPauseScreen.background[1], gdl, fb, 1, 1, 3, 0);
         G(gdl++, 0xFA000000, 0xE6E6E6FF);
         G(gdl++, 0xE3000C00, 0);
         G(gdl++, 0xE200001C, 0x00404240);
         font_reset_queue();
-        t = D_800E3730_2.tex2 + 1;
-        G(gdl++, 0xFD100000, D_800E3730_2.tex2->img);
+        t = &gPauseScreen.title[1];
+        G(gdl++, 0xFD100000, gPauseScreen.title->addr);
         G(gdl++, 0xE8000000, 0);
         G(gdl++, 0xF5000100, 0x07000000);
         G(gdl++, 0xE6000000, 0);
@@ -865,21 +821,21 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
                 } else {
                     G(gdl++, 0xFA000000, 0x4B4B4BFF);
                 }
-                gdl = render_draw_image(x, y, D_800E3730_2.bar + 0x28, gdl, fb, 1, 1, 6, 0);
+                gdl = render_draw_image(x, y, &gPauseScreen.volumeBar[5], gdl, fb, 1, 1, 6, 0);
             }
         }
         G(gdl++, 0xFA000000, 0xD2D2D2FF);
-        t = (TexHdr *)(D_800E3730_2.bar + 0x30);
+        t = &gPauseScreen.volumeBar[6];
         gdl = render_draw_image(0x100 - ((u8 *)t)[0] * 4, 0x78 - (((u8 *)t)[1] >> 1), t, gdl, fb, 1, 1, 6, ((u32)t & 1) >> 1);
         G(gdl++, 0xE3001001, 0x00008000);
         G(gdl++, 0xFCFFFFFF, 0xFFFCF279);
-        G(gdl++, 0xFD100000, &D_800E3730_2.tex3->img);
+        G(gdl++, 0xFD100000, gPauseScreen.cursorPal + 4);
         G(gdl++, 0xE8000000, 0);
         G(gdl++, 0xF5000100, 0x07000000);
         G(gdl++, 0xE6000000, 0);
         G(gdl++, 0xF0000000, 0x073FC000);
         G(gdl++, 0xE7000000, 0);
-        t = D_800E3730_2.anim + ((gGame_13.frame / 2) % 30 + 1);
+        t = &gPauseScreen.cursorImg[(gGame.menuAnimTimer / 2) % 30 + 1];
         for (j = 0; j < 4; j++) {
             if (j < 3) {
                 x = 0x48 - j * 7;
@@ -889,16 +845,16 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
                 x = xi - ((j - 3) / 2 + 3) * 7;
                 y = D_800C27B8[j];
             }
-            font_text_create(gGame_13.font, 0x40, 1, (j == gOptionsCursor) ? 4 : 2, 0x20);
-            font_text_add(gGame_13.font, gOptionsLabels[j]);
-            font_draw_text(gGame_13.font, x + 0x24, y + 8);
+            font_text_create(gGame.texts[0], 0x40, 1, (j == gOptionsCursor) ? 4 : 2, 0x20);
+            font_text_add(gGame.texts[0], gOptionsLabels[j]);
+            font_draw_text(gGame.texts[0], x + 0x24, y + 8);
             if (j == gOptionsCursor) {
                 gdl = render_draw_image(x - 2, y, t, gdl, fb, 1, 1, 3, 0);
             }
-            font_text_create(gGame_13.font, 0x40, 1, (j == gOptionsCursor) ? 6 : 2, 0x22);
+            font_text_create(gGame.texts[0], 0x40, 1, (j == gOptionsCursor) ? 6 : 2, 0x22);
             if (j == 3) {
-                font_text_add(gGame_13.font, gMonoStereoStrings[gSaveData_2.flag & 1]);
-                font_draw_text(gGame_13.font, x + 0xB4, y + 8);
+                font_text_add(gGame.texts[0], gMonoStereoStrings[gSaveData_2.flag & 1]);
+                font_draw_text(gGame.texts[0], x + 0xB4, y + 8);
             }
         }
         gdl = font_render(gdl);
@@ -906,18 +862,6 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
     return gdl;
 }
 
-typedef struct { s16 cnt; s16 pad; TexHdr *tex; } EbState_2;
-
-typedef struct {
-    u8 pad0[0x50];
-    s8 cfg[0x24];
-    s32 *font;
-    u8 pad78[0x2C8 - 0x78];
-    s8 ctl[4];
-} GState_2;
-
-extern EbState_2 D_800E3730_3;
-extern GState_2 gGame_14;
 
 Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
 {
@@ -928,35 +872,35 @@ Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
     s32 sel;
     s32 lo;
 
-    if (D_800E3730_3.cnt > 0) {
-        D_800E3730_3.cnt--;
+    if (gPauseScreen.timer > 0) {
+        gPauseScreen.timer--;
         gdl = render_begin_menu_frame(gdl, fb, mtx);
-    } else if (D_800E3730_3.cnt == -1) {
+    } else if (gPauseScreen.timer == -1) {
     gdl = render_begin_menu_frame(gdl, fb, mtx);
     G(gdl++, 0xE200001C, 0x00404240);
     G(gdl++, 0xE3001001, 0x00008000);
     G(gdl++, 0xFCFFFFFF, 0xFFFCF279);
-    G(gdl++, 0xFD100000, D_800E3730_3.tex->img);
+    G(gdl++, 0xFD100000, gPauseScreen.background->addr);
     G(gdl++, 0xE8000000, 0);
     G(gdl++, 0xF5000100, 0x07000000);
     G(gdl++, 0xE6000000, 0);
     G(gdl++, 0xF0000000, 0x073FC000);
     G(gdl++, 0xE7000000, 0);
     G(gdl++, 0xE7000000, 0);
-    gdl = render_draw_image(gViewRects_6[0], gViewRects_6[1], D_800E3730_3.tex + 1, gdl, fb, 1, 1, 3, 0);
+    gdl = render_draw_image(gViewRects_6[0], gViewRects_6[1], &gPauseScreen.background[1], gdl, fb, 1, 1, 3, 0);
     font_reset_queue();
-    font_text_create(gGame_14.font, 0x40, 4, 2, 0x21);
+    font_text_create(gGame.texts[0], 0x40, 4, 2, 0x21);
     strcpy(buf, "Controller ");
     i = 0;
-    int_to_str(gGame_14.ctl[gPausePlayer] + 1, buf + strlen(buf));
-    font_text_add(gGame_14.font, buf);
-    font_draw_text(gGame_14.font, 0xBE, 0x2A);
-    font_text_create(gGame_14.font, 0x40, 4, 2, 0x21);
+    int_to_str(gGame.playerPad[gPausePlayer] + 1, buf + strlen(buf));
+    font_text_add(gGame.texts[0], buf);
+    font_draw_text(gGame.texts[0], 0xBE, 0x2A);
+    font_text_create(gGame.texts[0], 0x40, 4, 2, 0x21);
     strcpy(buf, "Configuration ");
     buf[strlen(buf) + 1] = 0;
-    buf[strlen(buf)] = gGame_14.cfg[gGame_14.ctl[gPausePlayer]] + 'A';
-    font_text_add(gGame_14.font, buf);
-    font_draw_text(gGame_14.font, 0xEE, 0xC2);
+    buf[strlen(buf)] = gGame.padConfig[gGame.playerPad[gPausePlayer]] + 'A';
+    font_text_add(gGame.texts[0], buf);
+    font_draw_text(gGame.texts[0], 0xEE, 0xC2);
 
     for (; i < 9; i++) {
         sel = i & 1;
@@ -966,24 +910,24 @@ Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
         if (!sel) {
             v |= 0x40000000;
         }
-        font_text_create(gGame_14.font, 0x40, 5, a3v, v);
-        font_text_add(gGame_14.font, gControlActionLabels[gControlConfigs[gGame_14.cfg[gGame_14.ctl[gPausePlayer]]][i]]);
-        font_draw_text(gGame_14.font, gControlLabelPos[i].x + 4, gControlLabelPos[i].y + 5);
-        if (gControlConfigs[gGame_14.cfg[gGame_14.ctl[gPausePlayer]]][i] == 6) {
+        font_text_create(gGame.texts[0], 0x40, 5, a3v, v);
+        font_text_add(gGame.texts[0], gControlActionLabels[gControlConfigs[(s8)gGame.padConfig[gGame.playerPad[gPausePlayer]]][i]]);
+        font_draw_text(gGame.texts[0], gControlLabelPos[i].x + 4, gControlLabelPos[i].y + 5);
+        if (gControlConfigs[(s8)gGame.padConfig[gGame.playerPad[gPausePlayer]]][i] == 6) {
             a3v = sel ? 4 : 6;
             v = lo ? 0x22 : 0x20;
             if (!sel) {
                 v |= 0x40000000;
             }
-            font_text_create(gGame_14.font, 0x40, 5, a3v, v);
-            font_text_add(gGame_14.font, D_800CDAC8);
-            font_draw_text(gGame_14.font, gControlLabelPos[i].x + 4, gControlLabelPos[i].y + 0x10);
+            font_text_create(gGame.texts[0], 0x40, 5, a3v, v);
+            font_text_add(gGame.texts[0], D_800CDAC8);
+            font_draw_text(gGame.texts[0], gControlLabelPos[i].x + 4, gControlLabelPos[i].y + 0x10);
         }
     }
     for (i = 0; i < 3; i++) {
-        font_text_create(gGame_14.font, 0x40, 5, (i == 2) ? 4 : 6, (i != 2) ? 0x40000020 : 0x20);
-        font_text_add(gGame_14.font, gCameraButtonLabels[i]);
-        font_draw_text(gGame_14.font, gCameraLabelPos[i].x + 4, gCameraLabelPos[i].y + 5);
+        font_text_create(gGame.texts[0], 0x40, 5, (i == 2) ? 4 : 6, (i != 2) ? 0x40000020 : 0x20);
+        font_text_add(gGame.texts[0], gCameraButtonLabels[i]);
+        font_draw_text(gGame.texts[0], gCameraLabelPos[i].x + 4, gCameraLabelPos[i].y + 5);
     }
     gdl = font_render(gdl);
     }
@@ -1080,27 +1024,9 @@ typedef struct {
     u8 pad54[0x4C];
 } Track_4; /* 0xA0 */
 
-typedef struct {
-    s32 flags; /* 0x00 */
-    u8 pad4[0x38];
-    s32 f3C;   /* 0x3C */
-    u8 pad40[0xC];
-    s32 mode;  /* 0x4C */
-    u8 pad50[4];
-    s32 f54;   /* 0x54 */
-    s16 h58;   /* 0x58 */
-} Game_5;
-
-typedef struct {
-    s16 s0;
-    u8 c2;
-} Fade;
-
-extern Game_5 gGame_15;
 extern Track_4 *gCurTrack_12;
 extern Track_4 gTracks_6[];
 extern Player_2 gRiders_5[8];
-extern Fade D_800E3730_4;
 extern Skel *gBikeSkelTemplate_2;
 extern PG gRiderGfx_5[8];
 
@@ -1130,10 +1056,10 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gRiderAlpha[i] = 0x80;
         }
     }
-    if (gGame_15.f3C == 1 && D_800E3BBE != 0 && !(gGame_15.flags & 0x81) && gReplayPlayback == 0 &&
-        gGame_15.mode != 6 && gGame_15.mode != 7 && gGame_15.mode != 8 && gGame_15.mode != 9 &&
-        gGame_15.mode != 13 && gGame_15.mode != 14 && gCurTrack_12->type != 2) {
-        sInsetViewWanted = gGame_15.f3C;
+    if (gGame.numPlayers == 1 && D_800E3BBE != 0 && !(gGame.flags & 0x81) && gReplayPlayback == 0 &&
+        gGame.mode != 6 && gGame.mode != 7 && gGame.mode != 8 && gGame.mode != 9 &&
+        gGame.mode != 13 && gGame.mode != 14 && gCurTrack_12->type != 2) {
+        sInsetViewWanted = gGame.numPlayers;
     } else {
         sInsetViewWanted = 0;
     }
@@ -1305,9 +1231,9 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gdl = render_draw_controls_menu(gdl, fb, dyn);
             goto end;
         case 1:
-            if (D_800E3730_4.s0 != -1) {
-                if (D_800E3730_4.s0 > 0) {
-                    D_800E3730_4.s0--;
+            if (gPauseScreen.timer != -1) {
+                if (gPauseScreen.timer > 0) {
+                    gPauseScreen.timer--;
                 }
                 goto end;
             }
@@ -1341,11 +1267,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth, gScreenHeight);
     gDPPipeSync(gdl++);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
-    if (sClearFrames != 0 || D_800E3730_4.c2 != 0 || gPauseMenu != 0) {
+    if (sClearFrames != 0 || gPauseScreen.clearFrames != 0 || gPauseMenu != 0) {
         gDPSetFillColor(gdl++, 0x10001);
         gDPFillRectangle(gdl++, 0, 0, gScreenWidth, gScreenHeight);
-        if (D_800E3730_4.c2 != 0) {
-            D_800E3730_4.c2--;
+        if (gPauseScreen.clearFrames != 0) {
+            gPauseScreen.clearFrames--;
         }
     }
     if (sClearFrames != 0) {
@@ -1415,7 +1341,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gDPSetCycleType(gdl++, G_CYC_1CYCLE);
         gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
     }
-    if (gNumScreens == 1 && (gReplayPlayback != 0 || (gGame_15.flags & 0x81))) {
+    if (gNumScreens == 1 && (gReplayPlayback != 0 || (gGame.flags & 0x81))) {
         gdl = sun_draw_stars(render_set_viewport(gdl, dyn, 0, 1), dyn);
     }
     mem_fill((u8 *)sRiderDrawFlags, 0, 0x20);
@@ -1434,7 +1360,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             }
             if (gRiderViewLod[i] & 0xF0F0F0F0) {
                 if (gRiders_5[i].b6E8 == 0 || !((sRenderFrame / 2 + i) & 1) || gNumScreens != 1 ||
-                    ((gRiderViewLod[i] >> 4) & 0xF) == 3 || gRiders_5[i].b44 != 0 || (gGame_15.flags & 1)) {
+                    ((gRiderViewLod[i] >> 4) & 0xF) == 3 || gRiders_5[i].b44 != 0 || (gGame.flags & 1)) {
                     rider_update_pose(gRiders_5[i].p65C, i);
                 }
                 mtx_from_bones(gRiders_5[i].p65C, gRiderGfx_5[i].p234[fb], 0xF);
@@ -1536,7 +1462,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gdl = podium_draw(gdl, dyn, fb);
     }
     gDPPipeSync(gdl++);
-    switch (gGame_15.mode) {
+    switch (gGame.mode) {
         case 2:
             CHECK(2000);
             gdl = soccer_ball_draw(gdl, dyn, fb);
@@ -1619,7 +1545,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gdl = particles_draw(render_set_viewport(gdl, dyn, gCurView, 1), gCurView, dyn);
         }
     }
-    if (!(gGame_15.flags & 1) && gRaceFrame >= 0x259 && gReplayPlayback == 0 && gGame_15.mode != 8) {
+    if (!(gGame.flags & 1) && gRaceFrame >= 0x259 && gReplayPlayback == 0 && gGame.mode != 8) {
         s32 tr = gCurTrack_12 - gTracks_6;
 
         if (tr != 20 && tr != 23 && tr != 24) {
@@ -1678,7 +1604,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     if (gPodiumMode != 0) {
         gdl = hud_draw_congratulations_2(gdl, dyn, fb);
     } else if (gDrawFlags & 0x800) {
-        if (gCreditsMode == 0 && !(gGame_15.flags & 1)) {
+        if (gCreditsMode == 0 && !(gGame.flags & 1)) {
             if (gNumViews == 1 || gPauseMenu == 0) {
                 gdl = map_draw_minimap(gdl, dyn, fb);
             }
@@ -1693,22 +1619,22 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gSPSetGeometryMode(gdl++, gCullMode);
         }
     }
-    if (gGame_15.flags & 0x80) {
+    if (gGame.flags & 0x80) {
         gdl = hud_draw_track_intro(gdl, dyn, fb, gCurView);
     }
     if (gCreditsMode != 0) {
         gdl = render_draw_credits(render_set_viewport(gdl, dyn, 0, 0));
     }
-    if (!(gGame_15.flags & 1)) {
+    if (!(gGame.flags & 1)) {
         switch (gRacePhase_2) {
             case 0:
             case 4:
                 if (gRacePhaseTimer == -1) {
                     gRacePhaseTimer = 20;
                 }
-                gGame_15.f54 = 2;
+                gGame.fadeState = 2;
                 alpha = gRacePhaseTimer * 255 / 20;
-                gGame_15.h58 = alpha;
+                gGame.fadeLevel = alpha;
                 break;
             case 2:
             case 6:
@@ -1721,11 +1647,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                 } else {
                     alpha = 255 - gRacePhaseTimer * 255 / 20;
                 }
-                gGame_15.f54 = 0;
-                gGame_15.h58 = 255 - alpha;
+                gGame.fadeState = 0;
+                gGame.fadeLevel = 255 - alpha;
                 break;
             default:
-                gGame_15.f54 = 3;
+                gGame.fadeState = 3;
                 alpha = -1;
                 break;
         }
@@ -1788,17 +1714,6 @@ typedef struct {
     u8 pad7A6[0x7E0 - 0x7A6];
 } Rider;
 
-typedef struct {
-    u32 w0;
-    u8 pad4[0x1C - 0x4];
-    s32 f1C[8];
-    s32 w3C;
-    u8 pad40[0x3C0 - 0x40];
-    s32 w3C0;
-    s32 w3C4;
-} Game_6;
-
-extern Game_6 gGame_16;
 extern Bike gRiderGfx_6[];
 extern Rider gRiders_6[];
 extern DlPair D_800DC110_3[];
@@ -1827,9 +1742,9 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
             if (k != xlu) {
                 continue;
             }
-            if (gGame_16.w0 & 0x10) {
+            if (gGame.flags & 0x10) {
                 m = 2;
-                if (j == gGame_16.f1C[i]) {
+                if (j == gGame.riders[i]) {
                     m = 3;
                 }
             } else {
@@ -1845,7 +1760,7 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                 if (gNumScreens == 2 && i == j) {
                     m = 3;
                 }
-                if (D_800F05E4 != 0 && j == 0) {
+                if (gEvent.noPlayers != 0 && j == 0) {
                     m = 3;
                 }
                 if (gNumScreens == 1 && (j == gCamTargetOverride || (gCamTargetOverride == -1 && j == 0))) {
@@ -1865,13 +1780,13 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
             sRidersDrawn++;
             if (!(sRiderDrawFlags[j] & 4)) {
                 render_update_rider_palette(j, i);
-                if (!(gGame_16.w0 & 0x10)) {
+                if (!(gGame.flags & 0x10)) {
                     sRiderDrawFlags[j] |= 4;
                 }
             }
-            if (gGame_16.w0 & 0x10) {
-                if (gGame_16.w3C == 1) {
-                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].tlut18 + gGame_16.w3C0 * 0x200);
+            if (gGame.flags & 0x10) {
+                if (gGame.numPlayers == 1) {
+                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].tlut18 + gGame.riderSkinSel * 0x200);
                 } else {
                     gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].tlut18 + i * 0x200);
                 }
@@ -1893,9 +1808,9 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
             if (gDrawFlags & 1) {
                 if (m == 3) {
                     gSPSegment(gdl++, 1, gRiderGfx_6[j].seg230 & 0xFFFFFF);
-                    if (gGame_16.w0 & 0x10) {
-                        if (gGame_16.w3C == 1) {
-                            gSPSegment(gdl++, 2, D_800E1600_2[j][gGame_16.w3C0] & 0xFFFFFF);
+                    if (gGame.flags & 0x10) {
+                        if (gGame.numPlayers == 1) {
+                            gSPSegment(gdl++, 2, D_800E1600_2[j][gGame.riderSkinSel] & 0xFFFFFF);
                         } else {
                             gSPSegment(gdl++, 2, D_800E1600_2[j][i] & 0xFFFFFF);
                         }
@@ -1909,9 +1824,9 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                     }
                 } else {
                     gSPSegment(gdl++, 1, gRiderGfx_6[j].seg22C & 0xFFFFFF);
-                    if (gGame_16.w0 & 0x10) {
-                        if (gGame_16.w3C == 1) {
-                            gSPSegment(gdl++, 2, D_800E1600_2[j][gGame_16.w3C0 % 5] & 0xFFFFFF);
+                    if (gGame.flags & 0x10) {
+                        if (gGame.numPlayers == 1) {
+                            gSPSegment(gdl++, 2, D_800E1600_2[j][gGame.riderSkinSel % 5] & 0xFFFFFF);
                         } else {
                             gSPSegment(gdl++, 2, D_800E1600_2[j][i] & 0xFFFFFF);
                         }
@@ -1926,10 +1841,10 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                 if (gRiderGfx_6[j].fA54 != 0) {
                     gPrimBoneMtx = gRiderGfx_6[j].fA4C + vp * 0xC0;
                     if (!(gCheatFlags & 0x20)) {
-                        if (gGame_16.w0 & 0x10) {
+                        if (gGame.flags & 0x10) {
                             segs = D_800E1600_2[j];
                             gdl = prim_build_dl(0, gRiderGfx_6[j].fA54,
-                                                (gGame_16.w3C == 1) ? segs + gGame_16.w3C0 : segs + i, gdl);
+                                                (gGame.numPlayers == 1) ? segs + gGame.riderSkinSel : segs + i, gdl);
                         } else {
                             gdl = prim_build_dl(0, gRiderGfx_6[j].fA54, &gRiderGfx_6[j], gdl);
                         }
@@ -1940,8 +1855,8 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                 if (gRiders_6[j].b44 != 0) {
                     gSPMatrix(gdl++, &gRiderGfx_6[j].m448[vp * 4 + i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
                 }
-                if (gGame_16.w0 & 0x10) {
-                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[(j + gGame_16.w3C4) % 6].pal1C);
+                if (gGame.flags & 0x10) {
+                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[(j + gGame.bikeSkinSel) % 6].pal1C);
                 } else {
                     gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].pal1C);
                 }
@@ -1959,8 +1874,8 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                     }
                     if (gDrawFlags & 1) {
                         gSPMatrix(gdl++, gRiderGfx_6[j].mtx23C[gGfxFrameIndex] + k, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                        if (gGame_16.w0 & 0x10) {
-                            { Gfx *g = gdl++; g->words.w0 = 0xDB060008; if (j == 0) v = 0; gdl[-1].words.w1 = gRiderGfx_6[(j + gGame_16.w3C4) & 1].seg8; }
+                        if (gGame.flags & 0x10) {
+                            { Gfx *g = gdl++; g->words.w0 = 0xDB060008; if (j == 0) v = 0; gdl[-1].words.w1 = gRiderGfx_6[(j + gGame.bikeSkinSel) & 1].seg8; }
                         } else {
                             gSPSegment(gdl++, 2, gRiderGfx_6[j].seg8);
                         }
@@ -2008,14 +1923,6 @@ typedef struct {
 } Pal_4;
 
 typedef struct {
-    s32 w0;
-    u8 pad4[0x38];
-    s32 w3C;
-    u8 pad40[0x380];
-    s32 w3C0;
-} Game_7;
-
-typedef struct {
     u8 pad0[0x654];
     u8 b654;
     u8 pad655[0x6E8 - 0x655];
@@ -2029,7 +1936,6 @@ typedef struct {
     u8 pad30[0xA0 - 0x30];
 } Track_5;
 
-extern Game_7 gGame_17;
 extern Pal_4 gRiderGfx_7[];
 extern Tex *D_800E1600_3[][6];
 extern Player_3 gRiders_7[];
@@ -2046,10 +1952,10 @@ void render_update_rider_palette(s32 pl, s32 k)
     if (gPodiumMode != 0) {
         return;
     }
-    if (gGame_17.w0 & 0x10) {
-        if (gGame_17.w3C == 1) {
-            gRiderGfx_7[pl].src = D_800E1600_3[pl][(k + gGame_17.w3C0) % 5]->f4;
-            gRiderGfx_7[pl].dst = gRiderGfx_7[pl].base + ((k + gGame_17.w3C0) % 5) * 0x100;
+    if (gGame.flags & 0x10) {
+        if (gGame.numPlayers == 1) {
+            gRiderGfx_7[pl].src = D_800E1600_3[pl][(k + gGame.riderSkinSel) % 5]->f4;
+            gRiderGfx_7[pl].dst = gRiderGfx_7[pl].base + ((k + gGame.riderSkinSel) % 5) * 0x100;
         } else {
             gRiderGfx_7[pl].src = D_800E1600_3[pl][k]->f4;
             gRiderGfx_7[pl].dst = gRiderGfx_7[pl].base + k * 0x100;
@@ -2407,7 +2313,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     u16 *pal;
     s32 x, y;
 
-    if (gGameMode == 8) {
+    if (gGame.mode == 8) {
         p = D_800C8CE0;
     } else {
         p = pl;
