@@ -5107,9 +5107,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         gDPPipeSync(gdl++);
         break;
     case SCREEN_TYPE_RIDER_SELECT: {
-        s32 u7;
-        s32 u8;
-        s32 u9;
+        /* over the race, in each player's view: the rider's name, the ratings as bars (one or two players with
+           their labels, beside the rider), the arrows to change rider; one player: the bio sliding down while Z is
+           held, and the C buttons for the colours */
+        s32 uninit7;
+        s32 uninit8;
+        s32 uninit9;
 
         render_draw_race(m, fb, &gdl);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
@@ -5119,27 +5122,28 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
         gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
         for (i = 0; i < gGame.numPlayers; i++) {
-            s32 yo;
-            s32 bx;
-            s32 by;
+            s32 bioY;
+            s32 statsX;
+            s32 statsY;
             s32 x;
             s32 y;
 
+            /* the bio's slide (down by up to 124), the ratings move right with it */
             switch (gGame.riderSelectState[0]) {
-            case 1:
-                yo = (0x3E - gGame.riderSelectAnim[0]) * 2;
+            case BIO_OPENING:
+                bioY = (62 - gGame.riderSelectAnim[0]) * 2;
                 break;
-            case 2:
-                yo = 0x7C;
+            case BIO_SHOWN:
+                bioY = 124;
                 break;
-            case 3:
-                yo = gGame.riderSelectAnim[0] * 2;
+            case BIO_CLOSING:
+                bioY = gGame.riderSelectAnim[0] * 2;
                 break;
             default:
-                yo = 0;
+                bioY = 0;
                 break;
             }
-            statsSlideX = yo * 190 / 100;
+            statsSlideX = bioY * 190 / 100;
             font_reset_queue();
             gDPSetScissor(gdl++, G_SC_NON_INTERLACE, VIEWS[gNumViews - 1][i].x, VIEWS[gNumViews - 1][i].y,
                           VIEWS[gNumViews - 1][i].x + VIEWS[gNumViews - 1][i].w - 1,
@@ -5151,11 +5155,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
                     if (gGame.numPlayers == 1) {
                         gDPLoadTLUT_pal256(gdl++, gGame.itemBars->addr);
-                        DRAW(VIEWS[gNumViews - 1][i].x + 0x10, VIEWS[gNumViews - 1][i].y + 5 + yo, &gGame.itemBars[1], 3);
-                        if ((gFrameCounter & 0x20) && gGame.riderSelectState[0] == 0) {
+                        DRAW(VIEWS[gNumViews - 1][i].x + 0x10, VIEWS[gNumViews - 1][i].y + 5 + bioY, &gGame.itemBars[1], 3);
+                        if ((gFrameCounter & 0x20) && gGame.riderSelectState[0] == BIO_HIDDEN) {
                             gDPLoadTLUT_pal256(gdl++, gGame.smallArrows->addr);
-                            DRAW(0x28, yo + 0x17, &gGame.smallArrows[1], 3);
-                            DRAW(0xF5, yo + 0x17, &gGame.smallArrows[2], 3);
+                            DRAW(0x28, bioY + 0x17, &gGame.smallArrows[1], 3);
+                            DRAW(0xF5, bioY + 0x17, &gGame.smallArrows[2], 3);
                         }
                     } else if (gFrameCounter & 0x20) {
                         if (gSplitVertical != 0 && i == 1) {
@@ -5179,7 +5183,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         s32 dy = VIEWS[gNumViews - 1][i].y;
 
                         if (gGame.flags & GAME_FLAG_PLAYER_READY(i)) {
-                            dy += 600;
+                            dy += 600; /* off the screen */
                         }
                         DRAW_V(dx, dy, img, 6);
                     } else {
@@ -5187,16 +5191,17 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         s32 dx = statsSlideX + VIEWS[gNumViews - 1][i].x + VIEWS[gNumViews - 1][i].w - img->w * 8;
 
                         if (gGame.flags & GAME_FLAG_PLAYER_READY(i)) {
-                            dy += 600;
+                            dy += 600; /* off the screen */
                         }
                         DRAW_V(dx, dy, img, 6);
                     }
+                    /* the ratings' labels, then the bars */
                     img = &gGame.frames[8];
-                    bx = statsSlideX + VIEWS[gGame.numPlayers - 1][i].x + VIEWS[gGame.numPlayers - 1][i].w - img->w * 8 + 0x1F;
+                    statsX = statsSlideX + VIEWS[gGame.numPlayers - 1][i].x + VIEWS[gGame.numPlayers - 1][i].w - img->w * 8 + 0x1F;
                     if (gGame.numPlayers == 2 && i == 0 && gSplitVertical == 0) {
-                        by = VIEWS[gGame.numPlayers - 1][i].y + 11;
+                        statsY = VIEWS[gGame.numPlayers - 1][i].y + 11;
                     } else {
-                        by = VIEWS[gGame.numPlayers - 1][i].y + VIEWS[gGame.numPlayers - 1][i].h - img->h + 11;
+                        statsY = VIEWS[gGame.numPlayers - 1][i].y + VIEWS[gGame.numPlayers - 1][i].h - img->h + 11;
                     }
                     for (j = 1; j < 17; j++) {
                         font_text_create(gGame.texts[j + i * 20], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
@@ -5214,7 +5219,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         font_text_add(gGame.texts[i * 20 + 1], sStrPressAToContinue);
                         font_draw_text(gGame.texts[i * 20 + 1], VIEWS[0][0].x + VIEWS[0][0].w / 2, VIEWS[0][0].y + VIEWS[0][0].h / 2 + 0x53);
                     } else {
-                        font_draw_text(gGame.texts[i * 20], VIEWS[0][0].x + 0x7E, VIEWS[0][0].y + 0xF + yo);
+                        font_draw_text(gGame.texts[i * 20], VIEWS[0][0].x + 0x7E, VIEWS[0][0].y + 0xF + bioY);
                     }
                 } else if (gSplitVertical != 0) {
                     if (gGame.flags & GAME_FLAG_PLAYER_READY(i)) {
@@ -5238,35 +5243,37 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 if (!(gGame.flags & GAME_FLAG_PLAYER_READY(i))) {
                     for (j = 1; j < 5; j++) {
                         font_text_add(gGame.texts[i * 20 + j], sRiderStatLabels[j - 1]);
-                        font_draw_text(gGame.texts[i * 20 + j], bx - (j - 1) * 6, by + (j - 1) * 20);
+                        font_draw_text(gGame.texts[i * 20 + j], statsX - (j - 1) * 6, statsY + (j - 1) * 20);
                     }
                     if (gGame.numPlayers == 1) {
-                        shell_draw_rider_bio(i, yo);
+                        shell_draw_rider_bio(i, bioY);
                     }
                     gDPSetTextureLUT(gdl++, G_TT_NONE);
                     gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
                     if (gGame.numPlayers == 1) {
+                        /* the bio's panels, and the buttons of the rider's speciality (a trick of gRiderAnims) */
                         j = 0;
-                        DRAW_V(VIEWS[0][0].x, VIEWS[0][0].y + yo, &gGame.frames[1], 6);
+                        DRAW_V(VIEWS[0][0].x, VIEWS[0][0].y + bioY, &gGame.frames[1], 6);
                         img = &gGame.frames[2];
-                        DRAW_V(VIEWS[0][0].x, VIEWS[0][0].y - img->h + yo, img, 6);
+                        DRAW_V(VIEWS[0][0].x, VIEWS[0][0].y - img->h + bioY, img, 6);
                         for (j = 0; j < 16; j++) {
                             if (str_icmp(sRiderBios[gGame.riders[i]].text[2], gRiderAnims[j].name) == 0) {
                                 break;
                             }
                         }
                         if (gRiderAnims[j].inputGlyphs != NULL) {
-                            gdl = event_draw_glyph_string(gdl, fb, gRiderAnims[j].inputGlyphs, 0x8C, yo + VIEWS[0][0].y - 0x48);
+                            gdl = event_draw_glyph_string(gdl, fb, gRiderAnims[j].inputGlyphs, 0x8C, bioY + VIEWS[0][0].y - 0x48);
                         }
                     }
                     gDPSetTextureLUT(gdl++, G_TT_NONE);
                     gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
                     img = &gGame.frames[6];
                     for (j = 0; j < 4; j++) {
-                        s32 ox;
-                        s32 oy;
+                        /* 10 segments, the rating's (twice the rating plus 2) in its colour, green 5 to red 1 */
+                        s32 barOffsetX;
+                        s32 barY;
 
-                        ox = j * 6 - 0x55;
+                        barOffsetX = j * 6 - 0x55;
                         statLevel = (sRiderBios[gGame.riders[i]].stats[j] + 1) * 2;
                         switch (statLevel >> 1) {
                         case 5:
@@ -5286,8 +5293,9 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                             break;
                         }
                         bar = 0;
-                        oy = j * 20 - 7;
+                        barY = j * 20 - 7;
                         for (; bar < 10; bar++) {
+                            /* dead stores, as in the original */
                             rowH = statLevel;
                             resultsY = statLevel;
                             resultsX = statLevel;
@@ -5295,17 +5303,18 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                             if (bar == statLevel) {
                                 gDPSetPrimColor(gdl++, 0, 0, 0x28, 0x28, 0x28, 0xFF);
                             }
-                            DRAW(bx - ox + bar * 9, by + oy, img, 6);
+                            DRAW(statsX - barOffsetX + bar * 9, statsY + barY, img, 6);
                         }
                     }
                 }
             } else {
-                s32 u10;
-                s32 cx;
-                s32 cy;
-                s32 u11;
-                s32 msk;
-                s32 nn;
+                /* three or four players: the bars in two columns at the bottom of the view */
+                s32 uninit10;
+                s32 barX;
+                s32 barY;
+                s32 uninit11;
+                s32 readyFlag;
+                s32 statLevel2;
 
                 gDPSetTextureLUT(gdl++, G_TT_NONE);
                 gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
@@ -5313,9 +5322,9 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 if (!(gGame.flags & GAME_FLAG_PLAYER_READY(i))) {
                     img = &gGame.frames[7];
                     for (j = 0; j < 4; j++) {
-                        nn = (sRiderBios[gGame.riders[i]].stats[j] + 1) * 2;
-                        nn &= ~1;
-                        switch (nn >> 1) {
+                        statLevel2 = (sRiderBios[gGame.riders[i]].stats[j] + 1) * 2;
+                        statLevel2 &= ~1;
+                        switch (statLevel2 >> 1) {
                         case 5:
                             gDPSetPrimColor(gdl++, 0, 0, 0x14, 0xC8, 0x14, 0xFF);
                             break;
@@ -5334,27 +5343,27 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         }
                         switch (j) {
                         case 0:
-                            cx = VIEWS[gNumViews - 1][i].x + 0x12;
-                            cy = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0x1A;
+                            barX = VIEWS[gNumViews - 1][i].x + 0x12;
+                            barY = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0x1A;
                             break;
                         case 1:
-                            cx = VIEWS[gNumViews - 1][i].x + 0x74;
-                            cy = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0x1A;
+                            barX = VIEWS[gNumViews - 1][i].x + 0x74;
+                            barY = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0x1A;
                             break;
                         case 2:
-                            cx = VIEWS[gNumViews - 1][i].x + 0xF;
-                            cy = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0xD;
+                            barX = VIEWS[gNumViews - 1][i].x + 0xF;
+                            barY = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0xD;
                             break;
                         case 3:
-                            cx = VIEWS[gNumViews - 1][i].x + 0x71;
-                            cy = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0xD;
+                            barX = VIEWS[gNumViews - 1][i].x + 0x71;
+                            barY = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h - 0xD;
                             break;
                         }
                         for (bar = 0; bar < 10; bar++) {
-                            if (bar == nn) {
+                            if (bar == statLevel2) {
                                 gDPSetPrimColor(gdl++, 0, 0, 0x28, 0x28, 0x28, 0xFF);
                             }
-                            DRAW_V(cx + bar * 9, cy, img, 6);
+                            DRAW_V(barX + bar * 9, barY, img, 6);
                         }
                     }
                     gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
@@ -5364,24 +5373,24 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 font_text_create(gGame.texts[i * 4], 0x40, FONT_MENU, TEXT_COLOR_YELLOW, TEXT_CENTER);
                 font_text_add(gGame.texts[i * 4], sRiderBios[gGame.riders[i]].fullName);
                 {
-                    s32 yy = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h / 2;
-                    s32 xx = VIEWS[gNumViews - 1][i].x + VIEWS[gNumViews - 1][i].w / 2;
-                    s32 ty2;
+                    s32 centerY = VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h / 2;
+                    s32 centerX = VIEWS[gNumViews - 1][i].x + VIEWS[gNumViews - 1][i].w / 2;
+                    s32 nameY;
 
-                    msk = GAME_FLAG_PLAYER_READY(i);
-                    ty2 = yy + 0xA;
-                    if (gGame.flags & msk) {
-                        ty2 = yy + 0x23;
+                    readyFlag = GAME_FLAG_PLAYER_READY(i);
+                    nameY = centerY + 0xA;
+                    if (gGame.flags & readyFlag) {
+                        nameY = centerY + 0x23;
                     }
-                    font_draw_text(gGame.texts[i * 4], xx, ty2);
+                    font_draw_text(gGame.texts[i * 4], centerX, nameY);
                 }
                 gDPSetTextureLUT(gdl++, G_TT_RGBA16);
                 gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
-                if (!(gGame.flags & msk) && (gFrameCounter & 0x20)) {
+                if (!(gGame.flags & readyFlag) && (gFrameCounter & 0x20)) {
                     gDPLoadTLUT_pal256(gdl++, gGame.smallArrows->addr);
-                    DRAW_K(VIEWS[gNumViews - 1][i].x + 5, VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h / 2 + 3, &gGame.smallArrows[1], 3, u10);
+                    DRAW_K(VIEWS[gNumViews - 1][i].x + 5, VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h / 2 + 3, &gGame.smallArrows[1], 3, uninit10);
                     DRAW_K(VIEWS[gNumViews - 1][i].x + VIEWS[gNumViews - 1][i].w - 0x14,
-                         VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h / 2 + 3, &gGame.smallArrows[2], 3, u11);
+                         VIEWS[gNumViews - 1][i].y + VIEWS[gNumViews - 1][i].h / 2 + 3, &gGame.smallArrows[2], 3, uninit11);
                 }
             }
             if (gGame.numPlayers < 3) {
@@ -5401,6 +5410,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
         if (gGame.numPlayers == 1) {
+            /* the C buttons: the bike's colour (not in a time trial) and the rider's */
             if (gGame.mode != GAME_MODE_TIME_TRIAL) {
                 font_text_create(gGame.texts[0], 0x40, FONT_SMALL, TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
                 font_text_add(gGame.texts[0], sStrSwitchBikeColor);
@@ -5415,11 +5425,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
             gDPLoadTLUT_pal256(gdl++, gGame.cButtonIcons->addr);
             if (gGame.mode != GAME_MODE_TIME_TRIAL) {
-                DRAW_K(0x140, 0x21, &gGame.cButtonIcons[1], 3, u9);
+                DRAW_K(0x140, 0x21, &gGame.cButtonIcons[1], 3, uninit9);
                 DRAW(0x154, 0x21, &gGame.cButtonIcons[3], 3);
             }
-            DRAW_K(0x140, 0x13, &gGame.cButtonIcons[4], 3, u7);
-            DRAW_K(0x154, 0x13, &gGame.cButtonIcons[2], 3, u8);
+            DRAW_K(0x140, 0x13, &gGame.cButtonIcons[4], 3, uninit7);
+            DRAW_K(0x154, 0x13, &gGame.cButtonIcons[2], 3, uninit8);
         }
         gdl = font_render(gdl);
         break;
@@ -5431,6 +5441,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         gdl = screen_draw_wipe(gdl, m, gGfxFrameIndex);
     }
     {
+        /* gDPPipeSync: w1 is 0, from the high bits of three uninitialised locals as the original computes it */
         Gfx *_g = gdl++;
 
         _g->words.w0 = 0xE7000000;
