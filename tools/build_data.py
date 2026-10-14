@@ -5,8 +5,8 @@ symbols.txt places. Each file is compiled with the SN compiler (tools/sn64.py; p
 sn272_0006 for the boot loader) through a wrapper that also records sizeof() of every symbol the file defines; each
 symbol's bytes are taken from the object, its relocations (REL32 words: `(u32)func_80012340`,
 `(u32)D_800D5DD8 + 4`, ...) resolved by name through symbols.txt (and libultra_map.json for libultra's names), and
-written at its address in OUT/<image>.bin. The ranges in FROM_ROM are ROM content, not program data: the C only
-declares them extern, and they are copied from the extracted images. Then the written bytes are compared with the
+written at its address in OUT/<image>.bin. The ranges in FROM_ROM are not built from C (a bitmap, compressed data,
+hand-written code among the data): the C only declares them extern, and they are copied from the extracted images. Then the written bytes are compared with the
 originals.
 
 usage: python tools/build_data.py [OUT] [--check]    (default OUT: build/out)
@@ -43,11 +43,11 @@ NOT_C = {
     "boot": [(0x8000F4F0, 0x8000F910, "RSP microcode data: F3DEX.NoN xbus 2.08 (gspF3DEX2.NoN.xbus)"),
              (0x8000F910, 0x8000FD20, "RSP microcode data: F3DLX.Rej xbus 2.08 (gspF3DLX2.Rej.xbus)")],
 }
-# Data that is ROM content rather than program data: its src/data file declares it extern (rom_decl) and the build
+# Ranges not built from C: its src/data file declares it extern (rom_decl) and the build
 # copies it from the extracted image. (start, end, symbol, element type, what it is)
 FROM_ROM = {
     "game": [(0x800DB8E0, 0x800DC098, "D_800DB8E0", "u32",
-              "unreferenced stale linker buffer")],
+              "hand-written sound code (mixers, block decoders)")],
     "boot": [(0x8000CE10, 0x8000DE10, "sBootFontBitmap", "u8", "a bitmap"),
              (0x8000DE10, 0x8000F498, "sBootSplashSwd", "u8", "SWD-compressed data")],
 }

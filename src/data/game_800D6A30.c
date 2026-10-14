@@ -1064,5 +1064,5 @@ u32 sMixClampMin = 0x1;
 u32 sMixClampMax = 0x1;
 u8 D_800DB8DC = 0x1;
 u8 D_800DB8DD[0x3] = { 0x1 };
-/* 0x800db8e0-0x800dc098 (1976 bytes): unreferenced stale linker buffer, copied from the ROM at build time */
+/* 0x800db8e0-0x800dc098 (1976 bytes): hand-written sound code (mixers, block decoders), copied from the ROM at build time */
 extern u32 D_800DB8E0[0x1ee];
