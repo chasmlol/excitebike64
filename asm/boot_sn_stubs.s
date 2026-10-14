@@ -729,7 +729,13 @@ boot_func_80003350:
     /* 8000364C */  jr          $ra
     /* 80003650 */   nop
 
-# linker fill (leftover bytes) up to the RSP microcode at 0x80003660
+# linker fill (leftover bytes) up to the RSP microcode at 0x80003660 (other bytes in each version)
+.if VERSION == VERSION_LODGENET
     /* 80003654 */  .word 0x61746510
     /* 80003658 */  .word 0xDE008002
     /* 8000365C */  .word 0x08737764
+.elseif VERSION == VERSION_US_REV1
+    .word 0xE43D0BB8, 0x312812EC, 0x32FEE12F
+.else
+    .error "the linker fill of this version"
+.endif

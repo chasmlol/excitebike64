@@ -22,4 +22,17 @@
 #error "SRC_LINE: no line numbers for this version"
 #endif
 
+/* A RESOURCE set id (the set of models, textures, animations, maps...), written with LodgeNet's number: the retail
+   versions dropped 17 resources LodgeNet has (its 74, 82, 86, 88, 94, 151, 191, 193, 202, 208, 212, 331, 578, 581,
+   585, 611 and 614), which renumbers every id after them. tools/version_data.py reads these definitions. */
+#if VERSION == VERSION_LODGENET
+#define RES(id) (id)
+#elif VERSION == VERSION_US_REV1
+#define RES(id) ((id) - ((id) > 74) - ((id) > 82) - ((id) > 86) - ((id) > 88) - ((id) > 94) - ((id) > 151) \
+                  - ((id) > 191) - ((id) > 193) - ((id) > 202) - ((id) > 208) - ((id) > 212) - ((id) > 331) \
+                  - ((id) > 578) - ((id) > 581) - ((id) > 585) - ((id) > 611) - ((id) > 614))
+#else
+#error "RES: no resource numbering for this version"
+#endif
+
 #endif
