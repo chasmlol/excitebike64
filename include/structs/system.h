@@ -68,4 +68,25 @@
    while a motor runs. */
 #define RUMBLE_OFF              (-1)    /* a rumble_start duration that stops the motor */
 
+/* Replays and Controller Pak ghosts (unnamed/replay.c): the magic byte, a 24-bit checksum of everything after the
+   first four bytes (calc_checksum24), the 16-byte setup (players, CPU riders, track, laps, then a skin byte and a
+   rider byte per racer), a 24-bit frame count, then for each block of 8 frames the bit-packed changes of each
+   player's input. Numbers of several bytes are little-endian. */
+#define REPLAY_MAGIC            0x7B
+#define REPLAY_OFS_SETUP        4       /* the setup; the checksum covers the bytes from here on */
+#define REPLAY_OFS_TRACK        6
+#define REPLAY_OFS_LAPS         7
+#define REPLAY_OFS_FRAMES       0x14    /* the frame count */
+#define REPLAY_MAX_RACERS       6
+#define REPLAY_BLOCK_FRAMES     8
+#define REPLAY_GHOST_SIZE       0x2800  /* a time-trial ghost on the Controller Pak */
+#define REPLAY_RIDER_GHOST      0x80    /* in a rider byte: this racer is the ghost (gGhostSlot) */
+/* The buttons a replay keeps, as bits of its button byte (the bit number is what the stream stores). */
+#define REPLAY_BTN_A            0x01
+#define REPLAY_BTN_B            0x02
+#define REPLAY_BTN_Z            0x04
+#define REPLAY_BTN_C_DOWN       0x08
+#define REPLAY_BTN_R            0x10
+#define REPLAY_NUM_BUTTONS      5
+
 #endif
