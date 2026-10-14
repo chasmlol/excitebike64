@@ -181,7 +181,7 @@ gDPSetCycleType, gDPSetRenderMode), 0xD9 geometry mode, 0xDA matrix.
   in the slot.
 - Hoisting tells: a bound copy `addu t0,v1,zero` after the hoisted invariants means the test re-reads the global,
   `n = D_X; if (n > 0) do {..} while (i < D_X);` (render_clear_viewports); an invariant product recomputed in the loop is set in
-  two statements, `j = p * 17; j += cnt;` (pak_build_note_list); an outer latch with a fresh `lui; lw` is a real inner
+  two statements, `j = p * 17; j += cnt;`; an outer latch with a fresh `lui; lw` is a real inner
   loop, `while (rem > 0.0f) {..}` (path_calc_curvatures).
 - `lw` x4 + `sw` x4 loops and 12/24/32-byte `lw`/`sw` runs are assignments of a typedef'd struct, `D[0] = D[-1];`
   (s16-only members give `lwl/lwr`), as are rotating temps `lw tA,0(p); lw tB,4(p)`, `s4-s7` plus a dead spill, two

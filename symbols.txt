@@ -2103,7 +2103,6 @@ sPakModePrompts                       game  0x800CE05C  data      0xc
 sPakMessages                          game  0x800CE068  data     0xfc
 sPakText                              game  0x800CE164  data      0x4
 sPakNewNoteEntry                      game  0x800CE168  data     0x88
-sPakNewNoteEntry_2                    game  0x800CE168  data        -  sPakNewNoteEntry
 sArnedTexResIds                       game  0x800CE1F0  data      0xc
 sArnedCells                           game  0x800CE1FC  data      0x4
 sArnedCells_2                         game  0x800CE1FC  data        -  sArnedCells
@@ -5042,9 +5041,6 @@ D_800F483C                            game  0x800F483C  data        -
 sPakViewport                          game  0x800F4868  data        -
 sGbPakFs                              game  0x800F4878  data        -
 sPakNoteList                          game  0x800F48E0  data        -
-sPakNoteList_2                        game  0x800F48E0  data        -  sPakNoteList
-sPakNoteList_3                        game  0x800F48E0  data        -  sPakNoteList
-sPakNoteList_4                        game  0x800F48E0  data        -  sPakNoteList
 sPakBgTex                             game  0x800F49F0  data        -
 sPakBgTex_2                           game  0x800F49F0  data        -  sPakBgTex
 sPakUiTex                             game  0x800F49F4  data        -
@@ -5056,8 +5052,6 @@ sPakSound                             game  0x800F4A00  data        -
 gPakScreenDone                        game  0x800F4A04  data        -
 sPakRepairDeclined                    game  0x800F4A08  data        -
 sPakNoteTables                        game  0x800F4A10  data        -
-sPakNoteTables_2                      game  0x800F4A10  data        -  sPakNoteTables
-sPakNoteTables_3                      game  0x800F4A10  data        -  sPakNoteTables
 sPakIconTex                           game  0x800F4A20  data        -
 sPakIconTex_2                         game  0x800F4A20  data        -  sPakIconTex
 gPakScreen                            game  0x800F4A28  data        -

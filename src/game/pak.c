@@ -4,19 +4,6 @@ typedef struct { char c[16]; } Name16;
 typedef struct { char c[4]; } Ext4;
 
 typedef struct {
-    s32 size;
-    s32 magic;
-    u16 company;
-    Ext4 ext;
-    Name16 name;
-    s16 used;
-    u8 data[0x20];
-    char buf[0x30];
-    u8 status;
-    u8 pad[3];
-} Rec_47;
-
-typedef struct {
     u8 w;
     u8 pad[7];
 } Glyph_2;
@@ -35,34 +22,29 @@ typedef struct {
 
 typedef struct { u8 b[0x68]; } Ctl;
 
-extern Rec_47 *sPakNoteTables[];
-extern Rec_47 sPakNewNoteEntry;
 extern Font_2 *sPakButtonIcons;
 extern Msg sPakMessages[];
 extern Ctl sPakFs_2[4];
 
-extern Rec_47 *sPakNoteList[];
 
 void pak_build_note_list(s32 p, s32 z)
 {
-    s32 *cnt;
     s32 i;
     s32 r;
-    s32 j;
-    Rec_47 *rec;
+    PakNote *rec;
 
     sPakNoteCount[p] = 0;
     if (z != 0) {
-        sPakNoteList[p * 17] = &sPakNewNoteEntry;
+        sPakNoteList[p][0] = &sPakNewNoteEntry;
         sPakNoteCount[p] = 1;
     }
     for (i = 0; i < 16; i++) {
         rec = &sPakNoteTables[p][i];
-        if (rec->used != -1) {
-            if (rec->magic != 0x4E4D5847) {
+        if (rec->fileNo != -1) {
+            if (rec->gameCode != 0x4E4D5847) {
                 r = 1;
             } else {
-                r = gPakScreen.label(rec->data, sPakStrBuf, gPakScreen.mode == 0);
+                r = gPakScreen.label(rec->header, sPakStrBuf, gPakScreen.mode == 0);
                 if (r == 2) {
                     if (gPakScreen.mode == 1) {
                         continue;
@@ -71,19 +53,18 @@ void pak_build_note_list(s32 p, s32 z)
                 }
             }
             if (r != 1 || gPakScreen.mode != 1) {
-                mem_fill((u8 *)rec->buf, 0, 0x30);
-                *(Name16 *)rec->buf = rec->name;
-                if (rec->ext.c[0] != 0) {
-                    str_cat(rec->buf, D_800DA708);
-                    *(Ext4 *)&rec->buf[strlen(rec->buf)] = rec->ext;
+                mem_fill((u8 *)rec->text, 0, 0x30);
+                *(Name16 *)rec->text = *(Name16 *)rec->name;
+                if (rec->ext[0] != 0) {
+                    str_cat(rec->text, D_800DA708);
+                    *(Ext4 *)&rec->text[strlen(rec->text)] = *(Ext4 *)rec->ext;
                 }
                 if (r != 1) {
-                    str_cat(rec->buf, D_800DA70C);
-                    str_cat(rec->buf, sPakStrBuf);
+                    str_cat(rec->text, D_800DA70C);
+                    str_cat(rec->text, sPakStrBuf);
                 }
                 rec->status = r;
-                j = p * 17; j += sPakNoteCount[p];
-                sPakNoteList[j] = rec;
+                sPakNoteList[p][sPakNoteCount[p]] = rec;
                 sPakNoteCount[p]++;
             }
         }
@@ -217,17 +198,10 @@ typedef struct {
     Img g[1];
 } Font_3;
 
-typedef struct {
-    u32 size;
-    u8 pad[0x3C];
-    char name[1];
-} Entry_6;
-
 extern Font_3 *sPakBgTex_2;
 extern Font_3 *sPakUiTex_2;
 extern Font_3 *sPakIconTex_2;
 extern Font_3 *sPakLogoTex_2;
-extern Entry_6 *sPakNoteList_2[4][17];
 
 static inline Gfx *drawStr_2(Gfx *gdl, u8 *str, s32 p3, s32 p4, s32 x, s32 y)
 {
@@ -266,7 +240,7 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     s32 y;
     s32 col;
     u32 n;
-    Entry_6 *e;
+    PakNote *e;
     char **lines;
     char **p;
     s32 w;
@@ -326,10 +300,10 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         for (i = 0; i < sPakNoteCount[gPakScreen.pak]; i++) {
             c = i - gPakScreen.scroll;
             if (c >= 0) if (c < 8) {
-                e = sPakNoteList_2[gPakScreen.pak][i];
+                e = sPakNoteList[gPakScreen.pak][i];
                 x = 0x58 - c * 5 / 2;
                 y = c * 10 + 0x3B;
-                str_copy((char *)sPakStrBuf, e->name);
+                str_copy((char *)sPakStrBuf, e->text);
                 if (gPakScreen.state == 0) {
                     c = 6;
                 } else if (i == gPakScreen.sel) {
@@ -446,21 +420,9 @@ void pak_refresh(s32 p)
 }
 
 typedef struct {
-    u32 size;
-    u32 code;
-    u16 company;
-    u8 ext;
-    u8 padB[0x1E - 0xB];
-    s16 fileNo;
-    u8 pad20[0x74 - 0x20];
-} Entry_7;
-
-typedef struct {
-    Entry_7 *e[16];
+    PakNote *e[16];
 } EntryRow;
 
-extern Entry_7 *sPakNoteTables_2[];
-extern Entry_7 *sPakNoteList_3[4][17];
 
 static inline void SET(s32 s, s32 m) {
     gPakScreen.state = s;
@@ -478,8 +440,8 @@ static inline void SET2(s32 s) {
 }
 
 static inline void compact(s32 pak) {
-    if (sPakNoteList_3[pak][0] == &sPakNewNoteEntry && sPakNoteCount[pak] > 0) {
-        *(EntryRow *)&sPakNoteList_3[pak][0] = *(EntryRow *)&sPakNoteList_3[pak][1];
+    if (sPakNoteList[pak][0] == &sPakNewNoteEntry && sPakNoteCount[pak] > 0) {
+        *(EntryRow *)&sPakNoteList[pak][0] = *(EntryRow *)&sPakNoteList[pak][1];
         sPakNoteCount[pak]--;
     }
 }
@@ -493,7 +455,7 @@ void pak_screen_update(Pad16 *arg0) {
     s32 j;
     s32 cnt;
     s32 bit;
-    Entry_7 *e;
+    PakNote *e;
 
     if (gPakScreenDone != 0) {
         return;
@@ -537,7 +499,7 @@ void pak_screen_update(Pad16 *arg0) {
                 if (sPakValidMask & (1 << i)) {
                     pak_refresh(i);
                 } else {
-                    mem_fill((u8 *)sPakNoteTables_2[i], 0, 0x740);
+                    mem_fill((u8 *)sPakNoteTables[i], 0, 0x740);
                 }
                 if ((sPakBadMask & (1 << i)) && (gPakScreen.state == 0 || gPakScreen.state == 14)) {
                     gPakScreen.pak = i;
@@ -633,7 +595,7 @@ void pak_screen_update(Pad16 *arg0) {
             if (sPakValidMask & (1 << gPakScreen.pak)) {
                 n = 0;
                 for (i = 0; i < 16; i++) {
-                    if (sPakNoteTables_2[gPakScreen.pak][i].fileNo != -1) {
+                    if (sPakNoteTables[gPakScreen.pak][i].fileNo != -1) {
                         n++;
                     }
                 }
@@ -691,8 +653,8 @@ void pak_screen_update(Pad16 *arg0) {
                     goto done;
                 }
             }
-            if (gPakScreen.mode != 2 || sPakNoteList_3[gPakScreen.pak][j] == &sPakNewNoteEntry ||
-                sPakNoteList_3[gPakScreen.pak][j]->code == 0x4E4D5847) {
+            if (gPakScreen.mode != 2 || sPakNoteList[gPakScreen.pak][j] == &sPakNewNoteEntry ||
+                sPakNoteList[gPakScreen.pak][j]->gameCode == 0x4E4D5847) {
                 goto done;
             }
             j += n;
@@ -725,7 +687,7 @@ void pak_screen_update(Pad16 *arg0) {
             if (gPakScreen.mode == 0) {
                 SET(7, 1);
             } else if (gPakScreen.mode == 2) {
-                e = sPakNoteList_3[gPakScreen.pak][gPakScreen.sel];
+                e = sPakNoteList[gPakScreen.pak][gPakScreen.sel];
                 if (e == &sPakNewNoteEntry) {
                     if (sPakFreePages[gPakScreen.pak] < gPakScreen.pages) {
                         SET(8, 1);
@@ -768,14 +730,14 @@ void pak_screen_update(Pad16 *arg0) {
             }
             break;
         case 2:
-            if (pak_delete_note(gPakScreen.pak, sPakNoteList_3[gPakScreen.pak][gPakScreen.sel]->fileNo) != 0) {
+            if (pak_delete_note(gPakScreen.pak, sPakNoteList[gPakScreen.pak][gPakScreen.sel]->fileNo) != 0) {
                 SET(11, 3);
             } else if (gPakScreen.mode != 0) {
                 pak_refresh(gPakScreen.pak);
                 SET(0, 1);
             } else {
                 pak_refresh(gPakScreen.pak);
-                if (sPakNoteList_3[gPakScreen.pak] == NULL) {
+                if (sPakNoteList[gPakScreen.pak] == NULL) {
                     SET(0, 1);
                 } else {
                     SET(5, 1);
@@ -842,12 +804,12 @@ void pak_screen_update(Pad16 *arg0) {
             SET(5, 2);
         }
         if (pad & 0x10) {
-            e = sPakNoteList_3[gPakScreen.pak][gPakScreen.sel];
+            e = sPakNoteList[gPakScreen.pak][gPakScreen.sel];
             if (pak_delete_note(gPakScreen.pak, e->fileNo) != 0) {
                 SET(11, 3);
             } else {
-                if (e->code == 0x4E4D5847) {
-                    sPakOverwriteExt = e->ext;
+                if (e->gameCode == 0x4E4D5847) {
+                    sPakOverwriteExt = e->ext[0];
                 } else {
                     sPakOverwriteExt = -1;
                 }
@@ -885,7 +847,7 @@ void pak_screen_update(Pad16 *arg0) {
             }
             break;
         case 2:
-            e = sPakNoteList_3[gPakScreen.pak][gPakScreen.sel];
+            e = sPakNoteList[gPakScreen.pak][gPakScreen.sel];
             if (gPakScreen.pages < (e->size + 0xFF) >> 8) {
                 SET(19, 3);
                 return;
@@ -919,8 +881,8 @@ void pak_screen_update(Pad16 *arg0) {
                 n = 'A';
                 for (;;) {
                     for (i = 0; i < sPakNoteCount[gPakScreen.pak]; i++) {
-                        e = sPakNoteList_3[gPakScreen.pak][i];
-                        if (e->code == 0x4E4D5847 && e->ext == n) {
+                        e = sPakNoteList[gPakScreen.pak][i];
+                        if (e->gameCode == 0x4E4D5847 && e->ext[0] == n) {
                             break;
                         }
                     }
@@ -1045,18 +1007,6 @@ void pak_screen_exit(void)
 
 typedef struct { u32 w[8]; } Hdr_10;
 
-typedef struct {
-    u32 f0;
-    u32 magic;
-    u8 p8[2];
-    u8 a[4];
-    u8 b[0x10];
-    s16 id;
-    Hdr_10 hdr;
-    u8 rest[0x74 - 0x40];
-} Slot_13;
-
-extern Slot_13 *sPakNoteTables_3[];
 
 s32 pak_read_note_states(u32 p)
 {
@@ -1068,24 +1018,24 @@ s32 pak_read_note_states(u32 p)
     }
     cont_finish_read();
     for (i = 0; i < 16; i++) {
-        sPakNoteTables_3[p][i].id = -1;
+        sPakNoteTables[p][i].fileNo = -1;
     }
     k = 0;
     i = 0;
     do {
-        r = osPfsFileState(&sPakFs_2[p], i, &sPakNoteTables_3[p][k]);
+        r = osPfsFileState(&sPakFs_2[p], i, (OSPfsState *)&sPakNoteTables[p][k]);
         if (r == 5) {
-            mem_fill((u8 *)&sPakNoteTables_3[p][k], 0, 0x74);
-            sPakNoteTables_3[p][k].id = -1;
+            mem_fill((u8 *)&sPakNoteTables[p][k], 0, 0x74);
+            sPakNoteTables[p][k].fileNo = -1;
         } else if (r == 0) {
-            sPakNoteTables_3[p][k].id = i;
-            pak_pfs_to_ascii(sPakNoteTables_3[p][k].b, 0x10);
-            pak_pfs_to_ascii(sPakNoteTables_3[p][k].a, 4);
-            if (sPakNoteTables_3[p][k].magic == 0x4E4D5847) {
+            sPakNoteTables[p][k].fileNo = i;
+            pak_pfs_to_ascii((u8 *)sPakNoteTables[p][k].name, 0x10);
+            pak_pfs_to_ascii((u8 *)sPakNoteTables[p][k].ext, 4);
+            if (sPakNoteTables[p][k].gameCode == 0x4E4D5847) {
                 if (pak_read_note(p, i, 0, 0x20, (u8 *)&tmp) != 0) {
-                    sPakNoteTables_3[p][k].magic = 0;
+                    sPakNoteTables[p][k].gameCode = 0;
                 }
-                sPakNoteTables_3[p][k].hdr = tmp;
+                *(Hdr_10 *)sPakNoteTables[p][k].header = tmp;
             }
             k++;
         } else {
@@ -1495,12 +1445,6 @@ void pak_free_note_tables(void) {
     }
 }
 
-typedef struct {
-    s32 f0;
-    s32 w[16];
-} Ent_84;
-
-extern Ent_84 sPakNoteList_4[];
 
 void pak_remove_new_note_entry(s32 idx)
 {
@@ -1508,9 +1452,9 @@ void pak_remove_new_note_entry(s32 idx)
     Quad *src;
     Quad *end;
 
-    if (sPakNoteList_4[idx].f0 == (s32)sPakNewNoteEntry_2 && sPakNoteCount[idx] > 0) {
-        dst = (Quad *)&sPakNoteList_4[idx];
-        src = (Quad *)sPakNoteList_4[idx].w;
+    if (sPakNoteList[idx][0] == &sPakNewNoteEntry && sPakNoteCount[idx] > 0) {
+        dst = (Quad *)&sPakNoteList[idx][0];
+        src = (Quad *)&sPakNoteList[idx][1];
         end = src + 4;
         do {
             *dst = *src;
