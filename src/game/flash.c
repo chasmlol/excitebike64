@@ -1,14 +1,16 @@
 #include "game.h"
 
-void flash_init(s32 arg0)
+/* Loads the stands' quads of the track and assigns each the track section nearest to its centre. resSet is
+   unused (track_res_get reads the current track's set). */
+void flash_init(s32 resSet)
 {
     FlashQuadList *list;
     FlashQuadList *quads;
     s32 i;
     u32 j;
     s32 cx, cz, dx, dz;
-    s32 best;
-    s32 bi;
+    s32 bestDist;
+    s32 bestSection;
 
     sFlashTris = list = (FlashQuadList *)track_res_get(gGidCamFlash);
     if (list == NULL) {
@@ -27,18 +29,20 @@ void flash_init(s32 arg0)
             dx /= 4;
             dz /= 4;
             dx = dx * dx + dz * dz;
-            if (dx < best || j == 0) {
-                best = dx;
-                bi = j;
+            if (dx < bestDist || j == 0) {
+                bestDist = dx;
+                bestSection = j;
             }
         }
-        quads->e[i].section = bi;
+        quads->e[i].section = bestSection;
     }
 end:
     sFlashCandidates = mem_alloc_dbg(sFlashTris->count << 2, 0, sStrFlashC, 0x6F);
     sFlashTimer = 0;
 }
 
+/* While the flash timer runs (one view only), sets off one flash per frame at a random point of a stand quad
+   whose section is visible. */
 void flash_update(void)
 {
     FlashQuadList *list = sFlashTris;
@@ -65,34 +69,37 @@ void flash_update(void)
             do {
                 FlashQuad *q;
                 s32 a, b;
-                f32 v[4];
-                s32 w[16];
+                f32 pos[4];
+                s32 vel[16]; /* only 3 used: the size keeps the original stack frame */
                 i++;
                 j = (s32)random_byte() % sFlashCandidateCount;
                 q = sFlashCandidates[j];
+                /* a random point of the quad: a and b in 1/256ths of its two edges from v[0] */
                 a = (s32)random_byte() % 255;
                 b = (s32)random_byte() % 255;
-                v[0] = q->v[0][0];
-                v[1] = q->v[0][1];
-                v[2] = q->v[0][2];
-                v[0] += ((f32)q->v[1][0] - (f32)q->v[0][0]) * (f32)a * 0.00390625f;
-                v[1] += ((f32)q->v[1][1] - (f32)q->v[0][1]) * (f32)a * 0.00390625f;
-                v[2] += ((f32)q->v[1][2] - (f32)q->v[0][2]) * (f32)a * 0.00390625f;
-                v[0] += ((f32)q->v[3][0] - (f32)q->v[0][0]) * (f32)b * 0.00390625f;
-                v[1] += ((f32)q->v[3][1] - (f32)q->v[0][1]) * (f32)b * 0.00390625f;
-                v[2] += ((f32)q->v[3][2] - (f32)q->v[0][2]) * (f32)b * 0.00390625f;
-                v[0] *= 0.016f;
-                v[1] *= 0.016f;
-                v[2] *= 0.016f;
-                w[0] = 0;
-                w[1] = 0;
-                w[2] = 0;
-                particle_spawn(5, 0, v, w, &gParticleWhite);
+                pos[0] = q->v[0][0];
+                pos[1] = q->v[0][1];
+                pos[2] = q->v[0][2];
+                pos[0] += ((f32)q->v[1][0] - (f32)q->v[0][0]) * (f32)a * 0.00390625f;
+                pos[1] += ((f32)q->v[1][1] - (f32)q->v[0][1]) * (f32)a * 0.00390625f;
+                pos[2] += ((f32)q->v[1][2] - (f32)q->v[0][2]) * (f32)a * 0.00390625f;
+                pos[0] += ((f32)q->v[3][0] - (f32)q->v[0][0]) * (f32)b * 0.00390625f;
+                pos[1] += ((f32)q->v[3][1] - (f32)q->v[0][1]) * (f32)b * 0.00390625f;
+                pos[2] += ((f32)q->v[3][2] - (f32)q->v[0][2]) * (f32)b * 0.00390625f;
+                /* 16 mm units to metres */
+                pos[0] *= 0.016f;
+                pos[1] *= 0.016f;
+                pos[2] *= 0.016f;
+                vel[0] = 0;
+                vel[1] = 0;
+                vel[2] = 0;
+                particle_spawn(PARTICLE_SPARKLE, 0, pos, vel, &gParticleWhite);
             } while (i < 1);
         }
     }
 }
 
+/* Frees the list of visible quads. */
 void flash_free(void)
 {
     if (sFlashTris != 0) {
@@ -100,7 +107,8 @@ void flash_free(void)
     }
 }
 
-void flash_start(s32 x)
+/* Sets off flashes for the next `frames` frames (a human rider landed a jump). */
+void flash_start(s32 frames)
 {
-    sFlashTimer = x;
+    sFlashTimer = frames;
 }

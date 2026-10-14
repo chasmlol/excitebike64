@@ -41,6 +41,11 @@ typedef struct TrackModelList {
     /* 0x04 */ TrackModel e[1]; /* [count] */
 } TrackModelList;
 
+/* gObjectFlags: per object of gTrackObjects, copied from its mask in the resource. */
+#define OBJ_BREAKABLE  0x01 /* shatters when a rider rides through it (shatter.c) */
+#define OBJ_WALL_GROUP 0x06 /* bits 1-2: its group of removable walls (remove.c) */
+#define OBJ_HIDDEN     0x08 /* removed: no longer drawn */
+
 /* Outdoor tracks: an animated texture a model uses, drawn through segment 8 + its place in the model's list
    (tube_remap_tex_addr, tube_set_anim_tex_segs). */
 typedef struct TexSegRef {
@@ -93,6 +98,12 @@ typedef struct WallVtx {
     /* 0x04 */ s16 y;       /* 16 mm units */
     /* 0x06 */ s16 h;       /* height of the wall above y */
 } WallVtx; /* size 0x8 */
+
+/* gWallEdgeFlags: one byte per edge of the wall mesh. Bits 1-2 are the kind of wall a hit reports
+   (sWallHitType). */
+#define WALL_EDGE_GROUP(flags) (((flags) >> 3) & 3) /* bits 3-4: removable group (remove.c), 0 none */
+#define WALL_EDGE_REMOVED 0x20 /* its group was removed: nothing collides with it */
+#define WALL_EDGE_CAMERA  0x40 /* the camera collides with it */
 
 typedef struct WallEdge {
     /* 0x00 */ s16 v0;
