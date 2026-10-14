@@ -1151,6 +1151,7 @@ extern s32 gGroundTri;
 extern s32 gGroundTriCount;
 extern WallMesh *sWallMesh;
 extern s32 gWallHitFlags;
+extern DesertObj sDesertObjs[8];
 extern SurfacePoly **sSurfacePolys;
 extern s32 D_800E8E78;
 extern s32 D_800E8E7C;

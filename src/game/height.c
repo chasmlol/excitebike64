@@ -1,11 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    s32 x, y, z, w, h, f14, f18;
-} Node_5;
-
-extern Node_5 sDesertObjs[];
-
 /* A desert ground triangle from the height map (2000 mm cells). */
 static inline void tri(s32 id, s32 n, s32 ax, s32 az, s32 bx, s32 bz, s32 cx, s32 cz) {
     gGroundTris[gGroundTriCount].area = id;
@@ -770,11 +764,11 @@ s32 height_raycast_desert_objs(f32 *p1, f32 *p2, f32 *p3, f32 *p4)
     best = 0;
     bestFace = 0;
     for (n = 0; n < sDesertObjCount; n++) {
-        Node_5 *nd = &sDesertObjs[n];
+        DesertObj *nd = &sDesertObjs[n];
         for (i = 0; i < 5; i++) {
             Face *f = &sDesertBoxNormals[i];
-            s32 hw = nd->w;
-            s32 hh = nd->h;
+            s32 hw = nd->radius;
+            s32 hh = nd->height;
             s32 nx = nd->x;
             s32 ny = nd->y;
             s32 nz = nd->z;
@@ -994,22 +988,6 @@ u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
     return result;
 }
 
-typedef struct {
-    s32 x, y, z, r, a, b, c;
-} Ent_30;
-
-typedef struct {
-    s32 cx;             /* 0x00 */
-    s32 cz;             /* 0x04 */
-    s32 f8, fC;
-    s32 off;            /* 0x10 */
-    u8 pad14[0x320 - 0x14];
-    s32 count;          /* 0x320 */
-    Ent_30 e[8];           /* 0x324 */
-} Tile;
-
-extern Tile *gDesertTiles_2;
-extern Ent_30 sDesertObjs_2[];
 
 /* Gathers the wall edges and triangles of the grid cells around the box (x0, z0)-(x1, z1) (mm) into sWallEdges
    and sWallTris (at most 256 each; bit 0 of nz marks the ones already taken); on the desert, the objects of the
@@ -1032,17 +1010,17 @@ void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
     if (gCurTrack_5->mode == 2) {
         sDesertObjCount = 0;
         for (i = 0; i < 16; i++) {
-            if (gDesertTiles_2[i].off != 0) continue;
-            if (x1 < gDesertTiles_2[i].cx * 256000) continue;
-            if (z1 < gDesertTiles_2[i].cz * 256000) continue;
-            if ((gDesertTiles_2[i].cx + 1) * 256000 < x0) continue;
-            if ((gDesertTiles_2[i].cz + 1) * 256000 < z0) continue;
-            for (j = 0; j < gDesertTiles_2[i].count; j++) {
-                if (x1 >= gDesertTiles_2[i].e[j].x - gDesertTiles_2[i].e[j].r
-                    && z1 >= gDesertTiles_2[i].e[j].z - gDesertTiles_2[i].e[j].r
-                    && gDesertTiles_2[i].e[j].x + gDesertTiles_2[i].e[j].r >= x0
-                    && gDesertTiles_2[i].e[j].z + gDesertTiles_2[i].e[j].r >= z0) {
-                    sDesertObjs_2[sDesertObjCount] = gDesertTiles_2[i].e[j];
+            if (gDesertTiles[i].sp != 0) continue;
+            if (x1 < gDesertTiles[i].x * 256000) continue;
+            if (z1 < gDesertTiles[i].z * 256000) continue;
+            if ((gDesertTiles[i].x + 1) * 256000 < x0) continue;
+            if ((gDesertTiles[i].z + 1) * 256000 < z0) continue;
+            for (j = 0; j < gDesertTiles[i].numObjs; j++) {
+                if (x1 >= gDesertTiles[i].objs[j].x - gDesertTiles[i].objs[j].radius
+                    && z1 >= gDesertTiles[i].objs[j].z - gDesertTiles[i].objs[j].radius
+                    && gDesertTiles[i].objs[j].x + gDesertTiles[i].objs[j].radius >= x0
+                    && gDesertTiles[i].objs[j].z + gDesertTiles[i].objs[j].radius >= z0) {
+                    sDesertObjs[sDesertObjCount] = gDesertTiles[i].objs[j];
                     sDesertObjCount++;
                     if (sDesertObjCount == 8) return;
                 }

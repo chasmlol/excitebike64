@@ -4236,7 +4236,6 @@ gGroundTriCount                       game  0x800E8D68  data        -
 sWallMesh                             game  0x800E8D6C  data        -
 gWallHitFlags                         game  0x800E8D70  data        -
 sDesertObjs                           game  0x800E8D78  data        -
-sDesertObjs_2                         game  0x800E8D78  data        -  sDesertObjs
 sSurfacePolys                         game  0x800E8E6C  data        -
 D_800E8E78                            game  0x800E8E78  data        -
 D_800E8E7C                            game  0x800E8E7C  data        -
@@ -4347,7 +4346,6 @@ sFractalMap                           game  0x800EE12C  data        -
 sFractalCenterX                       game  0x800EE130  data        -
 sFractalCenterZ                       game  0x800EE134  data        -
 gDesertTiles                          game  0x800EE138  data        -
-gDesertTiles_2                        game  0x800EE138  data        -  gDesertTiles
 D_800EE140                            game  0x800EE140  data        -
 D_800EE150                            game  0x800EE150  data        -
 D_800EE160                            game  0x800EE160  data        -

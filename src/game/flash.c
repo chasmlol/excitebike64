@@ -1,6 +1,5 @@
 #include "game.h"
 
-
 void flash_init(s32 arg0)
 {
     FlashQuadList *list;

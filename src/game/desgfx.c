@@ -100,9 +100,9 @@ Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
     gSPSetGeometryMode(gdl++, 0x200004);
     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
     gDPSetRenderMode(gdl++, 0x552230, 0);
-    gDPLoadTLUT_pal256(gdl++, ((TexSet *)gTerrainTexSet)->pal);
+    gDPLoadTLUT_pal256(gdl++, gTerrainTexSet->pal);
     D_800EBE00 = -1;
-    gDPLoadTextureBlock_4b(gdl++, ((TexSet *)gTerrainTexSet)->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
+    gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP, G_TX_WRAP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     for (j = 0; j < 1; j++) {
         for (i = 0; i < 0x400; i++) {
@@ -149,8 +149,8 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
     RAW(gdl++, 0xFC127E24, 0xFFFFF9FC);
     RAW(gdl++, 0xE200001C, 0xC8004030);
     D_800EBE00 = -1;
-    gDPLoadTLUT_pal256(gdl++, ((TexSet *)gTerrainTexSet)->pal);
-    gDPLoadTextureBlock_4b(gdl++, ((TexSet *)gTerrainTexSet)->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
+    gDPLoadTLUT_pal256(gdl++, gTerrainTexSet->pal);
+    gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP | G_TX_NOMIRROR, G_TX_WRAP | G_TX_NOMIRROR, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     gSPViewport(gdl++, &gViewports[a3 + 4]);
     for (j = 0; j < sDesBlockCount; j++) {
@@ -178,10 +178,10 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
     gSPClearGeometryMode(gdl++, G_FOG);
     RAW(gdl++, 0xFCFFFFFF, 0xFFFCF87C);
     RAW(gdl++, 0xE200001C, 0x00442230);
-    gDPLoadTLUT_pal256(gdl++, ((TexSet *)gObjectTexSet)->pal);
+    gDPLoadTLUT_pal256(gdl++, gObjectTexSet->pal);
     for (i = 0; i < sDesObjectCount; i++) {
         gSPMatrix(gdl++, &sDesObjMtx[a2][i], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        gdl = prim_build_dl(0, sDesObjModels[sDesObjects[i].kind].model, (TexSet **)&gObjectTexSet, gdl);
+        gdl = prim_build_dl(0, sDesObjModels[sDesObjects[i].kind].model, &gObjectTexSet, gdl);
     }
     prim_set_tex_mode_callback(0);
     gDPPipeSync(gdl++);
