@@ -3993,12 +3993,7 @@ sOptionsPreviewDelay                  game  0x800E3708  data        -
 gNumRiders                            game  0x800E370C  data        -
 gPauseMenu                            game  0x800E3710  data        -
 D_800E3718                            game  0x800E3718  data        -
-D_800E3730                            game  0x800E3730  data        -
-D_800E3730_2                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_3                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_4                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_5                          game  0x800E3730  data        -  D_800E3730
-D_800E3730_6                          game  0x800E3730  data        -  D_800E3730
+gPauseScreen                          game  0x800E3730  data        -
 gActiveReplaySize                     game  0x800E3748  data        -
 gRacePhaseTimer                       game  0x800E374C  data        -
 D_800E3750                            game  0x800E3750  data        -

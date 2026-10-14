@@ -52,6 +52,19 @@ typedef struct TutorialLesson {
     /* 0x24 */ TutorialStep *steps;
 } TutorialLesson; /* size 0x28 */
 
+/* gPauseScreen: the race's options and controller screens of the pause menu (loaded by race_update, drawn by
+   render.c). */
+typedef struct PauseScreen {
+    /* 0x00 */ s16 timer;           /* > 0 frames before the screen shows, -1 shown */
+    /* 0x02 */ u8 clearFrames;      /* frames render_draw_race clears the screen for after it closes */
+    /* 0x03 */ u8 loaded;
+    /* 0x04 */ Img *background;     /* GUI image sets: entry 0 holds the palette, the images follow */
+    /* 0x08 */ Img *volumeBar;
+    /* 0x0C */ Img *title;
+    /* 0x10 */ Img *cursorImg;      /* 30 frames */
+    /* 0x14 */ u8 *cursorPal;
+} PauseScreen; /* size 0x18 */
+
 /* The race HUD's glyph images (gGame.hudGlyphs, event_draw_glyph_string): an image set of res_load. */
 typedef struct HudGlyphs {
     /* 0x00 */ s32 count;

@@ -173,12 +173,6 @@ typedef struct {
 } Obj_6;
 
 typedef struct {
-    s16 a;
-    u8 b;
-    u8 c;
-} Small;
-
-typedef struct {
     s32 data[0x1E0];
 } Blk_6;
 
@@ -189,7 +183,6 @@ typedef struct {
 } Slot_4;
 
 extern Obj_6 *gCurTrack_14;
-extern Small D_800E3730_5;
 extern Blk_6 *gRiderSkelTemplate_3;
 extern Slot_4 gRiders_14[8];
 
@@ -221,9 +214,9 @@ void race_init(s32 arg)
     gPodiumMode = 0;
     D_800C8CE0 = 0;
     gPauseMenu = 0;
-    D_800E3730_5.a = -1;
-    D_800E3730_5.b = 0;
-    D_800E3730_5.c = 0;
+    gPauseScreen.timer = -1;
+    gPauseScreen.clearFrames = 0;
+    gPauseScreen.loaded = 0;
     gSchedFrameLimit = 1;
     gGame.flags |= 0x10000;
     race_load_frontend_code(0);
@@ -691,7 +684,7 @@ void race_pause_update_options(void) {
         snd_set_volume(2, 0);
         save_write(5, 0);
         gPauseMenu = 1;
-        D_800E3730 = 3;
+        gPauseScreen.timer = 3;
         sfx_stop_all();
         tunes_stop_speech();
         return;
@@ -871,7 +864,7 @@ void race_pause_update_controller(void)
     if (((gPadInput_3[gGame.playerPad[gPausePlayer]] & 0x20) != 0) &&
         ((gPadInputPrev_3[gGame.playerPad[gPausePlayer]] & 0x20) == 0)) {
         gPauseMenu = 1;
-        D_800E3730 = 3;
+        gPauseScreen.timer = 3;
         save_write(5, 0);
     } else {
         u32 *t30 = gPadInput_3;
@@ -936,17 +929,6 @@ typedef struct {
 } Opt_2;
 
 typedef struct {
-    s16 h0;
-    u8 b2;
-    u8 b3;
-    s32 w4;
-    s32 w8;
-    s32 wC;
-    s32 w10;
-    s32 w14;
-} Gui;
-
-typedef struct {
     u8 pad0[4];
     s32 *f4;
 } Res_2;
@@ -966,7 +948,6 @@ extern Pad24 gPlayerInputsPrev_4;
 extern Pad24 D_800E3750;
 extern Pad24 D_800E3718;
 extern Player_7 gRiders_15[8];
-extern Gui D_800E3730_6;
 extern Res_2 *D_800E7728_4;
 extern Opt_2 gSaveData_3;
 
@@ -1041,9 +1022,9 @@ void race_update(u32 *arg)
     cfg.c = &D_800DC0B4;
     cfg.d = &gSfxVolume;
     if (gPauseMenu == 2 || gPauseMenu == 3) {
-        if (D_800E3730_6.h0 == 0 && D_800E3730_6.b3 == 0) {
+        if (gPauseScreen.timer == 0 && gPauseScreen.loaded == 0) {
             mem_free(gZBuffer);
-            D_800E3730_6.b3 = 1;
+            gPauseScreen.loaded = 1;
             if (gPauseMenu == 2) {
                 font_load_menu_set(D_800E7728_4);
             }
@@ -1052,15 +1033,15 @@ void race_update(u32 *arg)
                 gGame.texts[j] = font_text_create(0, 0x40, 4, 2, 0x20);
             }
             if (gPauseMenu == 2) {
-                D_800E3730_6.w4 = res_load((s32)D_800E7728_4, D_800D0C24);
+                gPauseScreen.background = res_load((s32)D_800E7728_4, D_800D0C24);
             } else {
-                D_800E3730_6.w8 = res_load((s32)D_800E7728_4, D_800D108C);
-                D_800E3730_6.w4 = res_load(gGuiRes, D_800D1488);
-                D_800E3730_6.w10 = res_load(gGuiRes, D_800D1428);
-                D_800E3730_6.w14 = res_load(gGuiRes, D_800D1424);
-                D_800E3730_6.wC = res_load(gGuiRes, D_800D1478);
+                gPauseScreen.volumeBar = res_load((s32)D_800E7728_4, D_800D108C);
+                gPauseScreen.background = res_load(gGuiRes, D_800D1488);
+                gPauseScreen.cursorImg = res_load(gGuiRes, D_800D1428);
+                gPauseScreen.cursorPal = res_load(gGuiRes, D_800D1424);
+                gPauseScreen.title = res_load(gGuiRes, D_800D1478);
             }
-            D_800E3730_6.h0 = -1;
+            gPauseScreen.timer = -1;
             while (sched_get_current_task() != 0) {
             }
             gViModeRequest = 1;
@@ -1068,9 +1049,9 @@ void race_update(u32 *arg)
             }
             render_update_screen_layout();
         }
-    } else if (gPauseMenu == 1 && D_800E3730_6.h0 == 0 && D_800E3730_6.b3 != 0) {
-        D_800E3730_6.b3 = 0;
-        D_800E3730_6.b2 = 2;
+    } else if (gPauseMenu == 1 && gPauseScreen.timer == 0 && gPauseScreen.loaded != 0) {
+        gPauseScreen.loaded = 0;
+        gPauseScreen.clearFrames = 2;
         for (j = 0; j < 0x30; j++) {
             func_800C204C(gGame.texts[j]);
             mem_free(gGame.texts[j]);
@@ -1098,7 +1079,7 @@ void race_update(u32 *arg)
         }
         render_update_screen_layout();
         font_load_race_set(D_800E7728_4);
-        D_800E3730_6.h0 = -1;
+        gPauseScreen.timer = -1;
     }
     if (gGame.mode != 9 && !(gGame.flags & 0x8010) && (gPadInput_3[0] & 0x400) &&
         !(gPadInputPrev_3[0] & 0x400)) {
@@ -1121,15 +1102,15 @@ void race_update(u32 *arg)
     }
 
     if (gPauseMenu == 2) {
-        if (gRacePhase_2 == 5 && D_800E3730_6.h0 == -1) {
+        if (gRacePhase_2 == 5 && gPauseScreen.timer == -1) {
             race_pause_update_controller();
         }
     } else if (gPauseMenu == 3) {
-        if (gRacePhase_2 == 5 && D_800E3730_6.h0 == -1) {
+        if (gRacePhase_2 == 5 && gPauseScreen.timer == -1) {
             race_pause_update_options();
         }
     } else if (gPauseMenu == 6) {
-        if (gRacePhase_2 == 5 && D_800E3730_6.h0 == -1) {
+        if (gRacePhase_2 == 5 && gPauseScreen.timer == -1) {
             if (PRESSED_2(0x20)) {
                 gPauseMenu = 0;
                 snd_set_volume(0, gSaveData_3.b2C6);
@@ -1171,10 +1152,10 @@ void race_update(u32 *arg)
             }
         }
         if (gPauseMenu == 0) {
-            D_800E3730_6.b2 = 2;
+            gPauseScreen.clearFrames = 2;
         }
     } else if (gPauseMenu == 5) {
-        if (gRacePhase_2 == 5 && D_800E3730_6.h0 == -1) {
+        if (gRacePhase_2 == 5 && gPauseScreen.timer == -1) {
             if (PRESSED_2(0x20) && gTutorialMenuForced_2 == 0 && gTutorialResult == 0) {
                 gPauseMenu = 0;
                 snd_set_volume(0, gSaveData_3.b2C6);
@@ -1232,10 +1213,10 @@ void race_update(u32 *arg)
             }
         }
         if (gPauseMenu == 0) {
-            D_800E3730_6.b2 = 2;
+            gPauseScreen.clearFrames = 2;
         }
     } else if (gPauseMenu == 1) {
-        if (gRacePhase_2 == 5 && D_800E3730_6.h0 == -1) {
+        if (gRacePhase_2 == 5 && gPauseScreen.timer == -1) {
             if (PRESSED_2(0x20)) {
                 snd_set_volume(0, gSaveData_3.b2C6);
                 snd_set_volume(1, gSaveData_3.b2C5);
@@ -1250,11 +1231,11 @@ void race_update(u32 *arg)
                     gPauseMenu = 2;
                     sOptionsPreviewDelay = 0;
                     gOptionsCursor = gGame.padPlayer[PAD_2];
-                    D_800E3730_6.h0 = 3;
+                    gPauseScreen.timer = 3;
                     break;
                 case 1:
                     gPauseMenu = 3;
-                    D_800E3730_6.h0 = 3;
+                    gPauseScreen.timer = 3;
                     gOptionsCursor = 0;
                     break;
                 case 4:
@@ -1289,10 +1270,10 @@ void race_update(u32 *arg)
             }
         }
         if (gPauseMenu == 0) {
-            D_800E3730_6.b2 = 2;
+            gPauseScreen.clearFrames = 2;
         }
     } else if (gPauseMenu == 4) {
-        if (gRacePhase_2 == 5 && D_800E3730_6.h0 == -1) {
+        if (gRacePhase_2 == 5 && gPauseScreen.timer == -1) {
             if (PRESSED_2(0x20)) {
                 gPauseMenu = 0;
                 snd_play_menu_sound(2);
@@ -1326,7 +1307,7 @@ void race_update(u32 *arg)
             }
         }
         if (gPauseMenu == 0) {
-            D_800E3730_6.b2 = 2;
+            gPauseScreen.clearFrames = 2;
         }
     } else {
         if (gEvent.flags & 0x800) {

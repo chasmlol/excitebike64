@@ -16,8 +16,6 @@ typedef struct {
     Col16 *items;
 } ColList;
 
-typedef struct { u32 w0; u32 img; } TexHdr;
-
 struct Dyn {
     Mtx m0[4];  /* 0x000 */
     Mtx m1[4];  /* 0x100 */
@@ -760,21 +758,10 @@ Gfx *render_begin_menu_frame(Gfx *gdl, s32 fb, u8 *mtx) {
 }
 
 typedef struct {
-    s16 cnt;
-    s16 pad;
-    TexHdr *tex;
-    u8 *bar;
-    TexHdr *tex2;
-    TexHdr *anim;
-    TexHdr *tex3;
-} EbState;
-
-typedef struct {
     u8 pad0[0x2C4];
     u8 flag;
 } Opts;
 
-extern EbState D_800E3730_2;
 extern Opts gSaveData_2;
 
 Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
@@ -783,32 +770,32 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
     s32 j;
     s32 x;
     s32 y;
-    TexHdr *t;
+    Img *t;
     s32 xi;
     u8 *p;
 
-    if (D_800E3730_2.cnt > 0) {
-        D_800E3730_2.cnt--;
+    if (gPauseScreen.timer > 0) {
+        gPauseScreen.timer--;
         gdl = render_begin_menu_frame_2(gdl, fb);
-    } else if (D_800E3730_2.cnt == -1) {
+    } else if (gPauseScreen.timer == -1) {
         gdl = render_begin_menu_frame_2(gdl, fb);
         G(gdl++, 0xE200001C, 0x0C084000);
         G(gdl++, 0xE3001001, 0x00008000);
         G(gdl++, 0xFCFFFFFF, 0xFFFCF279);
-        G(gdl++, 0xFD100000, D_800E3730_2.tex->img);
+        G(gdl++, 0xFD100000, gPauseScreen.background->addr);
         G(gdl++, 0xE8000000, 0);
         G(gdl++, 0xF5000100, 0x07000000);
         G(gdl++, 0xE6000000, 0);
         G(gdl++, 0xF0000000, 0x073FC000);
         G(gdl++, 0xE7000000, 0);
         G(gdl++, 0xE7000000, 0);
-        gdl = render_draw_image(0, 0, D_800E3730_2.tex + 1, gdl, fb, 1, 1, 3, 0);
+        gdl = render_draw_image(0, 0, &gPauseScreen.background[1], gdl, fb, 1, 1, 3, 0);
         G(gdl++, 0xFA000000, 0xE6E6E6FF);
         G(gdl++, 0xE3000C00, 0);
         G(gdl++, 0xE200001C, 0x00404240);
         font_reset_queue();
-        t = D_800E3730_2.tex2 + 1;
-        G(gdl++, 0xFD100000, D_800E3730_2.tex2->img);
+        t = &gPauseScreen.title[1];
+        G(gdl++, 0xFD100000, gPauseScreen.title->addr);
         G(gdl++, 0xE8000000, 0);
         G(gdl++, 0xF5000100, 0x07000000);
         G(gdl++, 0xE6000000, 0);
@@ -834,21 +821,21 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
                 } else {
                     G(gdl++, 0xFA000000, 0x4B4B4BFF);
                 }
-                gdl = render_draw_image(x, y, D_800E3730_2.bar + 0x28, gdl, fb, 1, 1, 6, 0);
+                gdl = render_draw_image(x, y, &gPauseScreen.volumeBar[5], gdl, fb, 1, 1, 6, 0);
             }
         }
         G(gdl++, 0xFA000000, 0xD2D2D2FF);
-        t = (TexHdr *)(D_800E3730_2.bar + 0x30);
+        t = &gPauseScreen.volumeBar[6];
         gdl = render_draw_image(0x100 - ((u8 *)t)[0] * 4, 0x78 - (((u8 *)t)[1] >> 1), t, gdl, fb, 1, 1, 6, ((u32)t & 1) >> 1);
         G(gdl++, 0xE3001001, 0x00008000);
         G(gdl++, 0xFCFFFFFF, 0xFFFCF279);
-        G(gdl++, 0xFD100000, &D_800E3730_2.tex3->img);
+        G(gdl++, 0xFD100000, gPauseScreen.cursorPal + 4);
         G(gdl++, 0xE8000000, 0);
         G(gdl++, 0xF5000100, 0x07000000);
         G(gdl++, 0xE6000000, 0);
         G(gdl++, 0xF0000000, 0x073FC000);
         G(gdl++, 0xE7000000, 0);
-        t = D_800E3730_2.anim + ((gGame.menuAnimTimer / 2) % 30 + 1);
+        t = &gPauseScreen.cursorImg[(gGame.menuAnimTimer / 2) % 30 + 1];
         for (j = 0; j < 4; j++) {
             if (j < 3) {
                 x = 0x48 - j * 7;
@@ -875,9 +862,6 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
     return gdl;
 }
 
-typedef struct { s16 cnt; s16 pad; TexHdr *tex; } EbState_2;
-
-extern EbState_2 D_800E3730_3;
 
 Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
 {
@@ -888,22 +872,22 @@ Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
     s32 sel;
     s32 lo;
 
-    if (D_800E3730_3.cnt > 0) {
-        D_800E3730_3.cnt--;
+    if (gPauseScreen.timer > 0) {
+        gPauseScreen.timer--;
         gdl = render_begin_menu_frame(gdl, fb, mtx);
-    } else if (D_800E3730_3.cnt == -1) {
+    } else if (gPauseScreen.timer == -1) {
     gdl = render_begin_menu_frame(gdl, fb, mtx);
     G(gdl++, 0xE200001C, 0x00404240);
     G(gdl++, 0xE3001001, 0x00008000);
     G(gdl++, 0xFCFFFFFF, 0xFFFCF279);
-    G(gdl++, 0xFD100000, D_800E3730_3.tex->img);
+    G(gdl++, 0xFD100000, gPauseScreen.background->addr);
     G(gdl++, 0xE8000000, 0);
     G(gdl++, 0xF5000100, 0x07000000);
     G(gdl++, 0xE6000000, 0);
     G(gdl++, 0xF0000000, 0x073FC000);
     G(gdl++, 0xE7000000, 0);
     G(gdl++, 0xE7000000, 0);
-    gdl = render_draw_image(gViewRects_6[0], gViewRects_6[1], D_800E3730_3.tex + 1, gdl, fb, 1, 1, 3, 0);
+    gdl = render_draw_image(gViewRects_6[0], gViewRects_6[1], &gPauseScreen.background[1], gdl, fb, 1, 1, 3, 0);
     font_reset_queue();
     font_text_create(gGame.texts[0], 0x40, 4, 2, 0x21);
     strcpy(buf, "Controller ");
@@ -1040,15 +1024,9 @@ typedef struct {
     u8 pad54[0x4C];
 } Track_4; /* 0xA0 */
 
-typedef struct {
-    s16 s0;
-    u8 c2;
-} Fade;
-
 extern Track_4 *gCurTrack_12;
 extern Track_4 gTracks_6[];
 extern Player_2 gRiders_5[8];
-extern Fade D_800E3730_4;
 extern Skel *gBikeSkelTemplate_2;
 extern PG gRiderGfx_5[8];
 
@@ -1253,9 +1231,9 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gdl = render_draw_controls_menu(gdl, fb, dyn);
             goto end;
         case 1:
-            if (D_800E3730_4.s0 != -1) {
-                if (D_800E3730_4.s0 > 0) {
-                    D_800E3730_4.s0--;
+            if (gPauseScreen.timer != -1) {
+                if (gPauseScreen.timer > 0) {
+                    gPauseScreen.timer--;
                 }
                 goto end;
             }
@@ -1289,11 +1267,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth, gScreenHeight);
     gDPPipeSync(gdl++);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
-    if (sClearFrames != 0 || D_800E3730_4.c2 != 0 || gPauseMenu != 0) {
+    if (sClearFrames != 0 || gPauseScreen.clearFrames != 0 || gPauseMenu != 0) {
         gDPSetFillColor(gdl++, 0x10001);
         gDPFillRectangle(gdl++, 0, 0, gScreenWidth, gScreenHeight);
-        if (D_800E3730_4.c2 != 0) {
-            D_800E3730_4.c2--;
+        if (gPauseScreen.clearFrames != 0) {
+            gPauseScreen.clearFrames--;
         }
     }
     if (sClearFrames != 0) {

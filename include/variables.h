@@ -1018,7 +1018,7 @@ extern s32 D_800E3704;
 extern s32 sOptionsPreviewDelay;
 extern s32 gNumRiders;
 extern s32 gPauseMenu;
-extern s16 D_800E3730;
+extern PauseScreen gPauseScreen;
 extern s32 gActiveReplaySize;
 extern s32 gRacePhaseTimer;
 extern s32 gPauseMenuCursor;
