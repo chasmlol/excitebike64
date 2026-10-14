@@ -59,7 +59,7 @@ typedef struct PakNote {
     /* 0x1E */ s16 fileNo;          /* -1: no note */
     /* 0x20 */ u8 header[0x20];     /* the first bytes of one of the game's notes */
     /* 0x40 */ char label[0x30];    /* the line of the list: name, extension and what the describe callback says */
-    /* 0x70 */ u8 status;           /* the describe callback's result */
+    /* 0x70 */ u8 status;           /* PAK_NOTE_OURS or PAK_NOTE_FOREIGN */
     /* 0x71 */ u8 unk_71[3];
 } PakNote; /* size 0x74 */
 
@@ -70,15 +70,15 @@ typedef struct PakNote {
 
 /* Nonzero: the loaded data is not valid. */
 typedef s32 (*PakValidateFunc)(u8 *data, s32 size);
-/* Writes what the list shows of one of the game's notes (from its header) to out; returns 0 the game's, 1 foreign,
-   2 hidden. */
+/* Writes what the list shows of one of the game's notes (from its header) to out; returns a PAK_NOTE_*: hidden
+   for a note of the other kind when loading. */
 typedef s32 (*PakDescribeFunc)(u8 *header, char *out, s32 inManager);
 
 /* The screen (gPakScreen). The front end sets mode, pages, data and the callbacks before pak_screen_init. */
 typedef struct PakScreen {
     /* 0x00 */ s32 mode;            /* PAK_MODE_* */
-    /* 0x04 */ s32 state;           /* 0-20, also the index of the state's message in sPakMessages */
-    /* 0x08 */ s32 subState;        /* steps of the saving / loading / erasing states */
+    /* 0x04 */ s32 state;           /* PAK_STATE_* */
+    /* 0x08 */ s32 subState;        /* PAK_STEP_* of the repairing / loading / saving / erasing states */
     /* 0x0C */ s32 pak;             /* the Controller Pak shown */
     /* 0x10 */ s32 sel;             /* the note selected */
     /* 0x14 */ s32 unk_14;
