@@ -28,7 +28,6 @@ typedef struct Hdr_5 Hdr_5;
 typedef struct Poly_2 Poly_2;
 typedef struct List_6 List_6;
 typedef struct Ent_35 Ent_35;
-typedef struct Obj_30 Obj_30;
 typedef struct Gen Gen;
 typedef struct Elem_2 Elem_2;
 typedef struct Pt_4 Pt_4;

@@ -29,6 +29,19 @@ typedef struct RiderSkeleton {
     /* 0x000 */ Bone bones[15];     /* gRiderSkelTemplate */
 } RiderSkeleton; /* size 0x780 */
 
+/* Where the rider's hands and feet go (the bike's grips and pegs) and how the hips turn (rider_update_pose,
+   rider_apply_ik). */
+typedef struct RiderIkTarget {
+    /* 0x00 */ Vec3i pos;
+    /* 0x0C */ Mtx3 rot;
+} RiderIkTarget; /* size 0x30 */
+
+typedef struct RiderIkTargets {
+    /* 0x00 */ RiderIkTarget limb[4]; /* left and right hand, left and right foot */
+    /* 0xC0 */ Mtx3 hips;
+    /* 0xE4 */ s32 armTwist;        /* 0x100 = full */
+} RiderIkTargets; /* size 0xE8 */
+
 /* A keyframe animation resource (rider_anims_load). */
 typedef struct AnimClip {
     /* 0x00 */ s32 bones;           /* a frame holds (bones * 3 + 7) / 2 halfwords */

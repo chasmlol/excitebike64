@@ -2,12 +2,7 @@
 
 typedef struct { s32 w[9]; } M9;
 
-struct Obj_30 {
-    u8 pad0[0x18];
-    Vec3i v;
-};
-
-void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Obj_30 *o)
+void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Mtx3 *o)
 {
     Mtx3 m;
     Mtx3 m2;
@@ -18,9 +13,9 @@ void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Obj_30 *o)
     s16 a2, a3, a4;
     s32 rot, dist, n, l1, l2, x, rad;
 
-    t.x = -(o->v.x * 80) / 16384 + tgt->x;
-    t.y = -(o->v.y * 80) / 16384 + tgt->y;
-    t.z = -(o->v.z * 80) / 16384 + tgt->z;
+    t.x = -(o->m[6] * 80) / 16384 + tgt->x;
+    t.y = -(o->m[7] * 80) / 16384 + tgt->y;
+    t.z = -(o->m[8] * 80) / 16384 + tgt->z;
     d.x = t.x - j[idx].worldPos.x;
     d.y = t.y - j[idx].worldPos.y;
     d.z = t.z - j[idx].worldPos.z;
@@ -32,7 +27,7 @@ void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Obj_30 *o)
     } else {
         rot = 0x2000;
     }
-    rot = rot * D_800EA774 / 256;
+    rot = rot * sRiderIkTargets.armTwist / 256;
     mtx3i_from_angles(&m, 0, rot, 0);
     vec3i_mul_mtx3i(&t, &m, &d);
     dist = isqrt_u32_3(d.x * d.x + d.y * d.y + d.z * d.z);
@@ -156,31 +151,23 @@ void rider_apply_ik(Bone *b)
     b[12].worldPos.y = b[12].worldPos.y + b[0].worldPos.y;
     b[12].worldPos.z = b[12].worldPos.z + b[0].worldPos.z;
 
-    rider_ik_arm(b, 3, sRiderIkTargets, sRiderIkTargets + 3);
-    rider_ik_arm(b, 6, sRiderIkTargets + 12, sRiderIkTargets + 15);
-    rider_ik_leg(b, 9, sRiderIkTargets + 24, sRiderIkTargets + 27);
-    rider_ik_leg(b, 12, sRiderIkTargets + 36, sRiderIkTargets + 39);
+    rider_ik_arm(b, 3, &sRiderIkTargets.limb[0].pos, &sRiderIkTargets.limb[0].rot);
+    rider_ik_arm(b, 6, &sRiderIkTargets.limb[1].pos, &sRiderIkTargets.limb[1].rot);
+    rider_ik_leg(b, 9, &sRiderIkTargets.limb[2].pos, sRiderIkTargets.limb[2].rot.m);
+    rider_ik_leg(b, 12, &sRiderIkTargets.limb[3].pos, sRiderIkTargets.limb[3].rot.m);
     skel_update_world_transforms(b, 15);
 
-    b[5].worldRot = *(Mtx3 *)(sRiderIkTargets + 3);
-    b[8].worldRot = *(Mtx3 *)D_800EA6CC;
-    b[11].worldRot = *(Mtx3 *)D_800EA6FC;
-    b[14].worldRot = *(Mtx3 *)D_800EA72C;
+    b[5].worldRot = sRiderIkTargets.limb[0].rot;
+    b[8].worldRot = D_800EA6CC;
+    b[11].worldRot = D_800EA6FC;
+    b[14].worldRot = D_800EA72C;
     o = b[2].worldRot.m;
-    *(Mtx3 *)o = *(Mtx3 *)D_800EA750;
+    *(Mtx3 *)o = D_800EA750;
 }
 
 #define B (gRiders[i])
 #define SINS(a) gCosTable[((a) >> 4) & 0xFFF]
 #define COSS(a) gCosTable[(((a) >> 4) - 0x400) & 0xFFF]
-
-typedef struct { Vec3i pos; Mtx3 rot; } Joint_3;
-
-typedef struct {
-    Joint_3 j[4];   /* 0x00 */
-    Mtx3 rot;    /* 0xC0 */
-    s32 fE4;      /* 0xE4 */
-} Cam_3;
 
 typedef struct {
     u8 pad[0xA4C];
@@ -189,7 +176,6 @@ typedef struct {
     u8 padA54[0x2C];
 } Slot_7;
 
-extern Cam_3 sRiderIkTargets_2;
 extern Slot_7 gRiderGfx_10[];
 
 void rider_update_pose(RiderSkeleton *m, s32 i) {
@@ -263,8 +249,8 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
             v[2] = (v[2] * u - w * 520) >> 8;
             v[1] = (v[1] * u + w * 900) >> 8;
         }
-        sRiderIkTargets_2.fE4 = 0x80 - s3 * 16;
-        if (sRiderIkTargets_2.fE4 < 0) sRiderIkTargets_2.fE4 = 0;
+        sRiderIkTargets.armTwist = 0x80 - s3 * 16;
+        if (sRiderIkTargets.armTwist < 0) sRiderIkTargets.armTwist = 0;
         mtx3i_from_angles(&mtx, B.drawRot[0], (B.drawRot[1] * 7) / 8, B.drawRot[2]);
         vec3i_mul_mtx3i(v, mtx.m, out);
         m->bones[0].pos.x = m->bones[0].worldPos.x = out[0];
@@ -274,10 +260,10 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
         m->bones[0].worldRot = m->bones[0].rot;
         r = s3 * 128 - 4000;
         mtx3i_from_angles(&m->bones[1].rot, D_800F2140[i] = d - r, 0, 0);
-        sRiderIkTargets_2.j[0].pos = gBikeSkelTemplate->bones[4].worldPos;
-        sRiderIkTargets_2.j[1].pos = gBikeSkelTemplate->bones[5].worldPos;
-        sRiderIkTargets_2.j[2].pos = gBikeSkelTemplate->bones[6].worldPos;
-        sRiderIkTargets_2.j[3].pos = gBikeSkelTemplate->bones[9].worldPos;
+        sRiderIkTargets.limb[0].pos = gBikeSkelTemplate->bones[4].worldPos;
+        sRiderIkTargets.limb[1].pos = gBikeSkelTemplate->bones[5].worldPos;
+        sRiderIkTargets.limb[2].pos = gBikeSkelTemplate->bones[6].worldPos;
+        sRiderIkTargets.limb[3].pos = gBikeSkelTemplate->bones[9].worldPos;
 
         if (B.leftFootOut != 0) {
             s32 x, y, z, p, q, n;
@@ -296,8 +282,8 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
                 x -= B.bike.right.z * k;
                 z = -(B.bike.fwd.x * k);
                 z += B.bike.fwd.z * k;
-                y = height_get_ground(B.drawPos.x + sRiderIkTargets_2.j[3].pos.x + x, B.drawPos.y, B.drawPos.z + sRiderIkTargets_2.j[3].pos.z + z) - B.drawPos.y;
-                y -= sRiderIkTargets_2.j[3].pos.y;
+                y = height_get_ground(B.drawPos.x + sRiderIkTargets.limb[3].pos.x + x, B.drawPos.y, B.drawPos.z + sRiderIkTargets.limb[3].pos.z + z) - B.drawPos.y;
+                y -= sRiderIkTargets.limb[3].pos.y;
                 y += 100;
                 if (B.rightFootOut != 0) {
                     if (B.unk_412 > 0) {
@@ -321,9 +307,9 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
             x = (x * n) >> 4;
             y = (y * n) >> 4;
             z = (z * n) >> 4;
-            sRiderIkTargets_2.j[3].pos.x += x;
-            sRiderIkTargets_2.j[3].pos.y += y;
-            sRiderIkTargets_2.j[3].pos.z += z;
+            sRiderIkTargets.limb[3].pos.x += x;
+            sRiderIkTargets.limb[3].pos.y += y;
+            sRiderIkTargets.limb[3].pos.z += z;
         }
         if (B.rightFootOut != 0) {
             s32 x, y, z, p, q, n;
@@ -342,8 +328,8 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
                 z = B.bike.fwd.x * k;
                 x -= B.bike.right.z * k;
                 z += B.bike.fwd.z * k;
-                y = height_get_ground(B.drawPos.x + sRiderIkTargets_2.j[3].pos.x + x, B.drawPos.y, B.drawPos.z + sRiderIkTargets_2.j[3].pos.z + z) - B.drawPos.y;
-                y -= sRiderIkTargets_2.j[2].pos.y;
+                y = height_get_ground(B.drawPos.x + sRiderIkTargets.limb[3].pos.x + x, B.drawPos.y, B.drawPos.z + sRiderIkTargets.limb[3].pos.z + z) - B.drawPos.y;
+                y -= sRiderIkTargets.limb[2].pos.y;
                 y += 100;
                 if (B.leftFootOut != 0) {
                     if (B.unk_412 < 0) {
@@ -367,14 +353,14 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
             x = (x * n) >> 4;
             y = (y * n) >> 4;
             z = (z * n) >> 4;
-            sRiderIkTargets_2.j[2].pos.x += x;
-            sRiderIkTargets_2.j[2].pos.y += y;
-            sRiderIkTargets_2.j[2].pos.z += z;
+            sRiderIkTargets.limb[2].pos.x += x;
+            sRiderIkTargets.limb[2].pos.y += y;
+            sRiderIkTargets.limb[2].pos.z += z;
         }
-        mtx3i_from_angles(&sRiderIkTargets_2.j[0].rot, 0x1000, 0, B.drawRot[2] + B.drawSteer);
-        mtx3i_from_angles(&sRiderIkTargets_2.j[1].rot, B.unk_5AC + 0x1000, 0, B.drawRot[2] + B.drawSteer);
-        mtx3i_from_angles(&sRiderIkTargets_2.j[2].rot, B.drawRot[0] / 2, 0, B.drawRot[2]);
-        mtx3i_from_angles(&sRiderIkTargets_2.j[3].rot, B.drawRot[0] / 2, 0, B.drawRot[2]);
+        mtx3i_from_angles(sRiderIkTargets.limb[0].rot.m, 0x1000, 0, B.drawRot[2] + B.drawSteer);
+        mtx3i_from_angles(sRiderIkTargets.limb[1].rot.m, B.unk_5AC + 0x1000, 0, B.drawRot[2] + B.drawSteer);
+        mtx3i_from_angles(sRiderIkTargets.limb[2].rot.m, B.drawRot[0] / 2, 0, B.drawRot[2]);
+        mtx3i_from_angles(sRiderIkTargets.limb[3].rot.m, B.drawRot[0] / 2, 0, B.drawRot[2]);
         h = B.headYaw;
         if (D_800EA7B8[i] == 0) {
             if (h < 0) {
@@ -386,7 +372,7 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
         st = h;
         if (st < 0) st = -st;
         h = (h * 12000) >> 14;
-        mtx3i_from_angles(&sRiderIkTargets_2.rot, (0x4000 - SINS(st * 4)) >> 4, 0, B.drawRot[2] + h);
+        mtx3i_from_angles(sRiderIkTargets.hips.m, (0x4000 - SINS(st * 4)) >> 4, 0, B.drawRot[2] + h);
         rider_apply_ik(m->bones);
         st = B.fistPump;
         if (st != 0) {

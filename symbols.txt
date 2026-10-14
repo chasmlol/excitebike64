@@ -4267,12 +4267,10 @@ sShadowTriCount                       game  0x800E9670  data        -
 sSkelLoadBuf                          game  0x800E9680  data        -
 sSkelWalkIndex                        game  0x800EA680  data        -
 sRiderIkTargets                       game  0x800EA690  data        -
-sRiderIkTargets_2                     game  0x800EA690  data        -  sRiderIkTargets
 D_800EA6CC                            game  0x800EA6CC  data        -
 D_800EA6FC                            game  0x800EA6FC  data        -
 D_800EA72C                            game  0x800EA72C  data        -
 D_800EA750                            game  0x800EA750  data        -
-D_800EA774                            game  0x800EA774  data        -
 sRiderBoneNodes                       game  0x800EA778  data        -
 D_800EA7B8                            game  0x800EA7B8  data        -
 D_800EA7C0                            game  0x800EA7C0  data        -

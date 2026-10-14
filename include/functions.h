@@ -430,7 +430,7 @@ void skel_reset_pose(Bone *param_1, s32 param_2);
 void skel_assign_parents(Ent_35 *base, s32 val, s32 n);
 
 /* src/game/unnamed/s0_8003C8E0.c */
-void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Obj_30 *o);
+void rider_ik_arm(Bone *j, s32 idx, Vec3i *tgt, Mtx3 *o);
 void rider_ik_leg(Bone *j, s32 idx, Vec3i *tgt, s32 *arg3);
 void rider_apply_ik(Bone *b);
 void rider_update_pose(RiderSkeleton *m, s32 i);

@@ -1190,12 +1190,13 @@ extern Vtx *sShadowVtx;
 extern Mtx sShadowViewMtx;
 extern s32 sShadowTriCount;
 extern s32 sSkelWalkIndex;
-extern s32 sRiderIkTargets[];
-extern s32 D_800EA6CC[];
-extern s32 D_800EA6FC[];
-extern s32 D_800EA72C[];
-extern s32 D_800EA750[];
-extern s32 D_800EA774;
+extern RiderIkTargets sRiderIkTargets;
+/* sRiderIkTargets.limb[1..3].rot and .hips under their own names: rider_apply_ik copies each from its own
+   address rather than from the struct's */
+extern Mtx3 D_800EA6CC;
+extern Mtx3 D_800EA6FC;
+extern Mtx3 D_800EA72C;
+extern Mtx3 D_800EA750;
 extern s32 sRiderBoneNodes[];
 extern u8 D_800EA7B8[];
 extern s32 D_800EA7C0;
