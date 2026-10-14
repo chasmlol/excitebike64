@@ -39,23 +39,24 @@ typedef struct {
     /* 0x10 */ s32 *skins[6];       /* the texture sets of the six skins */
 } RiderModelIds; /* size 0x28 */
 
+/* gRiderGfx, the render side of a rider (0xA80 bytes), as the functions of this file see it */
 typedef struct {
-    void *f0;
-    void *f4;
-    Img_3 *f8;
-    Pal_3 *fC;
-    Pal_3 *f10;
-    Pal_3 *f14;
-    Pal_3 *f18;
-    u16 pal[256];
-    Rgb col;
-    u8 pad21F;
-    void *f220;
-    void *a224[2];
-    void *a22C[2];
-    void *a234[2];
-    void *b23C[2];
-    u8 rest[0xA80 - 0x244];
+    /* 0x000 */ void *riderTex;      /* the skin's texture set */
+    /* 0x004 */ void *podiumTex;     /* the podium model's texture set */
+    /* 0x008 */ Img_3 *bikeTex;      /* the bike's texture set */
+    /* 0x00C */ Pal_3 *riderPalSrc;  /* the skin's palette */
+    /* 0x010 */ Pal_3 *bikePalSrc;   /* the bike's palette (bikeTex's, or one of sBikeAltPalettes) */
+    /* 0x014 */ Pal_3 *riderPal;     /* the rider palette drawn: riderPalSrc tinted (render_update_rider_palette) */
+    /* 0x018 */ Pal_3 *selectPals;   /* rider select: a palette per skin */
+    /* 0x01C */ u16 bikePal[256];    /* the bike palette drawn */
+    /* 0x21C */ Rgb color;           /* the rider's colour (dots, place markers) */
+    /* 0x21F */ u8 pad21F;
+    /* 0x220 */ void *shadowDL;      /* rider 0's untextured model (shadows) */
+    /* 0x224 */ void *riderDL[2];    /* the body's display lists: low and high detail */
+    /* 0x22C */ void *riderVtx[2];   /* their vertices (segment 1) */
+    /* 0x234 */ void *boneMtx[2];    /* per frame: the 15 bone matrices (segment 6) */
+    /* 0x23C */ void *partMtx[2];    /* per frame: the matrices of the six bike parts */
+    /* 0x244 */ u8 rest[0xA80 - 0x244];
 } Plr;
 
 extern RiderModelIds sRiderModelTable[];
@@ -80,19 +81,19 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
         if (arg5 == 0) {
             ponytail_init(n);
         }
-        gRiderGfx_2[n].f8 = res_load(r, *sBikeTexResIds[arg3]);
+        gRiderGfx_2[n].bikeTex = res_load(r, *sBikeTexResIds[arg3]);
     }
     if (gGame.flags & 0x10) {
-        gRiderGfx_2[n].f18 = mem_alloc_dbg(0xC00, 0, sStrRenderC, 0x1FF);
+        gRiderGfx_2[n].selectPals = mem_alloc_dbg(0xC00, 0, sStrRenderC, 0x1FF);
     } else {
-        gRiderGfx_2[n].f14 = mem_alloc_dbg(0x200, 0, sStrRenderC, 0x203);
+        gRiderGfx_2[n].riderPal = mem_alloc_dbg(0x200, 0, sStrRenderC, 0x203);
     }
     if (!(gGame.flags & 0x10)) {
         c = gGame.riderSkins[n];
     } else {
         c = gGame.riders[n & 3] & 3;
     }
-    col = &gRiderGfx_2[n].col;
+    col = &gRiderGfx_2[n].color;
     mem_fill((u8 *)col, 0xFF, 3);
     k = res_get_size(r, *ids[c]);
     if (gGame.flags & 0x10) {
@@ -104,44 +105,44 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
             res_unload(&r->tbl[*ids[i]]);
             prim_pkg_relocate((u32 *)&sRiderSkinTextures[n][i]);
         }
-        gRiderGfx_2[n].f0 = sRiderSkinTextures[n][0];
-        gRiderGfx_2[n].fC = 0;
+        gRiderGfx_2[n].riderTex = sRiderSkinTextures[n][0];
+        gRiderGfx_2[n].riderPalSrc = 0;
     } else if (n >= 6) {
-        gRiderGfx_2[n].f0 = res_load(r, sExtraRiderTexResId);
+        gRiderGfx_2[n].riderTex = res_load(r, sExtraRiderTexResId);
         sExtraRiderPalettes[0] = ((Img_3 *)res_load(r, sExtraRiderTexResId))->pal;
         sExtraRiderPalettes[1] = ((Img_3 *)res_load(r, sExtraRiderPal1ResId))->pal;
         sExtraRiderPalettes[2] = ((Img_3 *)res_load(r, sExtraRiderPal2ResId))->pal;
-        gRiderGfx_2[n].fC = sExtraRiderPalettes[n % 3];
+        gRiderGfx_2[n].riderPalSrc = sExtraRiderPalettes[n % 3];
     } else {
         tmp = res_load(r, *ids[c]);
-        gRiderGfx_2[n].f0 = tmp;
-        gRiderGfx_2[n].fC = ((Img_3 *)tmp)->pal;
+        gRiderGfx_2[n].riderTex = tmp;
+        gRiderGfx_2[n].riderPalSrc = ((Img_3 *)tmp)->pal;
         *col = sRiderColors[c];
     }
     if (gPodiumMode != 0) {
         if (n < 6) {
-            gRiderGfx_2[n].f4 = res_load(r, *e->podiumTex);
+            gRiderGfx_2[n].podiumTex = res_load(r, *e->podiumTex);
         } else {
-            gRiderGfx_2[n].f4 = res_load(r, *sRiderModelTable[0].podiumTex);
+            gRiderGfx_2[n].podiumTex = res_load(r, *sRiderModelTable[0].podiumTex);
         }
     }
     if (gGame.flags & 0x10) {
         for (i = 0; i < 6; i++) {
-            gRiderGfx_2[n].f18[i] = *sRiderSkinTextures[n][i]->pal;
+            gRiderGfx_2[n].selectPals[i] = *sRiderSkinTextures[n][i]->pal;
         }
     } else {
-        *gRiderGfx_2[n].f14 = *gRiderGfx_2[n].fC;
+        *gRiderGfx_2[n].riderPal = *gRiderGfx_2[n].riderPalSrc;
     }
     if (gPodiumMode == 0) {
         if (arg4 == 0) {
-            gRiderGfx_2[n].f10 = gRiderGfx_2[n].f8->pal;
+            gRiderGfx_2[n].bikePalSrc = gRiderGfx_2[n].bikeTex->pal;
         } else {
-            gRiderGfx_2[n].f10 = sBikeAltPalettes[arg3 * 3 + (arg4 - 1)];
+            gRiderGfx_2[n].bikePalSrc = sBikeAltPalettes[arg3 * 3 + (arg4 - 1)];
         }
-        __builtin_memcpy(gRiderGfx_2[n].pal, gRiderGfx_2[n].f10, sizeof(Pal_3));
-        gRiderGfx_2[n].pal[0] &= 0xFFFE;
-        gRiderGfx_2[n].f10->c[0] &= 0xFFFE;
-        gRiderGfx_2[n].f8->pal->c[0] &= 0xFFFE;
+        __builtin_memcpy(gRiderGfx_2[n].bikePal, gRiderGfx_2[n].bikePalSrc, sizeof(Pal_3));
+        gRiderGfx_2[n].bikePal[0] &= 0xFFFE;
+        gRiderGfx_2[n].bikePalSrc->c[0] &= 0xFFFE;
+        gRiderGfx_2[n].bikeTex->pal->c[0] &= 0xFFFE;
     }
     if (sRiderModelCache[arg5].a[0] == 0) {
         for (k = 0; k < 2; k++) {
@@ -158,13 +159,13 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
             res_set_load_buffer((s32)(gZBuffer + 0x1E000));
             m = (u32 *)((u32)res_load(r, id) & ~3);
             skel_make_verts_bone_local(gRiderSkelTemplate->bones, m);
-            buf[0] = (s32)gRiderGfx_2[n].f0;
+            buf[0] = (s32)gRiderGfx_2[n].riderTex;
             gPrimBoneMtx = (Mtx *)0x06000000;
-            buf[1] = (s32)gRiderGfx_2[n].f4;
+            buf[1] = (s32)gRiderGfx_2[n].podiumTex;
             if (gPodiumMode != 0) {
                 prim_alloc_seg_dl(&sRiderModelCache[arg5].a[k], m, (s32)buf, 0xC);
-                palmod_register((s32)gRiderGfx_2[n].f4, 0);
-                palmod_register((s32)gRiderGfx_2[n].f0, 0);
+                palmod_register((s32)gRiderGfx_2[n].podiumTex, 0);
+                palmod_register((s32)gRiderGfx_2[n].riderTex, 0);
             } else {
                 prim_alloc_seg_dl(&sRiderModelCache[arg5].a[k], m, (s32)buf, 0);
             }
@@ -176,21 +177,21 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
                 gPrimBoneMtx = (Mtx *)0x06000000;
                 len = (u32)prim_build_dl(0x23, m, 0, gZBuffer) - (u32)gZBuffer;
                 x = mem_alloc_dbg(len, 0, sStrRenderC, 0x2A0);
-                gRiderGfx_2[0].f220 = x;
+                gRiderGfx_2[0].shadowDL = x;
                 memcpy(x, gZBuffer, len);
             }
             res_unload(&r->tbl[id]);
             res_set_load_buffer(0);
         }
     }
-    gRiderGfx_2[n].a22C[0] = sRiderModelCache[arg5].b[0];
-    gRiderGfx_2[n].a22C[1] = sRiderModelCache[arg5].b[1];
-    gRiderGfx_2[n].a224[0] = sRiderModelCache[arg5].a[0];
-    gRiderGfx_2[n].a224[1] = sRiderModelCache[arg5].a[1];
+    gRiderGfx_2[n].riderVtx[0] = sRiderModelCache[arg5].b[0];
+    gRiderGfx_2[n].riderVtx[1] = sRiderModelCache[arg5].b[1];
+    gRiderGfx_2[n].riderDL[0] = sRiderModelCache[arg5].a[0];
+    gRiderGfx_2[n].riderDL[1] = sRiderModelCache[arg5].a[1];
     for (k = 0; k < 2; k++) {
-        gRiderGfx_2[n].a234[k] = mem_alloc_dbg(0x3C0, 0, sStrRenderC, 0x2B3);
+        gRiderGfx_2[n].boneMtx[k] = mem_alloc_dbg(0x3C0, 0, sStrRenderC, 0x2B3);
         if (gPodiumMode == 0) {
-            gRiderGfx_2[n].b23C[k] = mem_alloc_dbg(0x280, 0, sStrRenderC, 0x2B6);
+            gRiderGfx_2[n].partMtx[k] = mem_alloc_dbg(0x280, 0, sStrRenderC, 0x2B6);
         }
     }
 }
@@ -238,11 +239,12 @@ typedef struct {
     u8 pad57[0xA0 - 0x57];
 } Track_3;
 
+/* gRiderGfx: the rider's colour and the place marker's palette (shades of it) */
 typedef struct {
     u8 pad0[0x21C];
-    u8 rgb[3];
+    u8 color[3];
     u8 pad21F[0xA60 - 0x21F];
-    u16 pal[16];
+    u16 markerPal[16];
 } PalEnt;
 
 typedef struct {
@@ -419,21 +421,21 @@ void render_init(void) {
         event_hud_init();
     }
     for (i = 0; i < 8; i++) {
-        gRiderGfx_3[i].pal[0] = 0;
+        gRiderGfx_3[i].markerPal[0] = 0;
         for (j = 1; j < 8; j++) {
-            x = gRiderGfx_3[i].rgb[0] * j / 7 >> 3;
-            y = gRiderGfx_3[i].rgb[1] * j / 7 >> 3;
-            z = gRiderGfx_3[i].rgb[2] * j / 7 >> 3;
-            gRiderGfx_3[i].pal[j] = (x << 11) | (y << 6) | (z << 1) | 1;
+            x = gRiderGfx_3[i].color[0] * j / 7 >> 3;
+            y = gRiderGfx_3[i].color[1] * j / 7 >> 3;
+            z = gRiderGfx_3[i].color[2] * j / 7 >> 3;
+            gRiderGfx_3[i].markerPal[j] = (x << 11) | (y << 6) | (z << 1) | 1;
         }
         for (j = 0; j < 8; j++) {
-            x = gRiderGfx_3[i].rgb[0];
-            y = gRiderGfx_3[i].rgb[1];
-            z = gRiderGfx_3[i].rgb[2];
+            x = gRiderGfx_3[i].color[0];
+            y = gRiderGfx_3[i].color[1];
+            z = gRiderGfx_3[i].color[2];
             x = (x + (255 - x) * j / 7) >> 3;
             y = (y + (255 - y) * j / 7) >> 3;
             z = (z + (255 - z) * j / 7) >> 3;
-            gRiderGfx_3[i].pal[j + 8] = (x << 11) | (y << 6) | (z << 1) | 1;
+            gRiderGfx_3[i].markerPal[j + 8] = (x << 11) | (y << 6) | (z << 1) | 1;
         }
     }
     mem_fill((u8 *)sBikePartModels, 0, 0x30);
@@ -448,14 +450,14 @@ void render_init(void) {
             sBikePartModels[i].p[0] = res_load(gResourceSet, *sBikePartResIds[i + 6]);
         }
         sBikeLowModel = res_load(gResourceSet, sBikeLowModelResId);
-        prim_alloc_dl(&sBikeLowDL, sBikeLowModel, &gRiderGfx_2[0].f8, 0x20);
+        prim_alloc_dl(&sBikeLowDL, sBikeLowModel, &gRiderGfx_2[0].bikeTex, 0x20);
         for (i = 0; i < 6; i++) {
             skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].p[1]);
             skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].p[0]);
         }
         for (i = 0; i < 6; i++) {
             for (j = 0; j < 2; j++) {
-                prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].p[j], &gRiderGfx_2[0].f8, 0);
+                prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].p[j], &gRiderGfx_2[0].bikeTex, 0);
             }
             size = (s32)prim_build_dl(3, sBikePartModels[i].p[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
             gBikeShadowDLs[i] = mem_alloc_dbg(size, 0, sStrRenderC, 0x434);
@@ -535,7 +537,8 @@ void render_init(void) {
     render_reset_viewports();
 }
 
-typedef struct { u8 pad0[0x14]; s32 f14; s32 f18; u8 pad1c[0x234 - 0x1C]; s32 a[2]; s32 b[2]; u8 rest[0xA80 - 0x244]; } Plr_2;
+/* gRiderGfx: what render_free frees */
+typedef struct { u8 pad0[0x14]; s32 riderPal; s32 selectPals; u8 pad1c[0x234 - 0x1C]; s32 boneMtx[2]; s32 partMtx[2]; u8 rest[0xA80 - 0x244]; } Plr_2;
 typedef struct { u8 pad[0x2C]; s32 m; u8 pad30[0x20]; u32 f50; } Cfg_4;
 
 extern Cfg_4 *gCurTrack_10;
@@ -586,20 +589,20 @@ void render_free(void)
             if (n >= 6) {
                 break;
             }
-            mem_free(gRiderGfx_4[n].f18);
+            mem_free(gRiderGfx_4[n].selectPals);
             for (i = 0; i < 6; i++) {
                 mem_free(sRiderSkinTextures[n][i]);
             }
-        } else if (gRiderGfx_4[n].f14 != 0) {
-            mem_free(gRiderGfx_4[n].f14);
+        } else if (gRiderGfx_4[n].riderPal != 0) {
+            mem_free(gRiderGfx_4[n].riderPal);
         }
         ponytail_free(n);
         for (i = 0; i < 2; i++) {
-            mem_free(gRiderGfx_4[n].a[i]);
-            mem_free(gRiderGfx_4[n].b[i]);
+            mem_free(gRiderGfx_4[n].boneMtx[i]);
+            mem_free(gRiderGfx_4[n].partMtx[i]);
         }
     }
-    mem_free(gRiderGfx_2[0].f220);
+    mem_free(gRiderGfx_2[0].shadowDL);
     for (i = 0; i < 7; i++) {
         for (k = 0; k < 2; k++) {
             if (sRiderModelCache[i].a[k] != 0) {
@@ -964,15 +967,16 @@ Gfx *render_clear_viewports(Gfx *gdl)
 
  /* 0x7E0 */
 
+/* gRiderGfx: the matrices; the [8] are per frame and view, frame * 4 + view */
 typedef struct {
     u8 pad0[0x234];
-    Mtx *p234[2]; /* 0x234 */
-    Mtx *p23C[2]; /* 0x23C */
+    Mtx *boneMtx[2];     /* 0x234 */
+    Mtx *partMtx[2];     /* 0x23C */
     s32 pad244;
-    Mtx a[8];     /* 0x248 */
-    Mtx b[8];     /* 0x448 */
-    Mtx c[8];     /* 0x648 */
-    Mtx d[8];     /* 0x848 */
+    Mtx bikeMtx[8];      /* 0x248 the bike's position (relative to the camera off the stadium) */
+    Mtx bikeViewMtx[8];  /* 0x448 times the view's projection */
+    Mtx bodyMtx[8];      /* 0x648 the thrown rider's */
+    Mtx bodyViewMtx[8];  /* 0x848 */
     u8 padA48[0x38];
 } PG; /* 0xA80 */
 
@@ -1312,7 +1316,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                 if (gPodiumMode == 0) {
                     for (k = 0; k < 6; k++) {
                         Bone *bn = &gRiders[i].bikeSkel->bones[sBikePartBones[k]];
-                        mtx_from_rot3i_pos(bn->worldRot.m, (u16 *)&bn->worldPos, gRiderGfx_5[i].p23C[fb] + k);
+                        mtx_from_rot3i_pos(bn->worldRot.m, (u16 *)&bn->worldPos, gRiderGfx_5[i].partMtx[fb] + k);
                     }
                 }
             }
@@ -1321,9 +1325,9 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                     ((gRiderViewLod[i] >> 4) & 0xF) == 3 || gRiders[i].crashState != 0 || (gGame.flags & 1)) {
                     rider_update_pose(gRiders[i].riderSkel, i);
                 }
-                mtx_from_bones(gRiders[i].riderSkel->bones, gRiderGfx_5[i].p234[fb], 0xF);
+                mtx_from_bones(gRiders[i].riderSkel->bones, gRiderGfx_5[i].boneMtx[fb], 0xF);
                 if (gPodiumMode == 0 && (sBigHeadCheat != 0 || sPinHeadCheat != 0)) {
-                    u16 *m = (u16 *)&gRiderGfx_5[i].p234[fb][2];
+                    u16 *m = (u16 *)&gRiderGfx_5[i].boneMtx[fb][2];
 
                     for (a = 0; a < 3; a++) {
                         for (b = 0; b < 3; b++) {
@@ -1346,29 +1350,29 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             for (gCurView = 0; gCurView < gNumViews; gCurView++) {
                 if (gRiderViewLod[i] & (0xFF << (gCurView * 8))) {
                     if (gCurTrack_12->type == 0) {
-                        mtx_from_angles_pos_scale(&gRiderGfx_5[i].a[fb * 4 + gCurView], 0, 0, 0, gRiders[i].drawPos.x,
+                        mtx_from_angles_pos_scale(&gRiderGfx_5[i].bikeMtx[fb * 4 + gCurView], 0, 0, 0, gRiders[i].drawPos.x,
                                       gRiders[i].drawPos.y, gRiders[i].drawPos.z, 0x10);
                         if (gRiders[i].crashState != 0) {
-                            mtx_from_angles_pos_scale(&gRiderGfx_5[i].c[fb * 4 + gCurView], 0, 0, 0, gRiders[i].drawBodyPos.x,
+                            mtx_from_angles_pos_scale(&gRiderGfx_5[i].bodyMtx[fb * 4 + gCurView], 0, 0, 0, gRiders[i].drawBodyPos.x,
                                           gRiders[i].drawBodyPos.y, gRiders[i].drawBodyPos.z, 0x10);
                         }
                     } else {
-                        mtx_from_angles_pos_scale(&gRiderGfx_5[i].a[fb * 4 + gCurView], 0, 0, 0,
+                        mtx_from_angles_pos_scale(&gRiderGfx_5[i].bikeMtx[fb * 4 + gCurView], 0, 0, 0,
                                       gRiders[i].drawPos.x - gCamPos[gCurView].x,
                                       gRiders[i].drawPos.y - gCamPos[gCurView].y,
                                       gRiders[i].drawPos.z - gCamPos[gCurView].z, 0x10);
                         if (gRiders[i].crashState != 0) {
-                            mtx_from_angles_pos_scale(&gRiderGfx_5[i].c[fb * 4 + gCurView], 0, 0, 0,
+                            mtx_from_angles_pos_scale(&gRiderGfx_5[i].bodyMtx[fb * 4 + gCurView], 0, 0, 0,
                                           gRiders[i].drawBodyPos.x - gCamPos[gCurView].x,
                                           gRiders[i].drawBodyPos.y - gCamPos[gCurView].y,
                                           gRiders[i].drawBodyPos.z - gCamPos[gCurView].z, 0x10);
                         }
                     }
-                    mtx_mul(&gRiderGfx_5[i].a[fb * 4 + gCurView], &dyn->m0[gCurView],
-                                  &gRiderGfx_5[i].b[fb * 4 + gCurView]);
+                    mtx_mul(&gRiderGfx_5[i].bikeMtx[fb * 4 + gCurView], &dyn->m0[gCurView],
+                                  &gRiderGfx_5[i].bikeViewMtx[fb * 4 + gCurView]);
                     if (gRiders[i].crashState != 0) {
-                        mtx_mul(&gRiderGfx_5[i].c[fb * 4 + gCurView], &dyn->m0[gCurView],
-                                      &gRiderGfx_5[i].d[fb * 4 + gCurView]);
+                        mtx_mul(&gRiderGfx_5[i].bodyMtx[fb * 4 + gCurView], &dyn->m0[gCurView],
+                                      &gRiderGfx_5[i].bodyViewMtx[fb * 4 + gCurView]);
                     }
                 }
             }
@@ -1454,7 +1458,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                         }
                         gdl = render_set_viewport(gdl, dyn, gCurView, 0);
                         gSPMatrix(gdl++, &dyn->m1[gCurView], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-                        gSPMatrix(gdl++, &gRiderGfx_5[i].a[fb * 4 + gCurView],
+                        gSPMatrix(gdl++, &gRiderGfx_5[i].bikeMtx[fb * 4 + gCurView],
                                   G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
                         gdl = shadow_draw(i, dyn, gdl, gCurView);
                     }
@@ -1468,7 +1472,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                             }
                             gdl = render_set_viewport(gdl, dyn, gCurView, 0);
                             gSPMatrix(gdl++, &dyn->m1[gCurView], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-                            gSPMatrix(gdl++, &gRiderGfx_5[i].c[fb * 4 + gCurView],
+                            gSPMatrix(gdl++, &gRiderGfx_5[i].bodyMtx[fb * 4 + gCurView],
                                       G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
                             gdl = shadow_draw(i + 8, dyn, gdl, gCurView);
                         }
@@ -1625,27 +1629,28 @@ end:
     sRidersDrawnLast = sRidersDrawn;
 }
 
+/* gRiderGfx as render_draw_riders sees it */
 typedef struct {
-    u32 seg0;
-    u32 seg4;
-    u32 seg8;
+    u32 riderTex;
+    u32 podiumTex;
+    u32 bikeTex;
     u8 padC[0x14 - 0xC];
-    u32 tlut14;
-    u8 *tlut18;
-    u16 pal1C[(0x224 - 0x1C) / 2];
-    Gfx *dl224;
-    Gfx *dl228;
-    u32 seg22C;
-    u32 seg230;
-    u32 seg234[2];
-    Mtx *mtx23C[2];
+    u32 riderPal;
+    u8 *selectPals;
+    u16 bikePal[(0x224 - 0x1C) / 2];
+    Gfx *riderDLLow;
+    Gfx *riderDLHigh;
+    u32 riderVtxLow;
+    u32 riderVtxHigh;
+    u32 boneMtx[2];
+    Mtx *partMtx[2];
     u8 pad244[0x448 - 0x244];
-    Mtx m448[16];
-    Mtx m848[8];
+    Mtx bikeViewMtx[16];  /* only 8, then bodyMtx */
+    Mtx bodyViewMtx[8];
     u8 padA48[0xA4C - 0xA48];
-    u8 *fA4C;
+    u8 *ponytailMtx;      /* per frame, three bones */
     u8 padA50[4];
-    void *fA54;
+    void *ponytailModel;
     u8 padA58[0xA80 - 0xA58];
 } Bike;
 
@@ -1718,7 +1723,7 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
             }
             if (gPodiumMode != 0) {
                 m = 3;
-                if (gRiderGfx_6[j].dl228 == 0) {
+                if (gRiderGfx_6[j].riderDLHigh == 0) {
                     continue;
                 }
             }
@@ -1735,17 +1740,17 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
             }
             if (gGame.flags & 0x10) {
                 if (gGame.numPlayers == 1) {
-                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].tlut18 + gGame.riderSkinSel * 0x200);
+                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].selectPals + gGame.riderSkinSel * 0x200);
                 } else {
-                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].tlut18 + i * 0x200);
+                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].selectPals + i * 0x200);
                 }
             } else {
-                gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].tlut14);
+                gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].riderPal);
             }
             if (gRiders[j].crashState != 0) {
-                gSPMatrix(gdl++, &gRiderGfx_6[j].m848[vp * 4 + i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+                gSPMatrix(gdl++, &gRiderGfx_6[j].bodyViewMtx[vp * 4 + i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
             } else {
-                gSPMatrix(gdl++, &gRiderGfx_6[j].m448[vp * 4 + i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+                gSPMatrix(gdl++, &gRiderGfx_6[j].bikeViewMtx[vp * 4 + i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
             }
             if (xlu == 0) {
                 gDPSetRenderMode(gdl++, 0x442230, 0);
@@ -1756,7 +1761,7 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
             gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF67B);
             if (gDrawFlags & 1) {
                 if (m == 3) {
-                    gSPSegment(gdl++, 1, gRiderGfx_6[j].seg230 & 0xFFFFFF);
+                    gSPSegment(gdl++, 1, gRiderGfx_6[j].riderVtxHigh & 0xFFFFFF);
                     if (gGame.flags & 0x10) {
                         if (gGame.numPlayers == 1) {
                             gSPSegment(gdl++, 2, sRiderSkinTextures_2[j][gGame.riderSkinSel] & 0xFFFFFF);
@@ -1764,15 +1769,15 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                             gSPSegment(gdl++, 2, sRiderSkinTextures_2[j][i] & 0xFFFFFF);
                         }
                     } else {
-                        gSPSegment(gdl++, 2, gRiderGfx_6[j].seg0 & 0xFFFFFF);
-                        gSPSegment(gdl++, 3, gRiderGfx_6[j].seg4 & 0xFFFFFF);
+                        gSPSegment(gdl++, 2, gRiderGfx_6[j].riderTex & 0xFFFFFF);
+                        gSPSegment(gdl++, 3, gRiderGfx_6[j].podiumTex & 0xFFFFFF);
                     }
-                    gSPSegment(gdl++, 6, gRiderGfx_6[j].seg234[gGfxFrameIndex]);
+                    gSPSegment(gdl++, 6, gRiderGfx_6[j].boneMtx[gGfxFrameIndex]);
                     if (!(gCheatFlags & 0x20)) {
-                        gSPDisplayList(gdl++, gRiderGfx_6[j].dl228);
+                        gSPDisplayList(gdl++, gRiderGfx_6[j].riderDLHigh);
                     }
                 } else {
-                    gSPSegment(gdl++, 1, gRiderGfx_6[j].seg22C & 0xFFFFFF);
+                    gSPSegment(gdl++, 1, gRiderGfx_6[j].riderVtxLow & 0xFFFFFF);
                     if (gGame.flags & 0x10) {
                         if (gGame.numPlayers == 1) {
                             gSPSegment(gdl++, 2, sRiderSkinTextures_2[j][gGame.riderSkinSel % 5] & 0xFFFFFF);
@@ -1780,34 +1785,34 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                             gSPSegment(gdl++, 2, sRiderSkinTextures_2[j][i] & 0xFFFFFF);
                         }
                     } else {
-                        gSPSegment(gdl++, 2, gRiderGfx_6[j].seg0 & 0xFFFFFF);
+                        gSPSegment(gdl++, 2, gRiderGfx_6[j].riderTex & 0xFFFFFF);
                     }
-                    gSPSegment(gdl++, 6, gRiderGfx_6[j].seg234[gGfxFrameIndex]);
+                    gSPSegment(gdl++, 6, gRiderGfx_6[j].boneMtx[gGfxFrameIndex]);
                     if (!(gCheatFlags & 0x20)) {
-                        gSPDisplayList(gdl++, gRiderGfx_6[j].dl224);
+                        gSPDisplayList(gdl++, gRiderGfx_6[j].riderDLLow);
                     }
                 }
-                if (gRiderGfx_6[j].fA54 != 0) {
-                    gPrimBoneMtx = (Mtx *)(gRiderGfx_6[j].fA4C + vp * 0xC0);
+                if (gRiderGfx_6[j].ponytailModel != 0) {
+                    gPrimBoneMtx = (Mtx *)(gRiderGfx_6[j].ponytailMtx + vp * 0xC0);
                     if (!(gCheatFlags & 0x20)) {
                         if (gGame.flags & 0x10) {
                             segs = sRiderSkinTextures_2[j];
-                            gdl = prim_build_dl(0, gRiderGfx_6[j].fA54,
+                            gdl = prim_build_dl(0, gRiderGfx_6[j].ponytailModel,
                                                 (gGame.numPlayers == 1) ? segs + gGame.riderSkinSel : segs + i, gdl);
                         } else {
-                            gdl = prim_build_dl(0, gRiderGfx_6[j].fA54, &gRiderGfx_6[j], gdl);
+                            gdl = prim_build_dl(0, gRiderGfx_6[j].ponytailModel, &gRiderGfx_6[j], gdl);
                         }
                     }
                 }
             }
             if (gPodiumMode == 0) {
                 if (gRiders[j].crashState != 0) {
-                    gSPMatrix(gdl++, &gRiderGfx_6[j].m448[vp * 4 + i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+                    gSPMatrix(gdl++, &gRiderGfx_6[j].bikeViewMtx[vp * 4 + i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
                 }
                 if (gGame.flags & 0x10) {
-                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[(j + gGame.bikeSkinSel) % 6].pal1C);
+                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[(j + gGame.bikeSkinSel) % 6].bikePal);
                 } else {
-                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].pal1C);
+                    gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[j].bikePal);
                 }
                 for (k = 0; k < 6; k++) {
                     if (xlu != 1) {
@@ -1822,14 +1827,14 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                         gDPSetCombine(gdl++, 0xFF97FF, 0xFF2CFE7F);
                     }
                     if (gDrawFlags & 1) {
-                        gSPMatrix(gdl++, gRiderGfx_6[j].mtx23C[gGfxFrameIndex] + k, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                        gSPMatrix(gdl++, gRiderGfx_6[j].partMtx[gGfxFrameIndex] + k, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                         if (gGame.flags & 0x10) {
-                            { Gfx *g = gdl++; g->words.w0 = 0xDB060008; if (j == 0) v = 0; gdl[-1].words.w1 = gRiderGfx_6[(j + gGame.bikeSkinSel) & 1].seg8; }
+                            { Gfx *g = gdl++; g->words.w0 = 0xDB060008; if (j == 0) v = 0; gdl[-1].words.w1 = gRiderGfx_6[(j + gGame.bikeSkinSel) & 1].bikeTex; }
                         } else {
-                            gSPSegment(gdl++, 2, gRiderGfx_6[j].seg8);
+                            gSPSegment(gdl++, 2, gRiderGfx_6[j].bikeTex);
                         }
                         if (m == 1) {
-                            gSPSegment(gdl++, 2, gRiderGfx_6[j].seg8);
+                            gSPSegment(gdl++, 2, gRiderGfx_6[j].bikeTex);
                             gSPDisplayList(gdl++, sBikeLowDL);
                             break;
                         }
@@ -1861,13 +1866,14 @@ typedef struct {
     u16 *f4;
 } Tex;
 
+/* gRiderGfx: the palettes */
 typedef struct {
     u8 pad0[0xC];
-    u16 *src;      /* 0x0C */
-    u16 *src2;     /* 0x10 */
-    u16 *dst;      /* 0x14 */
-    u16 *base;     /* 0x18 */
-    u16 pal2[256]; /* 0x1C */
+    u16 *riderPalSrc;  /* 0x0C */
+    u16 *bikePalSrc;   /* 0x10 */
+    u16 *riderPal;     /* 0x14 */
+    u16 *selectPals;   /* 0x18 */
+    u16 bikePal[256];  /* 0x1C */
     u8 pad21C[0xA80 - 0x21C];
 } Pal_4;
 
@@ -1894,17 +1900,17 @@ void render_update_rider_palette(s32 pl, s32 k)
     }
     if (gGame.flags & 0x10) {
         if (gGame.numPlayers == 1) {
-            gRiderGfx_7[pl].src = sRiderSkinTextures_3[pl][(k + gGame.riderSkinSel) % 5]->f4;
-            gRiderGfx_7[pl].dst = gRiderGfx_7[pl].base + ((k + gGame.riderSkinSel) % 5) * 0x100;
+            gRiderGfx_7[pl].riderPalSrc = sRiderSkinTextures_3[pl][(k + gGame.riderSkinSel) % 5]->f4;
+            gRiderGfx_7[pl].riderPal = gRiderGfx_7[pl].selectPals + ((k + gGame.riderSkinSel) % 5) * 0x100;
         } else {
-            gRiderGfx_7[pl].src = sRiderSkinTextures_3[pl][k]->f4;
-            gRiderGfx_7[pl].dst = gRiderGfx_7[pl].base + k * 0x100;
+            gRiderGfx_7[pl].riderPalSrc = sRiderSkinTextures_3[pl][k]->f4;
+            gRiderGfx_7[pl].riderPal = gRiderGfx_7[pl].selectPals + k * 0x100;
         }
     }
     i = 0;
     if (gCreditsMode != 0) {
         do {
-            c = gRiderGfx_7[pl].src[i];
+            c = gRiderGfx_7[pl].riderPalSrc[i];
             r = c;
             g = (c >> 6) & 0x1F;
             b = (c >> 1) & 0x1F;
@@ -1913,8 +1919,8 @@ void render_update_rider_palette(s32 pl, s32 k)
             r >>= 3;
             g >>= 3;
             b >>= 3;
-            gRiderGfx_7[pl].dst[i] = (r << 11) | (g << 6) | (b << 1) | 1;
-            c = gRiderGfx_7[pl].src2[i];
+            gRiderGfx_7[pl].riderPal[i] = (r << 11) | (g << 6) | (b << 1) | 1;
+            c = gRiderGfx_7[pl].bikePalSrc[i];
             r = c;
             g = (c >> 6) & 0x1F;
             b = (c >> 1) & 0x1F;
@@ -1923,17 +1929,17 @@ void render_update_rider_palette(s32 pl, s32 k)
             r >>= 3;
             g >>= 3;
             b >>= 3;
-            gRiderGfx_7[pl].pal2[i] = (r << 11) | (g << 6) | (b << 1) | 1;
+            gRiderGfx_7[pl].bikePal[i] = (r << 11) | (g << 6) | (b << 1) | 1;
             i++;
         } while (i < 0x100);
-        gRiderGfx_7[pl].pal2[0] &= 0xFFFE;
+        gRiderGfx_7[pl].bikePal[0] &= 0xFFFE;
         return;
     }
     if (gLightningFlash != 0) {
         do {
             s32 x, y, z;
 
-            x = gRiderGfx_7[pl].src[i];
+            x = gRiderGfx_7[pl].riderPalSrc[i];
             y = (x >> 6) & 0x1F;
             z = (x >> 1) & 0x1F;
             x = (x >> 11) & 0x1F;
@@ -1941,8 +1947,8 @@ void render_update_rider_palette(s32 pl, s32 k)
             if (x > 31) {
                 x = 31;
             }
-            gRiderGfx_7[pl].dst[i] = (x << 11) | (x << 6) | (x << 1) | 1;
-            x = gRiderGfx_7[pl].src2[i];
+            gRiderGfx_7[pl].riderPal[i] = (x << 11) | (x << 6) | (x << 1) | 1;
+            x = gRiderGfx_7[pl].bikePalSrc[i];
             y = (x >> 6) & 0x1F;
             z = (x >> 1) & 0x1F;
             x = (x >> 11) & 0x1F;
@@ -1950,10 +1956,10 @@ void render_update_rider_palette(s32 pl, s32 k)
             if (x > 31) {
                 x = 31;
             }
-            gRiderGfx_7[pl].pal2[i] = (x << 11) | (x << 6) | (x << 1) | 1;
+            gRiderGfx_7[pl].bikePal[i] = (x << 11) | (x << 6) | (x << 1) | 1;
             i++;
         } while (i < 0x100);
-        gRiderGfx_7[pl].pal2[0] &= 0xFFFE;
+        gRiderGfx_7[pl].bikePal[0] &= 0xFFFE;
         sRiderPalDirty[pl] = 1;
         return;
     }
@@ -1962,21 +1968,21 @@ void render_update_rider_palette(s32 pl, s32 k)
         for (i = 0; i < 0x100; i++) {
             s32 x, y, z;
 
-            x = gRiderGfx_7[pl].src[i];
+            x = gRiderGfx_7[pl].riderPalSrc[i];
             y = (x >> 6) & 0x1F;
             z = (x >> 1) & 0x1F;
             x = (x >> 11) & 0x1F;
             x += (31 - x) * 3 / 8;
             y = y * 5 / 8;
             z = z * 5 / 8;
-            gRiderGfx_7[pl].dst[i] = (x << 11) | (y << 6) | (z << 1) | 1;
-            x = gRiderGfx_7[pl].src2[i];
+            gRiderGfx_7[pl].riderPal[i] = (x << 11) | (y << 6) | (z << 1) | 1;
+            x = gRiderGfx_7[pl].bikePalSrc[i];
             x += (31 - x) * 3 / 8;
             y = y * 5 / 8;
             z = z * 5 / 8;
-            gRiderGfx_7[pl].pal2[i] = (x << 11) | (y << 6) | (z << 1) | 1;
+            gRiderGfx_7[pl].bikePal[i] = (x << 11) | (y << 6) | (z << 1) | 1;
         }
-        gRiderGfx_7[pl].pal2[0] &= 0xFFFE;
+        gRiderGfx_7[pl].bikePal[0] &= 0xFFFE;
         sRiderPalDirty[pl] = 1;
         return;
     }
@@ -1991,22 +1997,22 @@ void render_update_rider_palette(s32 pl, s32 k)
         for (i = 0; i < 0x100; i++) {
             s32 x, y, z;
 
-            x = gRiderGfx_7[pl].src[i];
+            x = gRiderGfx_7[pl].riderPalSrc[i];
             y = (x >> 6) & 0x1F;
             z = (x >> 1) & 0x1F;
             x = (x >> 11) & 0x1F;
             x += ((fr - x) * t) >> 8;
             y += ((fg - y) * t) >> 8;
             z += ((fb - z) * t) >> 8;
-            gRiderGfx_7[pl].dst[i] = (x << 11) | (y << 6) | (z << 1) | 1;
-            x = gRiderGfx_7[pl].src2[i];
+            gRiderGfx_7[pl].riderPal[i] = (x << 11) | (y << 6) | (z << 1) | 1;
+            x = gRiderGfx_7[pl].bikePalSrc[i];
             y = (x >> 6) & 0x1F;
             z = (x >> 1) & 0x1F;
             x = (x >> 11) & 0x1F;
             x += ((fr - x) * t) >> 8;
             y += ((fg - y) * t) >> 8;
             z += ((fb - z) * t) >> 8;
-            gRiderGfx_7[pl].pal2[i] = (x << 11) | (y << 6) | (z << 1) | 1;
+            gRiderGfx_7[pl].bikePal[i] = (x << 11) | (y << 6) | (z << 1) | 1;
         }
         return;
     }
@@ -2031,30 +2037,30 @@ void render_update_rider_palette(s32 pl, s32 k)
         for (i = 0; i < 0x100; i++) {
             s32 x, y, z;
 
-            x = gRiderGfx_7[pl].src[i];
+            x = gRiderGfx_7[pl].riderPalSrc[i];
             y = (x >> 6) & 0x1F;
             z = (x >> 1) & 0x1F;
             x = (x >> 11) & 0x1F;
             x = (x * cr) >> 8;
             y = (y * cg) >> 8;
             z = (z * cb) >> 8;
-            gRiderGfx_7[pl].dst[i] = (x << 11) | (y << 6) | (z << 1) | 1;
+            gRiderGfx_7[pl].riderPal[i] = (x << 11) | (y << 6) | (z << 1) | 1;
         }
         for (i = 0; i < 0x100; i++) {
             s32 x, y, z;
 
-            x = gRiderGfx_7[pl].src2[i];
+            x = gRiderGfx_7[pl].bikePalSrc[i];
             y = (x >> 6) & 0x1F;
             z = (x >> 1) & 0x1F;
             x = (x >> 11) & 0x1F;
             x = (x * cr) >> 8;
             y = (y * cg) >> 8;
             z = (z * cb) >> 8;
-            gRiderGfx_7[pl].pal2[i] = (x << 11) | (y << 6) | (z << 1) | (i != 0);
+            gRiderGfx_7[pl].bikePal[i] = (x << 11) | (y << 6) | (z << 1) | (i != 0);
         }
     } else {
-        __builtin_memcpy(gRiderGfx_7[pl].dst, gRiderGfx_7[pl].src, 0x200);
-        __builtin_memcpy(gRiderGfx_7[pl].pal2, gRiderGfx_7[pl].src2, 0x200);
+        __builtin_memcpy(gRiderGfx_7[pl].riderPal, gRiderGfx_7[pl].riderPalSrc, 0x200);
+        __builtin_memcpy(gRiderGfx_7[pl].bikePal, gRiderGfx_7[pl].bikePalSrc, 0x200);
         sRiderLightColor[pl][0] = 0xFF;
         sRiderLightColor[pl][1] = 0xFF;
         sRiderLightColor[pl][2] = 0xFF;
@@ -2192,7 +2198,7 @@ Gfx *render_draw_place_markers(Gfx *gdl, s32 arg1) {
                 g->words.w1 = 0x1C070;
             }
             gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, 0, (tw8 - 1) << G_TEXTURE_IMAGE_FRAC, (th - 1) << G_TEXTURE_IMAGE_FRAC);
-            gDPLoadTLUT_pal256(gdl++, (u8 *)gRiderGfx_3[0].pal + pl);   /* pl = j * 0xA80: gRiderGfx_3[j].pal */
+            gDPLoadTLUT_pal256(gdl++, (u8 *)gRiderGfx_3[0].markerPal + pl);   /* pl = j * 0xA80: gRiderGfx_3[j].markerPal */
             gSPTextureRectangle(gdl++, (sx - w1 / 2) * 4, (y - h1 / 2) * 4, (sx + w1 / 2) * 4, (y + h1 / 2) * 4,
                                 0, 0, 0, s1, t1);
             gDPPipeSync(gdl++);
