@@ -148,7 +148,7 @@ void func_800A44EC(u8 *p)
     D_800C9570_3->ntrk = ntrk;
     for (i = 0; i < ntrk; i++) {
         D_800C9570_3->len[i] = p[1];
-        func_800AEC34((u8 *)(i * 30 + (u32)D_800C9570_3) + 0x14, p + 2, D_800C9570_3->len[i] * 4 - 2);
+        memcpy_2((u8 *)(i * 30 + (u32)D_800C9570_3) + 0x14, p + 2, D_800C9570_3->len[i] * 4 - 2);
         p += D_800C9570_3->len[i] * 4;
     }
     D_800C9570_3->n = (s16)n;
@@ -225,7 +225,7 @@ void func_800A4700(u8 *p)
         n = *(s16 *)p;
         w = *(u16 *)p;
         tp = D_800F55B8[i];
-        func_800AEC34(tp, p + 2, (n * 2 - 1) * 2);
+        memcpy(tp, p + 2, (n * 2 - 1) * 2);
         func_800A4FF0(D_800CE280_15[i + 0x12].f30, D_800CE280_15[i + 0x12].f34, tp, n);
         D_800CE280_15[i + 0x12].h2 = w;
         p = (u8 *)((s16 *)p + n * 2);
@@ -344,7 +344,7 @@ void func_800A4A20(void)
     if (k > 0) {
         do {
             D_800C9570_4->len[i] = D_800CE280_16[i + 0x12].len;
-            func_800AEC34((u8 *)(i * 30 + (s32)D_800C9570_4) + 0x14, D_800F55B8[i], D_800C9570_4->len[i] * 4 - 2);
+            memcpy((u8 *)(i * 30 + (s32)D_800C9570_4) + 0x14, D_800F55B8[i], D_800C9570_4->len[i] * 4 - 2);
             i++;
         } while (i < D_800C9570_4->n);
     }
@@ -486,12 +486,6 @@ struct Mesh_8 {
     Vtx *v;
 };
 
-typedef struct {
-    s32 x;
-    Mesh_8 *mesh;
-    u8 pad[0x18];
-} Obj_78;
-
 void func_800A4FF0(Mesh_8 **dst, Mesh_8 **src, s16 *h, s32 n)
 {
     Mesh_8 **tmpl = D_800CE9B4;
@@ -587,9 +581,9 @@ void func_800A5484(Set *out1, Set *out2, s32 count)
             o->mesh->tri = (u32 *)(o->mesh->v + o->mesh->nv);
             o->mesh->ntri = set1->e[i].mesh->ntri;
             o->tex = (s16 *)(o->mesh->tri + o->mesh->ntri);
-            func_800AEC34(o->mesh->v, set1->e[i].mesh->v, o->mesh->nv * 16);
-            func_800AEC34(o->mesh->tri, set1->e[i].mesh->tri, o->mesh->ntri * 4);
-            func_800AEC34(o->tex, set1->e[i].tex, size);
+            memcpy(o->mesh->v, set1->e[i].mesh->v, o->mesh->nv * 16);
+            memcpy(o->mesh->tri, set1->e[i].mesh->tri, o->mesh->ntri * 4);
+            memcpy(o->tex, set1->e[i].tex, size);
 
             size2 = (set2->e[i].tex[1] << 4) | 4;
             o2->mesh = func_800BC908(sizeof(Mesh) + set2->e[i].mesh->nv * 16 + set2->e[i].mesh->ntri * 4 + size2, 0, (s32)D_800DB040, 0x30C);
@@ -605,9 +599,9 @@ void func_800A5484(Set *out1, Set *out2, s32 count)
             o2->mesh->tri = (u32 *)(o2->mesh->v + o2->mesh->nv);
             o2->mesh->ntri = set2->e[i].mesh->ntri;
             o2->tex = (s16 *)(o2->mesh->tri + o2->mesh->ntri);
-            func_800AEC34(o2->mesh->v, set2->e[i].mesh->v, o2->mesh->nv * 16);
-            func_800AEC34(o2->mesh->tri, set2->e[i].mesh->tri, o2->mesh->ntri * 4);
-            func_800AEC34(o2->tex, set2->e[i].tex, size2);
+            memcpy(o2->mesh->v, set2->e[i].mesh->v, o2->mesh->nv * 16);
+            memcpy(o2->mesh->tri, set2->e[i].mesh->tri, o2->mesh->ntri * 4);
+            memcpy(o2->tex, set2->e[i].tex, size2);
         }
     }
 }
@@ -1302,10 +1296,10 @@ void func_800A5A74(void)
         }
         if (c < 256) {
             if (g68[c * 65] != 0) {
-                func_800AEC34(D_800F5CC0_4.f28->cell[c].a, g68 + c * 65 + 1, g68[c * 65] * 2);
+                memcpy(D_800F5CC0_4.f28->cell[c].a, g68 + c * 65 + 1, g68[c * 65] * 2);
             }
             if (g6C[c * 129] != 0) {
-                func_800AEC34(D_800F5CC0_4.f28->cell[c].b, g6C + c * 129 + 1, g6C[c * 129] * 2);
+                memcpy(D_800F5CC0_4.f28->cell[c].b, g6C + c * 129 + 1, g6C[c * 129] * 2);
             }
         }
     }

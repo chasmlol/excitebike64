@@ -18,6 +18,15 @@ typedef struct {
 
 typedef struct { u32 w0; u32 img; } TexHdr;
 
+struct Dyn {
+    Mtx m0[4];  /* 0x000 */
+    Mtx m1[4];  /* 0x100 */
+    Mtx m2[4];  /* 0x200 */
+    Mtx m3[4];  /* 0x300 */
+    Mtx m4;     /* 0x400 */
+    Gfx *glist; /* 0x440 */
+};
+
 extern Rec16 D_800E1568[];
 extern Img_3 *D_800E1600[][6];
 extern Pal_3 *D_800E1880[];
@@ -95,7 +104,7 @@ void func_80000450(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg5)
             D_800E1600[n][i] = func_800BC908(k, 0, D_800D5EBC, 0x220);
             tmp = func_800BF79C(r, *ids[i]);
             func_80014C80((u32 *)&tmp);
-            func_800AEC34(D_800E1600[n][i], tmp, k);
+            memcpy(D_800E1600[n][i], tmp, k);
             func_800BFEA4(&r->tbl[*ids[i]]);
             func_80014CCC((u32 *)&D_800E1600[n][i]);
         }
@@ -165,14 +174,14 @@ void func_80000450(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg5)
             }
             x = func_800BC908(m[0] << 4, 0, D_800D5EBC, 0x294);
             D_800E1568[arg5].b[k] = x;
-            func_800AEC34(x, (void *)m[1], m[0] << 4);
+            memcpy(x, (void *)m[1], m[0] << 4);
             if (k == 0 && n == 0) {
                 m[1] = 0x01000000;
                 D_800C8C70 = 0x06000000;
                 len = (u32)func_80013D70(0x23, m, 0, D_800C29E0) - (u32)D_800C29E0;
                 x = func_800BC908(len, 0, D_800D5EBC, 0x2A0);
                 D_800DC150_2[0].f220 = x;
-                func_800AEC34(x, D_800C29E0, len);
+                memcpy(x, D_800C29E0, len);
             }
             func_800BFEA4(&r->tbl[id]);
             func_800C0258(0);
@@ -485,7 +494,7 @@ void func_8000115C(void) {
             }
             size = func_80013D70_2(3, D_800E1900[i].p[1], 0, D_800C29E0) - D_800C29E0;
             D_800E16C0[i] = func_800BC908(size, 0, D_800D5EBC, 0x434);
-            func_800AEC34(D_800E16C0[i], D_800C29E0, size);
+            memcpy(D_800E16C0[i], D_800C29E0, size);
         }
     }
     D_800E19C8 = (ColList *)func_8005AED8(D_800D152C);
@@ -562,7 +571,6 @@ void func_8000115C(void) {
 }
 
 typedef struct { u8 pad0[0x14]; s32 f14; s32 f18; u8 pad1c[0x234 - 0x1C]; s32 a[2]; s32 b[2]; u8 rest[0xA80 - 0x244]; } Plr_2;
-typedef struct { s32 a[2]; s32 b[2]; } Rec16_2;
 typedef struct { s32 flags; u8 pad[0x48]; s32 mode; } State;
 typedef struct { u8 pad[0x2C]; s32 m; u8 pad30[0x20]; u32 f50; } Cfg_4;
 
@@ -940,13 +948,13 @@ Gfx *func_800035AC(Gfx *gdl, s32 fb, u8 *mtx)
     func_800C1E60(D_800EFD70_14.font, 0x40, 4, 2, 0x21);
     strcpy(buf, "Controller ");
     i = 0;
-    func_8000EE30(D_800EFD70_14.ctl[D_800E37AC] + 1, buf + func_800AEC10(buf));
+    func_8000EE30(D_800EFD70_14.ctl[D_800E37AC] + 1, buf + strlen(buf));
     func_800C1F2C(D_800EFD70_14.font, buf);
     func_800C0ACC(D_800EFD70_14.font, 0xBE, 0x2A);
     func_800C1E60(D_800EFD70_14.font, 0x40, 4, 2, 0x21);
     strcpy(buf, "Configuration ");
-    buf[func_800AEC10(buf) + 1] = 0;
-    buf[func_800AEC10(buf)] = D_800EFD70_14.cfg[D_800EFD70_14.ctl[D_800E37AC]] + 'A';
+    buf[strlen(buf) + 1] = 0;
+    buf[strlen(buf)] = D_800EFD70_14.cfg[D_800EFD70_14.ctl[D_800E37AC]] + 'A';
     func_800C1F2C(D_800EFD70_14.font, buf);
     func_800C0ACC(D_800EFD70_14.font, 0xEE, 0xC2);
 
@@ -1022,15 +1030,6 @@ Gfx *func_80003AC4(Gfx *gdl)
         *pgdl = gdl;             \
         return;                  \
     }
-
-struct Dyn {
-    Mtx m0[4];  /* 0x000 */
-    Mtx m1[4];  /* 0x100 */
-    Mtx m2[4];  /* 0x200 */
-    Mtx m3[4];  /* 0x300 */
-    Mtx m4;     /* 0x400 */
-    Gfx *glist; /* 0x440 */
-};
 
 typedef struct {
     u8 pad0[0x34];
@@ -1179,7 +1178,7 @@ void func_80003CC0(Dyn *dyn, s32 fb, Gfx **pgdl) {
 
     for (D_800C2598 = 0; D_800C2598 < D_800C2594; D_800C2598++) {
         D_800C23AC = 0x21;
-        func_800AE240(&dyn->m3[D_800C2598], -D_800F13EC / 2, D_800F13EC / 2, -D_800F13F0 / 2, D_800F13F0 / 2,
+        guOrtho(&dyn->m3[D_800C2598], -D_800F13EC / 2, D_800F13EC / 2, -D_800F13F0 / 2, D_800F13F0 / 2,
                       50.0f, D_800C23F0, 1.0f);
         for (i = 0; i < 2; i++) {
             ang = 0;
@@ -1189,17 +1188,17 @@ void func_80003CC0(Dyn *dyn, s32 fb, Gfx **pgdl) {
             k = (i != 0) * 2;
             if (D_800C2594 == 2 && D_800C2384 == 0) {
                 if (D_800C2388 != 0) {
-                    func_800AE540(&persp, &D_800E1B44, D_800C23AC, 256.0f / D_800F13F0, k + 50.0f,
+                    guPerspective(&persp, &D_800E1B44, D_800C23AC, 256.0f / D_800F13F0, k + 50.0f,
                                   D_800C23F0 + k, 1.0f);
                 } else {
-                    func_800AE540(&persp, &D_800E1B44, D_800C23AC, 480.0f / D_800F13F0, k + 50.0f,
+                    guPerspective(&persp, &D_800E1B44, D_800C23AC, 480.0f / D_800F13F0, k + 50.0f,
                                   D_800C23F0 + k, 1.0f);
                 }
             } else if (D_800CCCA8 == 2) {
-                func_800AE540(&persp, &D_800E1B44, D_800C23AC, 640.0f / D_800F13F0, k + 50.0f,
+                guPerspective(&persp, &D_800E1B44, D_800C23AC, 640.0f / D_800F13F0, k + 50.0f,
                               D_800C23F0 + k, 1.0f);
             } else {
-                func_800AE540(&persp, &D_800E1B44, D_800C23AC, 320.0f / D_800F13F0, k + 50.0f,
+                guPerspective(&persp, &D_800E1B44, D_800C23AC, 320.0f / D_800F13F0, k + 50.0f,
                               D_800C23F0 + k, 1.0f);
             }
             pp = &persp;
@@ -1215,10 +1214,10 @@ void func_80003CC0(Dyn *dyn, s32 fb, Gfx **pgdl) {
             D_800E1AB0[D_800C2598] = t * (1.0f / 65536);
             D_800E1AB0[D_800C2598] = D_800E1AB0[D_800C2598] * (D_800E1718[D_800C2594 - 1][D_800C2598].h * 0.5f);
             D_800E19C4 = pp;
-            func_800AE898(&rotA, D_800E7978[D_800C2598] * 360.0f * (1.0f / 65536),
+            guRotateRPY(&rotA, D_800E7978[D_800C2598] * 360.0f * (1.0f / 65536),
                           -(f32)D_800E8000[D_800C2598] * 360.0f * (1.0f / 65536), 0.0f);
-            func_800AE898(&rotB, 0.0f, 0.0f, D_800E78B8[D_800C2598] * 360.0f * (1.0f / 65536));
-            func_800B3240(&rotB, &rotA, &mf);
+            guRotateRPY(&rotB, 0.0f, 0.0f, D_800E78B8[D_800C2598] * 360.0f * (1.0f / 65536));
+            guMtxCatL(&rotB, &rotA, &mf);
             func_80012D30(&mf);
             if (D_800EFD64_12->type == 0) {
                 func_80011490(&rotB, 0, 0, 0, -D_800E8090[D_800C2598].x, -D_800E8090[D_800C2598].y,

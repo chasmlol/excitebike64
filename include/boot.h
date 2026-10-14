@@ -26,7 +26,7 @@ void boot_func_80000FC8(s32 x0, s32 x1, s32 y0);
 void boot_func_800010D0(void);
 void boot_func_80001660(u32 *from, u32 size, u32 *dst);
 s32 boot_func_8000182C(void);
-void boot_func_80001A24(void);
+void boot_init_prenmi_queue(void);
 void boot_func_80001A6C(void);
 
 /* src/boot/boot_80001AC4.c */
@@ -87,42 +87,12 @@ s32 boot_func_80000D28(s32 a0);
 void boot_func_80000D88(s32 a0);
 void boot_func_80000DB0(s32 x);
 
-/* libultra, by address (libultra_map.json) */
-void func_80005C70(void);  /* __osDisableInt */
-void func_80005D00(s32 a, void *b, void *c, s32 d);  /* osCreatePiManager */
-s32 boot_func_80006150(s32 a, void *b, s32 c);  /* osEPiStartDma */
-s32 func_80006210(void);  /* osCartRomInit */
-void func_80006BB0(s32 a, s32 b);  /* osInvalDCache */
-void func_80006C60(u32 a, u32 b);  /* osInvalICache */
-void func_80006CE0(s32 a, s32 b);  /* osWritebackDCache */
-void boot_func_80006D60(void);  /* osWritebackDCacheAll */
-void func_80006D90();  /* osContStartQuery */
-void func_80006E10();  /* osContGetQuery */
-void func_80006E30();  /* osContStartReadData */
-void func_80006EB8();  /* osContGetReadData */
-s32 func_80007010();  /* osContInit */
-u32 boot_func_80007460(char *s);  /* strlen */
-void func_800074B0(void *a, void *b, s32 c);  /* osCreateMesgQueue */
-s32 boot_func_80008030(void *a, s32 b, s32 c);  /* osRecvMesg */
-int func_80008030();  /* osRecvMesg */
-void func_80008290();  /* osSetEventMesg */
-void boot_func_800084E0(void *a, s32 b, void *c, s32 d, void *e, s32 f);  /* osCreateThread */
-void func_800084E0(OSThread *t, OSId id, void (*entry)(void *), void *arg, void *sp, OSPri pri);  /* osCreateThread */
-void boot_func_800086B0(void *a, s32 b);  /* osSetThreadPri */
-void boot_func_80008780(void *a);  /* osStartThread */
-void func_80008780(OSThread *t);  /* osStartThread */
-void func_80008EF0(s32 a);  /* osCreateViManager */
-void func_80009350(void *a, s32 b, s32 c);  /* osViSetEvent */
-void func_800093B0(void *a);  /* osViSetMode */
-void func_80009400(s32 a);  /* osViSetSpecialFeatures */
-u32 func_80009570(u32 a);  /* osViSwapBuffer */
-void func_800098D0(s32 a);  /* osViBlack */
-s32 func_80009930();  /* osGbpakInit */
-void func_80009B30();  /* __osMotorAccess */
-s32 func_80009C74();  /* osMotorInit */
-u32 func_80009FB0();  /* osPfsInitPak */
-void func_8000C2D8(void);  /* __osInitialize_common */
-void func_8000C5B0(void);  /* __osInitialize_autodetect */
+/* libultra functions its headers don't declare, and other views of libultra functions */
+void __osDisableInt(void);
+u32 strlen(char *s);
+u32 osViSwapBuffer_2(u32 a);
+void __osMotorAccess();
+void __osInitialize_autodetect(void);
 
 /* other code */
 void func_80002D20(void);
@@ -130,13 +100,8 @@ u32 boot_func_80002E04(void);
 u32 func_80002E04(void);
 void boot_func_80002E10(u32 v);
 void func_80002E10(u32 a);
-void func_80008030_2(void *a, void *b, s32 c);
-void func_80008030_3();
-void func_80008290_2(s32 a, void *b, s32 c);
 void func_800113E4(void);
 
-extern s32 D_80000300;
-extern u32 D_80000318;
 extern s32 D_8000CDF0;
 extern void (*D_8000CE04)(s32, s32, s32);
 extern u8 D_8000CE10[];
@@ -146,8 +111,8 @@ extern u32 D_8000F4A0[];
 extern u32 D_8000F4A4[];
 extern u32 D_8000F4A8;
 extern u32 D_8000F4B8;
-extern u8 D_8000FF30[];
-extern u8 D_800107F0[];
+extern OSViMode D_8000FF30;
+extern OSViMode D_800107F0;
 extern char D_80011240[];
 extern u32 D_800113B4;
 extern u32 D_800113B8;
@@ -160,26 +125,30 @@ extern u8 D_800115EC[];
 extern u8 D_800115F0[];
 extern u8 D_800115F8[];
 extern OSThread D_80011600;
-extern u8 D_800137B0[];
+extern OSThread D_800137B0;
 extern s32 D_80015960;
 extern s32 D_80017964;
-extern s32 D_80017968[];
+extern OSMesgQueue D_80017968;
 extern s32 D_80017984[];
-extern s32 D_80017BE0[];
+extern OSMesg D_80017BE0[];
 extern s32 D_80017C00;
 extern s32 D_80017C04;
-extern u8 D_80017C28[];
-extern u8 D_80017C40[];
+extern OSContPad D_80017C10[];
+extern OSMesgQueue D_80017C28;
+extern OSPfs D_80017C40;
 extern u32 D_80017CA8;
 extern u32 D_80017CAC;
-extern u8 D_80017E60[];
-extern u8 D_80017E78[];
+extern OSContStatus D_80017CB0[];
+extern OSPfs D_80017CC0[];
+extern OSMesgQueue D_80017E60;
+extern OSMesgQueue D_80017E78;
 extern u32 D_80017E90;
 extern u8 D_80017E94[];
-extern u8 D_80017E98[];
+extern OSMesg D_80017E98[];
 extern void (*D_80017EB8)(void);
-extern u8 D_800180B0[];
-extern u8 D_800180D0[];
+extern OSPfs D_80017F10[];
+extern OSMesg D_800180B0[];
+extern OSMesg D_800180D0[];
 extern u32 D_800180F0;
 extern u32 D_800180F8;
 extern u32 D_800180FC;

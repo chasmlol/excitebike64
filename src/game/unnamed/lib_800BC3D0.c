@@ -71,7 +71,7 @@ void func_800BC3D0(s32 arg0, s32 arg1, s32 arg2, s32 arg3)
     s32 n;
     s32 v;
 
-    func_800AEC60_2(buf, "\n");
+    sprintf(buf, "\n");
     func_8000EFB0_2(buf);
     v = 0;
     n = func_800BCEB8(D_80100640, D_80100644, 1);
@@ -148,7 +148,7 @@ void func_800BC66C(void)
     s32 n;
     s32 s0;
 
-    func_800AEC60(buf, "\n");
+    sprintf(buf, "\n");
     func_8000EFB0(buf);
     s0 = 0;
     n = func_800BCEB8(D_80100640, D_80100644, s0);
@@ -339,7 +339,6 @@ call:
     func_800BC3D0_2();
 }
 
-#define BLK_CHECKB(b) ((b)->check = 0xB562439F - ((u32)(b)->prev + (u32)(b)->next + (b)->size))
 #define BLK_CHECK(b) ((b)->check = 0xB562439F - ((u32)(b)->next + (u32)(b)->prev + (b)->size))
 
 extern Blk_4 **D_80100648_2;
@@ -475,7 +474,7 @@ s32 func_800BCEB8(s32 a, u32 b, s32 c)
     char *s;
     char *f;
 
-    func_800AEC60_2(buf, "\n");
+    sprintf(buf, "\n");
     func_8000EFB0_2(buf);
     count = 0;
     if (a == 0) {
@@ -540,7 +539,7 @@ s32 func_800BCEB8(s32 a, u32 b, s32 c)
             func_8000EFB0_2(buf);
         }
     }
-    func_800AEC60_2(buf, "\n");
+    sprintf(buf, "\n");
     if (c) {
         func_8000EFB0_2(buf);
     }

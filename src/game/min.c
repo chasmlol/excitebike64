@@ -277,7 +277,7 @@ void func_800154FC(s32 arg)
     } else {
         D_800C9650 = -1;
     }
-    func_800AD990();
+    osWritebackDCacheAll();
     func_800BF530(D_800D6160, &D_800E7728);
     if (D_800EFD64_14 != NULL) {
         func_8005AF4C(D_800EFD64_14->p80);
@@ -1790,7 +1790,7 @@ void func_800197B4(s32 x)
         if (!(D_800EFD64_16->f50 & 2)) {
             func_800BCCF0(p6 + 0x10, (u32)&D_800A9C20[-0x10] - (u32)p6, D_800D6170, 0xBE0);
         }
-        func_800AD990();
+        osWritebackDCacheAll();
         if (D_800C2950 == 0) {
             cart = 0xB0000C00;
             while ((h = func_800BEC20(D_801009A4, 0, (s32)p3 + cart + 0x30, (s32)(p3 + 0x30), sz)) < 0);
@@ -1825,8 +1825,8 @@ void func_800197B4(s32 x)
             func_800BDE38();
             *(Blk16 *)p6 = *(Blk16 *)&buf;
         }
-        func_800AD7E0(0, 0x800000);
-        func_800AD890(0, 0x800000);
+        osInvalDCache(0, 0x800000);
+        osInvalICache(0, 0x800000);
         D_800C8D1C = 1;
     } else {
         func_800BCB04(p3 + 0x30);

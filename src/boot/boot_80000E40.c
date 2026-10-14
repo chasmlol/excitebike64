@@ -44,7 +44,7 @@ void boot_func_80000EEC(u8 *s, s32 x, s32 y, u16 *fb, s32 color)
         x += 8;
         ch = *s;
     }
-    boot_func_80006D60();
+    osWritebackDCacheAll();
 }
 
 void boot_func_80000FC8(s32 x0, s32 x1, s32 y0)
@@ -99,19 +99,19 @@ void boot_func_800010D0(void)
     D_80017CA8 = 0x80200000;
     D_800180FC = 0x80300000;
     boot_func_80000704((void *)0x80200000, 0, 0x28000);
-    boot_func_80001A24();
+    boot_init_prenmi_queue();
     boot_func_80001A6C();
-    func_80008EF0(10);
-    if (D_80000300 == 1) {
-        func_800093B0(D_8000FF30);
-    } else if (D_80000300 == 2) {
-        func_800093B0(D_800107F0);
+    osCreateViManager(10);
+    if (osTvType == 1) {
+        osViSetMode(&D_8000FF30);
+    } else if (osTvType == 2) {
+        osViSetMode(&D_800107F0);
     }
-    func_800098D0(1);
-    if (D_80000300 == 0) {
+    osViBlack(1);
+    if (osTvType == 0) {
         for (;;) ;
     }
-    func_80009400(0xAA);
+    osViSetSpecialFeatures(0xAA);
     y = 0;
     boot_func_80001A6C();
     D_800113B4 = (u32)D_8000DE10;
@@ -130,18 +130,18 @@ void boot_func_800010D0(void)
             dst[d + j] = pal[src[y * 0x140 + j]];
         }
     }
-    func_80006CE0(0, 0x800000);
+    osWritebackDCache(0, 0x800000);
     boot_func_80001A6C();
-    func_800098D0(0);
-    func_80009570(D_80017CA8);
+    osViBlack(0);
+    osViSwapBuffer_2(D_80017CA8);
     y = 0;
-    func_800098D0(y);
-    func_80009570(D_80017CA8);
-    func_800074B0(D_80017C28, D_80017E98, 8);
-    func_80009350(D_80017C28, y, 1);
+    osViBlack(y);
+    osViSwapBuffer_2(D_80017CA8);
+    osCreateMesgQueue(&D_80017C28, D_80017E98, 8);
+    osViSetEvent(&D_80017C28, y, 1);
     boot_func_80001A6C();
     do {
-        func_80008030_2(D_80017C28, loc, 1);
+        osRecvMesg(&D_80017C28, loc, 1);
         boot_func_80001A6C();
         y++;
     } while (y < 0x78);
@@ -151,7 +151,7 @@ void boot_func_800010D0(void)
     y = boot_func_80000A30(D_80017C04, 0, t4, (u32)buf, 0xAF000);
     do {
     } while (boot_func_80000D28(y) != 3);
-    func_80006BB0(0, 0x400000);
+    osInvalDCache(0, 0x400000);
     boot_func_80001A6C();
     *(Blk48 *)&hdr = *(Blk48 *)buf;
     D_80017E90 = 0x80300000;
@@ -182,7 +182,7 @@ void boot_func_800010D0(void)
     *(u32 *)((u32)D_800115F0 + D_800180F0) = 0x80000400;
     boot_func_80001A6C();
     D_80017EB8 = (void (*)(void))0x802F0000;
-    func_80005C70();
+    __osDisableInt();
     D_80017EB8();
 }
 
@@ -237,19 +237,10 @@ void boot_func_80001660(u32 *from, u32 size, u32 *dst)
             *dst = w;
         }
     }
-    func_80006CE0(0, 0x800000);
-    func_80006BB0(0, 0x800000);
-    func_80006C60(0, 0x800000);
+    osWritebackDCache(0, 0x800000);
+    osInvalDCache(0, 0x800000);
+    osInvalICache(0, 0x800000);
 }
-
-typedef struct { u8 pad[3]; u8 f3; } S4;
-typedef struct { u16 flags; u8 pad[4]; } S6;
-typedef struct { u8 pad[0x68]; } Rec68;
-
-extern S4 D_80017CB0[];
-extern S6 D_80017C10[];
-extern Rec68 D_80017CC0[];
-extern Rec68 D_80017F10[];
 
 s32 boot_func_8000182C(void)
 {
@@ -261,26 +252,26 @@ s32 boot_func_8000182C(void)
     u32 buf[2];
     u32 *bp;
 
-    func_800074B0(D_80017E78, D_800180D0, 8);
-    func_80008290(5, D_80017E78, 0);
-    if (func_80007010(D_80017E78, D_80017E94, D_80017CB0) != 0) {
+    osCreateMesgQueue(&D_80017E78, D_800180D0, 8);
+    osSetEventMesg(5, &D_80017E78, 0);
+    if (osContInit(&D_80017E78, D_80017E94, D_80017CB0) != 0) {
         while (1) {}
     }
-    func_80006D90(D_80017E78);
+    osContStartQuery(&D_80017E78);
     bp = buf;
-    func_80008030_3(D_80017E78, bp, 1);
-    func_80006E10(D_80017CB0);
-    func_80006E30(D_80017E78);
-    func_80008030_3(D_80017E78, bp, 1);
-    func_80006EB8(D_80017C10);
+    osRecvMesg(&D_80017E78, bp, 1);
+    osContGetQuery(D_80017CB0);
+    osContStartReadData(&D_80017E78);
+    osRecvMesg(&D_80017E78, bp, 1);
+    osContGetReadData(D_80017C10);
     bVar1 = 0;
     bVar2 = 0;
     for (n = 0; n < 4; n++) {
-        if (D_80017CB0[n].f3 == 0) {
-            if ((D_80017C10[n].flags & 0x1000) && n == 0) {
+        if (D_80017CB0[n].errno == 0) {
+            if ((D_80017C10[n].button & 0x1000) && n == 0) {
                 bVar1 = 1;
             }
-            switch (func_80009FB0(D_80017E78, &D_80017CC0[n], n)) {
+            switch (osPfsInitPak(&D_80017E78, &D_80017CC0[n], n)) {
             case 0: dd = 0; break;
             case 1: dd = 1; break;
             case 2: dd = 2; break;
@@ -293,9 +284,9 @@ s32 boot_func_8000182C(void)
             case 9: dd = 9; break;
             case 10:
             case 11:
-                if (func_80009C74(D_80017E78, &D_80017F10[n], n) == 0) {
-                    func_80009B30(&D_80017F10[n], 0);
-                } else if (func_80009930(D_80017E78, D_80017C40, n) != 0) {
+                if (osMotorInit(&D_80017E78, &D_80017F10[n], n) == 0) {
+                    __osMotorAccess(&D_80017F10[n], 0);
+                } else if (osGbpakInit(&D_80017E78, &D_80017C40, n) != 0) {
                     bVar2 = 1;
                 }
                 break;
@@ -308,17 +299,17 @@ s32 boot_func_8000182C(void)
     return 0;
 }
 
-void boot_func_80001A24(void) {
-    func_800074B0(D_80017E60, D_800180B0, 8);
-    func_80008290_2(0xE, D_80017E60, 0);
+void boot_init_prenmi_queue(void) {
+    osCreateMesgQueue(&D_80017E60, D_800180B0, 8);
+    osSetEventMesg(0xE, &D_80017E60, 0);
 }
 
 void boot_func_80001A6C(void)
 {
     u32 buf[2];
-    if (func_80008030(D_80017E60, buf, 0) == 0) {
+    if (osRecvMesg(&D_80017E60, buf, 0) == 0) {
         boot_func_80000704(D_80017CA8, 0, 0x25800);
-        func_80006CE0(0, 0x400000);
+        osWritebackDCache(0, 0x400000);
         while (1) {}
     }
 }

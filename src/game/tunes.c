@@ -199,7 +199,7 @@ s32 func_8004B890(void)
             func_800BEF8C(s->handle);
             s->handle = -1;
             if (s->f38 >= 0) {
-                func_800AD7E0(s->f8, 0x220);
+                osInvalDCache(s->f8, 0x220);
                 b = s->f8;
                 q1 = s->pcm;
                 for (j = 0; j < 8; j++) {
@@ -480,7 +480,7 @@ void func_8004C22C(s32 param_1)
             while (1) ;
         }
         tab = &D_800EE4B8;
-        func_800AEC34(tab, D_800CA860_2, n);
+        memcpy(tab, D_800CA860_2, n);
         func_800BFEA4((u32 *)D_800D5604_4[1] + param_1);
         n = 0;
         D_800CA860_2 = (s32 *)tab;
@@ -756,7 +756,7 @@ ok:
         c = --D_800CA858_2[0];
         p->fE0 = e;
         if (c != 0) {
-            func_800AEC34(D_800EFD00, D_800EFD00 + 1, c << 2);
+            memcpy(D_800EFD00, D_800EFD00 + 1, c << 2);
         }
         D_800EECB8 = D_800E76D0;
     }

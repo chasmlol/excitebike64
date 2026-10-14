@@ -428,8 +428,8 @@ void func_8005B928(Bike_34 *b) {
         dz = b->unk540 - b->unk49C;
         dx = r * __builtin_sqrtf(dx * dx + dz * dz);
         dx += func_80013098(wx, wz);
-        sn = func_800ADFC0(dx);
-        c = func_800AEA30(dx);
+        sn = cosf(dx);
+        c = sinf(dx);
         q = b->unkA8 * sn - b->unkA0 * c;
         tl = b->unkB8 * c - b->unkC0 * sn;
         steer = 0.0f;

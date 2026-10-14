@@ -1564,7 +1564,7 @@ void func_80052C90(void)
         D_800F0730[1] = func_800BC908(0x1c0, 0, D_800D7340, 0xB6C);
     }
     t13 = *(volatile s32 *)&D_800F13F0;
-    func_800AE540(auStack_50, D_800F0744, 33.0f, 320.0f / (f32)t13, 50.0f, 4192.0f, 1.0f);
+    guPerspective(auStack_50, D_800F0744, 33.0f, 320.0f / (f32)t13, 50.0f, 4192.0f, 1.0f);
     iVar3 = 0;
     if (*(s32 *)(s2 + 0x4C) == 2) {
         D_800F0528 = func_800BF79C(D_800E7728, D_800D1084);
@@ -1589,7 +1589,7 @@ void func_80052F30(s32 param_1, char *param_2)
         return;
     }
     func_8000EE30(param_1 / 0xE10, buf);
-    if (func_800AEC10(buf) == 1) {
+    if (strlen(buf) == 1) {
         *(Str2 *)param_2 = *(Str2 *)D_800D8444;
         func_8000ED30(param_2, buf);
     } else {
@@ -1597,7 +1597,7 @@ void func_80052F30(s32 param_1, char *param_2)
     }
     func_8000ED30(param_2, D_800D8448);
     func_8000EE30((param_1 / 60) % 60, buf);
-    if (func_800AEC10(buf) == 1) {
+    if (strlen(buf) == 1) {
         func_8000ED30(param_2, D_800D8444);
         func_8000ED30(param_2, buf);
     } else {
@@ -1605,7 +1605,7 @@ void func_80052F30(s32 param_1, char *param_2)
     }
     func_8000ED30(param_2, D_800D844C);
     func_8000EE30(((param_1 % 60) * 100) / 60, buf);
-    if (func_800AEC10(buf) == 1) {
+    if (strlen(buf) == 1) {
         func_8000ED30(param_2, D_800D8444);
         func_8000ED30(param_2, buf);
     } else {
@@ -1624,14 +1624,14 @@ void func_8005313C(s32 param_1, char *param_2)
         func_8000ED30(param_2, D_800D8448);
     }
     func_8000EE30((param_1 / 0x3c) % 0x3c, acStack_30);
-    iVar1 = func_800AEC10(acStack_30);
+    iVar1 = strlen(acStack_30);
     if ((iVar1 == 1) && (param_1 > 0xe0f)) {
         func_8000ED30(param_2, D_800D8444);
     }
     func_8000ED30(param_2, acStack_30);
     func_8000ED30(param_2, D_800D844C);
     func_8000EE30(((param_1 % 0x3c) * 100) / 0x3c, acStack_30);
-    iVar1 = func_800AEC10(acStack_30);
+    iVar1 = strlen(acStack_30);
     if (iVar1 == 1) {
         func_8000ED30(param_2, D_800D8444);
     }
@@ -1835,18 +1835,6 @@ typedef struct {
     u8 pad0[0x18];
     u32 w18;
 } Txt;
-
-typedef struct {
-    Txt *p0;
-    Txt *p4;
-    Txt *p8;
-    Txt *pC;
-    Txt *p10;
-    Txt *p14;
-    Txt *p18;
-    Txt *p1C;
-    Txt *list[8];
-} Hud_2;
 
 typedef struct {
     u8 pad0[0x18];
@@ -2148,10 +2136,10 @@ Gfx *func_800549E4(Gfx *gdl, s32 a1, s32 a2, s32 idx)
         func_800C1E60(D_800F0530[3], 0x40, 1, 2, 0x20);
         func_800C1E60(D_800F0530[4], 0x40, 1, 4, 0x20);
         func_8000EE30(D_800E3BC2 + 1, buf);
-        n = func_800AEC10(buf);
+        n = strlen(buf);
         func_8000EE30(10, buf + n + 1);
         p = buf;
-        n = func_800AEC10(p);
+        n = strlen(p);
         p += n;
         *p = '/';
         if (D_800CCCA8 == 2) z = y + 0x2C;
@@ -2575,9 +2563,9 @@ Gfx *func_8005581C(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                 __builtin_strcpy(buf, "Lap ");
                 p = buf;
                 if (lp->hA != 0 || lp->h0 == D_800F05A8_31.h20) {
-                    func_8000EE30(lp->h0, p + func_800AEC10(p));
+                    func_8000EE30(lp->h0, p + strlen(p));
                 } else {
-                    func_8000EE30(lp->h0 + 1, p + func_800AEC10(p));
+                    func_8000EE30(lp->h0 + 1, p + strlen(p));
                 }
                 func_8000ED30(p, ": ");
                 func_800C1F2C(tLapL, buf);
@@ -2627,9 +2615,9 @@ Gfx *func_8005581C(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             __builtin_strcpy(buf, "Lap ");
             p = buf;
             if (lp->hA != 0 || lp->h0 == D_800F05A8_31.h20) {
-                func_8000EE30(lp->h0, p + func_800AEC10(p));
+                func_8000EE30(lp->h0, p + strlen(p));
             } else {
-                func_8000EE30(lp->h0 + 1, p + func_800AEC10(p));
+                func_8000EE30(lp->h0 + 1, p + strlen(p));
             }
             func_8000ED30(p, ": ");
             func_800C1F2C(tLapL, buf);
@@ -2873,11 +2861,11 @@ Gfx *func_80056C94(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         } else {
             if (D_800F05A8_32.w58 & 0x20) {
                 strcpy(msg, "You helped team ");
-                func_8000EE30(n, msg + func_800AEC10(msg));
+                func_8000EE30(n, msg + strlen(msg));
                 func_8000ED30(msg, " score!");
             } else {
                 strcpy(msg, "Team ");
-                func_8000EE30(n, msg + func_800AEC10(msg));
+                func_8000EE30(n, msg + strlen(msg));
                 func_8000ED30(msg, " scored!");
             }
             func_800C1F2C(D_800F054C, msg);
@@ -3030,7 +3018,7 @@ Gfx *func_80058438(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         func_800C0ACC(D_800F0530[i], 0x4D - i * 3, i * 13 + 0x44 + off);
         func_800C1E60(D_800F0530[3], 0x40, 1, 2, 0x21);
         __builtin_memcpy(buf, D_800D88D0, 9);
-        buf[func_800AEC10(buf) - 1] += trk->num;
+        buf[strlen(buf) - 1] += trk->num;
         func_800C1F2C(D_800F0530[3], buf);
         func_800C0ACC(D_800F0530[3], D_800F13EC / 2 + 3, off + 0x29);
     } else {
@@ -3230,13 +3218,6 @@ s32 func_800595A4(void) {
 #define COLS (D_800EFDAC_2[0] >= 3 ? 8 : 12)
 #define RECT (D_800E1718[D_800C2594 - 1][D_800F05F8])
 
-typedef struct Rect_2 {
-    s32 x;
-    s32 y;
-    s32 w;
-    s32 h;
-} Rect_2;
-
 typedef struct Plr_7 {
     u8 pad0[0x64];
     s16 h64;
@@ -3414,7 +3395,6 @@ Gfx *func_80059614(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
 }
 
 #define RP_2(T, n) ((Rect *)(((D_800C2598 << 4) + (((n) - 1) << 6)) + (u8 *)T))
-#define RPN(T, n) ((Rect *)(((((n) - 1) << 6) + (D_800C2598 << 4)) + (u8 *)T))
 #define RX(T, n) (RP_2(T, n)->x + RP_2(T, n)->w)
 #define RY(T, n) (RP_2(T, n)->y + RP_2(T, n)->h)
 #define R8(c) (((c) >> 8) & 0xF8)

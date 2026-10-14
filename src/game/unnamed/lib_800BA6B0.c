@@ -105,9 +105,9 @@ s32 func_800BA934(s32 param_1)
     if (i == 0x100) return -1;
     func_8000ED10((u8 *)&D_800FE8F0_2[i], 0, 0x1c);
     if (D_800FE8DC & 2) {
-        func_800AEC60_3(D_800FE880, D_800DB1C0, param_1);
+        sprintf(D_800FE880, D_800DB1C0, param_1);
     } else {
-        func_800AEC60_3(D_800FE880, D_800DB1C8, param_1);
+        sprintf(D_800FE880, D_800DB1C8, param_1);
     }
     f = func_800BE694(D_800FE880, D_800DB1D0);
     do { do { do { do { do { do { bp = buf; } while (0); } while (0); } while (0); } while (0); } while (0); } while (0);
@@ -163,9 +163,9 @@ s32 func_800BAB1C(s32 param_1, s32 arg1, s32 arg2, s32 arg3)
     }
     func_8000ED10((u8 *)&D_800FE8F0_3[i], 0, 0x1c);
     if (D_800FE8DC & 2) {
-        func_800AEC60_4(D_800FE880, D_800DB1D4, param_1);
+        sprintf(D_800FE880, D_800DB1D4, param_1);
     } else {
-        func_800AEC60_4(D_800FE880, D_800DB1E0, param_1);
+        sprintf(D_800FE880, D_800DB1E0, param_1);
     }
     q = (s32 *)func_800BFF60_2(D_800D5604, D_800FE880, &D_800FE8F0_3[i].f18);
     ent = &D_800FE8F0_3[i];
@@ -442,7 +442,7 @@ void func_800BB350(Hdr_13 **param_1)
     if ((p->flags & 0xF) >= 2) {
         if (D_800D560C != 0) {
             if (D_800D5614 < p->size + 0x1c) goto spin;
-            func_800AEC34(D_800D5610, p, p->size + 0x1c);
+            memcpy(D_800D5610, p, p->size + 0x1c);
             func_800BCB04(*param_1);
             p = (Hdr_13 *)D_800D5610;
             goto join;
@@ -459,7 +459,7 @@ void func_800BB350(Hdr_13 **param_1)
             }
             if (q == (Hdr_13 *)*bp) {
                 p = func_800BC908(p->size + 0x1c, 0, D_800DB170, 0x67b);
-                func_800AEC34(p, q, p->size + 0x1c);
+                memcpy(p, q, p->size + 0x1c);
                 q = p;
             }
             *param_1 = q;

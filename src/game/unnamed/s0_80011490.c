@@ -382,9 +382,6 @@ void func_8001254C(s32 x, s32 y, s16 *pAng, s32 *pRatio)
     }
 }
 
-#define SINS(x) D_800C2C60[(x) & 0xFFF]
-#define COSS(x) D_800C2C60[((x) - 0x400) & 0xFFF]
-
 void func_80012958(f32 *m, s16 a, s16 b, s16 c)
 {
     f32 sa, sb, cb, sc, cc;
@@ -722,14 +719,14 @@ void func_80013438(f32 *out, f32 x, f32 y, f32 z)
     f32 p21, p2s, ps1, pss;
 
     hx = x * 0.5f;
-    c1 = func_800ADFC0(hx);
-    s1 = func_800AEA30(hx);
+    c1 = cosf(hx);
+    s1 = sinf(hx);
     hy = y * 0.5f;
-    c2 = func_800ADFC0(hy);
-    s2 = func_800AEA30(hy);
+    c2 = cosf(hy);
+    s2 = sinf(hy);
     hz = z * 0.5f;
-    c3 = func_800ADFC0(hz);
-    s3 = func_800AEA30(hz);
+    c3 = cosf(hz);
+    s3 = sinf(hz);
 
     p21 = c2 * c1;
     p2s = c2 * s1;
@@ -850,7 +847,7 @@ u32 func_800138FC(f32 *p) {
     s32 i;
     u32 r;
 
-    c = func_800AEA30(*p + 4.0f) * 256.0f;
+    c = sinf(*p + 4.0f) * 256.0f;
     i = (s32)c;
     c = c - (f32)i;
     if (c < 0.0f) {

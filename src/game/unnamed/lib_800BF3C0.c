@@ -21,10 +21,10 @@ Blk_29 *func_800BF3C0(void)
         D_80100A30.tag = 0xA8000000;
         D_80100A30.b9 = 1;
         func_8000ED10(D_80100A30.buf, 0, 0x60);
-        r = func_800AC890();
-        D_80100A30.next = D_800D1E0C;
-        D_800D1E0C = (s32)&D_80100A30;
-        func_800AC900(r);
+        r = __osDisableInt();
+        D_80100A30.next = __osPiTable;
+        __osPiTable = (s32)&D_80100A30;
+        __osRestoreInt(r);
     }
     return &D_80100A30;
 }
@@ -33,7 +33,7 @@ int func_800BF460(u32 param_1)
 {
     s32 x;
 
-    func_800AD7E0(param_1, 0x8000);
+    osInvalDCache(param_1, 0x8000);
     func_800BEC20(D_80100700, 0, 0x8000000, param_1, 0x8000);
     if (x < 0) {
         return 1;
@@ -46,7 +46,7 @@ s32 func_800BF4C4(s32 p)
 {
     s32 r;
 
-    func_800AD910(p, 0x8000);
+    osWritebackDCache(p, 0x8000);
     func_800BEC20(D_80100700, 1, 0x08000000, p, 0x8000);
     if (r < 0) {
         return 1;

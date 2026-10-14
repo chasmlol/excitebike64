@@ -235,7 +235,7 @@ void func_8005D004(char *param_1, f32 param_2)
     char buf[40];
     s32 len;
     func_8000EF8C(buf, param_1);
-    len = func_800AEC10(buf);
+    len = strlen(buf);
     func_8005CD30(buf + len, param_2, 3);
 }
 
@@ -247,7 +247,7 @@ void func_8005D050(char *param_1, f32 param_2, f32 param_3)
 
     func_8000ED10((u8 *)buf, 0x20, 0x1E);
     func_8000EF8C(buf, param_1);
-    n = func_800AEC10(buf);
+    n = strlen(buf);
     func_8005CD30(buf + n, param_2, 3);
     i = 0;
     if (0 < n + 6) {
@@ -268,11 +268,11 @@ void func_8005D118(s32 arg0, f32 *v)
     char bz[24];
 
     strcpy(bx, "\nx=");
-    func_8005CD30(bx + func_800AEC10(bx), v[0], 6);
+    func_8005CD30(bx + strlen(bx), v[0], 6);
     strcpy(by, "y=");
-    func_8005CD30(by + func_800AEC10(by), v[1], 6);
+    func_8005CD30(by + strlen(by), v[1], 6);
     strcpy(bz, "z=");
-    func_8005CD30(bz + func_800AEC10(bz), v[2], 6);
+    func_8005CD30(bz + strlen(bz), v[2], 6);
 }
 
 void func_8005D1D0(char *param_1, s32 param_2) {
@@ -282,14 +282,14 @@ void func_8005D1D0(char *param_1, s32 param_2) {
 
     b = buf;
     func_8000EF8C(b, param_1);
-    func_8000EE30(param_2, b + func_800AEC10(b));
+    func_8000EE30(param_2, b + strlen(b));
 }
 
 void func_8005D220(char *param_1, u32 param_2) {
     char buf[56];
     char *s = buf + 16;
     func_8000EF8C(s, param_1);
-    func_8000EF0C(param_2, s + func_800AEC10(s));
+    func_8000EF0C(param_2, s + strlen(s));
 }
 
 void func_8005D270(void)

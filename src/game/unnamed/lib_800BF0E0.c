@@ -28,7 +28,7 @@ u32 *func_800BF100(void)
     u32 *pb;
     register u32 *p0 asm("$16");
 
-    func_800AD554();
+    __osPiGetAccess();
     if (D_800D5720 != 0) {
         __asm__ __volatile__("lui %0, 0x8010
 	addiu %0, %0, 0x9B4" : "=r"(pb4));
@@ -38,7 +38,7 @@ u32 *func_800BF100(void)
         *(u32 *)0x801009BC = 0xB0000000;
         *(u8 *)0x801009B9 = 0;
         *(s32 *)0x801009C0 = 0;
-        func_800B29A0(q, 0x60);
+        bzero(q, 0x60);
         while ((*(volatile u32 *)0xA4600010 & 3) != 0) {
         }
         t1 = *(volatile u32 *)0xA4600014;
@@ -64,13 +64,13 @@ u32 *func_800BF100(void)
         *(u8 *)0x801009B8 = (u8)(uVar1 >> 8);
         __asm__ ("" : "+r"(pb));
         p0 = pb - 3;
-        m = func_800AC890();
+        m = __osDisableInt();
         __asm__ __volatile__("lw %0, 0x800D1E0C" : "=r"(old));
         *(u32 *)0x800D1E0C = (u32)p0;
         pb[-3] = old;
-        func_800AC900(m);
+        __osRestoreInt(m);
     }
-    func_800AD5C0();
+    __osPiRelAccess();
     {
         u32 *r = &D_801009B0;
         __asm__ __volatile__("" : "+r"(r));

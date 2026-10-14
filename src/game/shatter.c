@@ -234,12 +234,6 @@ typedef struct {
 } Model_6;
 
 typedef struct {
-    s32 pad0;
-    Model_6 m;
-    u8 pad[0x20 - 4 - sizeof(Model_6)];
-} Obj_48;
-
-typedef struct {
     Model_6 *model;
     s32 n;
     s32 t;
@@ -300,7 +294,7 @@ void func_800671A8(void)
             D_800E7834[j] |= 8;
         }
     }
-    func_800AD910(0, 0x800000);
+    osWritebackDCache(0, 0x800000);
 }
 
 typedef struct {
@@ -522,7 +516,7 @@ void func_800679C0(void)
         i++;
     } while (i < n);
     }
-    func_800AD910(0, 0x800000);
+    osWritebackDCache(0, 0x800000);
 }
 
 /* struct stride 0x30, field w at 0x2c */

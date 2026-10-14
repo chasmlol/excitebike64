@@ -1644,9 +1644,9 @@ void func_8001DD10(Bike_9 *b)
     b->v500.z = 0.0f;
     b->v500.y = 0.0f;
     b->v500.x = 0.0f;
-    in.x = func_800ADFC0(b->f5A0);
+    in.x = cosf(b->f5A0);
     in.y = 0.0f;
-    in.z = func_800AEA30(b->f5A0);
+    in.z = sinf(b->f5A0);
     func_8001327C(&in.x, &b->mA0.x, &out.x);
     CROSS(t, out, b->v564);
     NORM(t);
@@ -1906,10 +1906,6 @@ struct Bike_10 {
     /* 0x7C0 */ u8 pad7C0[4];
     /* 0x7C4 */ f32 f7C4;
 };
-
-static inline f32 getHeight_2(Vec3f *p) {
-    return (f32)func_8002E920(p->x * 1000.0f, p->y * 1000.0f, p->z * 1000.0f) / 1000.0f;
-}
 
 void func_8001EC90(Bike_10 *b) {
     Vec3f F;
@@ -2317,8 +2313,8 @@ void func_8001FE1C(Bike_42 *b)
             ang *= 3.1415927f;
             ang *= 3.0517578e-05f;
             ang *= 0.5f;
-            c = func_800ADFC0(ang);
-            s = func_800AEA30(ang);
+            c = cosf(ang);
+            s = sinf(ang);
             r1[0] = c;
             r1[1] = s * FL(0xB8);
             r1[2] = s * FL(0xBC);
@@ -2334,8 +2330,8 @@ void func_8001FE1C(Bike_42 *b)
             }
             ang = D_800C2C60[((((D_800E76D0 - WD(0x5B8)) << 13) >> 4) - 0x400) & 0xFFF];
             ang *= k;
-            r2[0] = func_800ADFC0(ang);
-            s2 = func_800AEA30(ang);
+            r2[0] = cosf(ang);
+            s2 = sinf(ang);
             r2[1] = s2 * FL(0xAC);
             r2[2] = s2 * FL(0xB0);
             r2[3] = s2 * FL(0xB4);
@@ -2677,10 +2673,6 @@ typedef struct {
 extern Surf_3 D_800C9080_4[];
 extern Ent_13 D_800C9A40[];
 extern Seg_4 *D_800EE498_4;
-
-static inline s32 hgt(Vec3f *v) {
-    return func_8002E920(v->x * 1000.0f, v->y * 1000.0f, v->z * 1000.0f);
-}
 
 void func_80021068(Bike_13 *b) {
     volatile s32 pad[12];

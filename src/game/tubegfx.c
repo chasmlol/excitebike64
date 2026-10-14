@@ -282,10 +282,6 @@ Gfx *func_800238F0(Gfx *gdl, s32 p2, s32 p3, u32 sh)
     return gdl;
 }
 
-typedef struct Ent_15 {
-    u32 pad[8];
-} Ent_15;
-
 typedef struct List {
     u32 n;
     u32 pad[7];
@@ -352,11 +348,6 @@ typedef struct {
     s32 flag;
     u32 bits;
 } Rec_10;
-
-typedef struct {
-    u32 count;
-    Rec_10 recs[1];
-} List_2;
 
 extern Game_12 D_800EFD70_27;
 
@@ -630,8 +621,6 @@ void func_800248EC(u32 *param)
         } while (i < *base);
     }
 }
-
-typedef struct { u8 pad[0x40]; } Obj40;
 
 typedef struct {
     s32 a, b, c, d;
@@ -1370,7 +1359,7 @@ s32 **func_80027574(Ent_19 *h, s32 p2, u32 p3, s32 p4)
     if (!(*(s32 *)(D_800EFD64 + 0x50) & 2)) {
         i = h->sub->fC - (s32)h;
         n = func_800BD924(h);
-        func_800AEC34(buf, (u8 *)h + i, n - i);
+        memcpy(buf, (u8 *)h + i, n - i);
         h = func_800BD798(h, i, 0, D_800D6A50, 0x51B);
         do { } while (0);
         sz = 0;
@@ -1416,7 +1405,7 @@ s32 **func_80027574(Ent_19 *h, s32 p2, u32 p3, s32 p4)
         if (sz != 0) {
             sz *= 4;
             nb = func_800BC908(sz, 0, D_800D6A50, 0x565);
-            func_800AEC34(nb, D_800C9580, sz);
+            memcpy(nb, D_800C9580, sz);
             for (j = 0; j < (s32)i; j++) {
                 D_800C9584[j] = (s32)(nb + ((D_800C9584[j] - (s32)D_800C9580) >> 2));
             }
@@ -1528,7 +1517,7 @@ void func_80027B7C(void)
             if (i == 0 || i == D_800EFD70_4[15] - 1) {
                 n = a + b;
                 *offs++ = dst - D_800C29E0;
-                func_800AEC34(dst, (u16 *)((idx << 1) + (s32)D_800C9638_2), (n + 2) * 2);
+                memcpy(dst, (u16 *)((idx << 1) + (s32)D_800C9638_2), (n + 2) * 2);
                 dst += n * 2 + 4;
             }
             t1 = idx + 2;
@@ -1540,10 +1529,10 @@ void func_80027B7C(void)
     func_800BFEA4((u32 *)(D_800E7728_2[1] + func_8005B58C(D_800D1514) * 4));
     i = dst - D_800C29E0;
     D_800C9638_2 = func_800BC908(i, idx, D_800D6A50, 0x61B);
-    func_800AEC34(D_800C9638_2, D_800C29E0, i);
+    memcpy(D_800C9638_2, D_800C29E0, i);
     i = (s32)offs + (-0x1E000 - (s32)D_800C29E0);
     D_800C963C = func_800BC908(i, idx, D_800D6A50, 0x620);
-    func_800AEC34(D_800C963C, D_800C29E0 + 0x1E000, i);
+    memcpy(D_800C963C, D_800C29E0 + 0x1E000, i);
     p = D_800C9638_2;
     q = D_800C963C;
     for (; idx < i / 4; idx++) {

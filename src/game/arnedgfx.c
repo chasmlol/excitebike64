@@ -239,8 +239,8 @@ void func_8008D4C4(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry)
     q = (f32)f1 * 0.5f * D_800C2C60[0] / D_800C2C60[0xC00];
     *(volatile f32 *)&D_800E1930 = q;
     D_800E1930 = q * f2 * 0.00390625f;
-    func_800AE540(&persp, &D_800E1B44, 33.0f, 320.0f / f3, 50.0f, D_800C23F0, 1.0f);
-    func_800AE898(&rot, D_800F5582 * 360.0f * 1.5258789e-05f, -(f32)D_800F5580 * 360.0f * 1.5258789e-05f, 0.0f);
+    guPerspective(&persp, &D_800E1B44, 33.0f, 320.0f / f3, 50.0f, D_800C23F0, 1.0f);
+    guRotateRPY(&rot, D_800F5582 * 360.0f * 1.5258789e-05f, -(f32)D_800F5580 * 360.0f * 1.5258789e-05f, 0.0f);
     func_80012D30((u8 *)&rot);
     func_80011490(&a, 0, 0, 0, -D_800F558C, -D_800F5594, -D_800F559C, 0x100);
     func_800120A4(&a, &rot, &b);
@@ -556,8 +556,8 @@ void func_8008E8A4(s32 n, s32 id, s32 x, s32 y, s32 w, s32 h, s32 p7, s32 p8,
     asp = 320.0f / (f32)D_800F13F0;
     *(volatile f32 *)&D_800E1930 = t;
     D_800E1930 = t2;
-    func_800AE540(&persp, &D_800F4FF0_3[id].persp, 33.0f, asp, 50.0f, 16384.0f, 1.0f);
-    func_800AE898(&rot, (f32)p10 * 360.0f * 1.5258789e-05f, -(f32)p11 * 360.0f * 1.5258789e-05f, 0.0f);
+    guPerspective(&persp, &D_800F4FF0_3[id].persp, 33.0f, asp, 50.0f, 16384.0f, 1.0f);
+    guRotateRPY(&rot, (f32)p10 * 360.0f * 1.5258789e-05f, -(f32)p11 * 360.0f * 1.5258789e-05f, 0.0f);
     func_80012D30(&rot);
     func_80011490(&m1, 0, 0, 0, -p7, -p8, -p9, 0x100);
     func_800120A4(&m1, &rot, &m2);

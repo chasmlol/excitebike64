@@ -418,19 +418,6 @@ void func_8005FA18(void)
     }
 }
 
-#define STEP(i)                       \
-    do {                              \
-        c = D_800F0A24;               \
-        v = D_800F0A38;               \
-        c = c - 1;                    \
-        D_800F0A24 = c;               \
-        if (c == 0) {                 \
-            D_800F0A38 = v + 1;       \
-            D_800F0A24 = 8;           \
-        }                             \
-        i++;                          \
-    } while (i < 8)
-
 void func_8005FC68(void)
 {
     s32 i;

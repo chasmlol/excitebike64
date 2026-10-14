@@ -110,7 +110,7 @@ s32 func_800B7680(u8 *name)
             return iv;
         }
         if (iv < 0x100) {
-            pc = func_800BC908(func_800AEC10(name) + 1, 0, D_800DB160, 0x201);
+            pc = func_800BC908(strlen(name) + 1, 0, D_800DB160, 0x201);
             tab = D_800FA860_2;
             e = &tab[iv];
             e->name = pc;

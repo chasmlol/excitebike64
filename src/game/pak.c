@@ -33,7 +33,7 @@ typedef struct {
     char *extra;
 } Msg;
 
-struct Ctl { u8 b[0x68]; };
+typedef struct { u8 b[0x68]; } Ctl;
 
 extern Rec_47 *D_800F4A10[];
 extern Rec_47 D_800CE168;
@@ -75,7 +75,7 @@ void func_80088500(s32 p, s32 z)
                 *(Name16 *)rec->buf = rec->name;
                 if (rec->ext.c[0] != 0) {
                     func_8000ED30(rec->buf, D_800DA708);
-                    *(Ext4 *)&rec->buf[func_800AEC10(rec->buf)] = rec->ext;
+                    *(Ext4 *)&rec->buf[strlen(rec->buf)] = rec->ext;
                 }
                 if (r != 1) {
                     func_8000ED30(rec->buf, D_800DA70C);
@@ -202,7 +202,7 @@ void func_80088AE0(void)
     D_800F4868[1] = (s16)(hA << 1);
     D_800F4868[4] = (s16)(wB << 1);
     D_800F4868[5] = (s16)(hB << 1);
-    func_800AE240((s32 *)D_800F4A88, fa, fb, fc, fd, 50.0f, 16384.0f, 1.0f);
+    guOrtho((s32 *)D_800F4A88, fa, fb, fc, fd, 50.0f, 16384.0f, 1.0f);
     D_800F4A20 = func_800BF79C(*g, D_800D13A0);
     D_800F49F0 = func_800BF79C(*g, D_800D1488);
     D_800F49F4 = func_800BF79C(*g, D_800D14A8);
@@ -1073,7 +1073,7 @@ void func_8008B6DC(void)
 
 typedef struct { u32 w[8]; } Hdr_10;
 
-struct Slot_13 {
+typedef struct {
     u32 f0;
     u32 magic;
     u8 p8[2];
@@ -1082,7 +1082,9 @@ struct Slot_13 {
     s16 id;
     Hdr_10 hdr;
     u8 rest[0x74 - 0x40];
-};
+} Slot_13;
+
+extern Slot_13 *D_800F4A10_3[];
 
 s32 func_8008B7B4(u32 p)
 {
@@ -1099,7 +1101,7 @@ s32 func_8008B7B4(u32 p)
     k = 0;
     i = 0;
     do {
-        r = func_800B44D0(&D_800E1C78_2[p], i, &D_800F4A10_3[p][k]);
+        r = osPfsFileState(&D_800E1C78_2[p], i, &D_800F4A10_3[p][k]);
         if (r == 5) {
             func_8000ED10((u8 *)&D_800F4A10_3[p][k], 0, 0x74);
             D_800F4A10_3[p][k].id = -1;
@@ -1122,11 +1124,6 @@ s32 func_8008B7B4(u32 p)
     return 0;
 }
 
-struct MQ { u8 b[0x20]; };
-struct CStat { u16 type; u8 status; u8 errnum; };
-
-extern CStat D_800E1C68_2[4];
-
 void func_8008B9BC(s32 chan)
 {
     u32 bit = 1 << chan;
@@ -1136,13 +1133,13 @@ void func_8008B9BC(s32 chan)
     if (D_800E1E18 != 0) {
         func_8000CD00();
     }
-    func_800AD9C0(&D_800E1C48);
-    func_800B0610(&D_800E1C48, msg, 1);
-    func_800ADA40(D_800E1C68_2);
+    osContStartQuery(&D_800E1C48);
+    osRecvMesg(&D_800E1C48, msg, 1);
+    osContGetQuery(D_800E1C68);
     D_800C292C = 0;
     D_800C292D = 0;
     for (i = 0; i < 4; i++) {
-        if (D_800E1C68_2[i].errnum == 0) {
+        if (D_800E1C68[i].errno == 0) {
             if (D_800C292C == 0) {
                 D_800C292E = i;
             }
@@ -1157,25 +1154,25 @@ void func_8008B9BC(s32 chan)
     D_800E2004 &= ~bit;
     D_800E1C60 &= ~bit;
     D_800E2008 &= ~bit;
-    switch (func_800B4D20(&D_800E1C48, &D_800E1C78_2[i], i)) {
+    switch (osPfsInitPak(&D_800E1C48, &D_800E1C78_2[i], i)) {
     case 0:
         D_800E2004 |= bit;
         break;
     case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9:
         break;
     case 11:
-        if (func_800B3704(&D_800E1C48, &D_800E1E60[i], i) != 0) {
-            if (func_800B33C0(&D_800E1C48, D_800F4878, i) != 0) {
+        if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) != 0) {
+            if (osGbpakInit(&D_800E1C48, &D_800F4878, i) != 0) {
                 D_800E2008 |= 1 << i;
             }
         } else {
-            func_800B35C0(&D_800E1E60[i], 0);
+            __osMotorAccess(&D_800E1E60[i], 0);
             D_800E1C60 |= bit;
         }
         break;
     case 10:
-        if (func_800B3704(&D_800E1C48, &D_800E1E60[i], i) == 0) {
-            func_800B35C0(&D_800E1E60[i], 0);
+        if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) == 0) {
+            __osMotorAccess(&D_800E1E60[i], 0);
             D_800E1C60 |= bit;
         } else {
             D_800E2008 |= bit;
@@ -1183,13 +1180,6 @@ void func_8008B9BC(s32 chan)
         break;
     }
 }
-
-typedef struct {
-    u8 f0[3];
-    u8 f3;
-} Pad4;
-
-extern Pad4 D_800E1C68_3[];
 
 void func_8008BC30(void)
 {
@@ -1199,13 +1189,13 @@ void func_8008BC30(void)
     if (D_800E1E18 != 0) {
         func_8000CD00();
     }
-    func_800AD9C0(D_800E1C48);
-    func_800B0610(D_800E1C48, buf, 1);
-    func_800ADA40(D_800E1C68_3);
+    osContStartQuery(&D_800E1C48);
+    osRecvMesg(&D_800E1C48, buf, 1);
+    osContGetQuery(D_800E1C68);
     D_800C292C = 0;
     D_800C292D = 0;
     for (i = 0; i < 4; i++) {
-        if (D_800E1C68_3[i].f3 == 0) {
+        if (D_800E1C68[i].errno == 0) {
             if (D_800C292C == 0) {
                 D_800C292E = i;
             }
@@ -1220,7 +1210,7 @@ void func_8008BC30(void)
     for (i = 0; i < 4; i++) {
         D_800E2010[i] = 0;
         if ((D_800C292C >> i) & 1) {
-            switch (func_800B4D20(D_800E1C48, &D_800E1C78_3[i], i)) {
+            switch (osPfsInitPak(&D_800E1C48, &D_800E1C78_3[i], i)) {
             case 0:
                 D_800E2004 |= 1 << i;
                 break;
@@ -1235,16 +1225,16 @@ void func_8008BC30(void)
             case 9:
                 break;
             case 11:
-                if (func_800B3704(D_800E1C48, &D_800E1E60[i], i) == 0) {
-                    func_800B35C0(&D_800E1E60[i], 0);
+                if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) == 0) {
+                    __osMotorAccess(&D_800E1E60[i], 0);
                     D_800E1C60 |= 1 << i;
-                } else if (func_800B33C0(D_800E1C48, D_800F4878, i) != 0) {
+                } else if (osGbpakInit(&D_800E1C48, &D_800F4878, i) != 0) {
                     D_800E2008 |= 1 << i;
                 }
                 break;
             case 10:
-                if (func_800B3704(D_800E1C48, &D_800E1E60[i], i) == 0) {
-                    func_800B35C0(&D_800E1E60[i], 0);
+                if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) == 0) {
+                    __osMotorAccess(&D_800E1E60[i], 0);
                     D_800E1C60 |= 1 << i;
                 } else {
                     D_800E2008 |= 1 << i;
@@ -1253,7 +1243,7 @@ void func_8008BC30(void)
             }
         }
     }
-    D_800C2928 = func_800AC810(D_800E1C48);
+    D_800C2928 = osEepromProbe(&D_800E1C48);
 }
 
 void func_8008BE9C(void)
@@ -1265,9 +1255,9 @@ void func_8008BE9C(void)
     if (D_800E1E18 != 0) {
         func_8000CD00();
     }
-    func_800AD9C0(D_800E1C48);
-    func_800B0610(D_800E1C48, buf, 1);
-    func_800ADA40(D_800E1C68);
+    osContStartQuery(&D_800E1C48);
+    osRecvMesg(&D_800E1C48, buf, 1);
+    osContGetQuery(D_800E1C68);
     k = 0;
     D_800C292C = 0;
     D_800C292D = 0;
@@ -1296,12 +1286,12 @@ void func_8008BF60(void)
     func_8008BC30();
     for (i = 0; i < 4; i++) {
         D_800F4AC8[i] = -2;
-        if ((D_800E2004 & (1 << i)) && func_800B4C20(&D_800E1C78[i * 0x68], &a, &b) == 0) {
+        if ((D_800E2004 & (1 << i)) && osPfsNumFiles(&D_800E1C78[i * 0x68], &a, &b) == 0) {
             if (!(D_800E2004 & (1 << i))) {
                 x = -1;
             } else {
                 func_8000CD00();
-                if (func_800B4B10(&D_800E1C78[i * 0x68], &c) != 0) {
+                if (osPfsFreeBlocks(&D_800E1C78[i * 0x68], &c) != 0) {
                     x = -2;
                 } else {
                     x = c;
@@ -1325,7 +1315,7 @@ int func_8008C068(u32 param_1)
         return -1;
     }
     func_8000CD00();
-    if (func_800B4B10((u32 *)(D_800E1C78 + param_1 * 0x68), local_10) != 0) {
+    if (osPfsFreeBlocks((u32 *)(D_800E1C78 + param_1 * 0x68), local_10) != 0) {
         return -2;
     }
     return local_10[0];
@@ -1348,7 +1338,7 @@ s32 func_8008C0E4(u32 param_1, char *param_2, char *param_3, s32 param_4, s32 pa
         func_8000EF8C(acStack_38, param_2);
         func_8008C5E8(acStack_38, 0x10);
         func_8008C5E8(acStack_28, 4);
-        iVar2 = func_800B3A40(D_800E1C78 + param_1 * 0x68, (u16)param_4, param_5, acStack_38, acStack_28, param_6, local_20);
+        iVar2 = osPfsAllocateFile(D_800E1C78 + param_1 * 0x68, (u16)param_4, param_5, acStack_38, acStack_28, param_6, local_20);
         if (iVar2 == 0) {
             iVar2 = local_20[0];
         } else {
@@ -1368,11 +1358,11 @@ s32 func_8008C1FC(s32 channel, s32 file_no) {
         return -1;
     }
     func_8000CD00();
-    ret = func_800B44D0(&D_800E1C78_4[channel], file_no, &state);
+    ret = osPfsFileState(&D_800E1C78_4[channel], file_no, &state);
     if (ret != 0) {
         return 100 - ret;
     }
-    r2 = func_800B3E70(&D_800E1C78_4[channel], state.company_code, state.game_code, state.game_name, state.ext_name);
+    r2 = osPfsDeleteFile(&D_800E1C78_4[channel], state.company_code, state.game_code, state.game_name, state.ext_name);
     if (r2 != 0) {
         return -r2;
     }
@@ -1387,7 +1377,7 @@ s32 func_8008C2BC(u32 param_1, s32 param_2, u32 param_3, u32 param_4, u8 *param_
         return -1;
     }
     func_8000CD00();
-    r = func_800B4090((u8 *)D_800E1C78 + param_1 * 0x68, param_2, 0, param_3, param_4, param_5);
+    r = osPfsReadWriteFile((u8 *)D_800E1C78 + param_1 * 0x68, param_2, 0, param_3, param_4, param_5);
     if (r == 0) {
         return 0;
     }
@@ -1402,7 +1392,7 @@ s32 func_8008C370(u32 p1, s32 p2, u32 p3, u32 p4, u8 *p5)
         return -1;
     }
     func_8000CD00();
-    r = func_800B4090(D_800E1C78 + p1 * 0x68, p2, 1, p3, p4, p5);
+    r = osPfsReadWriteFile(D_800E1C78 + p1 * 0x68, p2, 1, p3, p4, p5);
     if (r != 0) {
         return -r;
     }
@@ -1436,9 +1426,9 @@ void func_8008C424(s32 c, u8 *buf, s32 n)
                         full = full + 1;
                     } else {
                         func_8000ED10_4(p, v + 1, 8);
-                        func_800AD910(p, 8);
-                        func_800AC240((s32)D_800E1C48, (u8)(c + i), p);
-                        func_800AD7E0(p, 8);
+                        osWritebackDCache(p, 8);
+                        osEepromRead((s32)&D_800E1C48, (u8)(c + i), p);
+                        osInvalDCache(p, 8);
                     }
                     i = i + 1;
                     p = p + 8;
@@ -1447,7 +1437,7 @@ void func_8008C424(s32 c, u8 *buf, s32 n)
             v = v + 1;
         } while (full < n);
     }
-    func_800AD7E0(buf, n << 3);
+    osInvalDCache(buf, n << 3);
 }
 
 s32 func_8008C55C(u32 param_1)
@@ -1457,9 +1447,9 @@ s32 func_8008C55C(u32 param_1)
 
     func_8000CD00_2();
     p = D_800E1C78 + param_1 * 0x68;
-    func_800B4D20(D_800E1C48, p, param_1);
-    r = func_800B5820(p);
-    func_800B4D20(D_800E1C48, p, param_1);
+    osPfsInitPak(&D_800E1C48, p, param_1);
+    r = osPfsRepairId(p);
+    osPfsInitPak(&D_800E1C48, p, param_1);
     return r;
 }
 
@@ -1622,7 +1612,7 @@ void func_8008CA68(u8 *param_1)
     D_800C292C = 0;
     D_800C292D = 0;
     do {
-        q = D_800E1C68 + i * 4;
+        q = D_800E1C68_2 + i * 4;
         if (q[3] == 0) {
             if (D_800C292C == 0) {
                 D_800C292E = i;
@@ -1632,5 +1622,5 @@ void func_8008CA68(u8 *param_1)
         }
         i++;
     } while (i < 4);
-    func_800B4830(D_800E1C48, param_1);
+    osPfsIsPlug(&D_800E1C48, param_1);
 }

@@ -12,8 +12,64 @@ typedef struct { u8 pad0[6]; s16 f6; u8 pad8[8]; s16 f10; } Cfg_12;
 typedef struct { u8 pad[0xC]; u32 flags; } Obj_2;
 
 typedef struct {
+    u8 pad0[6];
+    s16 f6;
+    u8 pad8[4];
+    s32 fC;
+    s16 f10;
+} Menu_6;
+
+typedef struct Node_24 {
+    s32 f0;
+    struct Node_24 *prev;
+    struct Node_24 *next;
+    s32 fC;
+    u16 f10;
+} Node_24;
+
+typedef struct {
     s16 w, h;
 } Dim;
+
+struct Game_36 {
+    u8 pad0[0x16C];
+    s32 f16C;
+    s32 f170;
+    s32 f174;
+    s32 f178;
+    Node_24 *f17C;
+    Node_24 *f180;
+    Node_24 *f184;
+    u8 pad188[8];
+    s32 f190;
+    Ent24_2 slots[150];
+    Dim *f16AC;
+    u8 pad16B0[6];
+    s16 f16B6;
+    s16 f16B8;
+    char name[11];
+    u8 f16C5[0xB];
+    s32 f16D0, f16D4, f16D8, f16DC;
+    Menu_6 *f16E0;
+    Menu_6 *f16E4;
+    u32 f16E8;
+    u8 pad16EC[8];
+    s32 f16F4;
+    u8 pad16F8[0x2C];
+    s32 f1724;
+    s32 f1728;
+    u8 pad172C[0xCC];
+    s32 f17F8;
+    s16 f17FC;
+    s16 f17FE;
+    s16 f1800;
+};
+
+typedef struct Ctl_23 {
+    u8 pad0[0xC];
+    u32 fC;
+    s16 h10;
+} Ctl_23;
 
 typedef struct Ent_4 {
     s16 dim[2];
@@ -29,6 +85,45 @@ typedef struct Ent_4 {
     u8 pad10[0x40 - 0x10];
 } Ent_4;
 
+typedef struct Node_25 {
+    s16 used;
+    s16 pad2;
+    struct Node_25 *next;
+    struct Node_25 *prev;
+    s16 x;
+    s16 y;
+    u16 st;
+    s16 idx;
+    Ent_4 *pt;
+    u8 pad18[8];
+    s16 w;
+    s16 h;
+} Node_25;
+
+typedef struct Edit {
+    u8 pad0[0x16C];
+    s32 f16C;
+    s32 mode;
+    u32 flags;
+    u32 pad178;
+    Node_25 *head;
+    Node_25 *tail;
+    Node_25 *cur;
+    Node_25 *f188;
+    Node_25 *f18C;
+    Node_25 *f190;
+    u8 pad194[0x16AC - 0x194];
+    s16 *size;
+    s16 f16B0;
+    s16 f16B2;
+    u8 pad16B4[0x16E0 - 0x16B4];
+    Ctl_23 *f16E0;
+    Ctl_23 *f16E4;
+    u32 f16E8;
+    u8 pad16EC[0x17B0 - 0x16EC];
+    Ent_4 *f17B0;
+} Edit;
+
 typedef struct { s32 pad[4]; s32 x, y, w, h; } Scis;
 
 typedef struct Sub_2 {
@@ -41,10 +136,6 @@ typedef struct Sub_2 {
     u8 pad2[0x4];
     s16 arr[2];
 } Sub_2;
-
-typedef struct U4 {
-    u32 w;
-} __attribute__((packed)) U4;
 
 typedef struct {
     u8 pad0[0x8];
@@ -91,6 +182,7 @@ extern V3_3 D_800CE228;
 extern V3_3 D_800CE21C;
 extern V3_3 D_800CE210;
 extern Cfg_12 D_800CEB08;
+extern Edit *D_800CEA40_11;
 extern Ent_4 D_800CE300[];
 extern Ent_4 D_800CE400[];
 extern Rec_5 D_800CE700[];
@@ -99,6 +191,24 @@ extern Game_3 *D_800CEA40_2;
 extern Rec_5 D_800CE280_2[];
 extern Tab64 D_800CE280_3[];
 extern Trk_3 D_800CE280_4[];
+
+static inline void sel(void) {
+    Node_25 *n;
+
+    if (D_800CEA40_11->f190 == NULL) {
+        n = D_800CEA40_11->head;
+        while (n != NULL) {
+            if (n->pt->fC.h.hi & 2) {
+                D_800CEA40_11->f190 = n;
+                break;
+            }
+            n = n->next;
+            if (n == D_800CEA40_11->head) {
+                break;
+            }
+        }
+    }
+}
 
 s32 func_80090560(void)
 {
@@ -209,7 +319,6 @@ void func_80090670(void)
     }
 }
 
-typedef struct { u8 b[7]; } Blk7;
 typedef struct { s16 a, b; s16 pad4[2]; s16 c, d; s16 padC[2]; } Vw;
 
 typedef struct State_11 {
@@ -298,12 +407,6 @@ extern Glob70 D_800EFD70_87;
 extern Obj_69 D_800CE280_5[];
 extern Tri3_4 D_800CE210_2;
 extern Tri3_4 D_800CE21C_2;
-
-static inline s32 rnd50(s32 v)
-{
-    s32 f = v % 50 >= 15;
-    return (v / 50 + f) * 50;
-}
 
 void func_80090A04(void)
 {
@@ -462,12 +565,8 @@ void func_80090A04(void)
     D_800CE21C_2.f8 = ((u32)(D_800CE21C_2.f8 + 0x800) >> 13) << 13;
     D_800CE240 = 0;
     func_8008E76C(D_800CEA40_8->f17F8, D_800CEA40_8->f1724, D_800CEA40_8->f1728);
-    func_800B2B00(0xAA);
+    osViSetSpecialFeatures(0xAA);
 }
-
-typedef struct {
-    s32 w[4];
-} __attribute__((packed)) BlkU;
 
 typedef struct { u8 pad[0x3E8]; s32 *p; } FB;
 
@@ -499,16 +598,16 @@ void func_80091270(void)
     }
     func_80087E00();
     func_80090484();
-    func_800B2B00(0xAA);
+    osViSetSpecialFeatures(0xAA);
     if (iVar7 >= 0) {
         __builtin_memcpy(D_800C29E0, D_800F0158, 0x400);
         n = (iVar7 - 1) * 0xc + 0x110;
-        func_800AEC34(D_800C29E0 + 0x400, D_800C9570_2, n);
+        memcpy(D_800C29E0 + 0x400, D_800C9570_2, n);
         func_800BCB04(D_800C9570_2);
         func_800BCB04(D_800EFD70_88.p);
         D_800C9570_2 = func_800BC908(n, 0, D_800DAB1C, 0x651);
         D_800EFD70_88.p = func_800BC908(0x400, 0, D_800DAB1C, 0x652);
-        func_800AEC34(D_800C9570_2, D_800C29E0 + 0x400, n);
+        memcpy(D_800C9570_2, D_800C29E0 + 0x400, n);
         __builtin_memcpy(D_800EFD70_88.p, D_800C29E0, 0x400);
     }
     func_8004834C();
@@ -680,7 +779,7 @@ void func_80091564(Game_36 *arg0, s32 arg1)
     }
 
     if (D_800CEA40_9->sel < 0x26) {
-        if (func_800AEC10(D_800CEA40_9->buf) == 0) {
+        if (strlen(D_800CEA40_9->buf) == 0) {
             D_800CEA40_9->buf[1] = 0;
         }
         D_800CEA40_9->buf[D_800CEA40_9->len] = *D_800CD1AC[D_800CEA40_9->sel];
@@ -691,56 +790,6 @@ void func_80091564(Game_36 *arg0, s32 arg1)
         func_8001102C(0);
     }
 }
-
-typedef struct {
-    u8 pad0[6];
-    s16 f6;
-    u8 pad8[4];
-    s32 fC;
-    s16 f10;
-} Menu_6;
-
-typedef struct Node_24 {
-    s32 f0;
-    struct Node_24 *prev;
-    struct Node_24 *next;
-    s32 fC;
-    u16 f10;
-} Node_24;
-
-struct Game_36 {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 f170;
-    s32 f174;
-    s32 f178;
-    Node_24 *f17C;
-    Node_24 *f180;
-    Node_24 *f184;
-    u8 pad188[8];
-    s32 f190;
-    Ent24_2 slots[150];
-    Dim *f16AC;
-    u8 pad16B0[6];
-    s16 f16B6;
-    s16 f16B8;
-    char name[11];
-    u8 f16C5[0xB];
-    s32 f16D0, f16D4, f16D8, f16DC;
-    Menu_6 *f16E0;
-    Menu_6 *f16E4;
-    u32 f16E8;
-    u8 pad16EC[8];
-    s32 f16F4;
-    u8 pad16F8[0x2C];
-    s32 f1724;
-    s32 f1728;
-    u8 pad172C[0xCC];
-    s32 f17F8;
-    s16 f17FC;
-    s16 f17FE;
-    s16 f1800;
-};
 
 typedef struct {
     s32 f0;
@@ -1062,58 +1111,12 @@ void func_80091AFC(void)
 #define PRESSED_2(m) ((D_800E30B0 & (m)) && !(D_800E25B0_3[0] & (m)))
 #define DEL()                                                                          if (D_800CEA40_11->cur != NULL) {                                                         if (D_800CEA40_11->cur->prev == NULL) {                                                   n = D_800CEA40_11->cur;                                                               D_800CEA40_11->cur = n->next;                                                         func_8009AF18(n);                                                                  sel();                                                                         } else if (D_800CEA40_11->cur->next == NULL || D_800CEA40_11->head->prev == D_800CEA40_11->tail) {             n = D_800CEA40_11->cur;                                                               D_800CEA40_11->cur = n->prev;                                                         func_8009AF18(n);                                                                  sel();                                                                         }                                                                              }
 
-typedef struct Ctl_23 {
-    u8 pad0[0xC];
-    u32 fC;
-    s16 h10;
-} Ctl_23;
-
-typedef struct Node_25 {
-    s16 used;
-    s16 pad2;
-    struct Node_25 *next;
-    struct Node_25 *prev;
-    s16 x;
-    s16 y;
-    u16 st;
-    s16 idx;
-    Ent_4 *pt;
-    u8 pad18[8];
-    s16 w;
-    s16 h;
-} Node_25;
-
-typedef struct Edit {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 mode;
-    u32 flags;
-    u32 pad178;
-    Node_25 *head;
-    Node_25 *tail;
-    Node_25 *cur;
-    Node_25 *f188;
-    Node_25 *f18C;
-    Node_25 *f190;
-    u8 pad194[0x16AC - 0x194];
-    s16 *size;
-    s16 f16B0;
-    s16 f16B2;
-    u8 pad16B4[0x16E0 - 0x16B4];
-    Ctl_23 *f16E0;
-    Ctl_23 *f16E4;
-    u32 f16E8;
-    u8 pad16EC[0x17B0 - 0x16EC];
-    Ent_4 *f17B0;
-} Edit;
-
 typedef struct Item_15 {
     s32 f0;
     u32 flags;
     u8 pad8[8];
 } Item_15;
 
-extern Edit *D_800CEA40_11;
 extern Item_15 D_800CEB1C[];
 extern Ctl_23 D_800CEB9C_2;
 
@@ -1164,24 +1167,6 @@ static inline s32 chkg(void) {
         return r;
     }
     return 1;
-}
-
-static inline void sel(void) {
-    Node_25 *n;
-
-    if (D_800CEA40_11->f190 == NULL) {
-        n = D_800CEA40_11->head;
-        while (n != NULL) {
-            if (n->pt->fC.h.hi & 2) {
-                D_800CEA40_11->f190 = n;
-                break;
-            }
-            n = n->next;
-            if (n == D_800CEA40_11->head) {
-                break;
-            }
-        }
-    }
 }
 
 void func_80092908(void) {
@@ -1972,10 +1957,6 @@ typedef struct {
     s16 h10;
 } Menu_8;
 
-typedef struct {
-    u8 b[64];
-} Blk_21;
-
 extern Edit_3 *D_800CEA40_15;
 extern Btn D_800CEA88[];
 extern Lbl D_800CEB1C_2;
@@ -2644,7 +2625,7 @@ Gfx *func_80097308(u8 *a0, s32 arg1, Gfx *gdl)
     s32 i;
 
     m = (Mtx *)(a0 + 0x300);
-    func_800AE240(m, -D_800F13EC / 2, D_800F13EC / 2, -D_800F13F0 / 2, D_800F13F0 / 2, 50.0f,
+    guOrtho(m, -D_800F13EC / 2, D_800F13EC / 2, -D_800F13F0 / 2, D_800F13F0 / 2, 50.0f,
                   D_800C23F0, 1.0f);
     gSPMatrix(gdl++, &D_800C2678, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPMatrix(gdl++, m, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
@@ -2969,7 +2950,7 @@ Gfx *func_800978A8(s32 arg0, s32 arg1, Gfx *gdl) {
                             (E->cur->def->flags & 2) ? r : -1, 1);
         if (E->mode == 6) {
             E->n = 0;
-            func_800B31C0(E->mtx, &D_800F4F08[arg1]);
+            guMtxL2F(E->mtx, &D_800F4F08[arg1]);
             func_8000ED10(E->buf[arg1], 0, 0xF00);
             if (E->sel != NULL && (E->sel->def->flags & 0x40)) {
                 switch (E->sel->rot) {
@@ -4103,6 +4084,10 @@ void func_8009CAA4(void)
     }
 }
 
+typedef struct U4 {
+    u32 w;
+} __attribute__((packed)) U4;
+
 typedef struct Game_41 {
     u8 pad0[0x184];
     Sub_2 *sub;
@@ -5003,7 +4988,7 @@ ret1:
 void func_8009F1F8(s32 param_1) {
     s32 p = param_1;
     *(s32 *)(D_800CEA40 + 0x1754) = 0;
-    func_800B31C0(D_800CEA40 + 0x1760, D_800F4F08_3 + (p << 6));
+    guMtxL2F(D_800CEA40 + 0x1760, D_800F4F08_3 + (p << 6));
     func_8000ED10(*(u8 **)((s32)D_800CEA40 + (p << 2) + 0x174C), 0, 0xF00);
 }
 

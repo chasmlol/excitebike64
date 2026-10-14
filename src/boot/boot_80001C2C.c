@@ -98,7 +98,7 @@ void boot_func_800024EC(void)
     boot_func_80001BB8(0xB1FFFFFC, 0);
     D_80018430 = 1;
     D_80018432 = 0xFF;
-    x = D_80000318;
+    x = osMemSize;
     if (x > 0x3FFFFF && (x & 0x1FFFF) == 0 && x < 0x2000001) {
         x = x - 1;
         D_8000F4A8 = x - 0x80000000;

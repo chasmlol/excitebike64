@@ -124,7 +124,6 @@ void func_8000BEA0(void)
 }
 
 #define W2(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
-#define W2R(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w1 = (b); _g->words.w0 = (a); }
 
 typedef struct {
     u8 pad[0x14];
@@ -209,16 +208,6 @@ static inline void rot(s32 *px, s32 *pz, s32 ang)
 
     *pz = (*pz * c + *px * s) >> 14;
     *px = t;
-}
-
-static inline void rot2(s32 *px, s32 *pz, s32 x, s32 z, s32 ang)
-{
-    s32 c = D_800C2C60[ang & 0xFFF];
-    s32 s = D_800C2C60[(ang - 0x400) & 0xFFF];
-    s32 xc = x * c, zc = z * c, xs = x * s, zs = z * s;
-
-    *pz = (zc + xs) >> 14;
-    *px = (xc - zs) >> 14;
 }
 
 void func_8000C450(void)

@@ -49,7 +49,7 @@ void func_8000CD00(void);
 s32 func_8000CD00_2(void);
 void func_8000CEAC(void);
 int func_8000CFE8(void);
-void func_8000D064(void);
+void start_controller_read(void);
 void func_8000D0A0(u32 a0, s32 a1);
 void func_8000D0D8(void);
 void func_8000D1A8(s32 p1, u8 *p2, s32 p3);
@@ -742,7 +742,7 @@ void func_800651A0(u8 *param_1, int arg1);
 void func_800652DC(void);
 void func_800656B4(s32 p);
 void func_800657FC(s32 a0, s32 a1);
-void func_80065830(s32 a0);
+void sched_submit_task(s32 a0);
 s32 func_80065858(void);
 void func_80065868(void *arg);
 void func_800658CC(u8 *param_1);
@@ -1429,88 +1429,23 @@ void func_800C21BC(u8 *s);
 void func_800C21F0(u8 *s);
 s32 func_800C2224(void);
 
-/* libultra, by address (libultra_map.json) */
-void func_800AC240(u8 *a0, u8 a1, u8 *a2);  /* osEepromRead */
-void func_800AC460(u8 *a0, u8 a1, u8 *a2);  /* osEepromWrite */
-s32 func_800AC810(u8 *p);  /* osEepromProbe */
-s32 func_800AC890(void);  /* __osDisableInt */
-void func_800AC900(s32);  /* __osRestoreInt */
-void func_800AC920(s32, void *, void *, s32);  /* osCreatePiManager */
-void func_800ACD70(void *a, u32 b, s32 c);  /* osEPiWriteIo */
-void func_800AD554(void);  /* __osPiGetAccess */
-void func_800AD5C0(void);  /* __osPiRelAccess */
-s32 func_800AD5F0(void);  /* osAiGetStatus */
-s32 func_800AD600(s32 x);  /* osAiSetFrequency */
-void func_800AD720(s16 *p, s32 n);  /* osAiSetNextBuffer */
-void func_800AD7E0(s32 a0, s32 a1);  /* osInvalDCache */
-void func_800AD890(s32 a0, s32 a1);  /* osInvalICache */
-void func_800AD910(s32, s32);  /* osWritebackDCache */
-void func_800AD990(void);  /* osWritebackDCacheAll */
-void func_800AD9C0(u8 *p);  /* osContStartQuery */
-void func_800ADA40(CStat *st);  /* osContGetQuery */
-void func_800ADA60(void *p);  /* osContStartReadData */
-void func_800ADAE8(void *p);  /* osContGetReadData */
-s32 func_800ADC40();  /* osContInit */
-f32 func_800ADFB0(f32 x);  /* sqrtf */
-f32 sqrtf(f32 x);  /* sqrtf */
-f32 func_800ADFC0(f32 x);  /* __cosf */
-void func_800AE240(Mtx *, f32, f32, f32, f32, f32, f32, f32);  /* guOrtho */
-void func_800AE540(Mtx *, u16 *, f32, f32, f32, f32, f32);  /* guPerspective */
-void func_800AE898(void *, f32, f32, f32);  /* guRotateRPY */
-f32 func_800AEA30(f32 x);  /* __sinf */
-s32 func_800AEC10(char *s);  /* strlen */
-void func_800AEC34(void *dst, void *src, s32 n);  /* memcpy */
-s32 func_800AEC60();  /* sprintf */
-void func_800B05E0();  /* osCreateMesgQueue */
-s32 func_800B0610(OSMesgQueue *, OSMesg *, s32);  /* osRecvMesg */
-void func_800B0DBC(s32 *p);  /* __osEnqueueAndYield */
-s32 *func_800B0F0C(Q_3 *q);  /* __osPopThread */
-s32 func_800B1150(OSMesgQueue *q, OSMesg m, s32 f);  /* osSendMesg */
-void func_800B1280();  /* osSetEventMesg */
-s32 func_800B1330(void);  /* osGetCount */
-s32 func_800B1340(void);  /* __osSpGetStatus */
-void func_800B1350(void *p);  /* osSpTaskLoad */
-void func_800B155C(void *p);  /* osSpTaskStartGo */
-void func_800B1B40(void *a, s32 b, void *c, s32 d, void *e, s32 f);  /* osCreateThread */
-void func_800B1D10(void *a, s32 b);  /* osSetThreadPri */
-void func_800B1DE0(void *a);  /* osStartThread */
-s32 func_800B2540();  /* osViGetCurrentLine */
-void func_800B2550(s32 a);  /* osCreateViManager */
-void func_800B29A0(void *p, s32 n);  /* bzero */
-void func_800B2A50();  /* osViSetEvent */
-void func_800B2AB0(void *p);  /* osViSetMode */
-void func_800B2B00(s32);  /* osViSetSpecialFeatures */
-void func_800B2C70(f32);  /* osViSetYScale */
-void func_800B2CC0();  /* osViSwapBuffer */
-void func_800B3020(s32 x);  /* osViBlack */
-void func_800B3080();  /* osViRepeatLine */
-void func_800B31C0(f32 *a0, u32 *a1);  /* guMtxL2F */
-void func_800B3240(void *, void *, void *);  /* guMtxCatL */
-s32 func_800B33C0(MQ *mq, void *buf, s32 chan);  /* osGbpakInit */
-void func_800B35C0(void *a, s32 c);  /* __osMotorAccess */
-s32 func_800B3704(MQ *mq, Ctl *pfs, s32 chan);  /* osMotorInit */
-s32 func_800B3A40(u8 *tbl, u16 a1, s32 a2, u8 *a3, u8 *a4, s32 a5, s32 *a6);  /* osPfsAllocateFile */
-s32 func_800B3E70(OSPfs *pfs, u16 company_code, u32 game_code, char *game_name, char *ext_name);  /* osPfsDeleteFile */
-s32 func_800B4090(void *, s32, u8, s32, s32, u8 *);  /* osPfsReadWriteFile */
-s32 func_800B44D0(Ctl *a0, s32 a1, Slot_13 *a2);  /* osPfsFileState */
-void func_800B4830(u8 *a0, u8 *a1);  /* osPfsIsPlug */
-s32 func_800B4B10(void *p, s32 *c);  /* osPfsFreeBlocks */
-s32 func_800B4C20(void *p, s32 *a, s32 *b);  /* osPfsNumFiles */
-s32 func_800B4D20(MQ *mq, Ctl *pfs, s32 chan);  /* osPfsInitPak */
-s32 func_800B5820(void *a);  /* osPfsRepairId */
-void func_800B6AA8(void);  /* __osInitialize_common */
-void func_800B6D80(void);  /* __osInitialize_autodetect */
+/* libultra functions its headers don't declare, and other views of libultra functions */
+s32 __osDisableInt(void);
+void __osRestoreInt(s32);
+void __osPiGetAccess(void);
+void __osPiRelAccess(void);
+s32 osAiGetStatus_2(void);
+s32 strlen(char *s);
+u32 strlen_2(char *s);
+void *memcpy(void *, const void *, u32);
+void memcpy_2(void *dst, void *src, s32 n);
+void __osEnqueueAndYield(s32 *p);
+s32 *__osPopThread(Q_3 *q);
+s32 __osSpGetStatus(void);
+void __osMotorAccess(void *a, s32 c);
+void __osInitialize_autodetect(void);
 
 /* other code */
-u32 func_800AEC10_2(char *s);
-void func_800AEC60_2(char *s, char *fmt);
-void func_800AEC60_3(u8 *a, char *b, s32 c);
-void func_800AEC60_4(void *a0, char *a1, s32 a2);
-void func_800AEC60_5(void *a, char *b, char *c);
-void func_800B05E0_2(OSMesgQueue *, OSMesg *, s32);
-void func_800B05E0_3(void *dst, void *src, int n);
-void func_800B05E0_4(void *, void *, s32);
-void func_800B2CC0_2(void *p);
 void func_800DB628(s32, s16 *, s32);
 void func_800DB8E0(void);
 void func_800DBAA0(void);
@@ -1519,7 +1454,6 @@ void func_800DBD00(void);
 void func_800DBE94(u8 *src, u16 *dst, s32 count);
 void func_800DBF94(u8 *a, u16 *b, s32 c, u8 *d);
 int abs(int);
-void *memcpy(void *, const void *, u32);
 char *strcpy(char *, const char *);
 
 #endif

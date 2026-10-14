@@ -72,7 +72,7 @@ void func_800BED20(void)
     D_801009A0 = 0;
     for (i = 0; i < 8; i++) {
         if (D_80100720_2[i].state == 1) {
-            if (func_800B0610(D_80100720_2[i].f04, 0, 0) == 0) {
+            if (osRecvMesg(D_80100720_2[i].f04, 0, 0) == 0) {
                 D_80100720_2[i].state = 3;
             } else {
                 D_80100704++;
@@ -107,14 +107,14 @@ s32 func_800BEE78(void)
     u8 *q;
     u8 *p;
 
-    func_800AC920(0x96, D_80100708, D_80100980, 8);
+    osCreatePiManager(0x96, &D_80100708, D_80100980, 8);
     i = 0;
     b = D_80100724;
     z = (s32 *)(b - 4);
     q = b + 0x18;
     p = b;
     do {
-        func_800B05E0_4(p, q, 1);
+        osCreateMesgQueue(p, q, 1);
         *z = 0;
         z = (s32 *)((u8 *)z + 0x4C);
         q += 0x4C;

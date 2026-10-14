@@ -114,7 +114,7 @@ void func_8000F240(Slot_2 *param_1)
     } else {
         D_800C2AD4 = 0;
     }
-    if (D_80000318 > 0x400000) {
+    if (osMemSize > 0x400000) {
         D_800C2AD4 = 0;
     }
     func_800BBABC(D_800C29E0, 0x25800);

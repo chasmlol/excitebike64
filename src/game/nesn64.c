@@ -42,7 +42,6 @@ static inline u32 rd(s32 a)
 
 typedef struct { u8 b[0x4000]; } B4000;
 typedef struct { u8 b[0x2000]; } B2000;
-typedef struct { u8 pad[0x10000]; u8 arr[0x4000]; } Mem;
 
 void func_8009F470(void)
 {
@@ -541,7 +540,7 @@ void func_800A11BC(s32 param)
 
     st = (u8 *)0x80380000;
     if (st[0x2001] & 0x10) {
-        func_800AD7E0(0, 0x400000);
+        osInvalDCache(0, 0x400000);
         bas = D_800F5A54;
         if (st[0x2000] & 8) {
             bas += 0x4000;
@@ -597,7 +596,7 @@ void func_800A11BC(s32 param)
                 }
             }
         }
-        func_800AD910(D_800C29D8_2[param], 0x25800);
+        osWritebackDCache(D_800C29D8_2[param], 0x25800);
     }
 }
 
@@ -606,7 +605,7 @@ void func_800A1484(void)
     s32 i;
     void *q;
 
-    D_800F5A70 = func_800AD600(0x5622);
+    D_800F5A70 = osAiSetFrequency(0x5622);
     D_800F5A78 = ((D_800CEC18 * D_800F5A70) / 60 + 7) & -8;
     for (i = 0; i < 2; i++) {
         q = func_800BC908(D_800F5A78 << 2, 0, D_800DAF38, 0x396);
@@ -708,15 +707,15 @@ void func_800A1898(void)
     s32 i;
     s16 *p;
 
-    func_800AD7E0(0, 0x400000);
-    if (func_800AD5F0() >= 0) {
+    osInvalDCache(0, 0x400000);
+    if (osAiGetStatus_2() >= 0) {
         p = (s16 *)D_800F5A80[D_800F5A74];
         for (i = 0; i < D_800CEC18; i++) {
             func_800A1570(p);
             p += (D_800F5A78 / D_800CEC18) * 2;
         }
-        func_800AD910((s16 *)D_800F5A80[D_800F5A74], D_800F5A78 << 2);
-        func_800AD720((s16 *)D_800F5A80[D_800F5A74], D_800F5A78 << 2);
+        osWritebackDCache((s16 *)D_800F5A80[D_800F5A74], D_800F5A78 << 2);
+        osAiSetNextBuffer((s16 *)D_800F5A80[D_800F5A74], D_800F5A78 << 2);
         D_800F5A74 = D_800F5A74 ^ 1;
     }
 }
@@ -1474,9 +1473,9 @@ void func_800A3070(void)
     u32 addr;
 
     if (D_800D05D4 != 0) {
-        a = func_800B1330();
+        a = osGetCount();
         addr = ((a << 2) & 0xFFFFF) + 0x80000000;
-        b = func_800B1330();
+        b = osGetCount();
         *(s32 *)addr = b;
     }
     st = (u8 *)0x80390000;
@@ -2047,21 +2046,6 @@ static inline s32 rd2(s32 a)
         return func_800A2444_2(a);
     }
     return *(u8 *)(a + 0x80380000);
-}
-
-static inline void rd3(s32 a)
-{
-    u32 r;
-    if (a < 0x2000) {
-        a = a & 0x7FF;
-    } else if (a > 0x7FFF) {
-    } else {
-        r = func_800A2444_2(a);
-        goto store;
-    }
-    r = *(u8 *)(a + 0x80380000);
-store:
-    D_800F5BB8 = r;
 }
 
 void func_800A3AE4(void)

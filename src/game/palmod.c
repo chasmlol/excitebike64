@@ -107,11 +107,6 @@ typedef struct {
     Quad r[4];
 } Ent40_3;
 
-typedef struct {
-    s32 f0, f4, f8, fC;
-    u8 pad[0x50 - 0x10];
-} Ent50;
-
 extern Ent40_3 D_800E1718_11[];
 
 Gfx *func_80067E4C(Gfx *gdl)

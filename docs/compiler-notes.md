@@ -27,10 +27,13 @@ names are examples in this repository where the pattern can be seen.
 
 ## Names, globals and literals
 
-- Every name resolves through symbols.txt (per image: the boot loader's `func_80008030` is not the game's), libultra's
-  own names through libultra_map.json (`sqrtf`, which GCC's `__builtin_sqrtf` calls as its NaN fallback). The
-  default names are `func_XXXXXXXX` (game), `boot_func_XXXXXXXX` (boot loader) and `D_XXXXXXXX`.
-- The C calls libultra by address names (`func_800B0610`); libultra_map.json gives the real names (`osRecvMesg`).
+- Every name resolves through symbols.txt, per image (libultra's `osRecvMesg` is 0x800B0610 in the game, 0x80008030
+  in the boot loader). libultra's names are the library's (libultra_map.json; `sqrtf` is what GCC's
+  `__builtin_sqrtf` calls as its NaN fallback). The default names are `func_XXXXXXXX` (game), `boot_func_XXXXXXXX`
+  (boot loader) and `D_XXXXXXXX`.
+- The C calls libultra by its own names (libultra_map.json), with the prototypes of `<ultra64.h>`;
+  include/functions.h declares the internal functions the game calls (`__osDisableInt`). A function whose code
+  depends on its own prototype calls a second name (`osAiGetStatus_2`, an `s32` where libultra returns `u32`).
 - Globals are `extern` (include/variables.h, or the source file when the type is local to it). Only src/data defines
   storage.
 - A `lui`/`%lo` pair may form a struct's base with the field offset in the instruction

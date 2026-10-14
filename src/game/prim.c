@@ -6,10 +6,6 @@ struct Hdr {
     Entry e[1];
 };
 
-#define TILEBITS(s3, fp, t4) \
-    ((((s3) & 2) ? G_TX_CLAMP : G_TX_WRAP) << 18 | ((fp) & 0xF) << 14 | \
-     (((s3) & 8) ? G_TX_MIRROR : ((s3) & 1) ? G_TX_CLAMP : G_TX_WRAP) << 8 | ((t4) & 0xF) << 4)
-
 #define CMS(b) (((b) & 8) ? G_TX_MIRROR : ((b) & 1) ? G_TX_CLAMP : G_TX_WRAP)
 #define CMT(b) (((b) & 2) ? G_TX_CLAMP : G_TX_WRAP)
 

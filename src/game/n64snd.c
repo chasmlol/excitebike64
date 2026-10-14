@@ -12,7 +12,7 @@ s32 func_800BBBC0(s32 param_1, s32 param_2, s32 param_3, s32 param_4, u32 *param
     }
     {
         D_80100624 = param_2;
-        D_80100628 = (s32)func_800AD600(param_3);
+        D_80100628 = (s32)osAiSetFrequency(param_3);
         iVar1 = 1;
         *param_6 = D_80100628;
         if (param_2 & 1) {
@@ -44,8 +44,8 @@ s32 func_800BBBC0(s32 param_1, s32 param_2, s32 param_3, s32 param_4, u32 *param
             D_800D5630 = 0;
             D_800D5628 = 0;
             func_8000ED10((u8 *)D_8010061C, 0, D_80100614 << 1);
-            func_800AD720((s32)D_8010061C, D_80100614);
-            func_800AD720((s32)D_8010061C + D_80100614, D_80100614);
+            osAiSetNextBuffer((s32)D_8010061C, D_80100614);
+            osAiSetNextBuffer((s32)D_8010061C + D_80100614, D_80100614);
             D_800D562C = 1;
             return 0;
         }
@@ -59,14 +59,14 @@ void func_800BBDE0(void)
     u32 h;
     s32 iVar4;
 
-    uVar1 = func_800AD5F0();
+    uVar1 = osAiGetStatus();
     if (uVar1 >= 0) {
         iVar4 = 0;
         if ((uVar1 & 0x40000000) == 0) {
             D_800D56BC = D_800D56BC + 1;
         }
         D_800D5628 = D_800D5628 ^ 1;
-        func_800AD720(D_8010061C + D_80100614 * D_800D5628, D_80100614);
+        osAiSetNextBuffer(D_8010061C + D_80100614 * D_800D5628, D_80100614);
         piVar3 = D_80100610;
         do {
             if (D_800D5630_2 != 0) {
@@ -91,7 +91,7 @@ void func_800BBDE0(void)
                 D_800D5638 = D_800D5638 - 1;
             }
         }
-        func_800AD910(D_8010061C + D_80100614 * D_800D5628, D_80100614);
+        osWritebackDCache(D_8010061C + D_80100614 * D_800D5628, D_80100614);
         D_8010062C = D_8010062C + 1;
     }
 }
@@ -238,7 +238,7 @@ void func_800BC2F8(s32 a0)
     if (a0 != 0) {
         D_800D5620 = 1;
         func_8000ED10(D_8010061C, 0, D_80100614 << 1);
-        func_800AD910(D_8010061C, D_80100614 << 1);
+        osWritebackDCache(D_8010061C, D_80100614 << 1);
         D_800D5638 = 3;
     } else {
         D_800D5620 = 0;
@@ -248,6 +248,6 @@ void func_800BC2F8(s32 a0)
 void func_800BC370(void)
 {
     func_8000ED10(D_8010061C, 0, D_80100614 << 1);
-    func_800AD910((u32)D_8010061C, D_80100614 << 1);
+    osWritebackDCache((u32)D_8010061C, D_80100614 << 1);
     D_800D5638 = 3;
 }

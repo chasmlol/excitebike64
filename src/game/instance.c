@@ -93,9 +93,9 @@ s32 func_80065B10(u32 *a, s32 b, s32 c, Box_4 *d, s32 e)
                     }
                 }
             }
-            func_800AEC34(D_800CCCD0_2, D_800F1438, D_800F1430_2->nitems * 64);
-            func_800AEC34(D_800F143C_2, D_800F1428, D_800F1430_2->nitems * 16);
-            func_800AEC34(D_800F142C, D_800F1420, D_800F1430_2->nitems * 4);
+            memcpy(D_800CCCD0_2, D_800F1438, D_800F1430_2->nitems * 64);
+            memcpy(D_800F143C_2, D_800F1428, D_800F1430_2->nitems * 16);
+            memcpy(D_800F142C, D_800F1420, D_800F1430_2->nitems * 4);
             func_800BCB04_2(D_800F1438);
             func_800BCB04_2(D_800F1420);
             ret = func_800BCB04_2(D_800F1428);

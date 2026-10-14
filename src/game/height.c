@@ -2,6 +2,20 @@
 
 typedef struct { u8 pad[0x20]; f32 pos; f32 vel; } S28;
 
+struct Player_10 {
+    s32 x, y, z;
+    u8 pad0C[0x54 - 0xC];
+    f32 f54;
+    u8 pad58[0x3FF - 0x58];
+    u8 b3FF;
+    u8 pad400[0x5A8 - 0x400];
+    s16 f5A8;
+    s16 f5AA;
+    u8 pad5AC[0x628 - 0x5AC];
+    s16 f628;
+    u8 pad62A[0x7E0 - 0x62A];
+};
+
 struct Rec6 {
     s32 x, y, z;
     s32 rx, ry, rz;
@@ -24,6 +38,7 @@ typedef struct {
 } Poly;
 
 typedef struct { u16 n; u16 id[1]; } Cell;
+typedef struct { s32 id; s32 n; s32 v[3][3]; } CTri;
 
 typedef struct {
     u8 pad[4];
@@ -44,9 +59,25 @@ extern Ent_2 D_800E8030[];
 extern S28 D_800E78C8[];
 extern Poly **D_800E8E6C;
 extern Cell **D_800E8D60;
+extern CTri D_800E80D8[];
 extern Ent_28 *D_800E8538[];
 extern Node_5 D_800E8D78[];
 extern Pt_3 *D_800C9840;
+
+static inline void tri(s32 id, s32 n, s32 ax, s32 az, s32 bx, s32 bz, s32 cx, s32 cz) {
+    D_800E80D8[D_800E8D68].id = id;
+    D_800E80D8[D_800E8D68].n = n;
+    D_800E80D8[D_800E8D68].v[0][0] = ax * 2000;
+    D_800E80D8[D_800E8D68].v[0][1] = D_800EA990[((az & 0x1FF) << 9) | (ax & 0x1FF)] << 6;
+    D_800E80D8[D_800E8D68].v[0][2] = az * 2000;
+    D_800E80D8[D_800E8D68].v[1][0] = bx * 2000;
+    D_800E80D8[D_800E8D68].v[1][1] = D_800EA990[((bz & 0x1FF) << 9) | (bx & 0x1FF)] << 6;
+    D_800E80D8[D_800E8D68].v[1][2] = bz * 2000;
+    D_800E80D8[D_800E8D68].v[2][0] = cx * 2000;
+    D_800E80D8[D_800E8D68].v[2][1] = D_800EA990[((cz & 0x1FF) << 9) | (cx & 0x1FF)] << 6;
+    D_800E80D8[D_800E8D68].v[2][2] = cz * 2000;
+    D_800E8D68++;
+}
 
 void func_80028600(s32 arg0)
 {
@@ -110,20 +141,6 @@ void func_80028790(void) {
         i = D_800EE498_5[i].next;
     } while (i != 0);
 }
-
-struct Player_10 {
-    s32 x, y, z;
-    u8 pad0C[0x54 - 0xC];
-    f32 f54;
-    u8 pad58[0x3FF - 0x58];
-    u8 b3FF;
-    u8 pad400[0x5A8 - 0x400];
-    s16 f5A8;
-    s16 f5AA;
-    u8 pad5AC[0x628 - 0x5AC];
-    s16 f628;
-    u8 pad62A[0x7E0 - 0x62A];
-};
 
 typedef struct {
     s32 f0;
@@ -1014,7 +1031,7 @@ other:
         q2 = D_800E7968;
         f = f * 3.1415927f;
         q = &q2[D_800C9684];
-        *q += (s32)(func_800AEA30(f / 6.0f) * 1024.0f * cs);
+        *q += (s32)(sinf(f / 6.0f) * 1024.0f * cs);
     }
 }
 
@@ -1826,9 +1843,6 @@ void func_8002CA70(s32 p1, s32 p2, s32 p3, s32 p4)
     }
 }
 
-#define REC(i) ((Rec_14 *)((i) * sizeof(Rec_14) + (u32)D_800EE498))
-#define REC2(i) ((Rec_14 *)((u32)D_800EE498 + (i) * sizeof(Rec_14)))
-
 typedef struct Rec_14 {
     f32 x;
     f32 y;
@@ -2018,8 +2032,8 @@ void func_8002D1F0(s32 param_1, s32 param_2)
         r = sqrtf(fVar3 * fVar3 + dz * dz);
         fVar4 = (f32)D_800E7978[param_2] * 3.1415925f * 3.0517578e-05f;
         fVar3 = r;
-        fVar2 = func_800AEA30(fVar4);
-        fVar4 = func_800ADFC0(fVar4);
+        fVar2 = sinf(fVar4);
+        fVar4 = cosf(fVar4);
         fVar4 = (fVar2 / fVar4) * fVar3 - (f32)(t[1] - iVar1);
         func_8001254C((s32)fVar4, (s32)fVar3, (s16 *)&bw, &iStack2c);
         D_800E7978[param_2] = (s32)((s16 *)&bw)[0];
@@ -2264,8 +2278,6 @@ void func_8002DA48(s32 i, s32 v)
     D_800E7FA8[i] = v;
 }
 
-#define SX(v) (((s32)(v) << 4) >> 4)
-
 typedef struct {
     void *hdr;
     s32 x0, z0, x1, z1;
@@ -2278,10 +2290,6 @@ struct Area_2 {
     u32 count;
     Sub_7 subs[1];
 };
-
-typedef struct {
-    u32 count;
-} PolyHdr;
 
 typedef struct { u16 n; u16 ids[1]; } List_5;
 
@@ -2362,7 +2370,7 @@ void func_8002DA60(Area_2 *area, s32 b, s32 c, u32 *polys)
         for (i = 0; (s32)i < 0x100; i++) {
             D_800E8D60_2[i] = (List_5 *)(D_800E8510 + n);
             D_800E8D60_2[i]->n = D_800C29E0_2[i];
-            func_800AEC34(D_800E8D60_2[i]->ids, out, D_800E8D60_2[i]->n * 2);
+            memcpy(D_800E8D60_2[i]->ids, out, D_800E8D60_2[i]->n * 2);
             n++;
             n += D_800E8D60_2[i]->n;
             out += D_800E8D60_2[i]->n;
@@ -2407,7 +2415,7 @@ void func_8002DA60(Area_2 *area, s32 b, s32 c, u32 *polys)
             if (D_800C29E0_2[i] != 0) {
                 buf = func_800BC908((D_800C29E0_2[i] + 1) * 2, 0, (s32)D_800D6C20, 0x123);
                 D_800E8500[i] = buf;
-                func_800AEC34(buf, out, D_800C29E0_2[i] * 2);
+                memcpy(buf, out, D_800C29E0_2[i] * 2);
                 out += D_800C29E0_2[i];
                 D_800E8500[i][D_800C29E0_2[i]] = -1;
             }
@@ -2472,11 +2480,6 @@ typedef struct {
     Grid *grid;
     s32 f18;
 } Sub_8;
-
-typedef struct {
-    s32 f0;
-    Sub_8 sub;
-} Area_3;
 
 s32 func_8002E29C(s32 id, s32 x, s32 y, s32 z)
 {
@@ -2899,25 +2902,6 @@ typedef struct { s32 pad; Vtx16 *v; } Mesh_5;
 typedef struct { u32 m0, m1; u16 v[3]; u16 flags; } Ent_27;
 typedef struct { u16 flags; u16 n; Ent_27 e[1]; } TList;
 typedef struct { Mesh_5 *m; s32 x0, z0, x1, z1; TList *tl; u8 pad[8]; } Obj_24;
-typedef struct { s32 pad; Obj_24 o; } Rec_15;
-typedef struct { s32 id; s32 n; s32 v[3][3]; } CTri;
-
-extern CTri D_800E80D8[];
-
-static inline void tri(s32 id, s32 n, s32 ax, s32 az, s32 bx, s32 bz, s32 cx, s32 cz) {
-    D_800E80D8[D_800E8D68].id = id;
-    D_800E80D8[D_800E8D68].n = n;
-    D_800E80D8[D_800E8D68].v[0][0] = ax * 2000;
-    D_800E80D8[D_800E8D68].v[0][1] = D_800EA990[((az & 0x1FF) << 9) | (ax & 0x1FF)] << 6;
-    D_800E80D8[D_800E8D68].v[0][2] = az * 2000;
-    D_800E80D8[D_800E8D68].v[1][0] = bx * 2000;
-    D_800E80D8[D_800E8D68].v[1][1] = D_800EA990[((bz & 0x1FF) << 9) | (bx & 0x1FF)] << 6;
-    D_800E80D8[D_800E8D68].v[1][2] = bz * 2000;
-    D_800E80D8[D_800E8D68].v[2][0] = cx * 2000;
-    D_800E80D8[D_800E8D68].v[2][1] = D_800EA990[((cz & 0x1FF) << 9) | (cx & 0x1FF)] << 6;
-    D_800E80D8[D_800E8D68].v[2][2] = cz * 2000;
-    D_800E8D68++;
-}
 
 void func_8002F62C(s32 x0, s32 z0, s32 x1, s32 z1, s32 hy) {
 
@@ -3146,8 +3130,6 @@ s32 func_800300B0(f32 *p1, f32 *p2, f32 *p3, f32 *p4)
     return 0;
 }
 
-typedef struct { s32 x; s32 y; s32 z; s32 pad[4]; } Ent_29;
-
 void func_80030478(f32 *p)
 {
     s32 nx, ny, i, dx, dy, ax, d2, lim;
@@ -3177,8 +3159,6 @@ void func_80030478(f32 *p)
     p[0] = (f32)nx / 1000.0f;
     p[2] = (f32)ny / 1000.0f;
 }
-
-#define ABS(x) ((x) < 0 ? -(x) : (x))
 
 typedef struct { s16 a, b, nx, nz; } Edge;
 typedef struct { s16 a, b, c, nx, ny, nz; } Tri12;
@@ -3329,9 +3309,6 @@ u8 func_80030658(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
     }
     return result;
 }
-
-#define MIN_2(a, b) ((a) < (b) ? (a) : (b))
-#define MAX_2(a, b) ((a) < (b) ? (b) : (a))
 
 typedef struct {
     s32 x, y, z, r, a, b, c;
@@ -3827,10 +3804,6 @@ typedef struct {
     Rec_17 r[1];
 } Tab_2;
 
-typedef struct {
-    s32 A, B, C, D, E;
-} Locs;
-
 extern Tab_2 *D_800C9860_3;
 
 void func_8003240C(s32 param_1, s32 param_2, s32 arg2)
@@ -3891,7 +3864,7 @@ void func_800325FC(s32 a0)
     if (D_800C9860_4 == NULL) {
         return;
     }
-    func_800AD7E0(0, 0x400000);
+    osInvalDCache(0, 0x400000);
     w = D_800E1718_2.w;
     h = D_800E1718_2.h;
     x0 = D_800E1718_2.x;
@@ -4214,7 +4187,7 @@ s32 func_80033AC8(s32 x, s32 y, s32 z, s32 *p4, s32 *p5, s32 *p6, s32 *p7, s32 p
     ky = (f32)ps[1] * 0.25f;
     kw = (f32)ps[4] * 0.25f;
     kz = (f32)ps[5] * 0.25f;
-    func_800B31C0(&m[0][0], (u32 *)(p8 + p9 * 0x40));
+    guMtxL2F(&m[0][0], (u32 *)(p8 + p9 * 0x40));
 
     fx = (f32)x;
     fy = (f32)y;

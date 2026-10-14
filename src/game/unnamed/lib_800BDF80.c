@@ -74,7 +74,7 @@ s32 func_800BDF80(u8 *src)
             return -1;
         }
         D_801006A4_2 = func_800BC908(size, 0, (s32)D_800DB410, 0x100);
-        func_800AEC34(D_801006A4_2, D_801006F0 + 4, size);
+        memcpy(D_801006A4_2, D_801006F0 + 4, size);
         max = 0;
         i = 0;
         if (D_80100698 != 0) {
@@ -397,7 +397,7 @@ s32 func_800BE848(u8 *buf, s32 size, s32 count, Stream_2 *f)
         if (b == NULL) {
             return 0;
         }
-        func_800AEC34(dst, b->data + off, chunk);
+        memcpy(dst, b->data + off, chunk);
         n -= chunk;
         dst += chunk;
         do { do {
@@ -492,14 +492,14 @@ Node_51 *func_800BEA40(s32 *k, s32 id, s8 flag)
 void func_800BEB68(void *param_1, void *param_2, s32 param_3)
 {
     s32 r;
-    func_800AD7E0(param_2, param_3);
+    osInvalDCache(param_2, param_3);
     if ((D_8010069C_2 & 0xF0000000) == 0x80000000) {
-        func_800AEC34(param_2, param_1, param_3);
+        memcpy(param_2, param_1, param_3);
     } else {
         do {
             r = func_800BEC20(D_801009A4, 0, param_1, param_2, param_3);
         } while (r < 0);
         func_800BEFB4(r);
-        func_800AD7E0(param_2, param_3);
+        osInvalDCache(param_2, param_3);
     }
 }

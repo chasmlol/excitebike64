@@ -7,14 +7,14 @@ void func_8000CD00(void)
     s32 v;
 
     if (D_800E1E18 != 0) {
-        func_800B0610(D_800E1C48, buf, 1);
+        osRecvMesg(&D_800E1C48, buf, 1);
         for (i = 0; i < 8; i++) {
-            func_800B0610(D_800E1C48, buf, 0);
+            osRecvMesg(&D_800E1C48, buf, 0);
         }
         for (i = 0; i < 4; i++) {
             if (D_800C2924 != 0) {
-                func_800B3704(D_800E1C48, &D_800E1E60[i], i);
-                func_800B35C0(&D_800E1E60[i], 0);
+                osMotorInit(&D_800E1C48, &D_800E1E60[i], i);
+                __osMotorAccess(&D_800E1E60[i], 0);
                 D_800E2010[i] = 0;
                 D_800E2020 &= ~(1 << i);
             }
@@ -22,13 +22,13 @@ void func_8000CD00(void)
                 if (D_800E2020 & (1 << i)) {
                     v = D_800E2010[i];
                     if (v == 0) {
-                        func_800B35C0(&D_800E1E60[i], 0);
+                        __osMotorAccess(&D_800E1E60[i], 0);
                         D_800E2010[i] = 0;
                         D_800E2020 &= ~(1 << i);
                     }
                 } else {
                     if (D_800E2010[i] != 0) {
-                        func_800B35C0(&D_800E1E60[i], 1);
+                        __osMotorAccess(&D_800E1E60[i], 1);
                         D_800E2020 |= 1 << i;
                     }
                 }
@@ -65,7 +65,7 @@ void func_8000CEAC(void)
         return;
     }
     cnt = 0;
-    func_800ADAE8(D_800E1C00);
+    osContGetReadData(D_800E1C00);
     started = 0;
     D_800E2000 = D_800E1C00[i].a;
     D_800E2001 = D_800E1C00[i].b;
@@ -100,9 +100,9 @@ int func_8000CFE8(void)
 {
     int r;
 
-    func_800B05E0(D_800E1C48, D_800E1E50, 4);
-    func_800B1280(5, D_800E1C48, 1);
-    r = func_800ADC40(D_800E1C48, D_800C292C_2, D_800E1C68);
+    osCreateMesgQueue(&D_800E1C48, D_800E1E50, 4);
+    osSetEventMesg(5, &D_800E1C48, 1);
+    r = osContInit(&D_800E1C48, D_800C292C_2, D_800E1C68);
     if (r != 0) {
         return r;
     }
@@ -111,9 +111,9 @@ int func_8000CFE8(void)
     return 0;
 }
 
-void func_8000D064(void) {
+void start_controller_read(void) {
     if (D_800E1E18 == 0) {
-        func_800ADA60(&D_800E1C48);
+        osContStartReadData(&D_800E1C48);
         D_800E1E18 = 1;
     }
 }
@@ -134,8 +134,8 @@ void func_8000D0D8(void)
     for (i = 0; i < 4; i++) {
         if ((D_800E1C60 & (1u << i)) != 0) {
             bit = 1u << i;
-            func_800B3704(D_800E1C48, D_800E1E60_2 + i * 0x68, i);
-            func_800B35C0(D_800E1E60_2 + i * 0x68, 0);
+            osMotorInit(&D_800E1C48, D_800E1E60_2 + i * 0x68, i);
+            __osMotorAccess(D_800E1E60_2 + i * 0x68, 0);
             D_800E2010[i] = 0;
             D_800E2020 = D_800E2020 & ~bit;
         }
@@ -152,19 +152,19 @@ void func_8000D1A8(s32 p1, u8 *p2, s32 p3)
     s32 w;
 
     func_8000CD00();
-    func_800AD910(p2, p3 << 3);
+    osWritebackDCache(p2, p3 << 3);
     i = 0;
     if (p3 > 0) {
         do {
             w = p1 + i;
             base = i * 8;
             do {
-                func_800AC460(D_800E1C48, (u8)w, p2 + base);
+                osEepromWrite(&D_800E1C48, (u8)w, p2 + base);
                 for (j = 0; j < 8; j++) {
                     loc[j] = p2[base + j] ^ 0xAA;
                 }
-                func_800AC240(D_800E1C48, (u8)w, loc);
-                func_800AD7E0(0, 0x400000);
+                osEepromRead(&D_800E1C48, (u8)w, loc);
+                osInvalDCache(0, 0x400000);
                 for (k = 0; k < 8; k++) {
                     if (loc[k] != p2[base + k]) {
                         break;

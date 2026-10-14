@@ -688,7 +688,7 @@ s32 func_800422AC(s32 mask)
     gSPEndDisplayList(gdl++);
     i = (u8 *)gdl - (u8 *)D_800C29E0;
     gdl = func_800BC908(i, 0, (s32)D_800D6FD0, 0x508);
-    func_800AEC34(gdl, D_800C29E0, i);
+    memcpy(gdl, D_800C29E0, i);
     return (s32)gdl;
 }
 

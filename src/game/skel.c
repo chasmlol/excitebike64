@@ -85,7 +85,7 @@ Gfx *func_8003AC18(s32 idx, Gfx *gdl, Mtx *m)
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 1, 1, 31, 31);
     gSPClipRatio(gdl++, FRUSTRATIO_6);
     blk = &D_800E37C0_37[idx];
-    func_800AE240(mf, -15.0f, 15.0f, -15.0f, 15.0f, 50.0f, 4192.0f, 1.0f);
+    guOrtho(mf, -15.0f, 15.0f, -15.0f, 15.0f, 50.0f, 4192.0f, 1.0f);
     func_80011490(rot, -0x4000, 0, 0, 0, 0, 0, 4);
     func_800120A4(rot, (s16 *)mf, (s16 *)&D_800E95E8);
     func_80011490(&D_800E9630, 0, 0, 0, 0, 0, 0, 0x100);
@@ -485,7 +485,7 @@ void *func_8003C2E0(u32 *param_1, s32 param_2)
     }
     func_800BFEA4((u32 *)(param_1[1] + param_2 * 4));
     r = func_800BC908(cnt * 0x80, 0, D_800D6E00, 0x74);
-    func_800AEC34(r, D_800E9680, cnt * 0x80);
+    memcpy(r, D_800E9680, cnt * 0x80);
     return r;
 }
 

@@ -41,9 +41,9 @@ s32 func_800732D0(u8 *src, char *dst, s32 flag)
             if (v < 10) {
                 func_8000ED30(dst, D_800D91D0);
             }
-            func_8000EE30(v, dst + func_800AEC10(dst));
+            func_8000EE30(v, dst + strlen(dst));
             func_8000ED30(dst, D_800D9474);
-            n = func_800AEC10(dst);
+            n = strlen(dst);
             v = w / 60 % 60;
             dst[n] = v / 10 + '0';
             n++;
@@ -66,9 +66,9 @@ s32 func_800732D0(u8 *src, char *dst, s32 flag)
             return 1;
         }
         __builtin_memcpy(dst, D_800D9478, 8);
-        m = func_800AEC10(dst);
+        m = strlen(dst);
         dst[m + 10] = 0;
-        m = func_800AEC10(dst);
+        m = strlen(dst);
         __builtin_memcpy(dst + m, src + 6, 10);
         ret = D_800F01F8;
         ret = ret ^ 1;
@@ -287,7 +287,7 @@ void func_800737A4(void)
         }
     }
     D_800EFD70_54.w44C = func_800BC908(D_800EFD70_54.h44A * 2, 0, "shell.c", 0x75C);
-    func_800AEC34(D_800EFD70_54.w44C, D_800C29E0_3, D_800EFD70_54.h44A * 2);
+    memcpy(D_800EFD70_54.w44C, D_800C29E0_3, D_800EFD70_54.h44A * 2);
     D_800EFD70_54.w44 = 5;
     D_800CA924_4 = 0;
     D_800EFD70_54.w0 = (D_800EFD70_54.w0 & 0x20F88000) | 1;
@@ -872,7 +872,7 @@ void func_80074684(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
                     Trip *t = G_6.f734;
                     *(Trip *)G_6.f466 = t[k];
                     G_6.f466[3] = 0;
-                    G_6.f464 = func_800AEC10(G_6.f466);
+                    G_6.f464 = strlen(G_6.f466);
                     G_6.f456 = 0x31F;
                     G_6.f458 = 0x31F;
                     G_6.f454 = 0x27;
@@ -962,7 +962,7 @@ void func_80074684(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
         }
     }
     if (G_6.f454 < 0x26) {
-        if (func_800AEC10(G_6.f466) == 0) {
+        if (strlen(G_6.f466) == 0) {
             G_6.f466[1] = 0;
         }
         G_6.f466[G_6.f464] = *D_800CD1AC[G_6.f454];
@@ -2803,7 +2803,7 @@ void func_8007896C(void)
     func_80014AD0();
     func_800BFDD4(D_800F47C0);
     D_800F47C0 = 0;
-    func_800B2B00(0xAA);
+    osViSetSpecialFeatures(0xAA);
     D_800EFD70_67.f0 &= ~1;
     if (D_800EFD70_67.f0 & 0x40000) {
         D_800EFD70_67.f3C = D_800F05CA;
@@ -3378,7 +3378,7 @@ void func_80079E00(Item_11 *p) {
     } else {
         p->w24 = 0;
     }
-    func_800B2B00((p->h10 & 4) ? 0x6A : 0xAA);
+    osViSetSpecialFeatures((p->h10 & 4) ? 0x6A : 0xAA);
 
     switch (p->h16) {
     case 23:
@@ -3480,7 +3480,7 @@ void func_80079E00(Item_11 *p) {
             if (D_800EFD70_71.rgb734[D_800EFD70_71.b758[D_800EFD70_71.w460]][0] != 0) {
                 __builtin_memcpy(D_800EFD70_71.name, D_800EFD70_71.rgb734[D_800EFD70_71.b758[D_800EFD70_71.w460]], 3);
                 D_800EFD70_71.name[3] = 0;
-                D_800EFD70_71.h464 = func_800AEC10(D_800EFD70_71.name);
+                D_800EFD70_71.h464 = strlen(D_800EFD70_71.name);
                 D_800EFD70_71.h456 = 0x31F;
                 D_800EFD70_71.h458 = 0x31F;
                 D_800EFD70_71.h454 = 0x27;
@@ -3703,8 +3703,6 @@ void func_80079E00(Item_11 *p) {
         break;
     }
 }
-
-#define CUR(m) ((m)->sel != NULL ? &(m)->items[*(m)->sel] : (m)->items)
 
 typedef struct Game_32 {
     u8 pad0[0x54];
@@ -4503,9 +4501,6 @@ ret1:
 ret0:
     return 0;
 }
-
-static inline s32 add2(s32 a, s32 b) { return a + b; }
-static inline s32 sub2(s32 a, s32 b) { return a - b; }
 
 Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
 {
@@ -5313,7 +5308,7 @@ Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     if (found) {
                         break;
                     }
-                    func_800AEC60_2(buf3, D_800D9F98);
+                    sprintf(buf3, D_800D9F98);
                     line = 4;
                     D_800F4AC8[4] = 0;
                     col = 8;
@@ -5325,7 +5320,7 @@ Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         func_8000ED30(buf3, D_800D9FD4);
                     } else {
                         func_8000ED30(buf3, D_800D9FE0);
-                        func_8000EE30(D_800F4AC8[slot], buf3 + func_800AEC10_2(buf3));
+                        func_8000EE30(D_800F4AC8[slot], buf3 + strlen_2(buf3));
                         func_8000ED30(buf3, D_800D9FE8);
                         if (D_800F4AC8[slot] != found) {
                             func_8000ED30(buf3, D_800D9FF4);
@@ -5397,7 +5392,7 @@ Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             func_800C0ACC(D.txt[0], 0x55, 0x35);
         } else {
             strcpy(buf, "Player ");
-            func_8000EE30(plr + 1, buf + func_800AEC10_2(buf));
+            func_8000EE30(plr + 1, buf + strlen_2(buf));
             func_8000ED30(buf, D_800DA014);
             func_800C1F2C(D.txt[0], buf);
             func_800C0ACC(D.txt[0], 0x55, 0x35);
@@ -5473,7 +5468,7 @@ Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             func_800C1E60(D.txt[0], 0x20, 1, (j == D.h464) ? 4 : 2, 0x21);
             func_800C1F2C(D.txt[0], D_800DA084);
             func_800C0ACC(D.txt[0], (j - 1) * 20 + ((cheat) ? 0x50 : 0xE2), 0xB9);
-            if (j < func_800AEC10_2(D.s466)) {
+            if (j < strlen_2(D.s466)) {
                 func_800C1E60(D.txt[0], 0x20, 1, (j == D.h464) ? 4 : 2, 0x21);
                 buf[0] = D.s466[j];
                 buf[1] = '\0';
@@ -5510,13 +5505,13 @@ Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         CMB_PRIM();
         func_800C1E60(gp->txt[0], 0x40, 4, 2, 0x21);
         strcpy(buf, "Controller ");
-        func_8000EE30(gp->h476 + 1, buf + func_800AEC10_2(buf));
+        func_8000EE30(gp->h476 + 1, buf + strlen_2(buf));
         func_800C1F2C(gp->txt[0], buf);
         func_800C0ACC(gp->txt[0], 0xBA, 0x29);
         func_800C1E60(gp->txt[0], 0x40, 4, 2, 0x21);
         strcpy(buf, "Configuration ");
-        buf[func_800AEC10_2(buf) + 1] = '\0';
-        buf[func_800AEC10_2(buf)] = gp->b50[gp->h476] + 'A';
+        buf[strlen_2(buf) + 1] = '\0';
+        buf[strlen_2(buf)] = gp->b50[gp->h476] + 'A';
         func_800C1F2C(gp->txt[0], buf);
         func_800C0ACC(gp->txt[0], 0xE9, 0xBF);
         for (j = 0; j < 9; j++) {
@@ -5665,7 +5660,7 @@ Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             func_800C1F2C(D.txt[j * 4 + 6], buf);
             func_800C0ACC(D.txt[j * 4 + 6], rx - (j * 7 - 0x6A), YR);
             if (r < 4) {
-                wid[r] = func_800C1118(D.txt[j * 4 + 6], 0x6A - j * 7, YR, func_800AEC10_2(buf) - 1) >> 16;
+                wid[r] = func_800C1118(D.txt[j * 4 + 6], 0x6A - j * 7, YR, strlen_2(buf) - 1) >> 16;
             }
             if (s->state == 7 && D_800CA938_3[j] != 0) {
                 func_800C1E60(D.txt[j * 4 + 7], 0x20, 1, (s32)img, 0x20);
@@ -6197,14 +6192,14 @@ c2:
     alpha = 0xFF - D_800EFD70_79.fade;
 done:
     func_80011490(&m[16], 0, 0, 0, 0, 0, 0, 0x100);
-    func_800AE240(&m[12], -D_800F13EC / 2, D_800F13EC / 2, -D_800F13F0 / 2, D_800F13F0 / 2, 50.0f, 4192.0f, 1.0f);
+    guOrtho(&m[12], -D_800F13EC / 2, D_800F13EC / 2, -D_800F13F0 / 2, D_800F13F0 / 2, 50.0f, 4192.0f, 1.0f);
     gSPSegment(gdl++, 0, 0);
     gSPDisplayList(gdl++, D_800C2A38);
     gSPDisplayList(gdl++, D_800C2A00);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, D_800F13EC, D_800F13F0);
     gSPViewport(gdl++, &D_800CDA60);
     gDPPipeSync(gdl++);
-    func_800AE540(&persp, &pn, 33.0f, 1.9512196f, 25.0f, 4192.0f, 1.0f);
+    guPerspective(&persp, &pn, 33.0f, 1.9512196f, 25.0f, 4192.0f, 1.0f);
     func_800120A4(&D_800C25F8, &persp, m);
     gSPPerspNormalize(gdl++, pn);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, D_800F13EC, D_800C29E0);

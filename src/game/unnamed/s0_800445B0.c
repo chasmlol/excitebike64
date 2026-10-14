@@ -116,7 +116,6 @@ void func_800445B0(Bike_23 *b, s32 n)
     func_80061D54(b->x248);
 }
 
-#define DAMP(x) { f32 k, v, w; k = (D_800EFD70_31.f4C == 6) ? D_800C8E14 * 20000.0f : 15000.0f; v = (x); w = v; if (D_800EFD70_31.f4C == 6) (x) = v - v * (k / ((D_800C8E18 * 2000.0f) / D_800E76C8)); else (x) = w - w * (k / (2200.0f / D_800E76C8)); }
 #define DAMPR(x) { f32 r, k, v, w; k = (D_800EFD70_31.f4C == 6) ? D_800C8E14 * 20000.0f : 15000.0f; v = (x); w = v; if (D_800EFD70_31.f4C == 6) r = v - v * (k / ((D_800C8E18 * 2000.0f) / D_800E76C8)); else r = w - w * (k / (2200.0f / D_800E76C8)); (x) = r; }
 #define CLAMP(b, p) { m = __builtin_sqrtf(b->p.vx * b->p.vx + b->p.vy * b->p.vy + b->p.vz * b->p.vz);     if (b->f428 < m) { b->p.vx *= b->f428 / m; b->p.vy *= b->f428 / m; b->p.vz *= b->f428 / m; } }
 
@@ -125,11 +124,6 @@ typedef struct { u8 pad[0x3C]; s32 f3C; u8 pad2[0x4C - 0x40]; s32 f4C; } Game_15
 
 extern Track_9 D_800C9080_7[];
 extern Game_15 D_800EFD70_31;
-
-static inline f32 damp2(f32 v, f32 k)
-{
-    return v - v * (k / (2200.0f / D_800E76C8));
-}
 
 static inline f32 airtime(Body_2 *p, f32 g)
 {
@@ -309,11 +303,11 @@ s32 func_800453D8(Body_3 *b, Pt_4 *t, s32 n, u8 m)
         len = __builtin_sqrtf(w.x * w.x + w.y * w.y + w.z * w.z);
         half = len * dt * 0.5f;
         if (len != 0.0f) {
-            sn = func_800AEA30(half) / len;
+            sn = sinf(half) / len;
         } else {
             sn = 0.0f;
         }
-        dq.q[0] = func_800ADFC0(half);
+        dq.q[0] = cosf(half);
         dq.q[1] = w.x * sn;
         dq.q[2] = w.y * sn;
         dq.q[3] = w.z * sn;

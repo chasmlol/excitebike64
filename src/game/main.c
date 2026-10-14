@@ -95,7 +95,7 @@ void func_8000D2E0(void)
         }
     }
     func_8000ED10((u8 *)D_800E25C0, 0, sizeof(D_800E25C0));
-    if (D_80000318 == 0x800000) {
+    if (osMemSize == 0x800000) {
         D_800C2940 = 1;
     } else {
         D_800C2940 = 0;
@@ -129,7 +129,7 @@ void func_8000D2E0(void)
     func_8000E980();
     func_8000ED10((u8 *)D_800E30B0_4, 0, sizeof(D_800E30B0_4));
     func_8000CFE8();
-    func_8000D064();
+    start_controller_read();
     func_8000CD00();
     func_8000CEAC();
     for (i = 0; i < 4; i++) {
@@ -144,9 +144,9 @@ void func_8000D2E0(void)
     D_800E25C0[0].dl = NULL;
     D_800E25C0[1].dl = NULL;
     func_8005B5E0();
-    func_800B05E0_2(&D_800E2048, D_800E20F0, 16);
-    func_800B1B40(&D_800E30C8, 5, func_8000E6E8, NULL, D_800E25B0_4, 12);
-    func_800B1DE0(&D_800E30C8);
+    osCreateMesgQueue(&D_800E2048, D_800E20F0, 16);
+    osCreateThread(&D_800E30C8, 5, func_8000E6E8, NULL, D_800E25B0_4, 12);
+    osStartThread(&D_800E30C8);
     func_800657FC((s32)D_800E2040, (s32)&D_800E2048);
     func_8000F060();
     D_800CB120 = 0;
@@ -159,13 +159,13 @@ void func_8000D2E0(void)
             }
             D_800C2938 += 100;
         }
-        D_800E3278 = func_800B1340();
+        D_800E3278 = __osSpGetStatus();
         {
         s32 n;
-        D_800E2060 = D_80000318 - (n = D_80100634 * 16 + 0x400000);
+        D_800E2060 = osMemSize - (n = D_80100634 * 16 + 0x400000);
         }
         D_800E2060 = D_800E2060 - D_800E20E8 * D_800E20EC * 6 + 0xB4000;
-        func_800B0610(&D_800E3090, &msg, 1);
+        osRecvMesg(&D_800E3090, &msg, 1);
         switch (*(s16 *)msg) {
         case 1:
             if (D_800C29CC_2->mode == 0) {
@@ -204,26 +204,26 @@ void func_8000D2E0(void)
             if ((D_800E1E40_2[0].button & 0xC00) == 0xC00) {
                 func_8000E8B0(1);
                 do {
-                    func_8000D064();
+                    start_controller_read();
                     func_8000CD00();
                     func_8000CEAC();
                 } while ((D_800E1E40_2[0].button & 0x300) != 0x300);
                 func_8000E8B0(0);
                 do {
-                    func_8000D064();
+                    start_controller_read();
                     func_8000CD00();
                     func_8000CEAC();
                 } while ((D_800E1E40_2[0].button & 0x300) == 0x300);
             }
-            func_8000D064();
+            start_controller_read();
             *(Blk *)D_800E25B0_4 = *(Blk *)D_800E30B0_4;
             for (i = 0; i < 4; i++) {
                 func_8000E31C(&D_800E1E40_2[i], &D_800E30B0_4[i]);
             }
             pads = D_800E30B0_4;
-            D_800E30C0 = func_800B1330();
+            D_800E30C0 = osGetCount();
             func_80010D44();
-            D_800E20E4 = func_800B1330();
+            D_800E20E4 = osGetCount();
             D_800E2134 = D_800E20E4 - D_800E30C0;
             if (D_800E2038 - D_800E2064 > 0 || D_800C29CC_2->mode == 5) {
                 if (D_800C29CC_2->mode == 2) {
@@ -295,9 +295,9 @@ void func_8000D2E0(void)
                 }
                 D_800E2064 = D_800E2038;
             }
-            D_800E30C0 = func_800B1330();
+            D_800E30C0 = osGetCount();
             func_80010D44();
-            D_800E20E4 = func_800B1330();
+            D_800E20E4 = osGetCount();
             D_800E2134 = D_800E20E4 - D_800E30C0;
             if (D_800C2958 < 2 && D_800C29CC_2->fn8 != NULL) {
                 if (D_800C29CC_2->mode == 5) {
@@ -329,7 +329,7 @@ void func_8000D2E0(void)
                         for (;;) {
                         }
                     }
-                    func_800AD990();
+                    osWritebackDCacheAll();
                     t->list.t.data_ptr = (u64 *)D_800E3080->dl;
                     q = t;
 #define T q
@@ -354,12 +354,12 @@ void func_8000D2E0(void)
                     T->msg = &D_800E25C0[D_800C29E8].msgtype;
                     T->framebuffer = D_800C29D8_2[D_800C29E8];
                     T->totalTime = 0;
-                    func_80065830((s32)q);
+                    sched_submit_task((s32)q);
                     D_800C2958++;
                     D_800C29E8 = 1 - D_800C29E8;
-                    D_800E30C0 = func_800B1330();
+                    D_800E30C0 = osGetCount();
                     func_80010D44();
-                    D_800E20E4 = func_800B1330();
+                    D_800E20E4 = osGetCount();
                     D_800E2134 = D_800E20E4 - D_800E30C0;
                     }
                 }
@@ -370,7 +370,7 @@ void func_8000D2E0(void)
                 s32 x, y;
                 __builtin_strcpy(buf, "e:\\log\\scr");
                 D_800C293C = D_800E2038 * 765 % 99999;
-                func_8000EE30(D_800C293C, buf + func_800AEC10(buf));
+                func_8000EE30(D_800C293C, buf + strlen(buf));
                 func_8000ED30(buf, ".raw");
                 D_800C293C++;
                 for (y = 0; y < D_800F13F0; y++) {
@@ -493,7 +493,7 @@ void func_8000E5C0(void)
     u32 s1;
     u32 t;
 
-    top = ((u32)D_80000318 | 0x80000000) - 0x100;
+    top = ((u32)osMemSize | 0x80000000) - 0x100;
     s0 = (u32)D_800731D0;
     s2 = (u32)D_800A42C0;
     s3 = (u32)D_800A9C20;
@@ -508,7 +508,7 @@ void func_8000E5C0(void)
     }
     s1 = (u32)D_80105680;
     s1 = (s1 + 0xFF) & ~0xFF;
-    func_800B3020(1);
+    osViBlack(1);
     func_8000ED10((u8 *)s1, 0, top - s1);
     func_800BD698(0, 0, s0, top - s0);
     t = 0x30;
@@ -538,21 +538,21 @@ void func_8000E6E8(void)
     u32 v;
 
     for (;;) {
-        func_800B0610(&D_800E2048, (OSMesg *)&msg, 1);
+        osRecvMesg(&D_800E2048, (OSMesg *)&msg, 1);
         switch (*msg) {
         case 1:
             D_800C29F0++;
             idx = func_80065858() != (s32)D_800E25C0_2[0].f4E8;
             if (idx != D_800C29F8) {
-                D_800E25C0_2[idx].a = func_800B1330();
+                D_800E25C0_2[idx].a = osGetCount();
             }
             D_800C29F8 = idx;
             if ((D_800C29FC ^ D_800C2350) & 0x1000) {
                 D_800C29FC = D_800C2350 & 0x1000;
-                func_800B2B00(D_800C29FC ? 0x6A : 0xAA);
+                osViSetSpecialFeatures(D_800C29FC ? 0x6A : 0xAA);
             }
             if (MQ_GET_COUNT(&D_800E3090) < 14) {
-                func_800B1150(&D_800E3090, msg, 0);
+                osSendMesg(&D_800E3090, msg, 0);
             }
             break;
         case 2:
@@ -564,10 +564,10 @@ void func_8000E6E8(void)
                 func_800325FC(idx);
                 func_80033E30(idx);
             }
-            t = func_800B1330();
+            t = osGetCount();
             D_800E25C0_2[idx].b = t;
             D_800E25C0_2[idx].c = t - D_800E25C0_2[idx].a;
-            func_800B1150(&D_800E3090, msg, 1);
+            osSendMesg(&D_800E3090, msg, 1);
             break;
         }
     }
@@ -580,7 +580,7 @@ void func_8000E8B0(s32 param_1)
     if (param_1 != 0) {
         flag = -1;
     }
-    func_800ACD70(p, 0xFF70000, flag);
+    osEPiWriteIo(p, 0xFF70000, flag);
     D_800C2930 = param_1;
 }
 
@@ -605,15 +605,15 @@ void func_8000E8F4(void)
     D_800E2138_2.f7 = 2;
     D_800E2138_2.f4 = 0;
     D_800E2138_2.f9 = 1;
-    r = func_800AC890();
-    D_800E2138_2.next = D_800D1E0C;
-    D_800D1E0C = &D_800E2138_2;
-    func_800AC900(r);
+    r = __osDisableInt();
+    D_800E2138_2.next = __osPiTable;
+    __osPiTable = &D_800E2138_2;
+    __osRestoreInt(r);
 }
 
 void func_8000E980(void)
 {
-    func_800B05E0_3(D_800E3090_2, D_800E2068, 0x10);
+    osCreateMesgQueue(&D_800E3090, D_800E2068, 0x10);
     func_800651A0(0xD, 1);
 }
 
@@ -624,14 +624,14 @@ void func_8000E9B8(void)
 
 void func_8000E9C0(void)
 {
-    func_800B2550(10);
-    func_800B2AB0(D_800D1FF0);
-    func_800B3020(0);
-    func_800B2CC0_2((void *)0x80200000);
-    func_800B3020(0);
-    func_800B2CC0_2((void *)0x80200000);
+    osCreateViManager(10);
+    osViSetMode(osViModeTable);
+    osViBlack(0);
+    osViSwapBuffer((void *)0x80200000);
+    osViBlack(0);
+    osViSwapBuffer((void *)0x80200000);
     func_8000ED10((u8 *)0x80200000, 0xFF, 0x25800);
-    func_800AD990();
+    osWritebackDCacheAll();
     __asm__ volatile("break 0x407");
     while (1) {}
 }

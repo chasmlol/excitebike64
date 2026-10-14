@@ -88,7 +88,7 @@ s32 func_800BF530(char *path, Obj_82 **out)
     }
     func_800BE770(f);
     func_8000EF8C(o->name, path);
-    func_800AEC60_5(o->sub, D_800DB44C, path);
+    sprintf(o->sub, D_800DB44C, path);
     *out = o;
     return 0;
 }
@@ -350,7 +350,7 @@ void func_800BFF60(u32 *param_1, u8 *param_2, u32 *param_3)
     Node_52 *p;
 
     for (;;) {
-        n = func_800AEC10(param_2);
+        n = strlen(param_2);
         if (!((u32)i < n)) break;
         if (!(i < 16)) break;
         sum += func_8000ECE0(param_2[i]);
@@ -489,7 +489,7 @@ u32 func_800C02E4(u8 *p)
     u8 c;
 
     for (;;) {
-        len = func_800AEC10(p);
+        len = strlen(p);
         if (len <= i || (s32)i >= 16) {
             break;
         }
@@ -667,7 +667,7 @@ s32 func_800C06D0(ResFile *arc, u32 **ids, char *name)
         base = func_800BD730(k, 0, D_800DB4D0, 0x124);
     }
     if (base == NULL) {
-        func_800AEC60_2(D_800EE380, D_800DB4DC);
+        sprintf(D_800EE380, D_800DB4DC);
         func_8000ECC4_2();
         return -1;
     }
@@ -692,7 +692,7 @@ s32 func_800C06D0(ResFile *arc, u32 **ids, char *name)
             D_80105370 = NULL;
             func_800BCB04(D_80105380[0]);
             D_80105380[0] = NULL;
-            func_800AEC60_2(D_800EE380, D_800DB504);
+            sprintf(D_800EE380, D_800DB504);
             func_8000ECC4_2();
             return -1;
         }
@@ -741,12 +741,12 @@ s32 func_800C06D0(ResFile *arc, u32 **ids, char *name)
         if (base == NULL) {
             func_8000ECB8(1);
         }
-        func_800AEC34(base, D_800D5870, k);
+        memcpy(base, D_800D5870, k);
     } else {
         base = func_800BD798(D_80105380[0], k, 0, D_800DB4D0, 0x1A9);
     }
     if (base == NULL) {
-        func_800AEC60_2(D_800EE380, D_800DB520);
+        sprintf(D_800EE380, D_800DB520);
         func_8000ECC4_2();
         return -1;
     }

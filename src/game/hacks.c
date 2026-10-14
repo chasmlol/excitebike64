@@ -96,7 +96,7 @@ void func_80062244(void)
         sp18 = res->data - (s32)res;
         t = func_800BD924(res);
         d = 0x1E000;
-        func_800AEC34(D_800C29E0 + d, res->data, t - sp18);
+        memcpy(D_800C29E0 + d, res->data, t - sp18);
         d = 0;
         func_800BD798(res, sp18, d, "hacks.c", 0x124);
         e = 0x1E000;

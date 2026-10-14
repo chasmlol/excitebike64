@@ -6,7 +6,7 @@ s32 func_800BF040(s32 a0, u16 *a1, s32 a2)
     s32 r;
     u16 t;
 
-    if (D_800D1DF0 == 0) {
+    if (__osPiDevMgr == 0) {
         return -1;
     }
     *(s32 *)(a1 + 10) = a0;
@@ -26,7 +26,7 @@ join:
         r = func_800BF280(p, a1, 0);
     } else {
         p = func_800BF0E0();
-        r = func_800B1150(p, a1, 0);
+        r = osSendMesg(p, a1, 0);
     }
     return r;
 }

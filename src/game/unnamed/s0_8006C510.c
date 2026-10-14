@@ -633,16 +633,6 @@ extern S19 D_800F1900_6;
 extern Ent_76 D_800CD370[];
 extern Ent_76 D_800CD430[];
 
-static inline s32 active(s32 n)
-{
-    if (D_800F0180 < D_800F1900_6.cnt) return 1;
-    if (D_800F1900_6.cnt == D_800F0180) {
-        if (n == 0) return 1;
-        return (D_800F1900_6.bits >> (n - 1)) & 1;
-    }
-    return 0;
-}
-
 s32 func_8006F128(void)
 {
     s32 saved = D_800EFD70_49.cur;
