@@ -1,17 +1,22 @@
 #include "game.h"
 
+/* Controllers, Rumble Paks and EEPROM, all over one SI message queue (gSiMesgQueue). */
+
+/* Finishes the controller read start_controller_read began (if one is pending): waits for the SI and drains the
+   queue, then runs the Rumble Paks: after gRumbleResetRequest every motor is initialized again and stopped; a motor
+   starts when its timer is set and stops when the timer reaches 0; the timers count down here, once per read. */
 void cont_finish_read(void)
 {
-    s32 buf[2];
+    s32 msgs[2];
     s32 i;
-    s32 v;
+    s32 timer;
 
     if (gContReadPending != 0) {
-        osRecvMesg(&gSiMesgQueue, buf, 1);
+        osRecvMesg(&gSiMesgQueue, msgs, OS_MESG_BLOCK);
         for (i = 0; i < 8; i++) {
-            osRecvMesg(&gSiMesgQueue, buf, 0);
+            osRecvMesg(&gSiMesgQueue, msgs, OS_MESG_NOBLOCK);
         }
-        for (i = 0; i < 4; i++) {
+        for (i = 0; i < MAXCONTROLLERS; i++) {
             if (gRumbleResetRequest != 0) {
                 osMotorInit(&gSiMesgQueue, &gRumblePfs[i], i);
                 __osMotorAccess(&gRumblePfs[i], 0);
@@ -20,8 +25,8 @@ void cont_finish_read(void)
             }
             if (gRumblePakMask & (1 << i)) {
                 if (gRumbleActiveMask & (1 << i)) {
-                    v = gRumbleTimers[i];
-                    if (v == 0) {
+                    timer = gRumbleTimers[i];
+                    if (timer == 0) {
                         __osMotorAccess(&gRumblePfs[i], 0);
                         gRumbleTimers[i] = 0;
                         gRumbleActiveMask &= ~(1 << i);
@@ -39,101 +44,124 @@ void cont_finish_read(void)
         }
         gRumbleResetRequest = 0;
         gContReadPending = 0;
-        if (D_800C2920 != 0) {
+        if (D_800C2920 != 0) {      /* never set */
             gZBuffer = 0x80010000;
         }
     }
 }
 
-typedef struct { u16 id; u8 a; u8 b; u8 flag; u8 pad; } Sel;
-typedef struct { u16 id; u8 a; u8 b; } Out;
+/* libultra's OSContPad, as osContGetReadData fills sContPadsRaw. */
+typedef struct {
+    u16 button;
+    u8 stickX;
+    u8 stickY;
+    u8 error;
+    u8 pad;
+} ContPadRaw;
 
-extern Sel sContPadsRaw[];
-extern Out gContPads[];
+/* gContPads: the last read of each connected controller. */
+typedef struct {
+    u16 button;
+    u8 stickX;
+    u8 stickY;
+} ContPad;
 
+extern ContPadRaw sContPadsRaw[];
+extern ContPad gContPads[];
+
+/* Takes the data of the finished controller read: gContMask gets a bit per controller that answered, gContFirst the
+   first of them, and gContPads and sContButtons their buttons and stick. */
 void cont_read_pads(void)
 {
     u16 i;
-    u16 cnt;
-    u32 started;
+    u16 count;
+    u32 foundFirst;
     u8 bit;
-    u8 nv;
-    u8 old;
-    Sel *e;
+    u8 maskWithBit;
+    u8 mask;
+    ContPadRaw *pad;
 
     if (gContReadPending != 0) {
         return;
     }
-    cnt = 0;
+    count = 0;
     osContGetReadData(sContPadsRaw);
-    started = 0;
-    sContStickX = sContPadsRaw[i].a;
-    sContStickY = sContPadsRaw[i].b;
+    foundFirst = 0;
+    /* A bug: i is read here before it is set. */
+    sContStickX = sContPadsRaw[i].stickX;
+    sContStickY = sContPadsRaw[i].stickY;
     i = 0;
     do {
-        old = gContMask;
+        mask = gContMask;
         bit = (u8)(1 << i);
-        nv = old | bit;
-        gContMask = nv;
-        e = &sContPadsRaw[i];
-        if (e->flag != 0) {
-            gContMask = nv & ~bit;
+        maskWithBit = mask | bit;
+        gContMask = maskWithBit;
+        pad = &sContPadsRaw[i];
+        if (pad->error != 0) {
+            gContMask = maskWithBit & ~bit;
         } else {
-            if (started == 0) {
+            if (foundFirst == 0) {
                 gContFirst = (u8)i;
-                started = 1;
+                foundFirst = 1;
             }
-            sContButtons[i] = e->id;
-            gContPads[i].id = e->id;
-            gContPads[i].a = e->a;
-            gContPads[i].b = e->b;
-            cnt = cnt + 1;
-            if (cnt == 4) {
+            sContButtons[i] = pad->button;
+            gContPads[i].button = pad->button;
+            gContPads[i].stickX = pad->stickX;
+            gContPads[i].stickY = pad->stickY;
+            count = count + 1;
+            if (count == MAXCONTROLLERS) {
                 return;
             }
         }
         i = i + 1;
-    } while (i < 4);
+    } while (i < MAXCONTROLLERS);
 }
 
+/* Creates the SI queue, initializes the controllers (gContMask, gContStatus) and probes their paks
+   (pak_probe_all). Returns osContInit's error, or 0. */
 int cont_init(void)
 {
-    int r;
+    int err;
 
     osCreateMesgQueue(&gSiMesgQueue, sSiMesgBuf, 4);
-    osSetEventMesg(5, &gSiMesgQueue, 1);
-    r = osContInit(&gSiMesgQueue, gContMask_2, gContStatus);
-    if (r != 0) {
-        return r;
+    osSetEventMesg(OS_EVENT_SI, &gSiMesgQueue, 1);
+    err = osContInit(&gSiMesgQueue, gContMask_2, gContStatus);
+    if (err != 0) {
+        return err;
     }
     pak_probe_all();
     gContReadPending = 0;
     return 0;
 }
 
-void start_controller_read(void) {
+/* Starts reading the controllers unless a read is already pending; cont_finish_read completes it. */
+void start_controller_read(void)
+{
     if (gContReadPending == 0) {
         osContStartReadData(&gSiMesgQueue);
         gContReadPending = 1;
     }
 }
 
-void rumble_start(u32 a0, s32 a1)
+/* Runs the Rumble Pak of a controller for the given number of reads (RUMBLE_OFF stops it), if it has one. */
+void rumble_start(u32 cont, s32 frames)
 {
-    if ((gRumblePakMask & (1u << a0)) != 0) {
-        gRumbleTimers[a0] = a1 + 1;
+    if ((gRumblePakMask & (1u << cont)) != 0) {
+        gRumbleTimers[cont] = frames + 1;
     }
 }
 
+/* Waits for the pending controller read and stops every Rumble Pak at once. */
 void rumble_stop_all(void)
 {
     s32 i;
     u32 bit;
 
     cont_finish_read();
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < MAXCONTROLLERS; i++) {
         if ((gRumblePakMask & (1u << i)) != 0) {
             bit = 1u << i;
+            /* &gRumblePfs[i]: 0x68 is sizeof(OSPfs) */
             osMotorInit(&gSiMesgQueue, gRumblePfs_2 + i * 0x68, i);
             __osMotorAccess(gRumblePfs_2 + i * 0x68, 0);
             gRumbleTimers[i] = 0;
@@ -142,36 +170,38 @@ void rumble_stop_all(void)
     }
 }
 
-void eeprom_write_verify(s32 p1, u8 *p2, s32 p3)
+/* Writes numBlocks 8-byte EEPROM blocks from src, starting at block firstBlock, writing each block again until
+   reading it back gives the same bytes. The read buffer is spoiled first (xor 0xAA) so a failed read cannot pass. */
+void eeprom_write_verify(s32 firstBlock, u8 *src, s32 numBlocks)
 {
-    u8 loc[8];
+    u8 readBack[EEPROM_BLOCK_SIZE];
     s32 i;
     s32 j;
     s32 k;
-    s32 base;
-    s32 w;
+    s32 offset;
+    s32 block;
 
     cont_finish_read();
-    osWritebackDCache(p2, p3 << 3);
+    osWritebackDCache(src, numBlocks << 3);    /* numBlocks * EEPROM_BLOCK_SIZE */
     i = 0;
-    if (p3 > 0) {
+    if (numBlocks > 0) {
         do {
-            w = p1 + i;
-            base = i * 8;
+            block = firstBlock + i;
+            offset = i * EEPROM_BLOCK_SIZE;
             do {
-                osEepromWrite(&gSiMesgQueue, (u8)w, p2 + base);
-                for (j = 0; j < 8; j++) {
-                    loc[j] = p2[base + j] ^ 0xAA;
+                osEepromWrite(&gSiMesgQueue, (u8)block, src + offset);
+                for (j = 0; j < EEPROM_BLOCK_SIZE; j++) {
+                    readBack[j] = src[offset + j] ^ 0xAA;
                 }
-                osEepromRead(&gSiMesgQueue, (u8)w, loc);
-                osInvalDCache(0, 0x400000);
-                for (k = 0; k < 8; k++) {
-                    if (loc[k] != p2[base + k]) {
+                osEepromRead(&gSiMesgQueue, (u8)block, readBack);
+                osInvalDCache(0, 0x400000);     /* the first 4 MB of RDRAM */
+                for (k = 0; k < EEPROM_BLOCK_SIZE; k++) {
+                    if (readBack[k] != src[offset + k]) {
                         break;
                     }
                 }
-            } while (k != 8);
+            } while (k != EEPROM_BLOCK_SIZE);
             i++;
-        } while (i < p3);
+        } while (i < numBlocks);
     }
 }

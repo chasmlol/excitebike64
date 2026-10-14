@@ -1,56 +1,65 @@
 #include "game.h"
 
+/* SRAM: a PI handle and whole-SRAM reads and writes. dma_init sets up the handle; nothing calls sram_read or
+   sram_write. */
+
+/* An OSPiHandle (sSramPiHandle). */
 struct Blk_29 {
     s32 next;
-    u8 b4, b5, b6, b7, b8, b9;
+    u8 type, latency, pageSize, relDuration, pulse, domain;
     u8 pad[2];
-    u32 tag;
-    u32 pad2;
-    u8 buf[0x50];
+    u32 baseAddress;
+    u32 speed;
+    u8 transferInfo[0x50]; /* libultra's is 0x60 bytes, which sram_init clears */
 };
 
+/* Sets up the SRAM handle the first time (until then its base address is not set) and links it into
+   __osPiTable. */
 Blk_29 *sram_init(void)
 {
-    u32 r;
-    if (sSramPiHandle.tag != 0xA8000000) {
-        sSramPiHandle.b4 = 3;
-        sSramPiHandle.b5 = 5;
-        sSramPiHandle.b8 = 0xC;
-        sSramPiHandle.b6 = 0xD;
-        sSramPiHandle.b7 = 2;
-        sSramPiHandle.tag = 0xA8000000;
-        sSramPiHandle.b9 = 1;
-        mem_fill(sSramPiHandle.buf, 0, 0x60);
-        r = __osDisableInt();
+    u32 saveMask;
+    if (sSramPiHandle.baseAddress != PHYS_TO_K1(PI_DOM2_ADDR2)) {
+        sSramPiHandle.type = DEVICE_TYPE_SRAM;
+        sSramPiHandle.latency = SRAM_LATENCY;
+        sSramPiHandle.pulse = SRAM_PULSE;
+        sSramPiHandle.pageSize = SRAM_PAGE_SIZE;
+        sSramPiHandle.relDuration = SRAM_REL_DURATION;
+        sSramPiHandle.baseAddress = PHYS_TO_K1(PI_DOM2_ADDR2);
+        sSramPiHandle.domain = PI_DOMAIN2;
+        mem_fill(sSramPiHandle.transferInfo, 0, 0x60);
+        saveMask = __osDisableInt();
         sSramPiHandle.next = __osPiTable;
         __osPiTable = (s32)&sSramPiHandle;
-        __osRestoreInt(r);
+        __osRestoreInt(saveMask);
     }
     return &sSramPiHandle;
 }
 
-int sram_read(u32 param_1)
+/* Reads all of SRAM into `buf`, meant to return 1 when no DMA slot is free and 0 when done. dma_start's result is
+   never stored: `req` is read uninitialised (a bug of the original). */
+int sram_read(u32 buf)
 {
-    s32 x;
+    s32 req;
 
-    osInvalDCache(param_1, 0x8000);
-    dma_start(sSramHandle, 0, 0x8000000, param_1, 0x8000);
-    if (x < 0) {
+    osInvalDCache(buf, SRAM_SIZE);
+    dma_start(sSramHandle, OS_READ, PI_DOM2_ADDR2, buf, SRAM_SIZE);
+    if (req < 0) {
         return 1;
     }
-    dma_wait(x);
+    dma_wait(req);
     return 0;
 }
 
-s32 sram_write(s32 p)
+/* Writes `buf` to all of SRAM, with the same bug as sram_read. */
+s32 sram_write(s32 buf)
 {
-    s32 r;
+    s32 req;
 
-    osWritebackDCache(p, 0x8000);
-    dma_start(sSramHandle, 1, 0x08000000, p, 0x8000);
-    if (r < 0) {
+    osWritebackDCache(buf, SRAM_SIZE);
+    dma_start(sSramHandle, OS_WRITE, PI_DOM2_ADDR2, buf, SRAM_SIZE);
+    if (req < 0) {
         return 1;
     }
-    dma_wait(r);
+    dma_wait(req);
     return 0;
 }

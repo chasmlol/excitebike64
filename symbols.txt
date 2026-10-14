@@ -4496,7 +4496,6 @@ __osPiRelAccess                       boot  0x80006B80  func     0x28
 osInvalDCache                         boot  0x80006BB0  func     0xb0
 osInvalICache                         boot  0x80006C60  func     0x74
 osWritebackDCache                     boot  0x80006CE0  func     0x74
-boot_func_80006D60                    boot  0x80006D60  data        -
 osWritebackDCacheAll                  boot  0x80006D60  func     0x28
 osContStartQuery                      boot  0x80006D90  func     0x80
 osContGetQuery                        boot  0x80006E10  func     0x20

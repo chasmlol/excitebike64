@@ -1,109 +1,99 @@
 #include "game.h"
 
-Gfx *soccer_ball_draw(Gfx *param_1, s32 param_2, s32 param_3)
+/* Draws the soccer ball (gSoccerBall) in every view: its rotation and position (metres to millimetres) make the
+   model matrix, in sPropMtx's slot of the frame buffer `fb`, then each view's projection from `dyn` and the model. */
+Gfx *soccer_ball_draw(Gfx *gdl, s32 dyn, s32 fb)
 {
-    s32 aiStack_e0[10];
-    s32 aux[3];
-    s16 asStack_a8[32];
-    s16 auStack_68[32];
-    f32 *q;
-    f32 fx;
+    s32 rot[10];
+    s32 origin[3];
+    s16 translate[32];
+    s16 rotate[32];
     s32 i;
-    s32 iVar5;
-    s32 tbl;
-    s32 iVar1;
-    Gfx *gA, *gB, *gC, *gD, *gE, *gF;
-    Gfx *gP, *gQ, *gT, *gU, *gV;
+    s32 mtx;
 
-    quat_to_mtx3i(aiStack_e0, gSoccerBall.quat);
-    aux[0] = 0;
-    aux[1] = 0;
-    aux[2] = 0;
-    mtx_from_rot3i_pos(aiStack_e0, (u16 *)aux, auStack_68);
-    mtx_from_angles_pos_scale(asStack_a8, 0, 0, 0, (s32)(gSoccerBall.pos.x * 1000.0f), (s32)(gSoccerBall.pos.y * 1000.0f),
+    quat_to_mtx3i(rot, gSoccerBall.quat);
+    origin[0] = 0;
+    origin[1] = 0;
+    origin[2] = 0;
+    mtx_from_rot3i_pos(rot, (u16 *)origin, rotate);
+    mtx_from_angles_pos_scale(translate, 0, 0, 0, (s32)(gSoccerBall.pos.x * 1000.0f), (s32)(gSoccerBall.pos.y * 1000.0f),
                   (s32)(gSoccerBall.pos.z * 1000.0f), 8);
-    tbl = (u32)sPropMtx + (param_3 << 8);
-    mtx_mul(auStack_68, asStack_a8, tbl);
+    mtx = (u32)sPropMtx + (fb << 8);
+    mtx_mul(rotate, translate, mtx);
 
-    gA = param_1++;
-    ((u32 *)gA)[0] = 0xDA380003;
-    ((u32 *)gA)[1] = tbl;
-    gB = param_1++;
-    ((u32 *)gB)[0] = 0xE7000000;
-    ((u32 *)gB)[1] = 0;
-    gC = param_1++;
-    ((u32 *)gC)[0] = 0xD9FEFFFF;
-    ((u32 *)gC)[1] = 0;
-    gD = param_1++;
-    ((u32 *)gD)[0] = 0xE200001C;
-    ((u32 *)gD)[1] = 0x442230;
-    gE = param_1++;
-    ((u32 *)gE)[0] = 0xFCFFFFFF;
-    ((u32 *)gE)[1] = 0xFFFCF279;
-    gF = param_1++;
-    ((u32 *)gF)[0] = 0xE7000000;
-    ((u32 *)gF)[1] = 0;
+    gSPMatrix(gdl++, mtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gDPPipeSync(gdl++);
+    gSPClearGeometryMode(gdl++, G_FOG);
+    gDPSetRenderMode(gdl++, G_RM_ZB_OPA_SURF, 0);
+    gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+    gDPPipeSync(gdl++);
 
     for (i = 0; i < gNumViews; i++) {
-        param_1 = render_set_viewport_2(param_1, param_2, i);
-        gP = param_1++;
-        gQ = param_1++;
-        ((u32 *)gP)[0] = 0xDA380007;
-        ((u32 *)gP)[1] = param_2 + i * 0x40 + 0x80000000;
-        ((u32 *)gQ)[0] = 0xDE000000;
-        ((u32 *)gQ)[1] = sPropDL;
+        gdl = render_set_viewport_2(gdl, dyn, i);
+        /* the view's projection matrix in dyn: adding 0x80000000 to its KSEG0 address gives the physical one */
+        gSPMatrix(gdl++, dyn + i * 0x40 + 0x80000000, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+        gSPDisplayList(gdl++, sPropDL);
     }
 
-    gT = param_1++;
-    ((u32 *)gT)[0] = 0xE3001001;
-    ((u32 *)gT)[1] = 0x8000;
-    gU = param_1++;
-    ((u32 *)gU)[0] = 0xE200001C;
-    ((u32 *)gU)[1] = 0x442230;
-    gV = param_1++;
-    ((u32 *)gV)[0] = 0xFCFFFFFF;
-    ((u32 *)gV)[1] = 0xFFFCF279;
-    return param_1;
+    gDPSetTextureLUT(gdl++, G_TT_RGBA16);
+    gDPSetRenderMode(gdl++, G_RM_ZB_OPA_SURF, 0);
+    gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+    return gdl;
 }
 
-#define gDPSetCombineRaw(pkt, a, b) \
-    { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = 0xFC000000 | (a); _g->words.w1 = (b); }
+/* A track of gTracks (0xA0 bytes) as far as this file reads it. */
+typedef struct TrackInfoView {
+    /* 0x00 */ char name[0x1E];
+    /* 0x1E */ s16 laps;            /* the race length the records are kept for */
+    /* 0x20 */ u8 unk_20[0x34 - 0x20];
+    /* 0x34 */ TrackRecord record;
+    /* 0x50 */ u32 flags;           /* TRACK_FLAG_RECORDS */
+    /* 0x54 */ u8 unk_54[4];
+    /* 0x58 */ u16 fogMax[4];       /* by the number of screens */
+    /* 0x60 */ u16 fogMin[4];
+    /* 0x68 */ u8 unk_68[0xA0 - 0x68];
+} TrackInfoView; /* size 0xA0 */
 
-typedef struct { u8 p0[0x58]; u16 a58; u8 p1[6]; u16 a60; } Dev;
+#define TRACK_FLAG_RECORDS 0x200    /* the track keeps records (gGame.records, the save data) */
+
+/* N64 matrices (Mtx) as these functions declare them. */
 typedef struct { s16 m[4][4][2]; } MtxQ;
 
-extern Dev *gCurTrack_35;
+extern TrackInfoView *gCurTrack_35;
 extern MtxQ sPropMtx_2[][4];
 
-Gfx *finishline_draw_user_track(Gfx *gdl, Mtx *proj, s32 i, s32 j)
+/* Draws the finish line of a user track, across the racing line at its node 1, in view `view` (with the projection
+   of `dyn`): the line itself (sFinishLineModel, IA textures, fogged), then the prop model (sPropDL) with cutout
+   textures. The line is drawn twice. */
+Gfx *finishline_draw_user_track(Gfx *gdl, Mtx *dyn, s32 fb, s32 view)
 {
-    MtxQ ma;
-    MtxQ mb;
-    s16 ang;
-    s32 ratio;
-    MtxQ *m;
+    MtxQ rotate;
+    MtxQ translate;
+    s16 heading;
+    s32 length;
+    MtxQ *mtx;
 
-    math_to_polar((s32)(gPathNodes[1].lateralZ * 1024.0f), (s32)(gPathNodes[1].lateralX * 1024.0f), &ang, &ratio);
-    mtx_from_angles_pos_scale(&ma, 0, 0, ang, 0, 0, 0, 0x100);
-    mtx_from_angles_pos_scale(&mb, 0, 0, 0, (s32)(gPathNodes[1].pos.x * 1000.0f), (s32)(gPathNodes[1].pos.y * 1000.0f),
-                  (s32)(gPathNodes[1].pos.z * 1000.0f), 0x10);
-    m = &sPropMtx_2[i][j];
-    mtx_mul(&ma, &mb, m);
+    math_to_polar((s32)(gPathNodes[1].lateralZ * 1024.0f), (s32)(gPathNodes[1].lateralX * 1024.0f), &heading, &length);
+    mtx_from_angles_pos_scale(&rotate, 0, 0, heading, 0, 0, 0, 0x100);
+    mtx_from_angles_pos_scale(&translate, 0, 0, 0, (s32)(gPathNodes[1].pos.x * 1000.0f),
+                              (s32)(gPathNodes[1].pos.y * 1000.0f), (s32)(gPathNodes[1].pos.z * 1000.0f), 0x10);
+    mtx = &sPropMtx_2[fb][view];
+    mtx_mul(&rotate, &translate, mtx);
 
-    gSPMatrix(gdl++, m, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, mtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
-    gdl = (Gfx *)render_set_viewport_3(gdl, proj, j);
-    gSPMatrix(gdl++, &proj[j + 4], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gdl = (Gfx *)render_set_viewport_3(gdl, dyn, view);
+    gSPMatrix(gdl++, &dyn[view + 4], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPSetGeometryMode(gdl++, G_FOG);
     gDPSetPrimColor(gdl++, 0, 0, 200, 200, 200, 255);
-    gDPSetCombineRaw(gdl++, 0x119623, 0xFF2FFFFF);
-    gDPSetRenderMode(gdl++, 0x404A50, 0);
+    gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gDPSetRenderMode(gdl++, G_RM_ZB_XLU_SURF, 0);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
-    gSPFogPosition(gdl++, gCurTrack_35->a60, gCurTrack_35->a58);
+    gSPFogPosition(gdl++, gCurTrack_35->fogMin[0], gCurTrack_35->fogMax[0]);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gPrimIATextures = 1;
     gdl = prim_build_dl(0, sFinishLineModel, gFinishLineTexSet_3, gdl);
@@ -116,176 +106,182 @@ Gfx *finishline_draw_user_track(Gfx *gdl, Mtx *proj, s32 i, s32 j)
     gDPSetBlendColor(gdl++, 0, 0, 0, 255);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
     gDPSetRenderMode(gdl++, 0xC8004030, 0);
-    gDPSetCombineRaw(gdl++, 0x127E24, 0xFFFFF3F9);
+    gDPSetCombineMode(gdl++, G_CC_MODULATEIDECALA, G_CC_MODULATEIDECALA);
     gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
-    gSPFogPosition(gdl++, gCurTrack_35->a58, gCurTrack_35->a60);
+    /* fog near and far the other way round */
+    gSPFogPosition(gdl++, gCurTrack_35->fogMax[0], gCurTrack_35->fogMin[0]);
     gPrimIATextures = 0;
     gSPDisplayList(gdl++, sTexCutoutFogDL);
     gSPDisplayList(gdl++, sPropDL);
     gDPPipeSync(gdl++);
     gSPClearGeometryMode(gdl++, G_FOG);
-    gSPMatrix(gdl++, proj, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, dyn, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     return gdl;
 }
 
 typedef struct { s16 m[32]; } MtxS_4;
 
-typedef struct { u8 pad[0x58]; u16 f58; u8 pad5A[6]; u16 f60; } Fog_2;
 typedef struct { Mtx m[4]; } MtxSet;
 
 extern MtxSet sPropMtx_3[];
-extern Fog_2 *gCurTrack_36;
+extern TrackInfoView *gCurTrack_36;
 
-Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
-    MtxS_4 m1;
-    MtxS_4 m2;
-    s16 ang;
-    s32 ratio;
-    PathNode *nd;
+/* Draws the tutorial lesson's lines across the racing line (one view): at its start node, and unless the lesson has
+   trick steps (flag 2) at its goal node too, with the prop model. sPropMtx_3[fb] holds the goal's matrix, then the
+   start's. */
+Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *dyn, s32 fb)
+{
+    MtxS_4 rotate;
+    MtxS_4 translate;
+    s16 heading;
+    s32 length;
+    PathNode *node;
 
     if (gTutorialLessons[gSeason->round].goalNode < gPathNodeCount) {
-        { u32 b = (u32)gPathNodes; nd = (PathNode *)(gTutorialLessons[gSeason->round].goalNode * sizeof(PathNode) + b); }
-        math_to_polar(nd->lateralZ * 1024.0f, nd->lateralX * 1024.0f, &ang, &ratio);
-        mtx_from_angles_pos_scale(&m1, 0, 0, ang, 0, 0, 0, 0x100);
-        mtx_from_angles_pos_scale(&m2, 0, 0, 0,
+        {
+            u32 base = (u32)gPathNodes;
+            node = (PathNode *)(gTutorialLessons[gSeason->round].goalNode * sizeof(PathNode) + base);
+        }
+        math_to_polar(node->lateralZ * 1024.0f, node->lateralX * 1024.0f, &heading, &length);
+        mtx_from_angles_pos_scale(&rotate, 0, 0, heading, 0, 0, 0, 0x100);
+        mtx_from_angles_pos_scale(&translate, 0, 0, 0,
                       gPathNodes[gTutorialLessons[gSeason->round].goalNode].pos.x * 1000.0f,
                       gPathNodes[gTutorialLessons[gSeason->round].goalNode].pos.y * 1000.0f,
                       gPathNodes[gTutorialLessons[gSeason->round].goalNode].pos.z * 1000.0f, 0x10);
-        mtx_mul(m1.m, m2.m, (s16 *)&sPropMtx_3[n].m[0]);
+        mtx_mul(rotate.m, translate.m, (s16 *)&sPropMtx_3[fb].m[0]);
     }
-    nd = (PathNode *)(gTutorialLessons[gSeason->round].startNode * sizeof(PathNode) + (u32)gPathNodes);
-    math_to_polar(nd->lateralZ * 1024.0f, nd->lateralX * 1024.0f, &ang, &ratio);
-    mtx_from_angles_pos_scale(&m1, 0, 0, ang, 0, 0, 0, 0x100);
-    mtx_from_angles_pos_scale(&m2, 0, 0, 0,
+    node = (PathNode *)(gTutorialLessons[gSeason->round].startNode * sizeof(PathNode) + (u32)gPathNodes);
+    math_to_polar(node->lateralZ * 1024.0f, node->lateralX * 1024.0f, &heading, &length);
+    mtx_from_angles_pos_scale(&rotate, 0, 0, heading, 0, 0, 0, 0x100);
+    mtx_from_angles_pos_scale(&translate, 0, 0, 0,
                   gPathNodes[gTutorialLessons[gSeason->round].startNode].pos.x * 1000.0f,
                   gPathNodes[gTutorialLessons[gSeason->round].startNode].pos.y * 1000.0f,
                   gPathNodes[gTutorialLessons[gSeason->round].startNode].pos.z * 1000.0f, 0x10);
-    mtx_mul(m1.m, m2.m, (s16 *)&sPropMtx_3[n].m[1]);
+    mtx_mul(rotate.m, translate.m, (s16 *)&sPropMtx_3[fb].m[1]);
 
-    gSPMatrix(gdl++, &sPropMtx_3[n].m[1], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, &sPropMtx_3[fb].m[1], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
-    gdl = (Gfx *)render_set_viewport_4((u32 *)gdl, (s32)proj, 0);
-    gSPMatrix(gdl++, proj + 4, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gdl = (Gfx *)render_set_viewport_4((u32 *)gdl, (s32)dyn, 0);
+    gSPMatrix(gdl++, dyn + 4, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
-    gSPTexture(gdl++, 0x8000, 0x8000, 0, 0, G_ON);
-    gSPSetGeometryMode(gdl++, 0x200004);
+    gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
+    gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPSetGeometryMode(gdl++, G_FOG);
     gDPSetPrimColor(gdl++, 0, 0, 200, 200, 200, 255);
-    gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-    gDPSetRenderMode(gdl++, 0x404A50, 0);
+    gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gDPSetRenderMode(gdl++, G_RM_ZB_XLU_SURF, 0);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
-    gSPFogPosition(gdl++, gCurTrack_36->f60, gCurTrack_36->f58);
+    gSPFogPosition(gdl++, gCurTrack_36->fogMin[0], gCurTrack_36->fogMax[0]);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gPrimIATextures = 1;
     gdl = prim_build_dl(0, sFinishLineModel, gFinishLineTexSet_3, gdl);
     if (gTutorialLessons[gSeason->round].flags & 2) {
         gPrimIATextures = 0;
     } else {
-        gSPMatrix(gdl++, &sPropMtx_3[n].m[0], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        gSPMatrix(gdl++, &sPropMtx_3[fb].m[0], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         gDPPipeSync(gdl++);
         gdl = prim_build_dl(0, sFinishLineModel, gFinishLineTexSet_3, gdl);
         gDPPipeSync(gdl++);
-        gSPTexture(gdl++, 0x8000, 0x8000, 0, 0, G_ON);
+        gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        gSPSetGeometryMode(gdl++, 0x200004);
+        gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
         gSPSetGeometryMode(gdl++, G_ZBUFFER);
         gDPSetBlendColor(gdl++, 0, 0, 0, 255);
         gDPSetAlphaCompare(gdl++, G_AC_NONE);
         gDPSetRenderMode(gdl++, 0xC8004030, 0);
-        gDPSetCombine(gdl++, 0x127E24, 0xFFFFF3F9);
+        gDPSetCombineMode(gdl++, G_CC_MODULATEIDECALA, G_CC_MODULATEIDECALA);
         gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
-        gSPFogPosition(gdl++, gCurTrack_36->f58, gCurTrack_36->f60);
+        gSPFogPosition(gdl++, gCurTrack_36->fogMax[0], gCurTrack_36->fogMin[0]);
         gPrimIATextures = 0;
         gSPDisplayList(gdl++, sTexCutoutFogDL);
         gSPDisplayList(gdl++, sPropDL);
         gDPPipeSync(gdl++);
         gSPClearGeometryMode(gdl++, G_FOG);
     }
-    gSPMatrix(gdl++, proj, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, dyn, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     return gdl;
 }
 
+/* Screen positions given for a 512x240 screen: x from the centre (positive to the left), y from the top. */
 #define SX(n) (gScreenWidth / 2 - gScreenWidth * (n) / 512)
 #define SY(n) (gScreenHeight * (n) / 240)
 
-typedef struct {
-    char name[0x1E];
-    s16 f1E;
-    u8 pad20[0x14];
-    s32 f34;
-    s32 f38;
-    s32 f3C;
-    s32 f40;
-    char f44[3];
-    char f47[3];
-    char f4A[3];
-    char f4D[3];
-} Info_2;
+/* gCups: the five season cups, then the custom cup and the tutorial's levels. */
+#define CUP_CHALLENGE   4   /* one race against one rider */
+#define CUP_CUSTOM      5
+#define CUP_TUTORIAL    6
 
-extern Info_2 *gCurTrack_37;
+/* Text alignments of font_text_create. */
+#define TEXT_LEFT_MIDDLE   (TEXT_HALIGN_LEFT | TEXT_VALIGN_CENTER)
+#define TEXT_CENTER_MIDDLE (TEXT_HALIGN_CENTER | TEXT_VALIGN_CENTER)
+#define TEXT_RIGHT_MIDDLE  (TEXT_HALIGN_RIGHT | TEXT_VALIGN_CENTER)
 
-Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
+extern TrackInfoView *gCurTrack_37;
+
+/* Draws the track intro screen over the race view: the track's picture and name, the season's rounds (the current one
+   blinking) and its goal, the number of laps (with arrows when it can be changed), the three best times and the best
+   lap with their initials ("Unavailable" when the race is not the length the records are for), and the blinking
+   "Press the A Button to Race". */
+Gfx *hud_draw_track_intro(Gfx *gdl, s32 dyn, s32 fb, s32 view)
 {
     char buf[0x40];
     s32 i;
-    s32 c;
-    s32 sel;
-    s32 x;
     s32 y;
-    u8 *p;
-    Game *g;
+    u8 *img;
+    Game *game;
 
     font_reset_queue();
     gDPPipeSync(gdl++);
     gSPClearGeometryMode(gdl++, G_ZBUFFER);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-    gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-    gDPSetRenderMode(gdl++, 0x404240, 0);
+    gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+    gDPSetRenderMode(gdl++, G_RM_XLU_SURF, 0);
     gDPLoadTLUT_pal256(gdl++, gRaceTextObjs->introPic->pal);
-    gdl = render_draw_image(gViewRects_2.x + 8, gViewRects_2.y + 3, gRaceTextObjs->introPic->img, gdl, arg2, 1, 1, 3, 0);
-    gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
+    gdl = render_draw_image(gViewRects_2.x + 8, gViewRects_2.y + 3, gRaceTextObjs->introPic->img, gdl, fb, 1, 1, 3, 0);
+    gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetPrimColor(gdl++, 0, 0, 0xE6, 0xE6, 0xE6, 0xFF);
-    if (gGame.mode == 1) {
+    if (gGame.mode == GAME_MODE_SEASON) {
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
+        gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
         for (i = 0; i < gSeason->cup->numRounds; i++) {
             gDPLoadTLUT_pal256(gdl++, gRaceTextObjs->roundPics[i]->pal);
-            p = gRaceTextObjs->roundPics[i]->img;
+            img = gRaceTextObjs->roundPics[i]->img;
             if (i != gSeason->round || (gFrameCounter & 0x20)) {
-                font_text_create(gRaceTextObjs->text[0], 0x40, 2, (i == gSeason->round) ? 7 : 2, (i != gSeason->round) ? 0x20000021 : 0x21);
+                font_text_create(gRaceTextObjs->text[0], 0x40, 2, (i == gSeason->round) ? 7 : 2,
+                                 (i != gSeason->round) ? TEXT_GREYED | TEXT_CENTER_MIDDLE : TEXT_CENTER_MIDDLE);
                 font_text_add(gRaceTextObjs->text[0], gTracks_11[gSeason->cup->tracks[i]]);
                 font_draw_text(gRaceTextObjs->text[0], gViewRects_2.x + gViewRects_2.w - 0x69,
                               gViewRects_2.y + 0x15 + gRaceTextObjs->introImages[0x21] * i);
             }
-            gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - p[0] * 8 - 8,
-                                gViewRects_2.y + 0xB + gRaceTextObjs->introImages[0x21] * i, p, gdl, arg2, 1, 1, 3, 0);
+            gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - img[0] * 8 - 8,
+                                gViewRects_2.y + 0xB + gRaceTextObjs->introImages[0x21] * i, img, gdl, fb, 1, 1, 3, 0);
         }
         gDPSetTextureLUT(gdl++, G_TT_NONE);
-        gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        p = gRaceTextObjs->introImages + 0x20;
+        gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+        img = gRaceTextObjs->introImages + 0x20;
         for (i = 0; i < gSeason->cup->numRounds; i++) {
-            gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - p[0] * 8, gViewRects_2.y + 6 + p[1] * i,
-                                p, gdl, arg2, 1, 1, 6, 0);
+            gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - img[0] * 8, gViewRects_2.y + 6 + img[1] * i,
+                                img, gdl, fb, 1, 1, 6, 0);
         }
-        p = gRaceTextObjs->introImages + 0x18;
+        img = gRaceTextObjs->introImages + 0x18;
     } else {
         gDPSetTextureLUT(gdl++, G_TT_NONE);
-        gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        p = gRaceTextObjs->introImages + 0x18;
+        gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+        img = gRaceTextObjs->introImages + 0x18;
     }
     if (gFrameCounter & 0x20) {
         y = 0xAA;
-        if (gGame.mode == 1) y = 0x9E;
-        font_text_create(gRaceTextObjs->text[4], 0x40, 2, 4, 0x21);
+        if (gGame.mode == GAME_MODE_SEASON) y = 0x9E;
+        font_text_create(gRaceTextObjs->text[4], 0x40, 2, 4, TEXT_CENTER_MIDDLE);
         font_text_add(gRaceTextObjs->text[4], "Press the A Button to Race");
-        font_draw_text(gRaceTextObjs->text[4], gScreenWidth / 2 - ((gGame.mode == 1) ? 0x52 : 0), y);
+        font_draw_text(gRaceTextObjs->text[4], gScreenWidth / 2 - ((gGame.mode == GAME_MODE_SEASON) ? 0x52 : 0), y);
     }
-    if (gGame.mode == 1) {
-        font_text_create(gRaceTextObjs->text[4], 0x40, 2, 7, 0x21);
-        if (gSeason->cup - gCups == 4) {
+    if (gGame.mode == GAME_MODE_SEASON) {
+        font_text_create(gRaceTextObjs->text[4], 0x40, 2, 7, TEXT_CENTER_MIDDLE);
+        if (gSeason->cup - gCups == CUP_CHALLENGE) {
             if (gSeason->round == gSeason->cup->numRounds - 1) {
                 font_text_add(gRaceTextObjs->text[4], sStrBeatOpponentFinal);
             } else {
@@ -296,41 +292,44 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         }
         font_draw_text(gRaceTextObjs->text[4], gScreenWidth / 2 - 0x52, 0xAA);
     }
-    gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y, p, gdl, arg2, 1, 1, 6, 0);
-    p = gRaceTextObjs->introImages + 8;
-    gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y + gViewRects_2.h - p[1], p, gdl, arg2, 1, 1, 6, 0);
-    if (gGame.mode == 0 && gGame.numPlayers >= 2 && (gFrameCounter & 0x20)) {
+    gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y, img, gdl, fb, 1, 1, 6, 0);
+    img = gRaceTextObjs->introImages + 8;
+    gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y + gViewRects_2.h - img[1], img, gdl, fb, 1, 1, 6, 0);
+    if (gGame.mode == GAME_MODE_EXHIBITION && gGame.numPlayers >= 2 && (gFrameCounter & 0x20)) {
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
+        gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
         gDPLoadTLUT_pal256(gdl++, gRaceTextObjs->lapArrows->pal);
         if (gGame.numLaps >= 2) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - 0x4B, gViewRects_2.y + gViewRects_2.h - 0xE,
-                                gRaceTextObjs->lapArrows->img, gdl, arg2, 1, 1, 3, 0);
+                                gRaceTextObjs->lapArrows->img, gdl, fb, 1, 1, 3, 0);
         }
         if (gGame.numLaps < 6) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - 0x28, gViewRects_2.y + gViewRects_2.h - 0xE,
-                                gRaceTextObjs->lapArrows->img + 8, gdl, arg2, 1, 1, 3, 0);
+                                gRaceTextObjs->lapArrows->img + 8, gdl, fb, 1, 1, 3, 0);
         }
     }
-    font_text_create(gRaceTextObjs->text[4], 0x40, 1, 4, 0x20);
+    font_text_create(gRaceTextObjs->text[4], 0x40, 1, 4, TEXT_LEFT_MIDDLE);
     font_text_add(gRaceTextObjs->text[4], "Best Times:");
     font_draw_text(gRaceTextObjs->text[4], SX(221), SY(197));
-    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 4, 0x20);
+    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 4, TEXT_LEFT_MIDDLE);
     font_text_add(gRaceTextObjs->text[5], "Best Lap:");
     font_draw_text(gRaceTextObjs->text[5], SX(-7), SY(197));
-    g = &gGame;
-    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 4, 0x20);
+    game = &gGame;
+    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 4, TEXT_LEFT_MIDDLE);
     font_text_add(gRaceTextObjs->text[5], "Number of Laps:");
     font_draw_text(gRaceTextObjs->text[5], SX(-2), SY(214));
-    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 2, (g->mode == 0 && g->numPlayers >= 2) ? 0x21 : 0x22);
+    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 2,
+                     (game->mode == GAME_MODE_EXHIBITION && game->numPlayers >= 2) ? TEXT_CENTER_MIDDLE
+                                                                                   : TEXT_RIGHT_MIDDLE);
     int_to_str(gGame.numLaps, buf);
     font_text_add(gRaceTextObjs->text[5], buf);
-    font_draw_text(gRaceTextObjs->text[5], SX(-217) - ((gGame.mode == 0 && gGame.numPlayers >= 2) ? 0x1E : 0), SY(214));
-    font_text_create(gRaceTextObjs->text[7], 0x40, 1, 2, 0x20);
-    if (gGame.numLaps != gCurTrack_37->f1E) {
-        font_text_create(gRaceTextObjs->text[6], 0x40, 2, 2, 0x21);
-        font_text_create(gRaceTextObjs->text[10], 0x40, 2, 2, 0x21);
-        font_text_create(gRaceTextObjs->text[11], 0x40, 2, 2, 0x21);
+    font_draw_text(gRaceTextObjs->text[5],
+                   SX(-217) - ((gGame.mode == GAME_MODE_EXHIBITION && gGame.numPlayers >= 2) ? 0x1E : 0), SY(214));
+    font_text_create(gRaceTextObjs->text[7], 0x40, 1, 2, TEXT_LEFT_MIDDLE);
+    if (gGame.numLaps != gCurTrack_37->laps) {
+        font_text_create(gRaceTextObjs->text[6], 0x40, 2, 2, TEXT_CENTER_MIDDLE);
+        font_text_create(gRaceTextObjs->text[10], 0x40, 2, 2, TEXT_CENTER_MIDDLE);
+        font_text_create(gRaceTextObjs->text[11], 0x40, 2, 2, TEXT_CENTER_MIDDLE);
         font_text_add(gRaceTextObjs->text[6], "Unavailable");
         font_draw_text(gRaceTextObjs->text[6], SX(61), SY(196));
         font_text_add(gRaceTextObjs->text[10], "Unavailable");
@@ -338,116 +337,127 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         font_text_add(gRaceTextObjs->text[11], "Unavailable");
         font_draw_text(gRaceTextObjs->text[11], SX(66), SY(214));
     } else {
-        font_text_create(gRaceTextObjs->text[6], 0x40, 2, 2, 0x20);
-        font_text_create(gRaceTextObjs->text[10], 0x40, 2, 2, 0x20);
-        font_text_create(gRaceTextObjs->text[11], 0x40, 2, 2, 0x20);
-        event_format_time(gCurTrack_37->f34, buf);
+        font_text_create(gRaceTextObjs->text[6], 0x40, 2, 2, TEXT_LEFT_MIDDLE);
+        font_text_create(gRaceTextObjs->text[10], 0x40, 2, 2, TEXT_LEFT_MIDDLE);
+        font_text_create(gRaceTextObjs->text[11], 0x40, 2, 2, TEXT_LEFT_MIDDLE);
+        event_format_time(gCurTrack_37->record.times[0], buf);
         font_text_add(gRaceTextObjs->text[6], buf);
         font_draw_text(gRaceTextObjs->text[6], SX(116), SY(196));
-        event_format_time(gCurTrack_37->f38, buf);
+        event_format_time(gCurTrack_37->record.times[1], buf);
         font_text_add(gRaceTextObjs->text[10], buf);
         font_draw_text(gRaceTextObjs->text[10], SX(119), SY(205));
-        event_format_time(gCurTrack_37->f3C, buf);
+        event_format_time(gCurTrack_37->record.times[2], buf);
         font_text_add(gRaceTextObjs->text[11], buf);
         font_draw_text(gRaceTextObjs->text[11], SX(121), SY(214));
     }
-    event_format_time(gCurTrack_37->f40, buf);
+    event_format_time(gCurTrack_37->record.bestLap, buf);
     font_text_add(gRaceTextObjs->text[7], buf);
     font_draw_text(gRaceTextObjs->text[7], gScreenWidth / 2 + gScreenWidth * 111 / 512, SY(197));
-    if (gGame.numLaps == gCurTrack_37->f1E) {
-        font_text_create(gRaceTextObjs->text[8], 0x40, 2, 2, 0x22);
-        __builtin_memcpy(buf, gCurTrack_37->f44, 3);
+    if (gGame.numLaps == gCurTrack_37->laps) {
+        font_text_create(gRaceTextObjs->text[8], 0x40, 2, 2, TEXT_RIGHT_MIDDLE);
+        __builtin_memcpy(buf, gCurTrack_37->record.initials[0], 3);
         buf[3] = 0;
         font_text_add(gRaceTextObjs->text[8], buf);
         font_draw_text(gRaceTextObjs->text[8], SX(7), SY(196));
-        font_text_create(gRaceTextObjs->text[12], 0x40, 2, 2, 0x22);
-        __builtin_memcpy(buf, gCurTrack_37->f47, 3);
+        font_text_create(gRaceTextObjs->text[12], 0x40, 2, 2, TEXT_RIGHT_MIDDLE);
+        __builtin_memcpy(buf, gCurTrack_37->record.initials[1], 3);
         buf[3] = 0;
         font_text_add(gRaceTextObjs->text[12], buf);
         font_draw_text(gRaceTextObjs->text[12], SX(10), SY(205));
-        font_text_create(gRaceTextObjs->text[13], 0x40, 2, 2, 0x22);
-        __builtin_memcpy(buf, gCurTrack_37->f4A, 3);
+        font_text_create(gRaceTextObjs->text[13], 0x40, 2, 2, TEXT_RIGHT_MIDDLE);
+        __builtin_memcpy(buf, gCurTrack_37->record.initials[2], 3);
         buf[3] = 0;
         font_text_add(gRaceTextObjs->text[13], buf);
         font_draw_text(gRaceTextObjs->text[13], SX(12), SY(214));
     }
-    font_text_create(gRaceTextObjs->text[9], 0x40, 1, 2, 0x22);
-    __builtin_memcpy(buf, gCurTrack_37->f4D, 3);
+    font_text_create(gRaceTextObjs->text[9], 0x40, 1, 2, TEXT_RIGHT_MIDDLE);
+    __builtin_memcpy(buf, gCurTrack_37->record.initials[3], 3);
     buf[3] = 0;
     font_text_add(gRaceTextObjs->text[9], buf);
     font_draw_text(gRaceTextObjs->text[9], SX(-220), SY(197));
-    font_text_create(gRaceTextObjs->text[14], 0x40, 4, 2, 0x20);
+    font_text_create(gRaceTextObjs->text[14], 0x40, 4, 2, TEXT_LEFT_MIDDLE);
     font_text_add(gRaceTextObjs->text[14], gCurTrack_37->name);
     font_draw_text(gRaceTextObjs->text[14], SX(215), SY(29));
     return font_render(gdl);
 }
 
-void hud_draw_congratulations(u32 *param_1, Dyn *arg1, s32 arg2)
+/* The special tracks menu (gSpecialTracksItems): the items, and the codes save_update_unlocks returns for the one
+   that has just opened (gGame.newUnlocks), which the congratulations screen announces. */
+#define SPECIAL_TRACK_DESERT        0
+#define SPECIAL_TRACK_STUNT_COURSE  1
+#define SPECIAL_TRACK_NES           2   /* Original Excitebike */
+#define SPECIAL_TRACK_SOCCER        3
+#define SPECIAL_TRACK_HILL_CLIMB    4
+#define SPECIAL_TRACK_EXCITE_3D     5
+
+/* Draws the screen after a season's last race: "Congratulations!", what was achieved (gGame flags 0x400000 a new
+   difficulty, 0x100000 a new round, 0x800000 the game finished) and, with flag 0x200000, the special track that has
+   opened. */
+void hud_draw_congratulations(u32 *gdl, Dyn *dyn, s32 fb)
 {
-    s32 iVar3;
-    s32 h;
-    s32 iVar4;
-    s32 *piVar1;
-    char *pcVar2;
-    s32 *pf;
+    s32 y;
+    s32 *game;
 
     font_reset_queue();
-    iVar4 = gScreenHeight_2 / 2 - 12;
+    y = gScreenHeight_2 / 2 - 12;
     if ((gGame.flags & 0x200000) != 0) {
-        iVar4 = gScreenHeight_2 / 2 - 24;
+        y = gScreenHeight_2 / 2 - 24;
     }
-    font_text_create(gRaceTextObjs->text[0], 0x40, 4, 7, 0x21);
+    font_text_create(gRaceTextObjs->text[0], 0x40, 4, 7, TEXT_CENTER_MIDDLE);
     font_text_add(gRaceTextObjs->text[0], sStrCongratulations);
-    font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4);
+    font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, y);
     if ((gFrameCounter & 0x20) != 0) {
-        font_text_create(gRaceTextObjs->text[0], 0x40, 5, 4, 0x21);
+        font_text_create(gRaceTextObjs->text[0], 0x40, 5, 4, TEXT_CENTER_MIDDLE);
         font_text_add(gRaceTextObjs->text[0], sStrPressStartToExit);
-        font_draw_text(gRaceTextObjs->text[0], *(volatile s32 *)&gScreenWidth / 2, *(volatile s32 *)&gScreenHeight_2 * 7 / 8);
+        font_draw_text(gRaceTextObjs->text[0], *(volatile s32 *)&gScreenWidth / 2,
+                       *(volatile s32 *)&gScreenHeight_2 * 7 / 8);
     }
-    font_text_create(gRaceTextObjs->text[0], 0x40, 4, 2, 0x21);
+    font_text_create(gRaceTextObjs->text[0], 0x40, 4, 2, TEXT_CENTER_MIDDLE);
     if ((gGame.flags & 0x400000) != 0) {
         font_text_add(gRaceTextObjs->text[0], sStrUnlockedDifficulty);
-        goto LAB_after;
+        goto draw;
     }
     if ((gGame.flags & 0x100000) != 0) {
         font_text_add(gRaceTextObjs->text[0], sStrUnlockedRound);
-        goto LAB_after;
+        goto draw;
     }
     if ((gGame.flags & 0x800000) != 0) {
         font_text_add(gRaceTextObjs->text[0], sStrFinishedGame);
-        goto LAB_after;
+        goto draw;
     }
     font_text_add(gRaceTextObjs->text[0], sStrFinishedRound);
-LAB_after:
-    font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4 + 0x18);
-    pf = (s32 *)&gGame.flags;
-    if ((pf[0] & 0x200000) != 0) {
-        font_text_create(gRaceTextObjs->text[0], 0x40, 4, 4, 0x21);
-        switch (pf[0x1D5]) {
-        case 1:
+draw:
+    font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, y + 0x18);
+    /* gGame read through a word pointer: game[0] is gGame.flags, game[0x1D5] gGame.newUnlocks */
+    game = (s32 *)&gGame.flags;
+    if ((game[0] & 0x200000) != 0) {
+        font_text_create(gRaceTextObjs->text[0], 0x40, 4, 4, TEXT_CENTER_MIDDLE);
+        switch (game[0x1D5]) {
+        case SPECIAL_TRACK_STUNT_COURSE:
             font_text_add(gRaceTextObjs->text[0], sStrStuntCourseUnlocked);
             break;
-        case 2:
+        case SPECIAL_TRACK_NES:
             font_text_add(gRaceTextObjs->text[0], sStrOriginalExcitebikeUnlocked);
             break;
-        case 3:
+        case SPECIAL_TRACK_SOCCER:
             font_text_add(gRaceTextObjs->text[0], sStrSoccerUnlocked);
             break;
-        case 4:
+        case SPECIAL_TRACK_HILL_CLIMB:
             font_text_add(gRaceTextObjs->text[0], sStrHillClimbUnlocked);
             break;
-        case 5:
+        case SPECIAL_TRACK_EXCITE_3D:
             font_text_add(gRaceTextObjs->text[0], sStrExcite3DUnlocked);
             break;
         default:
-            goto LAB_end;
+            goto done;
         }
-    LAB_end:
-        font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4 + 0x30);
+    done:
+        font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, y + 0x30);
     }
-    font_render(param_1);
+    font_render(gdl);
 }
 
+/* Loads the soccer ball's model and textures and builds its display list (sPropDL). */
 void soccer_ball_load_model(void)
 {
     sPropModel = res_load(gResourceSet, sSoccerBallModelResId);
@@ -455,126 +465,109 @@ void soccer_ball_load_model(void)
     prim_alloc_dl(sPropDL_2, sPropModel, &sPropTextures, 0xC);
 }
 
+/* Loads the finish line's model and textures and the prop drawn with it (its display list in sPropDL). */
 void finishline_load_models(void)
 {
-    u32 pa;
+    u32 textures;
     gFinishLineTexSet = res_load(gResourceSet, gFinishLineTexResId);
     sPropModel = res_load(gResourceSet, sFinishPropModelResId);
-    pa = (u32)&sPropTextures;
+    textures = (u32)&sPropTextures;
     sPropTextures = res_load(gResourceSet, sFinishPropTexResId);
     sFinishLineModel = res_load(gResourceSet, sFinishLineModelResId);
-    prim_alloc_dl(sPropDL_3, sPropModel, pa, 12);
+    prim_alloc_dl(sPropDL_3, sPropModel, textures, 12);
 }
 
-void soccer_ball_free_model(void) {
+/* Frees the prop's display list. */
+void soccer_ball_free_model(void)
+{
     mem_free(sPropDL);
 }
 
-void finishline_free_models(void) {
+void finishline_free_models(void)
+{
     mem_free(sPropDL);
 }
 
-typedef struct {
-    u8 pad0[0x50];
-    u32 flags;
-    u8 pad54[0xA0 - 0x54];
-} Rider_6;
+#define CUSTOM_CUP_END  0x1F    /* a track index that ends the custom cup's list */
 
-typedef struct {
-    u32 magic;
-    u32 sum;
-    TrackRecord recs[24];
-    u8 name[0x17];
-    u8 f2BF;
-    u8 f2C0;
-    u8 f2C1;
-    u8 pad2C2[2];
-    u8 f2C4;
-    u8 f2C5;
-    u8 f2C6;
-    u8 f2C7;
-    u8 f2C8;
-    u8 pad2C9[7];
-    u32 f2D0;
-    u8 f2D4[0x804 - 0x2D4];
-} Save;
-
-extern Save gSaveData_5;
-
+/* Fills the save image with its defaults: the tracks' records from gGame.records, an empty custom cup, the volumes,
+   stereo, and (in this build) everything open: top difficulty 3 with all its rounds done and the tutorial at 7,
+   which opens Original Excitebike. Then the magic and the checksum. */
 void save_init_defaults(void)
 {
-    TrackRecord *pd;
-    TrackRecord *ps;
-    Rider_6 *pc;
-    u8 *q;
-    u8 c;
+    TrackRecord *dst;
+    TrackRecord *src;
+    TrackInfoView *track;
+    u8 *p;
+    u8 empty;
     u32 sum;
-    u32 *p;
+    u32 *words;
     s32 i;
 
-    mem_fill((u8 *)&gSaveData_5, 0, sizeof(Save));
-    nes_init_saved_track(gSaveData_5.f2D4);
+    mem_fill((u8 *)&gSaveData, 0, sizeof(SaveData));
+    nes_init_saved_track(gSaveData.nesTrack);
     i = 0;
-    pc = gTracks;
-    pd = gSaveData_5.recs;
-    ps = gGame.records;
+    track = gTracks;
+    dst = gSaveData.records;
+    src = gGame.records;
     do {
         i++;
-        if (pc->flags & 0x200) {
-            *pd = *ps;
-            pd++;
-            ps++;
+        if (track->flags & TRACK_FLAG_RECORDS) {
+            *dst = *src;
+            dst++;
+            src++;
         }
-        pc++;
-    } while (i < 27);
-    c = '?';
-    gSaveData_5.f2C0 = 1;
-    gSaveData_5.f2BF = 0;
+        track++;
+    } while (i < TRACK_COUNT);
+    /* '?' (0x3F): track CUSTOM_CUP_END, so all five races of the custom cup are empty */
+    empty = '?';
+    gSaveData.topDifficulty = 1;
+    gSaveData.roundsDone = 0;
     i = 4;
-    q = (u8 *)&gSaveData_5 + 4;
+    p = (u8 *)&gSaveData + 4;
     do {
-        q[0x2A8] = c;
+        p[0x2A8] = empty; /* gSaveData.customRound[i] */
         i--;
-        q--;
+        p--;
     } while (i >= 0);
     sum = 0;
-    gSaveData_5.f2C5 = 0x8C;
-    gSaveData_5.f2C6 = 200;
-    gSaveData_5.f2C7 = 0xA0;
-    gSaveData_5.f2C4 = 1;
-    gSaveData_5.f2D0 = 1;
-    gSaveData_5.f2BF = 0x1F;
-    gSaveData_5.f2C1 = 7;
-    gSaveData_5.f2C8 = 0;
-    gSaveData_5.f2C0 = 3;
-    gSaveData_5.magic = 0x5748FB3A;
-    p = (u32 *)&gSaveData_5;
-    for (i = 0; i < 0x200; i++) {
+    gSaveData.volumes[0] = 0x8C;
+    gSaveData.volumes[1] = 200;
+    gSaveData.volumes[2] = 0xA0;
+    gSaveData.options = SAVE_OPT_STEREO;
+    gSaveData.unlockedTrackCount = 1;
+    gSaveData.roundsDone = 0x1F;
+    gSaveData.tutorialProgress = 7;
+    gSaveData.padConfigs = 0;
+    gSaveData.topDifficulty = 3;
+    gSaveData.magic = SAVE_MAGIC;
+    words = (u32 *)&gSaveData;
+    for (i = 0; i < SAVE_WORDS; i++) {
         if (i != 1) {
-            sum += p[i];
+            sum += words[i];
         }
     }
-    sum ^= 0xFCB1121D;
-    p[1] = sum;
+    sum ^= SAVE_CHECKSUM_XOR;
+    words[1] = sum;
 }
 
-typedef struct { u8 pad[0x2BF]; u8 bits; u8 cnt; } S19;
-
-extern S19 gSaveData_6;
-
+/* Opens or locks the items of the track list and of the special tracks menu from the season progress in the save
+   data, and returns the special track that has just opened (SPECIAL_TRACK_*) or 0. The track list opens in four
+   groups of five tracks, at difficulty 1, 1, 2 and 3: a group is open below the top difficulty reached, and at it
+   once the round before it is done. gGame.difficulty is borrowed for the comparisons and restored. */
 s32 save_update_unlocks(void)
 {
-    s32 saved = gGame.difficulty;
-    s32 i, j, act, idx, k;
-    s32 ret;
-    u32 g;
-    s32 hv;
+    s32 savedDifficulty = gGame.difficulty;
+    s32 group, n, open, track, first;
+    s32 newUnlock;
+    u32 unlocked;
+    s32 flags;
     u32 bit;
-    ScreenItem *e;
+    ScreenItem *item;
 
-    for (i = 0; i < 4; i++) {
-        k = i * 5;
-        switch (i) {
+    for (group = 0; group < 4; group++) {
+        first = group * 5;
+        switch (group) {
         case 0:
         case 1:
             gGame.difficulty = 1;
@@ -586,136 +579,138 @@ s32 save_update_unlocks(void)
             gGame.difficulty = 3;
             break;
         }
-        act = 0;
-        if (gGame.difficulty < gSaveData_6.cnt) {
-            act = 1;
-        } else if (gSaveData_6.cnt == gGame.difficulty) {
-            if (i == 0 || ((gSaveData_6.bits >> (i - 1)) & 1)) act = 1;
+        open = 0;
+        if (gGame.difficulty < gSaveData.topDifficulty) {
+            open = 1;
+        } else if (gSaveData.topDifficulty == gGame.difficulty) {
+            if (group == 0 || ((gSaveData.roundsDone >> (group - 1)) & 1)) open = 1;
         }
-        j = 0;
-        idx = k;
+        n = 0;
+        track = first;
         do {
-            if (act) {
-                bit = 1 << idx;
-                g = gUnlockedTracks | bit;
-                e = (ScreenItem *)(idx << 4);
-                e = (ScreenItem *)((u32)e + (u32)sTrackListItems);
-                hv = e->flags & ~1;
-                gUnlockedTracks = g;
-                e->flags = hv;
+            if (open) {
+                bit = 1 << track;
+                unlocked = gUnlockedTracks | bit;
+                item = (ScreenItem *)(track << 4);
+                item = (ScreenItem *)((u32)item + (u32)sTrackListItems);
+                flags = item->flags & ~SCREEN_ITEM_LOCKED;
+                gUnlockedTracks = unlocked;
+                item->flags = flags;
             } else {
-                bit = 1 << idx;
+                bit = 1 << track;
                 bit = ~bit;
-                e = (ScreenItem *)(idx << 4);
-                e = (ScreenItem *)((u32)e + (u32)sTrackListItems);
-                g = gUnlockedTracks & bit;
-                hv = e->flags | 1;
-                gUnlockedTracks = g;
-                e->flags = hv;
+                item = (ScreenItem *)(track << 4);
+                item = (ScreenItem *)((u32)item + (u32)sTrackListItems);
+                unlocked = gUnlockedTracks & bit;
+                flags = item->flags | SCREEN_ITEM_LOCKED;
+                gUnlockedTracks = unlocked;
+                item->flags = flags;
             }
-            j++;
-            idx++;
-        } while (j < 5);
+            n++;
+            track++;
+        } while (n < 5);
     }
 
-    ret = 0;
+    newUnlock = 0;
     if (gSaveData.tutorialProgress == 7) {
-        ret = (gSpecialTracksItems[2].flags & 1) << 1;
-        gSpecialTracksItems[2].flags &= ~1;
+        /* SPECIAL_TRACK_NES if it was locked */
+        newUnlock = (gSpecialTracksItems[SPECIAL_TRACK_NES].flags & SCREEN_ITEM_LOCKED) << 1;
+        gSpecialTracksItems[SPECIAL_TRACK_NES].flags &= ~SCREEN_ITEM_LOCKED;
     } else {
-        gSpecialTracksItems[2].flags |= 1;
+        gSpecialTracksItems[SPECIAL_TRACK_NES].flags |= SCREEN_ITEM_LOCKED;
     }
 
+    /* soccer is only ever locked here */
     gGame.difficulty = 1;
-    if (!(gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 4)))) gSpecialTracksItems[3].flags |= 1;
+    if (!(gGame.difficulty < gSaveData.topDifficulty
+          || (gSaveData.topDifficulty == gGame.difficulty && (gSaveData.roundsDone & 4)))) {
+        gSpecialTracksItems[SPECIAL_TRACK_SOCCER].flags |= SCREEN_ITEM_LOCKED;
+    }
 
     gGame.difficulty = 2;
-    if ((gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 8)))) {
-        if (gSpecialTracksItems[4].flags & 1) ret = 4;
-        gSpecialTracksItems[4].flags &= ~1;
+    if ((gGame.difficulty < gSaveData.topDifficulty
+         || (gSaveData.topDifficulty == gGame.difficulty && (gSaveData.roundsDone & 8)))) {
+        if (gSpecialTracksItems[SPECIAL_TRACK_HILL_CLIMB].flags & SCREEN_ITEM_LOCKED) {
+            newUnlock = SPECIAL_TRACK_HILL_CLIMB;
+        }
+        gSpecialTracksItems[SPECIAL_TRACK_HILL_CLIMB].flags &= ~SCREEN_ITEM_LOCKED;
     } else {
-        gSpecialTracksItems[4].flags |= 1;
+        gSpecialTracksItems[SPECIAL_TRACK_HILL_CLIMB].flags |= SCREEN_ITEM_LOCKED;
     }
 
     gGame.difficulty = 3;
-    if ((gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 16)))) {
-        if (gSpecialTracksItems[5].flags & 1) ret = 5;
-        gSpecialTracksItems[5].flags &= ~1;
+    if ((gGame.difficulty < gSaveData.topDifficulty
+         || (gSaveData.topDifficulty == gGame.difficulty && (gSaveData.roundsDone & 16)))) {
+        if (gSpecialTracksItems[SPECIAL_TRACK_EXCITE_3D].flags & SCREEN_ITEM_LOCKED) {
+            newUnlock = SPECIAL_TRACK_EXCITE_3D;
+        }
+        gSpecialTracksItems[SPECIAL_TRACK_EXCITE_3D].flags &= ~SCREEN_ITEM_LOCKED;
     } else {
-        gSpecialTracksItems[5].flags |= 1;
+        gSpecialTracksItems[SPECIAL_TRACK_EXCITE_3D].flags |= SCREEN_ITEM_LOCKED;
     }
 
-    gGame.difficulty = saved;
-    return ret;
+    gGame.difficulty = savedDifficulty;
+    return newUnlock;
 }
 
-typedef struct { u8 pad0[0x34]; TrackRecord b; s32 flags; u8 pad54[0xA0 - 0x54]; } Rec_42;
+extern TrackInfoView gTracks_12[];
 
-typedef struct {
-    u8 pad0[8];
-    TrackRecord blk[24];
-    u8 a8[5];
-    u8 tbl[5][3];
-    u8 pad2BC[4];
-    u8 c0, c1;
-    u8 pad2C2[3];
-    u8 c5, c6, c7, c8;
-    u8 pad2C9[7];
-    s32 n;
-} Save_2;
-
-extern Save_2 gSaveData_7;
-extern Rec_42 gTracks_12[];
-
-void save_load(s32 arg0)
+/* Applies the save data after resetting it to the defaults (save_init_defaults: nothing is read from a save in this
+   build): the open tracks, the records, the controller layouts, the volumes, the cups' progress, the custom cup, the
+   tutorial level and the difficulty. */
+void save_load(s32 unused)
 {
     s32 i, k;
     s32 j;
-    u8 v;
+    u8 track;
 
     save_init_defaults();
     do { gUnlockedTracks = 0; } while (0);
     j = 0;
-    for (i = 0; i < 27; i++) {
-        if (i < gSaveData_7.n) {
+    for (i = 0; i < TRACK_COUNT; i++) {
+        if (i < gSaveData.unlockedTrackCount) {
             gUnlockedTracks |= 1 << i;
         }
-        if (gTracks_12[i].flags & 0x200) {
-            TrackRecord *d = &gTracks_12[i].b;
-            TrackRecord *s = &gSaveData_7.blk[j];
-            *d = *s;
+        if (gTracks_12[i].flags & TRACK_FLAG_RECORDS) {
+            TrackRecord *dst = &gTracks_12[i].record;
+            TrackRecord *src = &gSaveData.records[j];
+            *dst = *src;
             j++;
         }
     }
-    gCups[5].numRounds = 0;
+    gCups[CUP_CUSTOM].numRounds = 0;
     for (i = 0; i < 4; i++) {
-        gGame.padConfig[i] = (gSaveData_7.c8 >> i) & 3;
+        /* shifted by i, not 2 * i: the layouts of neighbouring controllers overlap */
+        gGame.padConfig[i] = (gSaveData.padConfigs >> i) & 3;
     }
-    snd_set_volume(0, gSaveData_7.c6);
-    snd_set_volume(1, gSaveData_7.c5);
-    snd_set_volume(2, gSaveData_7.c7);
+    snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[1]);
+    snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[0]);
+    snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[2]);
     for (i = 0; i < 5; i++) {
         for (k = 0; k < 3; k++) {
-            gCups[i].progress[k] = gSaveData_7.tbl[0][i * 3 + k] >> 5;
-            gCups[i].won[k] = gSaveData_7.tbl[0][i * 3 + k] & 0x1F;
+            gCups[i].progress[k] = gSaveData.cupProgress[0][i * 3 + k] >> 5;
+            gCups[i].won[k] = gSaveData.cupProgress[0][i * 3 + k] & 0x1F;
         }
     }
     for (i = 0; i < 5; i++) {
-        v = gSaveData_7.a8[i] & 0x1F;
-        if (v == 0x1F) break;
-        gCups[5].tracks[i] = v;
-        gCups[5].laps[i] = gSaveData_7.a8[i] >> 5;
-        gCups[5].numRounds++;
+        track = gSaveData.customRound[i] & 0x1F;
+        if (track == CUSTOM_CUP_END) break;
+        gCups[CUP_CUSTOM].tracks[i] = track;
+        gCups[CUP_CUSTOM].laps[i] = gSaveData.customRound[i] >> 5;
+        gCups[CUP_CUSTOM].numRounds++;
     }
-    gCups[6].progress[0] = gSaveData_7.c1;
-    gGame.difficulty = gSaveData_7.c0;
+    gCups[CUP_TUTORIAL].progress[0] = gSaveData.tutorialProgress;
+    gGame.difficulty = gSaveData.topDifficulty;
     save_update_unlocks();
 }
 
-void save_write(s32 x, s32 arg1)
+/* Called when part of the save data has changed (SAVE_SECTION_*; `track` for SAVE_SECTION_RECORDS). In this build
+   nothing is written: only the tutorial level is copied into gSaveData. The unused buffer is what is left of the
+   frame of the removed code. */
+void save_write(s32 section, s32 track)
 {
     u8 buf[0x50];
-    if (x == 1) {
-        gSaveData.tutorialProgress = gCups[6].progress[0];
+    if (section == SAVE_SECTION_PROGRESS) {
+        gSaveData.tutorialProgress = gCups[CUP_TUTORIAL].progress[0];
     }
 }

@@ -1,53 +1,59 @@
 #include "game.h"
 
-Gfx *screen_draw_wipe(Gfx *gdl, Dyn *arg1, s32 arg2)
+/* Columns of the wipe across the screen. */
+#define WIPE_COLUMNS 64
+
+/* Draws the fade (gGame.fadeState, fadeLevel) as a wipe: 64 black columns whose alpha ramps across the screen, left to
+   right while fading out and right to left while fading in. Game flag 0x10000000 draws it fully black. In any other
+   state `level` is left unset; the callers only draw the wipe while fading. */
+Gfx *screen_draw_wipe(Gfx *gdl, Dyn *dyn, s32 fb)
 {
-    s32 a;
+    s32 level;
     s32 i;
-    s32 c;
-    s32 w;
+    s32 alpha;
+    s32 width;
     s32 x;
 
     if (gGame.flags & 0x10000000) {
-        a = 0xFF;
+        level = 0xFF;
     } else {
-        if (gGame.fadeState == 1) {
+        if (gGame.fadeState == FADE_SWAP) {
             return gdl;
         }
-        if (gGame.fadeState == 0) {
-            goto m0;
+        if (gGame.fadeState == FADE_OUT) {
+            goto fade_out;
         }
-        if (gGame.fadeState == 2) {
-            goto m2;
+        if (gGame.fadeState == FADE_IN) {
+            goto fade_in;
         }
         goto body;
-    m0:
-        a = 0xFF - gGame.fadeLevel;
+    fade_out:
+        level = 0xFF - gGame.fadeLevel;
         goto body;
-    m2:
-        a = gGame.fadeLevel;
+    fade_in:
+        level = gGame.fadeLevel;
     }
 body:
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetRenderMode(gdl++, 0x00404240, 0);
+    gDPSetRenderMode(gdl++, G_RM_XLU_SURF, 0);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     gSPViewport(gdl++, &gScreenViewport);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_OFF);
-    for (i = 0; i < 64; i++) {
-        c = a * 2 + i * 8 - 0x100;
-        if (c > 0xFF) {
-            c = 0xFF;
+    for (i = 0; i < WIPE_COLUMNS; i++) {
+        alpha = level * 2 + i * 8 - 0x100;
+        if (alpha > 0xFF) {
+            alpha = 0xFF;
         }
-        if (c < 0) {
-            c = 0;
+        if (alpha < 0) {
+            alpha = 0;
         }
-        w = gScreenWidth / 64;
-        x = i * gScreenWidth / 64;
-        if (gGame.fadeState == 2) {
-            x = gScreenWidth - w - x;
+        width = gScreenWidth / WIPE_COLUMNS;
+        x = i * gScreenWidth / WIPE_COLUMNS;
+        if (gGame.fadeState == FADE_IN) {
+            x = gScreenWidth - width - x;
         }
-        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, c);
-        gDPFillRectangle(gdl++, x, 0, x + w, gScreenHeight);
+        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, alpha);
+        gDPFillRectangle(gdl++, x, 0, x + width, gScreenHeight);
     }
     return gdl;
 }

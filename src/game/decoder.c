@@ -1,31 +1,33 @@
 #include "game.h"
 
-SamHeader *decoder_decode_adpcm(SamAdpcm *s)
+/* Decodes a Microsoft ADPCM sample (formats 4 and 5) into a new 8-bit companded one (SAM_FORMAT_PCM8) with the same
+   header. Returns NULL when its blocks are too long or there is no memory. */
+SamHeader *decoder_decode_adpcm(SamAdpcm *sam)
 {
-    u8 st[8];
-    u16 buf[1024];
+    u8 state[8];
+    u16 pcm[SAM_MAX_BLOCK_SAMPLES];
     s32 left;
     s32 n;
     SamHeader *out;
     u8 *dst;
-    u8 *in;
-    u16 *bp;
+    u8 *src;
+    u16 *pcmp;
 
-    if (s->blockSamples > 0x400) {
+    if (sam->blockSamples > SAM_MAX_BLOCK_SAMPLES) {
         return NULL;
     }
-    left = s->hdr.length;
+    left = sam->hdr.length;
     out = mem_alloc_dbg(((left + 3) & ~3) + sizeof(SamHeader), 0, sStrDecoderC, 0x1DE);
     if (out == NULL) {
         return NULL;
     }
-    *out = s->hdr;
-    out->flags = (out->flags & ~0xF) | 1;
-    mem_fill(st, 0, 4);
-    in = s->data;
+    *out = sam->hdr;
+    out->flags = (out->flags & ~SAM_FORMAT_MASK) | SAM_FORMAT_PCM8;
+    mem_fill(state, 0, 4);
+    src = sam->data;
     dst = (u8 *)(out + 1);
     while (left > 0) {
-        n = s->blockSamples;
+        n = sam->blockSamples;
         if (left < n) {
             n = left;
         }
@@ -33,72 +35,77 @@ SamHeader *decoder_decode_adpcm(SamAdpcm *s)
         if (gDmaIdleCallback != NULL) {
             gDmaIdleCallback();
         }
-        decoder_decode_msadpcm_block(in, buf, n, st);
-        in += s->blockSize;
-        bp = buf;
+        decoder_decode_msadpcm_block(src, pcm, n, state);
+        src += sam->blockSize;
+        pcmp = pcm;
+        /* the top 13 bits of each 16-bit sample pick its companded byte */
         while (--n != -1) {
-            *dst++ = sDecoderCompandTable[*bp++ >> 3];
+            *dst++ = sDecoderCompandTable[*pcmp++ >> 3];
         }
     }
+    /* the sample ends on 0 */
     dst[-1] = 0;
     return out;
 }
 
+/* The decompressor softmix_sam_decompress calls: an 8-bit sample is returned as it is, an ADPCM one decoded into a
+   new 8-bit one; NULL for format 2 and unknown formats. */
 SamHeader *decoder_decode_sample(SamHeader *sam)
 {
-    switch (sam->flags & 0xF) {
-    case 1:
+    switch (sam->flags & SAM_FORMAT_MASK) {
+    case SAM_FORMAT_PCM8:
         return sam;
     case 2:
         return NULL;
-    case 3:
+    case SAM_FORMAT_IMA_ADPCM:
         return decoder_decode_ima_adpcm((SamAdpcm *)sam);
-    case 4:
-    case 5:
+    case SAM_FORMAT_MSADPCM:
+    case SAM_FORMAT_MSADPCM_2:
         return decoder_decode_adpcm((SamAdpcm *)sam);
     default:
         return NULL;
     }
 }
 
-SamHeader *decoder_decode_ima_adpcm(SamAdpcm *p)
+/* Decodes an IMA ADPCM sample (format 3) into a new 8-bit companded one, like decoder_decode_adpcm. */
+SamHeader *decoder_decode_ima_adpcm(SamAdpcm *sam)
 {
-    SamHeader *r;
-    u8 *d;
+    SamHeader *out;
+    u8 *dst;
     u8 *src;
-    s32 left, cnt;
-    u16 *bp, *pb;
-    volatile s32 pad[2];
-    u16 buf[1024];
+    s32 left, n;
+    u16 *block, *pcmp;
+    volatile s32 pad[2];        /* unused: places pcm in the frame as the original did */
+    u16 pcm[SAM_MAX_BLOCK_SAMPLES];
 
-    if (p->blockSamples > 0x400) {
+    if (sam->blockSamples > SAM_MAX_BLOCK_SAMPLES) {
         return 0;
     }
-    left = p->hdr.length;
-    r = mem_alloc_dbg(((left + 3) & ~3) + sizeof(SamHeader), 0, sStrDecoderC, 381);
-    src = p->data;
-    if (r == 0) {
+    left = sam->hdr.length;
+    out = mem_alloc_dbg(((left + 3) & ~3) + sizeof(SamHeader), 0, sStrDecoderC, 381);
+    src = sam->data;
+    if (out == 0) {
         return 0;
     }
-    d = (u8 *)(r + 1);
-    *r = p->hdr;
-    r->flags = (r->flags & ~0xF) | 1;
+    dst = (u8 *)(out + 1);
+    *out = sam->hdr;
+    out->flags = (out->flags & ~SAM_FORMAT_MASK) | SAM_FORMAT_PCM8;
     if (left > 0) {
-        bp = buf;
+        block = pcm;
         do {
-        cnt = p->blockSamples;
-        if (left < cnt) {
-            cnt = left;
-        }
-        left -= cnt;
-        decoder_decode_ima_block(src, bp, cnt);
-        src += p->blockSize;
-        pb = bp;
-        while (--cnt != -1) {
-            *d++ = sDecoderCompandTable[*pb++ >> 3];
-        }
+            n = sam->blockSamples;
+            if (left < n) {
+                n = left;
+            }
+            left -= n;
+            decoder_decode_ima_block(src, block, n);
+            src += sam->blockSize;
+            pcmp = block;
+            while (--n != -1) {
+                *dst++ = sDecoderCompandTable[*pcmp++ >> 3];
+            }
         } while (left > 0);
     }
-    d[-1] = 0;
-    return r;
+    dst[-1] = 0;
+    return out;
 }

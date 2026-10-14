@@ -1,31 +1,35 @@
 #include "game.h"
 
-s32 dma_jam_mesg(Q_3 *q, s32 v, s32 mode)
+/* libultra's osJamMesg, compiled with SN's compiler: puts `msg` at the front of the message queue `mq` (Q_3 is an
+   OSMesgQueue: p0 mtqueue, f4 fullqueue, f8 validCount, f0c first, f10 msgCount, f14 msg). While the queue is full
+   it waits with OS_MESG_BLOCK, else returns -1. Then it wakes the first thread waiting for a message. */
+s32 dma_jam_mesg(Q_3 *mq, s32 msg, s32 flag)
 {
-    s32 lk;
-    s32 idx;
-    s32 m;
+    s32 saveMask;
+    s32 slot;
+    s32 blockFlag;
 
-    m = mode;
-    lk = __osDisableInt();
-    if (q->f8 >= q->f10) {
+    blockFlag = flag;
+    saveMask = __osDisableInt();
+    if (mq->f8 >= mq->f10) {
         do {
-            if (m != 1) {
-                __osRestoreInt(lk);
+            if (blockFlag != OS_MESG_BLOCK) {
+                __osRestoreInt(saveMask);
                 return -1;
             }
-            *(u16 *)((u8 *)*(s32 **)0x800D1F40 + 0x10) = 8;
-            __osEnqueueAndYield(&q->f4);
-        } while (q->f8 >= q->f10);
+            /* __osRunningThread->state */
+            *(u16 *)((u8 *)*(s32 **)0x800D1F40 + 0x10) = OS_STATE_WAITING;
+            __osEnqueueAndYield(&mq->f4);
+        } while (mq->f8 >= mq->f10);
     }
-    idx = (q->f0c + q->f10 - 1) % q->f10;
-    q->f0c = idx;
-    q->f14[idx] = v;
-    q->f8 = q->f8 + 1;
-    if (*q->p0 != 0) {
-        s32 *pp = __osPopThread(q);
-        osStartThread(pp);
+    slot = (mq->f0c + mq->f10 - 1) % mq->f10;
+    mq->f0c = slot;
+    mq->f14[slot] = msg;
+    mq->f8 = mq->f8 + 1;
+    if (*mq->p0 != 0) { /* mtqueue->next */
+        s32 *thread = __osPopThread(mq);
+        osStartThread(thread);
     }
-    __osRestoreInt(lk);
+    __osRestoreInt(saveMask);
     return 0;
 }

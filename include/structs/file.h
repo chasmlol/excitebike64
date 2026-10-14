@@ -4,6 +4,24 @@
 
 #include "common.h"
 
+/* Files are read in pages; sFilePageCount (8) of them are cached. */
+#define FILE_PAGE_SIZE      0x2000
+#define FILE_PAGE_SHIFT     13
+#define FILE_PAGE_MASK      0x1FFF
+#define FILE_PAGE_WORDS     0x800       /* the longest compressed file header a cached page holds */
+#define FILE_HANDLE_COUNT   4           /* sFileHandles */
+
+/* FileDirEntry.flags */
+#define FILE_FLAG_SWD       1           /* an 'sWd' file: SWD-compressed page by page */
+
+/* file_seek modes */
+#define FILE_SEEK_SET       0
+#define FILE_SEEK_CUR       1
+#define FILE_SEEK_END       2
+
+/* A compressed file starts with a header of words: 's' 'W' 'd' 0xB0, a word not used here, the unpacked size, then
+   for each page (offset << 4) | method (0: stored, else SWD) and one more entry for the end: (pages + 4) words. */
+
 /* A directory entry (sFileDir, sFileDirCount of them). */
 typedef struct FileDirEntry {
     /* 0x00 */ char name[16];
@@ -27,8 +45,8 @@ typedef struct FilePage {
 typedef struct FileHandle {
     /* 0x00 */ FileDirEntry *file;  /* NULL: the handle is free */
     /* 0x04 */ FilePage *header;    /* a compressed file's header page (its page offsets) */
-    /* 0x08 */ s32 unk_08;
-    /* 0x0C */ u32 pos;
+    /* 0x08 */ s32 unk_08;          /* only ever cleared (file_open, file_close) */
+    /* 0x0C */ u32 pos;             /* in the unpacked file */
 } FileHandle; /* size 0x10 */
 
 #endif

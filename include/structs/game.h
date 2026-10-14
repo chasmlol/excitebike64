@@ -158,20 +158,25 @@ typedef struct GameState {
     /* 0x18 */ s32 wait;                    /* mode 5: frames to wait for the GPU */
 } GameState; /* size 0x1C */
 
-/* The save image, gSaveData (overview.md, Saves). save_init_defaults, save_load and the season code read it
-   through views of their own (gSaveData_<n>). */
+/* The save image, gSaveData (overview.md, Saves). The season code and the editor read it through views of their
+   own (gSaveData_<n>). */
 typedef struct SaveData {
     /* 0x000 */ u32 magic;                  /* 0x5748FB3A */
     /* 0x004 */ u32 checksum;               /* sum of the other 0x1FF words, xor 0xFCB1121D */
     /* 0x008 */ TrackRecord records[24];    /* of the tracks with flag 0x200, in gTracks order */
-    /* 0x2A8 */ u8 unk_2A8[0x2C0 - 0x2A8];  /* the custom round, cup progress, rounds done (+0x2BF) */
+    /* 0x2A8 */ u8 customRound[5];         /* the custom cup's races: track | laps << 5, track 0x1F ends the list */
+    /* 0x2AD */ u8 cupProgress[5][3];       /* per cup and difficulty 1-3: Cup.progress << 5 | Cup.won */
+    /* 0x2BC */ u8 unk_2BC[3];
+    /* 0x2BF */ u8 roundsDone;              /* bit n: round n done at topDifficulty */
     /* 0x2C0 */ u8 topDifficulty;           /* highest difficulty reached */
     /* 0x2C1 */ u8 tutorialProgress;        /* lessons open; 7 unlocks Original Excitebike */
     /* 0x2C2 */ u8 unk_2C2[2];
     /* 0x2C4 */ u8 options;                 /* 1 stereo, 2 high resolution, 8 tested by the editor's load prompt,
                                                0x10 drones off */
     /* 0x2C5 */ u8 volumes[3];              /* music, effects, speech (snd_set_volume channels 1, 0, 2) */
-    /* 0x2C8 */ u8 unk_2C8[0x2D4 - 0x2C8];  /* the controller layouts (+0x2C8), unlocked track count (+0x2D0) */
+    /* 0x2C8 */ u8 padConfigs;              /* the button layout of each controller, 2 bits each (gGame.padConfig) */
+    /* 0x2C9 */ u8 unk_2C9[7];
+    /* 0x2D0 */ s32 unlockedTrackCount;     /* tracks 0 to n - 1 are open (gUnlockedTracks) */
     /* 0x2D4 */ u8 nesTrack[0x220];         /* the NES design track (NES_TRACK_SIZE) */
     /* 0x4F4 */ u8 userTrack[0x310];        /* the packed user track */
 } SaveData; /* size 0x804 */

@@ -1,33 +1,38 @@
 #include "game.h"
 
-s32 n64snd_init(s32 param_1, s32 param_2, s32 param_3, s32 param_4, u32 *param_5, s32 *param_6)
+/* Starts the AI and the mixer (the driver's init). Only stereo 16-bit output is accepted. An AI buffer holds two
+   frames of output (`frameMs` at the rate the AI gives, rounded up to 64 samples); both are queued silent. Returns 0,
+   1 or the mixer's error. */
+s32 n64snd_init(s32 numVoices, s32 mode, s32 rate, s32 frameMs, u32 *frameSamples, s32 *outRate)
 {
-    s32 iVar1;
-    s32 r;
+    s32 bytesPerSample;
+    s32 err;
 
     gN64SndSilenceFrames = 0;
     sN64SndMuted = 0;
-    if ((param_2 & 3) != 3) {
+    if ((mode & SFX_MODE_STEREO_16BIT) != SFX_MODE_STEREO_16BIT) {
         return 1;
     }
     {
-        sN64SndMode = param_2;
-        sN64SndFrequency = (s32)osAiSetFrequency(param_3);
-        iVar1 = 1;
-        *param_6 = sN64SndFrequency;
-        if (param_2 & 1) {
-            iVar1 = 2;
+        sN64SndMode = mode;
+        sN64SndFrequency = (s32)osAiSetFrequency(rate);
+        bytesPerSample = 1;
+        *outRate = sN64SndFrequency;
+        if (mode & SFX_MODE_STEREO) {
+            bytesPerSample = 2;
         }
-        if (param_2 & 2) {
-            iVar1 = iVar1 << 1;
+        if (mode & SFX_MODE_16BIT) {
+            bytesPerSample = bytesPerSample << 1;
         }
-        sN64SndFrames = ((((u32)(sN64SndFrequency * param_4) / 1000 + 0x3f) >> 6) << 6);
-        *param_5 = sN64SndFrames;
+        sN64SndFrames = ((((u32)(sN64SndFrequency * frameMs) / 1000 + 0x3f) >> 6) << 6);
+        *frameSamples = sN64SndFrames;
         sN64SndFrames = sN64SndFrames * 2;
-        sN64SndAiBufSize = iVar1 * sN64SndFrames;
+        sN64SndAiBufSize = bytesPerSample * sN64SndFrames;
         sN64SndMixBuf = (s32)mem_alloc_dbg(sN64SndAiBufSize * 4, 0, sStrN64sndC, 0xd7);
         sN64SndAiBuf = (s32 *)mem_alloc_dbg(sN64SndAiBufSize * 2 + 0x10, 0, sStrN64sndC, 0xd9);
         sN64SndAiBufAlloc = sN64SndAiBuf;
+        /* An allocation on a 256-byte boundary is moved up 16 bytes (the extra 0x10 allocated). This also turns a
+           failed allocation into 0x10, so the NULL check below never fails. */
         if (((u32)sN64SndAiBufAlloc & 0xff) == 0) {
             sN64SndAiBuf = sN64SndAiBufAlloc + 4;
         }
@@ -35,11 +40,11 @@ s32 n64snd_init(s32 param_1, s32 param_2, s32 param_3, s32 param_4, u32 *param_5
             return 1;
         }
         {
-            r = softmix_init(param_1, param_2, param_3, param_4);
-            if (r != 0) {
+            err = softmix_init(numVoices, mode, rate, frameMs);
+            if (err != 0) {
                 mem_free((s32)sN64SndAiBufAlloc);
                 mem_free(sN64SndMixBuf);
-                return r;
+                return err;
             }
             sN64SndCallback = 0;
             sN64SndBufIndex = 0;
@@ -52,38 +57,43 @@ s32 n64snd_init(s32 param_1, s32 param_2, s32 param_3, s32 param_4, u32 *param_5
     }
 }
 
+/* When the AI has room for another buffer: queues the other AI buffer, then mixes it in two halves (pre-mix
+   callback, mixer, post-mix callback for each), converts the mix into it and writes it back. While muted or
+   during the silent frames it is cleared after the mix. */
 void n64snd_update(void)
 {
-    s32 uVar1;
-    s32 *piVar3;
-    u32 h;
-    s32 iVar4;
+    s32 status;
+    s32 *mix;
+    u32 half;
+    s32 i;
 
-    uVar1 = osAiGetStatus();
-    if (uVar1 >= 0) {
-        iVar4 = 0;
-        if ((uVar1 & 0x40000000) == 0) {
+    status = osAiGetStatus();
+    /* AI_STATUS_FIFO_FULL (bit 31) clear */
+    if (status >= 0) {
+        i = 0;
+        /* An idle AI DMA has played both buffers out. */
+        if ((status & AI_STATUS_DMA_BUSY) == 0) {
             sN64SndUnderruns = sN64SndUnderruns + 1;
         }
         sN64SndBufIndex = sN64SndBufIndex ^ 1;
         osAiSetNextBuffer(sN64SndAiBuf + sN64SndAiBufSize * sN64SndBufIndex, sN64SndAiBufSize);
-        piVar3 = sN64SndMixBuf;
+        mix = sN64SndMixBuf;
         do {
             if (sN64SndCallback != 0) {
                 (*sN64SndCallback)();
             }
-            softmix_mix(piVar3, sN64SndFrames >> 1);
+            softmix_mix(mix, sN64SndFrames >> 1);
             if (gN64SndMixCallback != 0) {
-                (*gN64SndMixCallback)(piVar3, sN64SndFrames >> 1);
+                (*gN64SndMixCallback)(mix, sN64SndFrames >> 1);
             }
-            h = sN64SndFrames >> 1;
-            if (sN64SndMode & 1) {
-                piVar3 += h * 2;
+            half = sN64SndFrames >> 1;
+            if (sN64SndMode & SFX_MODE_STEREO) {
+                mix += half * 2;
             } else {
-                piVar3 += h;
+                mix += half;
             }
-            iVar4 = iVar4 + 1;
-        } while (iVar4 < 2);
+            i = i + 1;
+        } while (i < 2);
         softmix_convert_output((s32)sN64SndMixBuf, (s32)(sN64SndAiBuf + sN64SndAiBufSize * sN64SndBufIndex), sN64SndFrames);
         if (gN64SndSilenceFrames != 0 || sN64SndMuted != 0) {
             mem_fill(sN64SndAiBuf + sN64SndAiBufSize * sN64SndBufIndex, 0, sN64SndAiBufSize);
@@ -96,16 +106,19 @@ void n64snd_update(void)
     }
 }
 
-s32 n64snd_get_caps(s32 *arg0, s32 *arg1, s32 *arg2, s32 *arg3) {
-    softmix_get_caps(arg0, arg1, arg2);
-    *arg1 = 3;
-    *arg3 = 20;
-    if (*arg2 > 22050) {
-        *arg2 = 22050;
+/* The mixer's capabilities, limited to stereo 16-bit, 20 ms frames and SFX_MAX_RATE. */
+s32 n64snd_get_caps(s32 *voices, s32 *modes, s32 *rate, s32 *frameMs)
+{
+    softmix_get_caps(voices, modes, rate);
+    *modes = SFX_MODE_STEREO_16BIT;
+    *frameMs = 20;
+    if (*rate > SFX_MAX_RATE) {
+        *rate = SFX_MAX_RATE;
     }
     return 0;
 }
 
+/* Stops the driver: the mixer and the mix and AI buffers. */
 void n64snd_shutdown(void)
 {
     sN64SndActive = 0;
@@ -114,7 +127,9 @@ void n64snd_shutdown(void)
     mem_free(sN64SndAiBufAlloc);
 }
 
-s32 n64snd_load_sample_named(u8 *name) {
+/* Samples, voices, clocks and echo: the mixer's functions. */
+s32 n64snd_load_sample_named(u8 *name)
+{
     return softmix_load_sample_name(name);
 }
 
@@ -123,11 +138,13 @@ s32 n64snd_load_sample_index(s32 resId)
     return softmix_load_sample_id(resId);
 }
 
-s32 n64snd_create_sample(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 unk) {
-    return softmix_create_sample(data, length, loopStart, loopEnd, unk);
+s32 n64snd_create_sample(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 rate)
+{
+    return softmix_create_sample(data, length, loopStart, loopEnd, rate);
 }
 
-void n64snd_free_sample(u32 sample) {
+void n64snd_free_sample(u32 sample)
+{
     softmix_free_sample(sample);
 }
 
@@ -191,9 +208,11 @@ s32 n64snd_get_sample_clock(void)
     return softmix_get_sample_count();
 }
 
-u32 n64snd_get_buffer_clock(void) {
-    u32 r = softmix_get_sample_count();
-    return r / (sN64SndFrames >> 1);
+/* The frames mixed so far: output samples over the frame size (half an AI buffer, what each softmix_mix mixes). */
+u32 n64snd_get_buffer_clock(void)
+{
+    u32 count = softmix_get_sample_count();
+    return count / (sN64SndFrames >> 1);
 }
 
 void n64snd_set_callback(void (*fn)(void))
@@ -221,6 +240,7 @@ void n64snd_echo_free(void)
     softmix_echo_free();
 }
 
+/* The driver slots unk_64-unk_6C. */
 void n64snd_stub1(void)
 {
 }
@@ -233,9 +253,10 @@ void n64snd_stub3(void)
 {
 }
 
-void n64snd_set_mute(s32 a0)
+/* Muting clears both AI buffers at once and keeps the next 3 mixed ones silent; the mix goes on underneath. */
+void n64snd_set_mute(s32 on)
 {
-    if (a0 != 0) {
+    if (on != 0) {
         sN64SndMuted = 1;
         mem_fill(sN64SndAiBuf, 0, sN64SndAiBufSize << 1);
         osWritebackDCache(sN64SndAiBuf, sN64SndAiBufSize << 1);
@@ -245,6 +266,7 @@ void n64snd_set_mute(s32 a0)
     }
 }
 
+/* Clears both AI buffers and keeps the next 3 mixed ones silent. */
 void n64snd_clear_output(void)
 {
     mem_fill(sN64SndAiBuf, 0, sN64SndAiBufSize << 1);

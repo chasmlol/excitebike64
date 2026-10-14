@@ -135,6 +135,9 @@ typedef struct Q_3 {
     s32 *f14;
 } Q_3;
 
+/* The input word, controllers, scheduler, heap, DMA, replays and maths. */
+#include "structs/system.h"
+
 /* The structures of the track, its models and the effects drawn on it. */
 #include "structs/model.h"
 #include "structs/track.h"

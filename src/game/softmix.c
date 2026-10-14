@@ -1,57 +1,63 @@
 #include "game.h"
 
-s32 softmix_init(s32 param_1, u32 param_2, s32 param_3, s32 arg3)
+/* Starts the mixer for `numVoices` voices at `rate` Hz with the output mode `flags` (SFX_MODE_*): allocates the voices
+   and the volume table, hands them to the asm mixers, opens the "SFX" resource set and registers the "SAM" type.
+   Returns 0, 1 (bad arguments, no memory for the voices) or 2 (none for the table). `frameMs` is unused. */
+s32 softmix_init(s32 numVoices, u32 flags, s32 rate, s32 frameMs)
 {
-    s32 *piVar1;
-    s32 iVar2, iVar3, iVar4, iVar6;
-    s16 *psVar5;
+    s32 *table;
+    s32 unusedInt, acc, level, value;
+    s16 *unusedPtr;
 
-    if (param_1 < 9 && param_3 < 0x5623) goto body;
+    /* at most SOFTMIX_MAX_VOICES voices and SFX_MAX_RATE Hz */
+    if (numVoices < 9 && rate < 0x5623) goto body;
 ret1:
     return 1;
 body:
     {
-        sSoftmixFlags = param_2;
-        sSoftmixOutputRate = param_3;
-        sSoftmixNumVoices = param_1;
+        sSoftmixFlags = flags;
+        sSoftmixOutputRate = rate;
+        sSoftmixNumVoices = numVoices;
         sSoftmixSampleCount = 0;
         sSoftmixEchoOn = 0;
-        sSoftmixVoices = mem_alloc_dbg(param_1 * sizeof(SoftmixVoice), 0, &sStrSoftmixFile, 0x2c8);
+        sSoftmixVoices = mem_alloc_dbg(numVoices * sizeof(SoftmixVoice), 0, &sStrSoftmixFile, 0x2c8);
         if (sSoftmixVoices == 0) goto ret1;
         {
-            mem_fill((u8 *)sSoftmixVoices, 0, param_1 * sizeof(SoftmixVoice));
+            mem_fill((u8 *)sSoftmixVoices, 0, numVoices * sizeof(SoftmixVoice));
             mem_fill((u8 *)sSoftmixSamples, 0, sizeof(sSoftmixSamples));
-            sSoftmixVolumeTable = piVar1 = mem_alloc_dbg(0x8000, 0, &sStrSoftmixFile, 0x2d4);
-            if (piVar1 == 0) {
+            sSoftmixVolumeTable = table = mem_alloc_dbg(SOFTMIX_VOLUME_TABLE_SIZE, 0, &sStrSoftmixFile, 0x2d4);
+            if (table == 0) {
                 mem_free(sSoftmixVoices);
                 return 2;
             }
-            iVar6 = 0;
-            if (param_2 & 2) {
-                s32 *tp = piVar1;
+            /* Row `level`, entry `value`: the sample byte's value (16-bit: expanded from its companded form, 8-bit:
+               as a signed byte) times level / SOFTMIX_VOLUME_ROW_MAX. */
+            value = 0;
+            if (flags & SFX_MODE_16BIT) {
+                s32 *entries = table;
                 do {
-                    iVar4 = 0;
+                    level = 0;
                     do {
-                        s32 prod = sSoftmixExpandTable[iVar6] * iVar4;
-                        tp[iVar6 + iVar4 * 0x100] = prod / 0x1f;
-                        iVar4 = iVar4 + 1;
-                    } while (iVar4 < 0x20);
-                    iVar6 = iVar6 + 1;
-                } while (iVar6 < 0x100);
+                        s32 prod = sSoftmixExpandTable[value] * level;
+                        entries[value + level * SOFTMIX_VOLUME_ROW_SIZE] = prod / SOFTMIX_VOLUME_ROW_MAX;
+                        level = level + 1;
+                    } while (level < SOFTMIX_VOLUME_ROWS);
+                    value = value + 1;
+                } while (value < SOFTMIX_VOLUME_ROW_SIZE);
             } else {
-                s32 *tp = piVar1;
-                s32 sh;
+                s32 *entries = table;
+                s32 signedValue;
                 do {
-                    iVar4 = 0;
-                    sh = (s8)iVar6;
-                    iVar3 = 0;
+                    level = 0;
+                    signedValue = (s8)value;
+                    acc = 0;
                     do {
-                        tp[iVar6 + iVar4 * 0x100] = iVar3 / 0x1f;
-                        iVar3 = iVar3 + sh;
-                        iVar4 = iVar4 + 1;
-                    } while (iVar4 < 0x20);
-                    iVar6 = iVar6 + 1;
-                } while (iVar6 < 0x100);
+                        entries[value + level * SOFTMIX_VOLUME_ROW_SIZE] = acc / SOFTMIX_VOLUME_ROW_MAX;
+                        acc = acc + signedValue;
+                        level = level + 1;
+                    } while (level < SOFTMIX_VOLUME_ROWS);
+                    value = value + 1;
+                } while (value < SOFTMIX_VOLUME_ROW_SIZE);
             }
             sMixVoices = sSoftmixVoices;
             sMixNumVoices = sSoftmixNumVoices;
@@ -68,341 +74,364 @@ body:
 }
 }
 
-s32 softmix_load_sample_file(s32 param_1)
+/* Loads a sample from the file "<name>.16" or "<name>.08" (a 0x18-byte header like SamHeader, then the data) into a
+   free slot. Returns the slot, -1 (none free), -2 (no file) or -4 (no memory). */
+s32 softmix_load_sample_file(s32 name)
 {
     s32 i;
-    SoftmixSample *e;
-    FileHandle *f;
+    SoftmixSample *entry;
+    FileHandle *file;
     u8 buf[8];
     u8 *bp;
 
-    for (i = 0; i < 0x100; i++) {
+    for (i = 0; i < SOFTMIX_NUM_SAMPLES; i++) {
         if (sSoftmixSamples[i].length == 0) break;
     }
-    if (i == 0x100) return -1;
+    if (i == SOFTMIX_NUM_SAMPLES) return -1;
     mem_fill((u8 *)&sSoftmixSamples[i], 0, sizeof(SoftmixSample));
-    if (sSoftmixFlags & 2) {
-        sprintf(sSoftmixNameBuf, sStrSampleFile16, param_1);
+    if (sSoftmixFlags & SFX_MODE_16BIT) {
+        sprintf(sSoftmixNameBuf, sStrSampleFile16, name);
     } else {
-        sprintf(sSoftmixNameBuf, sStrSampleFile08, param_1);
+        sprintf(sSoftmixNameBuf, sStrSampleFile08, name);
     }
-    f = file_open(sSoftmixNameBuf, sStrModeRb);
+    file = file_open(sSoftmixNameBuf, sStrModeRb);
     do { do { do { do { do { do { bp = buf; } while (0); } while (0); } while (0); } while (0); } while (0); } while (0);
-    if (f == 0) return -2;
-    file_read(bp, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples[i].length, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples[i].loopStart, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples[i].loopEnd, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples[i].unk_10, 1, 4, f);
-    file_read(bp, 1, 4, f);
-    e = &sSoftmixSamples[i];
-    e->data = mem_alloc_dbg(e->length, 0, sStrSoftmixFile, 0x368);
-    if (e->data == 0) {
-        file_close(f);
+    if (file == 0) return -2;
+    /* flags and unk_14 are read into `buf` and dropped */
+    file_read(bp, 1, 4, file);
+    file_read((u8 *)&sSoftmixSamples[i].length, 1, 4, file);
+    file_read((u8 *)&sSoftmixSamples[i].loopStart, 1, 4, file);
+    file_read((u8 *)&sSoftmixSamples[i].loopEnd, 1, 4, file);
+    file_read((u8 *)&sSoftmixSamples[i].rate, 1, 4, file);
+    file_read(bp, 1, 4, file);
+    entry = &sSoftmixSamples[i];
+    entry->data = mem_alloc_dbg(entry->length, 0, sStrSoftmixFile, 0x368);
+    if (entry->data == 0) {
+        file_close(file);
         return -4;
     }
-    file_read(e->data, 1, e->length, f);
-    file_close(f);
+    file_read(entry->data, 1, entry->length, file);
+    file_close(file);
     return i;
 }
 
-s32 softmix_load_sample_name(u8 *param_1)
+/* Loads the "SAM" resource "SAM-<name>.16" or "SAM-<name>.08" of the "SFX" set into a free slot; returns the slot or
+   -1. */
+s32 softmix_load_sample_name(u8 *name)
 {
     s32 i;
-    SamHeader *e;
-    char *pcVar6;
-    s32 *q;
-    SoftmixSample *ent;
-    s32 *pp;
+    SamHeader *sam;
+    char *samBytes;
+    s32 *res;
+    SoftmixSample *entry;
+    s32 *samOrRate;
 
     if (gSfxResSet == 0) {
         return -1;
     }
-    for (i = 0; i < 0x100; i++) {
+    for (i = 0; i < SOFTMIX_NUM_SAMPLES; i++) {
         if (sSoftmixSamples[i].length == 0) {
             break;
         }
     }
-    if (i == 0x100) {
+    if (i == SOFTMIX_NUM_SAMPLES) {
         return -1;
     }
     mem_fill((u8 *)&sSoftmixSamples[i], 0, sizeof(SoftmixSample));
-    if (sSoftmixFlags & 2) {
-        sprintf(sSoftmixNameBuf, sStrSamName16, param_1);
+    if (sSoftmixFlags & SFX_MODE_16BIT) {
+        sprintf(sSoftmixNameBuf, sStrSamName16, name);
     } else {
-        sprintf(sSoftmixNameBuf, sStrSamName08, param_1);
+        sprintf(sSoftmixNameBuf, sStrSamName08, name);
     }
-    q = (s32 *)res_load_by_name_2(gSfxResSet, sSoftmixNameBuf, &sSoftmixSamples[i].resId);
-    ent = &sSoftmixSamples[i];
+    res = (s32 *)res_load_by_name_2(gSfxResSet, sSoftmixNameBuf, &sSoftmixSamples[i].resId);
+    entry = &sSoftmixSamples[i];
     /* `sam` stored and read back as volatile, each read a load of its own */
-    *(SamHeader *volatile *)&ent->sam = (SamHeader *)q;
-    ent->length = ((volatile SamHeader *)q)->length;
-    e = *(SamHeader *volatile *)&ent->sam;
-    pp = (s32 *)*(SamHeader *volatile *)&ent->sam;
-    ent->loopStart = e->loopStart;
-    ent->loopEnd = e->loopEnd;
-    pcVar6 = (char *)pp;
-    pp = (s32 *)((SamHeader *)pp)->unk_10;
-    ent->data = (u8 *)pcVar6 + sizeof(SamHeader);
-    ent->unk_10 = (s32)pp;
+    *(SamHeader *volatile *)&entry->sam = (SamHeader *)res;
+    entry->length = ((volatile SamHeader *)res)->length;
+    sam = *(SamHeader *volatile *)&entry->sam;
+    samOrRate = (s32 *)*(SamHeader *volatile *)&entry->sam;
+    entry->loopStart = sam->loopStart;
+    entry->loopEnd = sam->loopEnd;
+    samBytes = (char *)samOrRate;
+    samOrRate = (s32 *)((SamHeader *)samOrRate)->rate;
+    entry->data = (u8 *)samBytes + sizeof(SamHeader);
+    entry->rate = (s32)samOrRate;
     return i;
 }
 
-s32 softmix_load_sample_id(s32 param)
+/* Loads the "SAM" resource `resId` of the "SFX" set into a free slot; returns the slot or -1. */
+s32 softmix_load_sample_id(s32 resId)
 {
     s32 i;
-    SoftmixSample *e;
+    SoftmixSample *entry;
 
     if (gSfxResSet == NULL) {
         return -1;
     }
-    for (i = 0; i < 0x100; i++) {
+    for (i = 0; i < SOFTMIX_NUM_SAMPLES; i++) {
         if (sSoftmixSamples[i].length == 0) {
             break;
         }
     }
-    if (i == 0x100) {
+    if (i == SOFTMIX_NUM_SAMPLES) {
         return -1;
     }
-    e = &sSoftmixSamples[i];
-    mem_fill((u8 *)e, 0, sizeof(SoftmixSample));
-    e->resId = param;
-    e->sam = res_load(gSfxResSet, param);
-    e->length = e->sam->length;
-    e->loopStart = e->sam->loopStart;
-    e->loopEnd = e->sam->loopEnd;
-    e->unk_10 = e->sam->unk_10;
-    e->data = (u8 *)(e->sam + 1);
+    entry = &sSoftmixSamples[i];
+    mem_fill((u8 *)entry, 0, sizeof(SoftmixSample));
+    entry->resId = resId;
+    entry->sam = res_load(gSfxResSet, resId);
+    entry->length = entry->sam->length;
+    entry->loopStart = entry->sam->loopStart;
+    entry->loopEnd = entry->sam->loopEnd;
+    entry->rate = entry->sam->rate;
+    entry->data = (u8 *)(entry->sam + 1);
     return i;
 }
 
-s32 softmix_create_sample(u8 *p1, s32 p2, s32 p3, s32 p4, s32 p5)
+/* Copies `length` bytes of sample data into a new allocation in a free slot. Returns the slot, -1 (none free), -3
+   (no data) or -4 (no memory). */
+s32 softmix_create_sample(u8 *data, s32 length, s32 loopStart, s32 loopEnd, s32 rate)
 {
-    s32 n;
-    s32 t;
-    SoftmixSample *e;
-    SoftmixSample *base;
-    SoftmixSample *w;
-    void *q;
+    s32 slot;
+    s32 more;
+    SoftmixSample *entry;
+    SoftmixSample *samples;
+    SoftmixSample *walk;
+    void *buf;
 
-    base = sSoftmixSamples;
-    n = 0;
-    w = base;
+    samples = sSoftmixSamples;
+    slot = 0;
+    walk = samples;
 top:
-    if (w->length == 0) {
+    if (walk->length == 0) {
         goto done;
     }
-    n++;
-    t = n < 0x100;
-    w++;
-    if (t) {
+    slot++;
+    more = slot < SOFTMIX_NUM_SAMPLES;
+    walk++;
+    if (more) {
         goto top;
     }
 done:
-    if (n == 0x100) {
+    if (slot == SOFTMIX_NUM_SAMPLES) {
         return -1;
     }
-    e = (SoftmixSample *)((s32)(n * sizeof(SoftmixSample)) + (s32)base);
-    mem_fill((u8 *)e, 0, sizeof(SoftmixSample));
-    e->length = p2;
-    if (p2 == 0) {
+    entry = (SoftmixSample *)((s32)(slot * sizeof(SoftmixSample)) + (s32)samples);
+    mem_fill((u8 *)entry, 0, sizeof(SoftmixSample));
+    entry->length = length;
+    if (length == 0) {
         return -3;
     }
-    q = mem_alloc_dbg(p2, 0, sStrSoftmixFile, 0x421);
-    e->data = q;
-    if (q == 0) {
+    buf = mem_alloc_dbg(length, 0, sStrSoftmixFile, 0x421);
+    entry->data = buf;
+    if (buf == 0) {
         return -4;
     }
-    sfx_copy_bytes(q, p1, e->length);
-    e->loopStart = p3;
-    e->loopEnd = p4;
-    e->unk_10 = p5;
-    e->resId = -1;
-    return n;
+    sfx_copy_bytes(buf, data, entry->length);
+    entry->loopStart = loopStart;
+    entry->loopEnd = loopEnd;
+    entry->rate = rate;
+    entry->resId = -1;
+    return slot;
 }
 
-void softmix_voice_set_sample(s32 param_1, s32 param_2)
+/* Gives a voice a sample, keeping its position within the new sample's length. */
+void softmix_voice_set_sample(s32 voice, s32 sample)
 {
-    SoftmixVoice *a;
-    SoftmixSample *b;
-    SoftmixVoice *ab;
-    SoftmixSample *bb;
-    u8 *t;
-    u32 fl;
+    SoftmixVoice *voiceEntry;
+    SoftmixSample *sampleEntry;
+    SoftmixVoice *voices;
+    SoftmixSample *samples;
+    u8 *data;
+    u32 flags;
     critical_enter();
-    ab = sSoftmixVoices;
-    a = (SoftmixVoice *)((s32)(param_1 * sizeof(SoftmixVoice)) + (s32)ab);
-    bb = sSoftmixSamples;
-    b = (SoftmixSample *)((s32)(param_2 * sizeof(SoftmixSample)) + (s32)bb);
-    a->position = (u32)a->position % (u32)b->length;
-    a->loopStart = b->loopStart;
-    a->loopEnd = b->loopEnd;
-    t = b->data;
-    fl = a->flags;
-    a->sample = param_2;
-    a->data = t;
-    if (fl & 2) {
-        a->end = b->loopEnd;
+    voices = sSoftmixVoices;
+    voiceEntry = (SoftmixVoice *)((s32)(voice * sizeof(SoftmixVoice)) + (s32)voices);
+    samples = sSoftmixSamples;
+    sampleEntry = (SoftmixSample *)((s32)(sample * sizeof(SoftmixSample)) + (s32)samples);
+    voiceEntry->position = (u32)voiceEntry->position % (u32)sampleEntry->length;
+    voiceEntry->loopStart = sampleEntry->loopStart;
+    voiceEntry->loopEnd = sampleEntry->loopEnd;
+    data = sampleEntry->data;
+    flags = voiceEntry->flags;
+    voiceEntry->sample = sample;
+    voiceEntry->data = data;
+    if (flags & SFX_VOICE_LOOPED) {
+        voiceEntry->end = sampleEntry->loopEnd;
     } else {
-        a->end = b->length;
+        voiceEntry->end = sampleEntry->length;
     }
     critical_leave();
 }
 
-void softmix_voice_set_volume(s32 i, s32 val)
+/* softmix_voice_set_volume and softmix_voice_set_pan each write out softmix_voice_update_levels: in stereo a
+   voice's left and right levels are (SOFTMIX_PAN_MAX - pan) and pan times volume / 10, at most the volume. */
+void softmix_voice_set_volume(s32 voice, s32 value)
 {
-    s32 a, b, x, y;
+    s32 volume, pan, left, right;
 
-    sSoftmixVoices[i].volume = val;
-    if (sSoftmixFlags & 1) {
-        a = sSoftmixVoices[i].volume;
-        b = sSoftmixVoices[i].pan;
+    sSoftmixVoices[voice].volume = value;
+    if (sSoftmixFlags & SFX_MODE_STEREO) {
+        volume = sSoftmixVoices[voice].volume;
+        pan = sSoftmixVoices[voice].pan;
 
-        x = 15 - b;
-        x = x * a / 10;
-        y = b * a / 10;
-        if (x > a) x = a;
-        if (y > a) y = a;
-        sSoftmixVoices[i].left = x;
-        sSoftmixVoices[i].right = y;
+        left = SOFTMIX_PAN_MAX - pan;
+        left = left * volume / 10;
+        right = pan * volume / 10;
+        if (left > volume) left = volume;
+        if (right > volume) right = volume;
+        sSoftmixVoices[voice].left = left;
+        sSoftmixVoices[voice].right = right;
     }
 }
 
-void softmix_voice_set_pan(s32 i, s32 val)
+/* Sets a voice's pan (0-15) and, in stereo, its left and right levels from it and the volume. */
+void softmix_voice_set_pan(s32 voice, s32 value)
 {
-    s32 a, b, x, y;
+    s32 volume, pan, left, right;
 
-    sSoftmixVoices[i].pan = val;
-    if (sSoftmixFlags & 1) {
-        a = sSoftmixVoices[i].volume;
-        b = sSoftmixVoices[i].pan;
+    sSoftmixVoices[voice].pan = value;
+    if (sSoftmixFlags & SFX_MODE_STEREO) {
+        volume = sSoftmixVoices[voice].volume;
+        pan = sSoftmixVoices[voice].pan;
 
-        x = 15 - b;
-        x = x * a / 10;
-        y = b * a / 10;
-        if (x > a) x = a;
-        if (y > a) y = a;
-        sSoftmixVoices[i].left = x;
-        sSoftmixVoices[i].right = y;
+        left = SOFTMIX_PAN_MAX - pan;
+        left = left * volume / 10;
+        right = pan * volume / 10;
+        if (left > volume) left = volume;
+        if (right > volume) right = volume;
+        sSoftmixVoices[voice].left = left;
+        sSoftmixVoices[voice].right = right;
     }
 }
 
-void softmix_mix(s32 *param_1, s32 param_2)
+/* Mixes `count` output samples into `buf` (s32, interleaved in stereo): scales the voices' levels by the master
+   volume (0x100 = 1) for the asm mixer, then adds the echo ring. */
+void softmix_mix(s32 *buf, s32 count)
 {
     s32 i;
-    s32 n;
-    s32 ix;
-    u8 *pb;
+    s32 total;
+    s32 pos;
+    u8 *echoBuf;
 
-    sMixCount = param_2;
-    sMixSrc = param_1;
+    sMixCount = count;
+    sMixSrc = buf;
     sMixOverwrite = 1;
     for (i = 0; i < sSoftmixNumVoices; i++) {
         sSoftmixSavedLevels[i * 2] = sSoftmixVoices[i].left;
         sSoftmixSavedLevels[i * 2 + 1] = sSoftmixVoices[i].right;
         sSoftmixVoices[i].left = (sSoftmixVoices[i].left * sSoftmixMasterVolume) >> 8;
+        /* The right level is made from the already scaled left one (an original bug). */
         sSoftmixVoices[i].right = (sSoftmixVoices[i].left * sSoftmixMasterVolume) >> 8;
     }
-    if (sSoftmixFlags & 1) {
+    if (sSoftmixFlags & SFX_MODE_STEREO) {
         softmix_mix_voices_stereo();
     } else {
         softmix_mix_voices_mono();
     }
+    /* Echo: each output value gets the ring's byte at the current position through sSoftmixEchoTable (the level),
+       and the byte is replaced by the output scaled down. */
     if (sSoftmixEchoOn != 0) {
-        n = param_2;
-        if (sSoftmixFlags & 1) {
-            n = param_2 << 1;
+        total = count;
+        if (sSoftmixFlags & SFX_MODE_STEREO) {
+            total = count << 1;
         }
-        if (sSoftmixFlags & 2) {
+        if (sSoftmixFlags & SFX_MODE_16BIT) {
             i = 0;
-            if (0 < n) {
-                s8 *tb;
-                tb = sSoftmixEchoTable;
+            if (0 < total) {
+                s8 *table;
+                table = sSoftmixEchoTable;
                 do {
-                    pb = sSoftmixEchoBuf;
-                    ix = sSoftmixEchoPos;
-                    param_1[i] += *(s8 *)((s32)pb[ix] + (s32)tb) << 8;
-                    pb[ix] = param_1[i] >> 10;
-                    ix++;
-                    sSoftmixEchoPos = ix;
-                    if (ix == sSoftmixEchoSize) {
+                    echoBuf = sSoftmixEchoBuf;
+                    pos = sSoftmixEchoPos;
+                    buf[i] += *(s8 *)((s32)echoBuf[pos] + (s32)table) << 8;
+                    echoBuf[pos] = buf[i] >> 10;
+                    pos++;
+                    sSoftmixEchoPos = pos;
+                    if (pos == sSoftmixEchoSize) {
                         sSoftmixEchoPos = 0;
                     }
                     i++;
-                } while (i < n);
+                } while (i < total);
             }
         } else {
             i = 0;
-            if (0 < n) {
-                s8 *tb;
-                tb = sSoftmixEchoTable;
+            if (0 < total) {
+                s8 *table;
+                table = sSoftmixEchoTable;
                 do {
-                    pb = sSoftmixEchoBuf;
-                    ix = sSoftmixEchoPos;
-                    param_1[i] += *(s8 *)((s32)pb[ix] + (s32)tb);
-                    pb[ix] = param_1[i] >> 2;
-                    ix++;
-                    sSoftmixEchoPos = ix;
-                    if (ix == sSoftmixEchoSize) {
+                    echoBuf = sSoftmixEchoBuf;
+                    pos = sSoftmixEchoPos;
+                    buf[i] += *(s8 *)((s32)echoBuf[pos] + (s32)table);
+                    echoBuf[pos] = buf[i] >> 2;
+                    pos++;
+                    sSoftmixEchoPos = pos;
+                    if (pos == sSoftmixEchoSize) {
                         sSoftmixEchoPos = 0;
                     }
                     i++;
-                } while (i < n);
+                } while (i < total);
             }
         }
     }
-    sSoftmixSampleCount += param_2;
+    sSoftmixSampleCount += count;
     for (i = 0; i < sSoftmixNumVoices; i++) {
         sSoftmixVoices[i].left = sSoftmixSavedLevels[i * 2];
         sSoftmixVoices[i].right = sSoftmixSavedLevels[i * 2 + 1];
     }
 }
 
-void softmix_sam_decompress(SamHeader **param_1)
+/* The "SAM" resource type's load hook: a sample in a format other than 8-bit is copied into the decompression
+   buffer (it hangs when the buffer is too small; a missing decompressor halts), freed, and replaced by what the
+   decompressor (decoder_decode_sample) makes of it. */
+void softmix_sam_decompress(SamHeader **resp)
 {
-    SamHeader *p;
-    SamHeader *q;
-    u8 **bp;
+    SamHeader *sam;
+    SamHeader *decoded;
+    u8 **bufp;
 
-    p = *param_1;
-    if ((p->flags & 0xF) >= 2) {
+    sam = *resp;
+    if ((sam->flags & SAM_FORMAT_MASK) >= 2) {
         if (sSoftmixDecompressFn != 0) {
-            if (sSoftmixDecompressBufSize < (u32)p->length + 0x1c) goto spin;
-            memcpy(sSoftmixDecompressBuf, p, (u32)p->length + 0x1c);
-            mem_free(*param_1);
-            p = (SamHeader *)sSoftmixDecompressBuf;
+            if (sSoftmixDecompressBufSize < (u32)sam->length + 0x1c) goto spin;
+            memcpy(sSoftmixDecompressBuf, sam, (u32)sam->length + 0x1c);
+            mem_free(*resp);
+            sam = (SamHeader *)sSoftmixDecompressBuf;
             goto join;
         spin:
             while (1) {}
         join:
-            q = sSoftmixDecompressFn(p);
-            bp = &sSoftmixDecompressBuf;
-            if (q == 0) {
+            decoded = sSoftmixDecompressFn(sam);
+            bufp = &sSoftmixDecompressBuf;
+            if (decoded == 0) {
                 fatal_halt(1);
             }
-            if (p != (SamHeader *)*bp) {
-                mem_free(p);
+            if (sam != (SamHeader *)*bufp) {
+                mem_free(sam);
             }
-            if (q == (SamHeader *)*bp) {
-                p = mem_alloc_dbg((u32)p->length + 0x1c, 0, sStrSoftmixFile, 0x67b);
-                memcpy(p, q, (u32)p->length + 0x1c);
-                q = p;
+            /* A sample returned as it was still lies in the buffer: move it to memory of its own. */
+            if (decoded == (SamHeader *)*bufp) {
+                sam = mem_alloc_dbg((u32)sam->length + 0x1c, 0, sStrSoftmixFile, 0x67b);
+                memcpy(sam, decoded, (u32)sam->length + 0x1c);
+                decoded = sam;
             }
-            *param_1 = q;
+            *resp = decoded;
         } else {
             fatal_halt(1);
         }
     }
 }
 
-s32 softmix_get_caps(s32 *a, s32 *b, s32 *c)
+/* What the mixer can do: voices, output modes and the highest rate. */
+s32 softmix_get_caps(s32 *voices, s32 *modes, s32 *rate)
 {
-    *a = 8;
-    *b = 3;
-    *c = 0x5622;
+    *voices = SOFTMIX_MAX_VOICES;
+    *modes = SFX_MODE_STEREO_16BIT;
+    *rate = SFX_MAX_RATE;
     return 0;
 }
 
+/* Frees the volume table and the voices and closes the SFX resource set. */
 void softmix_shutdown(void)
 {
     mem_free(sSoftmixVolumeTable);
@@ -413,99 +442,109 @@ void softmix_shutdown(void)
     gSfxResSet = 0;
 }
 
-void softmix_free_sample(u32 p)
+/* Frees a slot: unloads its resource or frees its data. The check lets slot 0x100, one past the end, through. */
+void softmix_free_sample(u32 sample)
 {
-    SoftmixSample *w;
-    SoftmixSample *e;
-    if (p < 0x101) {
-        w = sSoftmixSamples;
-        e = &w[p];
-        if (e->length != 0) {
-            if (e->resId != -1) {
-                res_unload((u32 *)(gSfxResSet_2[1] + e->resId * 4));
+    SoftmixSample *samples;
+    SoftmixSample *entry;
+    if (sample < 0x101) {
+        samples = sSoftmixSamples;
+        entry = &samples[sample];
+        if (entry->length != 0) {
+            if (entry->resId != -1) {
+                res_unload((u32 *)(gSfxResSet_2[1] + entry->resId * 4));
             } else {
-                mem_free(e->data);
+                mem_free(entry->data);
             }
-            mem_fill((u8 *)&sSoftmixSamples[p], 0, sizeof(SoftmixSample));
+            mem_fill((u8 *)&sSoftmixSamples[sample], 0, sizeof(SoftmixSample));
         }
     }
 }
 
-void softmix_get_sample_info(s32 idx, s32 *out) {
-    SoftmixSample *base = sSoftmixSamples;
-    SoftmixSample *r = base + idx;
-    out[0] = r->length;
-    out[1] = r->loopStart;
-    out[2] = r->loopEnd;
-    out[3] = r->unk_10;
+/* A slot's info as the driver passes it: length, loop start, loop end, rate. */
+void softmix_get_sample_info(s32 sample, s32 *info)
+{
+    SoftmixSample *samples = sSoftmixSamples;
+    SoftmixSample *entry = samples + sample;
+    info[0] = entry->length;
+    info[1] = entry->loopStart;
+    info[2] = entry->loopEnd;
+    info[3] = entry->rate;
 }
 
-void softmix_set_sample_info(s32 i, s32 *src)
+/* Sets a sample's length, loop start, loop end and rate. */
+void softmix_set_sample_info(s32 sample, s32 *info)
 {
-    SoftmixSample *base = sSoftmixSamples;
-    SoftmixSample *e = &base[i];
-    e->length = src[0];
-    e->loopStart = src[1];
-    e->loopEnd = src[2];
-    e->unk_10 = src[3];
+    SoftmixSample *samples = sSoftmixSamples;
+    SoftmixSample *entry = &samples[sample];
+    entry->length = info[0];
+    entry->loopStart = info[1];
+    entry->loopEnd = info[2];
+    entry->rate = info[3];
 }
 
-void softmix_voice_set_rate(s32 param_1, s32 param_2)
+/* A voice's step per output sample, rate / output rate in 32.32 fixed point (16 bits of the fraction computed). */
+void softmix_voice_set_rate(s32 voice, s32 rate)
 {
-    s32 iVar1;
-    s32 iVar2;
+    s32 scratch;
+    s32 frac;
 
     critical_enter();
-    iVar1 = param_2 % sSoftmixOutputRate * 65536;
-    iVar2 = iVar1 / sSoftmixOutputRate;
-    iVar1 = param_1 * sizeof(SoftmixVoice) + (s32)sSoftmixVoices;
-    ((SoftmixVoice *)iVar1)->step = param_2 / sSoftmixOutputRate;
-    ((SoftmixVoice *)iVar1)->stepFrac = iVar2 * 65536;
+    scratch = rate % sSoftmixOutputRate * 65536;
+    frac = scratch / sSoftmixOutputRate;
+    scratch = voice * sizeof(SoftmixVoice) + (s32)sSoftmixVoices;
+    ((SoftmixVoice *)scratch)->step = rate / sSoftmixOutputRate;
+    ((SoftmixVoice *)scratch)->stepFrac = frac * 65536;
     critical_leave();
 }
 
-void softmix_voice_set_position(s32 i, s32 v)
+void softmix_voice_set_position(s32 voice, s32 position)
 {
-    sSoftmixVoices[i].position = v;
+    sSoftmixVoices[voice].position = position;
 }
 
-s32 softmix_voice_get_position(s32 a0)
+s32 softmix_voice_get_position(s32 voice)
 {
-    return sSoftmixVoices[a0].position;
+    return sSoftmixVoices[voice].position;
 }
 
-void softmix_voice_set_flags(s32 n, u32 flags)
+/* Sets a voice's flags (SFX_VOICE_*); it ends at the loop end when looped, else at the sample's end. */
+void softmix_voice_set_flags(s32 voice, u32 flags)
 {
-    SoftmixVoice *base = sSoftmixVoices;
-    SoftmixVoice *e = (SoftmixVoice *)((u32)(n * sizeof(SoftmixVoice)) + (u32)base);
-    e->flags = flags;
-    if (flags & 2) {
-        e->end = sSoftmixSamples[e->sample].loopEnd;
+    SoftmixVoice *voices = sSoftmixVoices;
+    SoftmixVoice *entry = (SoftmixVoice *)((u32)(voice * sizeof(SoftmixVoice)) + (u32)voices);
+    entry->flags = flags;
+    if (flags & SFX_VOICE_LOOPED) {
+        entry->end = sSoftmixSamples[entry->sample].loopEnd;
         return;
     }
-    e->end = sSoftmixSamples[e->sample].length;
+    entry->end = sSoftmixSamples[entry->sample].length;
 }
 
-s32 softmix_voice_get_flags(s32 i)
+s32 softmix_voice_get_flags(s32 voice)
 {
-    return sSoftmixVoices[i].flags;
+    return sSoftmixVoices[voice].flags;
 }
 
-s32 softmix_get_sample_count(void) {
+/* The output samples mixed so far. */
+s32 softmix_get_sample_count(void)
+{
     return sSoftmixSampleCount;
 }
 
-void softmix_convert_output(s32 a, s32 b, s32 c) {
+/* Converts `count` mixed samples from `src` (s32) into the output buffer `dst`, clamped to 16 bits or 8 bits. */
+void softmix_convert_output(s32 src, s32 dst, s32 count)
+{
     s32 flags;
 
-    sMixSrc = a;
-    sMixDst = b;
+    sMixSrc = src;
+    sMixDst = dst;
     flags = sSoftmixFlags;
-    sMixCount = c;
-    if (flags & 1) {
-        sMixCount = c << 1;
+    sMixCount = count;
+    if (flags & SFX_MODE_STEREO) {
+        sMixCount = count << 1;
     }
-    if (flags & 2) {
+    if (flags & SFX_MODE_16BIT) {
         sMixBias = 0;
         sMixShift = 0;
         sMixClampMin = (s32)0xFFFF8001;
@@ -520,30 +559,32 @@ void softmix_convert_output(s32 a, s32 b, s32 c) {
     }
 }
 
+/* Allocates an echo ring of `size` bytes per channel and turns the echo on at full level. Returns 0, -1 (already on)
+   or 1 (no memory). */
 s32 softmix_echo_init(s32 size)
 {
     s32 i;
-    u8 *q;
+    u8 *buf;
 
     if (sSoftmixEchoOn != 0) {
         return -1;
     }
-    if (sSoftmixFlags & 1) {
+    if (sSoftmixFlags & SFX_MODE_STEREO) {
         size <<= 1;
     }
-    sSoftmixEchoBuf = q = mem_alloc_dbg(size, 0, sStrSoftmixFile, 0x601);
-    if (q == NULL) {
+    sSoftmixEchoBuf = buf = mem_alloc_dbg(size, 0, sStrSoftmixFile, 0x601);
+    if (buf == NULL) {
         return 1;
     }
-    mem_fill(q, 0, size);
+    mem_fill(buf, 0, size);
     sSoftmixEchoSize = size;
     i = 0xFF;
     {
-        u8 *pp = sSoftmixEchoTable + i;
+        u8 *p = sSoftmixEchoTable + i;
         do {
-            *pp = i;
+            *p = i;
             i--;
-            pp--;
+            p--;
         } while (i >= 0);
     }
     sSoftmixEchoPos = 0;
@@ -551,9 +592,10 @@ s32 softmix_echo_init(s32 size)
     return 0;
 }
 
-void softmix_echo_enable(s32 p)
+/* Turns the echo on or off; turning it off clears the ring. */
+void softmix_echo_enable(s32 on)
 {
-    if (p != 0) {
+    if (on != 0) {
         sSoftmixEchoOn = 1;
         return;
     }
@@ -563,22 +605,24 @@ void softmix_echo_enable(s32 p)
     sSoftmixEchoOn = 0;
 }
 
-void softmix_echo_set_level(s32 k)
+/* Fills the echo table with each signed byte times level / 256, rounded toward zero. */
+void softmix_echo_set_level(s32 level)
 {
     s32 i = 0;
-    s32 x;
+    s32 scaled;
     u8 *dst;
     do {
-        x = (s8)i * k;
+        scaled = (s8)i * level;
         dst = sSoftmixEchoTable + i;
-        if (x < 0) {
-            x += 0xFF;
+        if (scaled < 0) {
+            scaled += 0xFF;
         }
-        *dst = (u8)(x >> 8);
+        *dst = (u8)(scaled >> 8);
         i++;
     } while (i < 0x100);
 }
 
+/* Frees the echo buffer, if the echo is on, and turns it off. */
 void softmix_echo_free(void)
 {
     if (sSoftmixEchoOn != 0) {
@@ -587,57 +631,63 @@ void softmix_echo_free(void)
     }
 }
 
-void softmix_write_sample(u32 idx, u8 *src, s32 n) {
+/* Writes up to the slot's length of companded bytes into a sample: copied as they are for 16-bit output, expanded to
+   linear 8-bit otherwise. The check lets slot 0x100, one past the end, through. */
+void softmix_write_sample(u32 sample, u8 *src, s32 size)
+{
     s32 i;
 
-    if (idx <= 0x100) {
-        if ((u32)sSoftmixSamples[idx].length < n) {
-            n = (u32)sSoftmixSamples[idx].length;
+    if (sample <= SOFTMIX_NUM_SAMPLES) {
+        if ((u32)sSoftmixSamples[sample].length < size) {
+            size = (u32)sSoftmixSamples[sample].length;
         }
-        if (sSoftmixFlags & 2) {
-            sfx_copy_bytes(sSoftmixSamples[idx].data, src, n);
+        if (sSoftmixFlags & SFX_MODE_16BIT) {
+            sfx_copy_bytes(sSoftmixSamples[sample].data, src, size);
         } else {
-            for (i = 0; i < n; i++) {
-                sSoftmixSamples[idx].data[i] = sSoftmixExpandTable[src[i]] >> 8;
+            for (i = 0; i < size; i++) {
+                sSoftmixSamples[sample].data[i] = sSoftmixExpandTable[src[i]] >> 8;
             }
         }
     }
 }
 
+/* The decoder softmix_sam_decompress uses (decoder_decode_sample), and the buffer it decodes from. */
 void softmix_set_decompressor(SamHeader *(*fn)(SamHeader *))
 {
     sSoftmixDecompressFn = fn;
 }
 
-void softmix_set_decompress_buf(s32 a, s32 b)
+void softmix_set_decompress_buf(s32 buf, s32 size)
 {
-    sSoftmixDecompressBuf = a;
-    sSoftmixDecompressBufSize = b;
+    sSoftmixDecompressBuf = buf;
+    sSoftmixDecompressBufSize = size;
 }
 
-void softmix_voice_update_levels(s32 i)
+/* Recomputes a voice's stereo levels from its volume and pan (see softmix_voice_set_volume). */
+void softmix_voice_update_levels(s32 voice)
 {
-    s32 a, b, x, y;
-    if (sSoftmixFlags & 1) {
-        a = sSoftmixVoices[i].volume;
-        b = sSoftmixVoices[i].pan;
+    s32 volume, pan, left, right;
+    if (sSoftmixFlags & SFX_MODE_STEREO) {
+        volume = sSoftmixVoices[voice].volume;
+        pan = sSoftmixVoices[voice].pan;
 
-        x = 15 - b;
-        x = x * a / 10;
-        y = b * a / 10;
-        if (x > a) x = a;
-        if (y > a) y = a;
-        sSoftmixVoices[i].left = x;
-        sSoftmixVoices[i].right = y;
+        left = SOFTMIX_PAN_MAX - pan;
+        left = left * volume / 10;
+        right = pan * volume / 10;
+        if (left > volume) left = volume;
+        if (right > volume) right = volume;
+        sSoftmixVoices[voice].left = left;
+        sSoftmixVoices[voice].right = right;
     }
 }
 
-s32 softmix_get_sample_data(s32 a0)
+s32 softmix_get_sample_data(s32 sample)
 {
-    return (s32)sSoftmixSamples[a0].data;
+    return (s32)sSoftmixSamples[sample].data;
 }
 
-void softmix_set_master_volume(s32 x)
+/* The master volume softmix_mix scales every voice by: 0x100 = 1. */
+void softmix_set_master_volume(s32 volume)
 {
-    sSoftmixMasterVolume = x;
+    sSoftmixMasterVolume = volume;
 }

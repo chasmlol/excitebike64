@@ -2,98 +2,106 @@
 
 extern SongEvent *sSongCursor;
 
-static inline void push_2(s32 v)
+/* The helpers below are copies of two pieces of code, written once per group of callers so that each caller compiles
+   as it did: speech_queue_push* add a clip to the announcer's queue (outside replays, the credits and the podium,
+   while there is room), and racer_to_rider* are inline forms of announce_check_rider. They are kept apart on
+   purpose. */
+
+static inline void speech_queue_push(s32 clip)
 {
-    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
-        sSpeechQueue[sSpeechQueueCount] = v;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
+        sSpeechQueue[sSpeechQueueCount] = clip;
         sSpeechQueueCount++;
     }
 }
 
-static inline s32 check(u32 *p)
+/* Whether racer *racer is left out of the announcements (1: the ghost, soccer, no named rider). Otherwise it stamps
+   the racer's announce time, replaces *racer with its rider (gGame.riders) and returns 2 in the tutorial, else 0. */
+static inline s32 racer_to_rider(u32 *racer)
 {
-    if (gGhostRace != 0 && *p == gGhostSlot) return 1;
-    if (gGame.mode == 2) return 1;
-    if (*p >= 6) return 1;
-    gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame.riders[*p];
-    if (*p >= 6) return 1;
-    return (gGame.mode == 9) << 1;
+    if (gGhostRace != 0 && *racer == gGhostSlot) return 1;
+    if (gGame.mode == GAME_MODE_SOCCER) return 1;
+    if (*racer >= ANNOUNCE_RACERS) return 1;
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) return 1;
+    return (gGame.mode == GAME_MODE_TUTORIAL) << 1;
 }
 
-static inline void queue(s32 v)
+static inline void speech_queue_push_2(s32 clip)
 {
-    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
-        sSpeechQueue[sSpeechQueueCount] = v;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
+        sSpeechQueue[sSpeechQueueCount] = clip;
         sSpeechQueueCount++;
     }
 }
 
-static __inline__ void push_4(s32 v)
+static __inline__ void speech_queue_push_3(s32 clip)
 {
-    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
-        sSpeechQueue[sSpeechQueueCount] = v;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
+        sSpeechQueue[sSpeechQueueCount] = clip;
         sSpeechQueueCount++;
     }
 }
 
-static inline s32 chk(u32 *p)
+static inline s32 racer_to_rider_2(u32 *racer)
 {
-    if (gGhostRace != 0 && *p == gGhostSlot) {
+    if (gGhostRace != 0 && *racer == gGhostSlot) {
         return 1;
     }
-    if (gGame.mode == 2) {
+    if (gGame.mode == GAME_MODE_SOCCER) {
         return 1;
     }
-    if (*p >= 6) {
+    if (*racer >= ANNOUNCE_RACERS) {
         return 1;
     }
-    gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame.riders[*p];
-    if (*p >= 6) {
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) {
         return 1;
     }
-    return (gGame.mode == 9) * 2;
+    return (gGame.mode == GAME_MODE_TUTORIAL) * 2;
 }
 
-static inline void push(u32 v)
+static inline void speech_queue_push_u32(u32 clip)
 {
-    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
-        sSpeechQueue[sSpeechQueueCount] = v;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
+        sSpeechQueue[sSpeechQueueCount] = clip;
         sSpeechQueueCount++;
     }
 }
 
-static inline void push_3(u32 v)
+static inline void speech_queue_push_u32_2(u32 clip)
 {
-    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
-        sSpeechQueue[sSpeechQueueCount] = v;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
+        sSpeechQueue[sSpeechQueueCount] = clip;
         sSpeechQueueCount++;
     }
 }
 
-void tunes_init(s32 param_1)
+/* Opens "BIG.RAW", loads its clip table and sets up the mix ring, the echo ring and `numChannels` stream channels. */
+void tunes_init(s32 numChannels)
 {
-    FileDirEntry *p;
+    FileDirEntry *file;
     s32 i;
 
     sSpeechQueueCount = 0;
-    p = file_find(sStrBigRaw);
-    if (p != NULL) {
-        sStreamDataBase = (s32)p->rom;
-        sStreamDataEnd = sStreamDataBase + p->size;
+    file = file_find(sStrBigRaw);
+    if (file != NULL) {
+        sStreamDataBase = (s32)file->rom;
+        sStreamDataEnd = sStreamDataBase + file->size;
         sStreamSampleTable = res_load(gSfxResSet, sStreamSampleTableResId);
         if (sStreamSampleTable != 0) {
-            sStreamMixBuf = mem_alloc_dbg(0x2000, 0, sStrTunesC, 0xFC);
+            sStreamMixBuf = mem_alloc_dbg(STREAM_MIX_BUF_BYTES, 0, sStrTunesC, 0xFC);
             sStreamMixFill = 0;
             sStreamMixWritePos = 0;
             sStreamMixReadPos = 0;
             gN64SndMixCallback = tunes_mix_callback;
-            mem_fill(sStreamEchoBuf, 0, 0x1000);
+            mem_fill(sStreamEchoBuf, 0, STREAM_ECHO_BUF_BYTES);
             sStreamEchoPos = 0;
-            sStreamChannelCount = param_1;
-            sStreamChannels = mem_alloc_dbg(4 * sizeof(StreamChannel), 0, sStrTunesC, 0x10C);
-            mem_fill(sStreamChannels, 0, 4 * sizeof(StreamChannel));
+            sStreamChannelCount = numChannels;
+            sStreamChannels = mem_alloc_dbg(STREAM_CHANNELS * sizeof(StreamChannel), 0, sStrTunesC, 0x10C);
+            mem_fill(sStreamChannels, 0, STREAM_CHANNELS * sizeof(StreamChannel));
             for (i = 0; i < sStreamChannelCount; i++) {
                 tunes_init_channel(&sStreamChannels[i]);
             }
@@ -104,34 +112,37 @@ void tunes_init(s32 param_1)
     }
 }
 
-static inline void echo_ring(s16 *q, s32 n)
+/* tunes_apply_echo, inlined: runs `count` samples through the echo ring. */
+static inline void echo_ring(s16 *pcm, s32 count)
 {
-    u16 *p;
-    s32 v;
+    u16 *echo;
+    s32 sample;
 
-    while (n != 0) {
-        p = &sStreamEchoBuf[sStreamEchoPos];
-        v = *q + ((s16)*p >> 1);
-        if (v > 0x7FFF)
-            v = 0x7FFF;
-        if (v < -0x7FFF)
-            v = -0x7FFF;
-        *p = v;
-        *q++ = v;
-        sStreamEchoPos = (sStreamEchoPos + 1) % 0x800;
-        n--;
+    while (count != 0) {
+        echo = &sStreamEchoBuf[sStreamEchoPos];
+        sample = *pcm + ((s16)*echo >> 1);
+        if (sample > 0x7FFF)
+            sample = 0x7FFF;
+        if (sample < -0x7FFF)
+            sample = -0x7FFF;
+        *echo = sample;
+        *pcm++ = sample;
+        sStreamEchoPos = (sStreamEchoPos + 1) % STREAM_ECHO_RING;
+        count--;
     }
 }
 
+/* Mixes one block of every channel into the mix ring. Returns 0 while a DMA runs or the ring is full, after
+   starting the DMAs of channels whose next block is not decoded; 1 after mixing a block (and advancing the song). */
 s32 tunes_mix_streams(void)
 {
-    StreamChannel *s;
+    StreamChannel *ch;
     s32 i, j, n, v;
-    s32 a, b;
+    s32 a, src;
     s32 started, mixed;
     s32 pos;
     u8 *addr, *end;
-    s16 *q, *q1;
+    s16 *in, *out;
     u16 *p;
     s32 vol;
     s32 flags;
@@ -139,31 +150,32 @@ s32 tunes_mix_streams(void)
 
     tunes_update_speech();
     if (sSpeechUseSfxVolume == 0) {
-        sStreamChannels[2].volume = (gSpeechVolume * gSndMasterVolume) >> 8;
+        sStreamChannels[STREAM_CH_SPEECH].volume = (gSpeechVolume * gSndMasterVolume) >> 8;
     } else {
-        sStreamChannels[2].volume = (gSfxVolume * gSndMasterVolume) >> 8;
+        sStreamChannels[STREAM_CH_SPEECH].volume = (gSfxVolume * gSndMasterVolume) >> 8;
     }
 
+    /* finished DMAs: decode the blocks */
     for (i = 0; i < sStreamChannelCount; i++) {
-        s = &sStreamChannels[i];
-        if (s->dmaHandle >= 0) {
-            if (dma_get_status(s->dmaHandle) != 3)
+        ch = &sStreamChannels[i];
+        if (ch->dmaHandle >= 0) {
+            if (dma_get_status(ch->dmaHandle) != DMA_DONE)
                 return 0;
-            dma_release(s->dmaHandle);
-            s->dmaHandle = -1;
-            if (s->dmaSample >= 0) {
-                osInvalDCache(s->dmaBuf, 0x220);
-                b = s->dmaBuf;
-                q1 = s->pcm;
-                for (j = 0; j < 8; j++) {
-                    tunes_decode_adpcm_block(b, q1, 0x80);
-                    b += 0x44;
-                    q1 += 0x80;
+            dma_release(ch->dmaHandle);
+            ch->dmaHandle = -1;
+            if (ch->dmaSample >= 0) {
+                osInvalDCache(ch->dmaBuf, STREAM_DMA_BYTES);
+                src = ch->dmaBuf;
+                out = ch->pcm;
+                for (j = 0; j < STREAM_DMA_BLOCKS; j++) {
+                    tunes_decode_adpcm_block(src, out, STREAM_BLOCK_SAMPLES);
+                    src += STREAM_BLOCK_BYTES;
+                    out += STREAM_BLOCK_SAMPLES;
                 }
-                s->bufBlock = s->dmaBlock;
-                s->bufSample = s->dmaSample;
-                if (s->echo != 0) {
-                    echo_ring(s->pcm, s->blocks << 7);
+                ch->bufBlock = ch->dmaBlock;
+                ch->bufSample = ch->dmaSample;
+                if (ch->echo != 0) {
+                    echo_ring(ch->pcm, ch->blocks << 7); /* blocks * STREAM_BLOCK_SAMPLES */
                 }
             }
         }
@@ -171,127 +183,133 @@ s32 tunes_mix_streams(void)
 
     if (sStreamLock != 0)
         return 0;
-    if (sStreamMixFill > 0x780)
+    if (sStreamMixFill > STREAM_MIX_RING - STREAM_BLOCK_SAMPLES)
         return 0;
 
+    /* channels whose next block is not in pcm: load the next STREAM_DMA_BLOCKS blocks (j: a DMA was started) */
     i = 0;
     j = 0;
     for (; i < sStreamChannelCount; i++) {
-        s = &sStreamChannels[i];
-        if (s->sample == s->bufSample && s->block >= s->bufBlock && s->block < s->bufBlock + 8)
+        ch = &sStreamChannels[i];
+        if (ch->sample == ch->bufSample && ch->block >= ch->bufBlock && ch->block < ch->bufBlock + STREAM_DMA_BLOCKS)
             continue;
-        if (s->sample >= 0) {
-        addr = s->data;
-        flags = (s32)(addr + s->size);
-        addr += s->block * 0x44;
-        s->blocks = (u32)(flags - (s32)addr) / 68;
-        if (s->blocks < 0)
-            s->blocks = 0;
-        if (s->blocks > 8)
-            s->blocks = 8;
-        if (s->blocks == 0) {
-            if (s->loop != 0) {
-                s->block = 0;
-                addr = s->data + s->block * 0x44;
-                s->blocks = (u32)(s->data + s->size - addr) / 68;
-                if (s->blocks < 0)
-                    s->blocks = 0;
-                if (s->blocks > 8)
-                    s->blocks = 8;
+        if (ch->sample >= 0) {
+            addr = ch->data;
+            flags = (s32)(addr + ch->size); /* here the clip's end */
+            addr += ch->block * STREAM_BLOCK_BYTES;
+            ch->blocks = (u32)(flags - (s32)addr) / STREAM_BLOCK_BYTES;
+            if (ch->blocks < 0)
+                ch->blocks = 0;
+            if (ch->blocks > STREAM_DMA_BLOCKS)
+                ch->blocks = STREAM_DMA_BLOCKS;
+            if (ch->blocks == 0) {
+                if (ch->loop != 0) {
+                    ch->block = 0;
+                    addr = ch->data + ch->block * STREAM_BLOCK_BYTES;
+                    ch->blocks = (u32)(ch->data + ch->size - addr) / STREAM_BLOCK_BYTES;
+                    if (ch->blocks < 0)
+                        ch->blocks = 0;
+                    if (ch->blocks > STREAM_DMA_BLOCKS)
+                        ch->blocks = STREAM_DMA_BLOCKS;
+                }
+                if (ch->blocks == 0) {
+                    /* the clip ended */
+                    ch->bufSample = -1;
+                    ch->sample = -1;
+                    ch->bufBlock = ch->block;
+                    if (i == STREAM_CH_AMBIENT && sAmbientLocked != 0)
+                        sAmbientLocked = 0;
+                    continue;
+                }
             }
-            if (s->blocks == 0) {
-                s->bufSample = -1;
-                s->sample = -1;
-                s->bufBlock = s->block;
-                if (i == 3 && sAmbientLocked != 0)
-                    sAmbientLocked = 0;
-                continue;
-            }
-        }
-        s->dmaHandle = dma_start(gCartRomHandle, 0, (s32)addr, s->dmaBuf, 0x220);
-        j = 1;
-        s->dmaSample = s->sample;
-        s->dmaBlock = s->block;
+            ch->dmaHandle = dma_start(gCartRomHandle, 0, (s32)addr, ch->dmaBuf, STREAM_DMA_BYTES);
+            j = 1;
+            ch->dmaSample = ch->sample;
+            ch->dmaBlock = ch->block;
         } else {
-            s->bufSample = -1;
-            s->bufBlock = s->block;
+            ch->bufSample = -1;
+            ch->bufBlock = ch->block;
         }
     }
     if (j)
         return 0;
 
+    /* mix a block of each channel: the first one stores, the others add */
     mixed = 0;
     for (i = 0; i < sStreamChannelCount; i++) {
-        s = &sStreamChannels[i];
-        q = s->pcm + (s->block - s->bufBlock) * 0x80;
-        if (s->blocks <= 0)
-            s->bufSample = -1;
-        if (s->bufSample == -1) {
-            if (s->echo == 0)
+        ch = &sStreamChannels[i];
+        in = ch->pcm + (ch->block - ch->bufBlock) * STREAM_BLOCK_SAMPLES;
+        if (ch->blocks <= 0)
+            ch->bufSample = -1;
+        if (ch->bufSample == -1) {
+            /* nothing playing: the echo's tail, fed with silence */
+            if (ch->echo == 0)
                 continue;
-            q = s->pcm;
-            if ((s->flags & 3) != 3) {
-                if (s->echoTail >= 0)
-                    mem_fill((u8 *)q, 0, 0x100);
-                echo_ring(q, 0x80);
-                if (++s->echoTail >= 0x20)
-                    s->echo = 0;
+            in = ch->pcm;
+            if ((ch->flags & 3) != 3) {
+                if (ch->echoTail >= 0)
+                    mem_fill((u8 *)in, 0, STREAM_BLOCK_SAMPLES * sizeof(s16));
+                echo_ring(in, STREAM_BLOCK_SAMPLES);
+                if (++ch->echoTail >= STREAM_ECHO_TAIL)
+                    ch->echo = 0;
             }
         } else {
-            s->echoTail = -1;
+            ch->echoTail = -1;
         }
-        flags = s->flags;
+        flags = ch->flags;
         vol = sStreamChannels[i].volume;
-        if (!(flags & 1)) {
+        if (!(flags & STREAM_HALF_RATE)) {
             pos = sStreamMixWritePos;
             if (!mixed) {
-                for (j = 0; j < 0x80; j++) {
-                    sStreamMixBuf[pos] = (*q++ * vol) >> 8;
-                    pos = (pos + 1) & 0x7FF;
+                for (j = 0; j < STREAM_BLOCK_SAMPLES; j++) {
+                    sStreamMixBuf[pos] = (*in++ * vol) >> 8;
+                    pos = (pos + 1) & STREAM_MIX_MASK;
                 }
             } else {
-                for (j = 0; j < 0x80; j++) {
-                    sStreamMixBuf[pos] += (*q++ * vol) >> 8;
-                    pos = (pos + 1) & 0x7FF;
+                for (j = 0; j < STREAM_BLOCK_SAMPLES; j++) {
+                    sStreamMixBuf[pos] += (*in++ * vol) >> 8;
+                    pos = (pos + 1) & STREAM_MIX_MASK;
                 }
             }
-            s->block++;
-            s->blocks--;
+            ch->block++;
+            ch->blocks--;
         } else {
-            if (flags & 2) {
-                q += 0x40;
-                s->block++;
-                s->blocks--;
+            /* half rate: half a block, each sample twice (the first interpolated with the previous one) */
+            if (flags & STREAM_SECOND_HALF) {
+                in += STREAM_BLOCK_SAMPLES / 2;
+                ch->block++;
+                ch->blocks--;
             }
             pos = sStreamMixWritePos;
-            s->flags ^= 2;
+            ch->flags ^= STREAM_SECOND_HALF;
+            /* `mixed` holds each scaled sample in these loops; the cast address forms are &buf[pos] */
             if (!mixed) {
                 j = 0;
                 buf = sStreamMixBuf;
-                for (; j < 0x40; j++) {
+                for (; j < STREAM_BLOCK_SAMPLES / 2; j++) {
                     s32 *b0 = (s32 *)(pos * 4 + (u32)buf);
                     s32 *b1;
-                    pos = (pos + 1) & 0x7FF;
+                    pos = (pos + 1) & STREAM_MIX_MASK;
                     b1 = (s32 *)(pos * 4 + (u32)buf);
-                    pos = (pos + 1) & 0x7FF;
-                    mixed = (*q++ * vol) >> 8;
-                    *b0 = (mixed + s->lastSample) / 2;
+                    pos = (pos + 1) & STREAM_MIX_MASK;
+                    mixed = (*in++ * vol) >> 8;
+                    *b0 = (mixed + ch->lastSample) / 2;
                     *b1 = mixed;
-                    s->lastSample = mixed;
+                    ch->lastSample = mixed;
                 }
             } else {
                 j = 0;
                 buf = sStreamMixBuf;
-                for (; j < 0x40; j++) {
+                for (; j < STREAM_BLOCK_SAMPLES / 2; j++) {
                     s32 *b0 = (s32 *)(pos * 4 + (u32)buf);
                     s32 *b1;
-                    pos = (pos + 1) & 0x7FF;
+                    pos = (pos + 1) & STREAM_MIX_MASK;
                     b1 = (s32 *)(pos * 4 + (u32)buf);
-                    pos = (pos + 1) & 0x7FF;
-                    mixed = (*q++ * vol) >> 8;
-                    *b0 += (mixed + s->lastSample) / 2;
+                    pos = (pos + 1) & STREAM_MIX_MASK;
+                    mixed = (*in++ * vol) >> 8;
+                    *b0 += (mixed + ch->lastSample) / 2;
                     *b1 += mixed;
-                    s->lastSample = mixed;
+                    ch->lastSample = mixed;
                 }
             }
         }
@@ -299,100 +317,105 @@ s32 tunes_mix_streams(void)
     }
     if (!mixed) {
         pos = sStreamMixWritePos;
-        for (j = 0; j < 0x80; j++) {
+        for (j = 0; j < STREAM_BLOCK_SAMPLES; j++) {
             sStreamMixBuf[pos] = 0;
-            pos = (pos + 1) & 0x7FF;
+            pos = (pos + 1) & STREAM_MIX_MASK;
         }
     }
     sStreamMixWritePos = pos;
-    sStreamMixFill += 0x80;
+    sStreamMixFill += STREAM_BLOCK_SAMPLES;
     sSongTick += 1;
     tunes_update_song();
     return 1;
 }
 
+/* Runs the song's events that are due: starts and stops clips on its channels, loops at SONG_NOTE_LOOP. */
 void tunes_update_song(void)
 {
-    Song *s;
-    SongEvent *c;
-    StreamSample *sm;
-    s32 *e;
+    Song *song;
+    SongEvent *ev;
+    StreamSample *smp;
+    s32 *pair;
 
     if (sCurrentSong == NULL) {
         return;
     }
     while (sSongCursor->time <= sSongTick) {
-        c = sSongCursor;
-        s = sCurrentSong;
-        if (c->note == 0xFE) {
+        ev = sSongCursor;
+        song = sCurrentSong;
+        if (ev->note == SONG_NOTE_LOOP) {
             sSongTick = 0;
-            sSongCursor = (SongEvent *)&s->samples[s->count];
+            sSongCursor = (SongEvent *)&song->samples[song->count];
         } else {
-            if (c->note == 0xFF) {
-                sStreamChannels[c->channel & 0xF].sample = -1;
+            if (ev->note == SONG_NOTE_STOP) {
+                sStreamChannels[ev->channel & 0xF].sample = -1;
             } else {
-                sStreamChannels[c->channel & 0xF].sample = c->note;
-                sStreamChannels[c->channel & 0xF].block = 0;
-                e = (s32 *)s + c->note * 2;     /* e[1]: s->samples[c->note].sample */
-                sStreamChannels[c->channel & 0xF].data = (u8 *)((sm = &sStreamSampleTable[e[1]])->offset + sStreamDataBase);
-                sStreamChannels[c->channel & 0xF].size = s->samples[c->note].size;
-                sStreamChannels[c->channel & 0xF].flags = sm->flags;
-                sStreamChannels[c->channel & 0xF].volume = gStreamVolumes_2[c->channel & 0xF] * gSndMasterVolume >> 8;
+                sStreamChannels[ev->channel & 0xF].sample = ev->note;
+                sStreamChannels[ev->channel & 0xF].block = 0;
+                pair = (s32 *)song + ev->note * 2;     /* pair[1]: song->samples[ev->note].sample */
+                sStreamChannels[ev->channel & 0xF].data =
+                    (u8 *)((smp = &sStreamSampleTable[pair[1]])->offset + sStreamDataBase);
+                sStreamChannels[ev->channel & 0xF].size = song->samples[ev->note].size;
+                sStreamChannels[ev->channel & 0xF].flags = smp->flags;
+                sStreamChannels[ev->channel & 0xF].volume = gStreamVolumes_2[ev->channel & 0xF] * gSndMasterVolume >> 8;
             }
             sSongCursor++;
         }
     }
 }
 
-extern Song sSongBuffer;   /* 0x800 bytes */
+extern Song sSongBuffer;   /* SONG_BUFFER_BYTES */
 
-void tunes_play_song(s32 param_1)
+/* Stops the song playing and starts song resource `songId` (none if negative): copies it to sSongBuffer and turns
+   its clip keys into clip indices. Hangs if the song is too big or names a missing clip. */
+void tunes_play_song(s32 songId)
 {
     s32 n;
-    u32 j;
-    StreamSample *r;
+    u32 clip;
+    StreamSample *table;
     s32 k;
-    Song *tab;
-    Song *t;
-    u32 *pw;
+    Song *buf;
+    Song *song;
+    u32 *words;
     u32 key;
 
     if (sCurrentSong != 0) {
         tunes_stop_song();
     }
-    if (param_1 >= 0) {
-        sCurrentSong = res_load(gSfxResSet_4, param_1);
+    if (songId >= 0) {
+        sCurrentSong = res_load(gSfxResSet_4, songId);
         n = mem_get_size(sCurrentSong);
-        if (n > 0x800) {
+        if (n > SONG_BUFFER_BYTES) {
             while (1) ;
         }
-        tab = &sSongBuffer;
-        memcpy(tab, sCurrentSong, n);
-        res_unload((u32 *)gSfxResSet_4[1] + param_1);
+        buf = &sSongBuffer;
+        memcpy(buf, sCurrentSong, n);
+        res_unload((u32 *)gSfxResSet_4[1] + songId);   /* the resource's handle */
+        /* n: now the sample pair */
         n = 0;
-        sCurrentSong = tab;
+        sCurrentSong = buf;
         if (sSongBuffer.count != 0) {
-            r = sStreamSampleTable;
-            t = tab;
-            pw = (u32 *)t;
+            table = sStreamSampleTable;
+            song = buf;
+            words = (u32 *)song;
             do {
-                key = pw[n * 2 + 1];
-                for (j = 0; j < r->count; j++) {
-                    if (r[j].key == key) {
-                        pw[n * 2 + 1] = j;
-                        pw[n * 2 + 2] = r[j].size;
+                key = words[n * 2 + 1];
+                for (clip = 0; clip < table->count; clip++) {
+                    if (table[clip].key == key) {
+                        words[n * 2 + 1] = clip;
+                        words[n * 2 + 2] = table[clip].size;
                         break;
                     }
                 }
-                if (j == r->count) {
+                if (clip == table->count) {
                     while (1) ;
                 }
                 n++;
-            } while ((u32)n < (u32)t->count);
+            } while ((u32)n < (u32)song->count);
         }
         sSongTick = 0;
         sSongCursor = (SongEvent *)&sCurrentSong->samples[sCurrentSong->count];
-        for (n = 0; n < 2; n++) {
+        for (n = 0; n < STREAM_MUSIC_CHANNELS; n++) {
             sStreamChannels[n].bufSample = -1;
             sStreamChannels[n].bufBlock = -1;
             sStreamChannels[n].dmaSample = -1;
@@ -402,10 +425,12 @@ void tunes_play_song(s32 param_1)
     }
 }
 
-void tunes_stop_song(void) {
+/* Stops every channel and, if a song plays, waits for the channels' DMAs and drops the song. */
+void tunes_stop_song(void)
+{
     s32 i;
     s32 n;
-    StreamChannel *p;
+    StreamChannel *ch;
     StreamChannel *q;
 
     for (i = 0; i < sStreamChannelCount; i++) {
@@ -420,12 +445,12 @@ void tunes_stop_song(void) {
     if (sCurrentSong != 0) {
         sStreamLock = 1;
         for (i = 0; i < sStreamChannelCount; i++) {
-            p = &sStreamChannels[i];
+            ch = &sStreamChannels[i];
             for (;;) {
-                if (p->dmaHandle < 0) break;
-                if (dma_get_status(p->dmaHandle) == 3) {
-                    dma_release(p->dmaHandle);
-                    p->dmaHandle = -1;
+                if (ch->dmaHandle < 0) break;
+                if (dma_get_status(ch->dmaHandle) == DMA_DONE) {
+                    dma_release(ch->dmaHandle);
+                    ch->dmaHandle = -1;
                     break;
                 }
             }
@@ -435,21 +460,23 @@ void tunes_stop_song(void) {
     }
 }
 
+/* Counts down the first crowd reaction (sCrowdQueue: clip, frames, clip, frames) and plays it on the ambience
+   channel when due. */
 void tunes_update_crowd_queue(void)
 {
-    StreamChannel *obj; StreamSample *e;
+    StreamChannel *ch; StreamSample *smp;
     if (sCrowdQueueCount != 0) {
         if (--sCrowdQueue[1] <= 0) {
-            obj = sStreamChannels;
-            e = &sStreamSampleTable[sCrowdQueue[0]];
-            obj[3].sample = sCrowdQueue[0];
-            obj[3].echo = 0;
-            obj[3].loop = 0;
-            obj[3].block = 0;
-            obj[3].data = (u8 *)(e->offset + sStreamDataBase);
-            obj[3].size = e->size;
-            obj[3].flags = e->flags;
-            obj[3].volume = (gAmbientVolume_2[0] * gSndMasterVolume_2[0]) >> 8;
+            ch = sStreamChannels;
+            smp = &sStreamSampleTable[sCrowdQueue[0]];
+            ch[STREAM_CH_AMBIENT].sample = sCrowdQueue[0];
+            ch[STREAM_CH_AMBIENT].echo = 0;
+            ch[STREAM_CH_AMBIENT].loop = 0;
+            ch[STREAM_CH_AMBIENT].block = 0;
+            ch[STREAM_CH_AMBIENT].data = (u8 *)(smp->offset + sStreamDataBase);
+            ch[STREAM_CH_AMBIENT].size = smp->size;
+            ch[STREAM_CH_AMBIENT].flags = smp->flags;
+            ch[STREAM_CH_AMBIENT].volume = (gAmbientVolume_2[0] * gSndMasterVolume_2[0]) >> 8;
             sCrowdQueueCount--;
             sCrowdQueue[0] = sCrowdQueue[2];
             sCrowdQueue[1] = sCrowdQueue[3];
@@ -457,165 +484,178 @@ void tunes_update_crowd_queue(void)
     }
 }
 
-void tunes_set_ambient(s32 param_1, s32 param_2, s32 arg2)
+/* Loops ambience clip `clip` on the ambience channel at `volume` (0 stops it), unless a one-shot clip holds the
+   channel (sAmbientLocked). */
+void tunes_set_ambient(s32 clip, s32 volume, s32 unused)
 {
     if (sAmbientLocked != 0) {
         return;
     }
-    if (param_2 == 0) {
-        if (sStreamChannels[3].sample != -1) {
-            sStreamChannels[3].sample = -1;
-            sStreamChannels[3].loop = 0;
+    if (volume == 0) {
+        if (sStreamChannels[STREAM_CH_AMBIENT].sample != -1) {
+            sStreamChannels[STREAM_CH_AMBIENT].sample = -1;
+            sStreamChannels[STREAM_CH_AMBIENT].loop = 0;
             gAmbientVolume = 0;
         }
         return;
     }
-    if (sStreamChannels[3].sample != param_1) {
-        StreamSample *t;
-        s32 v10;
-        sStreamChannels[3].sample = param_1;
-        t = &sStreamSampleTable[param_1];
-        sStreamChannels[3].block = 0;
-        sStreamChannels[3].data = (u8 *)(t->offset + sStreamDataBase);
-        sStreamChannels[3].size = t->size;
-        v10 = t->flags;
-        sStreamChannels[3].loop = 1;
-        sStreamChannels[3].flags = v10;
+    if (sStreamChannels[STREAM_CH_AMBIENT].sample != clip) {
+        StreamSample *smp;
+        s32 flags;
+        sStreamChannels[STREAM_CH_AMBIENT].sample = clip;
+        smp = &sStreamSampleTable[clip];
+        sStreamChannels[STREAM_CH_AMBIENT].block = 0;
+        sStreamChannels[STREAM_CH_AMBIENT].data = (u8 *)(smp->offset + sStreamDataBase);
+        sStreamChannels[STREAM_CH_AMBIENT].size = smp->size;
+        flags = smp->flags;
+        sStreamChannels[STREAM_CH_AMBIENT].loop = 1;
+        sStreamChannels[STREAM_CH_AMBIENT].flags = flags;
     }
-    gAmbientVolume = param_2;
+    gAmbientVolume = volume;
 }
 
+/* Starts the next clip of the speech queue when the announcer's channel is free (or playing a queued clip),
+   resolving place entries to the racer's place now. */
 void tunes_update_speech(void)
 {
-    s32 v;
-    s32 n;
-    s32 lo;
-    s32 t;
-    s32 f;
-    s32 c;
-    s32 e;
-    StreamChannel *p;
-    StreamSample *r;
+    s32 entry;
+    s32 place;
+    s32 limit;
+    s32 kind;
+    s32 busy;
+    s32 count;
+    s32 volume;
+    StreamChannel *ch;
+    StreamSample *smp;
 
     if (sSpeechQueueCount_2[0] == 0) {
         return;
     }
-    if (sStreamChannels[2].sample != -1 && sSpeechPriority >= 0) {
+    if (sStreamChannels[STREAM_CH_SPEECH].sample != -1 && sSpeechPriority >= 0) {
         return;
     }
-    v = sSpeechQueue[0];
-    if (v < 0) {
-        t = (v >> 16) & 0xFF;
-        if (t == 1) {
-            n = (v >> 8) & 0xFF;
-            n = gRiders[n].race.place;
-            lo = v & 0xFF;
-            if (lo < n) {
-                n = lo;
+    entry = sSpeechQueue[0];
+    if (entry < 0) {
+        kind = (entry >> 16) & 0xFF;
+        if (kind == SPEECH_PLACE_KIND_UP) {
+            place = (entry >> 8) & 0xFF;
+            place = gRiders[place].race.place;
+            limit = entry & 0xFF;
+            if (limit < place) {
+                place = limit;
             }
-            lo = gEvent.numRiders - 2;
-            if (lo < n) {
-                n = lo;
+            limit = gEvent.numRiders - 2;
+            if (limit < place) {
+                place = limit;
             }
-        } else if (t == 2) {
-            n = (v >> 8) & 0xFF;
-            n = gRiders[n].race.place;
-            lo = v & 0xFF;
-            if (n < lo) {
-                n = lo;
+        } else if (kind == SPEECH_PLACE_KIND_DOWN) {
+            place = (entry >> 8) & 0xFF;
+            place = gRiders[place].race.place;
+            limit = entry & 0xFF;
+            if (place < limit) {
+                place = limit;
             }
-            if (n <= 0) {
-                n = 1;
+            if (place <= 0) {
+                place = 1;
             }
         } else {
             goto bad;
         }
-        v = sPlaceClips[n];
+        entry = sPlaceClips[place];
         goto ok;
     bad:
         sSpeechQueueCount_2[0]--;
         return;
     }
 ok:
+    /* busy is left unset on the podium */
     if (gPodiumMode == 0) {
-        if (sStreamChannels[2].sample != -1 && sSpeechPriority >= 0) {
-            f = 1;
+        if (sStreamChannels[STREAM_CH_SPEECH].sample != -1 && sSpeechPriority >= 0) {
+            busy = 1;
         } else {
-            sStreamChannels[2].sample = v;
-            r = &sStreamSampleTable[v];
-            sStreamChannels[2].echo = 0;
-            sStreamChannels[2].loop = 0;
-            sStreamChannels[2].block = 0;
-            sStreamChannels[2].data = (u8 *)(r->offset + sStreamDataBase);
+            sStreamChannels[STREAM_CH_SPEECH].sample = entry;
+            smp = &sStreamSampleTable[entry];
+            sStreamChannels[STREAM_CH_SPEECH].echo = 0;
+            sStreamChannels[STREAM_CH_SPEECH].loop = 0;
+            sStreamChannels[STREAM_CH_SPEECH].block = 0;
+            sStreamChannels[STREAM_CH_SPEECH].data = (u8 *)(smp->offset + sStreamDataBase);
             sSpeechPriority = 0;
-            sStreamChannels[2].size = r->size;
+            sStreamChannels[STREAM_CH_SPEECH].size = smp->size;
             sSpeechUseSfxVolume = 0;
-            sStreamChannels[2].flags = r->flags;
-            f = 0;
+            sStreamChannels[STREAM_CH_SPEECH].flags = smp->flags;
+            busy = 0;
         }
     }
-    if (f == 0) {
-        p = sStreamChannels;
-        p[2].echo = 1;
-        e = gSpeechVolume;
-        c = --sSpeechQueueCount_2[0];
-        p[2].volume = e;
-        if (c != 0) {
-            memcpy(sSpeechQueue, sSpeechQueue + 1, c << 2);
+    if (busy == 0) {
+        ch = sStreamChannels;
+        ch[STREAM_CH_SPEECH].echo = 1;
+        volume = gSpeechVolume;
+        count = --sSpeechQueueCount_2[0];
+        ch[STREAM_CH_SPEECH].volume = volume;
+        if (count != 0) {
+            memcpy(sSpeechQueue, sSpeechQueue + 1, count << 2);
         }
         gLastSpeechTime = gRaceFrame;
     }
 }
 
-static inline s32 check_2(u32 *p)
+static inline s32 racer_to_rider_3(u32 *racer)
 {
-    if (gGhostRace != 0 && *p == gGhostSlot_2) return 1;
-    if (gGame.mode == 2) return 1;
-    if (*p >= 6) return 1;
-    gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame.riders[*p];
-    if (*p >= 6) return 1;
-    return (gGame.mode == 9) * 2;
+    if (gGhostRace != 0 && *racer == gGhostSlot_2) return 1;
+    if (gGame.mode == GAME_MODE_SOCCER) return 1;
+    if (*racer >= ANNOUNCE_RACERS) return 1;
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) return 1;
+    return (gGame.mode == GAME_MODE_TUTORIAL) * 2;
 }
 
-void announce_lead_collision(u32 a, u32 b)
+/* The announce_* functions queue a phrase of clips: rider names (sRiderNameClips, rider + intonation *
+   ANNOUNCER_RIDERS) and the CLIP_* words. Most give up unless the queue has room for the whole phrase (a phrase of n
+   clips needs sSpeechQueueCount < SPEECH_QUEUE_SIZE + 1 - n). */
+
+/* The two leaders collide: CLIP_AND_BATTLING A CLIP_AND B, or A CLIP_AND B CLIP_ARE_BATTLING / CLIP_ARE_FIGHTING. */
+void announce_lead_collision(u32 racerA, u32 racerB)
 {
-    if (gRaceFrame - sLastLeadCollisionTime < 600) return;
-    if (check_2(&a)) return;
-    if (check_2(&b)) return;
+    if (gRaceFrame - sLastLeadCollisionTime < ANNOUNCE_COLLISION_INTERVAL) return;
+    if (racer_to_rider_3(&racerA)) return;
+    if (racer_to_rider_3(&racerB)) return;
     sLastLeadCollisionTime = gRaceFrame;
     random_byte();
     if (random_byte() & 1) {
         if (sSpeechQueueCount >= 5) return;
-        push_2(0x75);
-        push_2(sRiderNameClips[a + 12]);
-        push_2(0xBA);
-        push_2(sRiderNameClips[b + 18]);
+        speech_queue_push(CLIP_AND_BATTLING);
+        speech_queue_push(sRiderNameClips[racerA + 2 * ANNOUNCER_RIDERS]);
+        speech_queue_push(CLIP_AND);
+        speech_queue_push(sRiderNameClips[racerB + 3 * ANNOUNCER_RIDERS]);
     } else {
         if (sSpeechQueueCount >= 5) return;
-        push_2(sRiderNameClips[a + 12]);
-        push_2(0xBA);
-        push_2(sRiderNameClips[b + 18]);
+        speech_queue_push(sRiderNameClips[racerA + 2 * ANNOUNCER_RIDERS]);
+        speech_queue_push(CLIP_AND);
+        speech_queue_push(sRiderNameClips[racerB + 3 * ANNOUNCER_RIDERS]);
         if (random_byte() & 1) {
-            push_2(0x76);
+            speech_queue_push(CLIP_ARE_BATTLING);
         } else {
-            push_2(0x74);
+            speech_queue_push(CLIP_ARE_FIGHTING);
         }
     }
 }
 
-void announce_lap(s32 param_1)
+/* "Lap two" to "Lap four" when lap `lap` (0: the first) ends. */
+void announce_lap(s32 lap)
 {
-    if (param_1 == 0) {
-        push_2(0x83);
-    } else if (param_1 == 1) {
-        push_2(0x82);
-    } else if (param_1 == 2) {
-        push_2(0x81);
+    if (lap == 0) {
+        speech_queue_push(CLIP_LAP_TWO);
+    } else if (lap == 1) {
+        speech_queue_push(CLIP_LAP_THREE);
+    } else if (lap == 2) {
+        speech_queue_push(CLIP_LAP_FOUR);
     }
 }
 
-void announce_leader_lap(s32 param_1, s32 param_2)
+/* The leader as the first or second lap ends or the final lap starts: that lap's clip, the rider, then a takes-
+   the-lead or still-leads clip. */
+void announce_leader_lap(s32 racer, s32 lap)
 {
     s32 *t;
     s32 v;
@@ -623,415 +663,437 @@ void announce_leader_lap(s32 param_1, s32 param_2)
     if (sSpeechQueueCount >= 6) {
         return;
     }
-    if (check((u32 *)&param_1)) {
+    if (racer_to_rider((u32 *)&racer)) {
         return;
     }
-    if (param_2 == gEvent.numLaps - 2) {
-        queue(sFinalLapClips[random_byte() & 1]);
-    } else if (param_2 == 0) {
-        queue(sLeaderFirstLapClips[random_byte() % 3]);
+    if (lap == gEvent.numLaps - 2) {
+        speech_queue_push_2(sFinalLapClips[random_byte() & 1]);
+    } else if (lap == 0) {
+        speech_queue_push_2(sLeaderFirstLapClips[random_byte() % 3]);
     } else {
-        if (param_2 != 1) {
+        if (lap != 1) {
             return;
         }
-        queue(0x88);
+        speech_queue_push_2(CLIP_AT_THE_END_2);
     }
-    queue(sRiderNameClips[param_1 + 0x12]);
-    if (param_1 != sLastLeader) {
-        queue(sTakesLeadClips[random_byte() & 3]);
+    speech_queue_push_2(sRiderNameClips[racer + 3 * ANNOUNCER_RIDERS]);
+    if (racer != sLastLeader) {
+        speech_queue_push_2(sTakesLeadClips[random_byte() & 3]);
     } else {
-        queue(sStillLeadsClips[random_byte() % 3]);
+        speech_queue_push_2(sStillLeadsClips[random_byte() % 3]);
     }
-    sLastLeader = param_1;
+    sLastLeader = racer;
 }
 
-static inline s32 check_3(u32 *p)
+static inline s32 racer_to_rider_4(u32 *racer)
 {
-    if (gGhostRace != 0 && *p == gGhostSlot) return 1;
-    if (gGame.mode == 2) return 1;
-    if (*p >= 6) return 1;
-    gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame.riders[*p];
-    if (*p >= 6) return 1;
-    return (gGame.mode == 9) * 2;
+    if (gGhostRace != 0 && *racer == gGhostSlot) return 1;
+    if (gGame.mode == GAME_MODE_SOCCER) return 1;
+    if (*racer >= ANNOUNCE_RACERS) return 1;
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) return 1;
+    return (gGame.mode == GAME_MODE_TUTORIAL) * 2;
 }
 
-void announce_place(u32 a, u32 b)
+/* A racer's place (1: first): takes the lead, is in second, third ... or last place. */
+void announce_place(u32 racer, u32 place)
 {
-    if (gEvent.time < 0x168) return;
+    if (gEvent.time < ANNOUNCE_START_DELAY) return;
     if (sSpeechQueueCount >= 6) return;
-    if (gRiders[a].race.finishPlace >= 0) return;
-    if (check_3(&a)) return;
-    push_2(sRiderNameClips[a + 12]);
-    if (b == 1) {
-        if (a != sLastLeader_2) {
-            push_2(sTakesLeadClips[random_byte() & 3]);
+    if (gRiders[racer].race.finishPlace >= 0) return;
+    if (racer_to_rider_4(&racer)) return;
+    speech_queue_push(sRiderNameClips[racer + 2 * ANNOUNCER_RIDERS]);
+    if (place == 1) {
+        if (racer != sLastLeader_2) {
+            speech_queue_push(sTakesLeadClips[random_byte() & 3]);
         } else {
-            push_2(0x8A);
+            speech_queue_push(CLIP_CONTINUES);
         }
-        sLastLeader_2 = a;
-    } else if (b == gGame.numPlayers + gGame.numCpuRiders) {
+        sLastLeader_2 = racer;
+    } else if (place == gGame.numPlayers + gGame.numCpuRiders) {
         if (random_byte() & 1) {
-            push_2(0x7F);
+            speech_queue_push(CLIP_IS_BEHIND);
         } else {
-            push_2(0xBE);
-            push_2(0x9F);
+            speech_queue_push(CLIP_IS_IN);
+            speech_queue_push(CLIP_LAST_PLACE);
         }
-    } else if (b == 2) {
+    } else if (place == 2) {
         if (random_byte() & 1) {
-            push_2(0x80);
+            speech_queue_push(CLIP_IS_BEHIND_2);
         } else {
-            push_2(0xBE);
-            push_2(0x9E);
+            speech_queue_push(CLIP_IS_IN);
+            speech_queue_push(CLIP_SECOND_PLACE);
         }
     } else {
-        push_2(0xBF);
-        if (b == 3) {
-            push_2(0x9D);
-        } else if (b == 4) {
-            push_2(0x9C);
-        } else if (b == 5) {
-            push_2(0x9A);
+        speech_queue_push(CLIP_IS_IN_2);
+        if (place == 3) {
+            speech_queue_push(CLIP_THIRD_PLACE);
+        } else if (place == 4) {
+            speech_queue_push(CLIP_FOURTH_PLACE);
+        } else if (place == 5) {
+            speech_queue_push(CLIP_FIFTH_PLACE);
         }
     }
 }
 
-void announce_winner(u32 param_1)
+/* The winner crosses the line: "(And) it's <rider> with the ...", "<rider> takes first" or "<rider> takes the ...". */
+void announce_winner(u32 racer)
 {
-    s32 r;
+    s32 pick;
 
-    r = (s32)random_byte() % 3;
-    if (check(&param_1)) {
+    pick = (s32)random_byte() % 3;
+    if (racer_to_rider(&racer)) {
         return;
     }
-    if (r == 0) {
+    if (pick == 0) {
         if (sSpeechQueueCount >= 6) {
             return;
         }
         if (random_byte() & 1) {
-            queue(0xB8);
+            speech_queue_push_2(CLIP_AND_ITS);
         } else {
-            queue(0xB9);
+            speech_queue_push_2(CLIP_ITS);
         }
-        queue(sRiderNameClips[param_1]);
-        queue(0x78);
-    } else if (r == 1) {
+        speech_queue_push_2(sRiderNameClips[racer]);
+        speech_queue_push_2(CLIP_WITH_THE);
+    } else if (pick == 1) {
         if (sSpeechQueueCount >= 7) {
             return;
         }
-        queue(sRiderNameClips[param_1]);
-        queue(0x99);
+        speech_queue_push_2(sRiderNameClips[racer]);
+        speech_queue_push_2(CLIP_TAKES_FIRST);
     } else {
         if (sSpeechQueueCount >= 7) {
             return;
         }
-        queue(sRiderNameClips[param_1]);
-        queue(0x77);
+        speech_queue_push_2(sRiderNameClips[racer]);
+        speech_queue_push_2(CLIP_TAKES_THE);
     }
 }
 
-static __inline__ s32 chk_2(u32 *p)
+static __inline__ s32 racer_to_rider_5(u32 *racer)
 {
-    if (gGhostRace != 0 && *p == gGhostSlot_2) {
+    if (gGhostRace != 0 && *racer == gGhostSlot_2) {
         return 1;
     }
-    if (gGame.mode == 2) {
+    if (gGame.mode == GAME_MODE_SOCCER) {
         return 1;
     }
-    if (*p >= 6) {
+    if (*racer >= ANNOUNCE_RACERS) {
         return 1;
     }
-    gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame.riders[*p];
-    if (*p >= 6) {
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) {
         return 1;
     }
-    return (gGame.mode == 9) << 1;
+    return (gGame.mode == GAME_MODE_TUTORIAL) << 1;
 }
 
-void announce_crash(u32 param_1)
+/* A racer crashes: "<rider> <crash clip>", when nothing else is queued. */
+void announce_crash(u32 racer)
 {
-    u32 r;
+    u32 pick;
 
     if (sSpeechQueueCount != 0) {
         return;
     }
-    if (chk_2(&param_1) == 0) {
-        r = random_byte() % 3;
-        if (r == 0) {
-            push_4(sRiderNameClips[param_1 + 0x12]);
+    if (racer_to_rider_5(&racer) == 0) {
+        pick = random_byte() % 3;
+        if (pick == 0) {
+            speech_queue_push_3(sRiderNameClips[racer + 3 * ANNOUNCER_RIDERS]);
         } else {
-            push_4(sRiderNameClips[param_1 + 6]);
+            speech_queue_push_3(sRiderNameClips[racer + 1 * ANNOUNCER_RIDERS]);
         }
-        push_4(sCrashClips[r]);
+        speech_queue_push_3(sCrashClips[pick]);
     }
 }
 
-static __inline__ s32 chk_3(u32 *p)
+static __inline__ s32 racer_to_rider_6(u32 *racer)
 {
-    if (gGhostRace != 0 && *p == gGhostSlot) {
+    if (gGhostRace != 0 && *racer == gGhostSlot) {
         return 1;
     }
-    if (gGame.mode == 2) {
+    if (gGame.mode == GAME_MODE_SOCCER) {
         return 1;
     }
-    if (*p >= 6) {
+    if (*racer >= ANNOUNCE_RACERS) {
         return 1;
     }
-    gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame.riders[*p];
-    if (*p >= 6) {
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) {
         return 1;
     }
-    return (gGame.mode == 9) << 1;
+    return (gGame.mode == GAME_MODE_TUTORIAL) << 1;
 }
 
-void announce_crash_landing(u32 param_1)
+/* A racer crashes on landing: "<rider> <crash landing clip>" in a stadium, announce_crash elsewhere. */
+void announce_crash_landing(u32 racer)
 {
-    if (*(s32 *)(gCurTrack + 0x2c) != 0) {
-        announce_crash_2(param_1);
+    if (*(s32 *)(gCurTrack + 0x2c) != 0) {  /* the track's environment type: not a stadium */
+        announce_crash_2(racer);
         return;
     }
     if (sSpeechQueueCount != 0) {
         return;
     }
-    if (chk_3(&param_1) == 0) {
-        push_4(sRiderNameClips[param_1 + 6]);
-        push_4(sCrashLandingClips[random_byte() % 3]);
+    if (racer_to_rider_6(&racer) == 0) {
+        speech_queue_push_3(sRiderNameClips[racer + 1 * ANNOUNCER_RIDERS]);
+        speech_queue_push_3(sCrashLandingClips[random_byte() % 3]);
     }
 }
 
-void announce_takeout(u32 a, u32 b)
+/* `attacker` knocks `victim` down: "<attacker> takes out / knocks off <victim>", or only the victim's crash if the
+   attacker was named recently. */
+void announce_takeout(u32 attacker, u32 victim)
 {
-    u32 r;
+    u32 pick;
 
     if (sSpeechQueueCount != 0) {
         return;
     }
-    if ((s32)(gRaceFrame - gAnnounceTimes[a]) < 0x1E0) {
-        announce_crash(b);
+    if ((s32)(gRaceFrame - gAnnounceTimes[attacker]) < ANNOUNCE_TAKEOUT_INTERVAL) {
+        announce_crash(victim);
         return;
     }
-    if (chk(&a) != 0) {
+    if (racer_to_rider_2(&attacker) != 0) {
         return;
     }
-    if (chk(&b) != 0) {
+    if (racer_to_rider_2(&victim) != 0) {
         return;
     }
-    r = random_byte() % 3;
-    if (r == 0) {
-        push(sRiderNameClips[a + 12]);
+    pick = random_byte() % 3;
+    if (pick == 0) {
+        speech_queue_push_u32(sRiderNameClips[attacker + 2 * ANNOUNCER_RIDERS]);
     } else {
-        push(sRiderNameClips[a + 6]);
+        speech_queue_push_u32(sRiderNameClips[attacker + 1 * ANNOUNCER_RIDERS]);
     }
-    push(sTakeoutClips[r]);
-    push(sRiderNameClips[b + 18]);
+    speech_queue_push_u32(sTakeoutClips[pick]);
+    speech_queue_push_u32(sRiderNameClips[victim + 3 * ANNOUNCER_RIDERS]);
 }
 
-static inline s32 check_4(u32 *p)
+/* racer_to_rider without the ghost test, which announce_trick makes itself. */
+static inline s32 racer_to_rider_no_ghost(u32 *racer)
 {
-    if (gGame.mode == 2) {
+    if (gGame.mode == GAME_MODE_SOCCER) {
         return 1;
     }
-    if (*p >= 6) {
+    if (*racer >= ANNOUNCE_RACERS) {
         return 1;
     }
-    gAnnounceTimes[*p] = gRaceFrame;
-    *p = gGame.riders[*p];
-    if (*p >= 6) {
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) {
         return 1;
     }
-    return (gGame.mode == 9) * 2;
+    return (gGame.mode == GAME_MODE_TUTORIAL) * 2;
 }
 
-void announce_trick(u32 a, s32 b)
+/* Queues a trick's clip (also in the tutorial). */
+void announce_trick(u32 racer, s32 clip)
 {
-    s32 r;
-    u32 *pa;
+    s32 result;
+    u32 *racerPtr;
 
     if (sSpeechQueueCount < 7) {
-        pa = &a;
-        if (gGhostRace != 0 && a == gGhostSlot) {
-            r = 1;
+        racerPtr = &racer;
+        if (gGhostRace != 0 && racer == gGhostSlot) {
+            result = 1;
         } else {
-            r = check_4(pa);
+            result = racer_to_rider_no_ghost(racerPtr);
         }
-        if (r != 1 && gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
-            sSpeechQueue[sSpeechQueueCount++] = b;
+        if (result != 1 && gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0
+            && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
+            sSpeechQueue[sSpeechQueueCount++] = clip;
         }
     }
 }
 
-void announce_overtake(u32 a, u32 b, s32 c)
+/* "<racer> overtakes / takes the ... <other>". */
+void announce_overtake(u32 racer, u32 other, s32 takesThe)
 {
-    if (gEvent.time < 0x168) {
+    if (gEvent.time < ANNOUNCE_START_DELAY) {
         return;
     }
     if (sSpeechQueueCount >= 6) {
         return;
     }
-    if (chk(&a) != 0) {
+    if (racer_to_rider_2(&racer) != 0) {
         return;
     }
-    if (chk(&b) != 0) {
+    if (racer_to_rider_2(&other) != 0) {
         return;
     }
-    push(sRiderNameClips[a + 12]);
-    if (c != 0) {
-        push(0x95);
+    speech_queue_push_u32(sRiderNameClips[racer + 2 * ANNOUNCER_RIDERS]);
+    if (takesThe != 0) {
+        speech_queue_push_u32(CLIP_TAKES_THE_2);
     } else {
-        push(0x96);
+        speech_queue_push_u32(CLIP_OVERTAKES);
     }
-    push(sRiderNameClips[b + 18]);
+    speech_queue_push_u32(sRiderNameClips[other + 3 * ANNOUNCER_RIDERS]);
 }
 
-static inline s32 chk_4(u32 p, u32 *q)
+/* racer_to_rider, testing the ghost on a copy of the racer slot. */
+static inline s32 racer_to_rider_7(u32 slot, u32 *racer)
 {
-    if (gGhostRace != 0 && p == gGhostSlot) {
+    if (gGhostRace != 0 && slot == gGhostSlot) {
         return 1;
     }
-    if (gGame.mode == 2) {
+    if (gGame.mode == GAME_MODE_SOCCER) {
         return 1;
     }
-    if (*q >= 6) {
+    if (*racer >= ANNOUNCE_RACERS) {
         return 1;
     }
-    gAnnounceTimes[*q] = gRaceFrame;
-    *q = gGame.riders[*q];
-    if (*q >= 6) {
+    gAnnounceTimes[*racer] = gRaceFrame;
+    *racer = gGame.riders[*racer];
+    if (*racer >= ANNOUNCER_RIDERS) {
         return 1;
     }
-    return (gGame.mode == 9) * 2;
+    return (gGame.mode == GAME_MODE_TUTORIAL) * 2;
 }
 
-void announce_place_change(u32 param_1, s32 param_2, u32 param_3)
+/* A player's place changes from `prevPlace` to `place`: "<rider> moves up / drops back", then the place, which the
+   queue resolves when it plays. */
+void announce_place_change(u32 racer, s32 place, u32 prevPlace)
 {
-    u32 t1 = param_1;
-    u32 uVar2;
-    u32 sh;
-    if (chk_4(t1, &param_1) != 0) {
+    u32 slot = racer;
+    u32 kind;
+    u32 slotBits;
+    if (racer_to_rider_7(slot, &racer) != 0) {
         return;
     }
     if (gGhostRace != 0) {
         return;
     }
-    if ((s32)(gRaceFrame - sLastPlaceChangeTime) < 900) {
+    if ((s32)(gRaceFrame - sLastPlaceChangeTime) < ANNOUNCE_PLACE_CHANGE_INTERVAL) {
         return;
     }
     sLastPlaceChangeTime = gRaceFrame;
     if (sSpeechQueueCount >= 6) {
         return;
     }
-    push_3(sRiderNameClips[param_1 + 0xc]);
-    if (param_2 < (s32)param_3) {
-        push_3(0x97);
-        sh = t1 << 8;
-        uVar2 = 0x80010000;
+    speech_queue_push_u32_2(sRiderNameClips[racer + 2 * ANNOUNCER_RIDERS]);
+    if (place < (s32)prevPlace) {
+        speech_queue_push_u32_2(CLIP_MOVES_UP);
+        slotBits = slot << 8;
+        kind = SPEECH_PLACE_UP;
     } else {
-        push_3(0x98);
-        sh = t1 << 8;
-        uVar2 = 0x80020000;
+        speech_queue_push_u32_2(CLIP_DROPS_BACK);
+        slotBits = slot << 8;
+        kind = SPEECH_PLACE_DOWN;
     }
-    push_3(sh | (param_3 | uVar2));
+    speech_queue_push_u32_2(slotBits | (prevPlace | kind));
 }
 
-void announce_finish(u32 p)
+/* "<rider> crosses (the line)". */
+void announce_finish(u32 racer)
 {
-    if (chk(&p) != 0) {
+    if (racer_to_rider_2(&racer) != 0) {
         return;
     }
     if (sSpeechQueueCount >= 7) {
         return;
     }
-    push(sRiderNameClips[p + 12]);
-    push(0x79);
+    speech_queue_push_u32(sRiderNameClips[racer + 2 * ANNOUNCER_RIDERS]);
+    speech_queue_push_u32(CLIP_CROSSES);
 }
 
-void announce_early_leader(u32 param_1)
+/* "And it's <rider> with the ..." for the early leader. */
+void announce_early_leader(u32 racer)
 {
-    if (chk(&param_1) != 0) {
+    if (racer_to_rider_2(&racer) != 0) {
         return;
     }
     if (sSpeechQueueCount >= 6) {
         return;
     }
-    push(0xB8);
-    push(sRiderNameClips[param_1]);
-    push(0x91);
+    speech_queue_push_u32(CLIP_AND_ITS);
+    speech_queue_push_u32(sRiderNameClips[racer]);
+    speech_queue_push_u32(CLIP_WITH_THE_2);
 }
 
-void announce_best_lap(u32 param_1)
+/* "<rider> has set (the best lap)". */
+void announce_best_lap(u32 racer)
 {
-    if (chk(&param_1) != 0) {
+    if (racer_to_rider_2(&racer) != 0) {
         return;
     }
     if (sSpeechQueueCount >= 7) {
         return;
     }
-    push(sRiderNameClips[param_1]);
-    push(0x7A);
+    speech_queue_push_u32(sRiderNameClips[racer]);
+    speech_queue_push_u32(CLIP_HAS_SET);
 }
 
-void announce_record(u32 param_1)
+/* "<rider> sets a new (record)". */
+void announce_record(u32 racer)
 {
-    if (chk(&param_1) != 0) {
+    if (racer_to_rider_2(&racer) != 0) {
         return;
     }
     if (sSpeechQueueCount >= 7) {
         return;
     }
-    push(sRiderNameClips[param_1]);
-    push(0x7B);
+    speech_queue_push_u32(sRiderNameClips[racer]);
+    speech_queue_push_u32(CLIP_SETS_A_NEW);
 }
 
+/* Soccer: "Goal!", and the crowd cheers in a stadium. */
 void announce_goal(void)
 {
-    push_3(0x94);
-    if (gCurTrack_4->f2C == 0) {
-        s32 k = sCrowdQueueCount;
-        s32 v = sCrowdCheerClip;
-        if (k < 2) {
-            sCrowdQueue[k * 2] = v;
-            sCrowdQueue[k * 2 + 1] = 0x1E;
-            sCrowdQueueCount = k + 1;
+    speech_queue_push_u32_2(CLIP_GOAL);
+    if (gCurTrack_4->f2C == 0) {    /* the track's environment type: a stadium */
+        s32 count = sCrowdQueueCount;
+        s32 clip = sCrowdCheerClip;
+        if (count < CROWD_QUEUE_SIZE) {
+            sCrowdQueue[count * 2] = clip;
+            sCrowdQueue[count * 2 + 1] = CROWD_DELAY;
+            sCrowdQueueCount = count + 1;
         }
     }
 }
 
-void tunes_play_cliff_fall(u32 param_1)
+/* A racer falls off a cliff: plays the cliff fall clip on the ambience channel, holding it until the clip ends. */
+void tunes_play_cliff_fall(u32 racer)
 {
-    StreamChannel *b;
-    StreamSample *s;
+    StreamChannel *ch;
+    StreamSample *table;
 
-    if (chk(&param_1) != 0) {
+    if (racer_to_rider_2(&racer) != 0) {
         return;
     }
-    if (param_1 == 0 || param_1 == 3) {
+    /* not for riders 0 and 3 (Sarah and Vikki, by their name clips) */
+    if (racer == 0 || racer == 3) {
         return;
     }
-    b = sStreamChannels;
-    b[3].sample = 0x73;
-    b[3].block = 0;
-    s = sStreamSampleTable;
-    b[3].data = (u8 *)(s[0x73].offset + sStreamDataBase);
-    b[3].size = s[0x73].size;
+    ch = sStreamChannels;
+    ch[STREAM_CH_AMBIENT].sample = CLIP_CLIFF_FALL;
+    ch[STREAM_CH_AMBIENT].block = 0;
+    table = sStreamSampleTable;
+    ch[STREAM_CH_AMBIENT].data = (u8 *)(table[CLIP_CLIFF_FALL].offset + sStreamDataBase);
+    ch[STREAM_CH_AMBIENT].size = table[CLIP_CLIFF_FALL].size;
     sAmbientLocked = 1;
-    b[3].flags = s[0x73].flags;
-    b[3].loop = 0;
+    ch[STREAM_CH_AMBIENT].flags = table[CLIP_CLIFF_FALL].flags;
+    ch[STREAM_CH_AMBIENT].loop = 0;
     gAmbientVolume_2[0] = gSfxVolume;
 }
 
-s32 tunes_is_song_playing(void) {
+s32 tunes_is_song_playing(void)
+{
     return sCurrentSong != 0;
 }
 
+/* Stops the song and frees the clip table, the mix ring and the channels. */
 void tunes_shutdown(void)
 {
     s32 i;
     if (sCurrentSong != 0) {
         tunes_stop_song();
     }
-    res_unload((u32 *)((u8 *)gSfxResSet_2[1] + sStreamSampleTableResId * 4));
+    res_unload((u32 *)((u8 *)gSfxResSet_2[1] + sStreamSampleTableResId * 4));   /* the clip table's handle */
     i = 0;
     mem_free(sStreamMixBuf);
     if (0 < sStreamChannelCount) {
@@ -1045,253 +1107,276 @@ void tunes_shutdown(void)
     sTunesActive = 0;
 }
 
-int tunes_play_speech(s32 param_1, s32 param_2, s32 param_3)
+/* Plays `clip` on the announcer's channel now unless a clip of `priority` or higher plays (a negative priority can
+   be cut by the queue). Returns 0 if it plays. */
+int tunes_play_speech(s32 clip, s32 priority, s32 useSfxVolume)
 {
-    StreamSample *iVar3;
+    StreamSample *smp;
 
     if (gPodiumMode != 0) {
         return gPodiumMode;
     }
-    if (sStreamChannels[2].sample != -1 && param_2 <= sSpeechPriority) {
+    if (sStreamChannels[STREAM_CH_SPEECH].sample != -1 && priority <= sSpeechPriority) {
         return 1;
     }
-    iVar3 = &sStreamSampleTable[param_1];
-    sStreamChannels[2].echo = 0;
-    sStreamChannels[2].loop = 0;
-    sStreamChannels[2].sample = param_1;
-    sStreamChannels[2].block = 0;
-    sStreamChannels[2].data = (u8 *)(iVar3->offset + sStreamDataBase);
-    sSpeechPriority = param_2;
-    sStreamChannels[2].size = iVar3->size;
-    sSpeechUseSfxVolume = param_3;
-    sStreamChannels[2].flags = iVar3->flags;
+    smp = &sStreamSampleTable[clip];
+    sStreamChannels[STREAM_CH_SPEECH].echo = 0;
+    sStreamChannels[STREAM_CH_SPEECH].loop = 0;
+    sStreamChannels[STREAM_CH_SPEECH].sample = clip;
+    sStreamChannels[STREAM_CH_SPEECH].block = 0;
+    sStreamChannels[STREAM_CH_SPEECH].data = (u8 *)(smp->offset + sStreamDataBase);
+    sSpeechPriority = priority;
+    sStreamChannels[STREAM_CH_SPEECH].size = smp->size;
+    sSpeechUseSfxVolume = useSfxVolume;
+    sStreamChannels[STREAM_CH_SPEECH].flags = smp->flags;
     return 0;
 }
 
+/* The frames the queued clips last: 2 samples per byte (twice that at half rate), 60 frames a second. */
 s32 tunes_get_speech_queue_time(void)
 {
-    s32 i, sum, w, f;
+    s32 i, sum, size, samples;
 
     sum = 0;
     for (i = 0; i < sSpeechQueueCount; i++) {
-        w = ((StreamSample *)((u8 *)sStreamSampleTable + ((sSpeechQueue[i] * 5) << 2)))->size;
-        f = w * 2;
-        /* the flags of clip `f`, not of the queued clip */
-        if (((StreamSample *)((u8 *)sStreamSampleTable + ((f * 5) << 2)))->flags & 1) {
-            f = w << 2;
+        size = ((StreamSample *)((u8 *)sStreamSampleTable + ((sSpeechQueue[i] * 5) << 2)))->size;
+        samples = size * 2;
+        /* the flags of clip `samples`, not of the queued clip */
+        if (((StreamSample *)((u8 *)sStreamSampleTable + ((samples * 5) << 2)))->flags & STREAM_HALF_RATE) {
+            samples = size << 2;
         }
-        sum += (f * 0x3c) / 0x5622;
+        sum += (samples * 60) / STREAM_SAMPLE_RATE;
     }
     return sum;
 }
 
-u32 tunes_find_sample(u32 key)
+/* The index of the clip whose tag is `tag`, -1 if none. */
+u32 tunes_find_sample(u32 tag)
 {
-    StreamSample *p;
+    StreamSample *rec;
     u32 i = 0;
-    u32 n;
+    u32 count;
 
-    p = sStreamSampleTable;
-    if (p->count != 0) {
-        n = p->count;
+    rec = sStreamSampleTable;
+    if (rec->count != 0) {
+        count = rec->count;
         do {
-            if (p[1].count == key) {    /* clip i's tag */
+            if (rec[1].count == tag) {    /* clip i's tag */
                 return i;
             }
             i++;
-            p++;
-        } while (i < n);
+            rec++;
+        } while (i < count);
     }
     return 0xFFFFFFFF;
 }
 
-static inline void push_5(s32 v, s32 w) {
-    s32 n = sCrowdQueueCount;
-    if (n < 2) {
+static inline void crowd_queue_push(s32 clip, s32 delay)
+{
+    s32 count = sCrowdQueueCount;
+    if (count < CROWD_QUEUE_SIZE) {
         do {
             do {
-                sCrowdQueue[n * 2] = v;
+                sCrowdQueue[count * 2] = clip;
             } while (0);
         } while (0);
-        sCrowdQueue[n * 2 + 1] = w;
-        sCrowdQueueCount = n + 1;
+        sCrowdQueue[count * 2 + 1] = delay;
+        sCrowdQueueCount = count + 1;
     }
 }
 
-void tunes_queue_crowd(s32 p) {
-    if (gCurTrack_3[11] == 0) {
-        push_5(sCrowdClips[p], 0x1E);
+/* Queues crowd reaction `kind` (sCrowdClips) in a stadium. */
+void tunes_queue_crowd(s32 kind)
+{
+    if (gCurTrack_3[11] == 0) {     /* the track's environment type: a stadium */
+        crowd_queue_push(sCrowdClips[kind], CROWD_DELAY);
     }
 }
 
+/* Clears the announcer's memory before a race. */
 void announce_reset(void)
 {
-    s32 val = -0x708;
+    s32 never = ANNOUNCE_NEVER;
     s32 i = 7;
 
     do {
-        gAnnounceTimes[i] = val;
+        gAnnounceTimes[i] = never;
         i--;
     } while (i >= 0);
     sLastLeader = -1;
     gLastSpeechTime = -1;
-    sLastPlaceChangeTime = -0x708;
-    sLastLeadCollisionTime = -0x708;
+    sLastPlaceChangeTime = ANNOUNCE_NEVER;
+    sLastLeadCollisionTime = ANNOUNCE_NEVER;
     sCrowdQueueCount = 0;
     sAmbientLocked = 0;
 }
 
-void tunes_queue_speech(s32 a0)
+/* Queues an announcer clip (not during replays, the credits or the podium; dropped when the queue is full). */
+void tunes_queue_speech(s32 clip)
 {
     if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0) {
-        s32 n = sSpeechQueueCount;
-        if (n < 8) {
-            sSpeechQueue[n] = a0;
-            sSpeechQueueCount = n + 1;
+        s32 count = sSpeechQueueCount;
+        if (count < SPEECH_QUEUE_SIZE) {
+            sSpeechQueue[count] = clip;
+            sSpeechQueueCount = count + 1;
         }
     }
 }
 
+/* Silences the announcer: stops its channel, empties the queue and clears its buffers, the echo and the mix ring. */
 void tunes_stop_speech(void)
 {
-    StreamChannel *o;
-    u8 *p;
+    StreamChannel *ch;
+    u8 *dmaBuf;
 
-    o = sStreamChannels;
-    p = o[2].dmaBuf;
-    o[2].sample = -1;
-    o[2].block = -1;
-    o[2].bufSample = -1;
-    o[2].bufBlock = -1;
-    o[2].dmaSample = -1;
-    o[2].dmaBlock = -1;
-    mem_fill(p, 0, 0x220);
-    mem_fill(sStreamChannels[2].pcm, 0, 0x800);
+    ch = sStreamChannels;
+    dmaBuf = ch[STREAM_CH_SPEECH].dmaBuf;
+    ch[STREAM_CH_SPEECH].sample = -1;
+    ch[STREAM_CH_SPEECH].block = -1;
+    ch[STREAM_CH_SPEECH].bufSample = -1;
+    ch[STREAM_CH_SPEECH].bufBlock = -1;
+    ch[STREAM_CH_SPEECH].dmaSample = -1;
+    ch[STREAM_CH_SPEECH].dmaBlock = -1;
+    mem_fill(dmaBuf, 0, STREAM_DMA_BYTES);
+    mem_fill(sStreamChannels[STREAM_CH_SPEECH].pcm, 0, STREAM_PCM_BYTES);
     sSpeechQueueCount = 0;
-    mem_fill(sStreamEchoBuf, 0, 0x1000);
-    mem_fill(sStreamMixBuf, 0, 0x2000);
+    mem_fill(sStreamEchoBuf, 0, STREAM_ECHO_BUF_BYTES);
+    mem_fill(sStreamMixBuf, 0, STREAM_MIX_BUF_BYTES);
 }
 
-void announce_race_start(s32 on)
+/* "Last race" or "Starting ..." before the start. */
+void announce_race_start(s32 lastRace)
 {
-    if (on) {
-        push_3(0x92);
+    if (lastRace) {
+        speech_queue_push_u32_2(CLIP_LAST_RACE);
     } else {
-        push_3(0x93);
+        speech_queue_push_u32_2(CLIP_STARTING);
     }
 }
 
-void tunes_mix_callback(s32 *p, s32 n)
+/* n64snd's post-mix callback: adds up to `count` mixed samples to both channels of the output. */
+void tunes_mix_callback(s32 *out, s32 count)
 {
-    if (sStreamMixFill < n) {
-        n = sStreamMixFill;
+    if (sStreamMixFill < count) {
+        count = sStreamMixFill;
     }
     if (sStreamLock == 0) {
-        sStreamMixFill = sStreamMixFill - n;
-        while (n != 0) {
-            *p = *p + sStreamMixBuf[sStreamMixReadPos];
-            p++;
-            *p = *p + sStreamMixBuf[sStreamMixReadPos];
-            p++;
-            sStreamMixReadPos = (sStreamMixReadPos + 1) & 0x7FF;
-            n--;
+        sStreamMixFill = sStreamMixFill - count;
+        while (count != 0) {
+            *out = *out + sStreamMixBuf[sStreamMixReadPos];
+            out++;
+            *out = *out + sStreamMixBuf[sStreamMixReadPos];
+            out++;
+            sStreamMixReadPos = (sStreamMixReadPos + 1) & STREAM_MIX_MASK;
+            count--;
         }
     }
 }
 
-void tunes_init_channel(StreamChannel *p) {
-    if (p->dmaBuf == 0) {
-        p->dmaBuf = mem_alloc_dbg(0x220, 0, (s32)&sStrTunesC, 0x128);
-        p->pcm = mem_alloc_dbg(0x800, 0, (s32)&sStrTunesC, 0x129);
-        p->unk_00 = 0;
-        p->dmaHandle = -1;
-        p->sample = -1;
-        p->bufSample = -1;
-    }
-}
-
-void tunes_free_channel(StreamChannel *param_1)
+/* Allocates a channel's buffers once. */
+void tunes_init_channel(StreamChannel *ch)
 {
-    if (param_1->dmaBuf != 0) {
-        mem_free(param_1->dmaBuf);
-        mem_free(param_1->pcm);
-        mem_fill(param_1, 0, sizeof(StreamChannel));
-        param_1->dmaHandle = -1;
-        param_1->sample = -1;
-        param_1->bufSample = -1;
+    if (ch->dmaBuf == 0) {
+        ch->dmaBuf = mem_alloc_dbg(STREAM_DMA_BYTES, 0, (s32)&sStrTunesC, 0x128);
+        ch->pcm = mem_alloc_dbg(STREAM_PCM_BYTES, 0, (s32)&sStrTunesC, 0x129);
+        ch->unk_00 = 0;
+        ch->dmaHandle = -1;
+        ch->sample = -1;
+        ch->bufSample = -1;
     }
 }
 
-void tunes_update(void) {
+/* Frees a channel's buffers and clears it. */
+void tunes_free_channel(StreamChannel *ch)
+{
+    if (ch->dmaBuf != 0) {
+        mem_free(ch->dmaBuf);
+        mem_free(ch->pcm);
+        mem_fill(ch, 0, sizeof(StreamChannel));
+        ch->dmaHandle = -1;
+        ch->sample = -1;
+        ch->bufSample = -1;
+    }
+}
+
+/* Mixes blocks until the mix ring is full or a DMA is needed. */
+void tunes_update(void)
+{
     if (sTunesActive != 0) {
         while (tunes_mix_streams() != 0) {
         }
     }
 }
 
-void tunes_apply_echo(s16 *p, s32 n) {
-    s32 v;
-    s32 i2;
-    s32 t;
-    for (; n != 0; n--) {
-        v = *p + ((s16)sStreamEchoBuf[sStreamEchoPos] >> 1);
-        if (v > 0x7FFF) {
-            v = 0x7FFF;
+/* Runs `count` samples through the echo ring: each gets half of the sample a ring earlier added, clamped. */
+void tunes_apply_echo(s16 *pcm, s32 count)
+{
+    s32 sample;
+    s32 next;
+    s32 rounded;
+    for (; count != 0; count--) {
+        sample = *pcm + ((s16)sStreamEchoBuf[sStreamEchoPos] >> 1);
+        if (sample > 0x7FFF) {
+            sample = 0x7FFF;
         }
-        if (v < -0x7FFF) {
-            v = -0x7FFF;
+        if (sample < -0x7FFF) {
+            sample = -0x7FFF;
         }
-        sStreamEchoBuf[sStreamEchoPos] = v;
-        *p = v;
-        p++;
-        i2 = sStreamEchoPos + 1;
-        t = i2;
-        if (i2 < 0) {
-            t = sStreamEchoPos + 0x800;
+        sStreamEchoBuf[sStreamEchoPos] = sample;
+        *pcm = sample;
+        pcm++;
+        /* sStreamEchoPos = (sStreamEchoPos + 1) % STREAM_ECHO_RING, written out */
+        next = sStreamEchoPos + 1;
+        rounded = next;
+        if (next < 0) {
+            rounded = sStreamEchoPos + STREAM_ECHO_RING;
         }
-        sStreamEchoPos = i2 - (t >> 11) * 0x800;
+        sStreamEchoPos = next - (rounded >> 11) * STREAM_ECHO_RING;
     }
 }
 
+/* Sets each channel's volume from gStreamVolumes and the master volume. */
 void tunes_update_volumes(void)
 {
-    s32 k = 0;
+    s32 i = 0;
 
     if (sTunesActive != 0) {
-        s32 *p = gStreamVolumes_2;
-        s32 a2 = gSndMasterVolume;
-        StreamChannel *e = sStreamChannels;
+        s32 *volumes = gStreamVolumes_2;
+        s32 master = gSndMasterVolume;
+        StreamChannel *ch = sStreamChannels;
         do {
-            s32 v = *p;
-            p++;
-            k++;
-            e->volume = (v * a2) >> 8;
-            e++;
-        } while (k < 4);
+            s32 v = *volumes;
+            volumes++;
+            i++;
+            ch->volume = (v * master) >> 8;
+            ch++;
+        } while (i < STREAM_CHANNELS);
     }
 }
 
-s32 announce_check_rider(u32 *p)
+/* Whether racer *racer is left out of the announcements (1: the ghost, soccer, no named rider). Otherwise it stamps
+   the racer's announce time, replaces *racer with its rider (gGame.riders) and returns 2 in the tutorial, else 0. */
+s32 announce_check_rider(u32 *racer)
 {
-    Game *base;
-    u32 u;
+    Game *game;
+    u32 rider;
     if (gGhostRace != 0) {
-        if (*p == gGhostSlot) {
+        if (*racer == gGhostSlot) {
             return 1;
         }
     }
-    base = &gGame;
-    if (base->mode == 2) {
+    game = &gGame;
+    if (game->mode == GAME_MODE_SOCCER) {
         return 1;
     }
-    if (*p >= 6) {
+    if (*racer >= ANNOUNCE_RACERS) {
         return 1;
     }
-    gAnnounceTimes[*p] = gRaceFrame;
-    u = base->riders[*p];
-    *p = u;
-    if (u < 6) {
-        return (base->mode == 9) << 1;
+    gAnnounceTimes[*racer] = gRaceFrame;
+    rider = game->riders[*racer];
+    *racer = rider;
+    if (rider < ANNOUNCER_RIDERS) {
+        return (game->mode == GAME_MODE_TUTORIAL) << 1;
     }
     return 1;
 }

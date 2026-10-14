@@ -1,13 +1,19 @@
 #include "game.h"
 
-static inline void copy(u8 *d, u8 *s, u32 len)
+/* The static inline helpers of this file repeat sfx_copy_bytes, sfx_str_icmp, sfx_find_sound, sfx_create_sample
+   and sfx_stream_read inside their callers. Each copy keeps the loop and label shape its caller compiled from, so
+   they stay separate even where two are the same. */
+
+/* Copies `len` bytes (sfx_stream_write, sfx_stream_read). */
+static inline void stream_copy(u8 *dst, u8 *src, u32 len)
 {
     for (; len != 0; len--) {
-        *d++ = *s++;
+        *dst++ = *src++;
     }
 }
 
-static inline s32 cmp(u8 *a, u8 *b)
+/* Compares two names ignoring case: 0 when equal, else 1. */
+static inline s32 name_icmp(u8 *a, u8 *b)
 {
     for (;;) {
         if (char_to_upper(*a) != char_to_upper(*b)) {
@@ -20,92 +26,96 @@ static inline s32 cmp(u8 *a, u8 *b)
     }
 }
 
+/* Loads a sample by name, or adds a reference to the one already loaded under that name; returns the sample or a
+   negative error. */
 s32 sfx_load_sample_name(u8 *name)
 {
-    s32 i, iv, loc[4];
-    SfxSample *tab;
-    SfxSample *e;
-    u8 *pc;
+    s32 i, sample, info[4];
+    SfxSample *samples;
+    SfxSample *entry;
+    u8 *nameCopy;
 
     if (sSfxInitialized != 0) {
-        for (i = 0; i < 0x100; i++) {
-            if (sSfxSamples[i].name != NULL && cmp(sSfxSamples[i].name, name) == 0) {
+        for (i = 0; i < SFX_NUM_SAMPLES; i++) {
+            if (sSfxSamples[i].name != NULL && name_icmp(sSfxSamples[i].name, name) == 0) {
                 if (sSfxSamples[i].refCount >= 0) {
                     sSfxSamples[i].refCount++;
                 }
                 return i;
             }
         }
-        iv = gSfxDriver->loadSampleNamed(name);
-        if (iv < 0) {
-            return iv;
+        sample = gSfxDriver->loadSampleNamed(name);
+        if (sample < 0) {
+            return sample;
         }
-        if (iv < 0x100) {
-            pc = mem_alloc_dbg(strlen(name) + 1, 0, sStrSfxFile, 0x201);
-            tab = sSfxSamples;
-            e = &tab[iv];
-            e->name = pc;
-            str_copy(pc, name);
-            gSfxDriver->getSampleInfo(iv, loc);
-            e->length = loc[0];
-            e->loopStart = loc[1];
-            e->loopEnd = loc[2];
-            e->unk_10 = loc[3];
-            return iv;
+        if (sample < SFX_NUM_SAMPLES) {
+            nameCopy = mem_alloc_dbg(strlen(name) + 1, 0, sStrSfxFile, 0x201);
+            samples = sSfxSamples;
+            entry = &samples[sample];
+            entry->name = nameCopy;
+            str_copy(nameCopy, name);
+            gSfxDriver->getSampleInfo(sample, info);
+            entry->length = info[0];
+            entry->loopStart = info[1];
+            entry->loopEnd = info[2];
+            entry->unk_10 = info[3];
+            return sample;
         }
-        gSfxDriver->freeSample(iv);
+        gSfxDriver->freeSample(sample);
     }
     return -1;
 }
 
+/* Loads the "SAM" resource `resId` as a new sample; returns the sample or a negative error. */
 s32 sfx_load_sample_id(s32 resId)
 {
-    s32 idx;
-    s32 buf[4];
-    u8 *base;
-    SndDriver *fp;
-    SfxSample *p;
+    s32 sample;
+    s32 info[4];
+    u8 *samples;
+    SndDriver *driver;
+    SfxSample *entry;
 
     if (sSfxInitialized != 0) {
-        idx = gSfxDriver->loadSampleIndex(resId);
-        if (idx < 0) {
-            return idx;
+        sample = gSfxDriver->loadSampleIndex(resId);
+        if (sample < 0) {
+            return sample;
         }
-        if (idx < 0x100) {
-            base = (u8 *)sSfxSamples;
-            p = (SfxSample *)(base + idx * sizeof(SfxSample));
-            fp = gSfxDriver;
-            p->name = 0;
-            p->refCount = 1;
-            fp->getSampleInfo(idx, buf);
-            p->length = buf[0];
-            p->loopStart = buf[1];
-            p->loopEnd = buf[2];
-            p->unk_10 = buf[3];
-            return idx;
+        if (sample < SFX_NUM_SAMPLES) {
+            samples = (u8 *)sSfxSamples;
+            entry = (SfxSample *)(samples + sample * sizeof(SfxSample));
+            driver = gSfxDriver;
+            entry->name = 0;
+            entry->refCount = 1;
+            driver->getSampleInfo(sample, info);
+            entry->length = info[0];
+            entry->loopStart = info[1];
+            entry->loopEnd = info[2];
+            entry->unk_10 = info[3];
+            return sample;
         }
-        gSfxDriver->freeSample(idx);
+        gSfxDriver->freeSample(sample);
     }
     return -1;
 }
 
-void sfx_free_sample(s32 param_1)
+/* Drops a reference to a sample (a locked one keeps its count) and frees it when none is left. */
+void sfx_free_sample(s32 sample)
 {
-    SfxSample *w;
-    SfxSample *e;
+    SfxSample *samples;
+    SfxSample *entry;
 
     if (sSfxInitialized != 0) {
-        w = sSfxSamples;
-        e = &w[param_1];
-        if (e->refCount > 0) {
-            e->refCount = e->refCount - 1;
+        samples = sSfxSamples;
+        entry = &samples[sample];
+        if (entry->refCount > 0) {
+            entry->refCount = entry->refCount - 1;
         }
-        if (e->refCount == 0) {
-            if (e->name != 0) {
-                mem_free(e->name);
+        if (entry->refCount == 0) {
+            if (entry->name != 0) {
+                mem_free(entry->name);
             }
-            mem_fill((u8 *)e, 0, sizeof(SfxSample));
-            gSfxDriver->freeSample(param_1);
+            mem_fill((u8 *)entry, 0, sizeof(SfxSample));
+            gSfxDriver->freeSample(sample);
         }
     }
 }
@@ -116,323 +126,338 @@ typedef s32 (*MethodFn)(void *);
 /* sfx_update_voices reads and writes a sound's voice flags as volatile. */
 #define VOICE_FLAGS(n) (((volatile SfxSound *)(n))->voiceFlags)
 
-s32 sfx_play(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 arg5)
+/* Starts a sound: takes a free entry of the pool, links it into sSfxSounds by priority and returns its handle (-1:
+   none free). It gets a voice at the next sfx_update_voices. `unused` is never read. */
+s32 sfx_play(s32 sample, s32 rate, s32 volume, s32 pan, s32 priority, s32 unused)
 {
-    SfxSound *p;
-    SfxSound *w;
-    SfxSound *q;
+    SfxSound *snd;
+    SfxSound *slot;
+    SfxSound *next;
     SfxSound *prev;
-    SndDriver *obj;
+    SndDriver *driver;
     s32 i;
-    s32 cnt;
-    s32 quo;
-    s32 ret;
-    s32 m1;
-    s32 t5;
-    s32 id;
-    MethodFn fn;
+    s32 numPlaying;
+    s32 step;
+    s32 clock;
+    s32 freeMark;
+    s32 prio;
+    s32 handle;
+    MethodFn getClock;
 
     if (sSfxInitialized == 0) {
         return -1;
     }
-    if (sSfxSamples[a0].length == 0) {
+    if (sSfxSamples[sample].length == 0) {
         return -1;
     }
     i = 0;
     critical_enter();
-    m1 = -1;
-    __asm__ __volatile__("" : "+r"(m1));
-    w = sSfxSoundPool;
-    for (i = 0; i < 0x80; i++) {
-        if (w->prev == (SfxSound *)m1) {
-            w->prev = NULL;
+    freeMark = -1; /* the `prev` of a free pool entry */
+    /* The empty asm statements hold freeMark, handle and prio in registers of their own, as the original allocated
+       them. */
+    __asm__ __volatile__("" : "+r"(freeMark));
+    slot = sSfxSoundPool;
+    for (i = 0; i < SFX_NUM_SOUNDS; i++) {
+        if (slot->prev == (SfxSound *)freeMark) {
+            slot->prev = NULL;
             break;
         }
-        w++;
+        slot++;
     }
     critical_leave();
-    if (i == 0x80) {
-        p = NULL;
+    if (i == SFX_NUM_SOUNDS) {
+        snd = NULL;
     } else {
-        p = &sSfxSoundPool[i];
+        snd = &sSfxSoundPool[i];
     }
-    if (p == NULL) {
+    if (snd == NULL) {
         return -1;
     }
-    mem_fill((u8 *)p, 0, sizeof(SfxSound));
-    id = sSfxNextHandle;
-    __asm__ __volatile__("" : "+r"(id));
-    p->sample = a0;
-    p->rate = a1;
-    p->volume = a2;
-    p->fadeVolume = a2 << 16;
-    p->pan = a3;
-    t5 = a4;
-    __asm__ __volatile__("" : "+r"(t5));
-    p->voiceFlags = 0;
-    p->fadeStep = 0;
-    __asm__ __volatile__("" : "+r"(t5));
-    p->priority = t5;
-    obj = gSfxDriver;
-    p->voice = -1;
-    p->handle = id;
-    fn = *(MethodFn *)&obj->getSampleClock;
-    sSfxNextHandle = id + 1;
-    ret = fn(obj);
-    quo = (a1 << 8) / sSfxOutputRate;
-    cnt = 0;
-    p->clock = ret;
-    p->step = quo;
+    mem_fill((u8 *)snd, 0, sizeof(SfxSound));
+    handle = sSfxNextHandle;
+    __asm__ __volatile__("" : "+r"(handle));
+    snd->sample = sample;
+    snd->rate = rate;
+    snd->volume = volume;
+    snd->fadeVolume = volume << SFX_FADE_SHIFT;
+    snd->pan = pan;
+    prio = priority;
+    __asm__ __volatile__("" : "+r"(prio));
+    snd->voiceFlags = 0;
+    snd->fadeStep = 0;
+    __asm__ __volatile__("" : "+r"(prio));
+    snd->priority = prio;
+    driver = gSfxDriver;
+    snd->voice = -1;
+    snd->handle = handle;
+    getClock = *(MethodFn *)&driver->getSampleClock;
+    sSfxNextHandle = handle + 1;
+    clock = getClock(driver);
+    step = (rate << SFX_POS_SHIFT) / sSfxOutputRate;
+    numPlaying = 0;
+    snd->clock = clock;
+    snd->step = step;
+    /* Insert before the first sound of no higher priority (sfx_insert_sound). */
     critical_enter();
-    q = sSfxSounds;
+    next = sSfxSounds;
     prev = NULL;
-    while (q != NULL) {
-        prev = q;
-        if (prev->priority <= p->priority) {
+    while (next != NULL) {
+        prev = next;
+        if (prev->priority <= snd->priority) {
             break;
         }
-        if (prev->voiceFlags & 1) {
-            cnt++;
+        if (prev->voiceFlags & SFX_VOICE_PLAYING) {
+            numPlaying++;
         }
-        q = prev->next;
+        next = prev->next;
     }
-    p->next = q;
-    if (q != NULL) {
-        p->prev = q->prev;
-        if (q->prev != NULL) {
-            q->prev->next = p;
+    snd->next = next;
+    if (next != NULL) {
+        snd->prev = next->prev;
+        if (next->prev != NULL) {
+            next->prev->next = snd;
         }
-        q->prev = p;
+        next->prev = snd;
     } else {
         if (prev != NULL) {
-            prev->next = p;
+            prev->next = snd;
         }
-        p->prev = prev;
+        snd->prev = prev;
     }
-    if (sSfxSounds == NULL || q == sSfxSounds) {
-        sSfxSounds = p;
-        p->prev = NULL;
+    if (sSfxSounds == NULL || next == sSfxSounds) {
+        sSfxSounds = snd;
+        snd->prev = NULL;
     }
-    if (cnt < sSfxNumVoices) {
+    if (numPlaying < sSfxNumVoices) {
         sSfxVoiceChangeCount++;
     }
     critical_leave();
-    return p->handle;
+    return snd->handle;
 }
 
+/* The per-buffer update (from sfx_driver_callback): advances the sounds without a voice, steps the fades, ends the
+   sounds that stopped, and gives the voices to the first sSfxNumVoices sounds of the list that still play. */
 void sfx_update_voices(void)
 {
-    SfxSound *n;
+    SfxSound *snd;
     s32 i;
     s32 now;
     s32 dt;
     s32 cnt;
     s32 v;
     u32 pos;
-    u32 cur;
+    u32 wrapped;
 
     if (sSfxInitialized != 0) {
         now = gSfxDriver->getSampleClock();
-        n = sSfxSounds;
+        snd = sSfxSounds;
         gSfxActiveCount = 0;
-        while (n != NULL) {
-            i = now - n->clock;
-            n->clock = now;
+        while (snd != NULL) {
+            /* i: the output samples since the last update */
+            i = now - snd->clock;
+            snd->clock = now;
             gSfxActiveCount++;
-            if ((VOICE_FLAGS(n) & 1) && n->voice == -1) {
-                v = VOICE_FLAGS(n) & 2;
-                pos = n->position + i * n->step;
-                n->position = pos;
+            if ((VOICE_FLAGS(snd) & SFX_VOICE_PLAYING) && snd->voice == -1) {
+                /* A playing sound without a voice moves on by itself, looping or ending as the voice would. */
+                v = VOICE_FLAGS(snd) & SFX_VOICE_LOOPED;
+                pos = snd->position + i * snd->step;
+                snd->position = pos;
                 if (v) {
-                    s32 len;
-                    len = (sSfxSamples[n->sample].loopEnd - sSfxSamples[n->sample].loopStart) << 8;
-                    while (n->position >= (u32)(sSfxSamples[n->sample].loopEnd << 8) && len != 0) {
-                        n->position -= len;
+                    s32 loopLen;
+                    loopLen = (sSfxSamples[snd->sample].loopEnd - sSfxSamples[snd->sample].loopStart) << SFX_POS_SHIFT;
+                    while (snd->position >= (u32)(sSfxSamples[snd->sample].loopEnd << SFX_POS_SHIFT) && loopLen != 0) {
+                        snd->position -= loopLen;
                     }
                 } else {
-                    s32 len;
-                    len = (sSfxSamples[n->sample].loopEnd - sSfxSamples[n->sample].loopStart) << 8;
-                    if (n->position >= (u32)(sSfxSamples[n->sample].length << 8)) {
-                        if (sSfxSamples[n->sample].loopStart != sSfxSamples[n->sample].loopEnd) {
-                            VOICE_FLAGS(n) |= 2;
-                            cur = n->position;
-                            while (cur >= (u32)(sSfxSamples[n->sample].loopEnd << 8)) {
-                                cur -= len;
-                                n->position = cur;
+                    s32 loopLen;
+                    loopLen = (sSfxSamples[snd->sample].loopEnd - sSfxSamples[snd->sample].loopStart) << SFX_POS_SHIFT;
+                    if (snd->position >= (u32)(sSfxSamples[snd->sample].length << SFX_POS_SHIFT)) {
+                        if (sSfxSamples[snd->sample].loopStart != sSfxSamples[snd->sample].loopEnd) {
+                            VOICE_FLAGS(snd) |= SFX_VOICE_LOOPED;
+                            wrapped = snd->position;
+                            while (wrapped >= (u32)(sSfxSamples[snd->sample].loopEnd << SFX_POS_SHIFT)) {
+                                wrapped -= loopLen;
+                                snd->position = wrapped;
                             }
                         } else {
-                            n->flags |= 1;
+                            snd->flags |= SFX_SOUND_STOP;
                         }
                     }
                 }
             }
-            n = n->next;
+            snd = snd->next;
         }
 
-        for (n = sSfxSounds; n != NULL; n = n->next) {
-            if (n->fadeStep != 0) {
-                n->fadeVolume += n->fadeStep;
-                v = n->fadeVolume / 0x10000;
-                n->volume = v;
+        /* Fades; a sound faded below 0 stops. */
+        for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+            if (snd->fadeStep != 0) {
+                snd->fadeVolume += snd->fadeStep;
+                v = snd->fadeVolume / SFX_FADE_ONE;
+                snd->volume = v;
                 if (v < 0) {
-                    n->volume = 0;
-                    n->flags |= 1;
+                    snd->volume = 0;
+                    snd->flags |= SFX_SOUND_STOP;
                 } else {
                     if (v >= 0x80) {
-                        n->volume = 0x7F;
+                        snd->volume = SFX_VOLUME_MAX;
                     }
-                    if (n->voice != -1) {
-                        gSfxDriver->voiceSetVolume(n->voice, n->volume);
+                    if (snd->voice != -1) {
+                        gSfxDriver->voiceSetVolume(snd->voice, snd->volume);
                     }
                 }
             }
         }
 
+        /* A voice that stopped playing ends its sound. */
         for (i = 0; i < sSfxNumVoices; i++) {
-            n = sSfxVoiceSounds[i];
-            if (n != NULL) {
+            snd = sSfxVoiceSounds[i];
+            if (snd != NULL) {
                 v = gSfxDriver->voiceGetFlags(i);
-                VOICE_FLAGS(n) = v;
-                if (!(v & 1)) {
-                    n->flags |= 1;
+                VOICE_FLAGS(snd) = v;
+                if (!(v & SFX_VOICE_PLAYING)) {
+                    snd->flags |= SFX_SOUND_STOP;
                 }
             }
         }
 
-        for (n = sSfxSounds; n != NULL; n = n->next) {
-            if (n->flags & 1) {
-                if (n->voice != -1) {
-                    gSfxDriver->voiceSetFlags(n->voice, 0);
-                    sSfxVoiceSounds[n->voice] = NULL;
-                    n->voice = -1;
+        for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+            if (snd->flags & SFX_SOUND_STOP) {
+                if (snd->voice != -1) {
+                    gSfxDriver->voiceSetFlags(snd->voice, 0);
+                    sSfxVoiceSounds[snd->voice] = NULL;
+                    snd->voice = -1;
                 }
-                n->flags |= 2;
+                snd->flags |= SFX_SOUND_ENDED;
             }
         }
 
+        /* The first sSfxNumVoices live sounds of the list want a voice. */
         i = 0;
-        for (n = sSfxSounds; n != NULL; n = n->next) {
-            n->wantsVoice = 0;
-            if (n->flags & 1) {
-            } else if (n->flags & 2) {
+        for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+            snd->wantsVoice = 0;
+            if (snd->flags & SFX_SOUND_STOP) {
+            } else if (snd->flags & SFX_SOUND_ENDED) {
             } else if (i < sSfxNumVoices) {
-                n->wantsVoice = 1;
+                snd->wantsVoice = 1;
                 i++;
             }
         }
 
+        /* Take the voices from the others, keeping their positions. */
         for (i = 0; i < sSfxNumVoices; i++) {
             if (sSfxVoiceSounds[i] != NULL && sSfxVoiceSounds[i]->wantsVoice == 0) {
-                sSfxVoiceSounds[i]->position = gSfxDriver->voiceGetPosition(i) << 8;
+                sSfxVoiceSounds[i]->position = gSfxDriver->voiceGetPosition(i) << SFX_POS_SHIFT;
                 sSfxVoiceSounds[i]->voice = -1;
                 sSfxVoiceSounds[i] = NULL;
                 gSfxDriver->voiceSetFlags(i, 0);
             }
         }
 
-        for (n = sSfxSounds; n != NULL; n = n->next) {
-            if (n->wantsVoice != 0 && n->voice == -1) {
+        /* Give a free voice to each sound that wants one and has none. */
+        for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+            if (snd->wantsVoice != 0 && snd->voice == -1) {
                 for (i = 0; i < sSfxNumVoices; i++) {
                     if (sSfxVoiceSounds[i] == NULL) {
                         break;
                     }
                 }
                 if (i != sSfxNumVoices) {
-                    sSfxVoiceSounds[i] = n;
-                    n->voice = i;
-                    VOICE_FLAGS(n) = 1;
-                    gSfxDriver->voiceSetSample(i, n->sample);
-                    gSfxDriver->voiceSetRate(i, n->rate);
-                    gSfxDriver->voiceSetVolume(i, n->volume);
-                    gSfxDriver->voiceSetPan(i, n->pan);
-                    gSfxDriver->voiceSetPosition(i, n->position >> 8);
-                    gSfxDriver->voiceSetFlags(i, VOICE_FLAGS(n));
+                    sSfxVoiceSounds[i] = snd;
+                    snd->voice = i;
+                    VOICE_FLAGS(snd) = SFX_VOICE_PLAYING;
+                    gSfxDriver->voiceSetSample(i, snd->sample);
+                    gSfxDriver->voiceSetRate(i, snd->rate);
+                    gSfxDriver->voiceSetVolume(i, snd->volume);
+                    gSfxDriver->voiceSetPan(i, snd->pan);
+                    gSfxDriver->voiceSetPosition(i, snd->position >> SFX_POS_SHIFT);
+                    gSfxDriver->voiceSetFlags(i, VOICE_FLAGS(snd));
                 }
             }
         }
     }
 }
 
-void sfx_set_priority(s32 param_1, s32 param_2)
+/* Changes a sound's priority: unlinks it and inserts it again at its new place in the list. */
+void sfx_set_priority(s32 handle, s32 priority)
 {
-    SfxSound *p;
-    SfxSound *q;
-    SfxSound *n;
-    s32 cnt;
+    SfxSound *snd;
+    SfxSound *prev;
+    SfxSound *next;
+    s32 numPlaying;
 
     if (sSfxInitialized == 0) {
         goto done;
     }
     critical_enter();
-    p = sSfxSounds;
-    if (p == 0) {
+    snd = sSfxSounds;
+    if (snd == 0) {
         goto nf;
     }
 loop:
-    if (p->handle == param_1) {
+    if (snd->handle == handle) {
         goto found;
     }
-    p = p->next;
-    if (p != 0) {
+    snd = snd->next;
+    if (snd != 0) {
         goto loop;
     }
 nf:
     critical_leave();
-    p = 0;
+    snd = 0;
 join:
-    if (p == 0) {
+    if (snd == 0) {
         goto done;
     }
-    p->priority = param_2;
+    snd->priority = priority;
     critical_enter();
-    if (p->prev != 0) {
-        p->prev->next = p->next;
+    if (snd->prev != 0) {
+        snd->prev->next = snd->next;
     }
-    if (p->next != 0) {
-        p->next->prev = p->prev;
+    if (snd->next != 0) {
+        snd->next->prev = snd->prev;
     }
-    if (p == sSfxSounds) {
-        sSfxSounds = p->next;
+    if (snd == sSfxSounds) {
+        sSfxSounds = snd->next;
     }
-    cnt = 0;
+    numPlaying = 0;
     critical_leave();
     critical_enter();
-    q = 0;
-    n = sSfxSounds;
-    while (n != 0) {
-        q = n;
-        if (q->priority <= p->priority) {
+    prev = 0;
+    next = sSfxSounds;
+    while (next != 0) {
+        prev = next;
+        if (prev->priority <= snd->priority) {
             break;
         }
-        if ((q->voiceFlags & 1) != 0) {
-            cnt = cnt + 1;
+        if ((prev->voiceFlags & SFX_VOICE_PLAYING) != 0) {
+            numPlaying = numPlaying + 1;
         }
-        n = q->next;
+        next = prev->next;
     }
-    p->next = n;
-    if (n == 0) {
+    snd->next = next;
+    if (next == 0) {
         goto nullins;
     }
-    p->prev = n->prev;
-    if (n->prev != 0) {
-        n->prev->next = p;
+    snd->prev = next->prev;
+    if (next->prev != 0) {
+        next->prev->next = snd;
     }
-    n->prev = p;
+    next->prev = snd;
     goto tail;
 found:
     critical_leave();
     goto join;
 nullins:
-    if (q != 0) {
-        q->next = p;
+    if (prev != 0) {
+        prev->next = snd;
     }
-    p->prev = q;
+    snd->prev = prev;
 tail:
-    if (sSfxSounds == 0 || n == sSfxSounds) {
-        sSfxSounds = p;
-        p->prev = 0;
+    if (sSfxSounds == 0 || next == sSfxSounds) {
+        sSfxSounds = snd;
+        snd->prev = 0;
     }
-    if (cnt < sSfxNumVoices) {
+    if (numPlaying < sSfxNumVoices) {
         sSfxVoiceChangeCount = sSfxVoiceChangeCount + 1;
     }
     critical_leave();
@@ -440,169 +465,176 @@ done:
     ;
 }
 
-void sfx_stream_free(SfxStream *param_1)
+/* Unlinks a stream, stops its sound and frees its samples, its ring buffer and itself. */
+void sfx_stream_free(SfxStream *stream)
 {
-    SfxStream *piVar1;
-    SfxStream *piVar2;
-    s32 iVar3;
-    SfxSound *iVar4;
-    SfxSound *pv;
+    SfxStream *head;
+    SfxStream *s;
+    s32 handle;
+    SfxSound *snd;
+    SfxSound *match;
 
     critical_enter();
-    piVar1 = sSfxStreams;
-    if (piVar1 == param_1) {
-        sSfxStreams = param_1->next;
+    head = sSfxStreams;
+    if (head == stream) {
+        sSfxStreams = stream->next;
     } else {
-        piVar2 = piVar1;
-        while (piVar2 != NULL) {
-            if (piVar2->next == param_1) {
-                piVar2->next = param_1->next;
+        s = head;
+        while (s != NULL) {
+            if (s->next == stream) {
+                s->next = stream->next;
                 break;
             }
-            piVar2 = piVar2->next;
+            s = s->next;
         }
     }
     critical_leave();
-    if (param_1->handle != -1) {
-        iVar3 = param_1->handle;
+    if (stream->handle != -1) {
+        handle = stream->handle;
         if (sSfxInitialized != 0) {
             critical_enter();
-            for (iVar4 = sSfxSounds; iVar4 != NULL; iVar4 = iVar4->next) {
-                if (iVar4->handle == iVar3) {
+            for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+                if (snd->handle == handle) {
                     critical_leave();
-                    pv = iVar4;
-                    goto LAB_800b83c8;
+                    match = snd;
+                    goto stop;
                 }
             }
             critical_leave();
-            pv = NULL;
-LAB_800b83c8:
-            if (pv != NULL) {
-                pv->flags |= 1;
+            match = NULL;
+stop:
+            if (match != NULL) {
+                match->flags |= SFX_SOUND_STOP;
             }
         }
-        param_1->handle = -1;
+        stream->handle = -1;
     }
-    if (param_1->samples[0] != -1) {
-        sfx_free_sample(param_1->samples[0]);
-        param_1->samples[0] = -1;
+    if (stream->samples[0] != -1) {
+        sfx_free_sample(stream->samples[0]);
+        stream->samples[0] = -1;
     }
-    if (param_1->samples[1] != -1) {
-        sfx_free_sample(param_1->samples[1]);
-        param_1->samples[1] = -1;
+    if (stream->samples[1] != -1) {
+        sfx_free_sample(stream->samples[1]);
+        stream->samples[1] = -1;
     }
-    mem_free(param_1->buf);
-    mem_free((s32)param_1);
+    mem_free(stream->buf);
+    mem_free((s32)stream);
     return;
 }
 
-static inline SfxSound *find(s32 key)
+/* sfx_find_sound, inlined in sfx_stream_start. */
+static inline SfxSound *stream_start_find_sound(s32 handle)
 {
-    SfxSound *v;
+    SfxSound *snd;
 
     critical_enter();
-    for (v = sSfxSounds; v != 0; v = v->next) {
-        if (v->handle == key) {
+    for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            return v;
+            return snd;
         }
     }
     critical_leave();
     return 0;
 }
 
-static inline void mark(s32 key)
+/* sfx_stop, inlined in sfx_stream_start. */
+static inline void stream_start_stop_sound(s32 handle)
 {
-    SfxSound *v;
+    SfxSound *snd;
 
     if (sSfxInitialized != 0) {
-        v = find(key);
-        if (v != 0) {
-            v->flags |= 1;
+        snd = stream_start_find_sound(handle);
+        if (snd != 0) {
+            snd->flags |= SFX_SOUND_STOP;
         }
     }
 }
 
-static inline s32 alloc(u8 *tb, u32 a, s32 d)
+/* sfx_create_sample without loop points, inlined in sfx_stream_start. */
+static inline s32 stream_start_create_sample(u8 *data, u32 length, s32 rate)
 {
-    s32 r;
-    SfxSample *s;
-    s32 buf[4];
+    s32 sample;
+    SfxSample *entry;
+    s32 info[4];
 
     if (sSfxInitialized == 0) {
         return -1;
     }
-    r = gSfxDriver->createSample(tb, a, 0, 0, d);
-    if (r < 0) {
-        return r;
+    sample = gSfxDriver->createSample(data, length, 0, 0, rate);
+    if (sample < 0) {
+        return sample;
     }
-    if (r >= 0x100) {
-        gSfxDriver->freeSample(r);
+    if (sample >= SFX_NUM_SAMPLES) {
+        gSfxDriver->freeSample(sample);
         return -1;
     }
     {
-        SfxSample *tb = sSfxSamples;
-        s = &tb[r];
+        SfxSample *samples = sSfxSamples;
+        entry = &samples[sample];
     }
-    s->name = 0;
-    s->refCount = 1;
-    gSfxDriver->getSampleInfo(r, buf);
-    s->length = buf[0];
-    s->loopStart = buf[1];
-    s->loopEnd = buf[2];
-    s->unk_10 = buf[3];
-    return r;
+    entry->name = 0;
+    entry->refCount = 1;
+    gSfxDriver->getSampleInfo(sample, info);
+    entry->length = info[0];
+    entry->loopStart = info[1];
+    entry->loopEnd = info[2];
+    entry->unk_10 = info[3];
+    return sample;
 }
 
-void sfx_stream_start(SfxStream *p, s32 a1, s32 a2, s32 a3, s32 a4)
+/* (Re)starts a stream: stops its sound, and creates its two samples of one buffer's worth of data at `rate`. */
+void sfx_stream_start(SfxStream *stream, s32 rate, s32 volume, s32 pan, s32 priority)
 {
-    SfxSound *v;
-    s32 key;
+    SfxSound *unusedSound;
+    s32 unusedHandle;
 
-    if (p->handle != -1) {
-        mark(p->handle);
-        p->handle = -1;
+    if (stream->handle != -1) {
+        stream_start_stop_sound(stream->handle);
+        stream->handle = -1;
     }
-    if (p->samples[0] != -1) {
-        sfx_free_sample(p->samples[0]);
-        p->samples[0] = -1;
+    if (stream->samples[0] != -1) {
+        sfx_free_sample(stream->samples[0]);
+        stream->samples[0] = -1;
     }
-    if (p->samples[1] != -1) {
-        sfx_free_sample(p->samples[1]);
-        p->samples[1] = -1;
+    if (stream->samples[1] != -1) {
+        sfx_free_sample(stream->samples[1]);
+        stream->samples[1] = -1;
     }
-    p->cur = 1;
-    p->rate = a1;
-    p->volume = a2;
-    p->pan = a3;
-    p->priority = a4;
-    p->chunkSize = (p->rate * sSfxFrameSamples) / sSfxOutputRate;
-    p->samples[0] = alloc(sSfxStreamBuf, p->chunkSize, p->rate);
-    p->samples[1] = alloc(sSfxStreamBuf, p->chunkSize, p->rate);
-    if (p->samples[0] == -1 || p->samples[1] == -1) {
+    stream->cur = 1;
+    stream->rate = rate;
+    stream->volume = volume;
+    stream->pan = pan;
+    stream->priority = priority;
+    stream->chunkSize = (stream->rate * sSfxFrameSamples) / sSfxOutputRate;
+    stream->samples[0] = stream_start_create_sample(sSfxStreamBuf, stream->chunkSize, stream->rate);
+    stream->samples[1] = stream_start_create_sample(sSfxStreamBuf, stream->chunkSize, stream->rate);
+    if (stream->samples[0] == -1 || stream->samples[1] == -1) {
         fatal_halt(1);
     } else {
-        p->filled[0] = 0;
+        stream->filled[0] = 0;
     }
-    *(volatile u8 *)&p->filled[1] = 0;
+    *(volatile u8 *)&stream->filled[1] = 0;
 }
 
-static __inline__ SfxSound *find_node(s32 id)
+/* sfx_find_sound, inlined in sfx_stream_update. */
+static __inline__ SfxSound *stream_update_find_sound(s32 handle)
 {
-    SfxSound *n;
+    SfxSound *snd;
 
     critical_enter();
-    for (n = sSfxSounds; n != 0; n = n->next) {
-        if (n->handle == id) {
+    for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            return n;
+            return snd;
         }
     }
     critical_leave();
     return 0;
 }
 
-static __inline__ void copy_bytes(u8 *dst, u8 *src, u32 n)
+/* sfx_copy_bytes, inlined in the two ring reads of sfx_stream_update. */
+static __inline__ void stream_update_copy(u8 *dst, u8 *src, u32 n)
 {
     while (n != 0) {
         *dst++ = *src++;
@@ -610,90 +642,95 @@ static __inline__ void copy_bytes(u8 *dst, u8 *src, u32 n)
     }
 }
 
-static __inline__ u32 ring_read(SfxStream *r, u8 *dst, u32 n0)
+/* sfx_stream_read, inlined in sfx_stream_update for the sample that plays next; reads all `size` bytes or none. */
+static __inline__ u32 stream_update_read_next(SfxStream *stream, u8 *dst, u32 size)
 {
-    u32 k;
-    u32 n = n0;
-    if (r->count < n) {
+    u32 firstPart;
+    u32 n = size;
+    if (stream->count < n) {
 fail:
         n = 0;
         goto done;
     }
     if (n == 0) goto fail;
-    if (r->size < r->readPos + n) {
-        k = r->size - r->readPos;
-        copy_bytes(dst, r->buf + r->readPos, k);
-        copy_bytes(dst + k, r->buf, n - k);
-        r->readPos = n - k;
+    if (stream->size < stream->readPos + n) {
+        firstPart = stream->size - stream->readPos;
+        stream_update_copy(dst, stream->buf + stream->readPos, firstPart);
+        stream_update_copy(dst + firstPart, stream->buf, n - firstPart);
+        stream->readPos = n - firstPart;
     } else {
-        copy_bytes(dst, r->buf + r->readPos, n);
-        r->readPos += n;
+        stream_update_copy(dst, stream->buf + stream->readPos, n);
+        stream->readPos += n;
     }
-    r->readPos = r->readPos % r->size;
-    r->count -= n;
+    stream->readPos = stream->readPos % stream->size;
+    stream->count -= n;
 done:
     return n;
 }
 
-static __inline__ u32 ring_read2(SfxStream *r, u8 *dst, u32 n0)
+/* The same for the sample that just finished. */
+static __inline__ u32 stream_update_read_current(SfxStream *stream, u8 *dst, u32 size)
 {
-    u32 k;
-    u32 n = n0;
-    if (r->count < n) goto fail;
+    u32 firstPart;
+    u32 n = size;
+    if (stream->count < n) goto fail;
     if (n != 0) goto ok;
 fail:
     n = 0;
     goto done;
 ok:
-    if (r->size < r->readPos + n) {
-        k = r->size - r->readPos;
-        copy_bytes(dst, r->buf + r->readPos, k);
-        copy_bytes(dst + k, r->buf, n - k);
-        r->readPos = n - k;
+    if (stream->size < stream->readPos + n) {
+        firstPart = stream->size - stream->readPos;
+        stream_update_copy(dst, stream->buf + stream->readPos, firstPart);
+        stream_update_copy(dst + firstPart, stream->buf, n - firstPart);
+        stream->readPos = n - firstPart;
     } else {
-        copy_bytes(dst, r->buf + r->readPos, n);
-        r->readPos += n;
+        stream_update_copy(dst, stream->buf + stream->readPos, n);
+        stream->readPos += n;
     }
-    r->readPos = r->readPos % r->size;
-    r->count -= n;
+    stream->readPos = stream->readPos % stream->size;
+    stream->count -= n;
 done:
     return n;
 }
 
-void sfx_stream_update(SfxStream *r)
+/* The per-buffer step of a stream (from sfx_driver_callback): stops the sound of the last buffer, plays the other
+   sample if it holds data (filling it from the ring first if needed), and refills the sample just played. */
+void sfx_stream_update(SfxStream *stream)
 {
-    s32 id;
-    SfxSound *nd;
+    s32 handle;
+    SfxSound *snd;
     u32 got;
 
-    if (r->samples[0] == -1) {
+    if (stream->samples[0] == -1) {
         return;
     }
-    if (r->handle != -1) {
-        id = r->handle;
+    if (stream->handle != -1) {
+        handle = stream->handle;
         if (sSfxInitialized != 0) {
-            nd = find_node(id);
-            if (nd != 0) {
-                nd->flags |= 1;
+            snd = stream_update_find_sound(handle);
+            if (snd != 0) {
+                snd->flags |= SFX_SOUND_STOP;
             }
         }
-        r->handle = -1;
+        stream->handle = -1;
     }
-    r->filled[r->cur] = 0;
-    if (r->filled[1 - r->cur] == 0) {
-        if ((got = ring_read(r, sSfxStreamBuf, r->chunkSize)) != 0) {
-            sfx_write_sample(r->samples[1 - r->cur], sSfxStreamBuf, got);
-            r->filled[1 - r->cur] = 1;
+    stream->filled[stream->cur] = 0;
+    if (stream->filled[1 - stream->cur] == 0) {
+        if ((got = stream_update_read_next(stream, sSfxStreamBuf, stream->chunkSize)) != 0) {
+            sfx_write_sample(stream->samples[1 - stream->cur], sSfxStreamBuf, got);
+            stream->filled[1 - stream->cur] = 1;
         }
     }
-    if (r->filled[1 - r->cur] != 0) {
-        r->handle = sfx_play(r->samples[1 - r->cur], r->rate, r->volume, r->pan, r->priority, 0);
+    if (stream->filled[1 - stream->cur] != 0) {
+        stream->handle = sfx_play(stream->samples[1 - stream->cur], stream->rate, stream->volume, stream->pan,
+                                  stream->priority, 0);
     }
-    if ((got = ring_read2(r, sSfxStreamBuf, r->chunkSize)) != 0) {
-        sfx_write_sample(r->samples[r->cur], sSfxStreamBuf, got);
-        r->filled[r->cur] = 1;
+    if ((got = stream_update_read_current(stream, sSfxStreamBuf, stream->chunkSize)) != 0) {
+        sfx_write_sample(stream->samples[stream->cur], sSfxStreamBuf, got);
+        stream->filled[stream->cur] = 1;
     }
-    r->cur = 1 - r->cur;
+    stream->cur = 1 - stream->cur;
 }
 
 void sfx_get_driver_caps(s32 *voices, s32 *modes, s32 *rate, s32 *frameMs)
@@ -701,33 +738,35 @@ void sfx_get_driver_caps(s32 *voices, s32 *modes, s32 *rate, s32 *frameMs)
     gSfxDriver->getCaps(voices, modes, rate, frameMs);
 }
 
-s32 sfx_init(s32 p1, s32 p2, s32 p3, s32 p4, s32 *p5, s32 *p6)
+/* Starts the driver (`mode`: SFX_MODE_*) and the sfx layer; returns 0, or the driver's error. */
+s32 sfx_init(s32 numVoices, s32 mode, s32 rate, s32 frameMs, s32 *frameSamples, s32 *outRate)
 {
-    s32 iv;
-    u8 *ptr;
-    s32 v5, v6;
+    s32 err;
+    u8 *voiceSounds;
+    s32 numFrameSamples, outputRate;
 
-    iv = gSfxDriver->init(p1, p2, p3, p4, p5, p6);
-    if (iv != 0) {
-        return iv;
+    err = gSfxDriver->init(numVoices, mode, rate, frameMs, frameSamples, outRate);
+    if (err != 0) {
+        return err;
     }
-    ptr = mem_alloc_dbg(p1 * 4, 0, sStrSfxFile, 0x19B);
-    sSfxVoiceSounds = ptr;
-    if (ptr == NULL) {
+    voiceSounds = mem_alloc_dbg(numVoices * 4, 0, sStrSfxFile, 0x19B);
+    sSfxVoiceSounds = voiceSounds;
+    if (voiceSounds == NULL) {
         gSfxDriver->shutdown();
         return 1;
     }
-    sSfxVoiceSounds = ptr;
-    sSfxNumVoices = p1;
-    sSfxDriverFlags = p2;
-    v6 = *p6;
-    sSfxFrameMs = p4;
-    sSfxOutputRate = v6;
-    v5 = *p5;
+    sSfxVoiceSounds = voiceSounds;
+    sSfxNumVoices = numVoices;
+    sSfxDriverFlags = mode;
+    outputRate = *outRate;
+    sSfxFrameMs = frameMs;
+    sSfxOutputRate = outputRate;
+    numFrameSamples = *frameSamples;
     sSfxSounds = 0;
-    sSfxFrameSamples = v5;
-    mem_fill(ptr, 0, p1 * 4);
+    sSfxFrameSamples = numFrameSamples;
+    mem_fill(voiceSounds, 0, numVoices * 4);
     mem_fill((u8 *)sSfxSamples, 0, sizeof(sSfxSamples));
+    /* Every pool entry's prev becomes -1: free. */
     mem_fill((u8 *)sSfxSoundPool, 0xFF, sizeof(sSfxSoundPool));
     gSfxDriver->setCallback(sfx_driver_callback);
     sSfxInitialized = 1;
@@ -741,35 +780,37 @@ void sfx_shutdown(void)
     sSfxInitialized = 0;
 }
 
-s32 sfx_create_sample(u8 *p1, u32 p2, s32 p3, s32 p4, s32 p5)
+/* Creates a sample from `length` bytes of data; returns the sample or a negative error. */
+s32 sfx_create_sample(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 rate)
 {
-    s32 r;
-    s32 buf[4];
-    SfxSample *e;
-    SfxSample *base;
+    s32 sample;
+    s32 info[4];
+    SfxSample *entry;
+    SfxSample *samples;
 
     if (sSfxInitialized != 0) {
-        r = gSfxDriver->createSample(p1, p2, p3, p4, p5);
-        if (r < 0) {
-            return r;
+        sample = gSfxDriver->createSample(data, length, loopStart, loopEnd, rate);
+        if (sample < 0) {
+            return sample;
         }
-        if (r < 0x100) {
-            base = sSfxSamples;
-            e = base + r;
-            e->name = 0;
-            e->refCount = 1;
-            gSfxDriver->getSampleInfo(r, buf);
-            e->length = buf[0];
-            e->loopStart = buf[1];
-            e->loopEnd = buf[2];
-            e->unk_10 = buf[3];
-            return r;
+        if (sample < SFX_NUM_SAMPLES) {
+            samples = sSfxSamples;
+            entry = samples + sample;
+            entry->name = 0;
+            entry->refCount = 1;
+            gSfxDriver->getSampleInfo(sample, info);
+            entry->length = info[0];
+            entry->loopStart = info[1];
+            entry->loopEnd = info[2];
+            entry->unk_10 = info[3];
+            return sample;
         }
-        gSfxDriver->freeSample(r);
+        gSfxDriver->freeSample(sample);
     }
     return -1;
 }
 
+/* Frees every sample that is not locked, whatever its reference count. */
 void sfx_free_all_samples(void)
 {
     s32 i;
@@ -782,10 +823,11 @@ void sfx_free_all_samples(void)
                 sfx_free_sample(i);
             }
             i++;
-        } while (i < 0x100);
+        } while (i < SFX_NUM_SAMPLES);
     }
 }
 
+/* Driver pass-throughs. */
 void sfx_get_sample_info(s32 sample, s32 *info)
 {
     if (sSfxInitialized != 0) {
@@ -805,58 +847,64 @@ void sfx_write_sample(s32 sample, u8 *data, u32 size)
     gSfxDriver->writeSample(sample, data, size);
 }
 
-static inline SfxSound *findSnd(s32 id) {
-    SfxSound *s;
+/* sfx_find_sound, inlined in sfx_stop. */
+static inline SfxSound *stop_find_sound(s32 handle)
+{
+    SfxSound *snd;
 
     critical_enter();
-    for (s = sSfxSounds; s != NULL; s = s->next) {
-        if (s->handle == id) {
+    for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            return s;
+            return snd;
         }
     }
     critical_leave();
     return NULL;
 }
 
-void sfx_stop(s32 id) {
+/* Asks a sound to stop; sfx_update_voices ends it. */
+void sfx_stop(s32 handle)
+{
     if (sSfxInitialized != 0) {
-        SfxSound *s = findSnd(id);
+        SfxSound *snd = stop_find_sound(handle);
 
-        if (s != NULL) {
-            s->flags |= 1;
+        if (snd != NULL) {
+            snd->flags |= SFX_SOUND_STOP;
         }
     }
 }
 
+/* Asks every sound to stop (sfx_update_voices ends them). */
 void sfx_stop_all(void)
 {
-    SfxSound *p;
+    SfxSound *snd;
 
     critical_enter();
-    p = sSfxSounds;
-    if (p != NULL) {
+    snd = sSfxSounds;
+    if (snd != NULL) {
         do {
-            p->flags |= 1;
-            p = p->next;
-        } while (p != NULL);
+            snd->flags |= SFX_SOUND_STOP;
+            snd = snd->next;
+        } while (snd != NULL);
     }
     critical_leave();
 }
 
+/* Pauses every sound by setting its rate to 0 (the rate is kept in pausedRate). */
 void sfx_pause_all(void)
 {
-    SfxSound *e;
+    SfxSound *snd;
 
     if (sSfxInitialized != 0) {
         critical_enter();
-        for (e = sSfxSounds; e != NULL; e = e->next) {
-            if (e->rate != 0) {
-                e->pausedRate = e->rate;
-                e->rate = 0;
-                e->step = (e->rate << 8) / sSfxOutputRate;
-                if (e->voice != -1) {
-                    gSfxDriver->voiceSetRate(e->voice, e->rate);
+        for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+            if (snd->rate != 0) {
+                snd->pausedRate = snd->rate;
+                snd->rate = 0;
+                snd->step = (snd->rate << SFX_POS_SHIFT) / sSfxOutputRate;
+                if (snd->voice != -1) {
+                    gSfxDriver->voiceSetRate(snd->voice, snd->rate);
                 }
             }
         }
@@ -864,18 +912,19 @@ void sfx_pause_all(void)
     }
 }
 
+/* Gives every paused sound its rate back. */
 void sfx_resume_all(void)
 {
-    SfxSound *e;
+    SfxSound *snd;
 
     if (sSfxInitialized != 0) {
         critical_enter();
-        for (e = sSfxSounds; e != NULL; e = e->next) {
-            if (e->rate == 0) {
-                e->rate = e->pausedRate;
-                e->step = (e->rate << 8) / sSfxOutputRate;
-                if (e->voice != -1) {
-                    gSfxDriver->voiceSetRate(e->voice, e->rate);
+        for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+            if (snd->rate == 0) {
+                snd->rate = snd->pausedRate;
+                snd->step = (snd->rate << SFX_POS_SHIFT) / sSfxOutputRate;
+                if (snd->voice != -1) {
+                    gSfxDriver->voiceSetRate(snd->voice, snd->rate);
                 }
             }
         }
@@ -883,6 +932,7 @@ void sfx_resume_all(void)
     }
 }
 
+/* Calls of the driver's empty slots. */
 void sfx_driver_stub2(void)
 {
     gSfxDriver->unk_68();
@@ -893,317 +943,333 @@ void sfx_driver_stub3(void)
     gSfxDriver->unk_6C();
 }
 
-void sfx_set_volume(s32 key, s32 val)
+/* The setters and getters below find the sound by its handle with sfx_find_sound written out in each; a getter
+   returns -1 when there is no such sound. */
+void sfx_set_volume(s32 handle, s32 volume)
 {
-    SfxSound *n;
-    SfxSound *q;
+    SfxSound *snd;
+    SfxSound *match;
 
     if (sSfxInitialized != 0) {
         critical_enter();
-        for (n = sSfxSounds; n != 0; n = n->next) {
-            if (n->handle == key) {
+        for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+            if (snd->handle == handle) {
                 critical_leave();
-                q = n;
+                match = snd;
                 goto found;
             }
         }
         critical_leave();
-        q = 0;
+        match = 0;
     found:
-        if (q != 0) {
-            q->volume = val;
-            q->fadeVolume = val << 16;
-            if (q->voice != -1) {
-                gSfxDriver->voiceSetVolume(q->voice, val);
+        if (match != 0) {
+            match->volume = volume;
+            match->fadeVolume = volume << SFX_FADE_SHIFT;
+            if (match->voice != -1) {
+                gSfxDriver->voiceSetVolume(match->voice, volume);
             }
         }
     }
 }
 
-void sfx_set_pan(s32 a, s32 b) {
-    SfxSound *p;
-    SfxSound *q;
+/* Sets a sound's pan (0-15), and its voice's if it has one. */
+void sfx_set_pan(s32 handle, s32 pan)
+{
+    SfxSound *snd;
+    SfxSound *match;
     if (sSfxInitialized != 0) {
         critical_enter();
-        for (p = sSfxSounds; p != 0; p = p->next) {
-            if (p->handle == a) {
+        for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+            if (snd->handle == handle) {
                 critical_leave();
-                q = p;
+                match = snd;
                 goto common;
             }
         }
         critical_leave();
-        q = 0;
+        match = 0;
 common:
-        if (q != 0) {
-            q->pan = b;
-            if (q->voice != -1) {
-                gSfxDriver->voiceSetPan(q->voice, b);
+        if (match != 0) {
+            match->pan = pan;
+            if (match->voice != -1) {
+                gSfxDriver->voiceSetPan(match->voice, pan);
             }
         }
     }
 }
 
-static inline SfxSound *find_2(s32 id)
+/* sfx_find_sound, inlined in sfx_set_rate. */
+static inline SfxSound *set_rate_find_sound(s32 handle)
 {
-    SfxSound *e;
+    SfxSound *snd;
 
     critical_enter();
-    for (e = sSfxSounds; e != NULL; e = e->next) {
-        if (e->handle == id) {
+    for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            return e;
+            return snd;
         }
     }
     critical_leave();
     return NULL;
 }
 
-void sfx_set_rate(s32 key, s32 v)
+/* Sets a sound's rate in Hz and the position step that follows from it. */
+void sfx_set_rate(s32 handle, s32 rate)
 {
-    SfxSound *e;
+    SfxSound *snd;
 
     if (sSfxInitialized != 0) {
-        e = find_2(key);
-        if (e != NULL) {
-            e->rate = v;
-            e->step = (e->rate << 8) / sSfxOutputRate;
-            if (e->voice != -1) {
-                gSfxDriver->voiceSetRate(e->voice, e->rate);
+        snd = set_rate_find_sound(handle);
+        if (snd != NULL) {
+            snd->rate = rate;
+            snd->step = (snd->rate << SFX_POS_SHIFT) / sSfxOutputRate;
+            if (snd->voice != -1) {
+                gSfxDriver->voiceSetRate(snd->voice, snd->rate);
             }
         }
     }
 }
 
-void sfx_set_position(s32 p1, u32 p2)
+/* Moves a sound to sample `position`. */
+void sfx_set_position(s32 handle, u32 position)
 {
-    SfxSound *n;
-    SfxSound *r;
-    u32 v;
+    SfxSound *snd;
+    SfxSound *match;
+    u32 pos;
 
     if (sSfxInitialized != 0) {
         critical_enter();
-        for (n = sSfxSounds; n != 0; n = n->next) {
-            if (n->handle == p1) {
+        for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+            if (snd->handle == handle) {
                 critical_leave();
-                r = n;
+                match = snd;
                 goto found;
             }
         }
         critical_leave();
-        r = 0;
+        match = 0;
     found:
-        if (r != 0) {
-            v = p2 << 8;
-            r->position = v;
-            if (r->voice != -1) {
-                gSfxDriver->voiceSetPosition(r->voice, v >> 8);
+        if (match != 0) {
+            pos = position << SFX_POS_SHIFT;
+            match->position = pos;
+            if (match->voice != -1) {
+                gSfxDriver->voiceSetPosition(match->voice, pos >> SFX_POS_SHIFT);
             }
         }
     }
 }
 
-void sfx_set_end_callback(s32 param_1, s32 param_2, void (*param_3)(s32, s32))
+/* Sets the function called with the sound's handle on the events in `events` (SFX_EVENT_END). */
+void sfx_set_end_callback(s32 handle, s32 events, void (*callback)(s32, s32))
 {
-    SfxSound *n;
-    SfxSound *q;
+    SfxSound *snd;
+    SfxSound *match;
 
     if (sSfxInitialized != 0) {
         critical_enter();
-        for (n = sSfxSounds; n != 0; n = n->next) {
-            if (n->handle == param_1) {
+        for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+            if (snd->handle == handle) {
                 critical_leave();
-                q = n;
+                match = snd;
                 goto found;
             }
         }
         critical_leave();
-        q = 0;
+        match = 0;
     found:
-        if (q != 0) {
-            q->endCallback = param_3;
-            q->endCallbackFlags = param_2;
+        if (match != 0) {
+            match->endCallback = callback;
+            match->endCallbackFlags = events;
         }
     }
 }
 
-void sfx_set_fade(s32 id, s32 v)
+/* Fades a sound's volume by `perSecond` (volume units per second, negative to fade out). */
+void sfx_set_fade(s32 handle, s32 perSecond)
 {
-    SfxSound *p;
-    SfxSound *q;
-    s32 iv;
+    SfxSound *snd;
+    SfxSound *match;
+    s32 scaled;
 
     if (sSfxInitialized == 0) {
         return;
     }
     critical_enter();
-    for (p = sSfxSounds; p != 0; p = p->next) {
-        if (p->handle == id) {
+    for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            q = p;
+            match = snd;
             goto common;
         }
     }
     critical_leave();
-    q = 0;
+    match = 0;
 common:
-    if (q != 0) {
-        iv = v * sSfxFrameMs;
-        q->fadeVolume = q->volume << 16;
-        q->fadeStep = (iv * 0x10000) / 1000;
+    if (match != 0) {
+        scaled = perSecond * sSfxFrameMs;
+        match->fadeVolume = match->volume << SFX_FADE_SHIFT;
+        match->fadeStep = (scaled * SFX_FADE_ONE) / 1000;
     }
 }
 
-s32 sfx_get_volume(s32 param_1)
+/* The getters: a sound's volume, pan, rate or priority, -1 when there is no such sound. */
+s32 sfx_get_volume(s32 handle)
 {
-    SfxSound *n;
-    SfxSound *r;
+    SfxSound *snd;
+    SfxSound *match;
 
     if (sSfxInitialized == 0) {
         return -1;
     }
     critical_enter();
-    for (n = sSfxSounds; n != NULL; n = n->next) {
-        if (n->handle == param_1) {
+    for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            r = n;
+            match = snd;
             goto found;
         }
     }
     critical_leave();
-    r = NULL;
+    match = NULL;
 found:
-    if (r == NULL) {
+    if (match == NULL) {
         return -1;
     }
-    return r->volume;
+    return match->volume;
 }
 
-s32 sfx_get_pan(s32 p1)
+s32 sfx_get_pan(s32 handle)
 {
-    SfxSound *n;
-    SfxSound *q;
+    SfxSound *snd;
+    SfxSound *match;
 
     if (sSfxInitialized == 0) {
         return -1;
     }
     critical_enter();
-    for (n = sSfxSounds; n != 0; n = n->next) {
-        if (n->handle == p1) {
+    for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            q = n;
+            match = snd;
             goto found;
         }
     }
     critical_leave();
-    q = 0;
+    match = 0;
 found:
-    if (q == 0) {
+    if (match == 0) {
         return -1;
     }
-    return q->pan;
+    return match->pan;
 }
 
-s32 sfx_get_rate(s32 param_1)
+/* Returns a sound's rate, the one it had before sfx_pause_all while paused. */
+s32 sfx_get_rate(s32 handle)
 {
-    SfxSound *n;
+    SfxSound *snd;
     SfxSound *found;
-    s32 r;
+    s32 rate;
 
     if (sSfxInitialized == 0) {
         return -1;
     }
     critical_enter();
-    for (n = sSfxSounds; n != 0; n = n->next) {
-        if (n->handle == param_1) {
+    for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            found = n;
+            found = snd;
             goto check;
         }
     }
     critical_leave();
     found = 0;
 check:
-    r = -1;
+    rate = -1;
     if (found != 0) {
-        r = found->rate;
-        if (r == 0) {
-            r = found->pausedRate;
+        rate = found->rate;
+        if (rate == 0) {
+            rate = found->pausedRate;
         }
     }
-    return r;
+    return rate;
 }
 
-s32 sfx_get_priority(s32 param_1)
+s32 sfx_get_priority(s32 handle)
 {
-    SfxSound *p;
-    SfxSound *r;
+    SfxSound *snd;
+    SfxSound *match;
 
     if (sSfxInitialized == 0) {
         return -1;
     }
     critical_enter();
-    p = sSfxSounds;
-    while (p != NULL) {
-        if (p->handle == param_1) {
+    snd = sSfxSounds;
+    while (snd != NULL) {
+        if (snd->handle == handle) {
             critical_leave();
-            r = p;
+            match = snd;
             goto done;
         }
-        p = p->next;
+        snd = snd->next;
     }
     critical_leave();
-    r = NULL;
+    match = NULL;
 done:
-    if (r == NULL) {
+    if (match == NULL) {
         return -1;
     }
-    return r->priority;
+    return match->priority;
 }
 
-s32 sfx_get_frame_count(void) {
+/* The driver's count of audio buffers mixed. */
+s32 sfx_get_frame_count(void)
+{
     if (sSfxInitialized == 0) {
         return -1;
     }
     return gSfxDriver->getBufferClock();
 }
 
-void sfx_reap_sounds(void) {
-    SfxSound *n;
-    SfxSound *nx;
+/* Unlinks the sounds that ended and returns them to the pool, calling their end callbacks first. */
+void sfx_reap_sounds(void)
+{
+    SfxSound *snd;
+    SfxSound *next;
 
     if (sSfxInitialized != 0) {
         critical_enter();
-        n = sSfxSounds;
-        while (n != 0) {
-            nx = n->next;
-            if (n->flags & 2) {
-                if (n->endCallback != 0 && (n->endCallbackFlags & 1)) {
-                    n->endCallback(n->handle, 1);
+        snd = sSfxSounds;
+        while (snd != 0) {
+            next = snd->next;
+            if (snd->flags & SFX_SOUND_ENDED) {
+                if (snd->endCallback != 0 && (snd->endCallbackFlags & SFX_EVENT_END)) {
+                    snd->endCallback(snd->handle, SFX_EVENT_END);
                 }
                 critical_enter();
-                if (n->prev != 0) {
-                    n->prev->next = n->next;
+                if (snd->prev != 0) {
+                    snd->prev->next = snd->next;
                 }
-                if (n->next != 0) {
-                    n->next->prev = n->prev;
+                if (snd->next != 0) {
+                    snd->next->prev = snd->prev;
                 }
-                if (n == sSfxSounds) {
-                    sSfxSounds = n->next;
+                if (snd == sSfxSounds) {
+                    sSfxSounds = snd->next;
                 }
                 critical_leave();
-                n->prev = (SfxSound *)-1;
+                snd->prev = (SfxSound *)-1;
             }
-            n = nx;
+            snd = next;
         }
         critical_leave();
     }
 }
 
-void sfx_set_frame_callback(void (*a0)(void))
+/* The function sfx_driver_callback calls first, before each buffer is mixed. */
+void sfx_set_frame_callback(void (*callback)(void))
 {
     if (sSfxInitialized != 0) {
-        sSfxFrameCallback = a0;
+        sSfxFrameCallback = callback;
     }
 }
 
@@ -1215,6 +1281,7 @@ void (*sfx_get_frame_callback(void))(void)
     return sSfxFrameCallback;
 }
 
+/* Echo: driver pass-throughs. */
 void sfx_echo_init(s32 size)
 {
     gSfxDriver->echoInit(size);
@@ -1235,95 +1302,100 @@ void sfx_driver_stub1(void)
     gSfxDriver->unk_64();
 }
 
-SfxStream *sfx_stream_create(s32 p1)
+/* Creates a stream with a ring buffer of `size` bytes and links it into sSfxStreams; sfx_stream_start starts it. */
+SfxStream *sfx_stream_create(s32 size)
 {
-    SfxStream *a;
-    u8 *b;
-    SfxStream *old;
+    SfxStream *stream;
+    u8 *buf;
+    SfxStream *head;
 
-    a = mem_alloc_dbg(sizeof(SfxStream), 0, sStrSfxFile, 0x6AC);
-    if (a != NULL) {
-        b = mem_alloc_dbg(p1, 0, sStrSfxFile, 0x6AF);
-        a->buf = b;
-        if (b != NULL) {
-            a->size = p1;
-            a->readPos = 0;
-            a->writePos = 0;
-            a->count = 0;
-            a->handle = -1;
-            a->samples[0] = -1;
-            a->samples[1] = -1;
+    stream = mem_alloc_dbg(sizeof(SfxStream), 0, sStrSfxFile, 0x6AC);
+    if (stream != NULL) {
+        buf = mem_alloc_dbg(size, 0, sStrSfxFile, 0x6AF);
+        stream->buf = buf;
+        if (buf != NULL) {
+            stream->size = size;
+            stream->readPos = 0;
+            stream->writePos = 0;
+            stream->count = 0;
+            stream->handle = -1;
+            stream->samples[0] = -1;
+            stream->samples[1] = -1;
             critical_enter();
-            old = sSfxStreams;
-            sSfxStreams = a;
-            a->next = old;
+            head = sSfxStreams;
+            sSfxStreams = stream;
+            stream->next = head;
             critical_leave();
-            return a;
+            return stream;
         }
-        mem_free(a);
+        mem_free(stream);
     }
     return NULL;
 }
 
-void sfx_stream_write(SfxStream *r, u32 n, u8 *src)
+/* Appends `size` bytes to a stream's ring buffer (there is no check for overflow). */
+void sfx_stream_write(SfxStream *stream, u32 size, u8 *src)
 {
-    u32 t;
+    u32 firstPart;
 
     critical_enter();
-    if (r->size < r->writePos + n) {
-        t = r->size - r->writePos;
-        copy(r->buf + r->writePos, src, t);
-        copy(r->buf, src + t, n - t);
-        r->writePos = n - t;
+    if (stream->size < stream->writePos + size) {
+        firstPart = stream->size - stream->writePos;
+        stream_copy(stream->buf + stream->writePos, src, firstPart);
+        stream_copy(stream->buf, src + firstPart, size - firstPart);
+        stream->writePos = size - firstPart;
     } else {
-        copy(r->buf + r->writePos, src, n);
-        r->writePos += n;
+        stream_copy(stream->buf + stream->writePos, src, size);
+        stream->writePos += size;
     }
-    r->writePos %= r->size;
-    r->count += n;
+    stream->writePos %= stream->size;
+    stream->count += size;
     critical_leave();
 }
 
-void sfx_stream_set_rate(SfxStream *o, s32 a1)
+/* Sets a stream's rate and the bytes it plays per output frame. */
+void sfx_stream_set_rate(SfxStream *stream, s32 rate)
 {
-    u32 q = (u32)(a1 * sSfxFrameSamples) / sSfxOutputRate;
-    o->rate = a1;
-    o->chunkSize = q;
+    u32 chunkSize = (u32)(rate * sSfxFrameSamples) / sSfxOutputRate;
+    stream->rate = rate;
+    stream->chunkSize = chunkSize;
 }
 
-static inline SfxSound *find_3(s32 id)
+/* sfx_find_sound, inlined in sfx_stream_set_volume. */
+static inline SfxSound *stream_volume_find_sound(s32 handle)
 {
-    SfxSound *e;
+    SfxSound *snd;
 
     critical_enter();
-    for (e = sSfxSounds; e != NULL; e = e->next) {
-        if (e->handle == id) {
+    for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            return e;
+            return snd;
         }
     }
     critical_leave();
     return NULL;
 }
 
-void sfx_stream_set_volume(SfxStream *h, s32 v)
+/* Sets a stream's volume, and its playing sound's (sfx_set_volume). */
+void sfx_stream_set_volume(SfxStream *stream, s32 volume)
 {
-    SfxSound *e;
-    s32 id;
+    SfxSound *snd;
+    s32 handle;
 
-    h->volume = v;
+    stream->volume = volume;
     critical_enter();
-    if (h->handle != -1) {
-        id = h->handle;
+    if (stream->handle != -1) {
+        handle = stream->handle;
         if (sSfxInitialized == 0) {
             goto out;
         }
-        e = find_3(id);
-        if (e != NULL) {
-            e->volume = v;
-            e->fadeVolume = v << 16;
-            if (e->voice != -1) {
-                gSfxDriver->voiceSetVolume(e->voice, v);
+        snd = stream_volume_find_sound(handle);
+        if (snd != NULL) {
+            snd->volume = volume;
+            snd->fadeVolume = volume << SFX_FADE_SHIFT;
+            if (snd->voice != -1) {
+                gSfxDriver->voiceSetVolume(snd->voice, volume);
             }
         }
     }
@@ -1331,77 +1403,78 @@ out:
     critical_leave();
 }
 
-void sfx_stream_set_pan(SfxStream *o, s32 v)
+/* Sets a stream's pan, and its playing sound's (sfx_set_pan). */
+void sfx_stream_set_pan(SfxStream *stream, s32 pan)
 {
-    SfxSound *n;
-    SfxSound *r;
-    s32 t;
-    s32 id;
+    SfxSound *snd;
+    SfxSound *match;
+    s32 cur;
+    s32 handle;
 
-    o->pan = v;
+    stream->pan = pan;
     critical_enter();
-    t = o->handle;
-    if (t == -1) {
+    cur = stream->handle;
+    if (cur == -1) {
         goto done;
     }
-    id = t;
+    handle = cur;
     if (sSfxInitialized == 0) {
         goto done;
     }
     critical_enter();
-    for (n = sSfxSounds; n != 0; n = n->next) {
-        if (n->handle == id) {
+    for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            r = n;
+            match = snd;
             goto common;
         }
     }
     critical_leave();
-    r = 0;
+    match = 0;
 common:
-    if (r != 0) {
-        r->pan = v;
-        if (r->voice != -1) {
-            gSfxDriver->voiceSetPan(r->voice, v);
+    if (match != 0) {
+        match->pan = pan;
+        if (match->voice != -1) {
+            gSfxDriver->voiceSetPan(match->voice, pan);
         }
     }
 done:
     critical_leave();
 }
 
-/* Sets the stream's priority byte but, like sfx_stream_set_pan, the sound's pan. */
-void sfx_stream_set_priority(SfxStream *o, s32 v)
+/* Sets the stream's priority byte but, like sfx_stream_set_pan, the sound's pan (an original bug). */
+void sfx_stream_set_priority(SfxStream *stream, s32 priority)
 {
-    SfxSound *n;
-    SfxSound *r;
-    s32 t;
-    s32 id;
+    SfxSound *snd;
+    SfxSound *match;
+    s32 cur;
+    s32 handle;
 
-    o->priority = v;
+    stream->priority = priority;
     critical_enter();
-    t = o->handle;
-    if (t == -1) {
+    cur = stream->handle;
+    if (cur == -1) {
         goto done;
     }
-    id = t;
+    handle = cur;
     if (sSfxInitialized == 0) {
         goto done;
     }
     critical_enter();
-    for (n = sSfxSounds; n != 0; n = n->next) {
-        if (n->handle == id) {
+    for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            r = n;
+            match = snd;
             goto common;
         }
     }
     critical_leave();
-    r = 0;
+    match = 0;
 common:
-    if (r != 0) {
-        r->pan = v;
-        if (r->voice != -1) {
-            gSfxDriver->voiceSetPan(r->voice, v);
+    if (match != 0) {
+        match->pan = priority;
+        if (match->voice != -1) {
+            gSfxDriver->voiceSetPan(match->voice, priority);
         }
     }
 done:
@@ -1418,38 +1491,42 @@ void sfx_unmute(void)
     gSfxDriver->setMute(0);
 }
 
-void sfx_driver_callback(void) {
-    SfxStream *p;
+/* The driver's callback before each buffer is mixed: the frame callback, the streams, then the voices. */
+void sfx_driver_callback(void)
+{
+    SfxStream *stream;
 
     if (sSfxInitialized != 0) {
         if (sSfxFrameCallback != 0) {
             sSfxFrameCallback();
         }
-        p = sSfxStreams;
-        while (p != 0) {
-            sfx_stream_update(p);
-            p = p->next;
+        stream = sSfxStreams;
+        while (stream != 0) {
+            sfx_stream_update(stream);
+            stream = stream->next;
         }
         sfx_update_voices();
     }
 }
 
-void sfx_copy_bytes(u8 *d, u8 *s, s32 n)
+/* Copies n bytes. */
+void sfx_copy_bytes(u8 *dst, u8 *src, s32 n)
 {
     while (n != 0) {
-        *d++ = *s++;
+        *dst++ = *src++;
         n = n - 1;
     }
 }
 
+/* Compares two strings ignoring case: 0 when equal, else 1. */
 s32 sfx_str_icmp(u8 *a, u8 *b)
 {
-    s32 x;
-    s32 y;
+    s32 ca;
+    s32 cb;
     for (;;) {
-        x = char_to_upper(*a);
-        y = char_to_upper(*b);
-        if (x != y) {
+        ca = char_to_upper(*a);
+        cb = char_to_upper(*b);
+        if (ca != cb) {
             return 1;
         }
         if (*a == 0) {
@@ -1460,7 +1537,9 @@ s32 sfx_str_icmp(u8 *a, u8 *b)
     }
 }
 
-void sfx_get_voice_handles(s32 *out) {
+/* Writes the handle of each voice's sound (-1: none), then the number of sounds in the list. */
+void sfx_get_voice_handles(s32 *out)
+{
     s32 i;
     for (i = 0; i < sSfxNumVoices; i++) {
         if (sSfxVoiceSounds[i] != NULL) {
@@ -1472,152 +1551,163 @@ void sfx_get_voice_handles(s32 *out) {
     out[sSfxNumVoices] = gSfxActiveCount;
 }
 
+/* Takes a free entry of sSfxSoundPool (prev -1: free); NULL when none is. */
 SfxSound *sfx_alloc_sound(void)
 {
     s32 i;
     critical_enter();
-    for (i = 0; i < 0x80; i++) {
+    for (i = 0; i < SFX_NUM_SOUNDS; i++) {
         if (sSfxSoundPool[i].prev == (SfxSound *)-1) {
             sSfxSoundPool[i].prev = NULL;
             break;
         }
     }
     critical_leave();
-    if (i == 0x80) {
+    if (i == SFX_NUM_SOUNDS) {
         return NULL;
     }
     return &sSfxSoundPool[i];
 }
 
-void sfx_free_sound(SfxSound *p)
+void sfx_free_sound(SfxSound *snd)
 {
-    p->prev = (SfxSound *)-1;
+    snd->prev = (SfxSound *)-1;
 }
 
-void sfx_insert_sound(SfxSound *n) {
-    SfxSound *p;
-    SfxSound *q;
-    s32 cnt;
+/* Links a sound into sSfxSounds before the first sound of no higher priority. A voice change is counted when fewer
+   than sSfxNumVoices playing sounds are ahead of it. */
+void sfx_insert_sound(SfxSound *snd)
+{
+    SfxSound *prev;
+    SfxSound *next;
+    s32 numPlaying;
 
-    cnt = 0;
+    numPlaying = 0;
     critical_enter();
-    p = 0;
-    q = sSfxSounds;
-    if (q != 0) {
-        s32 k = n->priority;
+    prev = 0;
+    next = sSfxSounds;
+    if (next != 0) {
+        s32 priority = snd->priority;
         do {
-            p = q;
-            if (k < p->priority) {
-                if (p->voiceFlags & 1) cnt++;
-                q = p->next;
+            prev = next;
+            if (priority < prev->priority) {
+                if (prev->voiceFlags & SFX_VOICE_PLAYING) numPlaying++;
+                next = prev->next;
             } else {
                 break;
             }
-        } while (q != 0);
+        } while (next != 0);
     }
-    n->next = q;
-    if (q != 0) {
-        n->prev = q->prev;
-        if (q->prev != 0) q->prev->next = n;
-        q->prev = n;
+    snd->next = next;
+    if (next != 0) {
+        snd->prev = next->prev;
+        if (next->prev != 0) next->prev->next = snd;
+        next->prev = snd;
     } else {
-        if (p != 0) p->next = n;
-        n->prev = p;
+        if (prev != 0) prev->next = snd;
+        snd->prev = prev;
     }
-    if (sSfxSounds == 0 || q == sSfxSounds) {
-        sSfxSounds = n;
-        n->prev = 0;
+    if (sSfxSounds == 0 || next == sSfxSounds) {
+        sSfxSounds = snd;
+        snd->prev = 0;
     }
-    if (cnt < sSfxNumVoices) {
+    if (numPlaying < sSfxNumVoices) {
         sSfxVoiceChangeCount++;
     }
     critical_leave();
 }
 
-void sfx_unlink_sound(SfxSound *n)
+/* Takes a sound out of sSfxSounds. */
+void sfx_unlink_sound(SfxSound *snd)
 {
     critical_enter();
-    if (n->prev != NULL) {
-        n->prev->next = n->next;
+    if (snd->prev != NULL) {
+        snd->prev->next = snd->next;
     }
-    if (n->next != NULL) {
-        n->next->prev = n->prev;
+    if (snd->next != NULL) {
+        snd->next->prev = snd->prev;
     }
-    if (n == sSfxSounds) {
-        sSfxSounds = n->next;
+    if (snd == sSfxSounds) {
+        sSfxSounds = snd->next;
     }
     critical_leave();
 }
 
-SfxSound *sfx_find_sound(s32 param_1)
+/* Returns the sound with this handle, NULL when there is none. */
+SfxSound *sfx_find_sound(s32 handle)
 {
-    SfxSound *p;
+    SfxSound *snd;
 
     critical_enter();
-    p = sSfxSounds;
-    while (p != NULL) {
-        if (p->handle == param_1) {
+    snd = sSfxSounds;
+    while (snd != NULL) {
+        if (snd->handle == handle) {
             critical_leave();
-            return p;
+            return snd;
         }
-        p = p->next;
+        snd = snd->next;
     }
     critical_leave();
     return 0;
 }
 
-static inline SfxSound *find_4(s32 id)
+/* sfx_find_sound, inlined in sfx_get_position. */
+static inline SfxSound *get_position_find_sound(s32 handle)
 {
-    SfxSound *e;
+    SfxSound *snd;
 
     critical_enter();
-    for (e = sSfxSounds; e != NULL; e = e->next) {
-        if (e->handle == id) {
+    for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            return e;
+            return snd;
         }
     }
     critical_leave();
     return NULL;
 }
 
-u32 sfx_get_position(s32 p)
+/* Returns a sound's sample position, -1 when it is not playing. The original does not check that the sound
+   exists. */
+u32 sfx_get_position(s32 handle)
 {
-    SfxSound *e;
+    SfxSound *snd;
 
     if (sSfxInitialized == 0) {
         return -1;
     }
-    e = find_4(p);
-    if (!(e->voiceFlags & 1)) {
+    snd = get_position_find_sound(handle);
+    if (!(snd->voiceFlags & SFX_VOICE_PLAYING)) {
         return -1;
     }
-    if (e->voice == -1) {
-        return e->position >> 8;
+    if (snd->voice == -1) {
+        return snd->position >> SFX_POS_SHIFT;
     }
-    return gSfxDriver->voiceGetPosition(e->voice);
+    return gSfxDriver->voiceGetPosition(snd->voice);
 }
 
-void sfx_set_sample(s32 p1, s32 p2) {
-    SfxSound *e;
-    SfxSound *q;
+/* Changes the sample a sound plays. */
+void sfx_set_sample(s32 handle, s32 sample)
+{
+    SfxSound *snd;
+    SfxSound *match;
 
     if (sSfxInitialized != 0) {
         critical_enter();
-        for (e = sSfxSounds; e != 0; e = e->next) {
-            if (e->handle == p1) {
+        for (snd = sSfxSounds; snd != 0; snd = snd->next) {
+            if (snd->handle == handle) {
                 critical_leave();
-                q = e;
+                match = snd;
                 goto found;
             }
         }
         critical_leave();
-        q = 0;
+        match = 0;
     found:
-        if (q != 0) {
-            q->sample = p2;
-            if (q->voice != -1) {
-                gSfxDriver->voiceSetSample(q->voice, p2);
+        if (match != 0) {
+            match->sample = sample;
+            if (match->voice != -1) {
+                gSfxDriver->voiceSetSample(match->voice, sample);
             }
         }
     }
@@ -1628,61 +1718,64 @@ void sfx_echo_enable(s32 on)
     gSfxDriver->echoEnable(on);
 }
 
-u32 sfx_stream_read(SfxStream *r, u32 n, u8 *dst)
+/* Takes `size` bytes from a stream's ring buffer: all of them, or none (returns 0) when fewer are there. */
+u32 sfx_stream_read(SfxStream *stream, u32 size, u8 *dst)
 {
-    u32 t;
+    u32 firstPart;
 
-    if (r->count < n) {
+    if (stream->count < size) {
         return 0;
     }
-    if (n == 0) {
+    if (size == 0) {
         return 0;
     }
-    if (r->size < r->readPos + n) {
-        t = r->size - r->readPos;
-        copy(dst, r->buf + r->readPos, t);
-        copy(dst + t, r->buf, n - t);
-        r->readPos = n - t;
+    if (stream->size < stream->readPos + size) {
+        firstPart = stream->size - stream->readPos;
+        stream_copy(dst, stream->buf + stream->readPos, firstPart);
+        stream_copy(dst + firstPart, stream->buf, size - firstPart);
+        stream->readPos = size - firstPart;
     } else {
-        copy(dst, r->buf + r->readPos, n);
-        r->readPos += n;
+        stream_copy(dst, stream->buf + stream->readPos, size);
+        stream->readPos += size;
     }
-    r->readPos %= r->size;
-    r->count -= n;
-    return n;
+    stream->readPos %= stream->size;
+    stream->count -= size;
+    return size;
 }
 
-void sfx_lock_sample(s32 i)
+/* A locked sample (refCount -1) is never freed by sfx_free_sample; unlocking leaves one reference. */
+void sfx_lock_sample(s32 sample)
 {
-    sSfxSamples[i].refCount = -1;
+    sSfxSamples[sample].refCount = -1;
 }
 
-void sfx_unlock_sample(s32 a0)
+void sfx_unlock_sample(s32 sample)
 {
-    sSfxSamples[a0].refCount = 1;
+    sSfxSamples[sample].refCount = 1;
 }
 
-s32 sfx_get_voice(s32 param_1)
+/* Returns the driver voice of a sound, -1 when it has none or does not exist. */
+s32 sfx_get_voice(s32 handle)
 {
-    SfxSound *n;
-    SfxSound *r;
+    SfxSound *snd;
+    SfxSound *match;
 
     if (sSfxInitialized == 0) {
         return -1;
     }
     critical_enter();
-    for (n = sSfxSounds; n != NULL; n = n->next) {
-        if (n->handle == param_1) {
+    for (snd = sSfxSounds; snd != NULL; snd = snd->next) {
+        if (snd->handle == handle) {
             critical_leave();
-            r = n;
+            match = snd;
             goto found;
         }
     }
     critical_leave();
-    r = NULL;
+    match = NULL;
 found:
-    if (r == NULL) {
+    if (match == NULL) {
         return -1;
     }
-    return r->voice;
+    return match->voice;
 }

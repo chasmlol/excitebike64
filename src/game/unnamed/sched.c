@@ -1,69 +1,83 @@
 #include "game.h"
 
-void sched_init(u8 *param_1, int arg1)
+/* The scheduler thread: it tells up to four client queues of each VI retrace, starts the graphics tasks main.c
+   submits, shows a task's framebuffer once the RDP is done with it, handles PRE-NMI and CPU faults, and switches
+   between the three VI modes (VI_MODE_*) when gViModeRequest changes. */
+
+/* Sets up the scheduler: no clients and no task, its two queues, the VI manager and the three VI modes, a black
+   512x240 screen, then starts the scheduler thread. main.c calls it with priority 13 and 1. */
+void sched_init(u8 *priority, int unused)
 {
-    mem_fill(sSchedClients, 0, 0x10);
-    mem_fill(sSchedCurTask, 0, 8);
+    mem_fill(sSchedClients, 0, SCHED_MAX_CLIENTS * 4);
+    mem_fill(sSchedCurTask, 0, 8);      /* the current and the next task */
     sSchedRdpIdle = -1;
-    sSchedRetraceMsg = 1;
+    sSchedRetraceMsg = SCHED_CLIENT_RETRACE;
     sSchedSwapDeferred = 0;
     gSchedMinRetraces = 1;
     gSchedFrameLimit = 0;
     osCreateMesgQueue(&sSchedSysEventQueue, sSchedSysEventMsgs, 8);
     osCreateMesgQueue(&sSchedTaskQueue, sSchedTaskMsgs, 8);
-    osCreateViManager(param_1 + 10);
-    sched_init_vi_mode(0);
-    sched_init_vi_mode(1);
-    sched_init_vi_mode(2);
-    sched_set_vi_mode(1);
-    osViBlack(1);
-    osViSetSpecialFeatures(0xAA);
+    osCreateViManager(priority + 10);
+    sched_init_vi_mode(VI_MODE_320X240);
+    sched_init_vi_mode(VI_MODE_512X240);
+    sched_init_vi_mode(VI_MODE_640X480);
+    sched_set_vi_mode(VI_MODE_512X240);
+    osViBlack(TRUE);
+    osViSetSpecialFeatures(OS_VI_GAMMA_OFF | OS_VI_GAMMA_DITHER_OFF | OS_VI_DIVOT_OFF | OS_VI_DITHER_FILTER_OFF);
     osViSwapBuffer(0x80200000);
     osViSwapBuffer(0x80200000);
-    osViRepeatLine(0);
-    osCreateThread(&sSchedThread, 1, sched_thread, 0, sSchedRetracesSinceTask, param_1);
+    osViRepeatLine(FALSE);
+    /* The thread's stack ends where sSchedRetracesSinceTask is. */
+    osCreateThread(&sSchedThread, 1, sched_thread, 0, sSchedRetracesSinceTask, priority);
     osStartThread(&sSchedThread);
 }
 
-typedef struct Item_5 {
-    u8 pad0[0xC];
-    s32 f0C;
-    u8 pad10[0x40];
-    s32 f50;
-    s32 f54;
-} Item_5;
+/* A task main.c submits: libultra's OSScTask. */
+typedef struct SchedTask {
+    /* 0x00 */ u8 pad0[0xC];    /* next, state, flags */
+    /* 0x0C */ s32 framebuffer;
+    /* 0x10 */ u8 list[0x40];   /* the OSTask */
+    /* 0x50 */ s32 msgQ;        /* told when the framebuffer is shown */
+    /* 0x54 */ s32 msg;
+} SchedTask;
 
-typedef struct CurNext {
-    Item_5 *cur;
-    Item_5 *next;
-} CurNext;
+/* sSchedCurTask: the task the RCP runs and the next one, taken from sSchedTaskQueue. */
+typedef struct SchedTaskSlots {
+    SchedTask *cur;
+    SchedTask *next;
+} SchedTaskSlots;
 
-typedef struct Pair_8 {
-    s32 a;
-    s32 b;
-} Pair_8;
+/* A saved 64-bit register of an OSThread's context. */
+typedef struct RegPair {
+    s32 hi;
+    s32 lo;
+} RegPair;
 
-extern CurNext sSchedCurTask_2;
+extern SchedTaskSlots sSchedCurTask_2;
 
+/* The scheduler thread. On a retrace it starts the next task if the RDP is idle and tells the clients; when the RDP
+   is done it shows the task's framebuffer (on the next retrace if the frame limit asks for more retraces per frame)
+   and sends the task's message; on PRE-NMI it blanks the screen, stops the Rumble Paks and hangs; on a CPU fault
+   with the Debug cheat on it draws the main thread's pc and registers in hex, and hangs. */
 void sched_thread(void)
 {
     s32 msg;
-    s32 n;
+    s32 line;
     s32 i;
-    Pair_8 *p;
-    Pair_8 *base;
+    RegPair *unused;
+    RegPair *regs;
 
-    osViSetEvent(&sSchedSysEventQueue, 1, 1);
-    osSetEventMesg(9, &sSchedSysEventQueue, 2);
-    osSetEventMesg(0xE, &sSchedSysEventQueue, 3);
+    osViSetEvent(&sSchedSysEventQueue, SCHED_MSG_RETRACE, 1);
+    osSetEventMesg(OS_EVENT_DP, &sSchedSysEventQueue, SCHED_MSG_RDP_DONE);
+    osSetEventMesg(OS_EVENT_PRENMI, &sSchedSysEventQueue, SCHED_MSG_PRENMI);
     if (D_800F4780 == 0) {
-        osSetEventMesg(0xC, &sSchedSysEventQueue, 4);
-        osSetEventMesg(0xA, &sSchedSysEventQueue, 4);
+        osSetEventMesg(OS_EVENT_FAULT, &sSchedSysEventQueue, SCHED_MSG_FAULT);
+        osSetEventMesg(OS_EVENT_CPU_BREAK, &sSchedSysEventQueue, SCHED_MSG_FAULT);
     }
 
     while (1) {
-        osRecvMesg(&sSchedSysEventQueue, &msg, 1);
-        if (msg == 1) {
+        osRecvMesg(&sSchedSysEventQueue, &msg, OS_MESG_BLOCK);
+        if (msg == SCHED_MSG_RETRACE) {
             if (gDebugPadFreeze != 0) {
                 continue;
             }
@@ -75,8 +89,8 @@ void sched_thread(void)
             sSchedRetracesSinceTask_2++;
             if (sSchedRdpIdle != 0) {
                 if (sSchedCurTask_2.next == NULL) {
-                    if (osRecvMesg(&sSchedTaskQueue, &msg, 0) == 0) {
-                        sSchedCurTask_2.next = (Item_5 *)msg;
+                    if (osRecvMesg(&sSchedTaskQueue, &msg, OS_MESG_NOBLOCK) == 0) {
+                        sSchedCurTask_2.next = (SchedTask *)msg;
                     }
                 }
                 sSchedCurTask_2.cur = sSchedCurTask_2.next;
@@ -88,59 +102,61 @@ void sched_thread(void)
             }
             sched_notify_clients(&sSchedRetraceMsg);
             if (sSchedSwapDeferred != 0) {
-                osSendMesg(&sSchedSysEventQueue, 2, 0);
+                osSendMesg(&sSchedSysEventQueue, SCHED_MSG_RDP_DONE, OS_MESG_NOBLOCK);
                 sSchedSwapDeferred = 0;
             }
-        } else if (msg == 2) {
-            n = osViGetCurrentLine();
-            if (n < 10 || sSchedSysEventQueue.validCount == 1) {
-                osSendMesg(&sSchedSysEventQueue, msg, 0);
+        } else if (msg == SCHED_MSG_RDP_DONE) {
+            /* Too close to the top of the screen, or nothing else queued: try again later. */
+            line = osViGetCurrentLine();
+            if (line < 10 || sSchedSysEventQueue.validCount == 1) {
+                osSendMesg(&sSchedSysEventQueue, msg, OS_MESG_NOBLOCK);
                 continue;
             }
             if (sSchedRetracesSinceTask_2 < gSchedMinRetraces && gSchedFrameLimit != 0) {
                 sSchedSwapDeferred = 1;
                 continue;
             }
-            if (sSchedSwapLineMax < n) {
-                sSchedSwapLineMax = n;
+            if (sSchedSwapLineMax < line) {
+                sSchedSwapLineMax = line;
             }
-            if (n < sSchedSwapLineMin) {
-                sSchedSwapLineMin = n;
+            if (line < sSchedSwapLineMin) {
+                sSchedSwapLineMin = line;
             }
             sSchedRdpIdle = 1;
-            osViSwapBuffer(sSchedCurTask_2.cur->f0C);
+            osViSwapBuffer(sSchedCurTask_2.cur->framebuffer);
             if (sViBlackFrames != 0) {
                 if (--sViBlackFrames == 0) {
-                    osViBlack(0);
+                    osViBlack(FALSE);
                 }
             }
-            osSendMesg(sSchedCurTask_2.cur->f50, sSchedCurTask_2.cur->f54, 0);
-        } else if (msg == 3) {
-            osViBlack(1);
-            sched_set_vi_mode(0);
-            osViBlack(1);
+            osSendMesg(sSchedCurTask_2.cur->msgQ, sSchedCurTask_2.cur->msg, OS_MESG_NOBLOCK);
+        } else if (msg == SCHED_MSG_PRENMI) {
+            osViBlack(TRUE);
+            sched_set_vi_mode(VI_MODE_320X240);
+            osViBlack(TRUE);
             osViSetYScale(1.0f);
             cont_finish_read();
-            for (i = 0; i < 4; i++) {
-                rumble_start(i, -1);
+            for (i = 0; i < MAXCONTROLLERS; i++) {
+                rumble_start(i, RUMBLE_OFF);
             }
             gRumbleResetRequest = 1;
             start_controller_read();
             cont_finish_read();
             for (;;) ;
-        } else if (msg == 4) {
-            base = (Pair_8 *)&gMainThread.context;  /* the registers as u64 pairs: .b is the low word */
-            sched_set_vi_mode(0);
-            mem_fill((u8 *)gFramebuffers_3, 0, 0x25800);
+        } else if (msg == SCHED_MSG_FAULT) {
+            regs = (RegPair *)&gMainThread.context;  /* the registers as u64 pairs: .lo is the low word */
+            sched_set_vi_mode(VI_MODE_320X240);
+            mem_fill((u8 *)gFramebuffers_3, 0, FB_320X240_SIZE);
             osWritebackDCacheAll();
             osViSwapBuffer(gFramebuffers_3);
-            osViBlack(0);
-            if (!(gGame.flags & 0x20000000)) {
+            osViBlack(FALSE);
+            if (!(gGame.flags & 0x20000000)) {      /* the Debug cheat */
                 for (;;) ;
             }
             fault_draw_hex(0x32, 0x1E, *(u32 *)((u32)&gMainThread + 0x11C));  /* gMainThread.context.pc, as a scalar */
+            /* The 31 registers from at to ra, in two columns. */
             for (i = 0; i < 0x1F; i++) {
-                fault_draw_hex((i & 1) * 150 + 0x32, (i / 2) * 10 + 0x28, base[i].b);
+                fault_draw_hex((i & 1) * 150 + 0x32, (i / 2) * 10 + 0x28, regs[i].lo);
             }
             osWritebackDCacheAll();
             for (;;) ;
@@ -148,158 +164,178 @@ void sched_thread(void)
     }
 }
 
+/* libultra's OSViMode as words (0x50 bytes), with the fields the game changes named. */
 typedef struct {
-    s32 f0[2];
-    s32 f8;
-    s32 fC[5];
-    s32 f20;
-    s32 f24;
-    s32 f28;
-    s32 f2C[4];
-    s32 f3C;
-    s32 f40[4];
-} Rec_37;
+    /* 0x00 */ s32 typeAndCtrl[2];  /* type, comRegs.ctrl */
+    /* 0x08 */ s32 width;           /* comRegs.width */
+    /* 0x0C */ s32 comRegs0C[5];    /* burst, vSync, hSync, leap, hStart */
+    /* 0x20 */ s32 xScale;          /* 2.10 fixed point */
+    /* 0x24 */ s32 vCurrent;
+    /* 0x28 */ s32 origin0;         /* fldRegs[0].origin: byte offset of the first line shown */
+    /* 0x2C */ s32 fldRegs0[4];     /* yScale, vStart, vBurst, vIntr */
+    /* 0x3C */ s32 origin1;         /* fldRegs[1].origin */
+    /* 0x40 */ s32 fldRegs1[4];
+} ViMode;
 
-extern Rec_37 sViModes[];
+extern ViMode sViModes[];
 
-void sched_init_vi_mode(s32 p)
+/* Builds sViModes[mode] from libultra's mode for the TV type (NTSC or MPAL; anything else hangs): the high-resolution
+   interlaced mode for VI_MODE_640X480, else the low-resolution one with its width and x scale set for
+   sViModeWidths[mode]. */
+void sched_init_vi_mode(s32 mode)
 {
-    Rec_37 *s;
-    Rec_37 *b;
+    ViMode *osMode;
+    ViMode *vm;
     s32 off;
-    Rec_37 *base;
+    ViMode *base;
 
-    if (osTvType == 1) {
-        if (p == 2) {
-            s = &osViModeNtscHpf1;
+    if (osTvType == OS_TV_NTSC) {
+        if (mode == VI_MODE_640X480) {
+            osMode = &osViModeNtscHpf1;
         } else {
-            s = &osViModeNtscLpn1;
+            osMode = &osViModeNtscLpn1;
         }
-    } else if (osTvType == 2) {
-        if (p == 2) {
-            s = &osViModeMpalHpf1;
+    } else if (osTvType == OS_TV_MPAL) {
+        if (mode == VI_MODE_640X480) {
+            osMode = &osViModeMpalHpf1;
         } else {
-            s = &osViModeMpalLpn1;
+            osMode = &osViModeMpalLpn1;
         }
     } else {
         main_hang();
     }
-    sViModes[p] = *s;
-    off = p * 0x50;
+    sViModes[mode] = *osMode;
+    off = mode * 0x50;      /* sizeof(OSViMode) */
     base = sViModes;
-    if (p != 2) {
-        b = (Rec_37 *)(off + (s32)base);
-        b->f8 = sViModeWidths[p];
-        b->f20 = (sViModeWidths[p] << 9) / 320;
-        b->f28 = sViModeWidths[p] << 1;
-        b->f3C = sViModeWidths[p] << 1;
+    if (mode != VI_MODE_640X480) {
+        vm = (ViMode *)(off + (s32)base);
+        vm->width = sViModeWidths[mode];
+        vm->xScale = (sViModeWidths[mode] << 9) / 320;    /* 0x200 (1.0) for 320 pixels */
+        vm->origin0 = sViModeWidths[mode] << 1;
+        vm->origin1 = sViModeWidths[mode] << 1;
     }
 }
 
-void sched_add_client(s32 a0, s32 a1)
+/* Registers a queue to be sent sSchedRetraceMsg on each retrace, in the first free of the four slots; nothing
+   happens when all are taken. The first argument is not used. */
+void sched_add_client(s32 client, s32 queue)
 {
     s32 i;
-    s32 *p;
+    s32 *slot;
 
     i = 0;
-    p = sSchedClients;
+    slot = sSchedClients;
     do {
         i = i + 1;
-        if (*p == 0) {
-            *p = a1;
+        if (*slot == 0) {
+            *slot = queue;
             return;
         }
-        p = p + 1;
-    } while (i < 4);
+        slot = slot + 1;
+    } while (i < SCHED_MAX_CLIENTS);
 }
 
-void sched_submit_task(s32 a0)
+/* Queues a graphics task (an OSScTask); it starts on a retrace once the RDP is idle. */
+void sched_submit_task(s32 task)
 {
-    osSendMesg(&sSchedTaskQueue, a0, 1);
+    osSendMesg(&sSchedTaskQueue, task, OS_MESG_BLOCK);
 }
 
-s32 sched_get_current_task(void) {
+/* The current graphics task (sSchedCurTask.cur); it goes back to 0 on the first retrace after the RDP is done
+   that finds no task queued. */
+s32 sched_get_current_task(void)
+{
     return sSchedCurTask_3;
 }
 
-void sched_notify_clients(void *arg)
+/* Sends msg to every registered client queue. */
+void sched_notify_clients(void *msg)
 {
     s32 i;
-    u32 *p;
-    for (i = 0, p = &sSchedClients; i < 4; i++, p++) {
-        if (p[0] != 0) {
-            osSendMesg(p[0], arg, 0);
+    u32 *slot;
+    for (i = 0, slot = &sSchedClients; i < SCHED_MAX_CLIENTS; i++, slot++) {
+        if (slot[0] != 0) {
+            osSendMesg(slot[0], msg, OS_MESG_NOBLOCK);
         }
     }
 }
 
-void sched_run_task(u8 *param_1) {
-    void *p = param_1 + 0x10;
+/* Loads and starts a task's OSTask (at +0x10 of the OSScTask) on the RSP. */
+void sched_run_task(u8 *task)
+{
+    void *spTask = task + 0x10;
     sSchedRdpIdle = 0;
-    osSpTaskLoad(p);
-    osSpTaskStartGo(p);
+    osSpTaskLoad(spTask);
+    osSpTaskStartGo(spTask);
 }
 
-void sched_set_vi_mode(s32 p)
+/* Switches the VI to one of sViModes and sets gScreenWidth, gScreenHeight and gViMode; the screen stays black for
+   the next three framebuffer swaps. */
+void sched_set_vi_mode(s32 mode)
 {
-    osViBlack(1);
+    osViBlack(TRUE);
     sViBlackFrames = 3;
-    osWritebackDCache(0, 0x800000);
-    osViSetMode(sViModes_2 + p * 0x50);
-    osViSetSpecialFeatures(0xA2);
-    *(volatile s32 *)&gScreenWidth = sViModeWidths[p];
-    *(volatile s32 *)&gScreenHeight = sViModeHeights[p];
-    *(volatile s32 *)&gViMode = p;
-    osViBlack(1);
+    osWritebackDCache(0, 0x800000);     /* all of RDRAM */
+    osViSetMode(sViModes_2 + mode * 0x50);
+    osViSetSpecialFeatures(OS_VI_GAMMA_OFF | OS_VI_DIVOT_OFF | OS_VI_DITHER_FILTER_OFF);
+    *(volatile s32 *)&gScreenWidth = sViModeWidths[mode];
+    *(volatile s32 *)&gScreenHeight = sViModeHeights[mode];
+    *(volatile s32 *)&gViMode = mode;
+    osViBlack(TRUE);
 }
 
-void fault_draw_hex(s32 x, s32 y, u32 bits)
+/* Draws a word as eight hex digits (8x8 glyphs of sFaultHexFont, white on black) into the 320-pixel-wide fault
+   framebuffer at x, y. */
+void fault_draw_hex(s32 x, s32 y, u32 value)
 {
-    s32 i, j, k;
-    u8 *r;
-    u16 *p;
+    s32 digit, row, bit;
+    u8 *glyph;
+    u16 *pixel;
 
-    for (i = 0; i < 8; i++) {
-        r = sFaultHexFont + ((bits >> ((7 - i) * 4)) & 0xF) * 8;
-        p = gFramebuffers_4 + (y * 0x140 + x);
-        for (j = 0; j < 8; j++) {
-            k = 7;
+    for (digit = 0; digit < 8; digit++) {
+        glyph = sFaultHexFont + ((value >> ((7 - digit) * 4)) & 0xF) * 8;
+        pixel = gFramebuffers_4 + (y * FAULT_FB_WIDTH + x);
+        for (row = 0; row < 8; row++) {
+            bit = 7;
             do {
-                if (((*r >> k) & 1) != 0) {
-                    *p = 0xFFFF;
+                if (((*glyph >> bit) & 1) != 0) {
+                    *pixel = 0xFFFF;
                 } else {
-                    *p = 1;
+                    *pixel = 1;
                 }
-                k--;
-                p++;
-            } while (k >= 0);
-            r++;
-            p += 0x140 - 8;
+                bit--;
+                pixel++;
+            } while (bit >= 0);
+            glyph++;
+            pixel += FAULT_FB_WIDTH - 8;
         }
         x += 8;
     }
 }
 
+/* Empty. */
 void func_80065A5C(void)
 {
 }
 
-void *sched_get_os_vi_mode(s32 a0) {
-    void *s0;
-    if (osTvType == 1) {
-        if (a0 == 2) {
-            s0 = osViModeNtscHpf1_2;
+/* libultra's VI mode behind one of the game's modes for the TV type (NTSC or MPAL; anything else hangs). */
+void *sched_get_os_vi_mode(s32 mode)
+{
+    void *osMode;
+    if (osTvType == OS_TV_NTSC) {
+        if (mode == VI_MODE_640X480) {
+            osMode = osViModeNtscHpf1_2;
         } else {
-            s0 = osViModeNtscLpn1_2;
+            osMode = osViModeNtscLpn1_2;
         }
-    } else if (osTvType == 2) {
-        if (a0 == 2) {
-            s0 = osViModeMpalHpf1_2;
+    } else if (osTvType == OS_TV_MPAL) {
+        if (mode == VI_MODE_640X480) {
+            osMode = osViModeMpalHpf1_2;
         } else {
-            s0 = osViModeMpalLpn1_2;
+            osMode = osViModeMpalLpn1_2;
         }
     } else {
         main_hang();
     }
-    return s0;
+    return osMode;
 }

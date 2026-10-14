@@ -1,18 +1,23 @@
 #include "game.h"
 
+/* The game image's entry (from asm/game_entry.s): initializes libultra and starts the idle thread, which starts
+   the main thread. */
 void game_boot(void)
 {
     __osInitialize_common();
     __osInitialize_autodetect();
     D_800F4780 = 0;
-    osCreateThread(&sIdleThread, 1, (void *)idle_thread, 0, &sIdleThreadStackEnd, 8);
+    osCreateThread(&sIdleThread, THREAD_ID_IDLE, (void *)idle_thread, 0, &sIdleThreadStackEnd,
+                   THREAD_PRI_IDLE_START);
     osStartThread(&sIdleThread);
     for (;;) {}
 }
 
-void idle_thread(s32 param_1) {
-    osCreateThread(&gMainThread, 3, (void *)game_main, param_1, sMainThreadStackEnd, 10);
+/* Starts the main thread (game_main) with arg, then drops to the lowest priority and idles. */
+void idle_thread(s32 arg)
+{
+    osCreateThread(&gMainThread, THREAD_ID_MAIN, (void *)game_main, arg, sMainThreadStackEnd, THREAD_PRI_MAIN);
     osStartThread(&gMainThread);
-    osSetThreadPri(NULL, 0);
+    osSetThreadPri(NULL, OS_PRIORITY_IDLE);
     main_hang();
 }
