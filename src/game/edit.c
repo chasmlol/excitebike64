@@ -167,13 +167,7 @@ typedef struct {
     u8 pad38[8];
 } Rec_5;
 
-typedef struct { s16 f0; s16 f2; u8 rest[0x3C]; } Tab64;
 
-typedef struct {
-    s16 f0;
-    s16 cnt;
-    u8 pad[60];
-} Trk_3;
 
 extern EditCamPos sEditCamDelta;
 extern EditCamPos sEditCamPosFixed; /* 1/1024 */
@@ -185,8 +179,6 @@ extern GuiMenuItem sEditMainMenuItems[];
 extern GuiMenuItem sEditTrackMenuItems[];
 extern Scis sEditViewRects_2;
 extern s32 *gEditor_33;
-extern Tab64 gPieceTypes_3[];
-extern Trk_3 gPieceTypes_4[];
 
 /* Makes the first piece that can start the track the start piece, if there is none. */
 static inline void edit_pick_start_piece(void) {
@@ -3592,7 +3584,7 @@ void edit_user_piece_append_segment(void)
 }
 
 #define CEA_IDX (gEditor->userPiece)
-#define LIM ((s32)gPieceTypes_3[CEA_IDX + 0x12].f2 << 1)
+#define LIM ((s32)gPieceTypes[CEA_IDX + 0x12].dim[1] << 1)
 
 int func_8009D224(int param_1, u16 *param_2)
 {
@@ -3644,7 +3636,7 @@ int func_8009D224(int param_1, u16 *param_2)
 }
 
 #define CE_ROW() (gEditor->userPiece)
-#define CE_LIM() ((gPieceTypes_3[CE_ROW() + 0x12].f2) << 1)
+#define CE_LIM() ((gPieceTypes[CE_ROW() + 0x12].dim[1]) << 1)
 #define GETA(i) (((i) + 1 > 0 && (i) + 1 < CE_LIM()) ? gUserPieceHeights[CE_ROW()][i] : 0)
 #define ANG(p, i) (((i) + 1 < CE_LIM()) ? 0x2000 - (p)[(i) + 1] : 0x2000)
 #define SINS(x) gCosTable[((x) >> 4) & 0xFFF]
@@ -3666,7 +3658,7 @@ s32 func_8009D3D4(s32 p1, s16 *p2)
     return (t0 < q) ? t0 : q;
 }
 
-#define OFS(n) (((n) - 1 > 0 && (n) - 1 < gPieceTypes_4[gEditor->userPiece + 0x12].cnt * 2) ? gUserPieceHeights[gEditor->userPiece][(n) - 2] : 0)
+#define OFS(n) (((n) - 1 > 0 && (n) - 1 < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(n) - 2] : 0)
 #define ANG_2(n, p) ((n) - 1 > 0 ? (p)[(n) - 2] : 0)
 
 int func_8009D5D8(int n, u16 *p)
@@ -3685,8 +3677,8 @@ int func_8009D5D8(int n, u16 *p)
     return res < lo ? lo : res;
 }
 
-#define OFS_2(i) (((i) > 0 && (i) < gPieceTypes_4[gEditor->userPiece + 0x12].cnt * 2) ? gUserPieceHeights[gEditor->userPiece][(i) - 1] : 0)
-#define ANG_3(i, p) ((i) < gPieceTypes_4[gEditor->userPiece + 0x12].cnt * 2 ? (p)[i] : 0)
+#define OFS_2(i) (((i) > 0 && (i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(i) - 1] : 0)
+#define ANG_3(i, p) ((i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2 ? (p)[i] : 0)
 
 int func_8009D788(int n, s16 *p)
 {
@@ -3704,18 +3696,11 @@ int func_8009D788(int n, s16 *p)
     return res < lo ? lo : res;
 }
 
-#define LIM_2 (gPieceTypes_11[gEditor_27->cur + 0x12].lim * 2)
+#define LIM_2 (gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2)
 #define T1_2 ((s16 *)gUserPieceHeights)
 
-typedef struct {
-    u8 pad[0x16FC];
-    s32 cur;
-} Ctx9D;
 
-typedef struct { s16 n0; s16 lim; s16 rest[30]; } Row9D;
 
-extern Ctx9D *gEditor_27;
-extern Row9D gPieceTypes_11[];
 
 static inline s16 *At(s16 *b, s32 c, s32 i)
 {
@@ -3730,26 +3715,26 @@ s32 func_8009D98C(s32 n)
     s32 a, cnt, v;
 
     if (n > 0 && n < LIM_2)
-        a = *At(T1_2, gEditor_27->cur, n - 1);
+        a = *At(T1_2, gEditor->userPiece, n - 1);
     else
         a = 0;
     cnt = a;
     for (;;) {
-        gUserPieceHeights[gEditor_27->cur][n - 1]++;
+        gUserPieceHeights[gEditor->userPiece][n - 1]++;
         if (n > 0 && n < LIM_2)
-            v = gUserPieceHeights[gEditor_27->cur][n - 1];
+            v = gUserPieceHeights[gEditor->userPiece][n - 1];
         else
             v = 0;
         if (n - 1 > 0 && n - 1 < LIM_2)
-            v -= gUserPieceHeights[gEditor_27->cur][n - 2];
+            v -= gUserPieceHeights[gEditor->userPiece][n - 2];
         math_to_polar(4000, v << 4, &r1, &dummy);
         r1 = 0x4000 - r1;
         if (n + 1 > 0 && n + 1 < LIM_2)
-            v = T1_2[gEditor_27->cur * 15 + n];
+            v = T1_2[gEditor->userPiece * 15 + n];
         else
             v = 0;
         if (n > 0 && n < LIM_2)
-            v -= gUserPieceHeights[gEditor_27->cur][n - 1];
+            v -= gUserPieceHeights[gEditor->userPiece][n - 1];
         math_to_polar(4000, v << 4, &r2, &dummy);
         r2 = 0x4000 - r2;
         if ((s16)(r2 - r1) < -0x2000)
@@ -3758,7 +3743,7 @@ s32 func_8009D98C(s32 n)
     }
     {
         s16 *b = T1_2;
-        *At(b, gEditor_27->cur, n - 1) = a;
+        *At(b, gEditor->userPiece, n - 1) = a;
     }
     return cnt;
 }
@@ -3816,19 +3801,15 @@ s32 func_8009DC6C(s32 param_1)
     return iVar4;
 }
 
-#define A_2 (gEditor_28->a)
-#define B_2 (gEditor_28->b)
-#define LIM_3 (gPieceTypes_12[B_2 + 0x12].lim * 2)
+#define A_2 (gEditor->heightSel)
+#define B_2 (gEditor->userPiece)
+#define LIM_3 (gPieceTypes[B_2 + 0x12].dim[1] * 2)
 #define H_2(c) ((c) > 0 && (c) < LIM_3 ? gUserPieceHeights[B_2][(c) - 1] : 0)
 #define MIN_2(x, y) ((x) < (y) ? (x) : (y))
 #define MAX_2(x, y) ((x) > (y) ? (x) : (y))
 #define CELL (({ s16 *_tb = (s16 *)gUserPieceHeights; _tb; })[({ s32 _c = A_2 - 1; B_2 * 15 + _c; })])
 
-typedef struct { u8 pad0[2]; s16 lim; u8 rest[0x3C]; } Tb_2;
-typedef struct { u8 pad[0x16F8]; s32 a; s32 b; s16 st; } Ctl_26;
 
-extern Tb_2 gPieceTypes_12[];
-extern Ctl_26 *gEditor_28;
 
 void edit_user_piece_adjust_height(void)
 {
@@ -3849,7 +3830,7 @@ void edit_user_piece_adjust_height(void)
     if (lo < -0x1C2) {
         lo = -0x1C2;
     }
-    *(volatile s16 *)&gEditor_28->st = 2;
+    *(volatile s16 *)&gEditor->heightState = 2;
     if (gPadInput & 1) {
         goto body;
     }
@@ -3883,21 +3864,21 @@ void edit_user_piece_adjust_height(void)
             v = CELL;
             if (hi < v) {
                 if (flag != 0) {
-                    gEditor_28->st = 1;
+                    gEditor->heightState = 1;
                 }
                 CELL = hi;
             } else if (v < lo) {
                 CELL = lo;
-                gEditor_28->st = 1;
+                gEditor->heightState = 1;
             }
         } else {
             v = CELL;
             if (hi < v) {
-                gEditor_28->st = 0;
+                gEditor->heightState = 0;
                 CELL = hi;
             } else if (v < lo) {
                 CELL = lo;
-                gEditor_28->st = 0;
+                gEditor->heightState = 0;
             }
         }
     }
