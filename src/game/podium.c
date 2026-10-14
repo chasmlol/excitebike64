@@ -3,7 +3,7 @@
 typedef struct { u8 pad[0x10]; void *p; } Obj_3;
 
 extern Obj_3 *sPodiumModel;
-extern Obj_3 *D_800E1B78;
+extern Obj_3 *sPodiumHelmetModel;
 
 extern PodiumCameraClip sPodiumCameraClips[];
 
@@ -82,24 +82,24 @@ void podium_init(void)
     }
     i = 0;
     gDesaturation = 0;
-    tunes_play_song(D_800D11E4);
-    sPodiumTexture = res_load(D_800E7728, D_800D10CC);
-    sPodiumModel = res_load(D_800E7728, D_800D0F30);
-    sPodiumMtxBuf = mem_alloc_dbg(0x200, i, D_800D6000, 0xFE);
-    D_800E1B78 = res_load(D_800E7728, D_800D0E34);
+    tunes_play_song(gPodiumSongResId);
+    sPodiumTexture = res_load(gResourceSet, sPodiumTextureResId);
+    sPodiumModel = res_load(gResourceSet, sPodiumModelResId);
+    sPodiumMtxBuf = mem_alloc_dbg(0x200, i, sStrPodiumFile, 0xFE);
+    sPodiumHelmetModel = res_load(gResourceSet, sPodiumHelmetResId);
 
     for (i = 0; i < 3; i++) {
         for (r = sPodiumRiderClips[i]; r->poseResId != 0; r++) {
-            r->pose = (PodiumClip *)res_load(D_800E7728, *r->poseResId);
+            r->pose = (PodiumClip *)res_load(gResourceSet, *r->poseResId);
             r->pose->frames = (u8 *)r->pose + 0x14;
             if (r->propResId != 0) {
-                r->prop = (PodiumClip *)res_load(D_800E7728, *r->propResId);
+                r->prop = (PodiumClip *)res_load(gResourceSet, *r->propResId);
                 r->prop->frames = (u8 *)r->prop + 0x1C;
             }
         }
     }
     for (i = 0; sPodiumCameraClips[i].resId != 0; i++) {
-        sPodiumCameraClips[i].clip = (PodiumClip *)res_load(D_800E7728, *sPodiumCameraClips[i].resId);
+        sPodiumCameraClips[i].clip = (PodiumClip *)res_load(gResourceSet, *sPodiumCameraClips[i].resId);
         sPodiumCameraClips[i].clip->frames = (u8 *)sPodiumCameraClips[i].clip + 0x1C;
     }
     palmod_register(sPodiumTexture, 0);
@@ -139,7 +139,7 @@ Gfx *podium_draw(Gfx *gdl, s32 x, s32 arg2)
     W2(gdl++, 0xDA380003, sPodiumMtxBuf + gGfxFrameIndex * 0x100);
     gdl = prim_build_dl(0, sPodiumModel, &sPodiumTexture_2, gdl);
     for (; i < gEvent.numRiders; i++) {
-        render_make_world_mtx((s32)&((Mtx *)(sPodiumMtxBuf + gGfxFrameIndex * 0x100))[i + 1], D_800E1B88[i][0], D_800E1B88[i][1], D_800E1B88[i][2], D_800E1BC8[i][0], D_800E1BC8[i][1], D_800E1BC8[i][2], 0x10, 0);
+        render_make_world_mtx((s32)&((Mtx *)(sPodiumMtxBuf + gGfxFrameIndex * 0x100))[i + 1], sPodiumHelmetRot[i][0], sPodiumHelmetRot[i][1], sPodiumHelmetRot[i][2], sPodiumHelmetPos[i][0], sPodiumHelmetPos[i][1], sPodiumHelmetPos[i][2], 0x10, 0);
         W2(gdl++, 0xDA380003, (s32)&((Mtx *)(sPodiumMtxBuf + gGfxFrameIndex * 0x100))[i + 1]);
         W2(gdl++, 0xFD100000, gRiderGfx_8[i].tex);
         W2(gdl++, 0xE8000000, 0);
@@ -147,7 +147,7 @@ Gfx *podium_draw(Gfx *gdl, s32 x, s32 arg2)
         W2(gdl++, 0xE6000000, 0);
         W2(gdl++, 0xF0000000, 0x073FC000);
         W2(gdl++, 0xE7000000, 0);
-        gdl = prim_build_dl(0, D_800E1B78, &gRiderGfx_8[i], gdl);
+        gdl = prim_build_dl(0, sPodiumHelmetModel, &gRiderGfx_8[i], gdl);
     }
     return gdl;
 }
@@ -252,7 +252,7 @@ void podium_update(void)
             }
             { s32 off = t * sizeof(PodiumPropFrame); r = (PodiumPoseFrame *)((u8 *)sPodiumRiderClips[i][k].prop->frames + off); }
             {
-                s32 *px = &D_800E1BC8[i][0], *pz = &D_800E1BC8[i][2];
+                s32 *px = &sPodiumHelmetPos[i][0], *pz = &sPodiumHelmetPos[i][2];
                 s32 x = ((PodiumPropFrame *)r)->x, z = ((PodiumPropFrame *)r)->z;
                 s32 a = (s32)(LO9C << 16) >> 20;
                 s32 c = gCosTable[a & 0xFFF];
@@ -266,16 +266,16 @@ void podium_update(void)
                 *pz = (zc + xs) >> 14;
                 *px = (xc - zs) >> 14;
             }
-            D_800E1BC8[i][1] = ((PodiumPropFrame *)r)->y;
-            D_800E1BC8[i][0] += sPodiumPos[0];
-            D_800E1BC8[i][1] += sPodiumPos[1];
-            D_800E1BC8[i][2] += sPodiumPos[2];
+            sPodiumHelmetPos[i][1] = ((PodiumPropFrame *)r)->y;
+            sPodiumHelmetPos[i][0] += sPodiumPos[0];
+            sPodiumHelmetPos[i][1] += sPodiumPos[1];
+            sPodiumHelmetPos[i][2] += sPodiumPos[2];
             cp = (u8 *)((PodiumPropFrame *)r)->rot;
-            D_800E1B88[i][0] = cp[0];
-            D_800E1B88[i][1] = cp[1];
-            D_800E1B88[i][2] = cp[2] + LO9C;
+            sPodiumHelmetRot[i][0] = cp[0];
+            sPodiumHelmetRot[i][1] = cp[1];
+            sPodiumHelmetRot[i][2] = cp[2] + LO9C;
         } else {
-            s32 *q = D_800E1BC8[i];
+            s32 *q = sPodiumHelmetPos[i];
             q[0] = b->bones[2].worldPos.x + gRiders[i].drawBodyPos.x;
             q[1] = b->bones[2].worldPos.y + gRiders[i].drawBodyPos.y;
             q[2] = b->bones[2].worldPos.z + gRiders[i].drawBodyPos.z;
@@ -287,9 +287,9 @@ void podium_update(void)
             q[2] += (b->bones[2].worldRot.m[8] * 50) >> 15;
             m = b->bones[2].worldRot;
             mtx3i_to_angles(m.m, &o0, &o1, &o2);
-            D_800E1B88[i][0] = o0;
-            D_800E1B88[i][1] = o1;
-            D_800E1B88[i][2] = o2;
+            sPodiumHelmetRot[i][0] = o0;
+            sPodiumHelmetRot[i][1] = o1;
+            sPodiumHelmetRot[i][2] = o2;
         }
     }
 }

@@ -5,34 +5,34 @@ void des_init(void)
     s32 i;
 
     gFarClip = 0x4000;
-    gTerrainTexSet = res_load(D_800E7728, D_800D0B68);
+    gTerrainTexSet = res_load(gResourceSet, sDesTerrainTexResId);
     for (i = 0; sDesObjModels[i].res != NULL; i++) {
-        sDesObjModels[i].model = (PrimModel *)res_load(D_800E7728, *sDesObjModels[i].res);
+        sDesObjModels[i].model = (PrimModel *)res_load(gResourceSet, *sDesObjModels[i].res);
     }
-    gObjectTexSet = res_load(D_800E7728, D_800D1014);
-    sDesPatches = mem_alloc_dbg(250 * sizeof(DesPatch), 0, D_800D6FD0, 0xe9);
+    gObjectTexSet = res_load(gResourceSet, sDesObjTexResId);
+    sDesPatches = mem_alloc_dbg(250 * sizeof(DesPatch), 0, sStrDesgfxC, 0xe9);
     for (i = 0; i < 250; i++) {
         sDesPatches[i].life = 0;
     }
-    gDesertHeightMap = mem_alloc_dbg(0x40000, 0, D_800D6FD0, 0xed);
+    gDesertHeightMap = mem_alloc_dbg(0x40000, 0, sStrDesgfxC, 0xed);
     fractal_init((u8 *)gDesertHeightMap);
     fractal_reset();
     for (i = 0; i < 16; i++) {
         sDesPatchDLs[i] = des_build_patch_dl(i);
     }
     mem_fill_2(sDesPatchGrid, -1, sizeof(sDesPatchGrid));
-    mem_fill_2(D_800EA998, 0, sizeof(D_800EA998));
+    mem_fill_2(sDesPatchGridOrigin, 0, sizeof(sDesPatchGridOrigin));
     sDesFreePatchCount = 250;
     for (i = 249; i >= 0; i--) {
         sDesFreePatches[i] = i;
     }
-    sDesObjMtx[0] = mem_alloc_dbg(16 * sizeof(Mtx), 0, D_800D6FD0, 0xfe);
-    sDesObjMtx[1] = mem_alloc_dbg(16 * sizeof(Mtx), 0, D_800D6FD0, 0xff);
-    sDesArrowTex = (TexSet *)res_load(D_800E7728, D_800D0DF0);
-    sDesArrowModel = (PrimModel *)res_load(D_800E7728, D_800D0C50);
-    sDesArrowMtx = mem_alloc_dbg(2 * sizeof(Mtx), 0, D_800D6FD0, 0x104);
-    sDesMarkerAnim = (TexSet *)res_load(D_800E7728, D_800D07C4);
-    D_800EA98C = res_load(D_800E7728, D_800D0BC8);
+    sDesObjMtx[0] = mem_alloc_dbg(16 * sizeof(Mtx), 0, sStrDesgfxC, 0xfe);
+    sDesObjMtx[1] = mem_alloc_dbg(16 * sizeof(Mtx), 0, sStrDesgfxC, 0xff);
+    sDesArrowTex = (TexSet *)res_load(gResourceSet, sDesArrowTexResId);
+    sDesArrowModel = (PrimModel *)res_load(gResourceSet, sDesArrowModelResId);
+    sDesArrowMtx = mem_alloc_dbg(2 * sizeof(Mtx), 0, sStrDesgfxC, 0x104);
+    sDesMarkerAnim = (TexSet *)res_load(gResourceSet, sDesMarkerAnimResId);
+    D_800EA98C = res_load(gResourceSet, D_800D0BC8);
 }
 
 void des_update_view(s32 arg0)
@@ -42,13 +42,13 @@ void des_update_view(s32 arg0)
     Mtx m1;
     Mtx m2;
 
-    D_800CA3B8 = gRaceFrame / 4;
+    sDesMarkerFrame = gRaceFrame / 4;
     fractal_generate_step(100);
     sDesCamX = gCamPos[0].x;
     sDesCamY = gCamPos[0].y;
     sDesCamZ = gCamPos[0].z;
-    divmod_floor(sDesCamX, 0x1F400, &D_800EDFD4, &D_800EBDF0);
-    divmod_floor(sDesCamZ, 0x1F400, &D_800EDFD8, &D_800EBDF4);
+    divmod_floor(sDesCamX, 0x1F400, &sDesCamBlockX, &sDesCamBlockOffX);
+    divmod_floor(sDesCamZ, 0x1F400, &sDesCamBlockZ, &sDesCamBlockOffZ);
     fractal_update_tiles(sDesCamX, sDesCamZ);
     des_calc_lod_grid();
     des_update_patches();
@@ -56,18 +56,18 @@ void des_update_view(s32 arg0)
     for (i = 0; i < 250; i++) {
         if (sDesPatches[i].visible != 0) {
             for (j = 0; j < sDesBlockCount; j++) {
-                if (D_800ED6A8[j] == sDesPatches[i].blockX && D_800ED728[j] == sDesPatches[i].blockZ) {
+                if (gDesBlockX[j] == sDesPatches[i].blockX && gDesBlockZ[j] == sDesPatches[i].blockZ) {
                     sDesPatches[i].block = j;
                     break;
                 }
             }
             if (j == sDesBlockCount) {
-                D_800ED6A8[j] = sDesPatches[i].blockX;
-                D_800ED728[j] = sDesPatches[i].blockZ;
+                gDesBlockX[j] = sDesPatches[i].blockX;
+                gDesBlockZ[j] = sDesPatches[i].blockZ;
                 mtx_from_angles_pos_scale(&sDesBlockMtx[gGfxFrameIndex][j], 0, 0, 0,
-                              (sDesPatches[i].blockX - D_800EDFD4) * 0x1F400 - D_800EBDF0 + 64000,
+                              (sDesPatches[i].blockX - sDesCamBlockX) * 0x1F400 - sDesCamBlockOffX + 64000,
                               -sDesCamY,
-                              (sDesPatches[i].blockZ - D_800EDFD8) * 0x1F400 - D_800EBDF4 + 64000,
+                              (sDesPatches[i].blockZ - sDesCamBlockZ) * 0x1F400 - sDesCamBlockOffZ + 64000,
                               0x100);
                 sDesPatches[i].block = sDesBlockCount;
                 sDesBlockCount++;
@@ -84,7 +84,7 @@ void des_update_view(s32 arg0)
         mtx_from_angles_pos_scale(&m2, -0x1000, 0, 0, -70, -55, 300, 10);
         mtx_mul(&m1, &m2, &sDesArrowMtx[gGfxFrameIndex]);
     }
-    mtx_from_angles_pos_scale(&D_800ED610[gGfxFrameIndex], 0, 0, gCamYaw[0], 0, 0, 1000, 0x100);
+    mtx_from_angles_pos_scale(&sDesMarkerMtx[gGfxFrameIndex], 0, 0, gCamYaw[0], 0, 0, 1000, 0x100);
 }
 
 Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
@@ -101,7 +101,7 @@ Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
     gDPSetRenderMode(gdl++, 0x552230, 0);
     gDPLoadTLUT_pal256(gdl++, gTerrainTexSet->pal);
-    D_800EBE00 = -1;
+    sDesCurBlock = -1;
     gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP, G_TX_WRAP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     for (j = 0; j < 1; j++) {
@@ -110,9 +110,9 @@ Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
             if (id != -1) {
                 p = (DesPatch *)(id * sizeof(DesPatch) + (s32)sDesPatches);
                 if (p->near == 1) {
-                    if (p->block != D_800EBE00) {
+                    if (p->block != sDesCurBlock) {
                         gSPMatrix(gdl++, &sDesBlockMtx[gGfxFrameIndex][p->block], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-                        D_800EBE00 = p->block;
+                        sDesCurBlock = p->block;
                     }
                     gSPVertex(gdl++, p->vtx, 25, 0);
                     gSPDisplayList(gdl++, sDesPatchDLs[p->seams]);
@@ -148,22 +148,22 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
     gSPFogPosition(gdl++, fc->fmin[gNumViews - 1], fc->fmax[gNumViews - 1]);
     RAW(gdl++, 0xFC127E24, 0xFFFFF9FC);
     RAW(gdl++, 0xE200001C, 0xC8004030);
-    D_800EBE00 = -1;
+    sDesCurBlock = -1;
     gDPLoadTLUT_pal256(gdl++, gTerrainTexSet->pal);
     gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet->tex[0].data, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP | G_TX_NOMIRROR, G_TX_WRAP | G_TX_NOMIRROR, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     gSPViewport(gdl++, &gViewports[a3 + 4]);
     for (j = 0; j < sDesBlockCount; j++) {
-        D_800EBE00 = 0;
+        sDesCurBlock = 0;
         for (k = 0; k < 3; k++) {
             for (i = 0; i < 0x400; i++) {
                 v = sDesPatchGrid[k][i];
                 if (v != -1) {
                     o = (DesPatch *)(v * sizeof(DesPatch) + (u32)sDesPatches);
                     if (o->block == j && (k != 0 || o->near == 0)) {
-                        if (D_800EBE00 == 0) {
+                        if (sDesCurBlock == 0) {
                             gSPMatrix(gdl++, &sDesBlockMtx[gGfxFrameIndex][j], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-                            D_800EBE00 = 1;
+                            sDesCurBlock = 1;
                         }
                         gSPVertex(gdl++, o->vtx, 25, 0);
                         { Gfx **dl = sDesPatchDLs; gSPDisplayList(gdl++, dl[o->seams]); }
@@ -215,9 +215,9 @@ Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
             /* the campfire of the next checkpoint */
             if (sDesObjects[i].kind == 2 && sDesObjects[i].ref == gDesWaypoint) {
                 PKT(w, 0xDA380003, (u32)&sDesObjMtx[idx][i]);
-                PKT(w, 0xDA380001, (u32)&D_800ED610[idx]);
+                PKT(w, 0xDA380001, (u32)&sDesMarkerMtx[idx]);
                 /* each frame of the animation has its colour in the palette */
-                frame = D_800CA3B8 % (anim = sDesMarkerAnim)->count;
+                frame = sDesMarkerFrame % (anim = sDesMarkerAnim)->count;
                 c = frame * 2 + (u32)anim->pal;
                 c = *(u16 *)c;
                 r = (c >> 11) << 3;
@@ -268,7 +268,7 @@ Blk_2 *des_draw_arrow(Blk_2 *gdl, s32 p2, s32 arg2, s32 arg3)
         PKT_2(0xE7000000, 0)
         off = gGfxFrameIndex * 0x40;
         PKT_2(0xDA380003, (u32)((u8 *)sDesArrowMtx + off))
-        PKT_2(0xDA380007, (u32)((u8 *)D_800E1938 + off))
+        PKT_2(0xDA380007, (u32)((u8 *)gHudPerspMtx + off))
         gdl = (Blk_2 *)prim_build_dl(0, sDesArrowModel, &sDesArrowTex, (Gfx *)gdl);
         PKT_2(0xDA380003, p2 + 0x400)
         return gdl;
@@ -286,32 +286,32 @@ void des_calc_lod_grid(void) {
 
     a = sDesCamX >> 4;
     h = sDesCamZ >> 4;
-    D_800EA7C0 = xx = a / d;
-    D_800ED7A8 = a - D_800EA7C0 * d + (((u32)a & 1) >> 1);
+    sDesLodCellX = xx = a / d;
+    sDesLodOffX = a - sDesLodCellX * d + (((u32)a & 1) >> 1);
     w = (u16)gCamYaw[0];
     w >>= 4;
     s = gCosTable[w] + (((u32)&gCosTable[w] & 1) >> 1);
     c = gCosTable[(w - 0x400) & 0xFFF];
-    if (D_800ED7A8 < 0) {
-        D_800ED7A8 += d;
-        D_800EA7C0 -= 1;
+    if (sDesLodOffX < 0) {
+        sDesLodOffX += d;
+        sDesLodCellX -= 1;
     }
-    D_800EA7C4 = h / d;
-    xx = D_800EA7C4 * d;
-    D_800ED7B0 = h - xx + (((u32)h & 1) >> 1);
-    if (D_800ED7B0 < 0) {
-        D_800ED7B0 += d;
-        D_800EA7C4 -= 1;
+    sDesLodCellZ = h / d;
+    xx = sDesLodCellZ * d;
+    sDesLodOffZ = h - xx + (((u32)h & 1) >> 1);
+    if (sDesLodOffZ < 0) {
+        sDesLodOffZ += d;
+        sDesLodCellZ -= 1;
     }
     n = 0;
     for (i = 0; i < 32; i++) {
         for (j = 0; j < 32; j++) {
             G[n] = 0;
             x = ((j - 15) * 8000 - 4000) >> 4;
-            k = ((u32)(D_800ED7A8 >> 31) & 1) >> 1;
+            k = ((u32)(sDesLodOffX >> 31) & 1) >> 1;
             z = (i * 8000 - 0x1E460) >> 4;
-            x -= D_800ED7A8 % 500;
-            z -= D_800ED7B0 % 500;
+            x -= sDesLodOffX % 500;
+            z -= sDesLodOffZ % 500;
             k = s * x;
             v = (s * z - c * x) >> 14;
             u = (k + c * z) >> 14;
@@ -336,24 +336,24 @@ void des_calc_lod_grid(void) {
             n++;
         }
     }
-    D_800ED7A8 /= 500;
-    D_800ED7B0 /= 500;
-    D_800EDBB0 = D_800ED7A8 & 1;
-    D_800EDBBC = D_800ED7B0 & 1;
-    D_800EDBB8 = (D_800ED7A8 & 2) >> 1;
-    D_800EDBC4 = (D_800ED7B0 & 2) >> 1;
-    D_800EDBC0 = D_800ED7A8 & 4;
-    D_800EDBC0 /= 4;
-    D_800EDBC8 = D_800ED7B0 & 4;
-    D_800EDBC8 /= 4;
+    sDesLodOffX /= 500;
+    sDesLodOffZ /= 500;
+    sDesLod0ShiftX = sDesLodOffX & 1;
+    sDesLod0ShiftZ = sDesLodOffZ & 1;
+    sDesLod1ShiftX = (sDesLodOffX & 2) >> 1;
+    sDesLod1ShiftZ = (sDesLodOffZ & 2) >> 1;
+    sDesLod2ShiftX = sDesLodOffX & 4;
+    sDesLod2ShiftX /= 4;
+    sDesLod2ShiftZ = sDesLodOffZ & 4;
+    sDesLod2ShiftZ /= 4;
     for (i = 2; i < 32; i += 2) {
         for (j = 2; j < 32; j += 2) {
             s32 r, kb, kc;
             r = ((i / 2 + 8) << 5) + 8;
             m = r + j / 2;
-            n = ((i - D_800EDBBC) << 5) + (j - D_800EDBB0);
-            kb = ((i - D_800EDBC4) << 5) + (j - D_800EDBB8);
-            kc = ((i - D_800EDBC8) << 5) + (j - D_800EDBC0);
+            n = ((i - sDesLod0ShiftZ) << 5) + (j - sDesLod0ShiftX);
+            kb = ((i - sDesLod1ShiftZ) << 5) + (j - sDesLod1ShiftX);
+            kc = ((i - sDesLod2ShiftZ) << 5) + (j - sDesLod2ShiftX);
             if (G[n] & G[n + 1] & G[n + 32] & G[n + 33] & 1) G[m] &= 0xFD;
             if (G[kb] & G[kb + 1] & G[kb + 32] & G[kb + 33] & 2) G[m] &= 0xFB;
             if (G[kc] & G[kc + 1] & G[kc + 32] & G[kc + 33] & 4) G[m] &= 0xF7;
@@ -367,7 +367,7 @@ void des_calc_lod_grid(void) {
         for (j = 2; j < 32; j += 2) {
             s32 r = (((i >> 1) + 8) << 5) + 8;
             m = r + (j >> 1);
-            n = (i - D_800EDBBC) * 32 + (j - D_800EDBB0);
+            n = (i - sDesLod0ShiftZ) * 32 + (j - sDesLod0ShiftX);
             if (sDesLodGrid[m + 32] & 2) {
                 if (sDesLodGrid[n + 32] & 1) sDesSeamFlags[n + 32] |= 0x10;
                 if (sDesLodGrid[n + 33] & 1) sDesSeamFlags[n + 33] |= 0x10;
@@ -384,7 +384,7 @@ void des_calc_lod_grid(void) {
                 if (sDesLodGrid[n] & 1) sDesSeamFlags[n] |= 0x80;
                 if (sDesLodGrid[n + 32] & 1) sDesSeamFlags[n + 32] |= 0x80;
             }
-            n = (i - D_800EDBC4) * 32 + (j - D_800EDBB8);
+            n = (i - sDesLod1ShiftZ) * 32 + (j - sDesLod1ShiftX);
             if (sDesLodGrid[m + 32] & 4) {
                 if (sDesLodGrid[n + 32] & 2) sDesSeamFlags[n + 32] |= 1;
                 if (sDesLodGrid[n + 33] & 2) sDesSeamFlags[n + 33] |= 1;
@@ -425,10 +425,10 @@ void des_update_patches(void)
 
     for (i = 0; i < 3; i++) {
         j = 1 << i;
-        D_800EA998[i] = ((qz0 / j) * 0x20 + qx0 / j) & 0x3ff;
+        sDesPatchGridOrigin[i] = ((qz0 / j) * 0x20 + qx0 / j) & 0x3ff;
     }
-    D_800ED690 = qx0;
-    D_800ED694 = qz0;
+    sDesCamCellX = qx0;
+    sDesCamCellZ = qz0;
 
     for (i = 0; i < 250; i++) {
         if (sDesPatches[i].life > 0)
@@ -454,7 +454,7 @@ void des_update_patches(void)
     for (i = 0; i < 3; i++) {
         divmod(sDesCamX >> 4, 500 << i, &qx, &rx);
         divmod(sDesCamZ >> 4, 500 << i, &qz, &rz);
-        s3 = D_800EA998[i];
+        s3 = sDesPatchGridOrigin[i];
         wz = (qz - 16) * (500 << i);
         for (j = 0; j < 0x20; j++) {
             s32 k;
@@ -498,7 +498,7 @@ out:
         sDesPatches[i].seams = 0;
 
     for (i = 0; i < 2; i++) {
-        s3 = D_800EA998[i];
+        s3 = sDesPatchGridOrigin[i];
         for (j = 0; j < 0x400; j++) {
             h = sDesPatchGrid[i][s3];
             if (h != -1) {
@@ -590,14 +590,14 @@ Gfx *des_build_patch_dl(s32 mask)
 
     for (i = 0; i < 4; i++) {
         if ((mask >> i) & 1) {
-            j = D_800CA3DC[i];
-            b = D_800CA3EC[i];
-            c = D_800CA3FC[i];
+            j = sDesSeamStartVtx[i];
+            b = sDesSeamStep[i];
+            c = sDesSeamInward[i];
             gSP2Triangles(gdl++, j, j + b + c, j + 2 * b, 0, j + 2 * b, j + 3 * b + c, j + 4 * b, 0);
         } else {
-            j = D_800CA3DC[i];
-            b = D_800CA3EC[i];
-            c = D_800CA3FC[i];
+            j = sDesSeamStartVtx[i];
+            b = sDesSeamStep[i];
+            c = sDesSeamInward[i];
             gSP2Triangles(gdl++, j, j + b + c, j + b, 0, j + b, j + b + c, j + 2 * b, 0);
             gSP2Triangles(gdl++, j + 2 * b, j + 3 * b + c, j + 3 * b, 0, j + 3 * b, j + 3 * b + c, j + 4 * b, 0);
         }
@@ -605,7 +605,7 @@ Gfx *des_build_patch_dl(s32 mask)
 
     gSPEndDisplayList(gdl++);
     i = (u8 *)gdl - (u8 *)gZBuffer;
-    gdl = mem_alloc_dbg(i, 0, (s32)D_800D6FD0, 0x508);
+    gdl = mem_alloc_dbg(i, 0, (s32)sStrDesgfxC, 0x508);
     memcpy(gdl, gZBuffer, i);
     return gdl;
 }
@@ -651,26 +651,26 @@ void divmod_floor(s32 a, s32 b, s32 *q, s32 *r)
 
 void des_bbox_add(s32 param_1, s32 param_2)
 {
-    if (param_1 < D_800ED7B4) {
-        D_800ED7B4 = param_1;
+    if (param_1 < sDesBBoxMinX) {
+        sDesBBoxMinX = param_1;
     }
-    if (param_2 < D_800ED7B8) {
-        D_800ED7B8 = param_2;
+    if (param_2 < sDesBBoxMinZ) {
+        sDesBBoxMinZ = param_2;
     }
-    if (D_800ED7BC < param_1) {
-        D_800ED7BC = param_1;
+    if (sDesBBoxMaxX < param_1) {
+        sDesBBoxMaxX = param_1;
     }
-    if (D_800ED7C0 < param_2) {
-        D_800ED7C0 = param_2;
+    if (sDesBBoxMaxZ < param_2) {
+        sDesBBoxMaxZ = param_2;
     }
 }
 
 void des_bbox_reset(void)
 {
-    D_800ED7B8 = 999;
-    D_800ED7B4 = 999;
-    D_800ED7C0 = -999;
-    D_800ED7BC = -999;
+    sDesBBoxMinZ = 999;
+    sDesBBoxMinX = 999;
+    sDesBBoxMaxZ = -999;
+    sDesBBoxMaxX = -999;
 }
 
 #define PKT_3(a, b) { Gfx *_g = (Gfx *)(gdl++); _g->words.w0 = (a); _g->words.w1 = (b); }

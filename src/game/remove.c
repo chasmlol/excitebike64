@@ -30,7 +30,7 @@ void remove_walls_init(TrackModelList *m, WallMesh *o)
     }
     for (i = 0; i < sRemoveGroupCount; i++) {
         if (sRemoveGroups[i].count) {
-            sRemoveGroups[i].edges = mem_alloc_dbg(sRemoveGroups[i].count * 2, 0, (s32)D_800D91A0, 0x5D);
+            sRemoveGroups[i].edges = mem_alloc_dbg(sRemoveGroups[i].count * 2, 0, (s32)sStrRemoveC, 0x5D);
             sRemoveGroups[i].count = 0;
         }
     }

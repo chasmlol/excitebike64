@@ -37,7 +37,7 @@ u32 sn_pi_read_byte(u32 addr)
     return (v >> sh) & 0xFF;
 }
 
-u32 boot_func_80001CB4(u32 a) {
+u32 sn_pi_read_byte_alt(u32 a) {
     u32 v;
     u32 sh;
 
@@ -123,7 +123,7 @@ void sn_pi_write_byte(u32 param_1, u8 param_2) {
     sn_pi_write_word((void *)param_1, (v & ~(0xFFU << shift)) | ((u32)param_2 << shift));
 }
 
-void boot_func_80001F98(u32 addr, u8 val) {
+void sn_pi_write_byte_alt(u32 addr, u8 val) {
     u32 sh;
     u32 v;
 
@@ -169,7 +169,7 @@ void sn_pi_copy_bytes(u8 *dst, u8 *src, s32 n)
     }
 }
 
-void boot_func_800023EC(void)
+void sn_host_copy_rom(void)
 {
     u8 buf[8];
     u32 *src;

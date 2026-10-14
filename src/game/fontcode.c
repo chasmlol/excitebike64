@@ -17,16 +17,16 @@ s32 font_load(ResFile *arc, u32 **ids, u32 *palette)
     if (gFontLoadBuffer != NULL) {
         base = (s32 *)gFontLoadBuffer;
     } else {
-        base = mem_calloc_dbg(k, 0, D_800DB4D0, 0x124);
+        base = mem_calloc_dbg(k, 0, sStrFontcodeFile, 0x124);
     }
     if (base == NULL) {
-        sprintf(D_800EE380, D_800DB4DC);
+        sprintf(sFontErrorText, sStrFontAllocFailed);
         fatal_halt_mem_report_2();
         return -1;
     }
     sFontPageTop = (u8 *)base + k - 0x1000;
     sFontPageCount = 0;
-    tbl = mem_alloc_dbg(0x2800, 0, D_800DB4D0, 0x132);
+    tbl = mem_alloc_dbg(0x2800, 0, sStrFontcodeFile, 0x132);
     sFontPageMaps = tbl;
     for (k = 0; k < 40; k++) {
         *tbl++ = -1;
@@ -45,7 +45,7 @@ s32 font_load(ResFile *arc, u32 **ids, u32 *palette)
             sFontPageMaps = NULL;
             mem_free(sFontTable[0]);
             sFontTable[0] = NULL;
-            sprintf(D_800EE380, D_800DB504);
+            sprintf(sFontErrorText, sStrFontLoadFailed);
             fatal_halt_mem_report_2();
             return -1;
         }
@@ -90,16 +90,16 @@ s32 font_load(ResFile *arc, u32 **ids, u32 *palette)
     }
     k = (u8 *)base - (u8 *)sFontTable[0];
     if (gFontLoadBuffer != NULL) {
-        base = mem_alloc_dbg(k, 0, D_800DB4D0, 0x1A0);
+        base = mem_alloc_dbg(k, 0, sStrFontcodeFile, 0x1A0);
         if (base == NULL) {
             fatal_halt(1);
         }
         memcpy(base, (void *)gFontLoadBuffer, k);
     } else {
-        base = mem_realloc_dbg((s32 *)sFontTable[0], k, 0, D_800DB4D0, 0x1A9);
+        base = mem_realloc_dbg((s32 *)sFontTable[0], k, 0, sStrFontcodeFile, 0x1A9);
     }
     if (base == NULL) {
-        sprintf(D_800EE380, D_800DB520);
+        sprintf(sFontErrorText, sStrFontShrinkFailed);
         fatal_halt_mem_report_2();
         return -1;
     }
@@ -148,7 +148,7 @@ u8 *font_draw_text(TextObj *t, s32 x, s32 y)
     x0 = x;
     if (sFontScaleY != 0x10000) {
         scale = 1;
-        if (D_800D576C != 0)
+        if (sFontScaleFromCorner != 0)
             scale = sFontScaleY >> 16;
         c = *s;
         if (c != 0) {
@@ -164,8 +164,8 @@ u8 *font_draw_text(TextObj *t, s32 x, s32 y)
                         return s;
                     g = &f->glyphs[i];
                     if (c - 0x80 < 0x10) {
-                        D_801053C0[c - 0x80][0] = x + g->x;
-                        D_801053C0[c - 0x80][1] = y + g->y;
+                        sFontSpecialGlyphPos[c - 0x80][0] = x + g->x;
+                        sFontSpecialGlyphPos[c - 0x80][1] = y + g->y;
                     }
                     if (m8 != 0) {
                         kp = sFontPageTop - (g->page << 12);
@@ -233,8 +233,8 @@ u8 *font_draw_text(TextObj *t, s32 x, s32 y)
                         return s;
                     g = &f->glyphs[i];
                     if (c - 0x80 < 0x10) {
-                        D_801053C0[c - 0x80][0] = x + g->x;
-                        D_801053C0[c - 0x80][1] = y + g->y;
+                        sFontSpecialGlyphPos[c - 0x80][0] = x + g->x;
+                        sFontSpecialGlyphPos[c - 0x80][1] = y + g->y;
                     }
                     if (m8b != 0) {
                         kq = sFontPageTop - (g->page << 12);
@@ -433,10 +433,10 @@ Gfx *font_render(Gfx *gdl)
     PKT(0xE200001C, 0x504240);
     PKT(0xFC119623, 0xFF2FFFFF);
     if (sFontScaleX == 0x10000 && sFontScaleY == 0x10000) {
-        gdl = font_render_pages(gdl, D_80105440);
+        gdl = font_render_pages(gdl, sFontSprListsBack);
         gdl = font_render_pages(gdl, sFontSprLists);
     } else {
-        gdl = font_render_pages_scaled(gdl, D_80105440);
+        gdl = font_render_pages_scaled(gdl, sFontSprListsBack);
         gdl = font_render_pages_scaled(gdl, sFontSprLists);
     }
     PKT(0xE7000000, 0);
@@ -444,7 +444,7 @@ Gfx *font_render(Gfx *gdl)
     PKT(0xE2001E01, 0);
     sFontSprPoolEnd = sFontSprPool + 0x3FE;
     for (i = 0; i < 0x28; i++) {
-        D_80105440[i] = NULL;
+        sFontSprListsBack[i] = NULL;
         sFontSprLists[i] = NULL;
     }
     return gdl;
@@ -465,7 +465,7 @@ Gfx *font_render_pages_scaled(Gfx *gdl, FontSprite **list)
             do {
                 if ((u16)(s->x + 63) < 703) {
                     gDPSetPrimColor(gdl++, 0, 0, s->color.c.r, s->color.c.g, s->color.c.b, s->color.c.a);
-                    if (D_800D576C == 0) {
+                    if (sFontScaleFromCorner == 0) {
                         gSPTextureRectangle(gdl++,
                             (s->x + (((0x10000 - sFontScaleX) * s->w) >> 17)) << 2,
                             (s->y + (((0x10000 - sy) * s->h) >> 17)) << 2,
@@ -629,7 +629,7 @@ void font_set_scale(s32 a, s32 b, s32 c, s32 d)
     sFontScaleX = a;
     sFontScaleY = b;
     D_800D5768 = c;
-    D_800D576C = d;
+    sFontScaleFromCorner = d;
     sFontTexStepX = 0x4000000 / a;
     sFontTexStepY = 0x4000000 / b;
 }
@@ -659,7 +659,7 @@ TextObj *font_text_create(TextObj *t, s32 size, s32 font, s32 color, u32 flags)
     }
     n = (size + 0xF) & -0x10;
     if (t == NULL) {
-        t = (TextObj *)mem_calloc_dbg(n + 0x20, 4, (s32)D_800DB4D0, 0x22A);
+        t = (TextObj *)mem_calloc_dbg(n + 0x20, 4, (s32)sStrFontcodeFile, 0x22A);
         if (t == NULL) {
             return NULL;
         }
@@ -717,7 +717,7 @@ char *font_text_add(TextObj *t, char *s)
     return s;
 }
 
-void func_800C204C(TextObj *t)
+void font_text_destroy(TextObj *t)
 {
 }
 
@@ -743,7 +743,7 @@ void str_make_initials(char *dst, char *src)
     dst[-1] = 0;
 }
 
-void func_800C20F0(u8 *s)
+void font_str_upper(u8 *s)
 {
     u8 c = *s;
     while (c != 0) {
@@ -778,7 +778,7 @@ void font_name_upper(u8 *s) {
     }
 }
 
-void func_800C21BC(u8 *s)
+void font_str_lower(u8 *s)
 {
     u8 c = *s;
     while (c != 0) {
@@ -805,7 +805,7 @@ void func_800C21F0(u8 *s)
 s32 font_reset_queue(void) {
     u32 i = 0;
     FontSprite **a = sFontSprLists;
-    FontSprite **b = D_80105440;
+    FontSprite **b = sFontSprListsBack;
     sFontSprNext = sFontSprPool;
     sFontSprPoolEnd = sFontSprPool + 0x3FE;
     do {

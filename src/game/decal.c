@@ -30,16 +30,16 @@ void debug_update_value_display(void)
         if (D_800C8D08 != 0 || D_800C8D10 != 0 || D_800C8D00 != 0 || D_800C8D18 != 0) {
             break;
         }
-        debug_print_float(D_800D8B10, D_800E76E8);
-        debug_print_float(D_800D8B18, D_800E76EC);
+        debug_print_float(sStrDebugImpact, gDebugValue0);
+        debug_print_float(sStrDebugExit, gDebugValue1);
         break;
     case 0:
-        debug_print_float(D_800D8B20, D_800E76E8);
-        debug_print_float(D_800D8B24, D_800E76EC);
-        debug_print_float(D_800D8B28, D_800E76F0);
-        debug_print_float(D_800D8B2C, D_800E76F4);
-        debug_print_float(D_800D8B30, D_800E76F8);
-        debug_print_float(D_800D8B34, D_800E76FC);
+        debug_print_float(sStrDebug0, gDebugValue0);
+        debug_print_float(sStrDebug1, gDebugValue1);
+        debug_print_float(sStrDebug2, gDebugValue2);
+        debug_print_float(sStrDebug3, gDebugValue3);
+        debug_print_float(sStrDebug4, gDebugValue4);
+        debug_print_float(sStrDebug5, gDebugValue5);
         break;
     case 2:
         for (i = 0; i < 6; i++) {
@@ -63,21 +63,21 @@ void debug_dump_spline(void)
     s32 k;
     u32 u;
 
-    debug_log(D_800CB17C);
+    debug_log(sStrSplineFileHeader);
     int_to_str(sSplineNodeCount, f.b40);
     debug_log(f.b40);
-    debug_log(D_800CB1D4);
+    debug_log(sStrSplineCountComment);
     for (k = 1; k <= sSplineNodeCount; k++) {
         int_to_str((s32)(sSplineNodes[k].x * 1000.0f), f.b10);
         int_to_str((s32)(sSplineNodes[k].z * 1000.0f), f.b30);
         u = height_get_ground((s32)(sSplineNodes[k].x * 1000.0f), (s32)(sSplineNodes[k].y * 1000.0f), (s32)(sSplineNodes[k].z * 1000.0f));
         int_to_str(u, f.b20);
         debug_log(f.b10);
-        debug_log(D_800D8B44);
+        debug_log(sStrSplineSep);
         debug_log(f.b30);
-        debug_log(D_800D8B48);
+        debug_log(sStrSplineNodeTail);
     }
-    debug_log(D_800CB1F0);
+    debug_log(sStrSplineFileFooter);
 }
 
 struct Obj_40 {
@@ -116,7 +116,7 @@ typedef struct {
     u8 c[4];
 } S4_2;
 
-extern S4_2 D_800D8B64;
+extern S4_2 sStrFtoaBig;
 
 void debug_ftoa(char *p, f32 x, s32 n)
 {
@@ -132,7 +132,7 @@ void debug_ftoa(char *p, f32 x, s32 n)
     }
     if (x >= 1.0f) {
         if (x > 1000000.0f) {
-            *(S4_2 *)p = D_800D8B64;
+            *(S4_2 *)p = sStrFtoaBig;
             return;
         }
         pw = 10;
@@ -273,8 +273,8 @@ void decal_init(void)
 {
     s32 i;
 
-    sTireTracks = mem_alloc_dbg(0xC00, 0, (s32)D_800D8B90, 0x67);
-    sTireTrackVtx = mem_alloc_dbg(0x2000, 0, (s32)D_800D8B90, 0x68);
+    sTireTracks = mem_alloc_dbg(0xC00, 0, (s32)sStrDecalC, 0x67);
+    sTireTrackVtx = mem_alloc_dbg(0x2000, 0, (s32)sStrDecalC, 0x68);
     sTireTrackNext = 0;
     mem_fill((u8 *)sTireTrackCur, 0, 0x20);
     mem_fill((u8 *)gTireTrackTimers, 0, 0x20);
@@ -296,7 +296,7 @@ void decal_init(void)
         sTireTrackVtx[i + 3].v.tc[0] = 0x200;
         sTireTrackVtx[i + 3].v.tc[1] = 0;
     }
-    sTireTrackTexture = mem_alloc_dbg(8, 0, (s32)D_800D8B90, 0x85);
+    sTireTrackTexture = mem_alloc_dbg(8, 0, (s32)sStrDecalC, 0x85);
     sTireTrackTexture[0] = 0xFF;
     sTireTrackTexture[1] = 0xDC;
     sTireTrackTexture[2] = 0x88;
@@ -347,7 +347,7 @@ void decal_update_tire_tracks(void)
         }
         sTireTrackSurface[i] = p->rearWheel.surface;
         if (p->crashState != 0) gTireTrackTimers[i] = 0;
-        if (D_800EE140 != 0) gTireTrackTimers[i] = 0;
+        if (gDebugFreeze != 0) gTireTrackTimers[i] = 0;
         if (gTireTrackTimers[i] == 0) {
             sTireTrackCur[i] = NULL;
             continue;
@@ -533,7 +533,7 @@ TireTrack *decal_add_quad(s32 area, s32 *a0, s32 *a1, s32 *b0, s32 *b1, s32 surf
 Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
     s32 i, j, k, m, a, idx, started, v, hi, lo;
 
-    if (D_800EE140 != 0) {
+    if (gDebugFreeze != 0) {
         return gdl;
     }
     gDPPipeSync(gdl++);
@@ -554,7 +554,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                 v = sTireTracks[j].area;
                 hi = v >> 16;
                 lo = (s16)v;
-                if (hi == D_800ED6A8[i] && lo == D_800ED728[i]) {
+                if (hi == gDesBlockX[i] && lo == gDesBlockZ[i]) {
                     k = j + 1;
                     if (!started) {
                         gSPMatrix(gdl++, &sDesBlockMtx[arg1][i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
@@ -566,7 +566,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                         v = sTireTracks[k].area;
                         hi = v >> 16;
                         lo = (s16)v;
-                        if (hi != D_800ED6A8[i] || lo != D_800ED728[i]) break;
+                        if (hi != gDesBlockX[i] || lo != gDesBlockZ[i]) break;
                     }
                     k -= j;
                     gSPVertex(gdl++, &sTireTrackVtx[j * 4], k * 4, 0);

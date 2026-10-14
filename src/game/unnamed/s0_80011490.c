@@ -490,7 +490,7 @@ void mtx3i_test_angles(void)
     ang[0] = x;
     ang[1] = y;
     ang[2] = ang[3];
-    debug_printf(D_800D60C0, x, y, ang[3]);
+    debug_printf(sStrTestAnglesFmt, x, y, ang[3]);
 }
 
 void mtx_transpose_rot(u8 *p)
@@ -984,7 +984,7 @@ void quat_mul(f32 *o, f32 *p, f32 *q) {
     o[3] = -P4 + ((P5 - P6) - P7 + P8) * 0.5f;
 }
 
-f32 func_80013D3C(f32 x)
+f32 math_double(f32 x)
 {
     return x + x;
 }

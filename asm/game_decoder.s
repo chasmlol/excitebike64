@@ -5,7 +5,7 @@
 # Linked among the game's initialized data, after game_softmix.s; the last bytes of the game image. decoder.c
 # decodes a "SAM" sample one chunk at a time through these and compands the 16-bit output to 8 bits
 # (sDecoderCompandTable):
-#   decoder_decode_ima_block(u8 *src, u16 *dst, s32 count)  IMA ADPCM, for func_800C055C (sample type 3): a 4-byte
+#   decoder_decode_ima_block(u8 *src, u16 *dst, s32 count)  IMA ADPCM, for decoder_decode_ima_adpcm (sample type 3): a 4-byte
 #       header {s16 first sample (little-endian), u8 step index, pad}, then 4-bit codes, low nibble first; count
 #       samples out, the header's included.
 #   decoder_decode_msadpcm_block(u8 *src, u16 *dst, s32 count, u8 *state)  Microsoft ADPCM, for

@@ -11,7 +11,7 @@ typedef struct {
     void *buf;
 } Track_14;
 
-extern Track_14 D_800CCB90[2];
+extern Track_14 sGravelPitMovers[2];
 
 extern TrackHack *sTrackHacks[];
 
@@ -30,17 +30,17 @@ void hacks_init(void)
         }
     }
     if (sCurTrackHack != NULL) {
-        D_800F0B40[0] = NULL;
-        D_800F0B40[1] = NULL;
+        sHackBuffers[0] = NULL;
+        sHackBuffers[1] = NULL;
         sHackResources = NULL;
         if (sCurTrackHack->numBufs != 0) {
-            D_800F0B40[0] = mem_alloc_dbg(sCurTrackHack->numBufs << 7, 0, D_800D8C10, 0x9f);
-            D_800F0B40[1] = (u8 *)D_800F0B40[0] + (sCurTrackHack->numBufs << 6);
+            sHackBuffers[0] = mem_alloc_dbg(sCurTrackHack->numBufs << 7, 0, sStrHacksFile, 0x9f);
+            sHackBuffers[1] = (u8 *)sHackBuffers[0] + (sCurTrackHack->numBufs << 6);
         }
         if (sCurTrackHack->numRes != 0) {
-            sHackResources = mem_alloc_dbg(sCurTrackHack->numRes << 2, 0, D_800D8C10, 0xa4);
+            sHackResources = mem_alloc_dbg(sCurTrackHack->numRes << 2, 0, sStrHacksFile, 0xa4);
             for (i = 0; i < sCurTrackHack->numRes; i++) {
-                sHackResources[i] = res_load(D_800E7728, *sCurTrackHack->resNames[i]);
+                sHackResources[i] = res_load(gResourceSet, *sCurTrackHack->resNames[i]);
             }
         }
         sCurTrackHack->init();
@@ -61,9 +61,9 @@ void hack_gravel_pit_init(void)
     s32 sp18;
     s32 d, e;
 
-    D_800CCB20 = 0;
+    gGravelPitMoverTimer = 0;
     for (i = 0; i < 2; i++) {
-        p = &D_800CCB90[i];
+        p = &sGravelPitMovers[i];
         math_to_polar(p->x1 - p->x0, p->y1 - p->y0, &p->ang, &sp18);
         cx = (p->x0 + p->x1) / 2;
         cy = (p->y0 + p->y1) / 2;
@@ -82,7 +82,7 @@ void hack_gravel_pit_init(void)
         p->buf = mem_alloc_dbg(p->n << 9, 0, "hacks.c", 0x116);
     }
     for (i = 0; i < 4; i++) {
-        res = res_load(D_800E7728, *D_800CCC10[i]);
+        res = res_load(gResourceSet, *sGravelPitItemResIds[i]);
         sp18 = res->data - (s32)res;
         t = mem_get_size(res);
         d = 0x1E000;
@@ -104,7 +104,7 @@ typedef struct {
     u8 v[8];
 } Ent_62;
 
-extern Ent_62 D_800CCB90_2[];
+extern Ent_62 sGravelPitMovers_2[];
 
 void hack_gravel_pit_update(void)
 {
@@ -113,7 +113,7 @@ void hack_gravel_pit_update(void)
     Ent_62 *e;
 
     for (j = 0; j < 2; j++) {
-        e = &D_800CCB90_2[j];
+        e = &sGravelPitMovers_2[j];
         for (i = 0; i < e->count; i++) {
             if (++e->t[i] >= 0x100) {
                 e->t[i] = 0;
@@ -124,14 +124,14 @@ void hack_gravel_pit_update(void)
 
     for (i = 0; i < 8; i++) {
         if (gRiders[i].inactive == 0 && gRiders[i].isCpu == 0 && gRiders[i].anim != -1 && gRiders[i].anim < 16) {
-            if (gRiderSection[i] == D_800CCB90_2[0].id || gRiderSection[i] == D_800CCB90_2[1].id) {
-                D_800CCB20 = 300;
+            if (gRiderSection[i] == sGravelPitMovers_2[0].id || gRiderSection[i] == sGravelPitMovers_2[1].id) {
+                gGravelPitMoverTimer = 300;
             }
         }
     }
 
-    if (D_800CCB20 > 0) {
-        D_800CCB20--;
+    if (gGravelPitMoverTimer > 0) {
+        gGravelPitMoverTimer--;
     }
 }
 
@@ -175,7 +175,7 @@ Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
     tab = gCamPos;
     v = tab + (sh + p4);
     for (; i < 2; i++) {
-        c = &D_800CCB90[i];
+        c = &sGravelPitMovers[i];
         if ((gTrackSections->e[c->idx].mask >> sh) & 1) {
             k = 0;
             if (c->cnt > 0) {
@@ -285,7 +285,7 @@ void hacks_exit(void) {
             mem_free((void *)sHackResources);
         }
         if (sCurTrackHack->numBufs != 0) {
-            mem_free(D_800F0B40);
+            mem_free(sHackBuffers);
         }
         sCurTrackHack->exit();
     }
@@ -322,7 +322,7 @@ void hack_mill_init(void)
     Instance *e;
 
     sMillObjCount = gInstanceHeader->numItems;
-    sMillObjState = (s32 *)mem_alloc_dbg(sMillObjCount * 12, 0, D_800D8C10, 0x1B1);
+    sMillObjState = (s32 *)mem_alloc_dbg(sMillObjCount * 12, 0, sStrHacksFile, 0x1B1);
     i = 0;
     n = sMillObjCount;
     if (n > 0) {
@@ -362,7 +362,7 @@ typedef struct {
 
 void hack_gravel_pit_exit(void) {
     s32 i = 0;
-    Blk_17 *p = D_800CCB90;
+    Blk_17 *p = sGravelPitMovers;
     u32 *q;
 
     do {

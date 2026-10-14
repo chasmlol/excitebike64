@@ -535,7 +535,7 @@ s32 stunt_seq_less(u8 *a, u8 *b) {
     return 0;
 }
 
-void func_80070560(Rider *b)
+void stunt_on_takeoff(Rider *b)
 {
 }
 

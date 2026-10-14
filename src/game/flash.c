@@ -10,7 +10,7 @@ void flash_init(s32 arg0)
     s32 best;
     s32 bi;
 
-    sFlashTris = list = (FlashQuadList *)track_res_get(D_800D1590);
+    sFlashTris = list = (FlashQuadList *)track_res_get(gGidCamFlash);
     if (list == NULL) {
         return;
     }
@@ -35,7 +35,7 @@ void flash_init(s32 arg0)
         quads->e[i].section = bi;
     }
 end:
-    sFlashCandidates = mem_alloc_dbg(sFlashTris->count << 2, 0, D_800D8E20, 0x6F);
+    sFlashCandidates = mem_alloc_dbg(sFlashTris->count << 2, 0, sStrFlashC, 0x6F);
     sFlashTimer = 0;
 }
 

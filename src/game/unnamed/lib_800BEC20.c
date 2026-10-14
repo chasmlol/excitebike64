@@ -69,7 +69,7 @@ void dma_update(void)
     s32 i;
 
     sDmaPendingCount = 0;
-    D_801009A0 = 0;
+    sDmaStartedCount = 0;
     for (i = 0; i < 8; i++) {
         if (sDmaRequests_2[i].state == 1) {
             if (osRecvMesg(sDmaRequests_2[i].f04, 0, 0) == 0) {
@@ -81,12 +81,12 @@ void dma_update(void)
         } else if (sDmaRequests_2[i].state == 2) {
             if (sDmaCopyFunc == 0) {
                 sDmaRequests_2[i].p24 = sDmaRequests_2[i].f04;
-                D_801009A0++;
+                sDmaStartedCount++;
                 sDmaRequests_2[i].flag22 = 0;
                 sDmaRequests_2[i].f28 = sDmaRequests_2[i].f3C;
                 sDmaRequests_2[i].f2C = sDmaRequests_2[i].f40;
                 sDmaRequests_2[i].f30 = sDmaRequests_2[i].f44;
-                func_8000EA24();
+                main_on_dma_start();
                 if (dma_epi_start(sDmaRequests_2[i].f38, sDmaRequests_2[i].f20, sDmaRequests_2[i].f48) == 0) {
                     sDmaRequests_2[i].state = 1;
                     return;

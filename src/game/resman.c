@@ -19,13 +19,13 @@ s32 res_open_set(char *path, ResSet **out)
     } else if (flag == (s32)0xFF000000) {
         sResSwapBytes = 1;
     } else {
-        debug_printf(D_800DB420);
+        debug_printf(sStrResConfused);
         fatal_halt(1);
     }
 
     str_copy(buf, path);
-    str_cat(buf, D_800DB434);
-    f = file_open(buf, D_800DB43C);
+    str_cat(buf, sStrDirExt);
+    f = file_open(buf, sStrResModeRb);
     if (f == NULL) {
         return 1;
     }
@@ -34,7 +34,7 @@ s32 res_open_set(char *path, ResSet **out)
     file_seek(f, 0, 0);
     if (sResLoadBuffer == NULL) {
         cnt = n >> 2;
-        o = mem_alloc_dbg(cnt * 12 + 0x518, 0, D_800DB440, 0xB0);
+        o = mem_alloc_dbg(cnt * 12 + 0x518, 0, sStrResmanC, 0xB0);
         if (o == NULL) {
             return 2;
         }
@@ -73,7 +73,7 @@ s32 res_open_set(char *path, ResSet **out)
     }
     file_close(f);
     str_copy(o->name, path);
-    sprintf(o->bigPath, D_800DB44C, path);
+    sprintf(o->bigPath, sStrBigFmt, path);
     *out = o;
     return 0;
 }
@@ -109,7 +109,7 @@ void *res_load(ResSet *set, s32 id)
     }
 inc:
     set->depth = set->depth + 1;
-    f = file_open(path, D_800DB43C);
+    f = file_open(path, sStrResModeRb);
     if (f == 0) {
         goto dec0;
     }
@@ -123,10 +123,10 @@ inc:
         sResLoadBuffer = 0;
     } else {
         inBuffer = 0;
-        data = mem_alloc_dbg(size, 0, D_800DB440, 0x1cd);
+        data = mem_alloc_dbg(size, 0, sStrResmanC, 0x1cd);
     }
     if (((u32)data & 3) != 0) {
-        debug_printf(D_800DB464, data);
+        debug_printf(sStrUnalignedMalloc, data);
         file_close(f);
         return 0;
     }
@@ -215,7 +215,7 @@ void res_register_type(char *ext, void (*relocate)(u32 *handle))
             }
         }
         if (i == 16) {
-            debug_printf((s32)D_800DB47C);
+            debug_printf((s32)sStrTooManyResTypes);
             fatal_halt(1);
         }
     }
@@ -318,7 +318,7 @@ void *res_load_by_name(ResSet *set, char *name, u32 *id)
         } while (p != NULL);
         if (p != NULL) goto LAB;
     }
-    debug_printf((s32)D_800DB454, name);
+    debug_printf((s32)sStrNoResource, name);
     fatal_halt(1);
 LAB:
     if (id != NULL) *id = p->id;
@@ -334,8 +334,8 @@ s32 res_find_gid(ResSet *set, char *name)
     s32 i;
 
     str_copy((char *)buf, set->name);
-    str_cat((char *)buf, D_800DB494);
-    q = file_open(buf, D_800DB43C);
+    str_cat((char *)buf, sStrGidExt);
+    q = file_open(buf, sStrResModeRb);
     if (q == 0) {
         return -1;
     }
@@ -396,7 +396,7 @@ void res_set_load_buffer(void *buf)
 }
 
 /* Meant to unload the resource whose data is `data`, but compares the handle table's address, not each handle. */
-void func_800C0264(ResSet *set, u32 data)
+void res_unload_by_data(ResSet *set, u32 data)
 {
     s32 i;
     u32 *p;

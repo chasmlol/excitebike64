@@ -20,26 +20,26 @@ void sun_init(void)
     sSunVtxBufs[1] = 0;
     sSunList = 0;
     if (gCurTrack_23->mode == 2) {
-        v = D_800D0F78;
+        v = sDesertLightDefResId;
     } else {
-        v = track_res_find(D_800D14EC);
+        v = track_res_find(gGidLightDef);
     }
     if (v < 0) {
         sSunList = 0;
         return;
     }
     a = 0;
-    sSunList = (FlareList *)res_load(D_800E7728, v);
+    sSunList = (FlareList *)res_load(gResourceSet, v);
     for (; a < sSunList->count; a++) {
         sSunList->e[a].flags &= ~0x18;
     }
     for (j = 0; j < 2; j++) {
-        sSunVtxBufs[j] = mem_alloc_dbg(0x800, 0, D_800D6C80, 0xCB);
+        sSunVtxBufs[j] = mem_alloc_dbg(0x800, 0, sStrSunC, 0xCB);
         for (n = 0; n < 0x80; n++) {
             sSunVtxBufs[j][n].v.ob[2] = 1000;
         }
     }
-    sFlareTextures = (TexSet *)res_load(D_800E7728, sSunList->texRes);
+    sFlareTextures = (TexSet *)res_load(gResourceSet, sSunList->texRes);
     for (a = 0; a < sFlareTextures->count; a++) {
         n = sFlareTextures->tex[a].width * sFlareTextures->tex[a].height * 8;
         for (k = 0; k < n; k++) {
@@ -47,8 +47,8 @@ void sun_init(void)
         }
     }
     if (gCurTrack_23->flags & 0x20) {
-        sStarTexture = (TexSet *)res_load(D_800E7728, D_800D0E00);
-        sStars = mem_alloc_dbg(0x300, 0, D_800D6C80, 0xE3);
+        sStarTexture = (TexSet *)res_load(gResourceSet, sStarTexResId);
+        sStars = mem_alloc_dbg(0x300, 0, sStrSunC, 0xE3);
         for (i = 0; i < 0x40; i++) {
             x = (random_byte() - 0x80) * 16;
             z = (random_byte() - 0x80) * 16;

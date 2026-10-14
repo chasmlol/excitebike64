@@ -18,7 +18,7 @@ Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **segs, Gfx *gdl) {
     mtx = 0;
     cmd = mdl->cmds;
     vtx = mdl->vtx;
-    if (flags & 8) D_800E36D0 = -1;
+    if (flags & 8) sPrimLastPalSeg = -1;
     done = 0;
     rel = flags & 0x20;
     do {
@@ -77,10 +77,10 @@ Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **segs, Gfx *gdl) {
                 addr = (u32)segs[seg]->tex[a].data;
                 if (rel) addr = ((addr - (u32)segs[seg]) & 0xFFFFFF) | ((seg + 2) << 24);
                 if (sPrimTexAddrCallback != NULL) sPrimTexAddrCallback(&addr);
-                t4 -= D_800C8C78;
-                fp -= D_800C8C78;
+                t4 -= sPrimTexSizeShift;
+                fp -= sPrimTexSizeShift;
                 pl = c0 & 0xF;
-                if ((flags & 4) && seg != D_800E36D0) {
+                if ((flags & 4) && seg != sPrimLastPalSeg) {
                     u32 pv = (u32)segs[seg]->pal;
                     if (pv != 0) {
                         tl = pv;
@@ -89,7 +89,7 @@ Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **segs, Gfx *gdl) {
                         gDPLoadTLUT_pal256(gdl++, tl);
                     }
                 }
-                D_800E36D0 = seg;
+                sPrimLastPalSeg = seg;
                 if (blk == 0) {
                     gDPLoadTextureBlock_4b(gdl++, addr, G_IM_FMT_CI, w, h, pl, CMS(b), CMT(b), t4, fp, 0, 0);
                 } else {
@@ -104,7 +104,7 @@ Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **segs, Gfx *gdl) {
                     }
                 }
                 if (segs[seg]->tex[a].flags & 8) {
-                    gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, (-(gFrameCounter * 2) & 0xFF) >> D_800C8C78, 0, 0);
+                    gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, (-(gFrameCounter * 2) & 0xFF) >> sPrimTexSizeShift, 0, 0);
                 }
             }
             cmd += 4;
@@ -213,19 +213,19 @@ void prim_set_tex_addr_callback(s32 a0)
 
 void prim_init(void)
 {
-    res_register_type(D_800D614C, prim_pkg_relocate);
-    res_register_type(D_800D6150, prim_n64_relocate);
-    D_800E36D0 = -1;
-    D_800C8C78 = 0;
+    res_register_type(sStrPrimPkg, prim_pkg_relocate);
+    res_register_type(sStrPrimN64, prim_n64_relocate);
+    sPrimLastPalSeg = -1;
+    sPrimTexSizeShift = 0;
 }
 
 void prim_exit(void)
 {
 }
 
-void func_80014AD8(s32 x)
+void prim_set_tex_size_shift(s32 x)
 {
-    D_800C8C78 = x;
+    sPrimTexSizeShift = x;
 }
 
 /* Builds a model's display list into a buffer of its size, with texture addresses relative to the sets' segments
@@ -236,7 +236,7 @@ void prim_alloc_seg_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags)
     Vtx *vtx;
 
     r = (u32)prim_build_dl(flags | 0x21, mdl, sets, (Gfx *)gZBuffer);
-    *out = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x323);
+    *out = mem_alloc_dbg(r - gZBuffer, 0, sStrPrimC, 0x323);
     vtx = mdl->vtx;
     mdl->vtx = (Vtx *)0x01000000;
     prim_build_dl(flags | 0x21, mdl, sets, *out);
@@ -249,7 +249,7 @@ void prim_alloc_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags)
     u32 r;
 
     r = (u32)prim_build_dl(flags | 1, mdl, sets, (Gfx *)gZBuffer);
-    r = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x33B);
+    r = mem_alloc_dbg(r - gZBuffer, 0, sStrPrimC, 0x33B);
     *out = (Gfx *)r;
     prim_build_dl(flags | 1, mdl, sets, (Gfx *)r);
 }

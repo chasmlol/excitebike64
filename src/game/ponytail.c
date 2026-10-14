@@ -210,8 +210,8 @@ typedef struct Pl_2 {
 
 typedef struct { u16 x, y, z; } V3u;
 extern Pl_2 gRiderGfx_13[];
-extern V3u D_800F2178[];
-extern V3u D_800F2160[];
+extern V3u sPonytailPoseA[];
+extern V3u sPonytailPoseB[];
 
 void ponytail_init(s32 n)
 {
@@ -222,7 +222,7 @@ void ponytail_init(s32 n)
     pl->a4c = mem_alloc_dbg(0x180, 0, sStrPonytailC, 0x16A);
     pl->a58 = mem_alloc_dbg(0x10, 0, sStrPonytailC, 0x16B);
     i = 0;
-    pl->a50 = skel_load(D_800E7728, D_800D0D88);
+    pl->a50 = skel_load(gResourceSet, sPonytailSkelResId);
     skel_reset_pose(pl->a50, 3);
     pl->nodes = mem_alloc_dbg(0x120, 0, sStrPonytailC, 0x170);
     mem_fill(pl->nodes, 0, 0x120);
@@ -247,16 +247,16 @@ void ponytail_init(s32 n)
     }
     pl->a54 = sPonytailMesh;
     if (sPonytailMesh == NULL) {
-        sPonytailMesh = res_load(D_800E7728, D_800D0A68);
+        sPonytailMesh = res_load(gResourceSet, sPonytailMeshResId);
         skel_make_verts_bone_local(pl->a50, sPonytailMesh);
-        r = skel_load(D_800E7728, D_800D0D44);
+        r = skel_load(gResourceSet, sPonytailPoseAResId);
         for (i = 0; i < 3; i++) {
-            mtx3i_to_angles(r[i].rot.m, &D_800F2178[i].x, &D_800F2178[i].y, &D_800F2178[i].z);
+            mtx3i_to_angles(r[i].rot.m, &sPonytailPoseA[i].x, &sPonytailPoseA[i].y, &sPonytailPoseA[i].z);
         }
         mem_free(r);
-        r = skel_load(D_800E7728, D_800D0C18);
+        r = skel_load(gResourceSet, sPonytailPoseBResId);
         for (i = 0; i < 3; i++) {
-            mtx3i_to_angles(r[i].rot.m, &D_800F2160[i].x, &D_800F2160[i].y, &D_800F2160[i].z);
+            mtx3i_to_angles(r[i].rot.m, &sPonytailPoseB[i].x, &sPonytailPoseB[i].y, &sPonytailPoseB[i].z);
         }
         mem_free(r);
         pl->a54 = sPonytailMesh;

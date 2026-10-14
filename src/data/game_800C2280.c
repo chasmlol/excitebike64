@@ -4,62 +4,62 @@
  * which places every symbol at the address in its name. Gaps are bytes other steps build. */
 #include "data.h"
 
-extern u32 D_800C2800[];
-extern u32 D_800C2840[];
-extern u32 D_800C2880[];
-extern u32 D_800C99F0;
-extern u32 D_800C99F4;
-extern u32 D_800C99F8[];
-extern u32 D_800C9A00;
-extern u32 D_800C9A04;
-extern u32 D_800C9A08;
-extern u32 D_800C9A0C;
-extern u32 D_800C9A10;
-extern u32 D_800C9A14;
-extern u32 D_800C9A18[];
-extern u32 D_800C9A20[];
-extern u32 D_800C9A28[];
-extern u32 D_800C9A30[];
-extern u32 D_800C9A38;
-extern u32 D_800CAAC4[];
-extern u32 D_800CAB04[];
-extern u32 D_800CAB24[];
-extern u32 D_800CAB44[];
-extern u32 D_800CAB54[];
-extern u32 D_800CAB84[];
-extern u32 D_800CAB94[];
-extern u32 D_800CABB4[];
-extern u32 D_800CABD4[];
-extern u32 D_800CAC04[];
-extern u32 D_800CAC24[];
-extern u32 D_800CAC44[];
-extern u32 D_800CAC64[];
-extern u32 D_800CAC84[];
-extern u32 D_800CACA4[];
-extern u32 D_800CACE4[];
-extern u32 D_800CAD24[];
-extern u32 D_800CCA80[];
-extern u32 D_800CCA98[];
-extern u32 D_800CCAB0[];
-extern u32 D_800CCAC8[];
-extern u32 D_800CCAD8[];
-extern u32 D_800CCB00[];
+extern u32 sPodium1stPlaceClips[];
+extern u32 sPodium2ndPlaceClips[];
+extern u32 sPodium3rdPlaceClips[];
+extern u32 gNoHanderInputGlyphs;
+extern u32 gFenderKissInputGlyphs;
+extern u32 gNothingInputGlyphs[];
+extern u32 gSaranWrapInputGlyphs;
+extern u32 gBarHopInputGlyphs;
+extern u32 gNacNacInputGlyphs;
+extern u32 gHeelClickerInputGlyphs;
+extern u32 gSupermanInputGlyphs;
+extern u32 gLazyboyInputGlyphs;
+extern u32 gDblCanCanInputGlyphs[];
+extern u32 gCliffHangerInputGlyphs[];
+extern u32 gFenderGrabInputGlyphs[];
+extern u32 gCordovaInputGlyphs[];
+extern u32 gKobeInputGlyphs;
+extern u32 sTutorialLesson1aSteps[];
+extern u32 sTutorialLesson1bSteps[];
+extern u32 sTutorialLesson2aSteps[];
+extern u32 sTutorialLesson2bSteps[];
+extern u32 sTutorialLesson3aSteps[];
+extern u32 sTutorialLesson3bSteps[];
+extern u32 sTutorialLesson4aSteps[];
+extern u32 sTutorialLesson4bSteps[];
+extern u32 sTutorialLesson4cSteps[];
+extern u32 sTutorialTest1Steps[];
+extern u32 sTutorialTest2Steps[];
+extern u32 sTutorialTest3Steps[];
+extern u32 sTutorialTest4Steps[];
+extern u32 sTutorialFinalTestSteps[];
+extern u32 sTutorialLesson5Steps[];
+extern u32 sTutorialWheelieSteps[];
+extern u32 sTutorialStuntsSteps[];
+extern u32 sAiRouteBranchesRainforestRun[];
+extern u32 sAiRouteBranchesGravelPit[];
+extern u32 sAiRouteBranchesCanyonChasm[];
+extern u32 sAiRouteBranchesMadrid[];
+extern u32 sAiRouteBranchesLosAngeles[];
+extern u32 sAiRouteBranchesConstructionYard[];
 extern u32 sHackLeftysMill[];
 extern u32 sHackGravelPit[];
-extern u32 D_800CD2A0[];
-extern u32 D_800CD2B0[];
-extern u32 D_800CD2C0[];
+extern u32 sItemGotoSplash2[];
+extern u32 sItemGotoBootSplash[];
+extern u32 sItemGotoTitle[];
 extern u32 sSeasonRoundItems[];
-extern u32 D_800CD340[];
-extern u32 D_800CD350[];
+extern u32 sEmptyScreenItem[];
+extern u32 sPakScreenItems[];
 extern u32 gSpecialTracksItems[];
-extern u32 D_800CD3D0[];
+extern u32 sRiderSelectItems[];
 extern u32 sTrackListItems[];
 extern u32 sMainMenuItems[];
-extern u32 D_800CD5D0[];
-extern u32 D_800CD5E0[];
-extern u32 D_800CD5F0[];
-extern u32 D_800CD620[];
+extern u32 sItemGotoMainMenu[];
+extern u32 sInitialsItems[];
+extern u32 sRecordsItems[];
+extern u32 sRoundSelectBgResIds[];
 extern u32 sScreenOptions[];
 extern u32 sScreenSeason[];
 extern u32 sScreenSpecialTracks[];
@@ -71,35 +71,35 @@ extern u32 sScreenGoldTracks[];
 extern u32 sScreenPlatinumTracks[];
 extern u32 sScreenTitle[];
 extern u32 sScreenBootSplash[];
-extern u32 D_800CD9AC[];
+extern u32 sScreenSplash2[];
 extern u32 D_800CDEA8[];
 extern u32 D_800CDEC0[];
 extern u32 D_800CDED8[];
-extern u32 D_800CDF00[];
-extern u32 D_800CDF10[];
-extern u32 D_800CDF18[];
-extern u32 D_800CDF24[];
-extern u32 D_800CDF30[];
-extern u32 D_800CDF3C[];
-extern u32 D_800CDF4C[];
-extern u32 D_800CDF58[];
-extern u32 D_800CDF6C[];
-extern u32 D_800CDF84[];
-extern u32 D_800CDF94[];
-extern u32 D_800CDFA4[];
-extern u32 D_800CDFB0[];
-extern u32 D_800CDFB8[];
-extern u32 D_800CDFC0[];
-extern char D_800CDFCC[];
-extern char D_800CDFE0[];
-extern char D_800CDFF0[];
-extern char D_800CDFFC[];
-extern char D_800CE004[];
-extern char D_800CE01C[];
+extern u32 sPakDamagedLines[];
+extern u32 sPakRepairedLines[];
+extern u32 sPakRepairFailedLines[];
+extern u32 sPakOverwriteLines[];
+extern u32 sPakEraseLines[];
+extern u32 sPakFullLines[];
+extern u32 sPakCommErrorLines[];
+extern u32 sPakNoPakLines[];
+extern u32 sPakNoGhostLines[];
+extern u32 sPakSaveDoneLines[];
+extern u32 sPakLoadDoneLines[];
+extern u32 sPakRumbleLines[];
+extern u32 sPakCancelSaveLines[];
+extern u32 sPakCancelLoadLines[];
+extern u32 sPakInvalidNoteLines[];
+extern char sPakButtonsOkCancel[];
+extern char sPakButtonsYesNo[];
+extern char sPakButtonsCancel[];
+extern char sPakButtonsOk[];
+extern char sPakButtonsRetryCancel[];
+extern char sPakButtonsSelectCancel[];
 extern u32 sEditUserPieceMenuItems[];
 extern u32 sEditMainMenuItems[];
 extern u32 sEditTrackMenuItems[];
-extern u32 D_800CEC30;
+extern u32 sNesMnemonics;
 extern u32 D_800CEC34;
 extern u32 D_800CEC38;
 extern u32 D_800CEC3C;
@@ -156,351 +156,351 @@ extern u32 D_800CED04;
 extern u32 D_800CED08;
 extern u32 D_800CED0C;
 extern u32 D_800CED10;
-extern u32 D_800D06C8[];
-extern u32 D_800D06D8;
-extern u32 D_800D06DC[];
-extern u32 D_800D0700[];
-extern u32 D_800D070C[];
-extern u32 D_800D0714[];
-extern u32 D_800D071C[];
-extern u32 D_800D0730[];
-extern u32 D_800D0740;
-extern u32 D_800D0744[];
-extern u32 D_800D0750[];
-extern u32 D_800D075C;
-extern u32 D_800D0760[];
-extern u32 D_800D076C;
-extern u32 D_800D0774;
-extern u32 D_800D0778[];
-extern u32 D_800D0784;
-extern u32 D_800D0788[];
-extern u32 D_800D0798[];
-extern u32 D_800D07B0;
-extern u32 D_800D07B8;
-extern u32 D_800D07BC;
-extern u32 D_800D07CC;
-extern u32 D_800D07D0;
-extern u32 D_800D07DC;
-extern u32 D_800D07E0;
-extern u32 D_800D07E4[];
-extern u32 D_800D07F0[];
-extern u32 D_800D07FC[];
-extern u32 D_800D0804[];
-extern u32 D_800D0810;
-extern u32 D_800D0814[];
-extern u32 D_800D087C[];
-extern u32 D_800D08A8[];
-extern u32 D_800D0908[];
-extern u32 D_800D0918[];
-extern u32 D_800D092C;
-extern u32 D_800D0930;
-extern u32 D_800D0934[];
-extern u32 D_800D093C;
-extern u32 D_800D0940;
-extern u32 D_800D0944[];
-extern u32 D_800D094C;
-extern u32 D_800D0958;
-extern u32 D_800D095C[];
-extern u32 D_800D0964[];
-extern u32 D_800D096C[];
-extern u32 D_800D0974[];
-extern u32 D_800D097C;
-extern u32 D_800D0980[];
-extern u32 D_800D0988;
-extern u32 D_800D0990[];
-extern u32 D_800D0998[];
-extern u32 D_800D09AC;
-extern u32 D_800D09B8[];
-extern u32 D_800D09E0;
-extern u32 D_800D09E4[];
-extern u32 D_800D09EC;
-extern u32 D_800D09F0;
-extern u32 D_800D09F4;
-extern u32 D_800D09FC[];
-extern u32 D_800D0A04;
-extern u32 D_800D0A08;
-extern u32 D_800D0A0C[];
-extern u32 D_800D0A14;
-extern u32 D_800D0A18;
-extern u32 D_800D0A1C;
-extern u32 D_800D0A20[];
-extern u32 D_800D0A28[];
-extern u32 D_800D0A30;
-extern u32 D_800D0A34[];
-extern u32 D_800D0A40;
-extern u32 D_800D0A44[];
-extern u32 D_800D0A50;
-extern u32 D_800D0A54;
-extern u32 D_800D0A58[];
-extern u32 D_800D0A60;
-extern u32 D_800D0A64;
-extern u32 D_800D0A74[];
-extern u32 D_800D0A8C[];
-extern u32 D_800D0A98[];
-extern u32 D_800D0AA4;
-extern u32 D_800D0AA8[];
-extern u32 D_800D0AB0;
-extern u32 D_800D0AB4;
-extern u32 D_800D0AB8[];
-extern u32 D_800D0AC0;
-extern u32 D_800D0AC4[];
-extern u32 D_800D0ACC[];
-extern u32 D_800D0AD4;
-extern u32 D_800D0AD8[];
-extern u32 D_800D0AE8;
-extern u32 D_800D0AEC[];
-extern u32 D_800D0AF4;
-extern u32 D_800D0AF8[];
-extern u32 D_800D0B00;
-extern u32 D_800D0B04;
-extern u32 D_800D0B08[];
-extern u32 D_800D0B14;
-extern u32 D_800D0B18;
-extern u32 D_800D0B1C[];
-extern u32 D_800D0B28;
-extern u32 D_800D0B2C[];
-extern u32 D_800D0B3C[];
-extern u32 D_800D0B44[];
-extern u32 D_800D0B50;
-extern u32 D_800D0B54;
-extern u32 D_800D0B58[];
-extern u32 D_800D0B64;
-extern u32 D_800D0B70;
-extern u32 D_800D0B74;
-extern u32 D_800D0B78[];
-extern u32 D_800D0B8C;
-extern u32 D_800D0B90[];
-extern u32 D_800D0B98[];
-extern u32 D_800D0BA8;
-extern u32 D_800D0BAC;
-extern u32 D_800D0BB0[];
-extern u32 D_800D0BC0;
-extern u32 D_800D0BC4;
-extern u32 D_800D0BD8;
-extern u32 D_800D0BDC[];
-extern u32 D_800D0BE8[];
-extern u32 D_800D0BF0;
-extern u32 D_800D0BF4;
-extern u32 D_800D0BF8[];
-extern u32 D_800D0C04;
-extern u32 D_800D0C08;
-extern u32 D_800D0C0C[];
-extern u32 D_800D0C14;
-extern u32 D_800D0C1C;
-extern u32 D_800D0C20;
-extern u32 D_800D0C28;
-extern u32 D_800D0C2C;
-extern u32 D_800D0C30[];
-extern u32 D_800D0C38;
-extern u32 D_800D0C3C;
-extern u32 D_800D0C40[];
-extern u32 D_800D0C58;
-extern u32 D_800D0C5C[];
-extern u32 D_800D0C6C;
-extern u32 D_800D0C70;
-extern u32 D_800D0C74[];
-extern u32 D_800D0C8C[];
-extern u32 D_800D0C9C[];
-extern u32 D_800D0CAC[];
-extern u32 D_800D0CBC[];
-extern u32 D_800D0CD0[];
-extern u32 D_800D0D14[];
-extern u32 D_800D0D1C;
-extern u32 D_800D0D28[];
-extern u32 D_800D0D34;
-extern u32 D_800D0D38;
-extern u32 D_800D0D3C[];
-extern u32 D_800D0D48[];
-extern u32 D_800D0D54;
-extern u32 D_800D0D58;
-extern u32 D_800D0D5C;
-extern u32 D_800D0D60;
-extern u32 D_800D0D64[];
-extern u32 D_800D0D70;
-extern u32 D_800D0D74[];
-extern u32 D_800D0D7C;
-extern u32 D_800D0D80;
-extern u32 D_800D0D84;
-extern u32 D_800D0D90[];
-extern u32 D_800D0D98[];
-extern u32 D_800D0DB0;
-extern u32 D_800D0DB8;
-extern u32 D_800D0DBC;
-extern u32 D_800D0DC0;
-extern u32 D_800D0DC4;
-extern u32 D_800D0DC8;
-extern u32 D_800D0DCC[];
-extern u32 D_800D0DD4[];
-extern u32 D_800D0DF8[];
-extern u32 D_800D0E04;
-extern u32 D_800D0E08;
-extern u32 D_800D0E2C[];
-extern u32 D_800D0E70[];
-extern u32 D_800D0E9C[];
-extern u32 D_800D0EB0[];
-extern u32 D_800D0EC4[];
-extern u32 D_800D0F00[];
-extern u32 D_800D0F08[];
-extern u32 D_800D0F14[];
-extern u32 D_800D0F20[];
-extern u32 D_800D0F2C;
-extern u32 D_800D0F38[];
-extern u32 D_800D0F58[];
-extern u32 D_800D0F84[];
-extern u32 D_800D0F90;
-extern u32 D_800D0F94[];
-extern u32 D_800D0FA0[];
-extern u32 D_800D0FAC;
-extern u32 D_800D0FC4[];
-extern u32 D_800D0FE0[];
-extern u32 D_800D1004[];
-extern u32 D_800D107C;
-extern u32 D_800D1098[];
-extern u32 D_800D10B0;
-extern u32 D_800D10E4;
-extern u32 D_800D1108[];
-extern u32 D_800D1114[];
-extern u32 D_800D1128[];
-extern u32 D_800D1138[];
-extern u32 D_800D119C[];
-extern u32 D_800D11A4[];
-extern u32 D_800D11B4[];
-extern u32 D_800D11BC;
-extern u32 D_800D11C0[];
-extern u32 D_800D11C8;
-extern u32 D_800D11DC;
-extern u32 D_800D11E0;
-extern u32 D_800D11E8;
-extern u32 D_800D11F0;
-extern u32 D_800D11F4;
-extern u32 D_800D11F8;
-extern u32 D_800D11FC;
-extern u32 D_800D1200;
-extern u32 D_800D1204;
-extern u32 D_800D1208;
-extern u32 D_800D120C;
-extern u32 D_800D1210;
-extern u32 D_800D1218;
-extern u32 D_800D121C;
-extern u32 D_800D1220;
-extern u32 D_800D1224;
-extern u32 D_800D1228;
-extern u32 D_800D122C;
-extern u32 D_800D1234;
-extern u32 D_800D1238;
-extern u32 D_800D1248;
-extern u32 D_800D124C;
-extern u32 D_800D1250;
-extern u32 D_800D1254;
-extern u32 D_800D1258;
-extern u32 D_800D1260;
-extern u32 D_800D1264;
-extern u32 D_800D1268;
-extern u32 D_800D126C;
-extern u32 D_800D1270;
-extern u32 D_800D1278;
-extern u32 D_800D127C;
-extern u32 D_800D1280;
-extern u32 D_800D1284;
-extern u32 D_800D1288;
-extern u32 D_800D128C;
-extern u32 D_800D1290;
-extern u32 D_800D1294;
-extern u32 D_800D1298;
-extern u32 D_800D129C;
-extern u32 D_800D12A0;
-extern u32 D_800D12A4;
-extern u32 D_800D12A8;
-extern u32 D_800D12AC;
-extern u32 D_800D12B0;
-extern u32 D_800D12B4;
-extern u32 D_800D12B8;
-extern u32 D_800D12BC;
-extern u32 D_800D12C0;
-extern u32 D_800D12C4;
-extern u32 D_800D12C8;
-extern u32 D_800D12CC;
-extern u32 D_800D12D0;
-extern u32 D_800D12D4;
-extern u32 D_800D12D8;
-extern u32 D_800D12DC;
-extern u32 D_800D12E0;
-extern u32 D_800D12E4;
-extern u32 D_800D12E8;
-extern u32 D_800D12EC;
-extern u32 D_800D12F0;
-extern u32 D_800D12F4;
-extern u32 D_800D12F8;
-extern u32 D_800D12FC;
-extern u32 D_800D1300;
-extern u32 D_800D1304;
-extern u32 D_800D1308;
-extern u32 D_800D130C;
-extern u32 D_800D1310;
-extern u32 D_800D1314;
-extern u32 D_800D1318;
-extern u32 D_800D131C;
-extern u32 D_800D1320;
-extern u32 D_800D1324;
-extern u32 D_800D1328;
-extern u32 D_800D132C;
-extern u32 D_800D1330;
-extern u32 D_800D1334;
-extern u32 D_800D1338;
-extern u32 D_800D133C;
-extern u32 D_800D1340;
-extern u32 D_800D1344;
-extern u32 D_800D1348;
-extern u32 D_800D134C;
-extern u32 D_800D1350;
-extern u32 D_800D1354;
-extern u32 D_800D1358;
-extern u32 D_800D135C;
-extern u32 D_800D1360;
-extern u32 D_800D1364;
-extern u32 D_800D136C;
-extern u32 D_800D1374;
-extern u32 D_800D1378;
-extern u32 D_800D137C;
-extern u32 D_800D1384;
-extern u32 D_800D138C;
-extern u32 D_800D1390;
-extern u32 D_800D13A4;
-extern u32 D_800D13AC;
-extern u32 D_800D13B0;
-extern u32 D_800D13B8;
-extern u32 D_800D13C4;
-extern u32 D_800D13D0;
-extern u32 D_800D13D4;
-extern u32 D_800D13D8;
-extern u32 D_800D13DC;
-extern u32 D_800D13E4;
-extern u32 D_800D13E8;
-extern u32 D_800D13F0;
-extern u32 D_800D13F8;
-extern u32 D_800D13FC;
-extern u32 D_800D1400;
-extern u32 D_800D1404;
-extern u32 D_800D1420;
-extern u32 D_800D1454;
-extern u32 D_800D1458;
-extern u32 D_800D145C;
-extern u32 D_800D1460;
-extern u32 D_800D1464;
-extern u32 D_800D1468;
-extern u32 D_800D146C;
-extern u32 D_800D1474;
-extern u32 D_800D147C;
-extern u32 D_800D1480;
-extern u32 D_800D1484;
-extern u32 D_800D1488;
-extern u32 D_800D14B0;
-extern u32 D_800D14B4;
-extern u32 D_800D14B8;
-extern u32 D_800D14BC;
-extern u32 D_800D14C0;
-extern u32 D_800D14C4;
-extern u32 D_800D14CC[];
+extern u32 sBikeFrameHiResId[];
+extern u32 sBikeRearWheelLoResId;
+extern u32 sAnimFenderGrabBodyResId[];
+extern u32 sKyotoThumbResId[];
+extern u32 sMountainQuarryThumbResId[];
+extern u32 sBobbyPodiumModelResId[];
+extern u32 sHoustonThumbResId[];
+extern u32 sLeftysMillThumbResId[];
+extern u32 sAnimCliffHangerBodyResId;
+extern u32 sOrlandoThumbResId[];
+extern u32 sNashvilleThumbResId[];
+extern u32 sCanyonChasmThumbResId;
+extern u32 sSarahPodiumModelResId[];
+extern u32 sLongIslandThumbResId;
+extern u32 sPodiumCamClip1ResId;
+extern u32 sVickyPodiumModelResId[];
+extern u32 sCongoCourseThumbResId;
+extern u32 sPodiumCamClip2ResId[];
+extern u32 sPodiumCamClip4ResId[];
+extern u32 sRickyPodiumModelResId;
+extern u32 sPodium1stPose1ResId;
+extern u32 sJimPodiumModelResId;
+extern u32 sPodium2ndPose1ResId;
+extern u32 sPodium1stPose2ResId;
+extern u32 sPodium3rdPose1ResId;
+extern u32 sPodium2ndPose2ResId;
+extern u32 sAnimNoHanderBodyResId[];
+extern u32 sPodium3rdPose2ResId[];
+extern u32 sDesertScenery1ResId[];
+extern u32 sNigelPodiumModelResId[];
+extern u32 sAnimFinish2ndBodyResId;
+extern u32 sAnimBarHopBodyResId[];
+extern u32 sBikeForkSliderHiResId[];
+extern u32 sDesertCampfireResId[];
+extern u32 sBobbyPodiumTexResId[];
+extern u32 sAnimNoFooterBodyResId[];
+extern u32 sAnimFinish4th5thBodyResId;
+extern u32 sLasVegasThumbResId;
+extern u32 sSarahPodiumTexResId[];
+extern u32 sBlizzardBlitzThumbResId;
+extern u32 sPhoenixThumbResId;
+extern u32 sVickyPodiumTexResId[];
+extern u32 sRainforestRunThumbResId;
+extern u32 sAnimLazyboyBodyResId;
+extern u32 sMadridThumbResId[];
+extern u32 sGravelPitThumbResId[];
+extern u32 sDetroitThumbResId[];
+extern u32 sGoldmineRushThumbResId[];
+extern u32 sRickyPodiumTexResId;
+extern u32 sLosAngelesThumbResId[];
+extern u32 sJimPodiumTexResId;
+extern u32 sConstructionYardThumbResId[];
+extern u32 sSeattleThumbResId[];
+extern u32 sNigelPodiumTexResId;
+extern u32 sAnimSkiJumpBodyResId[];
+extern u32 sAnimCrashBack1BodyResId;
+extern u32 sAnimCrashBack2BodyResId[];
+extern u32 sOrlandoResMapResId;
+extern u32 sAnimCrashBack3BodyResId;
+extern u32 sAnimAirTurn2RootResId;
+extern u32 sPodiumCamClip3ResId[];
+extern u32 sLongIslandResMapResId;
+extern u32 sBobbyModelHiResId;
+extern u32 sPodiumCamClip5ResId[];
+extern u32 sLasVegasResMapResId;
+extern u32 sAnimCrashFront1BodyResId;
+extern u32 sAnimFenderKissRootResId;
+extern u32 sNashvilleResMapResId[];
+extern u32 sAnimCrashFront2BodyResId[];
+extern u32 sPhoenixResMapResId;
+extern u32 sAnimCrashFront3BodyResId[];
+extern u32 sDetroitResMapResId;
+extern u32 sBobbyModelLoResId[];
+extern u32 sKyotoResMapResId;
+extern u32 sSarahModelHiResId;
+extern u32 sAnimHeelClickerBodyResId[];
+extern u32 sMadridResMapResId;
+extern u32 sVickyModelHiResId;
+extern u32 sLosAngelesResMapResId[];
+extern u32 sSarahModelLoResId[];
+extern u32 sVickyModelLoResId[];
+extern u32 sRickyModelHiResId;
+extern u32 sJimModelHiResId[];
+extern u32 sBikeTex0ResId;
+extern u32 sBikeTex1ResId;
+extern u32 sBikeForkLoResId[];
+extern u32 sRickyModelLoResId;
+extern u32 sAnimAirTurn2BodyResId[];
+extern u32 sJimModelLoResId[];
+extern u32 sNigelModelHiResId;
+extern u32 sAnimFenderKissBodyResId[];
+extern u32 sBikeFrontWheelLoResId;
+extern u32 sBlizzardBlitzResMapResId[];
+extern u32 sBobbySkin1ResId;
+extern u32 sLeftysMillResMapResId[];
+extern u32 sBikeSwingarmHiResId;
+extern u32 sBobbySkin2ResId;
+extern u32 sCanyonChasmResMapResId[];
+extern u32 sNigelModelLoResId;
+extern u32 sBobbySkin3ResId;
+extern u32 sRainforestRunResMapResId[];
+extern u32 sBobbySkin4ResId;
+extern u32 sGravelPitResMapResId[];
+extern u32 sBobbySkin5ResId[];
+extern u32 sConstructionYardResMapResId[];
+extern u32 sBikeRearWheelHiResId;
+extern u32 sBobbySkin6ResId;
+extern u32 sSarahSkin1ResId[];
+extern u32 sMountainQuarryResMapResId;
+extern u32 sVickySkin1ResId;
+extern u32 sSarahSkin2ResId;
+extern u32 sCongoCourseResMapResId[];
+extern u32 sVickySkin2ResId;
+extern u32 sSarahSkin3ResId[];
+extern u32 sGoldmineRushResMapResId[];
+extern u32 sVickySkin3ResId;
+extern u32 sSarahSkin4ResId;
+extern u32 sAnimCordovaBodyResId[];
+extern u32 sVickySkin4ResId;
+extern u32 sSarahSkin5ResId;
+extern u32 sVickySkin5ResId;
+extern u32 sSarahSkin6ResId[];
+extern u32 sPodium1stPose3ResId[];
+extern u32 sVickySkin6ResId;
+extern u32 sRickySkin1ResId;
+extern u32 sAnimKobeRootResId[];
+extern u32 sPodium2ndPose3ResId;
+extern u32 sRickySkin2ResId;
+extern u32 sJimSkin1ResId[];
+extern u32 sPodium3rdPose3ResId;
+extern u32 sRickySkin3ResId;
+extern u32 sJimSkin2ResId;
+extern u32 sSoccerResMapResId;
+extern u32 sRickySkin4ResId;
+extern u32 sJimSkin3ResId[];
+extern u32 sRickySkin5ResId;
+extern u32 sJimSkin4ResId;
+extern u32 sAnimAirTurnRootResId[];
+extern u32 sRickySkin6ResId;
+extern u32 sJimSkin5ResId[];
+extern u32 sNigelSkin1ResId;
+extern u32 sJimSkin6ResId;
+extern u32 sAnimNothingBodyResId[];
+extern u32 sNigelSkin2ResId[];
+extern u32 sNigelSkin3ResId[];
+extern u32 sNigelSkin4ResId[];
+extern u32 sNigelSkin5ResId[];
+extern u32 sNigelSkin6ResId[];
+extern u32 sAnimKobeBodyResId[];
+extern u32 sSeattleResMapResId;
+extern u32 sHoustonResMapResId[];
+extern u32 sAnimAirTurnBodyResId;
+extern u32 sFontMainResId;
+extern u32 sFontDigitsResId[];
+extern u32 sFontTitleResId[];
+extern u32 sFontSmallResId;
+extern u32 sTutorialLesson1aDemoResId;
+extern u32 sTutorialLesson2aDemoResId;
+extern u32 sTutorialLesson1bDemoResId;
+extern u32 sFontMenuResId[];
+extern u32 sTutorialLesson3aDemoResId;
+extern u32 sTutorialLesson2bDemoResId[];
+extern u32 sTutorialLesson4aDemoResId;
+extern u32 sTutorialLesson3bDemoResId;
+extern u32 sTutorialWheelieDemoResId;
+extern u32 sTutorialLesson4bDemoResId[];
+extern u32 sTutorialLesson4cDemoResId[];
+extern u32 sBikeTex0Pal1ResId;
+extern u32 sExcite3DResMapResId;
+extern u32 sBikeTex0Pal2ResId;
+extern u32 sBikeTex1Pal1ResId;
+extern u32 sHillClimbResMapResId;
+extern u32 sBikeTex0Pal3ResId;
+extern u32 sBikeTex1Pal2ResId[];
+extern u32 sBikeTex1Pal3ResId[];
+extern u32 sBikeFrameLoResId[];
+extern u32 sAnimPumpBodyResId;
+extern u32 sTutorialLesson5DemoResId;
+extern u32 sTutorialResMapResId[];
+extern u32 sDesertScenery2ResId[];
+extern u32 sAnimCrashLeft1BodyResId[];
+extern u32 sAnimCrashLeft2BodyResId[];
+extern u32 sAnimCrashLeft3BodyResId[];
+extern u32 sPodium1stPose2HelmetResId[];
+extern u32 sAnimCrashRight1BodyResId[];
+extern u32 sPodium2ndPose2HelmetResId[];
+extern u32 sAnimCrashRight2BodyResId[];
+extern u32 sPodium3rdPose2HelmetResId;
+extern u32 sAnimCrashRight3BodyResId[];
+extern u32 sDesertResMapResId[];
+extern u32 sGravelPitItem1ResId[];
+extern u32 sBikeForkSliderLoResId;
+extern u32 sGravelPitItem2ResId[];
+extern u32 sGravelPitItem3ResId[];
+extern u32 sGravelPitItem4ResId;
+extern u32 sBikeForkHiResId[];
+extern u32 sStuntCourseResMapResId[];
+extern u32 sBikeFrontWheelHiResId[];
+extern u32 sAnimSaranWrapBodyResId;
+extern u32 sAnimFinish3rdBodyResId[];
+extern u32 sAnimSupermanRootResId;
+extern u32 sAnimFinish1stBodyResId;
+extern u32 sAnimSupermanBodyResId[];
+extern u32 sAnimFinish6thBodyResId[];
+extern u32 sAnimNacNacRootResId[];
+extern u32 sAnimFenderGrabRootResId[];
+extern u32 sBikeSwingarmLoResId[];
+extern u32 sPodium2ndPose3HelmetResId[];
+extern u32 sPodium3rdPose3HelmetResId[];
+extern u32 sAnimDblCanCanBodyResId;
+extern u32 sAnimNacNacBodyResId[];
+extern u32 sOverheatSfxResId;
+extern u32 sWaterSplashSfxResId;
+extern u32 sRaceSong1ResId;
+extern u32 sWaterPlungeSfxResId;
+extern u32 sRaceSong2ResId;
+extern u32 sEngineGear1SfxResId;
+extern u32 sEngineGear2SfxResId;
+extern u32 sEngineGear3SfxResId;
+extern u32 sEngineGear4SfxResId;
+extern u32 sOptionsSfxSampleId;
+extern u32 sReedsSurfaceSfxResId;
+extern u32 sRaceSong3ResId;
+extern u32 sEngineIdleSfxResId;
+extern u32 sRaceSong4ResId;
+extern u32 sCrashHitSfxResId;
+extern u32 sLandingSfxResId;
+extern u32 sRaceSong5ResId;
+extern u32 sSkidSfxResId;
+extern u32 sCrashHit2SfxResId;
+extern u32 sWoodSurfaceSfxResId;
+extern u32 sEngineLoopSfxResId;
+extern u32 sRaceSong6ResId;
+extern u32 sScrapeSfxResId;
+extern u32 sPieceUserCollisionResId;
+extern u32 sPieceUserGroundResId;
+extern u32 sPieceUserPathResId;
+extern u32 sPieceTurn90PathResId;
+extern u32 sPieceMediumStraightPathResId;
+extern u32 sPieceLongJumpPathResId;
+extern u32 sEditArenaWallTexResId;
+extern u32 sPieceShortStraightPathResId;
+extern u32 sPieceSteepJumpObjectsResId;
+extern u32 sPieceEmptyGroundResId;
+extern u32 sPieceTabletopObjectsResId;
+extern u32 sPieceDoubleObjectsResId;
+extern u32 sPieceRaised180ObjectsResId;
+extern u32 sPieceLandingSlopeObjectsResId;
+extern u32 sPieceFlat90ObjectsResId;
+extern u32 sPieceCamelJumpObjectsResId;
+extern u32 sPieceBanked90ObjectsResId;
+extern u32 sPieceBanked180ObjectsResId;
+extern u32 sPieceRaised180CollisionResId;
+extern u32 sPieceFlat90CollisionResId;
+extern u32 sPieceBanked90CollisionResId;
+extern u32 sPieceBanked180CollisionResId;
+extern u32 sPieceSteepJumpGroundResId;
+extern u32 sPieceTabletopGroundResId;
+extern u32 sPieceDoubleGroundResId;
+extern u32 sPieceRaised180GroundResId;
+extern u32 sPieceLandingSlopeGroundResId;
+extern u32 sPieceFlat90GroundResId;
+extern u32 sPieceCamelJumpGroundResId;
+extern u32 sPieceBanked90GroundResId;
+extern u32 sPieceBanked180GroundResId;
+extern u32 sPieceShortJumpObjectsResId;
+extern u32 sPieceMiniJumpObjectsResId;
+extern u32 sEditArenaCollisionResId;
+extern u32 sPieceShortStraightObjectsResId;
+extern u32 sPieceWhoopsObjectsResId;
+extern u32 sPieceSmallLandingObjectsResId;
+extern u32 sPieceShortJumpCollisionResId;
+extern u32 sPieceShallowWhoopsObjectsResId;
+extern u32 sPieceMiniJumpCollisionResId;
+extern u32 sPieceLaunchJumpObjectsResId;
+extern u32 sPieceWhoopsCollisionResId;
+extern u32 sPieceMiniJumpLandingObjectsResId;
+extern u32 sPieceSmallLandingCollisionResId;
+extern u32 sPieceSteepJumpCollisionResId;
+extern u32 sPieceShallowWhoopsCollisionResId;
+extern u32 sPieceTabletopCollisionResId;
+extern u32 sPieceLaunchJumpCollisionResId;
+extern u32 sPieceDoubleCollisionResId;
+extern u32 sPieceMiniJumpLandingCollisionResId;
+extern u32 sPieceLandingSlopeCollisionResId;
+extern u32 sPieceCamelJumpCollisionResId;
+extern u32 sPieceShortJumpGroundResId;
+extern u32 sPieceMiniJumpGroundResId;
+extern u32 sPieceWhoopsGroundResId;
+extern u32 sPieceSmallLandingGroundResId;
+extern u32 sPieceShallowWhoopsGroundResId;
+extern u32 sPieceLaunchJumpGroundResId;
+extern u32 sPieceMiniJumpLandingGroundResId;
+extern u32 sPieceShortStraightCollisionResId;
+extern u32 sDirtTex0ResId;
+extern u32 sDirtTex1ResId;
+extern u32 sDirtTex2ResId;
+extern u32 sPieceShortStraightGroundResId;
+extern u32 sPieceBanked180PathResId;
+extern u32 sPieceMediumStraightObjectsResId;
+extern u32 sPieceMediumStraightCollisionResId;
+extern u32 sPieceMediumStraightGroundResId;
+extern u32 sPieceRaised180PathResId;
+extern u32 sRainforestRunPicResId;
+extern u32 sCongoCoursePicResId;
+extern u32 sLeftysMillPicResId;
+extern u32 sCanyonChasmPicResId;
+extern u32 sNintendoSplashResId;
+extern u32 sConstructionYardPicResId;
+extern u32 sMountainQuarryPicResId;
+extern u32 sGravelPitPicResId;
+extern u32 sYouLoseResId;
+extern u32 sHoustonPicResId;
+extern u32 sN64SportsLogoResId;
+extern u32 sSeattlePicResId;
+extern u32 sOrlandoPicResId;
+extern u32 sLongIslandPicResId;
+extern u32 sLasVegasPicResId;
+extern u32 sNashvillePicResId;
+extern u32 sPhoenixPicResId;
+extern u32 sDetroitPicResId;
+extern u32 sKyotoPicResId;
+extern u32 sGoldmineRushPicResId;
+extern u32 sMadridPicResId;
+extern u32 sLosAngelesPicResId;
+extern u32 sBlizzardBlitzPicResId;
+extern u32 sSeasonItemPicResId;
+extern u32 sExhibitionItemPicResId;
+extern u32 sTimeTrialsItemPicResId;
+extern u32 sSpecialTracksItemPicResId;
+extern u32 sOptionsItemPicResId;
+extern u32 sCustomTracksItemPicResId;
+extern u32 sDesertPicResId;
+extern u32 sStuntCoursePicResId;
+extern u32 sHillClimbPicResId;
+extern u32 sExcite3dPicResId;
+extern u32 sMenuBackgroundOrangeResId;
+extern u32 gMenuBackgroundResId;
+extern u32 sDesertItemPicResId;
+extern u32 sStuntCourseItemPicResId;
+extern u32 sLeftFieldLogoResId;
+extern u32 sOriginalExcitebikeItemPicResId;
+extern u32 sSoccerItemPicResId;
+extern u32 sHillClimbItemPicResId;
+extern u32 sExcite3dItemPicResId[];
 extern char D_800D5C90[];
 extern char D_800D5C98[];
 extern char D_800D5CA8[];
@@ -814,9 +814,9 @@ extern char D_800D8A04[];
 extern char D_800D8A14[];
 extern char D_800D91C0[];
 extern char D_800D91C4[];
-extern char D_800D91C8[];
-extern char D_800D91CC[];
-extern char D_800D91D0[];
+extern char sStrKeyDot[];
+extern char sStrKeySpace[];
+extern char sStrKeyZero[];
 extern char D_800D91D4[];
 extern char D_800D91D8[];
 extern char D_800D91DC[];
@@ -874,7 +874,7 @@ extern char D_800D9334[];
 extern char D_800D9348[];
 extern char D_800D9358[];
 extern char D_800D9360[];
-extern char D_800D9370[];
+extern char sStrOptions[];
 extern char D_800D9378[];
 extern char D_800D9388[];
 extern char D_800D9394[];
@@ -961,11 +961,11 @@ extern char D_800D9A08[];
 extern char D_800D9A10[];
 extern char D_800D9A18[];
 extern char D_800D9A20[];
-extern char D_800D9A28[];
-extern char D_800D9A30[];
+extern char sStrEdit[];
+extern char sStrPlay[];
 extern char D_800D9A38[];
 extern char D_800D9A40[];
-extern char D_800D9A4C[];
+extern char sStrContinue[];
 extern char D_800D9A58[];
 extern char D_800D9A60[];
 extern char D_800D9A6C[];
@@ -1016,11 +1016,11 @@ extern char D_800DA628[];
 extern char D_800DA650[];
 extern char D_800DA674[];
 extern char D_800DA694[];
-extern char D_800DA6B4[];
-extern char D_800DA6C0[];
-extern char D_800DA6CC[];
-extern char D_800DA6D8[];
-extern u32 D_800DA6E8[];
+extern char sStrPakErasing[];
+extern char sStrPakSaving[];
+extern char sStrPakLoading[];
+extern char sStrPakRepairing[];
+extern u32 sStrPakSelectPak[];
 extern char D_800DA890[];
 extern char D_800DA8A0[];
 extern char D_800DA8B0[];
@@ -1161,7 +1161,7 @@ extern void cam_mode_fall_view();
 extern void cam_mode_stunt_pip();
 extern void cam_mode_chase_far_alt();
 extern void cam_mode_side_view();
-extern void func_8002D528();
+extern void cam_mode_high_side();
 extern void cam_mode_chase_near();
 extern void cam_mode_chase_mid();
 extern void cam_mode_chase_far();
@@ -1337,12 +1337,12 @@ u32 gRiderAlpha[0x8] = {
     /* 0x010 */ 0xFF, 0xFF, 0xFF, 0xFF,
 };
 u32 sFovY = 0x21;
-u32 D_800C23B0[0x6] = {
-    /* 0x000 */ (u32)&D_800D0DB0, (u32)&D_800D0DBC, (u32)&D_800D0DC8, (u32)&D_800D0DC0,
-    /* 0x010 */ (u32)D_800D0DCC, (u32)D_800D0DD4,
+u32 sBikeAltPalResIds[0x6] = {
+    /* 0x000 */ (u32)&sBikeTex0Pal1ResId, (u32)&sBikeTex0Pal2ResId, (u32)&sBikeTex0Pal3ResId, (u32)&sBikeTex1Pal1ResId,
+    /* 0x010 */ (u32)sBikeTex1Pal2ResId, (u32)sBikeTex1Pal3ResId,
 };
-u32 D_800C23C8[0x2] = { (u32)&D_800D0AB0, (u32)&D_800D0AB4 };
-u32 D_800C23D0[0x8] = {
+u32 sBikeTexResIds[0x2] = { (u32)&sBikeTex0ResId, (u32)&sBikeTex1ResId };
+u32 sGaugeNeedleShape[0x8] = {
     /* 0x000 */ 0xFFFFFFFE, 0, 0, 0x18,
     /* 0x010 */ 0x2, 0, 0, 0xFFFFFFFB,
 };
@@ -1372,12 +1372,12 @@ u32 sViewLayoutsMulti[0x30] = {
 };
 u32 gNumViews = 0x1;
 u32 gCurView = 0;
-u32 D_800C259C[0xc] = {
-    /* 0x000 */ (u32)D_800D06C8, (u32)&D_800D0B00, (u32)&D_800D0B50, (u32)D_800D0FC4,
-    /* 0x010 */ (u32)D_800D087C, (u32)D_800D1004, (u32)D_800D0DF8, (u32)D_800D119C,
-    /* 0x020 */ (u32)&D_800D06D8, (u32)D_800D0AB8, (u32)&D_800D0F90, (u32)&D_800D0AE8,
+u32 sBikePartResIds[0xc] = {
+    /* 0x000 */ (u32)sBikeFrameHiResId, (u32)&sBikeSwingarmHiResId, (u32)&sBikeRearWheelHiResId, (u32)sBikeForkHiResId,
+    /* 0x010 */ (u32)sBikeForkSliderHiResId, (u32)sBikeFrontWheelHiResId, (u32)sBikeFrameLoResId, (u32)sBikeSwingarmLoResId,
+    /* 0x020 */ (u32)&sBikeRearWheelLoResId, (u32)sBikeForkLoResId, (u32)&sBikeForkSliderLoResId, (u32)&sBikeFrontWheelLoResId,
 };
-u32 D_800C25CC[0x7] = {
+u32 sBikePartBones[0x7] = {
     /* 0x000 */ 0, 0x7, 0x8, 0x1,
     /* 0x010 */ 0x2, 0x3,
 };
@@ -1394,54 +1394,54 @@ u32 gIdentityMtx[0x10] = {
     /* 0x000 */ 0x10000, 0, 0x1, 0,
     /* 0x010 */ 0, 0x10000, 0, 0x1,
 };
-u32 sRiderModelTable[0x4] = { (u32)D_800D0760, (u32)D_800D0934, (u32)&D_800D0A54, (u32)D_800D0A8C };
-u32 D_800C26C8[0x38] = {
-    /* 0x000 */ (u32)D_800D0B58, (u32)&D_800D0B74, (u32)D_800D0B90, (u32)&D_800D0BAC,
-    /* 0x010 */ (u32)&D_800D0BC4, (u32)D_800D0BDC, (u32)D_800D0714, (u32)D_800D0908,
-    /* 0x020 */ (u32)&D_800D0A08, (u32)D_800D0A44, (u32)&D_800D0AF4, (u32)&D_800D0B04,
-    /* 0x030 */ (u32)&D_800D0B18, (u32)&D_800D0B28, (u32)D_800D0B3C, (u32)&D_800D0B54,
-    /* 0x040 */ (u32)D_800D0804, (u32)&D_800D09AC, (u32)&D_800D0AD4, (u32)&D_800D0B14,
-    /* 0x050 */ (u32)&D_800D0C6C, (u32)D_800D0C8C, (u32)D_800D0C9C, (u32)D_800D0CAC,
-    /* 0x060 */ (u32)D_800D0CBC, (u32)D_800D0CD0, (u32)D_800D0778, (u32)D_800D0944,
-    /* 0x070 */ (u32)&D_800D0A64, (u32)D_800D0A98, (u32)&D_800D0B70, (u32)&D_800D0B8C,
-    /* 0x080 */ (u32)&D_800D0BA8, (u32)&D_800D0BC0, (u32)&D_800D0BD8, (u32)&D_800D0BF0,
-    /* 0x090 */ (u32)&D_800D07BC, (u32)&D_800D0988, (u32)D_800D0AA8, (u32)D_800D0ACC,
-    /* 0x0a0 */ (u32)D_800D0C0C, (u32)&D_800D0C20, (u32)D_800D0C30, (u32)&D_800D0C3C,
-    /* 0x0b0 */ (u32)D_800D0C5C, (u32)&D_800D0C70, (u32)&D_800D07B0, (u32)&D_800D097C,
-    /* 0x0c0 */ (u32)&D_800D0AA4, (u32)&D_800D0AC0, (u32)&D_800D0BF4, (u32)&D_800D0C08,
-    /* 0x0d0 */ (u32)&D_800D0C1C, (u32)&D_800D0C2C, (u32)&D_800D0C38, (u32)&D_800D0C58,
+u32 sRiderModelTable[0x4] = { (u32)sSarahPodiumModelResId, (u32)sSarahPodiumTexResId, (u32)&sSarahModelHiResId, (u32)sSarahModelLoResId };
+u32 sRiderSkinResIds[0x38] = {
+    /* 0x000 */ (u32)sSarahSkin1ResId, (u32)&sSarahSkin2ResId, (u32)sSarahSkin3ResId, (u32)&sSarahSkin4ResId,
+    /* 0x010 */ (u32)&sSarahSkin5ResId, (u32)sSarahSkin6ResId, (u32)sBobbyPodiumModelResId, (u32)sBobbyPodiumTexResId,
+    /* 0x020 */ (u32)&sBobbyModelHiResId, (u32)sBobbyModelLoResId, (u32)&sBobbySkin1ResId, (u32)&sBobbySkin2ResId,
+    /* 0x030 */ (u32)&sBobbySkin3ResId, (u32)&sBobbySkin4ResId, (u32)sBobbySkin5ResId, (u32)&sBobbySkin6ResId,
+    /* 0x040 */ (u32)sNigelPodiumModelResId, (u32)&sNigelPodiumTexResId, (u32)&sNigelModelHiResId, (u32)&sNigelModelLoResId,
+    /* 0x050 */ (u32)&sNigelSkin1ResId, (u32)sNigelSkin2ResId, (u32)sNigelSkin3ResId, (u32)sNigelSkin4ResId,
+    /* 0x060 */ (u32)sNigelSkin5ResId, (u32)sNigelSkin6ResId, (u32)sVickyPodiumModelResId, (u32)sVickyPodiumTexResId,
+    /* 0x070 */ (u32)&sVickyModelHiResId, (u32)sVickyModelLoResId, (u32)&sVickySkin1ResId, (u32)&sVickySkin2ResId,
+    /* 0x080 */ (u32)&sVickySkin3ResId, (u32)&sVickySkin4ResId, (u32)&sVickySkin5ResId, (u32)&sVickySkin6ResId,
+    /* 0x090 */ (u32)&sJimPodiumModelResId, (u32)&sJimPodiumTexResId, (u32)sJimModelHiResId, (u32)sJimModelLoResId,
+    /* 0x0a0 */ (u32)sJimSkin1ResId, (u32)&sJimSkin2ResId, (u32)sJimSkin3ResId, (u32)&sJimSkin4ResId,
+    /* 0x0b0 */ (u32)sJimSkin5ResId, (u32)&sJimSkin6ResId, (u32)&sRickyPodiumModelResId, (u32)&sRickyPodiumTexResId,
+    /* 0x0c0 */ (u32)&sRickyModelHiResId, (u32)&sRickyModelLoResId, (u32)&sRickySkin1ResId, (u32)&sRickySkin2ResId,
+    /* 0x0d0 */ (u32)&sRickySkin3ResId, (u32)&sRickySkin4ResId, (u32)&sRickySkin5ResId, (u32)&sRickySkin6ResId,
 };
 u32 sPonytailMesh = 0;
 u32 sCreditsFont = 0;
 u32 sCreditsHeaderFont = 0;
 u32 sCreditsText = 0;
-s16 D_800C27B8[0x24] = {
+s16 sSoundMenuRowY[0x24] = {
     /* 0x000 */ 90, 113, 135, 157, 157, 180, 180, 202,
     /* 0x010 */ 202, 225, 225, 0, 269, 75, 180, 79,
     /* 0x020 */ 180, 111, 180, 143, 266, 163, 417, 76,
     /* 0x030 */ 417, 117, 419, 130, 417, 144, 0, 0,
     /* 0x040 */ -28750, 32, -28751, 28,
 };
-u32 D_800C2800[0x10] = {
-    /* 0x000 */ (u32)&D_800D07B8, 0, 0, 0,
-    /* 0x010 */ (u32)&D_800D07D0, (u32)D_800D0F00, 0, 0,
-    /* 0x020 */ (u32)D_800D0BE8,
+u32 sPodium1stPlaceClips[0x10] = {
+    /* 0x000 */ (u32)&sPodium1stPose1ResId, 0, 0, 0,
+    /* 0x010 */ (u32)&sPodium1stPose2ResId, (u32)sPodium1stPose2HelmetResId, 0, 0,
+    /* 0x020 */ (u32)sPodium1stPose3ResId,
 };
-u32 D_800C2840[0x10] = {
-    /* 0x000 */ (u32)&D_800D07CC, 0, 0, 0,
-    /* 0x010 */ (u32)&D_800D07E0, (u32)D_800D0F14, 0, 0,
-    /* 0x020 */ (u32)&D_800D0C04, (u32)D_800D11A4,
+u32 sPodium2ndPlaceClips[0x10] = {
+    /* 0x000 */ (u32)&sPodium2ndPose1ResId, 0, 0, 0,
+    /* 0x010 */ (u32)&sPodium2ndPose2ResId, (u32)sPodium2ndPose2HelmetResId, 0, 0,
+    /* 0x020 */ (u32)&sPodium2ndPose3ResId, (u32)sPodium2ndPose3HelmetResId,
 };
-u32 D_800C2880[0x10] = {
-    /* 0x000 */ (u32)&D_800D07DC, 0, 0, 0,
-    /* 0x010 */ (u32)D_800D07F0, (u32)&D_800D0F2C, 0, 0,
-    /* 0x020 */ (u32)&D_800D0C14, (u32)D_800D11B4,
+u32 sPodium3rdPlaceClips[0x10] = {
+    /* 0x000 */ (u32)&sPodium3rdPose1ResId, 0, 0, 0,
+    /* 0x010 */ (u32)sPodium3rdPose2ResId, (u32)&sPodium3rdPose2HelmetResId, 0, 0,
+    /* 0x020 */ (u32)&sPodium3rdPose3ResId, (u32)sPodium3rdPose3HelmetResId,
 };
-u32 sPodiumRiderClips[0x3] = { (u32)D_800C2800, (u32)D_800C2840, (u32)D_800C2880 };
+u32 sPodiumRiderClips[0x3] = { (u32)sPodium1stPlaceClips, (u32)sPodium2ndPlaceClips, (u32)sPodium3rdPlaceClips };
 u32 sPodiumCameraClips[0x15] = {
-    /* 0x000 */ (u32)&D_800D0774, 0, (u32)D_800D0788, 0,
-    /* 0x010 */ (u32)D_800D09FC, 0, (u32)D_800D0798, 0,
-    /* 0x020 */ (u32)D_800D0A0C, 0, 0, 0,
+    /* 0x000 */ (u32)&sPodiumCamClip1ResId, 0, (u32)sPodiumCamClip2ResId, 0,
+    /* 0x010 */ (u32)sPodiumCamClip3ResId, 0, (u32)sPodiumCamClip4ResId, 0,
+    /* 0x020 */ (u32)sPodiumCamClip5ResId, 0, 0, 0,
     /* 0x030 */ 0x4E2, 0x2EE, 0x1F4, 0,
     /* 0x040 */ 0x3E8, 0xFFFFFC18, 0x27BD0038, 0x3C02800D,
     /* 0x050 */ 0x8C424FC0,
@@ -1452,7 +1452,7 @@ u32 sEepromType = 0;
 u8 gContMask = 0;
 u8 gContCount = 0;
 u8 gContFirst[0x2] = { 0, 0x14 };
-u32 D_800C2930 = 0;
+u32 gDebugPadFreeze = 0;
 u32 sDebugLagEnable = 0;
 u32 sDebugLagLoops = 0;
 u32 sScreenshotCounter = 0;
@@ -1483,13 +1483,13 @@ u32 sRetraceCount = 0;
 u32 sGfxDoneCount = 0;
 u32 sDisplayedFb = 0xFFFFFFFF;
 u32 sViDitherFilter = 0;
-u32 D_800C2A00[0xe] = {
+u32 gRspInitDL[0xe] = {
     /* 0x000 */ 0xD9C0F9FA, 0, 0xD7000000, 0,
     /* 0x010 */ 0xDB040004, 0x1, 0xDB04000C, 0x1,
     /* 0x020 */ 0xDB040014, 0xFFFF, 0xDB04001C, 0xFFFF,
     /* 0x030 */ 0xDF000000,
 };
-u32 D_800C2A38[0x22] = {
+u32 gRdpInitDL[0x22] = {
     /* 0x000 */ 0xE3000800, 0, 0xE3000A01, 0,
     /* 0x010 */ 0xE3000C00, 0x80000, 0xE3000D01, 0,
     /* 0x020 */ 0xE3000F00, 0, 0xE3001001, 0,
@@ -1505,13 +1505,13 @@ u32 sRandomSeed[0x3] = { 0x4D2, 0, 0x8C62004C };
 u32 sEngineSamplesLoaded = 0;
 u32 sSndReducedSet = 0;
 u32 sTrackTunes[0x1b] = {
-    /* 0x000 */ (u32)&D_800D1224, (u32)&D_800D1248, (u32)&D_800D11E0, (u32)&D_800D1218,
-    /* 0x010 */ (u32)&D_800D1224, (u32)&D_800D11E0, (u32)&D_800D1218, (u32)&D_800D1224,
-    /* 0x020 */ (u32)&D_800D11F0, (u32)&D_800D11E0, (u32)&D_800D1224, (u32)&D_800D11F0,
-    /* 0x030 */ (u32)&D_800D11E0, (u32)&D_800D1248, (u32)&D_800D1224, (u32)&D_800D120C,
-    /* 0x040 */ (u32)&D_800D11E0, (u32)&D_800D1218, (u32)&D_800D1224, (u32)&D_800D1248,
-    /* 0x050 */ (u32)&D_800D1218, (u32)&D_800D1224, (u32)&D_800D1224, (u32)&D_800D1218,
-    /* 0x060 */ (u32)&D_800D1224, (u32)&D_800D1248, (u32)&D_800D1248,
+    /* 0x000 */ (u32)&sRaceSong5ResId, (u32)&sRaceSong6ResId, (u32)&sRaceSong1ResId, (u32)&sRaceSong4ResId,
+    /* 0x010 */ (u32)&sRaceSong5ResId, (u32)&sRaceSong1ResId, (u32)&sRaceSong4ResId, (u32)&sRaceSong5ResId,
+    /* 0x020 */ (u32)&sRaceSong2ResId, (u32)&sRaceSong1ResId, (u32)&sRaceSong5ResId, (u32)&sRaceSong2ResId,
+    /* 0x030 */ (u32)&sRaceSong1ResId, (u32)&sRaceSong6ResId, (u32)&sRaceSong5ResId, (u32)&sRaceSong3ResId,
+    /* 0x040 */ (u32)&sRaceSong1ResId, (u32)&sRaceSong4ResId, (u32)&sRaceSong5ResId, (u32)&sRaceSong6ResId,
+    /* 0x050 */ (u32)&sRaceSong4ResId, (u32)&sRaceSong5ResId, (u32)&sRaceSong5ResId, (u32)&sRaceSong4ResId,
+    /* 0x060 */ (u32)&sRaceSong5ResId, (u32)&sRaceSong6ResId, (u32)&sRaceSong6ResId,
 };
 u32 sRaceTuneStarted = 0;
 u32 sEngineVoiceCounts[0x4] = { 0x3, 0x4, 0x4, 0x4 };
@@ -1520,25 +1520,25 @@ u32 sSndEnabled = 0;
 u32 sSndServiceBusy = 0;
 u32 sSndRaceLoaded = 0;
 u32 sEngineSamples[0x2a] = {
-    /* 0x000 */ (u32)&D_800D11F4, 0, 0, 0,
-    /* 0x010 */ 0x4074, 0x5DC0, (u32)&D_800D11F8, 0,
+    /* 0x000 */ (u32)&sEngineGear1SfxResId, 0, 0, 0,
+    /* 0x010 */ 0x4074, 0x5DC0, (u32)&sEngineGear2SfxResId, 0,
     /* 0x020 */ 0, 0, 0x4E52, 0x6784,
-    /* 0x030 */ (u32)&D_800D11FC, 0, 0, 0,
-    /* 0x040 */ 0x4E52, 0x61A8, (u32)&D_800D1200, 0,
+    /* 0x030 */ (u32)&sEngineGear3SfxResId, 0, 0, 0,
+    /* 0x040 */ 0x4E52, 0x61A8, (u32)&sEngineGear4SfxResId, 0,
     /* 0x050 */ 0, 0, 0x4E52, 0x6590,
     /* 0x060 */ 0, 0, 0, 0,
-    /* 0x070 */ 0x4E52, 0x6590, (u32)&D_800D1210, 0,
+    /* 0x070 */ 0x4E52, 0x6590, (u32)&sEngineIdleSfxResId, 0,
     /* 0x080 */ 0, 0, 0x34BC, 0x4E52,
-    /* 0x090 */ (u32)&D_800D1238, 0, 0, 0,
+    /* 0x090 */ (u32)&sEngineLoopSfxResId, 0, 0, 0,
     /* 0x0a0 */ 0x4E52, 0x6590,
 };
 u32 sRiderSfx[0xf] = {
-    /* 0x000 */ (u32)&D_800D1220, 0, (u32)&D_800D1228, 0,
-    /* 0x010 */ (u32)&D_800D11C8, 0, (u32)&D_800D11DC, 0,
-    /* 0x020 */ (u32)&D_800D121C, 0, (u32)&D_800D124C, 0,
-    /* 0x030 */ (u32)&D_800D11E8, 0, (u32)&D_800D1204,
+    /* 0x000 */ (u32)&sLandingSfxResId, 0, (u32)&sSkidSfxResId, 0,
+    /* 0x010 */ (u32)&sOverheatSfxResId, 0, (u32)&sWaterSplashSfxResId, 0,
+    /* 0x020 */ (u32)&sCrashHitSfxResId, 0, (u32)&sScrapeSfxResId, 0,
+    /* 0x030 */ (u32)&sWaterPlungeSfxResId, 0, (u32)&sOptionsSfxSampleId,
 };
-u32 D_800C2C4C[0x2] = { 0, (u32)&D_800D122C };
+u32 sOptionsTestSfx[0x2] = { 0, (u32)&sCrashHit2SfxResId };
 u32 D_800C2C54[0x3] = { 0 };
 s16 gCosTable[0x1000] = {
     /* 0x000 */ 16384, 16383, 16383, 16383, 16383, 16383, 16383, 16383,
@@ -3086,7 +3086,7 @@ u16 sAsinTable[0x1006] = {
 };
 u32 gPrimBoneMtx = 0;
 u32 gPrimIATextures = 0;
-u32 D_800C8C78 = 0;
+u32 sPrimTexSizeShift = 0;
 u32 gPrimTexAlphaMode = 0;
 u32 sPrimTexModeCallback = 0;
 u32 sPrimTexAddrCallback[0x9] = {
@@ -3103,7 +3103,7 @@ u32 D_800C8CD0 = 0;
 u32 sGhostData = 0;
 u32 gGhostRace = 0;
 u32 gDemoPlayback = 0;
-u32 D_800C8CE0 = 0;
+u32 gTimeTrialPlayer = 0;
 u32 gActiveReplay = 0;
 u32 gReplayPlayback = 0;
 u32 sReplayRequest = 0;
@@ -3119,15 +3119,15 @@ u32 sFrontendLoaded[0x13] = {
     /* 0x030 */ 0x73747576, 0x7778797A, 0x30313233, 0x34353637,
     /* 0x040 */ 0x3839FFFE, 0xFD000000,
 };
-u32 D_800C8D68[0x16] = {
-    /* 0x000 */ (u32)D_800D0700, (u32)D_800D070C, (u32)D_800D071C, (u32)D_800D0730,
-    /* 0x010 */ (u32)D_800D0744, (u32)D_800D0750, (u32)&D_800D075C, (u32)&D_800D076C,
-    /* 0x020 */ (u32)&D_800D0784, (u32)&D_800D0930, (u32)&D_800D0940, (u32)&D_800D094C,
-    /* 0x030 */ (u32)D_800D095C, (u32)D_800D0964, (u32)D_800D096C, (u32)D_800D0974,
-    /* 0x040 */ (u32)D_800D0980, (u32)D_800D0990, (u32)D_800D0998, (u32)&D_800D093C,
+u32 sIntroTrackPicResIds[0x16] = {
+    /* 0x000 */ (u32)sKyotoThumbResId, (u32)sMountainQuarryThumbResId, (u32)sHoustonThumbResId, (u32)sLeftysMillThumbResId,
+    /* 0x010 */ (u32)sOrlandoThumbResId, (u32)sNashvilleThumbResId, (u32)&sCanyonChasmThumbResId, (u32)&sLongIslandThumbResId,
+    /* 0x020 */ (u32)&sCongoCourseThumbResId, (u32)&sLasVegasThumbResId, (u32)&sPhoenixThumbResId, (u32)&sRainforestRunThumbResId,
+    /* 0x030 */ (u32)sMadridThumbResId, (u32)sGravelPitThumbResId, (u32)sDetroitThumbResId, (u32)sGoldmineRushThumbResId,
+    /* 0x040 */ (u32)sLosAngelesThumbResId, (u32)sConstructionYardThumbResId, (u32)sSeattleThumbResId, (u32)&sBlizzardBlitzThumbResId,
     /* 0x050 */ 0x3C03800D, 0x8C6339DC,
 };
-u32 D_800C8DC0[0xe] = {
+u32 sBikeTuneMenu[0xe] = {
     /* 0x000 */ 0, (u32)D_800D621C, (u32)D_800D6214, (u32)D_800D6208,
     /* 0x010 */ (u32)D_800D6200, (u32)D_800D61F8, (u32)D_800D61F0, (u32)D_800D61E8,
     /* 0x020 */ (u32)D_800D61E0, (u32)D_800D61D8, (u32)D_800D61D0, 0,
@@ -3208,11 +3208,11 @@ u32 gSurfaceTable[0x100] = {
     /* 0x100 */ 0x576F6F64, 0, 0, 0,
     /* 0x110 */ 0x3CF5C28F, 0x40A00000, 0x3F800000, 0xBCA3D70A,
     /* 0x120 */ 0x3E800000, 0x3F800000, 0x17, 0x40200000,
-    /* 0x130 */ 0x40200000, 0x40200000, (u32)&D_800D1234, 0xFFFFFFFF,
+    /* 0x130 */ 0x40200000, 0x40200000, (u32)&sWoodSurfaceSfxResId, 0xFFFFFFFF,
     /* 0x140 */ 0x52656564, 0x73000000, 0, 0,
     /* 0x150 */ 0x3ECCCCCD, 0x42480000, 0x3F800000, 0xBE19999A,
     /* 0x160 */ 0, 0x3F800000, 0x7, 0x40200000,
-    /* 0x170 */ 0x40200000, 0x40200000, (u32)&D_800D1208, 0xFFFFFFFF,
+    /* 0x170 */ 0x40200000, 0x40200000, (u32)&sReedsSurfaceSfxResId, 0xFFFFFFFF,
     /* 0x180 */ 0x4D756430, 0, 0, 0,
     /* 0x190 */ 0x3CF5C28F, 0x3F800000, 0x3F99999A, 0xBCA3D70A,
     /* 0x1a0 */ 0, 0x3F800000, 0x7, 0x40200000,
@@ -3264,7 +3264,7 @@ f32 sSuspDampScale = 1.0f;
 f32 sLeanTorqueGain = 0.04f;
 f32 sLeanTorqueDamping = 0.15f;
 u16 D_800C94C0[0x2] = { 0x4000 };
-f32 D_800C94C4 = 2500.0f;
+f32 sHardTurnDrag = 2500.0f;
 u32 sBikeContactPoints[0x20] = {
     /* 0x000 */ 0x3E99999A, 0x3ECCCCCC, 0x3E800000, 0x3F000000,
     /* 0x010 */ 0xBE99999A, 0x3ECCCCCC, 0x3E800000, 0x3F000000,
@@ -3275,11 +3275,11 @@ u32 sBikeContactPoints[0x20] = {
     /* 0x060 */ 0x3B83126F, 0xBECCCCCD, 0x3F000000, 0x3DCCCCCD,
     /* 0x070 */ 0x3B83126F, 0xBECCCCCD, 0xBF19999A, 0x3DCCCCCD,
 };
-u8 D_800C9548[0x8] = { 0, 0x1, 0x4, 0x5, 0x1, 0, 0x5, 0x4 };
+u8 sBikeWallCheckPairs[0x8] = { 0, 0x1, 0x4, 0x5, 0x1, 0, 0x5, 0x4 };
 u32 gLoDetailThresh[0x4] = { 0x834, 0x5DC, 0x3E8, 0x3E8 };
 u32 gVisibleThresh[0x4] = { 0xFA0, 0xED8, 0xCB2, 0x9C4 };
 u32 gUserTrackLayout = 0;
-u32 D_800C9574[0x3] = { 0, 0xC0300F2, 0x2803821 };
+u32 gTrackWallMesh[0x3] = { 0, 0xC0300F2, 0x2803821 };
 u32 sTexSegList = 0;
 u32 sTexSegListIndex = 0;
 u8 sTexOpaqueFogDL[0x18] = {
@@ -3324,7 +3324,7 @@ u32 gCamModes[0x30] = {
     /* 0x020 */ 0, (u32)cam_mode_chase_mid, 0, 0x10000,
     /* 0x030 */ 0, (u32)cam_mode_chase_far, 0, 0x10000,
     /* 0x040 */ 0, (u32)cam_mode_side_view, 0, 0x80000,
-    /* 0x050 */ 0, (u32)func_8002D528, 0, 0x80000,
+    /* 0x050 */ 0, (u32)cam_mode_high_side, 0, 0x80000,
     /* 0x060 */ 0, (u32)cam_mode_hill_climb, 0, 0x80000,
     /* 0x070 */ 0, (u32)cam_mode_stunt_pip, 0, 0x80000,
     /* 0x080 */ 0, (u32)cam_mode_chase_far_alt, 0, 0x80000,
@@ -3345,7 +3345,7 @@ f32 sCamSideViewParams[0x14] = {
     /* 0x010 */ 6144.0f, 0.0f, 0.0f, 0.0f,
     /* 0x040 */ [0x10] = 1.121e-41f,
 };
-u32 D_800C97E4 = 0xFFFFFFFF;
+u32 sCamDollyZoneIndex = 0xFFFFFFFF;
 u32 sCamZoneOffset[0x6] = {
     /* 0x000 */ 0, 0, 0, 0x24843078,
     /* 0x010 */ 0x2821, 0xC003B44,
@@ -3410,160 +3410,160 @@ u32 sRiderBoneNames[0x10] = {
     /* 0x020 */ (u32)D_800D6E40, (u32)D_800D6E38, (u32)D_800D6E30, (u32)D_800D6E28,
     /* 0x030 */ (u32)D_800D6E20, (u32)D_800D6E18, (u32)D_800D6E10,
 };
-u32 D_800C99F0 = 0x7061300;
-u32 D_800C99F4 = 0x7061200;
-u32 D_800C99F8[0x2] = { 0x7060406, 0x13000000 };
-u32 D_800C9A00 = 0x7061400;
-u32 D_800C9A04 = 0x7060E00;
-u32 D_800C9A08 = 0x7060D00;
-u32 D_800C9A0C = 0x7060F00;
-u32 D_800C9A10 = 0x7061000;
-u32 D_800C9A14 = 0x7060B00;
-u32 D_800C9A18[0x2] = { 0x7060406, 0x14000000 };
-u32 D_800C9A20[0x2] = { 0x7060406, 0xF000000 };
-u32 D_800C9A28[0x2] = { 0x7060406, 0xC000000 };
-u32 D_800C9A30[0x2] = { 0x7060406, 0xB000000 };
-u32 D_800C9A38 = 0x7061100;
+u32 gNoHanderInputGlyphs = 0x7061300;
+u32 gFenderKissInputGlyphs = 0x7061200;
+u32 gNothingInputGlyphs[0x2] = { 0x7060406, 0x13000000 };
+u32 gSaranWrapInputGlyphs = 0x7061400;
+u32 gBarHopInputGlyphs = 0x7060E00;
+u32 gNacNacInputGlyphs = 0x7060D00;
+u32 gHeelClickerInputGlyphs = 0x7060F00;
+u32 gSupermanInputGlyphs = 0x7061000;
+u32 gLazyboyInputGlyphs = 0x7060B00;
+u32 gDblCanCanInputGlyphs[0x2] = { 0x7060406, 0x14000000 };
+u32 gCliffHangerInputGlyphs[0x2] = { 0x7060406, 0xF000000 };
+u32 gFenderGrabInputGlyphs[0x2] = { 0x7060406, 0xC000000 };
+u32 gCordovaInputGlyphs[0x2] = { 0x7060406, 0xB000000 };
+u32 gKobeInputGlyphs = 0x7061100;
 u8 D_800C9A3C[0x4] = { 0x1 };
 u32 gRiderAnims[0x111] = {
-    /* 0x000 */ 0x9, (u32)D_800D06DC, (u32)D_800D1138, 0,
-    /* 0x010 */ 0, (u32)D_800C9A28, (u32)D_800D6F90, 0x8,
+    /* 0x000 */ 0x9, (u32)sAnimFenderGrabBodyResId, (u32)sAnimFenderGrabRootResId, 0,
+    /* 0x010 */ 0, (u32)gFenderGrabInputGlyphs, (u32)D_800D6F90, 0x8,
     /* 0x020 */ 0x5DC, 0x2, 0, 0x100,
     /* 0x030 */ 0x100, 0x100, 0xCB, 0x9,
-    /* 0x040 */ (u32)D_800D0BB0, 0, 0, 0,
-    /* 0x050 */ (u32)D_800C9A30, (u32)D_800D6F88, 0x1, 0x7D0,
+    /* 0x040 */ (u32)sAnimCordovaBodyResId, 0, 0, 0,
+    /* 0x050 */ (u32)gCordovaInputGlyphs, (u32)D_800D6F88, 0x1, 0x7D0,
     /* 0x060 */ 0x2, 0xF, 0xA0, 0xA0,
-    /* 0x070 */ 0xA0, 0xC1, 0x9, (u32)&D_800D0740,
-    /* 0x080 */ 0, 0, 0, (u32)D_800C9A20,
+    /* 0x070 */ 0xA0, 0xC1, 0x9, (u32)&sAnimCliffHangerBodyResId,
+    /* 0x080 */ 0, 0, 0, (u32)gCliffHangerInputGlyphs,
     /* 0x090 */ (u32)D_800D6F78, 0xFFFFFFFF, 0x7D0, 0x2,
     /* 0x0a0 */ 0, 0x100, 0x100, 0x100,
-    /* 0x0b0 */ 0xCE, 0x9, (u32)&D_800D0958, 0,
-    /* 0x0c0 */ 0, 0, (u32)&D_800C9A14, (u32)D_800D6F70,
+    /* 0x0b0 */ 0xCE, 0x9, (u32)&sAnimLazyboyBodyResId, 0,
+    /* 0x0c0 */ 0, 0, (u32)&gLazyboyInputGlyphs, (u32)D_800D6F70,
     /* 0x0d0 */ 0x2, 0x3E8, 0x2, 0x7,
     /* 0x0e0 */ 0x100, 0x40, 0x100, 0xCF,
-    /* 0x0f0 */ 0x9, (u32)&D_800D11BC, 0, 0,
-    /* 0x100 */ 0, (u32)D_800C9A18, (u32)D_800D6F64, 0x4,
+    /* 0x0f0 */ 0x9, (u32)&sAnimDblCanCanBodyResId, 0, 0,
+    /* 0x100 */ 0, (u32)gDblCanCanInputGlyphs, (u32)D_800D6F64, 0x4,
     /* 0x110 */ 0x3E8, 0x2, 0, 0x100,
     /* 0x120 */ 0x100, 0x100, 0xCA, 0x9,
-    /* 0x130 */ (u32)D_800D11C0, (u32)D_800D1128, 0, 0,
-    /* 0x140 */ (u32)&D_800C9A08, (u32)D_800D6F5C, 0xFFFFFFFF, 0x3E8,
+    /* 0x130 */ (u32)sAnimNacNacBodyResId, (u32)sAnimNacNacRootResId, 0, 0,
+    /* 0x140 */ (u32)&gNacNacInputGlyphs, (u32)D_800D6F5C, 0xFFFFFFFF, 0x3E8,
     /* 0x150 */ 0x2, 0x7, 0x100, 0x100,
-    /* 0x160 */ 0x100, 0xC9, 0x9, (u32)D_800D1108,
-    /* 0x170 */ (u32)&D_800D10B0, 0, 0, (u32)&D_800C9A10,
+    /* 0x160 */ 0x100, 0xC9, 0x9, (u32)sAnimSupermanBodyResId,
+    /* 0x170 */ (u32)&sAnimSupermanRootResId, 0, 0, (u32)&gSupermanInputGlyphs,
     /* 0x180 */ (u32)D_800D6F50, 0x10, 0x3E8, 0x2,
     /* 0x190 */ 0xF, 0xC0, 0xC0, 0xC0,
-    /* 0x1a0 */ 0xC5, 0x9, (u32)D_800D0814, 0,
-    /* 0x1b0 */ 0, 0, (u32)&D_800C9A04, (u32)D_800D6F48,
+    /* 0x1a0 */ 0xC5, 0x9, (u32)sAnimBarHopBodyResId, 0,
+    /* 0x1b0 */ 0, 0, (u32)&gBarHopInputGlyphs, (u32)D_800D6F48,
     /* 0x1c0 */ 0xFFFFFFFF, 0x3E8, 0x2, 0,
     /* 0x1d0 */ 0x100, 0x100, 0x100, 0xCD,
-    /* 0x1e0 */ 0x2, (u32)&D_800D107C, 0, 0,
-    /* 0x1f0 */ 0, (u32)&D_800C9A00, (u32)D_800D6F3C, 0xFFFFFFFF,
+    /* 0x1e0 */ 0x2, (u32)&sAnimSaranWrapBodyResId, 0, 0,
+    /* 0x1f0 */ 0, (u32)&gSaranWrapInputGlyphs, (u32)D_800D6F3C, 0xFFFFFFFF,
     /* 0x200 */ 0x1F4, 0x2, 0, 0x100,
     /* 0x210 */ 0x100, 0x100, 0xC2, 0x9,
-    /* 0x220 */ (u32)D_800D0A58, 0, 0, 0,
-    /* 0x230 */ (u32)&D_800C9A0C, (u32)D_800D6F2C, 0xFFFFFFFF, 0x3E8,
+    /* 0x220 */ (u32)sAnimHeelClickerBodyResId, 0, 0, 0,
+    /* 0x230 */ (u32)&gHeelClickerInputGlyphs, (u32)D_800D6F2C, 0xFFFFFFFF, 0x3E8,
     /* 0x240 */ 0x2, 0, 0x100, 0x100,
-    /* 0x250 */ 0x100, 0xD2, 0x9, (u32)D_800D0AD8,
-    /* 0x260 */ (u32)&D_800D0A1C, 0, 0, (u32)&D_800C99F4,
+    /* 0x250 */ 0x100, 0xD2, 0x9, (u32)sAnimFenderKissBodyResId,
+    /* 0x260 */ (u32)&sAnimFenderKissRootResId, 0, 0, (u32)&gFenderKissInputGlyphs,
     /* 0x270 */ (u32)D_800D6F20, 0xFFFFFFFF, 0x3E8, 0x2,
     /* 0x280 */ 0, 0x100, 0x100, 0x100,
-    /* 0x290 */ 0xCC, 0x9, (u32)D_800D09B8, 0,
+    /* 0x290 */ 0xCC, 0x9, (u32)sAnimSkiJumpBodyResId, 0,
     /* 0x2a0 */ 0, 0, 0, (u32)D_800D6F14,
     /* 0x2b0 */ 0xFFFFFFFF, 0x3E8, 0x2, 0,
     /* 0x2c0 */ 0x100, 0x100, 0x100, 0xC4,
-    /* 0x2d0 */ 0x9, (u32)D_800D07E4, 0, 0,
-    /* 0x2e0 */ 0, (u32)&D_800C99F0, (u32)D_800D6F08, 0xFFFFFFFF,
+    /* 0x2d0 */ 0x9, (u32)sAnimNoHanderBodyResId, 0, 0,
+    /* 0x2e0 */ 0, (u32)&gNoHanderInputGlyphs, (u32)D_800D6F08, 0xFFFFFFFF,
     /* 0x2f0 */ 0x1F4, 0x2, 0, 0x1C0,
     /* 0x300 */ 0x140, 0x140, 0xC8, 0x9,
-    /* 0x310 */ (u32)D_800D0918, 0, 0, 0,
+    /* 0x310 */ (u32)sAnimNoFooterBodyResId, 0, 0, 0,
     /* 0x320 */ 0, (u32)D_800D6EFC, 0xFFFFFFFF, 0x1F4,
     /* 0x330 */ 0x2, 0, 0x100, 0x100,
-    /* 0x340 */ 0x100, 0xC6, 0x9, (u32)D_800D0C74,
-    /* 0x350 */ 0, 0, 0, (u32)D_800C99F8,
+    /* 0x340 */ 0x100, 0xC6, 0x9, (u32)sAnimNothingBodyResId,
+    /* 0x350 */ 0, 0, 0, (u32)gNothingInputGlyphs,
     /* 0x360 */ (u32)D_800D6EF4, 0xFFFFFFFF, 0x3E8, 0x2,
     /* 0x370 */ 0, 0x140, 0x140, 0x140,
-    /* 0x380 */ 0xC7, 0x9, (u32)D_800D0D14, (u32)D_800D0BF8,
-    /* 0x390 */ 0, 0, (u32)&D_800C9A38, (u32)D_800D6EEC,
+    /* 0x380 */ 0xC7, 0x9, (u32)sAnimKobeBodyResId, (u32)sAnimKobeRootResId,
+    /* 0x390 */ 0, 0, (u32)&gKobeInputGlyphs, (u32)D_800D6EEC,
     /* 0x3a0 */ 0x20, 0xBB8, 0x2, 0,
     /* 0x3b0 */ 0x100, 0x100, 0x100, 0xD1,
-    /* 0x3c0 */ 0x9, (u32)&D_800D0D34, (u32)D_800D0C40, 0,
+    /* 0x3c0 */ 0x9, (u32)&sAnimAirTurnBodyResId, (u32)sAnimAirTurnRootResId, 0,
     /* 0x3d0 */ 0, 0, (u32)D_800D6EE4, 0xFFFFFFFF,
     /* 0x3e0 */ 0, 0, 0, 0x100,
     /* 0x3f0 */ 0x100, 0x100, 0xFFFFFFFF, 0x9,
-    /* 0x400 */ (u32)D_800D0AC4, (u32)&D_800D09F4, 0, 0,
+    /* 0x400 */ (u32)sAnimAirTurn2BodyResId, (u32)&sAnimAirTurn2RootResId, 0, 0,
     /* 0x410 */ 0, (u32)D_800D6ED8, 0xFFFFFFFF, 0,
     /* 0x420 */ 0, 0, 0x100, 0x100,
-    /* 0x430 */ 0x100, 0xFFFFFFFF, 0x12, (u32)&D_800D0E04,
+    /* 0x430 */ 0x100, 0xFFFFFFFF, 0x12, (u32)&sAnimPumpBodyResId,
 };
 u32 D_800C9E84[0x12b] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800D6ED0,
     /* 0x010 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x020 */ 0x100, 0x100, 0x100, 0xFFFFFFFF,
-    /* 0x030 */ 0x12, (u32)&D_800D10E4, 0, 0,
+    /* 0x030 */ 0x12, (u32)&sAnimFinish1stBodyResId, 0, 0,
     /* 0x040 */ 0, 0, (u32)D_800D6ECC, 0xFFFFFFFF,
     /* 0x050 */ 0, 0, 0, 0x80,
     /* 0x060 */ 0x100, 0x100, 0xFFFFFFFF, 0x12,
-    /* 0x070 */ (u32)&D_800D0810, 0, 0, 0,
+    /* 0x070 */ (u32)&sAnimFinish2ndBodyResId, 0, 0, 0,
     /* 0x080 */ 0, (u32)D_800D6EC8, 0xFFFFFFFF, 0,
     /* 0x090 */ 0, 0, 0x80, 0x100,
-    /* 0x0a0 */ 0x100, 0xFFFFFFFF, 0x12, (u32)D_800D1098,
+    /* 0x0a0 */ 0x100, 0xFFFFFFFF, 0x12, (u32)sAnimFinish3rdBodyResId,
     /* 0x0b0 */ 0, 0, 0, 0,
     /* 0x0c0 */ (u32)D_800D6EC4, 0xFFFFFFFF, 0, 0,
     /* 0x0d0 */ 0, 0x80, 0x100, 0x100,
-    /* 0x0e0 */ 0xFFFFFFFF, 0x12, (u32)&D_800D092C, 0,
+    /* 0x0e0 */ 0xFFFFFFFF, 0x12, (u32)&sAnimFinish4th5thBodyResId, 0,
     /* 0x0f0 */ 0, 0, 0, (u32)D_800D6EC0,
     /* 0x100 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x110 */ 0x80, 0x100, 0x100, 0xFFFFFFFF,
-    /* 0x120 */ 0x12, (u32)&D_800D092C, 0, 0,
+    /* 0x120 */ 0x12, (u32)&sAnimFinish4th5thBodyResId, 0, 0,
     /* 0x130 */ 0, 0, (u32)D_800D6EBC, 0xFFFFFFFF,
     /* 0x140 */ 0, 0, 0, 0x80,
     /* 0x150 */ 0x100, 0x100, 0xFFFFFFFF, 0x12,
-    /* 0x160 */ (u32)D_800D1114, 0, 0, 0,
+    /* 0x160 */ (u32)sAnimFinish6thBodyResId, 0, 0, 0,
     /* 0x170 */ 0, (u32)D_800D6EB8, 0xFFFFFFFF, 0,
     /* 0x180 */ 0, 0, 0x80, 0x100,
-    /* 0x190 */ 0x100, 0xFFFFFFFF, 0x10, (u32)&D_800D09E0,
+    /* 0x190 */ 0x100, 0xFFFFFFFF, 0x10, (u32)&sAnimCrashBack1BodyResId,
     /* 0x1a0 */ 0, 0, 0, (u32)D_800D6EB4,
     /* 0x1b0 */ 0, 0, 0, 0x100,
     /* 0x1c0 */ 0x100, 0x100, 0xFFFFFFFF, 0,
-    /* 0x1d0 */ 0, 0x14, (u32)D_800D09E4, 0,
+    /* 0x1d0 */ 0, 0x14, (u32)sAnimCrashBack2BodyResId, 0,
     /* 0x1e0 */ 0, 0, (u32)D_800D6EB0, 0,
     /* 0x1f0 */ 0, 0, 0x100, 0x100,
     /* 0x200 */ 0x100, 0xFFFFFFFF, 0, 0,
-    /* 0x210 */ 0x10, (u32)&D_800D09F0, 0, 0,
+    /* 0x210 */ 0x10, (u32)&sAnimCrashBack3BodyResId, 0, 0,
     /* 0x220 */ 0, (u32)D_800D6EAC, 0, 0,
     /* 0x230 */ 0, 0x100, 0x100, 0x100,
     /* 0x240 */ 0xFFFFFFFF, 0, 0, 0x10,
-    /* 0x250 */ (u32)&D_800D0A18, 0, 0, 0,
+    /* 0x250 */ (u32)&sAnimCrashFront1BodyResId, 0, 0, 0,
     /* 0x260 */ (u32)D_800D6EA8, 0, 0, 0,
     /* 0x270 */ 0x100, 0x100, 0x100, 0xFFFFFFFF,
-    /* 0x280 */ 0, 0, 0x4, (u32)D_800D0A28,
+    /* 0x280 */ 0, 0, 0x4, (u32)sAnimCrashFront2BodyResId,
     /* 0x290 */ 0, 0, 0, (u32)D_800D6EA4,
     /* 0x2a0 */ 0, 0, 0, 0x100,
     /* 0x2b0 */ 0x100, 0x100, 0xFFFFFFFF, 0,
-    /* 0x2c0 */ 0, 0x10, (u32)D_800D0A34, 0,
+    /* 0x2c0 */ 0, 0x10, (u32)sAnimCrashFront3BodyResId, 0,
     /* 0x2d0 */ 0, 0, (u32)D_800D6EA0, 0,
     /* 0x2e0 */ 0, 0, 0x100, 0x100,
     /* 0x2f0 */ 0x100, 0xFFFFFFFF, 0, 0,
-    /* 0x300 */ 0x10, (u32)D_800D0E9C, 0, 0,
+    /* 0x300 */ 0x10, (u32)sAnimCrashLeft1BodyResId, 0, 0,
     /* 0x310 */ 0, (u32)D_800D6E9C, 0, 0,
     /* 0x320 */ 0, 0x100, 0x100, 0x100,
     /* 0x330 */ 0xFFFFFFFF, 0, 0, 0x14,
-    /* 0x340 */ (u32)D_800D0EB0, 0, 0, 0,
+    /* 0x340 */ (u32)sAnimCrashLeft2BodyResId, 0, 0, 0,
     /* 0x350 */ (u32)D_800D6E98, 0, 0, 0,
     /* 0x360 */ 0x100, 0x100, 0x100, 0xFFFFFFFF,
-    /* 0x370 */ 0, 0, 0x10, (u32)D_800D0EC4,
+    /* 0x370 */ 0, 0, 0x10, (u32)sAnimCrashLeft3BodyResId,
     /* 0x380 */ 0, 0, 0, (u32)D_800D6E94,
     /* 0x390 */ 0, 0, 0, 0x100,
     /* 0x3a0 */ 0x100, 0x100, 0xFFFFFFFF, 0,
-    /* 0x3b0 */ 0, 0x10, (u32)D_800D0F08, 0,
+    /* 0x3b0 */ 0, 0x10, (u32)sAnimCrashRight1BodyResId, 0,
     /* 0x3c0 */ 0, 0, (u32)D_800D6E90, 0,
     /* 0x3d0 */ 0, 0, 0x100, 0x100,
     /* 0x3e0 */ 0x100, 0xFFFFFFFF, 0, 0,
-    /* 0x3f0 */ 0x14, (u32)D_800D0F20, 0, 0,
+    /* 0x3f0 */ 0x14, (u32)sAnimCrashRight2BodyResId, 0, 0,
     /* 0x400 */ 0, (u32)D_800D6E8C, 0, 0,
     /* 0x410 */ 0, 0x100, 0x100, 0x100,
     /* 0x420 */ 0xFFFFFFFF, 0, 0, 0x10,
-    /* 0x430 */ (u32)D_800D0F38, 0, 0, 0,
+    /* 0x430 */ (u32)sAnimCrashRight3BodyResId, 0, 0, 0,
     /* 0x440 */ (u32)D_800D6E88, 0, 0, 0,
     /* 0x450 */ 0x100, 0x100, 0x100, 0xFFFFFFFF,
     /* 0x460 */ 0, 0, 0x10, 0,
@@ -3581,14 +3581,14 @@ u32 sDesMarkerVtx[0x20] = {
 };
 u32 sDesArrowAngle = 0;
 u32 gDesWaypoint = 0;
-u32 D_800CA3B8 = 0;
+u32 sDesMarkerFrame = 0;
 u32 sDesObjModels[0x8] = {
-    /* 0x000 */ (u32)D_800D07FC, 0, (u32)D_800D0E70, 0,
-    /* 0x010 */ (u32)D_800D08A8,
+    /* 0x000 */ (u32)sDesertScenery1ResId, 0, (u32)sDesertScenery2ResId, 0,
+    /* 0x010 */ (u32)sDesertCampfireResId,
 };
-u32 D_800CA3DC[0x4] = { 0x14, 0x4, 0x18 };
-u32 D_800CA3EC[0x4] = { 0x1, 0xFFFFFFFF, 0xFFFFFFFB, 0x5 };
-u32 D_800CA3FC[0x5] = {
+u32 sDesSeamStartVtx[0x4] = { 0x14, 0x4, 0x18 };
+u32 sDesSeamStep[0x4] = { 0x1, 0xFFFFFFFF, 0xFFFFFFFB, 0x5 };
+u32 sDesSeamInward[0x5] = {
     /* 0x000 */ 0xFFFFFFFB, 0x5, 0xFFFFFFFF, 0x1,
     /* 0x010 */ 0x8C440000,
 };
@@ -3657,10 +3657,10 @@ u32 D_800CA6F4[0x1f] = {
     /* 0x070 */ 0xC2000000, 0x282A021, 0x92230006,
 };
 u32 sFontSetLoaded = 0;
-u32 sRaceFontIds[0x4] = { (u32)&D_800D0D38, (u32)&D_800D0D54, (u32)D_800D0D3C };
+u32 sRaceFontIds[0x4] = { (u32)&sFontMainResId, (u32)&sFontSmallResId, (u32)sFontDigitsResId };
 u32 sMenuFontIds[0x6] = {
-    /* 0x000 */ (u32)&D_800D0D38, (u32)&D_800D0D54, (u32)D_800D0D3C, (u32)D_800D0D48,
-    /* 0x010 */ (u32)D_800D0D64,
+    /* 0x000 */ (u32)&sFontMainResId, (u32)&sFontSmallResId, (u32)sFontDigitsResId, (u32)sFontTitleResId,
+    /* 0x010 */ (u32)sFontMenuResId,
 };
 u8 sFontColors[0x73] = {
     /* 0x000 */ 0, 0, 0, 0xFF, 0, 0, 0, 0xFF, 0, 0, 0, 0xFF, 0x10, 0x10, 0x10, 0xFF,
@@ -3672,7 +3672,7 @@ u8 sFontColors[0x73] = {
     /* 0x060 */ 0, 0, 0, 0xFF, 0xF0, 0x20, 0x20, 0xFF, 0, 0, 0, 0xFF, 0, 0, 0, 0xFF,
     /* 0x070 */ 0xFF, 0xFF, 0xFF,
 };
-u8 D_800CA80F[0x11] = {
+u8 sFontColorFadeAlpha[0x11] = {
     /* 0x000 */ 0xFF, 0, 0, 0, 0xFF, 0x4C, 0x4C, 0x4C, 0xFF, 0x80, 0x80, 0x80, 0xFF, 0x10, 0x10, 0x10,
     /* 0x010 */ 0xFF,
 };
@@ -3709,7 +3709,7 @@ u32 sTakeoutClips[0x5] = {
     /* 0x010 */ 0x5012,
 };
 u32 gRaceExitCode = 0;
-u32 D_800CA924[0x3] = { 0 };
+u32 gRaceSeries[0x3] = { 0 };
 u32 gSeason = (u32)sSeasonState;
 u32 gHudLevel = 0;
 u32 gRacePoints[0x8] = { 0x5, 0x3, 0x2, 0x1 };
@@ -3740,135 +3740,135 @@ u8 gCustomRound[0x24] = {
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1,
 };
 u8 sTutorialRound = 0x11;
-u8 D_800CAAA1[0x23] = {
+u8 gTutorialProgress[0x23] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0x1A, 0, 0, 0, 0, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1, 0,
     /* 0x020 */ 0x1, 0, 0x1,
 };
-u32 D_800CAAC4[0x10] = {
+u32 sTutorialLesson1aSteps[0x10] = {
     /* 0x000 */ 0x1E, (u32)D_800D7450, 0, 0,
     /* 0x010 */ 0xF0, (u32)D_800D7428, 0, 0,
     /* 0x020 */ 0x186, (u32)D_800D73F8, (u32)D_800D73D8, 0,
     /* 0x030 */ 0x258, (u32)D_800D73A8, (u32)D_800D7378, (u32)D_800D7348,
 };
-u32 D_800CAB04[0x8] = {
+u32 sTutorialLesson1bSteps[0x8] = {
     /* 0x000 */ 0xB4, (u32)D_800D74D4, (u32)D_800D74C4, 0,
     /* 0x010 */ 0x14A, (u32)D_800D7494, (u32)D_800D747C,
 };
-u32 D_800CAB24[0x8] = {
+u32 sTutorialLesson2aSteps[0x8] = {
     /* 0x000 */ 0x78, (u32)D_800D75A4, (u32)D_800D7574, (u32)D_800D7554,
     /* 0x010 */ 0xB4, (u32)D_800D7528, (u32)D_800D7500,
 };
-u32 D_800CAB44[0x4] = { 0x96, (u32)D_800D761C, (u32)D_800D75F0, (u32)D_800D75D0 };
-u32 D_800CAB54[0xc] = {
+u32 sTutorialLesson2bSteps[0x4] = { 0x96, (u32)D_800D761C, (u32)D_800D75F0, (u32)D_800D75D0 };
+u32 sTutorialLesson3aSteps[0xc] = {
     /* 0x000 */ 0x1E, (u32)D_800D770C, (u32)D_800D76E4, 0,
     /* 0x010 */ 0xB4, (u32)D_800D76BC, (u32)D_800D7698, 0,
     /* 0x020 */ 0xF0, (u32)D_800D7670, (u32)D_800D7648,
 };
-u32 D_800CAB84[0x4] = { 0x1E, (u32)D_800D7758, (u32)D_800D7738 };
-u32 D_800CAB94[0x8] = {
+u32 sTutorialLesson3bSteps[0x4] = { 0x1E, (u32)D_800D7758, (u32)D_800D7738 };
+u32 sTutorialLesson4aSteps[0x8] = {
     /* 0x000 */ 0x1E, (u32)D_800D7808, (u32)D_800D77F4, 0,
     /* 0x010 */ 0x96, (u32)D_800D77C4, (u32)D_800D7798, (u32)D_800D777C,
 };
-u32 D_800CABB4[0x8] = {
+u32 sTutorialLesson4bSteps[0x8] = {
     /* 0x000 */ 0x1, (u32)D_800D78BC, (u32)D_800D78A0, 0,
     /* 0x010 */ 0xB4, (u32)D_800D7870, (u32)D_800D7840, (u32)D_800D7834,
 };
-u32 D_800CABD4[0xc] = {
+u32 sTutorialLesson4cSteps[0xc] = {
     /* 0x000 */ 0x1, (u32)D_800D79A0, (u32)D_800D797C, 0,
     /* 0x010 */ 0x10E, (u32)D_800D7954, (u32)D_800D7928, 0,
     /* 0x020 */ 0x14A, (u32)D_800D7908, (u32)D_800D78E8,
 };
-u32 D_800CAC04[0x8] = {
+u32 sTutorialTest1Steps[0x8] = {
     /* 0x000 */ 0x1E, (u32)D_800D7A38, (u32)D_800D7A1C, 0,
     /* 0x010 */ 0x40000000, (u32)D_800D79F0, (u32)D_800D79C8,
 };
-u32 D_800CAC24[0x8] = {
+u32 sTutorialTest2Steps[0x8] = {
     /* 0x000 */ 0x1E, (u32)D_800D7AE8, (u32)D_800D7AB8, (u32)D_800D7AAC,
     /* 0x010 */ 0x40000000, (u32)D_800D7A7C, (u32)D_800D7A64,
 };
-u32 D_800CAC44[0x8] = {
+u32 sTutorialTest3Steps[0x8] = {
     /* 0x000 */ 0x1E, (u32)D_800D7B94, (u32)D_800D7B6C, (u32)D_800D7B60,
     /* 0x010 */ 0x40000000, (u32)D_800D7B34, (u32)D_800D7B14,
 };
-u32 D_800CAC64[0x8] = {
+u32 sTutorialTest4Steps[0x8] = {
     /* 0x000 */ 0x1E, (u32)D_800D7C7C, (u32)D_800D7C54, (u32)D_800D7C2C,
     /* 0x010 */ 0x40000000, (u32)D_800D7BFC, (u32)D_800D7BD0, (u32)D_800D7BC0,
 };
-u32 D_800CAC84[0x8] = {
+u32 sTutorialFinalTestSteps[0x8] = {
     /* 0x000 */ 0x1E, (u32)D_800D7D70, (u32)D_800D7D48, (u32)D_800D7D28,
     /* 0x010 */ 0x40000000, (u32)D_800D7CFC, (u32)D_800D7CD0, (u32)D_800D7CA8,
 };
-u32 D_800CACA4[0x10] = {
+u32 sTutorialLesson5Steps[0x10] = {
     /* 0x000 */ 0xFFFFFFFF, (u32)D_800D7EC0, (u32)D_800D7EB0, 0,
     /* 0x010 */ 0xB4, (u32)D_800D7E80, (u32)D_800D7E5C, 0,
     /* 0x020 */ 0x118, (u32)D_800D7E30, (u32)D_800D7E04, (u32)D_800D7DF4,
     /* 0x030 */ 0x40000000, (u32)D_800D7DCC, (u32)D_800D7DA0, (u32)D_800D7D98,
 };
-u32 D_800CACE4[0x10] = {
+u32 sTutorialWheelieSteps[0x10] = {
     /* 0x000 */ 0, (u32)D_800D8024, (u32)D_800D7FFC, 0,
     /* 0x010 */ 0x5A, (u32)D_800D7FD0, (u32)D_800D7FA4, 0,
     /* 0x020 */ 0xF0, (u32)D_800D7F74, (u32)D_800D7F44, (u32)D_800D7F30,
     /* 0x030 */ 0x1E0, (u32)D_800D7F04, (u32)D_800D7EEC,
 };
-u32 D_800CAD24[0x30] = {
+u32 sTutorialStuntsSteps[0x30] = {
     /* 0x000 */ 0x1E, (u32)D_800D81F0, (u32)D_800D81C4, (u32)D_800D81A0,
     /* 0x010 */ 0x708, 0, 0, 0,
-    /* 0x020 */ 0xC, (u32)D_800D8190, (u32)&D_800C99F0, 0,
-    /* 0x030 */ 0xA, (u32)D_800D8180, (u32)&D_800C99F4, 0,
-    /* 0x040 */ 0xE, (u32)D_800D8174, (u32)D_800C99F8, 0,
-    /* 0x050 */ 0x8, (u32)D_800D8164, (u32)&D_800C9A00, 0,
-    /* 0x060 */ 0x7, (u32)D_800D8158, (u32)&D_800C9A04, 0,
-    /* 0x070 */ 0x5, (u32)D_800D814C, (u32)&D_800C9A08, 0,
-    /* 0x080 */ 0x9, (u32)D_800D8138, (u32)&D_800C9A0C, 0,
-    /* 0x090 */ 0x2, (u32)D_800D8128, (u32)D_800C9A20, 0,
+    /* 0x020 */ 0xC, (u32)D_800D8190, (u32)&gNoHanderInputGlyphs, 0,
+    /* 0x030 */ 0xA, (u32)D_800D8180, (u32)&gFenderKissInputGlyphs, 0,
+    /* 0x040 */ 0xE, (u32)D_800D8174, (u32)gNothingInputGlyphs, 0,
+    /* 0x050 */ 0x8, (u32)D_800D8164, (u32)&gSaranWrapInputGlyphs, 0,
+    /* 0x060 */ 0x7, (u32)D_800D8158, (u32)&gBarHopInputGlyphs, 0,
+    /* 0x070 */ 0x5, (u32)D_800D814C, (u32)&gNacNacInputGlyphs, 0,
+    /* 0x080 */ 0x9, (u32)D_800D8138, (u32)&gHeelClickerInputGlyphs, 0,
+    /* 0x090 */ 0x2, (u32)D_800D8128, (u32)gCliffHangerInputGlyphs, 0,
     /* 0x0a0 */ 0, (u32)D_800D80FC, (u32)D_800D80D4, (u32)D_800D80CC,
     /* 0x0b0 */ 0, (u32)D_800D809C, (u32)D_800D806C, (u32)D_800D8054,
 };
 u32 gTutorialLessons[0xad] = {
     /* 0x000 */ 0x2, 0xA, 0xFFFFFFFF, 0x1000000,
-    /* 0x010 */ (u32)D_800D82EC, 0x294, 0xBD000A, (u32)&D_800D0D58,
-    /* 0x020 */ 0x4, (u32)D_800CAAC4, 0x2, 0xA,
+    /* 0x010 */ (u32)D_800D82EC, 0x294, 0xBD000A, (u32)&sTutorialLesson1aDemoResId,
+    /* 0x020 */ 0x4, (u32)sTutorialLesson1aSteps, 0x2, 0xA,
     /* 0x030 */ 0xC, 0x1, (u32)D_800D82E0, 0x3C0,
-    /* 0x040 */ 0x5001C, (u32)&D_800D0D60, 0x2, (u32)D_800CAB04,
+    /* 0x040 */ 0x5001C, (u32)&sTutorialLesson1bDemoResId, 0x2, (u32)sTutorialLesson1bSteps,
     /* 0x050 */ 0x1, 0x8, 0xFFFFFFFF, 0x8000002,
     /* 0x060 */ (u32)D_800D82D8, 0x2D0, 0xC00024, 0,
-    /* 0x070 */ 0x2, (u32)D_800CAC04, 0x1, 0x8,
+    /* 0x070 */ 0x2, (u32)sTutorialTest1Steps, 0x1, 0x8,
     /* 0x080 */ 0xFFFFFFFF, 0x1010000, (u32)D_800D82CC, 0x294,
-    /* 0x090 */ 0x27003C, (u32)&D_800D0D5C, 0x2, (u32)D_800CAB24,
+    /* 0x090 */ 0x27003C, (u32)&sTutorialLesson2aDemoResId, 0x2, (u32)sTutorialLesson2aSteps,
     /* 0x0a0 */ 0x1, 0x8, 0xFFFFFFFF, 0x10001,
-    /* 0x0b0 */ (u32)D_800D82C0, 0x294, 0x390056, (u32)D_800D0D74,
-    /* 0x0c0 */ 0x1, (u32)D_800CAB44, 0x1, 0x8,
+    /* 0x0b0 */ (u32)D_800D82C0, 0x294, 0x390056, (u32)sTutorialLesson2bDemoResId,
+    /* 0x0c0 */ 0x1, (u32)sTutorialLesson2bSteps, 0x1, 0x8,
     /* 0x0d0 */ 0xFFFFFFFF, 0x8010002, (u32)D_800D82B8, 0x3C0,
-    /* 0x0e0 */ 0x240056, 0, 0x2, (u32)D_800CAC24,
+    /* 0x0e0 */ 0x240056, 0, 0x2, (u32)sTutorialTest2Steps,
     /* 0x0f0 */ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x1020000,
-    /* 0x100 */ (u32)D_800D82AC, (u32)D_800D829C, 0x550063, (u32)&D_800D0D70,
-    /* 0x110 */ 0x3, (u32)D_800CAB54, 0x1, 0x8,
+    /* 0x100 */ (u32)D_800D82AC, (u32)D_800D829C, 0x550063, (u32)&sTutorialLesson3aDemoResId,
+    /* 0x110 */ 0x3, (u32)sTutorialLesson3aSteps, 0x1, 0x8,
     /* 0x120 */ 0xFFFFFFFF, 0x20001, (u32)D_800D8290, (u32)D_800D827C,
-    /* 0x130 */ 0x690078, (u32)&D_800D0D80, 0x1, (u32)D_800CAB84,
+    /* 0x130 */ 0x690078, (u32)&sTutorialLesson3bDemoResId, 0x1, (u32)sTutorialLesson3bSteps,
     /* 0x140 */ 0x1, 0x8, 0xFFFFFFFF, 0x8020002,
     /* 0x150 */ (u32)D_800D8274, 0x3A2, 0x550080, 0,
-    /* 0x160 */ 0x2, (u32)D_800CAC44, 0x1, 0x8,
+    /* 0x160 */ 0x2, (u32)sTutorialTest3Steps, 0x1, 0x8,
     /* 0x170 */ 0xFFFFFFFF, 0x1030000, (u32)D_800D8268, 0x294,
-    /* 0x180 */ 0x80008E, (u32)&D_800D0D7C, 0x2, (u32)D_800CAB94,
+    /* 0x180 */ 0x80008E, (u32)&sTutorialLesson4aDemoResId, 0x2, (u32)sTutorialLesson4aSteps,
     /* 0x190 */ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x30001,
-    /* 0x1a0 */ (u32)D_800D825C, 0x294, 0x8B009A, (u32)D_800D0D90,
-    /* 0x1b0 */ 0x2, (u32)D_800CABB4, 0xFFFFFFFF, 0xFFFFFFFF,
+    /* 0x1a0 */ (u32)D_800D825C, 0x294, 0x8B009A, (u32)sTutorialLesson4bDemoResId,
+    /* 0x1b0 */ 0x2, (u32)sTutorialLesson4bSteps, 0xFFFFFFFF, 0xFFFFFFFF,
     /* 0x1c0 */ 0xFFFFFFFF, 0x30002, (u32)D_800D8250, 0x294,
-    /* 0x1d0 */ 0x9900BA, (u32)D_800D0D98, 0x3, (u32)D_800CABD4,
+    /* 0x1d0 */ 0x9900BA, (u32)sTutorialLesson4cDemoResId, 0x3, (u32)sTutorialLesson4cSteps,
     /* 0x1e0 */ 0x1, 0x8, 0xFFFFFFFF, 0x8030000,
     /* 0x1f0 */ (u32)D_800D8248, 0x4EC, 0x8000C0, 0,
-    /* 0x200 */ 0x2, (u32)D_800CAC64, 0xFFFFFFFF, 0xFFFFFFFF,
+    /* 0x200 */ 0x2, (u32)sTutorialTest4Steps, 0xFFFFFFFF, 0xFFFFFFFF,
     /* 0x210 */ 0xFFFFFFFF, 0xC040000, (u32)D_800D823C, 0xE10,
-    /* 0x220 */ 0x390049, (u32)&D_800D0E08, 0x4, (u32)D_800CACA4,
+    /* 0x220 */ 0x390049, (u32)&sTutorialLesson5DemoResId, 0x4, (u32)sTutorialLesson5Steps,
     /* 0x230 */ 0x1, 0x8, 0xFFFFFFFF, 0x8050000,
     /* 0x240 */ (u32)D_800D8230, 0xD20, 0x100BF, 0,
-    /* 0x250 */ 0x2, (u32)D_800CAC84, 0xFFFFFFFF, 0xFFFFFFFF,
+    /* 0x250 */ 0x2, (u32)sTutorialFinalTestSteps, 0xFFFFFFFF, 0xFFFFFFFF,
     /* 0x260 */ 0xFFFFFFFF, 0x1060000, (u32)D_800D8228, 0xE10,
-    /* 0x270 */ 0xBD000A, (u32)&D_800D0D84, 0x4, (u32)D_800CACE4,
+    /* 0x270 */ 0xBD000A, (u32)&sTutorialWheelieDemoResId, 0x4, (u32)sTutorialWheelieSteps,
     /* 0x280 */ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xA060001,
     /* 0x290 */ (u32)D_800D8220, 0xE10, 0xC8, 0,
-    /* 0x2a0 */ 0xB, (u32)D_800CAD24, (u32)D_800D85B8, (u32)D_800D85B0,
+    /* 0x2a0 */ 0xB, (u32)sTutorialStuntsSteps, (u32)D_800D85B8, (u32)D_800D85B0,
     /* 0x2b0 */ (u32)D_800D85AC,
 };
 u32 sTutorialFailText[0x8] = {
@@ -3902,15 +3902,15 @@ f32 sHardTurnSteerAngle[0x12] = {
     /* 0x040 */ 51714384.0f,
 };
 u32 sDebugPage = 0;
-char D_800CB17C[0x58] = "file     \"spl.bin\"\r\n"
+char sStrSplineFileHeader[0x58] = "file     \"spl.bin\"\r\n"
                         "resource \"SPL-CTR\"\r\n"
                         "#\r\n"
                         "# track spline resource data\r\n"
                         "#\r\n"
                         "\r\n"
                         "dwords\r\n";
-char D_800CB1D4[0x1c] = "# number of spline nodes\r\n";
-char D_800CB1F0[0x18] = "endresource\r\nendfile\r\n";
+char sStrSplineCountComment[0x1c] = "# number of spline nodes\r\n";
+char sStrSplineFileFooter[0x18] = "endresource\r\nendfile\r\n";
 u32 D_800CB208[0x2] = { 0x90A3000F, 0x441025 };
 u32 gTracks[0x78] = {
     /* 0x000 */ 0x4B796F74, 0x6F2C204A, 0x6170616E, 0,
@@ -3921,7 +3921,7 @@ u32 gTracks[0x78] = {
     /* 0x050 */ 0x220, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x060 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x070 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x080 */ (u32)&D_800D0A50, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)&sKyotoResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x0a0 */ 0x4D6F756E, 0x7461696E, 0x20517561, 0x72727900,
     /* 0x0b0 */ 0, 0, 0, 0x2,
@@ -3931,7 +3931,7 @@ u32 gTracks[0x78] = {
     /* 0x0f0 */ 0x201, 0x3296C800, 0x3E303E3, 0x3DE03DB,
     /* 0x100 */ 0x3E803EA, 0x3E803E4, 0, 0,
     /* 0x110 */ 0x40490FDB, 0, 0, 0,
-    /* 0x120 */ (u32)&D_800D0B64, 0, 0xFFFF0000, 0,
+    /* 0x120 */ (u32)&sMountainQuarryResMapResId, 0, 0xFFFF0000, 0,
     /* 0x130 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x140 */ 0x486F7573, 0x746F6E2C, 0x20545800, 0,
     /* 0x150 */ 0, 0, 0, 0x3,
@@ -3941,10 +3941,10 @@ u32 gTracks[0x78] = {
     /* 0x190 */ 0x220, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x1a0 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x1b0 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x1c0 */ (u32)D_800D0D28, 0, 0xFFFF0000, 0,
+    /* 0x1c0 */ (u32)sHoustonResMapResId, 0, 0xFFFF0000, 0,
     /* 0x1d0 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CB3F0[0x78] = {
+u32 sTrackLeftysMill[0x78] = {
     /* 0x000 */ 0x4C656674, 0x79277320, 0x4D696C6C, 0,
     /* 0x010 */ 0, 0, 0, 0x2,
     /* 0x020 */ 0x3F4CCCCD, 0x3F59999A, 0x3F666666, 0x1,
@@ -3953,7 +3953,7 @@ u32 D_800CB3F0[0x78] = {
     /* 0x050 */ 0x201, 0xFFFFFF00, 0x3E203E0, 0x3DE03DE,
     /* 0x060 */ 0x3E703E6, 0x3E603E4, 0, 0,
     /* 0x070 */ 0x40490FDB, 0, 0, 0,
-    /* 0x080 */ (u32)D_800D0AF8, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)sLeftysMillResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x0a0 */ 0x4F726C61, 0x6E646F2C, 0x20464C00, 0,
     /* 0x0b0 */ 0, 0, 0, 0x3,
@@ -3963,7 +3963,7 @@ u32 D_800CB3F0[0x78] = {
     /* 0x0f0 */ 0x200, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x100 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x110 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x120 */ (u32)&D_800D09EC, 0, 0xFFFF0000, 0,
+    /* 0x120 */ (u32)&sOrlandoResMapResId, 0, 0xFFFF0000, 0,
     /* 0x130 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x140 */ 0x4E617368, 0x76696C6C, 0x652C2054, 0x4E000000,
     /* 0x150 */ 0, 0, 0, 0x3,
@@ -3973,10 +3973,10 @@ u32 D_800CB3F0[0x78] = {
     /* 0x190 */ 0x200, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x1a0 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x1b0 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x1c0 */ (u32)D_800D0A20, 0, 0xFFFF0000, 0,
+    /* 0x1c0 */ (u32)sNashvilleResMapResId, 0, 0xFFFF0000, 0,
     /* 0x1d0 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CB5D0[0x28] = {
+u32 gTrackCanyonChasm[0x28] = {
     /* 0x000 */ 0x43616E79, 0x6F6E2043, 0x6861736D, 0,
     /* 0x010 */ 0, 0, 0, 0x2,
     /* 0x020 */ 0x3F59999A, 0x3F6147AE, 0x3F70A3D7, 0x1,
@@ -3985,7 +3985,7 @@ u32 D_800CB5D0[0x28] = {
     /* 0x050 */ 0x201, 0, 0x3E503E3, 0x3DE03DB,
     /* 0x060 */ 0x3E903EA, 0x3E603E4, 0, 0,
     /* 0x070 */ 0x40490FDB, 0, 0, 0,
-    /* 0x080 */ (u32)D_800D0B08, (u32)D_800CCAB0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)sCanyonChasmResMapResId, (u32)sAiRouteBranchesCanyonChasm, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
 u32 sTrackLongIsland[0x50] = {
@@ -3997,7 +3997,7 @@ u32 sTrackLongIsland[0x50] = {
     /* 0x050 */ 0x220, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x060 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x070 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x080 */ (u32)&D_800D0A04, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)&sLongIslandResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x0a0 */ 0x436F6E67, 0x6F20436F, 0x75727365, 0,
     /* 0x0b0 */ 0, 0, 0, 0x2,
@@ -4007,10 +4007,10 @@ u32 sTrackLongIsland[0x50] = {
     /* 0x0f0 */ 0x201, 0, 0x3D803E3, 0x3DA03DA,
     /* 0x100 */ 0x3E903EA, 0x3E103E1, 0, 0,
     /* 0x110 */ 0x40490FDB, 0, 0, 0,
-    /* 0x120 */ (u32)D_800D0B78, 0, 0xFFFF0000, 0,
+    /* 0x120 */ (u32)sCongoCourseResMapResId, 0, 0xFFFF0000, 0,
     /* 0x130 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CB7B0[0xa0] = {
+u32 gTrackLasVegas[0xa0] = {
     /* 0x000 */ 0x4C617320, 0x56656761, 0x732C204E, 0x56000000,
     /* 0x010 */ 0, 0, 0, 0x3,
     /* 0x020 */ 0x3F59999A, 0x3F63D70A, 0x3F733333, 0,
@@ -4019,7 +4019,7 @@ u32 D_800CB7B0[0xa0] = {
     /* 0x050 */ 0x220, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x060 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x070 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x080 */ (u32)&D_800D0A14, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)&sLasVegasResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x0a0 */ 0x50686F65, 0x6E69782C, 0x20415A00, 0,
     /* 0x0b0 */ 0, 0, 0, 0x3,
@@ -4029,7 +4029,7 @@ u32 D_800CB7B0[0xa0] = {
     /* 0x0f0 */ 0x220, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x100 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x110 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x120 */ (u32)&D_800D0A30, 0, 0xFFFF0000, 0,
+    /* 0x120 */ (u32)&sPhoenixResMapResId, 0, 0xFFFF0000, 0,
     /* 0x130 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x140 */ 0x5261696E, 0x666F7265, 0x73742052, 0x756E0000,
     /* 0x150 */ 0, 0, 0, 0x2,
@@ -4039,7 +4039,7 @@ u32 D_800CB7B0[0xa0] = {
     /* 0x190 */ 0x201, 0, 0x3D803DA, 0x3DA03DA,
     /* 0x1a0 */ 0x3E903E3, 0x3E103E1, 0, 0,
     /* 0x1b0 */ 0x40490FDB, 0, 0, 0,
-    /* 0x1c0 */ (u32)D_800D0B1C, (u32)D_800CCA80, 0xFFFF0000, 0,
+    /* 0x1c0 */ (u32)sRainforestRunResMapResId, (u32)sAiRouteBranchesRainforestRun, 0xFFFF0000, 0,
     /* 0x1d0 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x1e0 */ 0x4D616472, 0x69642C20, 0x53706169, 0x6E000000,
     /* 0x1f0 */ 0, 0, 0, 0x3,
@@ -4049,7 +4049,7 @@ u32 D_800CB7B0[0xa0] = {
     /* 0x230 */ 0x200, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x240 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x250 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x260 */ (u32)&D_800D0A60, (u32)D_800CCAC8, 0xFFFF0000, 0,
+    /* 0x260 */ (u32)&sMadridResMapResId, (u32)sAiRouteBranchesMadrid, 0xFFFF0000, 0,
     /* 0x270 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
 u32 sTrackGravelPit[0x50] = {
@@ -4061,7 +4061,7 @@ u32 sTrackGravelPit[0x50] = {
     /* 0x050 */ 0x201, 0, 0x3E503E3, 0x3DC03DB,
     /* 0x060 */ 0x3E903EA, 0x3E503E4, 0, 0,
     /* 0x070 */ 0x40490FDB, 0, 0, 0,
-    /* 0x080 */ (u32)D_800D0B2C, (u32)D_800CCA98, 0x10077, 0x1B90001,
+    /* 0x080 */ (u32)sGravelPitResMapResId, (u32)sAiRouteBranchesGravelPit, 0x10077, 0x1B90001,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x0a0 */ 0x44657472, 0x6F69742C, 0x204D4900, 0,
     /* 0x0b0 */ 0, 0, 0, 0x3,
@@ -4071,10 +4071,10 @@ u32 sTrackGravelPit[0x50] = {
     /* 0x0f0 */ 0x220, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x100 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x110 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x120 */ (u32)&D_800D0A40, 0, 0xFFFF0000, 0,
+    /* 0x120 */ (u32)&sDetroitResMapResId, 0, 0xFFFF0000, 0,
     /* 0x130 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CBB70[0xc8] = {
+u32 gTrackGoldmineRush[0xc8] = {
     /* 0x000 */ 0x476F6C64, 0x6D696E65, 0x20527573, 0x68000000,
     /* 0x010 */ 0, 0, 0, 0x2,
     /* 0x020 */ 0x3F666666, 0x3F6E147B, 0x3F7851EC, 0x1,
@@ -4083,7 +4083,7 @@ u32 D_800CBB70[0xc8] = {
     /* 0x050 */ 0x201, 0, 0x3C303C3, 0x3D803D8,
     /* 0x060 */ 0x3EA03E8, 0x3E303E3, 0, 0,
     /* 0x070 */ 0x40490FDB, 0, 0, 0,
-    /* 0x080 */ (u32)D_800D0B98, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)sGoldmineRushResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x0a0 */ 0x4C6F7320, 0x416E6765, 0x6C65732C, 0x20434100,
     /* 0x0b0 */ 0, 0, 0, 0x3,
@@ -4093,7 +4093,7 @@ u32 D_800CBB70[0xc8] = {
     /* 0x0f0 */ 0x200, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x100 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x110 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x120 */ (u32)D_800D0A74, (u32)D_800CCAD8, 0xFFFF0000, 0,
+    /* 0x120 */ (u32)sLosAngelesResMapResId, (u32)sAiRouteBranchesLosAngeles, 0xFFFF0000, 0,
     /* 0x130 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x140 */ 0x436F6E73, 0x74727563, 0x74696F6E, 0x20596172,
     /* 0x150 */ 0x64000000, 0, 0, 0x2,
@@ -4103,7 +4103,7 @@ u32 D_800CBB70[0xc8] = {
     /* 0x190 */ 0x201, 0, 0x3E503E3, 0x3DE03DB,
     /* 0x1a0 */ 0x3E903EA, 0x3E803E4, 0, 0,
     /* 0x1b0 */ 0x40490FDB, 0, 0, 0,
-    /* 0x1c0 */ (u32)D_800D0B44, (u32)D_800CCB00, 0xFFFF0000, 0,
+    /* 0x1c0 */ (u32)sConstructionYardResMapResId, (u32)sAiRouteBranchesConstructionYard, 0xFFFF0000, 0,
     /* 0x1d0 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x1e0 */ 0x53656174, 0x746C652C, 0x20574100, 0,
     /* 0x1f0 */ 0, 0, 0, 0x3,
@@ -4113,7 +4113,7 @@ u32 D_800CBB70[0xc8] = {
     /* 0x230 */ 0x200, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x240 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x250 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x260 */ (u32)&D_800D0D1C, 0, 0xFFFF0000, 0,
+    /* 0x260 */ (u32)&sSeattleResMapResId, 0, 0xFFFF0000, 0,
     /* 0x270 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x280 */ 0x426C697A, 0x7A617264, 0x20426C69, 0x747A0000,
     /* 0x290 */ 0, 0, 0, 0x2,
@@ -4123,7 +4123,7 @@ u32 D_800CBB70[0xc8] = {
     /* 0x2d0 */ 0x201, 0, 0x3E503E3, 0x3DE03DB,
     /* 0x2e0 */ 0x3E903EA, 0x3E803E4, 0, 0,
     /* 0x2f0 */ 0x40490FDB, 0, 0, 0,
-    /* 0x300 */ (u32)D_800D0AEC, 0, 0xFFFF0000, 0,
+    /* 0x300 */ (u32)sBlizzardBlitzResMapResId, 0, 0xFFFF0000, 0,
     /* 0x310 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
 /* 0x800cbe90-0x800cbe9a (10 bytes): literals of the C (build_code.py) */
@@ -4136,10 +4136,10 @@ u32 D_800CBE9C[0x25] = {
     /* 0x040 */ 0x534A494D, 0x201, 0, 0x3E303E3,
     /* 0x050 */ 0x3DE03DB, 0x3E703EA, 0x3E803E4, 0,
     /* 0x060 */ 0, 0x40490FDB, 0, 0,
-    /* 0x070 */ 0, (u32)&D_800D0DB8, 0, 0xFFFF0000,
+    /* 0x070 */ 0, (u32)&sExcite3DResMapResId, 0, 0xFFFF0000,
     /* 0x080 */ 0, 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CBF30[0x28] = {
+u32 gTrackUser[0x28] = {
     /* 0x000 */ 0x55736572, 0x20547261, 0x636B0000, 0,
     /* 0x010 */ 0, 0, 0, 0x3,
     /* 0x020 */ 0x3F666666, 0x3F800000, 0x3F8CCCCD, 0,
@@ -4148,7 +4148,7 @@ u32 D_800CBF30[0x28] = {
     /* 0x050 */ 0x2, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x060 */ 0x3DE03DC, 0x3DA03D8, 0, 0,
     /* 0x070 */ 0, 0, 0, 0,
-    /* 0x080 */ (u32)&D_800D09EC, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)&sOrlandoResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
 u32 sTrackSoccer[0x28] = {
@@ -4160,10 +4160,10 @@ u32 sTrackSoccer[0x28] = {
     /* 0x050 */ 0, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x060 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x070 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x080 */ (u32)&D_800D0C28, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)&sSoccerResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CC070[0x28] = {
+u32 gTrackHillClimb[0x28] = {
     /* 0x000 */ 0x48696C6C, 0x20436C69, 0x6D620000, 0,
     /* 0x010 */ 0, 0, 0, 0x1,
     /* 0x020 */ 0x3F666666, 0x3F800000, 0x3F8CCCCD, 0x1,
@@ -4172,7 +4172,7 @@ u32 D_800CC070[0x28] = {
     /* 0x050 */ 0x241, 0, 0x3E503E3, 0x3DE03DB,
     /* 0x060 */ 0x3E903EA, 0x3E803E4, 0, 0,
     /* 0x070 */ 0x40490FDB, 0, 0, 0,
-    /* 0x080 */ (u32)&D_800D0DC4, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)&sHillClimbResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
 /* 0x800cc110-0x800cc11d (13 bytes): literals of the C (build_code.py) */
@@ -4185,7 +4185,7 @@ u32 D_800CC120[0x24] = {
     /* 0x040 */ 0x600, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x050 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x060 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x070 */ (u32)D_800D0FE0, 0, 0xFFFF0000, 0,
+    /* 0x070 */ (u32)sStuntCourseResMapResId, 0, 0xFFFF0000, 0,
     /* 0x080 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
 /* 0x800cc1b0-0x800cc1b7 (7 bytes): literals of the C (build_code.py) */
@@ -4198,7 +4198,7 @@ u32 D_800CC1B8[0x26] = {
     /* 0x040 */ 0x494D4455, 0x4B444F47, 0x200, 0x3C281400,
     /* 0x050 */ 0x3DE03DE, 0x3DE03D4, 0x3E803E8, 0x3E303DC,
     /* 0x060 */ 0, 0, 0, 0,
-    /* 0x070 */ 0, 0, (u32)D_800D0F58, 0,
+    /* 0x070 */ 0, 0, (u32)sDesertResMapResId, 0,
     /* 0x080 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000,
 };
@@ -4211,10 +4211,10 @@ u32 sTrackTutorial[0x29] = {
     /* 0x050 */ 0, 0x3C281400, 0x3D403CF, 0x3CE03CE,
     /* 0x060 */ 0x3DE03DC, 0x3DA03D8, 0x425C0000, 0xC2300000,
     /* 0x070 */ 0xBFC90FDB, 0, 0, 0,
-    /* 0x080 */ (u32)D_800D0E2C, 0, 0xFFFF0000, 0,
+    /* 0x080 */ (u32)sTutorialResMapResId, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u8 D_800CC2F4[0x18] = {
+u8 sSoccerBallSphereDesc[0x18] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0x3F, 0x80,
 };
@@ -4345,29 +4345,29 @@ u8 sBikeSphereTreeDescSoccer[0x3b4] = {
     /* 0x3a0 */ 0x3F, 0x1E, 0xB8, 0x52, 0x3E, 0x19, 0x99, 0x9A, 0x37, 0xF9, 0x37, 0xED, 0x37, 0xE0, 0x37, 0xD4,
     /* 0x3b0 */ 0x37, 0xC8, 0x37, 0xBB,
 };
-u32 D_800CCA80[0x6] = {
+u32 sAiRouteBranchesRainforestRun[0x6] = {
     /* 0x000 */ 0xB0001, (u32)ai_route_lap_lt_or_wide, 0x10F0001, (u32)ai_route_never,
     /* 0x010 */ 0xFFFF0000,
 };
-u32 D_800CCA98[0x6] = {
+u32 sAiRouteBranchesGravelPit[0x6] = {
     /* 0x000 */ 0x7A0001, (u32)ai_route_lap_ge, 0x12C0001, (u32)ai_route_lap_le,
     /* 0x010 */ 0xFFFF0000,
 };
-u32 D_800CCAB0[0x6] = {
+u32 sAiRouteBranchesCanyonChasm[0x6] = {
     /* 0x000 */ 0x6D0001, (u32)ai_route_toggle, 0xDE0001, (u32)ai_route_lap_gt0,
     /* 0x010 */ 0xFFFF0000,
 };
-u32 D_800CCAC8[0x4] = { 0x260001, (u32)ai_route_random, 0xFFFF0000 };
-u32 D_800CCAD8[0xa] = {
+u32 sAiRouteBranchesMadrid[0x4] = { 0x260001, (u32)ai_route_random, 0xFFFF0000 };
+u32 sAiRouteBranchesLosAngeles[0xa] = {
     /* 0x000 */ 0x3E0001, (u32)ai_route_random, 0xFFFF0000, 0,
     /* 0x010 */ 0x20001, (u32)ai_route_random, 0x8D0001, (u32)ai_route_random,
     /* 0x020 */ 0xFFFF0000,
 };
-u32 D_800CCB00[0x8] = {
+u32 sAiRouteBranchesConstructionYard[0x8] = {
     /* 0x000 */ 0x440001, (u32)ai_route_toggle, 0xCB0001, (u32)ai_route_toggle_from_lap,
     /* 0x010 */ 0xFFFF0000, 0, 0x33A33394, 0x33853376,
 };
-u32 D_800CCB20[0x7] = {
+u32 gGravelPitMoverTimer[0x7] = {
     /* 0x000 */ 0, 0, 0, 0,
     /* 0x010 */ 0x64, 0, 0x64,
 };
@@ -4380,7 +4380,7 @@ u32 sHackGravelPit[0x9] = {
     /* 0x010 */ (u32)hack_gravel_pit_draw_pass1, (u32)hack_gravel_pit_draw_pass2,
 };
 u32 sTrackHacks[0x3] = { (u32)sHackGravelPit, (u32)sHackLeftysMill };
-u32 D_800CCB90[0x20] = {
+u32 sGravelPitMovers[0x20] = {
     /* 0x000 */ 0xFFFF54F8, 0xCA1D, 0xFFFEB1CE, 0xFFFFAF82,
     /* 0x010 */ 0, 0, 0, 0,
     /* 0x020 */ 0, 0, 0x3, 0,
@@ -4389,7 +4389,7 @@ u32 D_800CCB90[0x20] = {
     /* 0x050 */ 0, 0, 0, 0,
     /* 0x060 */ 0, 0, 0x3,
 };
-u32 D_800CCC10[0x4] = { (u32)D_800D0F84, (u32)D_800D0F94, (u32)D_800D0FA0, (u32)&D_800D0FAC };
+u32 sGravelPitItemResIds[0x4] = { (u32)sGravelPitItem1ResId, (u32)sGravelPitItem2ResId, (u32)sGravelPitItem3ResId, (u32)&sGravelPitItem4ResId };
 u8 sFaultHexFont[0x80] = {
     /* 0x000 */ 0, 0x7E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x7E, 0, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,
     /* 0x010 */ 0, 0x7E, 0x6, 0x6, 0x7E, 0x60, 0x60, 0x7E, 0, 0x7E, 0x6, 0x6, 0x3E, 0x6, 0x6, 0x7E,
@@ -4412,19 +4412,19 @@ u32 gInstanceMtx[0x4] = { 0, 0x240B23F6, 0x23E123CD, 0x23B823A3 };
 u32 sShatterCount[0x4] = { 0, 0x2364234F, 0x233A2325, 0x231022FB };
 u32 sMapBarStart = 0x30;
 u32 sMapBarEnd = 0x1D0;
-u8 D_800CCCF8[0x8] = { 0x4, 0x8, 0xC, 0xF8, 0xF8, 0xC, 0x8, 0x4 };
+u8 sMapBarRow[0x8] = { 0x4, 0x8, 0xC, 0xF8, 0xF8, 0xC, 0x8, 0x4 };
 u32 sMapPos[0x8] = {
     /* 0x000 */ 0x10, 0x10, 0x80, 0x58,
     /* 0x010 */ 0xD0, 0x8E, 0x80, 0x58,
 };
-u32 D_800CCD20[0x10] = {
+u32 sMapShadeRamp[0x10] = {
     /* 0x000 */ 0xFF, 0xFF, 0xFF, 0xFF,
     /* 0x010 */ 0xF, 0xF, 0xF, 0xC,
     /* 0x020 */ 0xC, 0x8, 0x8, 0x4,
     /* 0x030 */ 0x4,
 };
-u8 D_800CCD60[0x3] = { 0 };
-u8 D_800CCD63 = 0;
+u8 gPalBrightness[0x3] = { 0 };
+u8 gPalBrightnessLo = 0;
 u32 gCreditsMode = 0;
 u32 sLightningPatterns[0x16] = {
     /* 0x000 */ 0x1, 0, 0x1, 0,
@@ -4496,29 +4496,29 @@ u32 sSnowSplatVtx[0x1e] = {
     /* 0x060 */ (u32)D_800E5740, (u32)D_800E5F20, (u32)sExtraRiders, (u32)D_800E6EE0,
     /* 0x070 */ 0xF7C7F7AE, 0xF795F77C,
 };
-u8 D_800CD090[0x28] = {
+u8 sNoInputPads[0x28] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0, 0x1, 0, 0, 0, 0x2, 0, 0, 0, 0x3,
     /* 0x020 */ 0, 0, 0, 0x7, 0, 0, 0, 0x8,
 };
 u32 sMenuItemPicResIds[0x24] = {
-    /* 0x000 */ (u32)&D_800D1454, (u32)&D_800D1458, (u32)&D_800D145C, (u32)&D_800D1460,
-    /* 0x010 */ (u32)&D_800D1464, (u32)&D_800D1468, (u32)&D_800D14B0, (u32)&D_800D14B4,
-    /* 0x020 */ (u32)&D_800D14BC, (u32)&D_800D14C0, (u32)&D_800D14C4, (u32)D_800D14CC,
-    /* 0x030 */ (u32)&D_800D13D4, (u32)&D_800D13D8, (u32)&D_800D13DC, (u32)&D_800D13E4,
-    /* 0x040 */ (u32)&D_800D13E8, (u32)&D_800D13F0, (u32)&D_800D13F8, (u32)&D_800D1400,
-    /* 0x050 */ (u32)&D_800D1404, (u32)&D_800D13D0, (u32)&D_800D13D0, (u32)&D_800D13D0,
-    /* 0x060 */ (u32)&D_800D13A4, (u32)&D_800D1384, (u32)&D_800D1374, (u32)&D_800D137C,
-    /* 0x070 */ (u32)&D_800D1390, (u32)&D_800D1390, (u32)&D_800D13AC, (u32)&D_800D1384,
-    /* 0x080 */ (u32)&D_800D1378, (u32)&D_800D137C, (u32)&D_800D1390, (u32)&D_800D1390,
+    /* 0x000 */ (u32)&sSeasonItemPicResId, (u32)&sExhibitionItemPicResId, (u32)&sTimeTrialsItemPicResId, (u32)&sSpecialTracksItemPicResId,
+    /* 0x010 */ (u32)&sOptionsItemPicResId, (u32)&sCustomTracksItemPicResId, (u32)&sDesertItemPicResId, (u32)&sStuntCourseItemPicResId,
+    /* 0x020 */ (u32)&sOriginalExcitebikeItemPicResId, (u32)&sSoccerItemPicResId, (u32)&sHillClimbItemPicResId, (u32)sExcite3dItemPicResId,
+    /* 0x030 */ (u32)&sOrlandoPicResId, (u32)&sLongIslandPicResId, (u32)&sLasVegasPicResId, (u32)&sNashvillePicResId,
+    /* 0x040 */ (u32)&sPhoenixPicResId, (u32)&sDetroitPicResId, (u32)&sKyotoPicResId, (u32)&sMadridPicResId,
+    /* 0x050 */ (u32)&sLosAngelesPicResId, (u32)&sSeattlePicResId, (u32)&sSeattlePicResId, (u32)&sSeattlePicResId,
+    /* 0x060 */ (u32)&sMountainQuarryPicResId, (u32)&sCanyonChasmPicResId, (u32)&sRainforestRunPicResId, (u32)&sLeftysMillPicResId,
+    /* 0x070 */ (u32)&sConstructionYardPicResId, (u32)&sConstructionYardPicResId, (u32)&sGravelPitPicResId, (u32)&sCanyonChasmPicResId,
+    /* 0x080 */ (u32)&sCongoCoursePicResId, (u32)&sLeftysMillPicResId, (u32)&sConstructionYardPicResId, (u32)&sConstructionYardPicResId,
 };
 u32 sTrackPicResIds[0x18] = {
-    /* 0x000 */ (u32)&D_800D13D4, (u32)&D_800D13D8, (u32)&D_800D13DC, (u32)&D_800D13E4,
-    /* 0x010 */ (u32)&D_800D13E8, (u32)&D_800D13F0, (u32)&D_800D13F8, (u32)&D_800D1400,
-    /* 0x020 */ (u32)&D_800D1404, (u32)&D_800D13D0, (u32)&D_800D13B8, (u32)&D_800D137C,
-    /* 0x030 */ (u32)&D_800D1384, (u32)&D_800D1374, (u32)&D_800D1378, (u32)&D_800D13A4,
-    /* 0x040 */ (u32)&D_800D13AC, (u32)&D_800D1390, (u32)&D_800D1420, (u32)&D_800D13FC,
-    /* 0x050 */ (u32)&D_800D1480, (u32)&D_800D147C, (u32)&D_800D1474, (u32)&D_800D146C,
+    /* 0x000 */ (u32)&sOrlandoPicResId, (u32)&sLongIslandPicResId, (u32)&sLasVegasPicResId, (u32)&sNashvillePicResId,
+    /* 0x010 */ (u32)&sPhoenixPicResId, (u32)&sDetroitPicResId, (u32)&sKyotoPicResId, (u32)&sMadridPicResId,
+    /* 0x020 */ (u32)&sLosAngelesPicResId, (u32)&sSeattlePicResId, (u32)&sHoustonPicResId, (u32)&sLeftysMillPicResId,
+    /* 0x030 */ (u32)&sCanyonChasmPicResId, (u32)&sRainforestRunPicResId, (u32)&sCongoCoursePicResId, (u32)&sMountainQuarryPicResId,
+    /* 0x040 */ (u32)&sGravelPitPicResId, (u32)&sConstructionYardPicResId, (u32)&sBlizzardBlitzPicResId, (u32)&sGoldmineRushPicResId,
+    /* 0x050 */ (u32)&sExcite3dPicResId, (u32)&sHillClimbPicResId, (u32)&sStuntCoursePicResId, (u32)&sDesertPicResId,
 };
 u32 sCheatMask = 0;
 u32 gKeyboardKeys[0x28] = {
@@ -4530,8 +4530,8 @@ u32 gKeyboardKeys[0x28] = {
     /* 0x050 */ (u32)D_800D920C, (u32)D_800D9208, (u32)D_800D9204, (u32)D_800D9200,
     /* 0x060 */ (u32)D_800D91FC, (u32)D_800D91F8, (u32)D_800D91F4, (u32)D_800D91F0,
     /* 0x070 */ (u32)D_800D91EC, (u32)D_800D91E8, (u32)D_800D91E4, (u32)D_800D91E0,
-    /* 0x080 */ (u32)D_800D91DC, (u32)D_800D91D8, (u32)D_800D91D4, (u32)D_800D91D0,
-    /* 0x090 */ (u32)D_800D91CC, (u32)D_800D91C8, (u32)D_800D91C4, (u32)D_800D91C0,
+    /* 0x080 */ (u32)D_800D91DC, (u32)D_800D91D8, (u32)D_800D91D4, (u32)sStrKeyZero,
+    /* 0x090 */ (u32)sStrKeySpace, (u32)sStrKeyDot, (u32)D_800D91C4, (u32)D_800D91C0,
 };
 s16 sOptionsRowY[0xc] = {
     /* 0x000 */ 56, 79, 101, 123, 123, 146, 146, 168,
@@ -4544,9 +4544,9 @@ u32 gOptionsLabels[0xb] = {
     /* 0x010 */ (u32)D_800D92CC, (u32)D_800D92BC, (u32)D_800D92AC, (u32)D_800D92A4,
     /* 0x020 */ (u32)D_800D929C, (u32)D_800D9288, (u32)D_800D9278,
 };
-u32 D_800CD2A0[0x4] = { 0, (u32)D_800CD9AC };
-u32 D_800CD2B0[0x4] = { 0, (u32)sScreenBootSplash };
-u32 D_800CD2C0[0x4] = { 0, (u32)sScreenTitle };
+u32 sItemGotoSplash2[0x4] = { 0, (u32)sScreenSplash2 };
+u32 sItemGotoBootSplash[0x4] = { 0, (u32)sScreenBootSplash };
+u32 sItemGotoTitle[0x4] = { 0, (u32)sScreenTitle };
 u32 sSeasonRoundItems[0x1c] = {
     /* 0x000 */ 0, (u32)sScreenRiderSelect, 0, 0,
     /* 0x010 */ 0, (u32)sScreenRiderSelect, 0, 0,
@@ -4556,8 +4556,8 @@ u32 sSeasonRoundItems[0x1c] = {
     /* 0x050 */ 0, (u32)sScreenRiderSelect, 0, 0,
     /* 0x060 */ 0, 0, 0, (u32)shell_cb_tutorial,
 };
-u32 D_800CD340[0x4] = { 0 };
-u32 D_800CD350[0x8] = {
+u32 sEmptyScreenItem[0x4] = { 0 };
+u32 sPakScreenItems[0x8] = {
     /* 0x000 */ 0, 0, 0, 0,
     /* 0x010 */ 0, (u32)sScreenTitle,
 };
@@ -4569,7 +4569,7 @@ u32 gSpecialTracksItems[0x18] = {
     /* 0x040 */ (u32)D_800D9320, (u32)sScreenRiderSelect, 0, (u32)shell_cb_hill_climb,
     /* 0x050 */ (u32)D_800D9314, (u32)sScreenRiderSelect, 0, (u32)shell_cb_excite3d,
 };
-u32 D_800CD3D0[0x18] = { 0 };
+u32 sRiderSelectItems[0x18] = { 0 };
 u32 sTrackListItems[0x50] = {
     /* 0x000 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
     /* 0x010 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
@@ -4597,118 +4597,118 @@ u32 sMainMenuItems[0x18] = {
     /* 0x010 */ (u32)D_800D9394, (u32)sScreenBronzeTracks, 0x5000000, (u32)shell_cb_exhibition,
     /* 0x020 */ (u32)D_800D9388, (u32)sScreenBronzeTracks, 0, (u32)shell_cb_time_trials,
     /* 0x030 */ (u32)D_800D9378, (u32)sScreenSpecialTracks, 0, 0,
-    /* 0x040 */ (u32)D_800D9370, (u32)sScreenOptions, 0, 0,
+    /* 0x040 */ (u32)sStrOptions, (u32)sScreenOptions, 0, 0,
     /* 0x050 */ (u32)D_800D9360, 0, 0x10010000, (u32)shell_cb_custom_tracks,
 };
-u32 D_800CD5D0[0x4] = { 0, (u32)sScreenMainMenu };
-u32 D_800CD5E0[0x4] = { 0 };
-u32 D_800CD5F0[0xc] = {
+u32 sItemGotoMainMenu[0x4] = { 0, (u32)sScreenMainMenu };
+u32 sInitialsItems[0x4] = { 0 };
+u32 sRecordsItems[0xc] = {
     /* 0x000 */ 0, 0, 0, (u32)shell_cb_custom_tracks,
     /* 0x010 */ 0, 0, 0, (u32)shell_cb_custom_tracks,
     /* 0x020 */ 0, 0, 0, (u32)shell_cb_custom_tracks,
 };
-u32 D_800CD620[0x7] = {
-    /* 0x000 */ (u32)&D_800D1488, (u32)&D_800D1484, (u32)&D_800D1488, (u32)&D_800D1484,
-    /* 0x010 */ (u32)&D_800D1488, (u32)&D_800D1484, (u32)&D_800D1488,
+u32 sRoundSelectBgResIds[0x7] = {
+    /* 0x000 */ (u32)&gMenuBackgroundResId, (u32)&sMenuBackgroundOrangeResId, (u32)&gMenuBackgroundResId, (u32)&sMenuBackgroundOrangeResId,
+    /* 0x010 */ (u32)&gMenuBackgroundResId, (u32)&sMenuBackgroundOrangeResId, (u32)&gMenuBackgroundResId,
 };
 u32 sScreens[0x16] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD5D0,
-    /* 0x010 */ 0x200000, 0x7, 0x10000, (u32)&D_800D1484,
+    /* 0x000 */ 0, 0, 0, (u32)sItemGotoMainMenu,
+    /* 0x010 */ 0x200000, 0x7, 0x10000, (u32)&sMenuBackgroundOrangeResId,
     /* 0x020 */ 0, 0, 0, 0,
-    /* 0x030 */ 0, 0, (u32)D_800CD5D0, 0x200000,
-    /* 0x040 */ 0xD, 0x10000, (u32)&D_800D1488,
+    /* 0x030 */ 0, 0, (u32)sItemGotoMainMenu, 0x200000,
+    /* 0x040 */ 0xD, 0x10000, (u32)&gMenuBackgroundResId,
 };
 u32 sScreenSeasonStandings[0xb] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD5D0,
-    /* 0x010 */ 0x200000, 0xE, 0x10000, (u32)&D_800D1488,
+    /* 0x000 */ 0, 0, 0, (u32)sItemGotoMainMenu,
+    /* 0x010 */ 0x200000, 0xE, 0x10000, (u32)&gMenuBackgroundResId,
 };
-u32 D_800CD6C0[0x16] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD340,
-    /* 0x010 */ 0x200000, 0x8, 0x10000, (u32)&D_800D13B0,
+u32 sScreenRoundOver[0x16] = {
+    /* 0x000 */ 0, 0, 0, (u32)sEmptyScreenItem,
+    /* 0x010 */ 0x200000, 0x8, 0x10000, (u32)&sYouLoseResId,
     /* 0x020 */ 0, 0, 0, 0,
-    /* 0x030 */ 0, 0, (u32)D_800CD340, 0x200000,
-    /* 0x040 */ 0x9, 0x10000, (u32)&D_800D1488,
+    /* 0x030 */ 0, 0, (u32)sEmptyScreenItem, 0x200000,
+    /* 0x040 */ 0x9, 0x10000, (u32)&gMenuBackgroundResId,
 };
 u32 sScreenOptions[0xb] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD340,
-    /* 0x010 */ 0x22200000, 0x6, 0x10000, (u32)&D_800D1488,
+    /* 0x000 */ 0, 0, 0, (u32)sEmptyScreenItem,
+    /* 0x010 */ 0x22200000, 0x6, 0x10000, (u32)&gMenuBackgroundResId,
 };
 u32 sScreenSeason[0xb] = {
     /* 0x000 */ 0, 0, 0, (u32)sSeasonRoundItems,
-    /* 0x010 */ 0x20A00000, 0x4, 0x60000, (u32)D_800CD620,
+    /* 0x010 */ 0x20A00000, 0x4, 0x60000, (u32)sRoundSelectBgResIds,
     /* 0x020 */ (u32)D_800EFD7C,
 };
 u32 sScreenSpecialTracks[0xb] = {
     /* 0x000 */ (u32)D_800D9378, 0, 0, (u32)gSpecialTracksItems,
-    /* 0x010 */ 0xA00006, 0x3, 0x60000, (u32)&D_800D1488,
+    /* 0x010 */ 0xA00006, 0x3, 0x60000, (u32)&gMenuBackgroundResId,
     /* 0x020 */ (u32)D_800EFD78,
 };
 u32 sScreenMainMenu[0xb] = {
     /* 0x000 */ (u32)D_800D93EC, 0, 0, (u32)sMainMenuItems,
-    /* 0x010 */ 0xA00000, 0x3, 0x60000, (u32)&D_800D1484,
+    /* 0x010 */ 0xA00000, 0x3, 0x60000, (u32)&sMenuBackgroundOrangeResId,
     /* 0x020 */ (u32)D_800EFD74,
 };
 u32 sScreenRiderSelect[0xb] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD3D0,
+    /* 0x000 */ 0, 0, 0, (u32)sRiderSelectItems,
     /* 0x010 */ 0x2200000, 0x2, 0x60000,
 };
 u32 sScreenBronzeTracks[0xb] = {
     /* 0x000 */ (u32)D_800D93E4, 0, (u32)sScreenSilverTracks, (u32)sTrackListItems,
-    /* 0x010 */ 0x20A0000C, 0xB, 0x50000, (u32)&D_800D1484,
+    /* 0x010 */ 0x20A0000C, 0xB, 0x50000, (u32)&sMenuBackgroundOrangeResId,
     /* 0x020 */ (u32)D_800EFD84,
 };
 u32 sScreenSilverTracks[0xb] = {
     /* 0x000 */ (u32)D_800D93DC, (u32)sScreenBronzeTracks, (u32)sScreenGoldTracks, (u32)sTrackListItems,
-    /* 0x010 */ 0x20A00012, 0x5000B, 0x50000, (u32)&D_800D1488,
+    /* 0x010 */ 0x20A00012, 0x5000B, 0x50000, (u32)&gMenuBackgroundResId,
     /* 0x020 */ (u32)D_800EFD84,
 };
 u32 sScreenGoldTracks[0xb] = {
     /* 0x000 */ (u32)D_800D93D4, (u32)sScreenSilverTracks, (u32)sScreenPlatinumTracks, (u32)sTrackListItems,
-    /* 0x010 */ 0x20A00018, 0xA000B, 0x50000, (u32)&D_800D1484,
+    /* 0x010 */ 0x20A00018, 0xA000B, 0x50000, (u32)&sMenuBackgroundOrangeResId,
     /* 0x020 */ (u32)D_800EFD84,
 };
 u32 sScreenPlatinumTracks[0xb] = {
     /* 0x000 */ (u32)D_800D93C8, (u32)sScreenGoldTracks, 0, (u32)sTrackListItems,
-    /* 0x010 */ 0x20A0001E, 0xF000B, 0x50000, (u32)&D_800D1488,
+    /* 0x010 */ 0x20A0001E, 0xF000B, 0x50000, (u32)&gMenuBackgroundResId,
     /* 0x020 */ (u32)D_800EFD84,
 };
 u32 sScreenTitle[0xb] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD5D0,
+    /* 0x000 */ 0, 0, 0, (u32)sItemGotoMainMenu,
     /* 0x010 */ 0x2300000, 0, 0x10000,
 };
 u32 sScreenPak[0xb] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD350,
+    /* 0x000 */ 0, 0, 0, (u32)sPakScreenItems,
     /* 0x010 */ 0x2000000, 0xC, 0x10000, 0,
     /* 0x020 */ (u32)D_800F0154,
 };
 u32 sScreenRecords[0xb] = {
-    /* 0x000 */ (u32)D_800D93C0, 0, 0, (u32)D_800CD5F0,
-    /* 0x010 */ 0x20A00000, 0x12, 0x10000, (u32)&D_800D1484,
+    /* 0x000 */ (u32)D_800D93C0, 0, 0, (u32)sRecordsItems,
+    /* 0x010 */ 0x20A00000, 0x12, 0x10000, (u32)&sMenuBackgroundOrangeResId,
     /* 0x020 */ (u32)D_800F01C0,
 };
 u32 sScreenControllerSettings[0x16] = {
-    /* 0x000 */ (u32)D_800D93AC, 0, 0, (u32)D_800CD340,
-    /* 0x010 */ 0x2200000, 0x13, 0x40000, (u32)&D_800D1484,
+    /* 0x000 */ (u32)D_800D93AC, 0, 0, (u32)sEmptyScreenItem,
+    /* 0x010 */ 0x2200000, 0x13, 0x40000, (u32)&sMenuBackgroundOrangeResId,
     /* 0x020 */ 0, 0, 0, 0,
-    /* 0x030 */ 0, 0, (u32)D_800CD5E0, 0x200000,
-    /* 0x040 */ 0x14, 0x10000, (u32)&D_800D1484, (u32)D_800F0154,
+    /* 0x030 */ 0, 0, (u32)sInitialsItems, 0x200000,
+    /* 0x040 */ 0x14, 0x10000, (u32)&sMenuBackgroundOrangeResId, (u32)D_800F0154,
 };
 u32 sScreenBootSplash[0xb] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD2A0,
-    /* 0x010 */ 0x2000000, 0x15, 0x10000, (u32)&D_800D14B8,
+    /* 0x000 */ 0, 0, 0, (u32)sItemGotoSplash2,
+    /* 0x010 */ 0x2000000, 0x15, 0x10000, (u32)&sLeftFieldLogoResId,
 };
-u32 D_800CD9AC[0x2d] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD2C0,
-    /* 0x010 */ 0x2200000, 0x16, 0x10000, (u32)&D_800D138C,
+u32 sScreenSplash2[0x2d] = {
+    /* 0x000 */ 0, 0, 0, (u32)sItemGotoTitle,
+    /* 0x010 */ 0x2200000, 0x16, 0x10000, (u32)&sNintendoSplashResId,
     /* 0x020 */ 0, 0, 0, 0,
-    /* 0x030 */ 0, 0, (u32)D_800CD2B0, 0x2200000,
-    /* 0x040 */ 0x17, 0x10000, (u32)&D_800D13C4, 0,
+    /* 0x030 */ 0, 0, (u32)sItemGotoBootSplash, 0x2200000,
+    /* 0x040 */ 0x17, 0x10000, (u32)&sN64SportsLogoResId, 0,
     /* 0x050 */ 0, 0, 0, 0,
-    /* 0x060 */ 0, (u32)D_800CD2A0, 0x2200000, 0x18,
-    /* 0x070 */ 0x10000, (u32)&D_800D1488, 0, 0,
+    /* 0x060 */ 0, (u32)sItemGotoSplash2, 0x2200000, 0x18,
+    /* 0x070 */ 0x10000, (u32)&gMenuBackgroundResId, 0, 0,
     /* 0x080 */ 0, 0, 0, 0,
-    /* 0x090 */ (u32)D_800CD2A0, 0x2200000, 0x19, 0x10000,
-    /* 0x0a0 */ (u32)&D_800D1484,
+    /* 0x090 */ (u32)sItemGotoSplash2, 0x2200000, 0x19, 0x10000,
+    /* 0x0a0 */ (u32)&sMenuBackgroundOrangeResId,
 };
 u16 sShellViewport[0x8] = { 0, 0, 0x1FF, 0, 0, 0, 0x1FF };
 u32 gControlLabelPos[0x9] = {
@@ -4722,7 +4722,7 @@ u32 gControlActionLabels[0x7] = {
     /* 0x010 */ (u32)D_800D9410, (u32)D_800D9404, (u32)D_800D93FC,
 };
 u32 gCameraButtonLabels[0x3] = { (u32)D_800D9458, (u32)D_800D944C, (u32)D_800D9440 };
-u32 D_800CDAC8 = (u32)D_800D9464;
+u32 gControlReverseLabel = (u32)D_800D9464;
 u32 gControlConfigs[0x24] = {
     /* 0x000 */ 0, 0x1, 0x2, 0x1,
     /* 0x010 */ 0x2, 0x3, 0x4, 0x5,
@@ -4775,9 +4775,9 @@ u32 sRiderBios[0x84] = {
 u32 sRiderStatLabels[0x4] = { (u32)D_800D99EC, (u32)D_800D99E0, (u32)D_800D99D8, (u32)D_800D9430 };
 u32 sRiderStatRatings[0x8] = {
     /* 0x000 */ (u32)D_800D9A18, (u32)D_800D9A10, (u32)D_800D9A08, (u32)D_800D9A00,
-    /* 0x010 */ (u32)D_800D99F4, (u32)D_800D9A30, (u32)D_800D9A28, (u32)D_800D9A20,
+    /* 0x010 */ (u32)D_800D99F4, (u32)sStrPlay, (u32)sStrEdit, (u32)D_800D9A20,
 };
-u32 sSeasonResultOptions[0x3] = { (u32)D_800D9A4C, (u32)D_800D9A40, (u32)D_800D9A38 };
+u32 sSeasonResultOptions[0x3] = { (u32)sStrContinue, (u32)D_800D9A40, (u32)D_800D9A38 };
 u32 sTimeTrialResultOptions[0x3] = { (u32)D_800D9A6C, (u32)D_800D9A60, (u32)D_800D9A58 };
 u32 sExhibitionResultOptions[0x3] = { (u32)D_800D9A80, (u32)D_800D9A40, (u32)D_800D9A74 };
 u32 sSpecialTrackResultOptions[0x3] = { (u32)D_800D9A6C, (u32)D_800D9A40, (u32)D_800D9A74 };
@@ -4794,7 +4794,7 @@ u32 sBackupLostMsg[0x8] = {
     /* 0x000 */ (u32)&D_800D999C, (u32)D_800D9C00, (u32)D_800D9BF0, (u32)&D_800D999C,
     /* 0x010 */ 0, 0xED9DEDB5, 0xEDCDEDE5, 0xEDFDEE15,
 };
-u32 D_800CDE70 = 0;
+u32 sPakSkipRumblePrompt = 0;
 char sPakCharset[0x34] = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#'*+,-./:=?@";
 u32 D_800CDEA8[0x6] = {
     /* 0x000 */ 0x436F6E74, 0x726F6C6C, 0x65722050, 0x616B8120,
@@ -4810,48 +4810,48 @@ u32 D_800CDED8[0x6] = {
 };
 u32 sPakTitles[0x3] = { (u32)D_800CDED8, (u32)D_800CDEA8, (u32)D_800CDEC0 };
 u32 sPakGameName = (u32)D_800DA260;
-u32 D_800CDF00[0x4] = { (u32)D_800DA2B0, (u32)D_800DA288, (u32)D_800DA268 };
-u32 D_800CDF10[0x2] = { (u32)D_800DA2DC };
-u32 D_800CDF18[0x3] = { (u32)D_800DA328, (u32)D_800DA30C };
-u32 D_800CDF24[0x3] = { (u32)D_800DA370, (u32)D_800DA34C };
-u32 D_800CDF30[0x3] = { (u32)D_800DA398, (u32)D_800DA34C };
-u32 D_800CDF3C[0x4] = { (u32)D_800DA3FC, (u32)D_800DA3D0, (u32)D_800DA3BC };
-u32 D_800CDF4C[0x3] = { (u32)D_800DA444, (u32)D_800DA42C };
-u32 D_800CDF58[0x3] = { (u32)D_800DA494, (u32)D_800DA470 };
-u32 D_800CDF64[0x2] = { (u32)D_800DA4B4 };
-u32 D_800CDF6C[0x3] = { (u32)D_800DA50C, (u32)D_800DA4E4 };
-u32 D_800CDF78[0x3] = { (u32)D_800DA50C, (u32)D_800DA53C };
-u32 D_800CDF84[0x4] = { (u32)D_800DA5AC, (u32)D_800DA584, (u32)D_800DA568 };
-u32 D_800CDF94[0x4] = { (u32)D_800DA5CC, (u32)D_800DA584, (u32)D_800DA568 };
-u32 D_800CDFA4[0x3] = { (u32)D_800DA584, (u32)D_800DA568 };
-u32 D_800CDFB0[0x2] = { (u32)D_800DA5EC };
-u32 D_800CDFB8[0x2] = { (u32)D_800DA5FC };
-u32 D_800CDFC0[0x3] = { (u32)D_800DA628, (u32)D_800DA60C };
-char D_800CDFCC[0x14] = "@A OK    @B Cancel";
-char D_800CDFE0[0x10] = "@A Yes    @B No";
-char D_800CDFF0[0xc] = "@B Cancel";
-char D_800CDFFC[0x8] = "@A OK";
-char D_800CE004[0x18] = "@A Retry     @B Cancel";
-char D_800CE01C[0x18] = "@A Select    @B Cancel";
-char D_800CE034[0x28] = "@A Select    @B Continue without saving";
+u32 sPakDamagedLines[0x4] = { (u32)D_800DA2B0, (u32)D_800DA288, (u32)D_800DA268 };
+u32 sPakRepairedLines[0x2] = { (u32)D_800DA2DC };
+u32 sPakRepairFailedLines[0x3] = { (u32)D_800DA328, (u32)D_800DA30C };
+u32 sPakOverwriteLines[0x3] = { (u32)D_800DA370, (u32)D_800DA34C };
+u32 sPakEraseLines[0x3] = { (u32)D_800DA398, (u32)D_800DA34C };
+u32 sPakFullLines[0x4] = { (u32)D_800DA3FC, (u32)D_800DA3D0, (u32)D_800DA3BC };
+u32 sPakCommErrorLines[0x3] = { (u32)D_800DA444, (u32)D_800DA42C };
+u32 sPakNoPakLines[0x3] = { (u32)D_800DA494, (u32)D_800DA470 };
+u32 sPakEmptyLines[0x2] = { (u32)D_800DA4B4 };
+u32 sPakNoGhostLines[0x3] = { (u32)D_800DA50C, (u32)D_800DA4E4 };
+u32 sPakNoTrackLines[0x3] = { (u32)D_800DA50C, (u32)D_800DA53C };
+u32 sPakSaveDoneLines[0x4] = { (u32)D_800DA5AC, (u32)D_800DA584, (u32)D_800DA568 };
+u32 sPakLoadDoneLines[0x4] = { (u32)D_800DA5CC, (u32)D_800DA584, (u32)D_800DA568 };
+u32 sPakRumbleLines[0x3] = { (u32)D_800DA584, (u32)D_800DA568 };
+u32 sPakCancelSaveLines[0x2] = { (u32)D_800DA5EC };
+u32 sPakCancelLoadLines[0x2] = { (u32)D_800DA5FC };
+u32 sPakInvalidNoteLines[0x3] = { (u32)D_800DA628, (u32)D_800DA60C };
+char sPakButtonsOkCancel[0x14] = "@A OK    @B Cancel";
+char sPakButtonsYesNo[0x10] = "@A Yes    @B No";
+char sPakButtonsCancel[0xc] = "@B Cancel";
+char sPakButtonsOk[0x8] = "@A OK";
+char sPakButtonsRetryCancel[0x18] = "@A Retry     @B Cancel";
+char sPakButtonsSelectCancel[0x18] = "@A Select    @B Cancel";
+char sPakButtonsSelectNoSave[0x28] = "@A Select    @B Continue without saving";
 u32 sPakModePrompts[0x3] = { (u32)D_800DA694, (u32)D_800DA674, (u32)D_800DA650 };
 u32 sPakMessages[0x3f] = {
-    /* 0x000 */ 0, (u32)D_800DA6E8, (u32)D_800CE01C, (u32)D_800CDF00,
-    /* 0x010 */ 0, (u32)D_800CDFE0, 0, (u32)D_800DA6D8,
-    /* 0x020 */ (u32)D_800CDFCC, (u32)D_800CDF10, 0, (u32)D_800CDFFC,
-    /* 0x030 */ (u32)D_800CDF18, 0, (u32)D_800CE004, 0,
-    /* 0x040 */ 0, (u32)D_800CE01C, (u32)D_800CDF24, 0,
-    /* 0x050 */ (u32)D_800CDFE0, (u32)D_800CDF30, 0, (u32)D_800CDFE0,
-    /* 0x060 */ (u32)D_800CDF3C, 0, (u32)D_800CDFE0, 0,
-    /* 0x070 */ (u32)D_800DA6CC, 0, 0, (u32)D_800DA6C0,
-    /* 0x080 */ 0, (u32)D_800CDF4C, 0, (u32)D_800CDFFC,
-    /* 0x090 */ (u32)D_800CDF6C, 0, (u32)D_800CDFFC, 0,
-    /* 0x0a0 */ (u32)D_800DA6B4, 0, (u32)D_800CDF58, 0,
-    /* 0x0b0 */ (u32)D_800CDFF0, (u32)D_800CDF84, 0, (u32)D_800CDFFC,
-    /* 0x0c0 */ (u32)D_800CDF94, 0, (u32)D_800CDFFC, (u32)D_800CDFB0,
-    /* 0x0d0 */ 0, (u32)D_800CDFE0, (u32)D_800CDFB8, 0,
-    /* 0x0e0 */ (u32)D_800CDFE0, (u32)D_800CDFC0, 0, (u32)D_800CDFE0,
-    /* 0x0f0 */ (u32)D_800CDFA4, 0, (u32)D_800CDFFC,
+    /* 0x000 */ 0, (u32)sStrPakSelectPak, (u32)sPakButtonsSelectCancel, (u32)sPakDamagedLines,
+    /* 0x010 */ 0, (u32)sPakButtonsYesNo, 0, (u32)sStrPakRepairing,
+    /* 0x020 */ (u32)sPakButtonsOkCancel, (u32)sPakRepairedLines, 0, (u32)sPakButtonsOk,
+    /* 0x030 */ (u32)sPakRepairFailedLines, 0, (u32)sPakButtonsRetryCancel, 0,
+    /* 0x040 */ 0, (u32)sPakButtonsSelectCancel, (u32)sPakOverwriteLines, 0,
+    /* 0x050 */ (u32)sPakButtonsYesNo, (u32)sPakEraseLines, 0, (u32)sPakButtonsYesNo,
+    /* 0x060 */ (u32)sPakFullLines, 0, (u32)sPakButtonsYesNo, 0,
+    /* 0x070 */ (u32)sStrPakLoading, 0, 0, (u32)sStrPakSaving,
+    /* 0x080 */ 0, (u32)sPakCommErrorLines, 0, (u32)sPakButtonsOk,
+    /* 0x090 */ (u32)sPakNoGhostLines, 0, (u32)sPakButtonsOk, 0,
+    /* 0x0a0 */ (u32)sStrPakErasing, 0, (u32)sPakNoPakLines, 0,
+    /* 0x0b0 */ (u32)sPakButtonsCancel, (u32)sPakSaveDoneLines, 0, (u32)sPakButtonsOk,
+    /* 0x0c0 */ (u32)sPakLoadDoneLines, 0, (u32)sPakButtonsOk, (u32)sPakCancelSaveLines,
+    /* 0x0d0 */ 0, (u32)sPakButtonsYesNo, (u32)sPakCancelLoadLines, 0,
+    /* 0x0e0 */ (u32)sPakButtonsYesNo, (u32)sPakInvalidNoteLines, 0, (u32)sPakButtonsYesNo,
+    /* 0x0f0 */ (u32)sPakRumbleLines, 0, (u32)sPakButtonsOk,
 };
 u32 sPakText = 0;
 u32 sPakNewNoteEntry[0x22] = {
@@ -4861,7 +4861,7 @@ u32 sPakNewNoteEntry[0x22] = {
     /* 0x070 */ 0, 0x14, 0xB4, 0x64,
     /* 0x080 */ 0x18DA18F1, 0x19081920,
 };
-u32 sArnedTexResIds[0x3] = { (u32)&D_800D1348, (u32)&D_800D134C, (u32)&D_800D1350 };
+u32 sArnedTexResIds[0x3] = { (u32)&sDirtTex0ResId, (u32)&sDirtTex1ResId, (u32)&sDirtTex2ResId };
 u32 sArnedCells = 0;
 u32 gGui[0x4] = { 0, 0x1A1D1A34, 0x1A4B1A62, 0x1A791A8F };
 u32 sEditCamTarget[0x3] = { 0xFFFFF060, 0xFFFFF060 };
@@ -4873,123 +4873,123 @@ u32 sEditCamMoving[0xb] = {
     /* 0x010 */ 0x6AB, 0x4000001, 0x10000, 0xFC0006AB,
     /* 0x020 */ 0x1, 0x1F955, 0xFC000001,
 };
-u32 gEditArena[0x5] = { 0xF000F, (u32)&D_800D126C, (u32)&D_800D12DC };
+u32 gEditArena[0x5] = { 0xF000F, (u32)&sEditArenaWallTexResId, (u32)&sEditArenaCollisionResId };
 u32 gPieceTypes[0x1d0] = {
     /* 0x000 */ 0x20002, 0x20000, 0, 0xA0002,
     /* 0x010 */ 0x10000, 0x9088, 0, (u32)D_800DA9FC,
-    /* 0x020 */ (u32)&D_800D1364, (u32)&D_800D135C, (u32)&D_800D1264, (u32)&D_800D1360,
+    /* 0x020 */ (u32)&sPieceMediumStraightGroundResId, (u32)&sPieceMediumStraightObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceMediumStraightCollisionResId,
     /* 0x030 */ 0, 0, 0, 0,
     /* 0x040 */ 0x20001, 0x20000, 0, 0x80002,
     /* 0x050 */ 0x10000, 0x88B8, 0, (u32)D_800DA9EC,
-    /* 0x060 */ (u32)&D_800D1354, (u32)&D_800D12E0, (u32)&D_800D1270, (u32)&D_800D1344,
+    /* 0x060 */ (u32)&sPieceShortStraightGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceShortStraightPathResId, (u32)&sPieceShortStraightCollisionResId,
     /* 0x070 */ 0, 0, 0, 0,
     /* 0x080 */ 0x40004, 0x20002, 0x2, 0x90C0000,
     /* 0x090 */ 0, 0xCB20, 0, (u32)D_800DA9E0,
-    /* 0x0a0 */ (u32)&D_800D12BC, (u32)&D_800D1288, (u32)&D_800D136C, (u32)&D_800D12A0,
+    /* 0x0a0 */ (u32)&sPieceRaised180GroundResId, (u32)&sPieceRaised180ObjectsResId, (u32)&sPieceRaised180PathResId, (u32)&sPieceRaised180CollisionResId,
     /* 0x0b0 */ 0, 0, 0, 0,
     /* 0x0c0 */ 0x20002, 0x20001, 0, 0x90C0001,
     /* 0x0d0 */ 0, 0xCB20, 0, (u32)D_800DA9D4,
-    /* 0x0e0 */ (u32)&D_800D12C4, (u32)&D_800D1290, (u32)&D_800D1260, (u32)&D_800D12A4,
+    /* 0x0e0 */ (u32)&sPieceFlat90GroundResId, (u32)&sPieceFlat90ObjectsResId, (u32)&sPieceTurn90PathResId, (u32)&sPieceFlat90CollisionResId,
     /* 0x0f0 */ 0, 0, 0, 0,
     /* 0x100 */ 0x20002, 0x20001, 0, 0x90C0001,
     /* 0x110 */ 0, 0xCB20, 0, (u32)D_800DA9C8,
-    /* 0x120 */ (u32)&D_800D12CC, (u32)&D_800D1298, (u32)&D_800D1260, (u32)&D_800D12A8,
+    /* 0x120 */ (u32)&sPieceBanked90GroundResId, (u32)&sPieceBanked90ObjectsResId, (u32)&sPieceTurn90PathResId, (u32)&sPieceBanked90CollisionResId,
     /* 0x130 */ 0, 0, 0, 0,
     /* 0x140 */ 0x40002, 0x20002, 0x2, 0x90C0000,
     /* 0x150 */ 0, 0xCB20, 0, (u32)D_800DA9BC,
-    /* 0x160 */ (u32)&D_800D12D0, (u32)&D_800D129C, (u32)&D_800D1358, (u32)&D_800D12AC,
+    /* 0x160 */ (u32)&sPieceBanked180GroundResId, (u32)&sPieceBanked180ObjectsResId, (u32)&sPieceBanked180PathResId, (u32)&sPieceBanked180CollisionResId,
     /* 0x170 */ 0, 0, 0, 0,
     /* 0x180 */ 0x20004, 0x20000, 0, 0x80002,
     /* 0x190 */ 0x10000, 0xCF08, 0, (u32)D_800DA9B0,
-    /* 0x1a0 */ (u32)&D_800D12B0, (u32)&D_800D1278, (u32)&D_800D1268, (u32)&D_800D1308,
+    /* 0x1a0 */ (u32)&sPieceSteepJumpGroundResId, (u32)&sPieceSteepJumpObjectsResId, (u32)&sPieceLongJumpPathResId, (u32)&sPieceSteepJumpCollisionResId,
     /* 0x1b0 */ 0, 0, 0, 0,
     /* 0x1c0 */ 0x20004, 0x20000, 0, 0x80002,
     /* 0x1d0 */ 0x10000, 0xCF08, 0, (u32)D_800DA9A4,
-    /* 0x1e0 */ (u32)&D_800D12B4, (u32)&D_800D1280, (u32)&D_800D1268, (u32)&D_800D1310,
+    /* 0x1e0 */ (u32)&sPieceTabletopGroundResId, (u32)&sPieceTabletopObjectsResId, (u32)&sPieceLongJumpPathResId, (u32)&sPieceTabletopCollisionResId,
     /* 0x1f0 */ 0, 0, 0, 0,
     /* 0x200 */ 0x20004, 0x20000, 0, 0x80002,
     /* 0x210 */ 0x10000, 0xCF08, 0, (u32)D_800DA99C,
-    /* 0x220 */ (u32)&D_800D12B8, (u32)&D_800D1284, (u32)&D_800D1268, (u32)&D_800D1318,
+    /* 0x220 */ (u32)&sPieceDoubleGroundResId, (u32)&sPieceDoubleObjectsResId, (u32)&sPieceLongJumpPathResId, (u32)&sPieceDoubleCollisionResId,
     /* 0x230 */ 0, 0, 0, 0,
     /* 0x240 */ 0x20004, 0x20000, 0, 0x80002,
     /* 0x250 */ 0x10000, 0xCF08, 0, (u32)D_800DA98C,
-    /* 0x260 */ (u32)&D_800D12C0, (u32)&D_800D128C, (u32)&D_800D1268, (u32)&D_800D1320,
+    /* 0x260 */ (u32)&sPieceLandingSlopeGroundResId, (u32)&sPieceLandingSlopeObjectsResId, (u32)&sPieceLongJumpPathResId, (u32)&sPieceLandingSlopeCollisionResId,
     /* 0x270 */ 0, 0, 0, 0,
     /* 0x280 */ 0x20004, 0x20000, 0, 0x80002,
     /* 0x290 */ 0x10000, 0xCF08, 0, (u32)D_800DA980,
-    /* 0x2a0 */ (u32)&D_800D12C8, (u32)&D_800D1294, (u32)&D_800D1268, (u32)&D_800D1324,
+    /* 0x2a0 */ (u32)&sPieceCamelJumpGroundResId, (u32)&sPieceCamelJumpObjectsResId, (u32)&sPieceLongJumpPathResId, (u32)&sPieceCamelJumpCollisionResId,
     /* 0x2b0 */ 0, 0, 0, 0,
     /* 0x2c0 */ 0x20002, 0x20000, 0, 0x80002,
     /* 0x2d0 */ 0x10000, 0xCF08, 0, (u32)D_800DA974,
-    /* 0x2e0 */ (u32)&D_800D1328, (u32)&D_800D12D4, (u32)&D_800D1264, (u32)&D_800D12EC,
+    /* 0x2e0 */ (u32)&sPieceShortJumpGroundResId, (u32)&sPieceShortJumpObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceShortJumpCollisionResId,
     /* 0x2f0 */ 0, 0, 0, 0,
     /* 0x300 */ 0x20002, 0x20000, 0, 0x80002,
     /* 0x310 */ 0x10000, 0xCF08, 0, (u32)D_800DA968,
-    /* 0x320 */ (u32)&D_800D132C, (u32)&D_800D12D8, (u32)&D_800D1264, (u32)&D_800D12F4,
+    /* 0x320 */ (u32)&sPieceMiniJumpGroundResId, (u32)&sPieceMiniJumpObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceMiniJumpCollisionResId,
     /* 0x330 */ 0, 0, 0, 0,
     /* 0x340 */ 0x20002, 0x20000, 0, 0x80002,
     /* 0x350 */ 0x10000, 0xCF08, 0, (u32)D_800DA960,
-    /* 0x360 */ (u32)&D_800D1330, (u32)&D_800D12E4, (u32)&D_800D1264, (u32)&D_800D12FC,
+    /* 0x360 */ (u32)&sPieceWhoopsGroundResId, (u32)&sPieceWhoopsObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceWhoopsCollisionResId,
     /* 0x370 */ 0, 0, 0, 0,
     /* 0x380 */ 0x20002, 0x20000, 0, 0x80002,
     /* 0x390 */ 0x10000, 0xCF08, 0, (u32)D_800DA950,
-    /* 0x3a0 */ (u32)&D_800D1334, (u32)&D_800D12E8, (u32)&D_800D1264, (u32)&D_800D1304,
+    /* 0x3a0 */ (u32)&sPieceSmallLandingGroundResId, (u32)&sPieceSmallLandingObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceSmallLandingCollisionResId,
     /* 0x3b0 */ 0, 0, 0, 0,
     /* 0x3c0 */ 0x20002, 0x20000, 0, 0x80002,
     /* 0x3d0 */ 0x10000, 0xCF08, 0, (u32)D_800DA940,
-    /* 0x3e0 */ (u32)&D_800D1338, (u32)&D_800D12F0, (u32)&D_800D1264, (u32)&D_800D130C,
+    /* 0x3e0 */ (u32)&sPieceShallowWhoopsGroundResId, (u32)&sPieceShallowWhoopsObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceShallowWhoopsCollisionResId,
     /* 0x3f0 */ 0, 0, 0, 0,
     /* 0x400 */ 0x20002, 0x20000, 0, 0x80002,
     /* 0x410 */ 0x10000, 0xCF08, 0, (u32)D_800DA934,
-    /* 0x420 */ (u32)&D_800D133C, (u32)&D_800D12F8, (u32)&D_800D1264, (u32)&D_800D1314,
+    /* 0x420 */ (u32)&sPieceLaunchJumpGroundResId, (u32)&sPieceLaunchJumpObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceLaunchJumpCollisionResId,
     /* 0x430 */ 0, 0, 0, 0,
     /* 0x440 */ 0x20002, 0x20000, 0, 0x80002,
     /* 0x450 */ 0x10000, 0xCF08, 0, (u32)D_800DA920,
-    /* 0x460 */ (u32)&D_800D1340, (u32)&D_800D1300, (u32)&D_800D1264, (u32)&D_800D131C,
+    /* 0x460 */ (u32)&sPieceMiniJumpLandingGroundResId, (u32)&sPieceMiniJumpLandingObjectsResId, (u32)&sPieceMediumStraightPathResId, (u32)&sPieceMiniJumpLandingCollisionResId,
     /* 0x470 */ 0, 0, 0, 0,
     /* 0x480 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x490 */ 0x10000, 0xC350, 0, (u32)D_800DA910,
-    /* 0x4a0 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x4a0 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x4b0 */ 0, 0, 0, 0,
     /* 0x4c0 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x4d0 */ 0x10000, 0xC350, 0, (u32)D_800DA900,
-    /* 0x4e0 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x4e0 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x4f0 */ 0, 0, 0, 0,
     /* 0x500 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x510 */ 0x10000, 0xC350, 0, (u32)D_800DA8F0,
-    /* 0x520 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x520 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x530 */ 0, 0, 0, 0,
     /* 0x540 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x550 */ 0x10000, 0xC350, 0, (u32)D_800DA8E0,
-    /* 0x560 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x560 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x570 */ 0, 0, 0, 0,
     /* 0x580 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x590 */ 0x10000, 0xC350, 0, (u32)D_800DA8D0,
-    /* 0x5a0 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x5a0 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x5b0 */ 0, 0, 0, 0,
     /* 0x5c0 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x5d0 */ 0x10000, 0xC350, 0, (u32)D_800DA8C0,
-    /* 0x5e0 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x5e0 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x5f0 */ 0, 0, 0, 0,
     /* 0x600 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x610 */ 0x10000, 0xC350, 0, (u32)D_800DA8B0,
-    /* 0x620 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x620 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x630 */ 0, 0, 0, 0,
     /* 0x640 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x650 */ 0x10000, 0xC350, 0, (u32)D_800DA8A0,
-    /* 0x660 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x660 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
     /* 0x670 */ 0, 0, 0, 0,
     /* 0x680 */ 0x20004, 0x20000, 0, 0x880002,
     /* 0x690 */ 0x10000, 0xC350, 0, (u32)D_800DA890,
-    /* 0x6a0 */ 0, 0, (u32)&D_800D1258, 0,
+    /* 0x6a0 */ 0, 0, (u32)&sPieceUserPathResId, 0,
     /* 0x6b0 */ 0, 0, 0, 0,
     /* 0x6c0 */ 0x10001, 0, 0, 0,
     /* 0x6d0 */ 0, 0x9C40, 0, 0,
-    /* 0x6e0 */ (u32)&D_800D127C, 0, 0, 0,
+    /* 0x6e0 */ (u32)&sPieceEmptyGroundResId, 0, 0, 0,
     /* 0x6f0 */ 0, 0, 0, 0,
     /* 0x700 */ 0x20001, 0x20000, 0, 0x2,
     /* 0x710 */ 0, 0x9C40, 0, 0,
-    /* 0x720 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
+    /* 0x720 */ (u32)&sPieceUserGroundResId, (u32)&sPieceShortStraightObjectsResId, (u32)&sPieceUserPathResId, (u32)&sPieceUserCollisionResId,
 };
 u32 sEditViewRects[0x10] = {
     /* 0x000 */ 0x1A, 0x10, 0x1CC, 0xD1,
@@ -5048,7 +5048,7 @@ u32 sNesBorderColors[0x4] = { 0x10001, 0xC001C001, 0x6010601, 0x310031 };
 u32 sNesAudioChunks = 0x1;
 u32 sNesInstrCount = 0;
 u32 sNesInstrPerFrame[0x4] = { 0, 0x5660568, 0x56B056D, 0x5700572 };
-u32 D_800CEC30 = (u32)D_800DAF50;
+u32 sNesMnemonics = (u32)D_800DAF50;
 u32 D_800CEC34 = (u32)D_800DAF54;
 u32 D_800CEC38 = (u32)D_800DAF58;
 u32 D_800CEC3C = (u32)D_800DAF5C;
@@ -5251,49 +5251,49 @@ u32 sNesOpcodeTable[0x4bb] = {
     /* 0x8e0 */ 0x70003, 0, 0, 0,
     /* 0x8f0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x900 */ (u32)&D_800CECDC, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_rts,
-    /* 0x910 */ 0x60001, 0, (u32)&D_800CEC30, (u32)nes_am_indexed_indirect_stub,
+    /* 0x910 */ 0x60001, 0, (u32)&sNesMnemonics, (u32)nes_am_indexed_indirect_stub,
     /* 0x920 */ (u32)nes_am_indexed_indirect, (u32)nes_op_adc, 0x60002, 0,
     /* 0x930 */ 0, 0, 0, 0,
     /* 0x940 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x950 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x960 */ 0, 0, 0, 0,
-    /* 0x970 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)nes_am_zeropage_stub,
+    /* 0x970 */ 0xFFFFFFFF, 0, (u32)&sNesMnemonics, (u32)nes_am_zeropage_stub,
     /* 0x980 */ (u32)nes_am_zeropage, (u32)nes_op_adc, 0x30002, 0,
     /* 0x990 */ (u32)&D_800CECD4, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_ror,
     /* 0x9a0 */ 0x50002, 0, 0, 0,
     /* 0x9b0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x9c0 */ (u32)&D_800CECC8, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_pla,
-    /* 0x9d0 */ 0x40001, 0, (u32)&D_800CEC30, (u32)nes_am_immediate_stub,
+    /* 0x9d0 */ 0x40001, 0, (u32)&sNesMnemonics, (u32)nes_am_immediate_stub,
     /* 0x9e0 */ (u32)nes_am_immediate, (u32)nes_op_adc, 0x20002, 0,
     /* 0x9f0 */ (u32)&D_800CECD4, (u32)nes_am_accumulator_stub, (u32)nes_am_accumulator, (u32)nes_op_ror,
     /* 0xa00 */ 0x20001, 0, 0, 0,
     /* 0xa10 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xa20 */ (u32)&D_800CECA0, (u32)nes_am_jump_indirect_stub, (u32)nes_am_jump_indirect, (u32)nes_op_jmp,
-    /* 0xa30 */ 0x50003, 0, (u32)&D_800CEC30, (u32)nes_am_absolute_stub,
+    /* 0xa30 */ 0x50003, 0, (u32)&sNesMnemonics, (u32)nes_am_absolute_stub,
     /* 0xa40 */ (u32)nes_am_absolute, (u32)nes_op_adc, 0x40003, 0,
     /* 0xa50 */ (u32)&D_800CECD4, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_ror,
     /* 0xa60 */ 0x60003, 0, 0, 0,
     /* 0xa70 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xa80 */ (u32)&D_800CEC64, (u32)nes_am_relative_stub, (u32)nes_am_relative, (u32)nes_op_bvs,
-    /* 0xa90 */ 0x20002, 0, (u32)&D_800CEC30, (u32)nes_am_indirect_indexed_stub,
+    /* 0xa90 */ 0x20002, 0, (u32)&sNesMnemonics, (u32)nes_am_indirect_indexed_stub,
     /* 0xaa0 */ (u32)nes_am_indirect_indexed, (u32)nes_op_adc, 0x50002, 0,
     /* 0xab0 */ 0, 0, 0, 0,
     /* 0xac0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0xad0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xae0 */ 0, 0, 0, 0,
-    /* 0xaf0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)nes_am_zeropage_x_stub,
+    /* 0xaf0 */ 0xFFFFFFFF, 0, (u32)&sNesMnemonics, (u32)nes_am_zeropage_x_stub,
     /* 0xb00 */ (u32)nes_am_zeropage_x, (u32)nes_op_adc, 0x40002, 0,
     /* 0xb10 */ (u32)&D_800CECD4, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_ror,
     /* 0xb20 */ 0x60002, 0, 0, 0,
     /* 0xb30 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xb40 */ (u32)&D_800CECEC, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_sei,
-    /* 0xb50 */ 0x20001, 0, (u32)&D_800CEC30, (u32)nes_am_absolute_y_stub,
+    /* 0xb50 */ 0x20001, 0, (u32)&sNesMnemonics, (u32)nes_am_absolute_y_stub,
     /* 0xb60 */ (u32)nes_am_absolute_y, (u32)nes_op_adc, 0x40003, 0,
     /* 0xb70 */ 0, 0, 0, 0,
     /* 0xb80 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0xb90 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xba0 */ 0, 0, 0, 0,
-    /* 0xbb0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)nes_am_absolute_x_stub,
+    /* 0xbb0 */ 0xFFFFFFFF, 0, (u32)&sNesMnemonics, (u32)nes_am_absolute_x_stub,
     /* 0xbc0 */ (u32)nes_am_absolute_x, (u32)nes_op_adc, 0x40003, 0,
     /* 0xbd0 */ (u32)&D_800CECD4, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_ror,
     /* 0xbe0 */ 0x70003, 0, 0, 0,
@@ -5507,7 +5507,7 @@ u8 sNesRgbPalette[0xc0] = {
     /* 0x0a0 */ 0xC7, 0xDB, 0xFF, 0xBF, 0xB3, 0xFF, 0xDB, 0xAB, 0xFF, 0xE7, 0xA3, 0xE3, 0xFF, 0xA3, 0xAB, 0xF3,
     /* 0x0b0 */ 0xBF, 0xB3, 0xFF, 0xCF, 0x9F, 0xFF, 0xF3,
 };
-u32 D_800D05D4 = 0;
+u32 sNesCorruptRam = 0;
 u16 sNesDutyTable[0x4] = { 0x2000, 0x4000, 0x8000, 0xC000 };
 u32 sNesLengthTable[0x10] = {
     /* 0x000 */ 0x5, 0xA, 0x13, 0x28,
@@ -5529,344 +5529,344 @@ u32 sPieceRotations[0xc] = {
     /* 0x010 */ 0x1F4, 0x1FFFF, 0x2, 0x1F401F4,
     /* 0x020 */ 0xFFFFFFFF, 0x20000, 0x1F40000, 0xFFFF0001,
 };
-u8 D_800D06B4[0x14] = {
+u8 sEmptyCellTris[0x14] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0x1F, 0x42, 0x1F, 0x44, 0, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0x1,
 };
-u32 D_800D06C8[0x2] = { 0x2, 0x3 };
-u32 D_800D06D0[0x2] = { 0x4, 0x5 };
-u32 D_800D06D8 = 0x6;
-u32 D_800D06DC[0x3] = { 0x7, 0x8, 0x9 };
-u32 D_800D06E8[0x3] = { 0xA, 0xB, 0xC };
-u32 D_800D06F4[0x2] = { 0xD, 0xE };
-u32 D_800D06FC = 0xF;
-u32 D_800D0700[0x3] = { 0x10, 0x11, 0x12 };
-u32 D_800D070C[0x2] = { 0x13, 0x14 };
-u32 D_800D0714[0x2] = { 0x15, 0x16 };
-u32 D_800D071C[0x2] = { 0x17, 0x18 };
+u32 sBikeFrameHiResId[0x2] = { 0x2, 0x3 };
+u32 sSoccerBallModelResId[0x2] = { 0x4, 0x5 };
+u32 sBikeRearWheelLoResId = 0x6;
+u32 sAnimFenderGrabBodyResId[0x3] = { 0x7, 0x8, 0x9 };
+u32 sExtraRiderPal1ResId[0x3] = { 0xA, 0xB, 0xC };
+u32 sUserTrackStandLowResId[0x2] = { 0xD, 0xE };
+u32 sExtraRiderPal2ResId = 0xF;
+u32 sKyotoThumbResId[0x3] = { 0x10, 0x11, 0x12 };
+u32 sMountainQuarryThumbResId[0x2] = { 0x13, 0x14 };
+u32 sBobbyPodiumModelResId[0x2] = { 0x15, 0x16 };
+u32 sHoustonThumbResId[0x2] = { 0x17, 0x18 };
 u32 D_800D0724[0x3] = { 0x19, 0x1A, 0x1B };
-u32 D_800D0730[0x4] = { 0x1C, 0x1D, 0x1E, 0x1F };
-u32 D_800D0740 = 0x20;
-u32 D_800D0744[0x3] = { 0x21, 0x22, 0x23 };
-u32 D_800D0750[0x3] = { 0x24, 0x25, 0x26 };
-u32 D_800D075C = 0x27;
-u32 D_800D0760[0x3] = { 0x28, 0x29, 0x2A };
-u32 D_800D076C = 0x2B;
-u32 D_800D0770 = 0x2C;
-u32 D_800D0774 = 0x2D;
-u32 D_800D0778[0x3] = { 0x2E, 0x2F, 0x30 };
-u32 D_800D0784 = 0x31;
-u32 D_800D0788[0x4] = { 0x32, 0x33, 0x34, 0x35 };
-u32 D_800D0798[0x6] = {
+u32 sLeftysMillThumbResId[0x4] = { 0x1C, 0x1D, 0x1E, 0x1F };
+u32 sAnimCliffHangerBodyResId = 0x20;
+u32 sOrlandoThumbResId[0x3] = { 0x21, 0x22, 0x23 };
+u32 sNashvilleThumbResId[0x3] = { 0x24, 0x25, 0x26 };
+u32 sCanyonChasmThumbResId = 0x27;
+u32 sSarahPodiumModelResId[0x3] = { 0x28, 0x29, 0x2A };
+u32 sLongIslandThumbResId = 0x2B;
+u32 sFinishLineModelResId = 0x2C;
+u32 sPodiumCamClip1ResId = 0x2D;
+u32 sVickyPodiumModelResId[0x3] = { 0x2E, 0x2F, 0x30 };
+u32 sCongoCourseThumbResId = 0x31;
+u32 sPodiumCamClip2ResId[0x4] = { 0x32, 0x33, 0x34, 0x35 };
+u32 sPodiumCamClip4ResId[0x6] = {
     /* 0x000 */ 0x36, 0x37, 0x38, 0x39,
     /* 0x010 */ 0x3A, 0x3B,
 };
-u32 D_800D07B0 = 0x3C;
-u32 D_800D07B4 = 0x3D;
-u32 D_800D07B8 = 0x3E;
-u32 D_800D07BC = 0x3F;
-u32 D_800D07C0 = 0x40;
-u32 D_800D07C4[0x2] = { 0x41, 0x42 };
-u32 D_800D07CC = 0x43;
-u32 D_800D07D0 = 0x44;
-u32 D_800D07D4[0x2] = { 0x45, 0x46 };
-u32 D_800D07DC = 0x47;
-u32 D_800D07E0 = 0x48;
-u32 D_800D07E4[0x3] = { 0x49, 0x4A, 0x4B };
-u32 D_800D07F0[0x3] = { 0x4C, 0x4D, 0x4E };
-u32 D_800D07FC[0x2] = { 0x4F, 0x50 };
-u32 D_800D0804[0x3] = { 0x51, 0x52, 0x53 };
-u32 D_800D0810 = 0x54;
-u32 D_800D0814[0xd] = {
+u32 sRickyPodiumModelResId = 0x3C;
+u32 sCanyonChasmDronesResId = 0x3D;
+u32 sPodium1stPose1ResId = 0x3E;
+u32 sJimPodiumModelResId = 0x3F;
+u32 sUserTrackStandResId = 0x40;
+u32 sDesMarkerAnimResId[0x2] = { 0x41, 0x42 };
+u32 sPodium2ndPose1ResId = 0x43;
+u32 sPodium1stPose2ResId = 0x44;
+u32 sUserTrackStandTexResId[0x2] = { 0x45, 0x46 };
+u32 sPodium3rdPose1ResId = 0x47;
+u32 sPodium2ndPose2ResId = 0x48;
+u32 sAnimNoHanderBodyResId[0x3] = { 0x49, 0x4A, 0x4B };
+u32 sPodium3rdPose2ResId[0x3] = { 0x4C, 0x4D, 0x4E };
+u32 sDesertScenery1ResId[0x2] = { 0x4F, 0x50 };
+u32 sNigelPodiumModelResId[0x3] = { 0x51, 0x52, 0x53 };
+u32 sAnimFinish2ndBodyResId = 0x54;
+u32 sAnimBarHopBodyResId[0xd] = {
     /* 0x000 */ 0x55, 0x56, 0x57, 0x58,
     /* 0x010 */ 0x59, 0x5A, 0x5B, 0x5C,
     /* 0x020 */ 0x5D, 0x5E, 0x5F, 0x60,
     /* 0x030 */ 0x61,
 };
-u32 D_800D0848[0x5] = {
+u32 sRiderColorsResId[0x5] = {
     /* 0x000 */ 0x62, 0x63, 0x64, 0x65,
     /* 0x010 */ 0x66,
 };
-u32 D_800D085C[0x8] = {
+u32 sLapArrowsResId[0x8] = {
     /* 0x000 */ 0x67, 0x68, 0x69, 0x6A,
     /* 0x010 */ 0x6B, 0x6C, 0x6D, 0x6E,
 };
-u32 D_800D087C[0x4] = { 0x6F, 0x70, 0x71, 0x72 };
-u32 D_800D088C[0x7] = {
+u32 sBikeForkSliderHiResId[0x4] = { 0x6F, 0x70, 0x71, 0x72 };
+u32 sIntroImagesResId[0x7] = {
     /* 0x000 */ 0x73, 0x74, 0x75, 0x76,
     /* 0x010 */ 0x77, 0x78, 0x79,
 };
-u32 D_800D08A8[0xe] = {
+u32 sDesertCampfireResId[0xe] = {
     /* 0x000 */ 0x7A, 0x7B, 0x7C, 0x7D,
     /* 0x010 */ 0x7E, 0x7F, 0x80, 0x81,
     /* 0x020 */ 0x82, 0x83, 0x84, 0x85,
     /* 0x030 */ 0x86, 0x87,
 };
-u32 D_800D08E0[0xa] = {
+u32 sSoccerBallTexResId[0xa] = {
     /* 0x000 */ 0x88, 0x89, 0x8A, 0x8B,
     /* 0x010 */ 0x8C, 0x8D, 0x8E, 0x8F,
     /* 0x020 */ 0x90, 0x91,
 };
-u32 D_800D0908[0x4] = { 0x92, 0x93, 0x94, 0x95 };
-u32 D_800D0918[0x2] = { 0x96, 0x97 };
-u32 D_800D0920 = 0x98;
-u32 D_800D0924[0x2] = { 0x99, 0x9A };
-u32 D_800D092C = 0x9B;
-u32 D_800D0930 = 0x9C;
-u32 D_800D0934[0x2] = { 0x9D, 0x9E };
-u32 D_800D093C = 0x9F;
-u32 D_800D0940 = 0xA0;
-u32 D_800D0944[0x2] = { 0xA1, 0xA2 };
-u32 D_800D094C = 0xA3;
-u32 D_800D0950[0x2] = { 0xA4, 0xA5 };
-u32 D_800D0958 = 0xA6;
-u32 D_800D095C[0x2] = { 0xA7, 0xA8 };
-u32 D_800D0964[0x2] = { 0xA9, 0xAA };
-u32 D_800D096C[0x2] = { 0xAB, 0xAC };
-u32 D_800D0974[0x2] = { 0xAD, 0xAE };
-u32 D_800D097C = 0xAF;
-u32 D_800D0980[0x2] = { 0xB0, 0xB1 };
-u32 D_800D0988 = 0xB2;
-u32 D_800D098C = 0xB3;
-u32 D_800D0990[0x2] = { 0xB4, 0xB5 };
-u32 D_800D0998[0x5] = {
+u32 sBobbyPodiumTexResId[0x4] = { 0x92, 0x93, 0x94, 0x95 };
+u32 sAnimNoFooterBodyResId[0x2] = { 0x96, 0x97 };
+u32 sBikeSkelResId = 0x98;
+u32 sSplashTexResId[0x2] = { 0x99, 0x9A };
+u32 sAnimFinish4th5thBodyResId = 0x9B;
+u32 sLasVegasThumbResId = 0x9C;
+u32 sSarahPodiumTexResId[0x2] = { 0x9D, 0x9E };
+u32 sBlizzardBlitzThumbResId = 0x9F;
+u32 sPhoenixThumbResId = 0xA0;
+u32 sVickyPodiumTexResId[0x2] = { 0xA1, 0xA2 };
+u32 sRainforestRunThumbResId = 0xA3;
+u32 sTeamPhotoResId[0x2] = { 0xA4, 0xA5 };
+u32 sAnimLazyboyBodyResId = 0xA6;
+u32 sMadridThumbResId[0x2] = { 0xA7, 0xA8 };
+u32 sGravelPitThumbResId[0x2] = { 0xA9, 0xAA };
+u32 sDetroitThumbResId[0x2] = { 0xAB, 0xAC };
+u32 sGoldmineRushThumbResId[0x2] = { 0xAD, 0xAE };
+u32 sRickyPodiumTexResId = 0xAF;
+u32 sLosAngelesThumbResId[0x2] = { 0xB0, 0xB1 };
+u32 sJimPodiumTexResId = 0xB2;
+u32 sCreditsTextResId = 0xB3;
+u32 sConstructionYardThumbResId[0x2] = { 0xB4, 0xB5 };
+u32 sSeattleThumbResId[0x5] = {
     /* 0x000 */ 0xB6, 0xB7, 0xB8, 0xB9,
     /* 0x010 */ 0xBA,
 };
-u32 D_800D09AC = 0xBB;
-u32 D_800D09B0[0x2] = { 0xBC, 0xBD };
-u32 D_800D09B8[0x7] = {
+u32 sNigelPodiumTexResId = 0xBB;
+u32 sIntroPicResId[0x2] = { 0xBC, 0xBD };
+u32 sAnimSkiJumpBodyResId[0x7] = {
     /* 0x000 */ 0xBE, 0xBF, 0xC0, 0xC1,
     /* 0x010 */ 0xC2, 0xC3, 0xC4,
 };
-u32 D_800D09D4[0x3] = { 0xC5, 0xC6, 0xC7 };
-u32 D_800D09E0 = 0xC8;
-u32 D_800D09E4[0x2] = { 0xC9, 0xCA };
-u32 D_800D09EC = 0xCB;
-u32 D_800D09F0 = 0xCC;
-u32 D_800D09F4 = 0xCD;
-u32 D_800D09F8 = 0xCE;
-u32 D_800D09FC[0x2] = { 0xCF, 0xD0 };
-u32 D_800D0A04 = 0xD1;
-u32 D_800D0A08 = 0xD2;
-u32 D_800D0A0C[0x2] = { 0xD3, 0xD4 };
-u32 D_800D0A14 = 0xD5;
-u32 D_800D0A18 = 0xD6;
-u32 D_800D0A1C = 0xD7;
-u32 D_800D0A20[0x2] = { 0xD8, 0xD9 };
-u32 D_800D0A28[0x2] = { 0xDA, 0xDB };
-u32 D_800D0A30 = 0xDC;
-u32 D_800D0A34[0x3] = { 0xDD, 0xDE, 0xDF };
-u32 D_800D0A40 = 0xE0;
-u32 D_800D0A44[0x3] = { 0xE1, 0xE2, 0xE3 };
-u32 D_800D0A50 = 0xE4;
-u32 D_800D0A54 = 0xE5;
-u32 D_800D0A58[0x2] = { 0xE6, 0xE7 };
-u32 D_800D0A60 = 0xE8;
-u32 D_800D0A64 = 0xE9;
-u32 D_800D0A68[0x3] = { 0xEA, 0xEB, 0xEC };
-u32 D_800D0A74[0x6] = {
+u32 sTutorialTitleResId[0x3] = { 0xC5, 0xC6, 0xC7 };
+u32 sAnimCrashBack1BodyResId = 0xC8;
+u32 sAnimCrashBack2BodyResId[0x2] = { 0xC9, 0xCA };
+u32 sOrlandoResMapResId = 0xCB;
+u32 sAnimCrashBack3BodyResId = 0xCC;
+u32 sAnimAirTurn2RootResId = 0xCD;
+u32 gHudGlyphsResId = 0xCE;
+u32 sPodiumCamClip3ResId[0x2] = { 0xCF, 0xD0 };
+u32 sLongIslandResMapResId = 0xD1;
+u32 sBobbyModelHiResId = 0xD2;
+u32 sPodiumCamClip5ResId[0x2] = { 0xD3, 0xD4 };
+u32 sLasVegasResMapResId = 0xD5;
+u32 sAnimCrashFront1BodyResId = 0xD6;
+u32 sAnimFenderKissRootResId = 0xD7;
+u32 sNashvilleResMapResId[0x2] = { 0xD8, 0xD9 };
+u32 sAnimCrashFront2BodyResId[0x2] = { 0xDA, 0xDB };
+u32 sPhoenixResMapResId = 0xDC;
+u32 sAnimCrashFront3BodyResId[0x3] = { 0xDD, 0xDE, 0xDF };
+u32 sDetroitResMapResId = 0xE0;
+u32 sBobbyModelLoResId[0x3] = { 0xE1, 0xE2, 0xE3 };
+u32 sKyotoResMapResId = 0xE4;
+u32 sSarahModelHiResId = 0xE5;
+u32 sAnimHeelClickerBodyResId[0x2] = { 0xE6, 0xE7 };
+u32 sMadridResMapResId = 0xE8;
+u32 sVickyModelHiResId = 0xE9;
+u32 sPonytailMeshResId[0x3] = { 0xEA, 0xEB, 0xEC };
+u32 sLosAngelesResMapResId[0x6] = {
     /* 0x000 */ 0xED, 0xEE, 0xEF, 0xF0,
     /* 0x010 */ 0xF1, 0xF2,
 };
-u32 D_800D0A8C[0x3] = { 0xF3, 0xF4, 0xF5 };
-u32 D_800D0A98[0x3] = { 0xF6, 0xF7, 0xF8 };
-u32 D_800D0AA4 = 0xF9;
-u32 D_800D0AA8[0x2] = { 0xFA, 0xFB };
-u32 D_800D0AB0 = 0xFC;
-u32 D_800D0AB4 = 0xFD;
-u32 D_800D0AB8[0x2] = { 0xFE, 0xFF };
-u32 D_800D0AC0 = 0x100;
-u32 D_800D0AC4[0x2] = { 0x101, 0x102 };
-u32 D_800D0ACC[0x2] = { 0x103, 0x104 };
-u32 D_800D0AD4 = 0x105;
-u32 D_800D0AD8[0x4] = { 0x106, 0x107, 0x108, 0x109 };
-u32 D_800D0AE8 = 0x10A;
-u32 D_800D0AEC[0x2] = { 0x10B, 0x10C };
-u32 D_800D0AF4 = 0x10D;
-u32 D_800D0AF8[0x2] = { 0x10E, 0x10F };
-u32 D_800D0B00 = 0x110;
-u32 D_800D0B04 = 0x111;
-u32 D_800D0B08[0x3] = { 0x112, 0x113, 0x114 };
-u32 D_800D0B14 = 0x115;
-u32 D_800D0B18 = 0x116;
-u32 D_800D0B1C[0x3] = { 0x117, 0x118, 0x119 };
-u32 D_800D0B28 = 0x11A;
-u32 D_800D0B2C[0x4] = { 0x11B, 0x11C, 0x11D, 0x11E };
-u32 D_800D0B3C[0x2] = { 0x11F, 0x120 };
-u32 D_800D0B44[0x3] = { 0x121, 0x122, 0x123 };
-u32 D_800D0B50 = 0x124;
-u32 D_800D0B54 = 0x125;
-u32 D_800D0B58[0x3] = { 0x126, 0x127, 0x128 };
-u32 D_800D0B64 = 0x129;
-u32 D_800D0B68[0x2] = { 0x12A, 0x12B };
-u32 D_800D0B70 = 0x12C;
-u32 D_800D0B74 = 0x12D;
-u32 D_800D0B78[0x5] = {
+u32 sSarahModelLoResId[0x3] = { 0xF3, 0xF4, 0xF5 };
+u32 sVickyModelLoResId[0x3] = { 0xF6, 0xF7, 0xF8 };
+u32 sRickyModelHiResId = 0xF9;
+u32 sJimModelHiResId[0x2] = { 0xFA, 0xFB };
+u32 sBikeTex0ResId = 0xFC;
+u32 sBikeTex1ResId = 0xFD;
+u32 sBikeForkLoResId[0x2] = { 0xFE, 0xFF };
+u32 sRickyModelLoResId = 0x100;
+u32 sAnimAirTurn2BodyResId[0x2] = { 0x101, 0x102 };
+u32 sJimModelLoResId[0x2] = { 0x103, 0x104 };
+u32 sNigelModelHiResId = 0x105;
+u32 sAnimFenderKissBodyResId[0x4] = { 0x106, 0x107, 0x108, 0x109 };
+u32 sBikeFrontWheelLoResId = 0x10A;
+u32 sBlizzardBlitzResMapResId[0x2] = { 0x10B, 0x10C };
+u32 sBobbySkin1ResId = 0x10D;
+u32 sLeftysMillResMapResId[0x2] = { 0x10E, 0x10F };
+u32 sBikeSwingarmHiResId = 0x110;
+u32 sBobbySkin2ResId = 0x111;
+u32 sCanyonChasmResMapResId[0x3] = { 0x112, 0x113, 0x114 };
+u32 sNigelModelLoResId = 0x115;
+u32 sBobbySkin3ResId = 0x116;
+u32 sRainforestRunResMapResId[0x3] = { 0x117, 0x118, 0x119 };
+u32 sBobbySkin4ResId = 0x11A;
+u32 sGravelPitResMapResId[0x4] = { 0x11B, 0x11C, 0x11D, 0x11E };
+u32 sBobbySkin5ResId[0x2] = { 0x11F, 0x120 };
+u32 sConstructionYardResMapResId[0x3] = { 0x121, 0x122, 0x123 };
+u32 sBikeRearWheelHiResId = 0x124;
+u32 sBobbySkin6ResId = 0x125;
+u32 sSarahSkin1ResId[0x3] = { 0x126, 0x127, 0x128 };
+u32 sMountainQuarryResMapResId = 0x129;
+u32 sDesTerrainTexResId[0x2] = { 0x12A, 0x12B };
+u32 sVickySkin1ResId = 0x12C;
+u32 sSarahSkin2ResId = 0x12D;
+u32 sCongoCourseResMapResId[0x5] = {
     /* 0x000 */ 0x12E, 0x12F, 0x130, 0x131,
     /* 0x010 */ 0x132,
 };
-u32 D_800D0B8C = 0x133;
-u32 D_800D0B90[0x2] = { 0x134, 0x135 };
-u32 D_800D0B98[0x4] = { 0x136, 0x137, 0x138, 0x139 };
-u32 D_800D0BA8 = 0x13A;
-u32 D_800D0BAC = 0x13B;
-u32 D_800D0BB0[0x4] = { 0x13C, 0x13D, 0x13E, 0x13F };
-u32 D_800D0BC0 = 0x140;
-u32 D_800D0BC4 = 0x141;
+u32 sVickySkin2ResId = 0x133;
+u32 sSarahSkin3ResId[0x2] = { 0x134, 0x135 };
+u32 sGoldmineRushResMapResId[0x4] = { 0x136, 0x137, 0x138, 0x139 };
+u32 sVickySkin3ResId = 0x13A;
+u32 sSarahSkin4ResId = 0x13B;
+u32 sAnimCordovaBodyResId[0x4] = { 0x13C, 0x13D, 0x13E, 0x13F };
+u32 sVickySkin4ResId = 0x140;
+u32 sSarahSkin5ResId = 0x141;
 u32 D_800D0BC8[0x4] = { 0x142, 0x143, 0x144, 0x145 };
-u32 D_800D0BD8 = 0x146;
-u32 D_800D0BDC[0x3] = { 0x147, 0x148, 0x149 };
-u32 D_800D0BE8[0x2] = { 0x14A, 0x14B };
-u32 D_800D0BF0 = 0x14C;
-u32 D_800D0BF4 = 0x14D;
-u32 D_800D0BF8[0x3] = { 0x14E, 0x14F, 0x150 };
-u32 D_800D0C04 = 0x151;
-u32 D_800D0C08 = 0x152;
-u32 D_800D0C0C[0x2] = { 0x153, 0x154 };
-u32 D_800D0C14 = 0x155;
-u32 D_800D0C18 = 0x156;
-u32 D_800D0C1C = 0x157;
-u32 D_800D0C20 = 0x158;
-u32 D_800D0C24 = 0x159;
-u32 D_800D0C28 = 0x15A;
-u32 D_800D0C2C = 0x15B;
-u32 D_800D0C30[0x2] = { 0x15C, 0x15D };
-u32 D_800D0C38 = 0x15E;
-u32 D_800D0C3C = 0x15F;
-u32 D_800D0C40[0x4] = { 0x160, 0x161, 0x162, 0x163 };
-u32 D_800D0C50[0x2] = { 0x164, 0x165 };
-u32 D_800D0C58 = 0x166;
-u32 D_800D0C5C[0x4] = { 0x167, 0x168, 0x169, 0x16A };
-u32 D_800D0C6C = 0x16B;
-u32 D_800D0C70 = 0x16C;
-u32 D_800D0C74[0x5] = {
+u32 sVickySkin5ResId = 0x146;
+u32 sSarahSkin6ResId[0x3] = { 0x147, 0x148, 0x149 };
+u32 sPodium1stPose3ResId[0x2] = { 0x14A, 0x14B };
+u32 sVickySkin6ResId = 0x14C;
+u32 sRickySkin1ResId = 0x14D;
+u32 sAnimKobeRootResId[0x3] = { 0x14E, 0x14F, 0x150 };
+u32 sPodium2ndPose3ResId = 0x151;
+u32 sRickySkin2ResId = 0x152;
+u32 sJimSkin1ResId[0x2] = { 0x153, 0x154 };
+u32 sPodium3rdPose3ResId = 0x155;
+u32 sPonytailPoseBResId = 0x156;
+u32 sRickySkin3ResId = 0x157;
+u32 sJimSkin2ResId = 0x158;
+u32 sControlsBgResId = 0x159;
+u32 sSoccerResMapResId = 0x15A;
+u32 sRickySkin4ResId = 0x15B;
+u32 sJimSkin3ResId[0x2] = { 0x15C, 0x15D };
+u32 sRickySkin5ResId = 0x15E;
+u32 sJimSkin4ResId = 0x15F;
+u32 sAnimAirTurnRootResId[0x4] = { 0x160, 0x161, 0x162, 0x163 };
+u32 sDesArrowModelResId[0x2] = { 0x164, 0x165 };
+u32 sRickySkin6ResId = 0x166;
+u32 sJimSkin5ResId[0x4] = { 0x167, 0x168, 0x169, 0x16A };
+u32 sNigelSkin1ResId = 0x16B;
+u32 sJimSkin6ResId = 0x16C;
+u32 sAnimNothingBodyResId[0x5] = {
     /* 0x000 */ 0x16D, 0x16E, 0x16F, 0x170,
     /* 0x010 */ 0x171,
 };
-u32 D_800D0C88 = 0x172;
-u32 D_800D0C8C[0x4] = { 0x173, 0x174, 0x175, 0x176 };
-u32 D_800D0C9C[0x4] = { 0x177, 0x178, 0x179, 0x17A };
-u32 D_800D0CAC[0x4] = { 0x17B, 0x17C, 0x17D, 0x17E };
-u32 D_800D0CBC[0x5] = {
+u32 sExtraRiderTexResId = 0x172;
+u32 sNigelSkin2ResId[0x4] = { 0x173, 0x174, 0x175, 0x176 };
+u32 sNigelSkin3ResId[0x4] = { 0x177, 0x178, 0x179, 0x17A };
+u32 sNigelSkin4ResId[0x4] = { 0x17B, 0x17C, 0x17D, 0x17E };
+u32 sNigelSkin5ResId[0x5] = {
     /* 0x000 */ 0x17F, 0x180, 0x181, 0x182,
     /* 0x010 */ 0x183,
 };
-u32 D_800D0CD0[0xc] = {
+u32 sNigelSkin6ResId[0xc] = {
     /* 0x000 */ 0x184, 0x185, 0x186, 0x187,
     /* 0x010 */ 0x188, 0x189, 0x18A, 0x18B,
     /* 0x020 */ 0x18C, 0x18D, 0x18E, 0x18F,
 };
-u32 D_800D0D00 = 0x190;
-u32 D_800D0D04[0x4] = { 0x191, 0x192, 0x193, 0x194 };
-u32 D_800D0D14[0x2] = { 0x195, 0x196 };
-u32 D_800D0D1C = 0x197;
-u32 D_800D0D20[0x2] = { 0x198, 0x199 };
-u32 D_800D0D28[0x3] = { 0x19A, 0x19B, 0x19C };
-u32 D_800D0D34 = 0x19D;
-u32 D_800D0D38 = 0x19E;
-u32 D_800D0D3C[0x2] = { 0x19F, 0x1A0 };
-u32 D_800D0D44 = 0x1A1;
-u32 D_800D0D48[0x2] = { 0x1A2, 0x1A3 };
-u32 D_800D0D50 = 0x1A4;
-u32 D_800D0D54 = 0x1A5;
-u32 D_800D0D58 = 0x1A6;
-u32 D_800D0D5C = 0x1A7;
-u32 D_800D0D60 = 0x1A8;
-u32 D_800D0D64[0x3] = { 0x1A9, 0x1AA, 0x1AB };
-u32 D_800D0D70 = 0x1AC;
-u32 D_800D0D74[0x2] = { 0x1AD, 0x1AE };
-u32 D_800D0D7C = 0x1AF;
-u32 D_800D0D80 = 0x1B0;
-u32 D_800D0D84 = 0x1B1;
-u32 D_800D0D88[0x2] = { 0x1B2, 0x1B3 };
-u32 D_800D0D90[0x2] = { 0x1B4, 0x1B5 };
-u32 D_800D0D98[0x3] = { 0x1B6, 0x1B7, 0x1B8 };
-u32 D_800D0DA4[0x2] = { 0x1B9, 0x1BA };
-u32 D_800D0DAC = 0x1BB;
-u32 D_800D0DB0 = 0x1BC;
-u32 D_800D0DB4 = 0x1BD;
-u32 D_800D0DB8 = 0x1BE;
-u32 D_800D0DBC = 0x1BF;
-u32 D_800D0DC0 = 0x1C0;
-u32 D_800D0DC4 = 0x1C1;
-u32 D_800D0DC8 = 0x1C2;
-u32 D_800D0DCC[0x2] = { 0x1C3, 0x1C4 };
-u32 D_800D0DD4[0x6] = {
+u32 sCountdownResId = 0x190;
+u32 sMarkerImageResId[0x4] = { 0x191, 0x192, 0x193, 0x194 };
+u32 sAnimKobeBodyResId[0x2] = { 0x195, 0x196 };
+u32 sSeattleResMapResId = 0x197;
+u32 sSparkleTexResId[0x2] = { 0x198, 0x199 };
+u32 sHoustonResMapResId[0x3] = { 0x19A, 0x19B, 0x19C };
+u32 sAnimAirTurnBodyResId = 0x19D;
+u32 sFontMainResId = 0x19E;
+u32 sFontDigitsResId[0x2] = { 0x19F, 0x1A0 };
+u32 sPonytailPoseAResId = 0x1A1;
+u32 sFontTitleResId[0x2] = { 0x1A2, 0x1A3 };
+u32 sDownhillPathResId = 0x1A4;
+u32 sFontSmallResId = 0x1A5;
+u32 sTutorialLesson1aDemoResId = 0x1A6;
+u32 sTutorialLesson2aDemoResId = 0x1A7;
+u32 sTutorialLesson1bDemoResId = 0x1A8;
+u32 sFontMenuResId[0x3] = { 0x1A9, 0x1AA, 0x1AB };
+u32 sTutorialLesson3aDemoResId = 0x1AC;
+u32 sTutorialLesson2bDemoResId[0x2] = { 0x1AD, 0x1AE };
+u32 sTutorialLesson4aDemoResId = 0x1AF;
+u32 sTutorialLesson3bDemoResId = 0x1B0;
+u32 sTutorialWheelieDemoResId = 0x1B1;
+u32 sPonytailSkelResId[0x2] = { 0x1B2, 0x1B3 };
+u32 sTutorialLesson4bDemoResId[0x2] = { 0x1B4, 0x1B5 };
+u32 sTutorialLesson4cDemoResId[0x3] = { 0x1B6, 0x1B7, 0x1B8 };
+u32 sRiderSkelResId[0x2] = { 0x1B9, 0x1BA };
+u32 sExhaustTexResId = 0x1BB;
+u32 sBikeTex0Pal1ResId = 0x1BC;
+u32 sClodTexResId = 0x1BD;
+u32 sExcite3DResMapResId = 0x1BE;
+u32 sBikeTex0Pal2ResId = 0x1BF;
+u32 sBikeTex1Pal1ResId = 0x1C0;
+u32 sHillClimbResMapResId = 0x1C1;
+u32 sBikeTex0Pal3ResId = 0x1C2;
+u32 sBikeTex1Pal2ResId[0x2] = { 0x1C3, 0x1C4 };
+u32 sBikeTex1Pal3ResId[0x6] = {
     /* 0x000 */ 0x1C5, 0x1C6, 0x1C7, 0x1C8,
     /* 0x010 */ 0x1C9, 0x1CA,
 };
-u32 D_800D0DEC = 0x1CB;
-u32 D_800D0DF0[0x2] = { 0x1CC, 0x1CD };
-u32 D_800D0DF8[0x2] = { 0x1CE, 0x1CF };
-u32 D_800D0E00 = 0x1D0;
-u32 D_800D0E04 = 0x1D1;
-u32 D_800D0E08 = 0x1D2;
-u32 D_800D0E0C[0x8] = {
+u32 gFinishLineTexResId = 0x1CB;
+u32 sDesArrowTexResId[0x2] = { 0x1CC, 0x1CD };
+u32 sBikeFrameLoResId[0x2] = { 0x1CE, 0x1CF };
+u32 sStarTexResId = 0x1D0;
+u32 sAnimPumpBodyResId = 0x1D1;
+u32 sTutorialLesson5DemoResId = 0x1D2;
+u32 sPuffTexResId[0x8] = {
     /* 0x000 */ 0x1D3, 0x1D4, 0x1D5, 0x1D6,
     /* 0x010 */ 0x1D7, 0x1D8, 0x1D9, 0x1DA,
 };
-u32 D_800D0E2C[0x2] = { 0x1DB, 0x1DC };
-u32 D_800D0E34[0xf] = {
+u32 sTutorialResMapResId[0x2] = { 0x1DB, 0x1DC };
+u32 sPodiumHelmetResId[0xf] = {
     /* 0x000 */ 0x1DD, 0x1DE, 0x1DF, 0x1E0,
     /* 0x010 */ 0x1E1, 0x1E2, 0x1E3, 0x1E4,
     /* 0x020 */ 0x1E5, 0x1E6, 0x1E7, 0x1E8,
     /* 0x030 */ 0x1E9, 0x1EA, 0x1EB,
 };
-u32 D_800D0E70[0xb] = {
+u32 sDesertScenery2ResId[0xb] = {
     /* 0x000 */ 0x1EC, 0x1ED, 0x1EE, 0x1EF,
     /* 0x010 */ 0x1F0, 0x1F1, 0x1F2, 0x1F3,
     /* 0x020 */ 0x1F4, 0x1F5, 0x1F6,
 };
-u32 D_800D0E9C[0x5] = {
+u32 sAnimCrashLeft1BodyResId[0x5] = {
     /* 0x000 */ 0x1F7, 0x1F8, 0x1F9, 0x1FA,
     /* 0x010 */ 0x1FB,
 };
-u32 D_800D0EB0[0x5] = {
+u32 sAnimCrashLeft2BodyResId[0x5] = {
     /* 0x000 */ 0x1FC, 0x1FD, 0x1FE, 0x1FF,
     /* 0x010 */ 0x200,
 };
-u32 D_800D0EC4[0xf] = {
+u32 sAnimCrashLeft3BodyResId[0xf] = {
     /* 0x000 */ 0x201, 0x202, 0x203, 0x204,
     /* 0x010 */ 0x205, 0x206, 0x207, 0x208,
     /* 0x020 */ 0x209, 0x20A, 0x20B, 0x20C,
     /* 0x030 */ 0x20D, 0x20E, 0x20F,
 };
-u32 D_800D0F00[0x2] = { 0x210, 0x211 };
-u32 D_800D0F08[0x3] = { 0x212, 0x213, 0x214 };
-u32 D_800D0F14[0x3] = { 0x215, 0x216, 0x217 };
-u32 D_800D0F20[0x3] = { 0x218, 0x219, 0x21A };
-u32 D_800D0F2C = 0x21B;
-u32 D_800D0F30[0x2] = { 0x21C, 0x21D };
-u32 D_800D0F38[0x8] = {
+u32 sPodium1stPose2HelmetResId[0x2] = { 0x210, 0x211 };
+u32 sAnimCrashRight1BodyResId[0x3] = { 0x212, 0x213, 0x214 };
+u32 sPodium2ndPose2HelmetResId[0x3] = { 0x215, 0x216, 0x217 };
+u32 sAnimCrashRight2BodyResId[0x3] = { 0x218, 0x219, 0x21A };
+u32 sPodium3rdPose2HelmetResId = 0x21B;
+u32 sPodiumModelResId[0x2] = { 0x21C, 0x21D };
+u32 sAnimCrashRight3BodyResId[0x8] = {
     /* 0x000 */ 0x21E, 0x21F, 0x220, 0x221,
     /* 0x010 */ 0x222, 0x223, 0x224, 0x225,
 };
-u32 D_800D0F58[0x8] = {
+u32 sDesertResMapResId[0x8] = {
     /* 0x000 */ 0x226, 0x227, 0x228, 0x229,
     /* 0x010 */ 0x22A, 0x22B, 0x22C, 0x22D,
 };
-u32 D_800D0F78[0x3] = { 0x22E, 0x22F, 0x230 };
-u32 D_800D0F84[0x3] = { 0x231, 0x232, 0x233 };
-u32 D_800D0F90 = 0x234;
-u32 D_800D0F94[0x3] = { 0x235, 0x236, 0x237 };
-u32 D_800D0FA0[0x3] = { 0x238, 0x239, 0x23A };
-u32 D_800D0FAC = 0x23B;
-u32 D_800D0FB0[0x5] = {
+u32 sDesertLightDefResId[0x3] = { 0x22E, 0x22F, 0x230 };
+u32 sGravelPitItem1ResId[0x3] = { 0x231, 0x232, 0x233 };
+u32 sBikeForkSliderLoResId = 0x234;
+u32 sGravelPitItem2ResId[0x3] = { 0x235, 0x236, 0x237 };
+u32 sGravelPitItem3ResId[0x3] = { 0x238, 0x239, 0x23A };
+u32 sGravelPitItem4ResId = 0x23B;
+u32 sFinishPropModelResId[0x5] = {
     /* 0x000 */ 0x23C, 0x23D, 0x23E, 0x23F,
     /* 0x010 */ 0x240,
 };
-u32 D_800D0FC4[0x7] = {
+u32 sBikeForkHiResId[0x7] = {
     /* 0x000 */ 0x241, 0x242, 0x243, 0x244,
     /* 0x010 */ 0x245, 0x246, 0x247,
 };
-u32 D_800D0FE0[0x8] = {
+u32 sStuntCourseResMapResId[0x8] = {
     /* 0x000 */ 0x248, 0x249, 0x24A, 0x24B,
     /* 0x010 */ 0x24C, 0x24D, 0x24E, 0x24F,
 };
-u32 D_800D1000 = 0x250;
-u32 D_800D1004[0x4] = { 0x251, 0x252, 0x253, 0x254 };
-u32 D_800D1014[0x1a] = {
+u32 sSnowTexResId = 0x250;
+u32 sBikeFrontWheelHiResId[0x4] = { 0x251, 0x252, 0x253, 0x254 };
+u32 sDesObjTexResId[0x1a] = {
     /* 0x000 */ 0x255, 0x256, 0x257, 0x258,
     /* 0x010 */ 0x259, 0x25A, 0x25B, 0x25C,
     /* 0x020 */ 0x25D, 0x25E, 0x25F, 0x260,
@@ -5875,36 +5875,36 @@ u32 D_800D1014[0x1a] = {
     /* 0x050 */ 0x269, 0x26A, 0x26B, 0x26C,
     /* 0x060 */ 0x26D, 0x26E,
 };
-u32 D_800D107C = 0x26F;
+u32 sAnimSaranWrapBodyResId = 0x26F;
 u32 D_800D1080 = 0x270;
-u32 D_800D1084[0x2] = { 0x271, 0x272 };
-u32 D_800D108C[0x3] = { 0x273, 0x274, 0x275 };
-u32 D_800D1098[0x6] = {
+u32 sSoccerMapResId[0x2] = { 0x271, 0x272 };
+u32 sVolumeBarResId[0x3] = { 0x273, 0x274, 0x275 };
+u32 sAnimFinish3rdBodyResId[0x6] = {
     /* 0x000 */ 0x276, 0x277, 0x278, 0x279,
     /* 0x010 */ 0x27A, 0x27B,
 };
-u32 D_800D10B0 = 0x27C;
-u32 D_800D10B4 = 0x27D;
-u32 D_800D10B8[0x5] = {
+u32 sAnimSupermanRootResId = 0x27C;
+u32 sWaterSplashTexResId = 0x27D;
+u32 sGaugeTexResId[0x5] = {
     /* 0x000 */ 0x27E, 0x27F, 0x280, 0x281,
     /* 0x010 */ 0x282,
 };
-u32 D_800D10CC[0x6] = {
+u32 sPodiumTextureResId[0x6] = {
     /* 0x000 */ 0x283, 0x284, 0x285, 0x286,
     /* 0x010 */ 0x287, 0x288,
 };
-u32 D_800D10E4 = 0x289;
-u32 D_800D10E8[0x2] = { 0x28A, 0x28B };
-u32 D_800D10F0[0x2] = { 0x28C, 0x28D };
-u32 D_800D10F8[0x4] = { 0x28E, 0x28F, 0x290, 0x291 };
-u32 D_800D1108[0x3] = { 0x292, 0x293, 0x294 };
-u32 D_800D1114[0x5] = {
+u32 sAnimFinish1stBodyResId = 0x289;
+u32 sTutorialPrevNextResId[0x2] = { 0x28A, 0x28B };
+u32 sTutorialPathResId[0x2] = { 0x28C, 0x28D };
+u32 sFinishPropTexResId[0x4] = { 0x28E, 0x28F, 0x290, 0x291 };
+u32 sAnimSupermanBodyResId[0x3] = { 0x292, 0x293, 0x294 };
+u32 sAnimFinish6thBodyResId[0x5] = {
     /* 0x000 */ 0x295, 0x296, 0x297, 0x298,
     /* 0x010 */ 0x299,
 };
-u32 D_800D1128[0x2] = { 0x29A, 0x29B };
-u32 D_800D1130[0x2] = { 0x29C, 0x29D };
-u32 D_800D1138[0x19] = {
+u32 sAnimNacNacRootResId[0x2] = { 0x29A, 0x29B };
+u32 sBikeLowModelResId[0x2] = { 0x29C, 0x29D };
+u32 sAnimFenderGrabRootResId[0x19] = {
     /* 0x000 */ 0x29E, 0x29F, 0x2A0, 0x2A1,
     /* 0x010 */ 0x2A2, 0x2A3, 0x2A4, 0x2A5,
     /* 0x020 */ 0x2A6, 0x2A7, 0x2A8, 0x2A9,
@@ -5913,227 +5913,227 @@ u32 D_800D1138[0x19] = {
     /* 0x050 */ 0x2B2, 0x2B3, 0x2B4, 0x2B5,
     /* 0x060 */ 0x2B6,
 };
-u32 D_800D119C[0x2] = { 0x2B7, 0x2B8 };
-u32 D_800D11A4[0x3] = { 0x2B9, 0x2BA, 0x2BB };
-u32 D_800D11B0 = 0x2BC;
-u32 D_800D11B4[0x2] = { 0x2BD, 0x2BE };
-u32 D_800D11BC = 0x2BF;
-u32 D_800D11C0[0x2] = { 0x2C0, 0x2C1 };
-u32 D_800D11C8 = 0;
-u32 D_800D11CC = 0x1;
-u32 D_800D11D0 = 0x2;
-u32 D_800D11D4 = 0x3;
-u32 D_800D11D8 = 0x4;
-u32 D_800D11DC = 0x5;
-u32 D_800D11E0 = 0x6;
-u32 D_800D11E4 = 0x7;
-u32 D_800D11E8 = 0x8;
-u32 D_800D11EC = 0x9;
-u32 D_800D11F0 = 0xA;
-u32 D_800D11F4 = 0xB;
-u32 D_800D11F8 = 0xC;
-u32 D_800D11FC = 0xD;
-u32 D_800D1200 = 0xE;
-u32 D_800D1204 = 0xF;
-u32 D_800D1208 = 0x10;
-u32 D_800D120C = 0x11;
-u32 D_800D1210 = 0x12;
-u32 D_800D1214 = 0x13;
-u32 D_800D1218 = 0x14;
-u32 D_800D121C = 0x15;
-u32 D_800D1220 = 0x16;
-u32 D_800D1224 = 0x17;
-u32 D_800D1228 = 0x18;
-u32 D_800D122C = 0x19;
-u32 D_800D1230 = 0x1A;
-u32 D_800D1234 = 0x1B;
-u32 D_800D1238 = 0x1C;
-u32 D_800D123C = 0x1D;
-u32 D_800D1240 = 0x1E;
-u32 D_800D1244 = 0x1F;
-u32 D_800D1248 = 0x20;
-u32 D_800D124C = 0x21;
-u32 D_800D1250 = 0;
-u32 D_800D1254 = 0x1;
-u32 D_800D1258 = 0x2;
-u32 D_800D125C = 0x3;
-u32 D_800D1260 = 0x4;
-u32 D_800D1264 = 0x5;
-u32 D_800D1268 = 0x6;
-u32 D_800D126C = 0x7;
-u32 D_800D1270 = 0x8;
+u32 sBikeSwingarmLoResId[0x2] = { 0x2B7, 0x2B8 };
+u32 sPodium2ndPose3HelmetResId[0x3] = { 0x2B9, 0x2BA, 0x2BB };
+u32 sTempGaugeResId = 0x2BC;
+u32 sPodium3rdPose3HelmetResId[0x2] = { 0x2BD, 0x2BE };
+u32 sAnimDblCanCanBodyResId = 0x2BF;
+u32 sAnimNacNacBodyResId[0x2] = { 0x2C0, 0x2C1 };
+u32 sOverheatSfxResId = 0;
+u32 sMenuErrorSfxResId = 0x1;
+u32 sMenuMoveSfxResId = 0x2;
+u32 sMenuSongId = 0x3;
+u32 gReplaySongResId = 0x4;
+u32 sWaterSplashSfxResId = 0x5;
+u32 sRaceSong1ResId = 0x6;
+u32 gPodiumSongResId = 0x7;
+u32 sWaterPlungeSfxResId = 0x8;
+u32 sFinishSongResId = 0x9;
+u32 sRaceSong2ResId = 0xA;
+u32 sEngineGear1SfxResId = 0xB;
+u32 sEngineGear2SfxResId = 0xC;
+u32 sEngineGear3SfxResId = 0xD;
+u32 sEngineGear4SfxResId = 0xE;
+u32 sOptionsSfxSampleId = 0xF;
+u32 sReedsSurfaceSfxResId = 0x10;
+u32 sRaceSong3ResId = 0x11;
+u32 sEngineIdleSfxResId = 0x12;
+u32 sDemoSongResId = 0x13;
+u32 sRaceSong4ResId = 0x14;
+u32 sCrashHitSfxResId = 0x15;
+u32 sLandingSfxResId = 0x16;
+u32 sRaceSong5ResId = 0x17;
+u32 sSkidSfxResId = 0x18;
+u32 sCrashHit2SfxResId = 0x19;
+u32 sMenuSelectSfxResId = 0x1A;
+u32 sWoodSurfaceSfxResId = 0x1B;
+u32 sEngineLoopSfxResId = 0x1C;
+u32 sSurfaceSoundsResId = 0x1D;
+u32 sMenuBackSfxResId = 0x1E;
+u32 sStreamSampleTableResId = 0x1F;
+u32 sRaceSong6ResId = 0x20;
+u32 sScrapeSfxResId = 0x21;
+u32 sPieceUserCollisionResId = 0;
+u32 sPieceUserGroundResId = 0x1;
+u32 sPieceUserPathResId = 0x2;
+u32 sEditCursorTexResId = 0x3;
+u32 sPieceTurn90PathResId = 0x4;
+u32 sPieceMediumStraightPathResId = 0x5;
+u32 sPieceLongJumpPathResId = 0x6;
+u32 sEditArenaWallTexResId = 0x7;
+u32 sPieceShortStraightPathResId = 0x8;
 u32 D_800D1274 = 0x9;
-u32 D_800D1278 = 0xA;
-u32 D_800D127C = 0xB;
-u32 D_800D1280 = 0xC;
-u32 D_800D1284 = 0xD;
-u32 D_800D1288 = 0xE;
-u32 D_800D128C = 0xF;
-u32 D_800D1290 = 0x10;
-u32 D_800D1294 = 0x11;
-u32 D_800D1298 = 0x12;
-u32 D_800D129C = 0x13;
-u32 D_800D12A0 = 0x14;
-u32 D_800D12A4 = 0x15;
-u32 D_800D12A8 = 0x16;
-u32 D_800D12AC = 0x17;
-u32 D_800D12B0 = 0x18;
-u32 D_800D12B4 = 0x19;
-u32 D_800D12B8 = 0x1A;
-u32 D_800D12BC = 0x1B;
-u32 D_800D12C0 = 0x1C;
-u32 D_800D12C4 = 0x1D;
-u32 D_800D12C8 = 0x1E;
-u32 D_800D12CC = 0x1F;
-u32 D_800D12D0 = 0x20;
-u32 D_800D12D4 = 0x21;
-u32 D_800D12D8 = 0x22;
-u32 D_800D12DC = 0x23;
-u32 D_800D12E0 = 0x24;
-u32 D_800D12E4 = 0x25;
-u32 D_800D12E8 = 0x26;
-u32 D_800D12EC = 0x27;
-u32 D_800D12F0 = 0x28;
-u32 D_800D12F4 = 0x29;
-u32 D_800D12F8 = 0x2A;
-u32 D_800D12FC = 0x2B;
-u32 D_800D1300 = 0x2C;
-u32 D_800D1304 = 0x2D;
-u32 D_800D1308 = 0x2E;
-u32 D_800D130C = 0x2F;
-u32 D_800D1310 = 0x30;
-u32 D_800D1314 = 0x31;
-u32 D_800D1318 = 0x32;
-u32 D_800D131C = 0x33;
-u32 D_800D1320 = 0x34;
-u32 D_800D1324 = 0x35;
-u32 D_800D1328 = 0x36;
-u32 D_800D132C = 0x37;
-u32 D_800D1330 = 0x38;
-u32 D_800D1334 = 0x39;
-u32 D_800D1338 = 0x3A;
-u32 D_800D133C = 0x3B;
-u32 D_800D1340 = 0x3C;
-u32 D_800D1344 = 0x3D;
-u32 D_800D1348 = 0x3E;
-u32 D_800D134C = 0x3F;
-u32 D_800D1350 = 0x40;
-u32 D_800D1354 = 0x41;
-u32 D_800D1358 = 0x42;
-u32 D_800D135C = 0x43;
-u32 D_800D1360 = 0x44;
-u32 D_800D1364 = 0x45;
-u32 D_800D1368 = 0x46;
-u32 D_800D136C = 0x47;
-u32 D_800D1370 = 0x48;
-u32 D_800D1374 = 0;
-u32 D_800D1378 = 0x1;
-u32 D_800D137C = 0x2;
-u32 D_800D1380 = 0x3;
-u32 D_800D1384 = 0x4;
-u32 D_800D1388 = 0x5;
-u32 D_800D138C = 0x6;
-u32 D_800D1390 = 0x7;
-u32 D_800D1394 = 0x8;
-u32 D_800D1398 = 0x9;
-u32 D_800D139C = 0xA;
-u32 D_800D13A0 = 0xB;
-u32 D_800D13A4 = 0xC;
+u32 sPieceSteepJumpObjectsResId = 0xA;
+u32 sPieceEmptyGroundResId = 0xB;
+u32 sPieceTabletopObjectsResId = 0xC;
+u32 sPieceDoubleObjectsResId = 0xD;
+u32 sPieceRaised180ObjectsResId = 0xE;
+u32 sPieceLandingSlopeObjectsResId = 0xF;
+u32 sPieceFlat90ObjectsResId = 0x10;
+u32 sPieceCamelJumpObjectsResId = 0x11;
+u32 sPieceBanked90ObjectsResId = 0x12;
+u32 sPieceBanked180ObjectsResId = 0x13;
+u32 sPieceRaised180CollisionResId = 0x14;
+u32 sPieceFlat90CollisionResId = 0x15;
+u32 sPieceBanked90CollisionResId = 0x16;
+u32 sPieceBanked180CollisionResId = 0x17;
+u32 sPieceSteepJumpGroundResId = 0x18;
+u32 sPieceTabletopGroundResId = 0x19;
+u32 sPieceDoubleGroundResId = 0x1A;
+u32 sPieceRaised180GroundResId = 0x1B;
+u32 sPieceLandingSlopeGroundResId = 0x1C;
+u32 sPieceFlat90GroundResId = 0x1D;
+u32 sPieceCamelJumpGroundResId = 0x1E;
+u32 sPieceBanked90GroundResId = 0x1F;
+u32 sPieceBanked180GroundResId = 0x20;
+u32 sPieceShortJumpObjectsResId = 0x21;
+u32 sPieceMiniJumpObjectsResId = 0x22;
+u32 sEditArenaCollisionResId = 0x23;
+u32 sPieceShortStraightObjectsResId = 0x24;
+u32 sPieceWhoopsObjectsResId = 0x25;
+u32 sPieceSmallLandingObjectsResId = 0x26;
+u32 sPieceShortJumpCollisionResId = 0x27;
+u32 sPieceShallowWhoopsObjectsResId = 0x28;
+u32 sPieceMiniJumpCollisionResId = 0x29;
+u32 sPieceLaunchJumpObjectsResId = 0x2A;
+u32 sPieceWhoopsCollisionResId = 0x2B;
+u32 sPieceMiniJumpLandingObjectsResId = 0x2C;
+u32 sPieceSmallLandingCollisionResId = 0x2D;
+u32 sPieceSteepJumpCollisionResId = 0x2E;
+u32 sPieceShallowWhoopsCollisionResId = 0x2F;
+u32 sPieceTabletopCollisionResId = 0x30;
+u32 sPieceLaunchJumpCollisionResId = 0x31;
+u32 sPieceDoubleCollisionResId = 0x32;
+u32 sPieceMiniJumpLandingCollisionResId = 0x33;
+u32 sPieceLandingSlopeCollisionResId = 0x34;
+u32 sPieceCamelJumpCollisionResId = 0x35;
+u32 sPieceShortJumpGroundResId = 0x36;
+u32 sPieceMiniJumpGroundResId = 0x37;
+u32 sPieceWhoopsGroundResId = 0x38;
+u32 sPieceSmallLandingGroundResId = 0x39;
+u32 sPieceShallowWhoopsGroundResId = 0x3A;
+u32 sPieceLaunchJumpGroundResId = 0x3B;
+u32 sPieceMiniJumpLandingGroundResId = 0x3C;
+u32 sPieceShortStraightCollisionResId = 0x3D;
+u32 sDirtTex0ResId = 0x3E;
+u32 sDirtTex1ResId = 0x3F;
+u32 sDirtTex2ResId = 0x40;
+u32 sPieceShortStraightGroundResId = 0x41;
+u32 sPieceBanked180PathResId = 0x42;
+u32 sPieceMediumStraightObjectsResId = 0x43;
+u32 sPieceMediumStraightCollisionResId = 0x44;
+u32 sPieceMediumStraightGroundResId = 0x45;
+u32 sEditCursorModelResId = 0x46;
+u32 sPieceRaised180PathResId = 0x47;
+u32 gPieceObjectTexResId = 0x48;
+u32 sRainforestRunPicResId = 0;
+u32 sCongoCoursePicResId = 0x1;
+u32 sLeftysMillPicResId = 0x2;
+u32 sTextEntryTitleBarResId = 0x3;
+u32 sCanyonChasmPicResId = 0x4;
+u32 sRiderSelectFramesResId = 0x5;
+u32 sNintendoSplashResId = 0x6;
+u32 sConstructionYardPicResId = 0x7;
+u32 sTrophyResId = 0x8;
+u32 sDialogTitleBarResId = 0x9;
+u32 sControllerDiagramResId = 0xA;
+u32 gControllerIconResId = 0xB;
+u32 sMountainQuarryPicResId = 0xC;
 u32 D_800D13A8 = 0xD;
-u32 D_800D13AC = 0xE;
-u32 D_800D13B0 = 0xF;
-u32 D_800D13B4 = 0x10;
-u32 D_800D13B8 = 0x11;
-u32 D_800D13BC = 0x12;
-u32 D_800D13C0 = 0x13;
-u32 D_800D13C4 = 0x14;
-u32 D_800D13C8 = 0x15;
-u32 D_800D13CC = 0x16;
-u32 D_800D13D0 = 0x17;
-u32 D_800D13D4 = 0x18;
-u32 D_800D13D8 = 0x19;
-u32 D_800D13DC = 0x1A;
-u32 D_800D13E0 = 0x1B;
-u32 D_800D13E4 = 0x1C;
-u32 D_800D13E8 = 0x1D;
+u32 sGravelPitPicResId = 0xE;
+u32 sYouLoseResId = 0xF;
+u32 sExpansionPakDetectedResId = 0x10;
+u32 sHoustonPicResId = 0x11;
+u32 sPakStatusTitleBarResId = 0x12;
+u32 sResultsTitleBarsResId = 0x13;
+u32 sN64SportsLogoResId = 0x14;
+u32 sWonFlagResId = 0x15;
+u32 sCheatPicResId = 0x16;
+u32 sSeattlePicResId = 0x17;
+u32 sOrlandoPicResId = 0x18;
+u32 sLongIslandPicResId = 0x19;
+u32 sLasVegasPicResId = 0x1A;
+u32 gWarnFrameResId = 0x1B;
+u32 sNashvillePicResId = 0x1C;
+u32 sPhoenixPicResId = 0x1D;
 u32 D_800D13EC = 0x1E;
-u32 D_800D13F0 = 0x1F;
-u32 D_800D13F4 = 0x20;
-u32 D_800D13F8 = 0x21;
-u32 D_800D13FC = 0x22;
-u32 D_800D1400 = 0x23;
-u32 D_800D1404 = 0x24;
-u32 D_800D1408 = 0x25;
-u32 D_800D140C = 0x26;
-u32 D_800D1410 = 0x27;
+u32 sDetroitPicResId = 0x1F;
+u32 sPadlockResId = 0x20;
+u32 sKyotoPicResId = 0x21;
+u32 sGoldmineRushPicResId = 0x22;
+u32 sMadridPicResId = 0x23;
+u32 sLosAngelesPicResId = 0x24;
+u32 sGuiImagesResId = 0x25;
+u32 sSponsorLogosResId = 0x26;
+u32 sDialogFrameResId = 0x27;
 u32 D_800D1414 = 0x28;
-u32 D_800D1418 = 0x29;
-u32 D_800D141C = 0x2A;
-u32 D_800D1420 = 0x2B;
-u32 D_800D1424 = 0x2C;
-u32 D_800D1428 = 0x2D;
-u32 D_800D142C = 0x2E;
-u32 D_800D1430 = 0x2F;
-u32 D_800D1434 = 0x30;
-u32 D_800D1438 = 0x31;
-u32 D_800D143C = 0x32;
-u32 D_800D1440 = 0x33;
-u32 D_800D1444 = 0x34;
-u32 D_800D1448 = 0x35;
-u32 D_800D144C = 0x36;
-u32 D_800D1450 = 0x37;
-u32 D_800D1454 = 0x38;
-u32 D_800D1458 = 0x39;
-u32 D_800D145C = 0x3A;
-u32 D_800D1460 = 0x3B;
-u32 D_800D1464 = 0x3C;
-u32 D_800D1468 = 0x3D;
-u32 D_800D146C = 0x3E;
-u32 D_800D1470 = 0x3F;
-u32 D_800D1474 = 0x40;
-u32 D_800D1478 = 0x41;
-u32 D_800D147C = 0x42;
-u32 D_800D1480 = 0x43;
-u32 D_800D1484 = 0x44;
-u32 D_800D1488 = 0x45;
-u32 D_800D148C = 0x46;
-u32 D_800D1490 = 0x47;
-u32 D_800D1494 = 0x48;
-u32 D_800D1498 = 0x49;
-u32 D_800D149C = 0x4A;
-u32 D_800D14A0 = 0x4B;
-u32 D_800D14A4 = 0x4C;
-u32 D_800D14A8 = 0x4D;
-u32 D_800D14AC = 0x4E;
-u32 D_800D14B0 = 0x4F;
-u32 D_800D14B4 = 0x50;
-u32 D_800D14B8 = 0x51;
-u32 D_800D14BC = 0x52;
-u32 D_800D14C0 = 0x53;
-u32 D_800D14C4 = 0x54;
-u32 D_800D14C8 = 0x55;
-u32 D_800D14CC[0x3] = { 0x56, 0x57, 0x58 };
-u32 D_800D14D8 = 0;
-u32 D_800D14DC = 0;
-u32 D_800D14E0 = 0x1;
-u32 D_800D14E4 = 0x2;
-u32 D_800D14E8 = 0x3;
-u32 D_800D14EC = 0x4;
-u32 D_800D14F0 = 0x5;
-u32 D_800D14F4 = 0x6;
-u32 D_800D14F8 = 0x7;
-u32 D_800D14FC = 0x8;
-u32 D_800D1500 = 0x9;
-u32 D_800D1504 = 0xA;
-u32 D_800D1508 = 0xB;
-u32 D_800D150C = 0xC;
-u32 D_800D1510 = 0xD;
-u32 D_800D1514 = 0xE;
-u32 D_800D1518 = 0xF;
-u32 D_800D151C[0x2] = { 0x10, 0x11 };
-u32 D_800D1524 = 0x12;
-u32 D_800D1528 = 0x13;
-u32 D_800D152C[0x16] = {
+u32 gTitleBarResId = 0x29;
+u32 sSubmenuFrameResId = 0x2A;
+u32 sBlizzardBlitzPicResId = 0x2B;
+u32 gCursorPalResId = 0x2C;
+u32 gCursorResId = 0x2D;
+u32 gWarnTitleBarResId = 0x2E;
+u32 sSubmenuItemBarResId = 0x2F;
+u32 sPakButtonIconsResId = 0x30;
+u32 sPopupFramesResId = 0x31;
+u32 sResultsFramesResId = 0x32;
+u32 sGuiCursorImagesResId = 0x33;
+u32 sOptionsFrameResId = 0x34;
+u32 sCustomRoundArrowsResId = 0x35;
+u32 sRiderSelectBarResId = 0x36;
+u32 sMenuFramesResId = 0x37;
+u32 sSeasonItemPicResId = 0x38;
+u32 sExhibitionItemPicResId = 0x39;
+u32 sTimeTrialsItemPicResId = 0x3A;
+u32 sSpecialTracksItemPicResId = 0x3B;
+u32 sOptionsItemPicResId = 0x3C;
+u32 sCustomTracksItemPicResId = 0x3D;
+u32 sDesertPicResId = 0x3E;
+u32 sOptionsTitleBarResId = 0x3F;
+u32 sStuntCoursePicResId = 0x40;
+u32 sOptionsTitleResId = 0x41;
+u32 sHillClimbPicResId = 0x42;
+u32 sExcite3dPicResId = 0x43;
+u32 sMenuBackgroundOrangeResId = 0x44;
+u32 gMenuBackgroundResId = 0x45;
+u32 sTextEntryFramesResId = 0x46;
+u32 sTitleLogoResId = 0x47;
+u32 sCButtonIconsResId = 0x48;
+u32 sControllerSettingsFrameResId = 0x49;
+u32 sSmallArrowsResId = 0x4A;
+u32 sPakStatusFrameResId = 0x4B;
+u32 sCopyrightResId = 0x4C;
+u32 sPakUiTexResId = 0x4D;
+u32 sScreenArrowsResId = 0x4E;
+u32 sDesertItemPicResId = 0x4F;
+u32 sStuntCourseItemPicResId = 0x50;
+u32 sLeftFieldLogoResId = 0x51;
+u32 sOriginalExcitebikeItemPicResId = 0x52;
+u32 sSoccerItemPicResId = 0x53;
+u32 sHillClimbItemPicResId = 0x54;
+u32 sMenuItemBarsResId = 0x55;
+u32 sExcite3dItemPicResId[0x3] = { 0x56, 0x57, 0x58 };
+u32 sNesRomResId = 0;
+u32 gGidArnGround = 0;
+u32 gGidArnScene = 0x1;
+u32 gGidArnWater = 0x2;
+u32 gGidDrones = 0x3;
+u32 gGidLightDef = 0x4;
+u32 gGidMaterials = 0x5;
+u32 gGidPatches = 0x6;
+u32 gGidPathSpline = 0x7;
+u32 gGidPkgAlt = 0x8;
+u32 gGidPkgAnim = 0x9;
+u32 gGidPkgGround = 0xA;
+u32 gGidPkgScene = 0xB;
+u32 gGidPkgSky = 0xC;
+u32 gGidPkgWater = 0xD;
+u32 gGidVisInfo = 0xE;
+u32 gGidWalCol = 0xF;
+u32 gGidSpCam[0x2] = { 0x10, 0x11 };
+u32 gGidAmbient = 0x12;
+u32 gGidInstanceDef = 0x13;
+u32 gGidArnSky[0x16] = {
     /* 0x000 */ 0x14, 0x15, 0x16, 0x17,
     /* 0x010 */ 0x18, 0x19, 0x1A, 0x1B,
     /* 0x020 */ 0x1C, 0x1D, 0x1E, 0x1F,
@@ -6141,10 +6141,10 @@ u32 D_800D152C[0x16] = {
     /* 0x040 */ 0x24, 0x25, 0x26, 0x27,
     /* 0x050 */ 0x28, 0x29,
 };
-u32 D_800D1584 = 0x2A;
-u32 D_800D1588 = 0x2B;
-u32 D_800D158C = 0x2C;
-u32 D_800D1590[0xc] = {
+u32 gGidArnStand = 0x2A;
+u32 gGidArnStandLow = 0x2B;
+u32 gGidPkgStand = 0x2C;
+u32 gGidCamFlash[0xc] = {
     /* 0x000 */ 0x2D, 0x2E, 0x2F, 0x30,
     /* 0x010 */ 0x31, 0x32, 0x33, 0x34,
     /* 0x020 */ 0x35, 0x36, 0x37, 0x123A123D,

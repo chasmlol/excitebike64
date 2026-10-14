@@ -218,7 +218,7 @@ gDPSetCycleType, gDPSetRenderMode), 0xD9 geometry mode, 0xDA matrix.
 - Mixed stack locals in the wrong slots: one struct in the original's order; but out-parameters read back before
   record stores are separate scalars `s32 A, B, C;` (struct locals are in-struct MEMs). u16 pairs next to an s32
   out-parameter (any local array/struct takes an 8-byte padded slot): declare the s32s, pass `(u16 *)&w`
-  (func_8009DC6C). Address-taken parameters: `&param`. No dead-store elimination on address-taken stack locals. A
+  (edit_user_piece_find_height_min). Address-taken parameters: `&param`. No dead-store elimination on address-taken stack locals. A
   scalar at a fixed stack address never aliases array/struct elements: its load may move above their stores
   (cam_shift_xz).
 
@@ -258,9 +258,9 @@ gDPSetCycleType, gDPSetRenderMode), 0xD9 geometry mode, 0xDA matrix.
 ## Inline asm
 
 Six functions keep inline asm because the original has instructions no C produces: the `break 0x407` halts
-(fatal_halt, fatal_halt_mem_report, func_8000E9C0), a debug `break 0x400` (sn_host_call), an
-`addu $t1, $fp, $zero` (func_8000EA5C) and a library function built by another compiler (dma_cart_rom_init: its
-`lui`/`addiu` pairs and a macro `lw` are asm, with a register variable). Five others (func_80019EC0, race_grid_from_standings,
+(fatal_halt, fatal_halt_mem_report, main_halt_white_screen), a debug `break 0x400` (sn_host_call), an
+`addu $t1, $fp, $zero` (main_check_cart_ipl3) and a library function built by another compiler (dma_cart_rom_init: its
+`lui`/`addiu` pairs and a macro `lw` are asm, with a register variable). Five others (race_load_ghost_setup, race_grid_from_standings,
 nes_read_io, sfx_play, dma_epi_start) hold empty asm statements (`__asm__("" : "+r"(p))`, memory clobbers)
 that force an allocation or an order the plain C did not reproduce; replacing them with plain C is open work.
 `register` alone does nothing.

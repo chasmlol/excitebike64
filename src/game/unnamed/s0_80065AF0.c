@@ -1,5 +1,5 @@
 #include "game.h"
 
-s32 func_80065AF0(void) {
+s32 cic_check_rdram_200(void) {
     return D_A0000200 == 0xAC290000;
 }

@@ -41,7 +41,7 @@ void race_spawn_extra_rider(Spawn *sp)
     f32 y, k;
     Vec3f unused;
 
-    if (D_800F1BC4 & 0x10) return;
+    if (gSaveOptions & 0x10) return;
     if (gEvent.flags & 0x200) return;
 
     b = &gRiders[6];
@@ -779,8 +779,8 @@ extern Obj_46 *gCurTrack_34;
 void race_load_extra_rider_spawns(s32 arg0)
 {
     if (gCurTrack_34->state != 2 && (gCurTrack_34->flags & 2) == 0) {
-        D_800F0BD8 = track_res_find(D_800D14E8);
-        sExtraRiderSpawns = track_res_get(D_800D14E8);
+        sExtraRiderSpawnsIdx = track_res_find(gGidDrones);
+        sExtraRiderSpawns = track_res_get(gGidDrones);
     }
 }
 

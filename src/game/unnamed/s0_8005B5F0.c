@@ -248,10 +248,10 @@ void ai_update_steering(Rider *b) {
         }
         ai_set_steering(b, f * 8.0f / (b->speed + 5.0f));
         if (b == &gRiders[gCamTargetOverride]) {
-            D_800EE150 = gPathNodes[idx].pos;
-            D_800EE160.z = 2.0f * gPathNodes[idx].lateralX;
-            D_800EE160.y = 0;
-            D_800EE160.x = 2.0f * -gPathNodes[idx].lateralZ;
+            gAiDebugTargetPos = gPathNodes[idx].pos;
+            gAiDebugTargetDir.z = 2.0f * gPathNodes[idx].lateralX;
+            gAiDebugTargetDir.y = 0;
+            gAiDebugTargetDir.x = 2.0f * -gPathNodes[idx].lateralZ;
         }
         return;
     }
@@ -450,6 +450,6 @@ void func_8005C8F4(void)
 {
 }
 
-void func_8005C8FC(void)
+void ai_free(void)
 {
 }

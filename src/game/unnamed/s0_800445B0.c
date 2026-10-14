@@ -270,7 +270,7 @@ s32 phys_body_step(RigidBody *b, Pt_4 *t, s32 n, u8 m)
     height_gather_walls((s32)((b->pos.x + lx) * 1000.0f), (s32)((b->pos.z + lz) * 1000.0f),
                   (s32)((b->pos.x + hx) * 1000.0f), (s32)((b->pos.z + hz) * 1000.0f));
     if (b->hitTimer != 0) {
-        b->hitTimer -= D_800E76C7;
+        b->hitTimer -= gPhysTicksByte;
         if (b->hitTimer < 0) {
             b->hitTimer = 0;
         }

@@ -78,7 +78,7 @@ void sky_update_scroll(void)
             v = gCamPitch[i];
             v = v / 32;
             v += 0x80;
-            if (gCurTrack == D_800CC070) {
+            if (gCurTrack == gTrackHillClimb) {
                 v -= 0x50;
             }
             sSkyScrollY[i] = v;
@@ -299,7 +299,7 @@ s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view)
     return 0;
 }
 
-void func_80035630(void)
+void sky_init(void)
 {
 }
 

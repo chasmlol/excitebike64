@@ -49,14 +49,14 @@ void bikes_init(void) {
     gCrashSlowMotion = 0;
     D_800E7700 ^= 1;
     zero = 0.0f;
-    D_800EE150.z = zero;
-    D_800EE150.y = zero;
-    D_800EE150.x = zero;
-    D_800EE160.z = zero;
-    D_800EE160.y = zero;
-    D_800EE160.x = zero;
+    gAiDebugTargetPos.z = zero;
+    gAiDebugTargetPos.y = zero;
+    gAiDebugTargetPos.x = zero;
+    gAiDebugTargetDir.z = zero;
+    gAiDebugTargetDir.y = zero;
+    gAiDebugTargetDir.x = zero;
     collide_init_node_pool();
-    race_load_extra_rider_spawns(D_800E7728);
+    race_load_extra_rider_spawns(gResourceSet);
     r250_init();
     D_800E7704 = 1;
     gRaceFrame = 0;
@@ -302,7 +302,7 @@ void bikes_init(void) {
         excite3d_init();
         break;
     }
-    D_800C8DC0 = 1;
+    sBikeTuneMenu = 1;
 }
 
 typedef struct {
@@ -539,7 +539,7 @@ void bike_update_wheel_contacts(Rider *b) {
         diff = b->bike.pos.y - (f32)h / 1000.0f;
         idx = (D_800E84F4[1] >> 4) & 0xF;
         *(volatile s32 *)&b->surfaceIdx = idx;
-        if ((gGame.mode == 7 || gCurTrack == D_800CBB70) && diff > 2.0f && (gSurfaceTable[idx].flags & 0x800)) {
+        if ((gGame.mode == 7 || gCurTrack == gTrackGoldmineRush) && diff > 2.0f && (gSurfaceTable[idx].flags & 0x800)) {
             bike_queue_crash_2(b, -25);
             return;
         }
@@ -648,7 +648,7 @@ void bike_update_suspension(Rider *s)
         s->hardLandFrame = gRaceFrame;
     }
     if (s->frontWheel.airTicks == gPhysTicks || s->rearWheel.airTicks == gPhysTicks) {
-        func_80022908(s);
+        bike_sync_wheel_contacts(s);
     }
 }
 
@@ -1512,7 +1512,7 @@ void bike_compute_forces(Rider *b) {
             k += b->rearWheel.surface->unk_10 * sqrtf(b->rearWheel.force.x * b->rearWheel.force.x + b->rearWheel.force.y * b->rearWheel.force.y + b->rearWheel.force.z * b->rearWheel.force.z);
             k += b->frontWheel.surface->unk_10 * sqrtf(b->frontWheel.force.x * b->frontWheel.force.x + b->frontWheel.force.y * b->frontWheel.force.y + b->frontWheel.force.z * b->frontWheel.force.z);
             if (b->hardTurn != 0) {
-                k += D_800C94C4;
+                k += sHardTurnDrag;
             }
             if (b->rHeld < -10 && b->isCpu == 0 && !(b->input & 0x20)) {
                 s32 n;
@@ -1777,7 +1777,7 @@ void bike_integrate_position(Rider *b)
         b->bike.vel.z = t2 - L.loc[2];
     }
     if (id == (gRaceFrame & 7)) {
-        u8 *tb = D_800C9548;
+        u8 *tb = sBikeWallCheckPairs;
         u8 *t = (u8 *)(((gRaceFrame >> 2) & 6) + (s32)tb);
         if (height_raycast_walls(&b->bike.contacts[t[0]].x, &b->bike.contacts[t[1]].x, gContactNormal, L.one, 0)) {
             bike_crash_begin(b, 0x1C);
@@ -2156,7 +2156,7 @@ void bike_update_jump(Rider *b) {
     f32 k;
 
     if (b->roughLanding != 0) {
-        b->roughLanding += D_800E76C7;
+        b->roughLanding += gPhysTicksByte;
         if (b->roughLanding >= 60) {
             b->roughLanding = 0;
         }
@@ -2170,7 +2170,7 @@ void bike_update_jump(Rider *b) {
             b->landingTime1 = (b->bike.vel.y + b->bike.vel.y) / 10.106251f;
             b->landingTime2 = (b->bike.vel.y + b->bike.vel.y) / 19.29375f;
             b->landingTime = (b->bike.vel.y + b->bike.vel.y) / 14.700001f;
-            func_80070560(b);
+            stunt_on_takeoff(b);
             s1v = b->speed;
             t1v = 0.5f;
             if (!(s1v > 20.0f)) {
@@ -2616,7 +2616,7 @@ void bikes_update(s32 n) {
         }
     }
     gRaceFrame += n;
-    if (D_800EE140 != 0) {
+    if (gDebugFreeze != 0) {
         for (b = gRiders; b < gRiders + 8; b++) {
             if (b->inactive == 0) {
                 bike_update_render_pose(b);
@@ -2682,7 +2682,7 @@ void bikes_update(s32 n) {
         }
     }
     particles_update();
-    D_800E76CC = 0;
+    gRaceFrameDrawn = 0;
 }
 
 float bike_get_ground_height(float *p)
@@ -2692,12 +2692,12 @@ float bike_get_ground_height(float *p)
     return (float)r / 1000.0f;
 }
 
-void func_80022908(Rider *p)
+void bike_sync_wheel_contacts(Rider *p)
 {
     s32 i;
     Vec3f out;
 
-    D_800E7708 = gRaceFrame;
+    sWheelLiftoffFrame = gRaceFrame;
     for (i = 6; i < 8; i++) {
         vec3_mul_mtx3f(&sBikeContactPoints_2[i].x, &p->bike.right.x, &out.x);
         p->bike.contacts[i].x = out.x + p->bike.pos.x;
@@ -2712,7 +2712,7 @@ void bikes_free(void) {
         mem_free(gRiders[i].bikeSkel);
         mem_free(gRiders[i].riderSkel);
     }
-    func_8005C8FC();
+    ai_free();
     collide_free_node_pool();
     race_free_extra_rider_spawns();
 }

@@ -4,18 +4,18 @@
  * which places every symbol at the address in its name. Gaps are bytes other steps build. */
 #include "data.h"
 
-extern u32 D_800D07B0;
-extern u32 D_800D07B4;
+extern u32 sRickyPodiumModelResId;
+extern u32 sCanyonChasmDronesResId;
 
-char D_800D6A30[0x4] = "ARN";
-char D_800D6A34[0x4] = "WAL";
-char D_800D6A38[0x18] = "arngfx.c";
-char D_800D6A50[0xc] = "tubegfx.c";
-char D_800D6A5C[0x4] = "ARN";
-char D_800D6A60[0x4] = "WAL";
+char sStrArnArn[0x4] = "ARN";
+char sStrArnWal[0x4] = "WAL";
+char sStrArngfxC[0x18] = "arngfx.c";
+char sStrTubegfxC[0xc] = "tubegfx.c";
+char sStrTubeArn[0x4] = "ARN";
+char sStrTubeWal[0x4] = "WAL";
 /* 0x800d6a64-0x800d6a68 (4 bytes): literals of the C (build_code.py) */
 u32 D_800D6A68[0x2] = { 0 };
-char D_800D6A70[0xc] = "camera.c";
+char sStrCameraC[0xc] = "camera.c";
 /* 0x800d6a7c-0x800d6b74 (248 bytes): literals of the C (build_code.py) */
 char D_800D6B74[0x4] = "p";
 char D_800D6B78[0x4] = "h";
@@ -24,15 +24,15 @@ char D_800D6B80[0x4] = "y";
 char D_800D6B84[0x4] = "x";
 /* 0x800d6b88-0x800d6c1c (148 bytes): literals of the C (build_code.py) */
 u32 D_800D6C1C = 0;
-char D_800D6C20[0xc] = "height.c";
+char sStrHeightC[0xc] = "height.c";
 /* 0x800d6c2c-0x800d6c7c (80 bytes): literals of the C (build_code.py) */
 u32 D_800D6C7C = 0;
-char D_800D6C80[0x8] = "sun.c";
+char sStrSunC[0x8] = "sun.c";
 /* 0x800d6c88-0x800d6ca4 (28 bytes): literals of the C (build_code.py) */
 u32 D_800D6CA4[0x3] = { 0 };
 /* 0x800d6cb0-0x800d6cf4 (68 bytes): literals of the C (build_code.py) */
 u32 D_800D6CF4[0x3] = { 0 };
-char D_800D6D00[0x8] = "mud2.c";
+char sStrMud2C[0x8] = "mud2.c";
 /* 0x800d6d08-0x800d6df4 (236 bytes): literals of the C (build_code.py) */
 char sStrShadowC[0xc] = "shadow.c";
 char sStrSkelC[0x10] = "skel.c";
@@ -89,8 +89,8 @@ char D_800D6F78[0x10] = "Cliff Hanger";
 char D_800D6F88[0x8] = "Cordova";
 char D_800D6F90[0xc] = "Fender Grab";
 /* 0x800d6f9c-0x800d6fd0 (52 bytes): literals of the C (build_code.py) */
-char D_800D6FD0[0x10] = "desgfx.c";
-char D_800D6FE0[0xc] = "fractal.c";
+char sStrDesgfxC[0x10] = "desgfx.c";
+char sStrFractalC[0xc] = "fractal.c";
 /* 0x800d6fec-0x800d6ffc (16 bytes): literals of the C (build_code.py) */
 u32 D_800D6FFC = 0;
 /* 0x800d7000-0x800d71c8 (456 bytes): literals of the C (build_code.py) */
@@ -101,9 +101,9 @@ u32 D_800D7224[0x3] = { 0 };
 char sStrPathFile[0x8] = "path.c";
 /* 0x800d7258-0x800d7328 (208 bytes): literals of the C (build_code.py) */
 u32 D_800D7328[0x2] = { 0 };
-char D_800D7330[0x8] = "BIG.RAW";
-char D_800D7338[0x8] = "tunes.c";
-char D_800D7340[0x8] = "event.c";
+char sStrBigRaw[0x8] = "BIG.RAW";
+char sStrTunesC[0x8] = "tunes.c";
+char sStrEventFile[0x8] = "event.c";
 char D_800D7348[0x30] = "much turbo will cause your bike to overheat.";
 char D_800D7378[0x30] = "Make sure to watch the temperature gauge. Too";
 char D_800D73A8[0x30] = "Press and hold the Z Button to use the turbo.";
@@ -237,12 +237,12 @@ u32 D_800D83C4 = 0;
 /* 0x800d83c8-0x800d83ec (36 bytes): literals of the C (build_code.py) */
 u32 D_800D83EC = 0;
 /* 0x800d83f0-0x800d8424 (52 bytes): literals of the C (build_code.py) */
-char D_800D8424[0x4] = "N64";
+char sStrEventN64[0x4] = "N64";
 /* 0x800d8428-0x800d8438 (16 bytes): literals of the C (build_code.py) */
-char D_800D8438[0xc] = ">3 hours";
-char D_800D8444[0x4] = "0";
-char D_800D8448[0x4] = ":";
-char D_800D844C[0x4] = ".";
+char sStrOver3Hours[0xc] = ">3 hours";
+char sStrZero[0x4] = "0";
+char sStrColon[0x4] = ":";
+char sStrDot[0x4] = ".";
 /* 0x800d8450-0x800d8461 (17 bytes): literals of the C (build_code.py) */
 u8 D_800D8461[0x3] = { 0 };
 /* 0x800d8464-0x800d848a (38 bytes): literals of the C (build_code.py) */
@@ -253,12 +253,12 @@ u8 D_800D8499[0x3] = { 0 };
 u16 D_800D84A6 = 0;
 /* 0x800d84a8-0x800d84df (55 bytes): literals of the C (build_code.py) */
 u8 D_800D84DF = 0;
-char D_800D84E0[0x4] = "Tie";
-char D_800D84E4[0x8] = "Loser";
+char sStrTie[0x4] = "Tie";
+char sStrLoser[0x8] = "Loser";
 /* 0x800d84ec-0x800d84f2 (6 bytes): literals of the C (build_code.py) */
 u16 D_800D84F2 = 0;
 /* 0x800d84f4-0x800d850c (24 bytes): literals of the C (build_code.py) */
-char D_800D850C[0x8] = "Gate:";
+char sStrGate[0x8] = "Gate:";
 /* 0x800d8514-0x800d85ac (152 bytes): literals of the C (build_code.py) */
 char D_800D85AC[0x4] = "New";
 char D_800D85B0[0x8] = "2/18";
@@ -277,7 +277,7 @@ u8 D_800D8607 = 0;
 u8 D_800D860F = 0;
 /* 0x800d8610-0x800d865a (74 bytes): literals of the C (build_code.py) */
 u16 D_800D865A = 0;
-char D_800D865C[0x20] = "Two on Two Soccer: First Half";
+char sStrSoccerFirstHalf[0x20] = "Two on Two Soccer: First Half";
 /* 0x800d867c-0x800d869f (35 bytes): literals of the C (build_code.py) */
 u8 D_800D869F = 0;
 /* 0x800d86a0-0x800d86aa (10 bytes): literals of the C (build_code.py) */
@@ -292,7 +292,7 @@ u8 D_800D86F3 = 0;
 u16 D_800D8706 = 0;
 /* 0x800d8708-0x800d8719 (17 bytes): literals of the C (build_code.py) */
 u8 D_800D8719[0x3] = { 0 };
-char D_800D871C[0xc] = "You scored!";
+char sStrYouScored[0xc] = "You scored!";
 /* 0x800d8728-0x800d8739 (17 bytes): literals of the C (build_code.py) */
 u8 D_800D8739[0x3] = { 0 };
 /* 0x800d873c-0x800d874d (17 bytes): literals of the C (build_code.py) */
@@ -301,7 +301,7 @@ u8 D_800D874D[0x3] = { 0 };
 char D_800D886C[0x14] = "want more practice.";
 char D_800D8880[0x28] = "go back to the previous lessons if you";
 char D_800D88A8[0x28] = "You didn't quite make it. Try again or";
-char D_800D88D0[0xc] = "Lesson 1";
+char sStrLesson1[0xc] = "Lesson 1";
 /* 0x800d88dc-0x800d8924 (72 bytes): literals of the C (build_code.py) */
 char D_800D8924[0x8] = "5th: ";
 char D_800D892C[0x8] = "4th: ";
@@ -328,29 +328,29 @@ char D_800D8A14[0xc] = "Quit Season";
 u32 D_800D8A64[0x3] = { 0 };
 /* 0x800d8a70-0x800d8b0c (156 bytes): literals of the C (build_code.py) */
 u32 D_800D8B0C = 0;
-char D_800D8B10[0x8] = "impact ";
-char D_800D8B18[0x8] = "exit  ";
-char D_800D8B20[0x4] = "0 ";
-char D_800D8B24[0x4] = "1 ";
-char D_800D8B28[0x4] = "2 ";
-char D_800D8B2C[0x4] = "3 ";
-char D_800D8B30[0x4] = "4 ";
-char D_800D8B34[0x4] = "5 ";
+char sStrDebugImpact[0x8] = "impact ";
+char sStrDebugExit[0x8] = "exit  ";
+char sStrDebug0[0x4] = "0 ";
+char sStrDebug1[0x4] = "1 ";
+char sStrDebug2[0x4] = "2 ";
+char sStrDebug3[0x4] = "3 ";
+char sStrDebug4[0x4] = "4 ";
+char sStrDebug5[0x4] = "5 ";
 /* 0x800d8b38-0x800d8b43 (11 bytes): literals of the C (build_code.py) */
 u8 D_800D8B43 = 0;
-char D_800D8B44[0x4] = " ";
-char D_800D8B48[0x14] = " 0!w 0!w 0!w 0!w\r\n";
+char sStrSplineSep[0x4] = " ";
+char sStrSplineNodeTail[0x14] = " 0!w 0!w 0!w 0!w\r\n";
 /* 0x800d8b5c-0x800d8b64 (8 bytes): literals of the C (build_code.py) */
-char D_800D8B64[0x4] = "big";
+char sStrFtoaBig[0x4] = "big";
 /* 0x800d8b68-0x800d8b90 (40 bytes): literals of the C (build_code.py) */
-char D_800D8B90[0x8] = "decal.c";
+char sStrDecalC[0x8] = "decal.c";
 /* 0x800d8b98-0x800d8b9c (4 bytes): literals of the C (build_code.py) */
 u32 D_800D8B9C = 0;
 char sStrCollideC[0xc] = "collide.c";
 /* 0x800d8bac-0x800d8bf8 (76 bytes): literals of the C (build_code.py) */
 u32 D_800D8BF8[0x2] = { 0 };
 /* 0x800d8c00-0x800d8c08 (8 bytes): literals of the C (build_code.py) */
-u32 D_800D8C08[0x2] = { 0, (u32)&D_800D07B4 };
+u32 D_800D8C08[0x2] = { 0, (u32)&sCanyonChasmDronesResId };
 /* 0x800d8c10-0x800d8c1c (12 bytes): literals of the C (build_code.py) */
 u32 D_800D8C1C = 0x30002;
 /* 0x800d8c20-0x800d8d34 (276 bytes): literals of the C (build_code.py) */
@@ -358,38 +358,38 @@ u32 D_800D8D34[0x3] = { 0x800A3DD8, 0x800A3084, 0x50002 };
 /* 0x800d8d40-0x800d8d44 (4 bytes): literals of the C (build_code.py) */
 u32 D_800D8D44[0x3] = { 0 };
 char sStrInstanceC[0x10] = "instance.c";
-char D_800D8D60[0xc] = "shatter.c";
+char sStrShatterC[0xc] = "shatter.c";
 /* 0x800d8d6c-0x800d8d74 (8 bytes): literals of the C (build_code.py) */
 u32 D_800D8D74[0x3] = { 0 };
 /* 0x800d8d80-0x800d8dcc (76 bytes): literals of the C (build_code.py) */
-char D_800D8DCC[0x8] = "map.c";
+char sStrMapC[0x8] = "map.c";
 /* 0x800d8dd4-0x800d8e0c (56 bytes): literals of the C (build_code.py) */
 u32 D_800D8E0C = 0;
-char D_800D8E10[0x10] = "palmod.c";
-char D_800D8E20[0x8] = "flash.c";
+char sStrPalmodC[0x10] = "palmod.c";
+char sStrFlashC[0x8] = "flash.c";
 /* 0x800d8e28-0x800d8eb8 (144 bytes): literals of the C (build_code.py) */
 u32 D_800D8EB8[0x2] = { 0x800A34C8, 0x60002 };
 /* 0x800d8ec0-0x800d8f1c (92 bytes): literals of the C (build_code.py) */
 u32 D_800D8F1C = 0x30002;
 /* 0x800d8f20-0x800d8f57 (55 bytes): literals of the C (build_code.py) */
 u8 D_800D8F57 = 0;
-char D_800D8F58[0x2c] = "Beat your opponent to complete the game!";
-char D_800D8F84[0x20] = "Beat your opponent to advance.";
-char D_800D8FA4[0x24] = "Place 1{ overall to beat the round";
+char sStrBeatOpponentFinal[0x2c] = "Beat your opponent to complete the game!";
+char sStrBeatOpponent[0x20] = "Beat your opponent to advance.";
+char sStrPlaceFirstOverall[0x24] = "Place 1{ overall to beat the round";
 /* 0x800d8fc8-0x800d8fde (22 bytes): literals of the C (build_code.py) */
 u16 D_800D8FDE = 0;
 /* 0x800d8fe0-0x800d8ffc (28 bytes): literals of the C (build_code.py) */
-char D_800D8FFC[0x14] = "Congratulations!";
-char D_800D9010[0x14] = "Press START to exit";
-char D_800D9024[0x20] = "You unlocked a new difficulty";
-char D_800D9044[0x1c] = "You unlocked a new round";
-char D_800D9060[0x18] = "You finished the game";
-char D_800D9078[0x18] = "You finished the round";
-char D_800D9090[0x18] = "Stunt course unlocked!";
-char D_800D90A8[0x20] = "Original Excitebike unlocked!";
-char D_800D90C8[0x14] = "Soccer unlocked!";
-char D_800D90DC[0x18] = "Hill Climb unlocked!";
-char D_800D90F4[0x14] = "Excite 3D unlocked!";
+char sStrCongratulations[0x14] = "Congratulations!";
+char sStrPressStartToExit[0x14] = "Press START to exit";
+char sStrUnlockedDifficulty[0x20] = "You unlocked a new difficulty";
+char sStrUnlockedRound[0x1c] = "You unlocked a new round";
+char sStrFinishedGame[0x18] = "You finished the game";
+char sStrFinishedRound[0x18] = "You finished the round";
+char sStrStuntCourseUnlocked[0x18] = "Stunt course unlocked!";
+char sStrOriginalExcitebikeUnlocked[0x20] = "Original Excitebike unlocked!";
+char sStrSoccerUnlocked[0x14] = "Soccer unlocked!";
+char sStrHillClimbUnlocked[0x18] = "Hill Climb unlocked!";
+char sStrExcite3DUnlocked[0x14] = "Excite 3D unlocked!";
 /* 0x800d9108-0x800d911c (20 bytes): literals of the C (build_code.py) */
 u32 D_800D911C = 0;
 /* 0x800d9120-0x800d913c (28 bytes): literals of the C (build_code.py) */
@@ -397,17 +397,17 @@ u32 D_800D913C = 0;
 /* 0x800d9140-0x800d9178 (56 bytes): literals of the C (build_code.py) */
 char sStrPonytailC[0x14] = "ponytail.c";
 u32 D_800D918C = 0xFFFFFFFF;
-u8 D_800D9190[0x10] = {
+u8 sStrSnowC[0x10] = {
     0x73, 0x6E, 0x6F, 0x77, 0x2E, 0x63, 0, 0x5C, 0x80, 0xA, 0x3A, 0x84, 0x80, 0xA, 0x3A, 0x8C,
 };
-u32 D_800D91A0[0x4] = { 0x72656D6F, 0x76652E63, 0, (u32)&D_800D07B0 };
+u32 sStrRemoveC[0x4] = { 0x72656D6F, 0x76652E63, 0, (u32)&sRickyPodiumModelResId };
 /* 0x800d91b0-0x800d91b4 (4 bytes): literals of the C (build_code.py) */
 u32 D_800D91B4[0x3] = { 0x800A3D3C, 0x800A3024, 0x60002 };
 char D_800D91C0[0x4] = "OK";
 char D_800D91C4[0x4] = "Del";
-char D_800D91C8[0x4] = ".";
-char D_800D91CC[0x4] = " ";
-char D_800D91D0[0x4] = "0";
+char sStrKeyDot[0x4] = ".";
+char sStrKeySpace[0x4] = " ";
+char sStrKeyZero[0x4] = "0";
 char D_800D91D4[0x4] = "9";
 char D_800D91D8[0x4] = "8";
 char D_800D91DC[0x4] = "7";
@@ -465,7 +465,7 @@ char D_800D9334[0x14] = "Original Excitebike";
 char D_800D9348[0x10] = "Stunt Course";
 char D_800D9358[0x8] = "Desert";
 char D_800D9360[0x10] = "Custom Tracks";
-char D_800D9370[0x8] = "Options";
+char sStrOptions[0x8] = "Options";
 char D_800D9378[0x10] = "Special Tracks";
 char D_800D9388[0xc] = "Time Trials";
 char D_800D9394[0x10] = "Exhibition Race";
@@ -488,10 +488,10 @@ char D_800D9440[0xc] = "Change HUD";
 char D_800D944C[0xc] = "Camera Type";
 char D_800D9458[0xc] = "Rear Camera";
 char D_800D9464[0x8] = "Reverse";
-char D_800D946C[0x8] = "Ghost: ";
-char D_800D9474[0x4] = ":";
-char D_800D9478[0x8] = "Track: ";
-char D_800D9480[0x1c] = "EXCITEBIKE64 - UNKNOWN FILE";
+char sStrGhostLabel[0x8] = "Ghost: ";
+char sStrGhostTimeColon[0x4] = ":";
+char sStrTrackLabel[0x8] = "Track: ";
+char sStrUnknownFile[0x1c] = "EXCITEBIKE64 - UNKNOWN FILE";
 /* 0x800d949c-0x800d94a3 (7 bytes): literals of the C (build_code.py) */
 u8 D_800D94A3 = 0;
 /* 0x800d94a4-0x800d94ad (9 bytes): literals of the C (build_code.py) */
@@ -565,11 +565,11 @@ char D_800D9A08[0x8] = "AVERAGE";
 char D_800D9A10[0x8] = "POOR";
 char D_800D9A18[0x8] = "AWFUL";
 char D_800D9A20[0x8] = "Delete";
-char D_800D9A28[0x8] = "Edit";
-char D_800D9A30[0x8] = "Play";
+char sStrEdit[0x8] = "Edit";
+char sStrPlay[0x8] = "Play";
 char D_800D9A38[0x8] = "Retire";
 char D_800D9A40[0xc] = "Show Replay";
-char D_800D9A4C[0xc] = "Continue";
+char sStrContinue[0xc] = "Continue";
 char D_800D9A58[0x8] = "Quit";
 char D_800D9A60[0xc] = "Save Ghost";
 char D_800D9A6C[0x8] = "Retry";
@@ -579,12 +579,12 @@ char D_800D9A8C[0x4] = "Pro";
 char D_800D9A90[0x8] = "Amateur";
 char D_800D9A98[0x8] = "Novice";
 char D_800D9AA0[0xc] = "Tutorial";
-char D_800D9AAC[0x14] = "Insert Controller";
-char D_800D9AC0[0x4] = "CPU";
-char D_800D9AC4[0x8] = " Player";
-char D_800D9ACC[0x4] = "Yes";
-char D_800D9AD0[0x4] = "No";
-char D_800D9AD4[0x1c] = "Hold Z Button for rider bio";
+char sStrInsertController[0x14] = "Insert Controller";
+char sStrCpu[0x4] = "CPU";
+char sStrPlayerSuffix[0x8] = " Player";
+char sStrYes[0x4] = "Yes";
+char sStrNo[0x4] = "No";
+char sStrHoldZForBio[0x1c] = "Hold Z Button for rider bio";
 char D_800D9AF0[0x28] = "order to save a new Time Trial ghost.";
 char D_800D9B18[0x24] = "This game requires 40 free pages in";
 char D_800D9B3C[0x20] = "to save a new Time Trial ghost.";
@@ -594,31 +594,31 @@ char D_800D9BA8[0x24] = "ghost data to this Controller Pak.";
 char D_800D9BCC[0x24] = "You will be able to save Time Trial";
 char D_800D9BF0[0x10] = "has been lost.";
 char D_800D9C00[0x18] = "Game Pak backup memory";
-char D_800D9C18[0x8] = "LOCKED";
-char D_800D9C20[0x14] = "Race Saved Track";
-char D_800D9C34[0x14] = "Load From Game Pak";
-char D_800D9C48[0x10] = "Go To Editor";
-char D_800D9C58[0x18] = "Load Saved Ghost Data";
-char D_800D9C70[0x1c] = "Load From Controller Pak";
-char D_800D9C8C[0xc] = "UNAVAILABLE";
-char D_800D9C98[0x14] = "Play other rounds";
-char D_800D9CAC[0x18] = "to unlock this track";
+char sStrLocked[0x8] = "LOCKED";
+char sStrRaceSavedTrack[0x14] = "Race Saved Track";
+char sStrLoadFromGamePak[0x14] = "Load From Game Pak";
+char sStrGoToEditor[0x10] = "Go To Editor";
+char sStrLoadSavedGhost[0x18] = "Load Saved Ghost Data";
+char sStrLoadFromControllerPak[0x1c] = "Load From Controller Pak";
+char sStrUnavailable[0xc] = "UNAVAILABLE";
+char sStrPlayOtherRounds[0x14] = "Play other rounds";
+char sStrToUnlockThisTrack[0x18] = "to unlock this track";
 /* 0x800d9cc4-0x800d9cc6 (2 bytes): literals of the C (build_code.py) */
 u16 D_800D9CC6 = 0;
 /* 0x800d9cc8-0x800d9cd2 (10 bytes): literals of the C (build_code.py) */
 u16 D_800D9CD2 = 0;
 /* 0x800d9cd4-0x800d9cdb (7 bytes): literals of the C (build_code.py) */
 u8 D_800D9CDB = 0;
-char D_800D9CDC[0x8] = "Create";
+char sStrCreate[0x8] = "Create";
 /* 0x800d9ce4-0x800d9cf0 (12 bytes): literals of the C (build_code.py) */
-char D_800D9CF0[0x24] = "Press the A Button to add a track";
-char D_800D9D14[0x30] = "A Button to change track, Z Button to delete";
+char sStrPressAToAddTrack[0x24] = "Press the A Button to add a track";
+char sStrChangeOrDeleteTrack[0x30] = "A Button to change track, Z Button to delete";
 /* 0x800d9d44-0x800d9d51 (13 bytes): literals of the C (build_code.py) */
 u8 D_800D9D51[0x3] = { 0 };
-char D_800D9D54[0x14] = "Bronze Round Tracks";
-char D_800D9D68[0x14] = "Silver Round Tracks";
-char D_800D9D7C[0x14] = "Gold Round Tracks";
-char D_800D9D90[0x18] = "Platinum Round Tracks";
+char sStrBronzeRoundTracks[0x14] = "Bronze Round Tracks";
+char sStrSilverRoundTracks[0x14] = "Silver Round Tracks";
+char sStrGoldRoundTracks[0x14] = "Gold Round Tracks";
+char sStrPlatinumRoundTracks[0x18] = "Platinum Round Tracks";
 /* 0x800d9da8-0x800d9db5 (13 bytes): literals of the C (build_code.py) */
 u8 D_800D9DB5[0x3] = { 0 };
 /* 0x800d9db8-0x800d9dc5 (13 bytes): literals of the C (build_code.py) */
@@ -627,56 +627,56 @@ u8 D_800D9DC5[0x3] = { 0 };
 u8 D_800D9DD3 = 0;
 /* 0x800d9dd4-0x800d9de3 (15 bytes): literals of the C (build_code.py) */
 u8 D_800D9DE3 = 0;
-char D_800D9DE4[0x10] = "Round Complete";
-char D_800D9DF4[0x30] = "Finish 1{ in every race to complete the game";
-char D_800D9E24[0x2c] = "Finish 1{ overall to open a new difficulty";
-char D_800D9E50[0x1c] = "Press the A Button to start";
-char D_800D9E6C[0x28] = "Press the A Button to edit the season";
-char D_800D9E94[0x2c] = "Press the A Button to create a custom round";
-char D_800D9EC0[0x2c] = "Finish 1{ overall to unlock the next round";
-char D_800D9EEC[0x28] = "Complete the Platinum round to unlock";
-char D_800D9F14[0x2c] = "Finish 1{ in the previous round to unlock";
-char D_800D9F40[0xc] = "Best Scores";
-char D_800D9F4C[0xc] = "Best Times";
-char D_800D9F58[0xc] = "Best Lap";
-char D_800D9F64[0x18] = "Erase all saved data?";
-char D_800D9F7C[0x8] = "Warning";
-char D_800D9F84[0x10] = "Controller Paks";
-char D_800D9F94[0x4] = "TM";
-char D_800D9F98[0x28] = "No suitable Controller Paks were found.";
+char sStrRoundComplete[0x10] = "Round Complete";
+char sStrFinishFirstEveryRace[0x30] = "Finish 1{ in every race to complete the game";
+char sStrFinishFirstNewDifficulty[0x2c] = "Finish 1{ overall to open a new difficulty";
+char sStrPressAToStart[0x1c] = "Press the A Button to start";
+char sStrPressAToEditSeason[0x28] = "Press the A Button to edit the season";
+char sStrPressAToCreateRound[0x2c] = "Press the A Button to create a custom round";
+char sStrFinishFirstNextRound[0x2c] = "Finish 1{ overall to unlock the next round";
+char sStrCompletePlatinumToUnlock[0x28] = "Complete the Platinum round to unlock";
+char sStrFinishFirstPrevRound[0x2c] = "Finish 1{ in the previous round to unlock";
+char sStrBestScores[0xc] = "Best Scores";
+char sStrBestTimes[0xc] = "Best Times";
+char sStrBestLap[0xc] = "Best Lap";
+char sStrEraseAllData[0x18] = "Erase all saved data?";
+char sStrWarning[0x8] = "Warning";
+char sStrControllerPaks[0x10] = "Controller Paks";
+char sStrTrademark[0x4] = "TM";
+char sStrNoSuitablePaks[0x28] = "No suitable Controller Paks were found.";
 /* 0x800d9fc0-0x800d9fd3 (19 bytes): literals of the C (build_code.py) */
 u8 D_800D9FD3 = 0;
-char D_800D9FD4[0xc] = "is full.";
-char D_800D9FE0[0x8] = "has ";
-char D_800D9FE8[0xc] = " free page";
-char D_800D9FF4[0x4] = "s";
+char sStrIsFull[0xc] = "is full.";
+char sStrHas[0x8] = "has ";
+char sStrFreePage[0xc] = " free page";
+char sStrPluralS[0x4] = "s";
 /* 0x800d9ff8-0x800da00b (19 bytes): literals of the C (build_code.py) */
 u8 D_800DA00B = 0;
 /* 0x800da00c-0x800da014 (8 bytes): literals of the C (build_code.py) */
-char D_800DA014[0xc] = " Initials";
-char D_800DA020[0xc] = " Enabled";
-char D_800DA02C[0xc] = " Disabled";
-char D_800DA038[0x14] = "Press the A Button";
-char D_800DA04C[0x14] = "Not A Valid Code";
-char D_800DA060[0xc] = "Best Score";
-char D_800DA06C[0xc] = "Best Time";
-char D_800DA078[0xc] = ", Best Lap";
-char D_800DA084[0x4] = "_";
+char sStrInitialsSuffix[0xc] = " Initials";
+char sStrEnabledSuffix[0xc] = " Enabled";
+char sStrDisabledSuffix[0xc] = " Disabled";
+char sStrPressA[0x14] = "Press the A Button";
+char sStrNotAValidCode[0x14] = "Not A Valid Code";
+char sStrBestScore[0xc] = "Best Score";
+char sStrBestTime[0xc] = "Best Time";
+char sStrCommaBestLap[0xc] = ", Best Lap";
+char sStrUnderscore[0x4] = "_";
 /* 0x800da088-0x800da0a3 (27 bytes): literals of the C (build_code.py) */
 u8 D_800DA0A3 = 0;
-char D_800DA0A4[0x14] = "Season Standings";
-char D_800DA0B8[0x4] = "Pts";
-char D_800DA0BC[0x14] = "Time Trial Results";
-char D_800DA0D0[0x10] = "Race Results";
-char D_800DA0E0[0x8] = "Time";
-char D_800DA0E8[0x14] = "You Placed First!";
-char D_800DA0FC[0x14] = "You Placed Second";
-char D_800DA110[0x10] = "Really Retire?";
-char D_800DA120[0x24] = "No Controller Present In Socket 1";
-char D_800DA144[0xc] = "Press START";
-char D_800DA150[0x20] = "Press the A Button to Continue";
-char D_800DA170[0x14] = "Switch bike color";
-char D_800DA184[0x14] = "Switch rider color";
+char sStrSeasonStandings[0x14] = "Season Standings";
+char sStrPts[0x4] = "Pts";
+char sStrTimeTrialResults[0x14] = "Time Trial Results";
+char sStrRaceResults[0x10] = "Race Results";
+char sStrTimeHeader[0x8] = "Time";
+char sStrYouPlacedFirst[0x14] = "You Placed First!";
+char sStrYouPlacedSecond[0x14] = "You Placed Second";
+char sStrReallyRetire[0x10] = "Really Retire?";
+char sStrNoControllerInSocket1[0x24] = "No Controller Present In Socket 1";
+char sStrPressStart[0xc] = "Press START";
+char sStrPressAToContinue[0x20] = "Press the A Button to Continue";
+char sStrSwitchBikeColor[0x14] = "Switch bike color";
+char sStrSwitchRiderColor[0x14] = "Switch rider color";
 /* 0x800da198-0x800da204 (108 bytes): literals of the C (build_code.py) */
 u32 D_800DA204 = 0;
 /* 0x800da208-0x800da21c (20 bytes): literals of the C (build_code.py) */
@@ -756,26 +756,26 @@ char D_800DA628[0x28] = "This note does not appear to be valid.";
 char D_800DA650[0x24] = "Please select a slot to save into.";
 char D_800DA674[0x20] = "Please select a note to load.";
 char D_800DA694[0x20] = "Please select a note to erase.";
-char D_800DA6B4[0xc] = "Erasing...";
-char D_800DA6C0[0xc] = "Saving...";
-char D_800DA6CC[0xc] = "Loading...";
-char D_800DA6D8[0x10] = "Repairing...";
-u32 D_800DA6E8[0x8] = {
+char sStrPakErasing[0xc] = "Erasing...";
+char sStrPakSaving[0xc] = "Saving...";
+char sStrPakLoading[0xc] = "Loading...";
+char sStrPakRepairing[0x10] = "Repairing...";
+u32 sStrPakSelectPak[0x8] = {
     /* 0x000 */ 0x506C6561, 0x73652073, 0x656C6563, 0x74206120,
     /* 0x010 */ 0x436F6E74, 0x726F6C6C, 0x65722050, 0x616B8100,
 };
-char D_800DA708[0x4] = ".";
-char D_800DA70C[0x4] = " - ";
+char sStrPakExtDot[0x4] = ".";
+char sStrPakLabelSep[0x4] = " - ";
 /* 0x800da710-0x800da766 (86 bytes): literals of the C (build_code.py) */
 u16 D_800DA766 = 0;
 /* 0x800da768-0x800da7c4 (92 bytes): literals of the C (build_code.py) */
 u32 D_800DA7C4 = 0;
 /* 0x800da7c8-0x800da828 (96 bytes): literals of the C (build_code.py) */
 u32 D_800DA828[0x2] = { 0x17A, 0x17B };
-char D_800DA830[0xc] = "arnedgfx.c";
+char sStrArnedgfxC[0xc] = "arnedgfx.c";
 /* 0x800da83c-0x800da880 (68 bytes): literals of the C (build_code.py) */
-char D_800DA880[0x8] = "gui.c";
-u8 D_800DA888[0x8] = { 0x47, 0x75, 0x69, 0x52, 0x65, 0x73, 0, 0x93 };
+char sStrGuiFile[0x8] = "gui.c";
+u8 sStrGuiResSet[0x8] = { 0x47, 0x75, 0x69, 0x52, 0x65, 0x73, 0, 0x93 };
 char D_800DA890[0x10] = "New User Piece";
 char D_800DA8A0[0x10] = "User Piece 8";
 char D_800DA8B0[0x10] = "User Piece 7";
@@ -876,8 +876,8 @@ u32 D_800DAECC = 0;
 u32 D_800DAEE4 = 0;
 /* 0x800daee8-0x800daf2c (68 bytes): literals of the C (build_code.py) */
 u32 D_800DAF2C = 0xE;
-char D_800DAF30[0x8] = "nesres";
-char D_800DAF38[0xc] = "nesn64.c";
+char sStrNesres[0x8] = "nesres";
+char sStrNesn64C[0xc] = "nesn64.c";
 /* 0x800daf44-0x800daf48 (4 bytes): literals of the C (build_code.py) */
 u32 D_800DAF48[0x2] = { 0x15, 0x16 };
 char D_800DAF50[0x4] = "ADC";
@@ -954,15 +954,15 @@ char sStrSampleFile08[0x8] = "%s.08";
 char sStrModeRb[0x4] = "rb";
 char sStrSamName16[0xc] = "SAM-%s.16";
 char sStrSamName08[0x10] = "SAM-%s.08";
-char D_800DB1F0[0x10] = "n64snd.c";
+char sStrN64sndC[0x10] = "n64snd.c";
 /* 0x800db200-0x800db247 (71 bytes): literals of the C (build_code.py) */
 u8 D_800DB247 = 0;
-char D_800DB248[0x40] = "WARNING - Attempt to free an invalid or corrupt memory block\n";
-char D_800DB288[0x34] = "WARNING - Memory overrun detected during free()\n";
-char D_800DB2BC[0x38] = "WARNING - Attempt to free an already free memory block\n";
-char D_800DB2F4[0x4c] = "WARNING - Attempt to find the size of an invalid or corrupt memory block\n";
-char D_800DB340[0x24] = "WARNING - Memory overrun detected\n";
-char D_800DB364[0x44] = "WARNING - Attempt to find the size of an already free memory block\n";
+char sStrMemFreeInvalid[0x40] = "WARNING - Attempt to free an invalid or corrupt memory block\n";
+char sStrMemFreeOverrun[0x34] = "WARNING - Memory overrun detected during free()\n";
+char sStrMemFreeTwice[0x38] = "WARNING - Attempt to free an already free memory block\n";
+char sStrMemSizeInvalid[0x4c] = "WARNING - Attempt to find the size of an invalid or corrupt memory block\n";
+char sStrMemSizeOverrun[0x24] = "WARNING - Memory overrun detected\n";
+char sStrMemSizeFreed[0x44] = "WARNING - Attempt to find the size of an already free memory block\n";
 /* 0x800db3a8-0x800db3b1 (9 bytes): literals of the C (build_code.py) */
 u8 D_800DB3B1[0x3] = { 0 };
 /* 0x800db3b4-0x800db3d9 (37 bytes): literals of the C (build_code.py) */
@@ -975,24 +975,24 @@ u8 D_800DB3F1[0x3] = { 0 };
 u8 D_800DB3FB = 0;
 /* 0x800db3fc-0x800db403 (7 bytes): literals of the C (build_code.py) */
 u8 D_800DB403[0xd] = { 0 };
-char D_800DB410[0x10] = "FILE.C";
-char D_800DB420[0x14] = "I'm so confused\n";
-char D_800DB434[0x8] = ".dir";
+char sStrFileC[0x10] = "FILE.C";
+char sStrResConfused[0x14] = "I'm so confused\n";
+char sStrDirExt[0x8] = ".dir";
 /* 0x800db43c-0x800db43f (3 bytes): literals of the C (build_code.py) */
 u8 D_800DB43F = 0;
-char D_800DB440[0xc] = "../RESMAN.C";
-char D_800DB44C[0x8] = "%s.BIG";
-char D_800DB454[0x10] = "NO RESOURCE %s\n";
-char D_800DB464[0x18] = "Unaligned malloc: %p\n";
-char D_800DB47C[0x18] = "too many constructors\n";
-u8 D_800DB494[0xc] = { 0x2E, 0x67, 0x69, 0x64, 0, 0x20, 0x1, 0xD8, 0, 0xDA, 0x11, 0x90 };
-char D_800DB4A0[0x10] = "DECODER.C";
+char sStrResmanC[0xc] = "../RESMAN.C";
+char sStrBigFmt[0x8] = "%s.BIG";
+char sStrNoResource[0x10] = "NO RESOURCE %s\n";
+char sStrUnalignedMalloc[0x18] = "Unaligned malloc: %p\n";
+char sStrTooManyResTypes[0x18] = "too many constructors\n";
+u8 sStrGidExt[0xc] = { 0x2E, 0x67, 0x69, 0x64, 0, 0x20, 0x1, 0xD8, 0, 0xDA, 0x11, 0x90 };
+char sStrDecoderC[0x10] = "DECODER.C";
 /* 0x800db4b0-0x800db4c4 (20 bytes): literals of the C (build_code.py) */
 u32 D_800DB4C4[0x3] = { 0x113C102C, 0x102C1214, 0x12141214 };
-char D_800DB4D0[0xc] = "FONTCODE.C";
-char D_800DB4DC[0x28] = "Can't allocate memory for font data !";
-char D_800DB504[0x1c] = "Can't load font resource !";
-char D_800DB520[0x24] = "Can't shrink memory for font data !";
+char sStrFontcodeFile[0xc] = "FONTCODE.C";
+char sStrFontAllocFailed[0x28] = "Can't allocate memory for font data !";
+char sStrFontLoadFailed[0x1c] = "Can't load font resource !";
+char sStrFontShrinkFailed[0x24] = "Can't shrink memory for font data !";
 u32 D_800DB544[0x3] = { 0x8300858, 0x88008A8, 0x8D008F8 };
 /* 0x800db550-0x800db8b8 (872 bytes): tunes.c's ADPCM block decoder and its tables (build_asm.py: asm/game_tunes.s) */
 u32 sMixVoices = 0x1;

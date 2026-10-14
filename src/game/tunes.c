@@ -78,13 +78,13 @@ void tunes_init(s32 param_1)
     s32 i;
 
     sSpeechQueueCount = 0;
-    p = file_find(D_800D7330);
+    p = file_find(sStrBigRaw);
     if (p != NULL) {
         sStreamDataBase = (s32)p->rom;
         sStreamDataEnd = sStreamDataBase + p->size;
-        sStreamSampleTable = res_load(gSfxResSet, D_800D1244);
+        sStreamSampleTable = res_load(gSfxResSet, sStreamSampleTableResId);
         if (sStreamSampleTable != 0) {
-            sStreamMixBuf = mem_alloc_dbg(0x2000, 0, D_800D7338, 0xFC);
+            sStreamMixBuf = mem_alloc_dbg(0x2000, 0, sStrTunesC, 0xFC);
             sStreamMixFill = 0;
             sStreamMixWritePos = 0;
             sStreamMixReadPos = 0;
@@ -92,7 +92,7 @@ void tunes_init(s32 param_1)
             mem_fill(sStreamEchoBuf, 0, 0x1000);
             sStreamEchoPos = 0;
             sStreamChannelCount = param_1;
-            sStreamChannels = mem_alloc_dbg(4 * sizeof(StreamChannel), 0, D_800D7338, 0x10C);
+            sStreamChannels = mem_alloc_dbg(4 * sizeof(StreamChannel), 0, sStrTunesC, 0x10C);
             mem_fill(sStreamChannels, 0, 4 * sizeof(StreamChannel));
             for (i = 0; i < sStreamChannelCount; i++) {
                 tunes_init_channel(&sStreamChannels[i]);
@@ -862,7 +862,7 @@ void announce_trick(u32 a, s32 b)
     }
 }
 
-void func_8004E3EC(u32 a, u32 b, s32 c)
+void announce_overtake(u32 a, u32 b, s32 c)
 {
     if (gEvent.time < 0x168) {
         return;
@@ -998,7 +998,7 @@ void announce_goal(void)
     }
 }
 
-void func_8004F064(u32 param_1)
+void tunes_play_cliff_fall(u32 param_1)
 {
     StreamChannel *b;
     StreamSample *s;
@@ -1031,7 +1031,7 @@ void tunes_shutdown(void)
     if (sCurrentSong != 0) {
         tunes_stop_song();
     }
-    res_unload((u32 *)((u8 *)gSfxResSet_2[1] + D_800D1244 * 4));
+    res_unload((u32 *)((u8 *)gSfxResSet_2[1] + sStreamSampleTableResId * 4));
     i = 0;
     mem_free(sStreamMixBuf);
     if (0 < sStreamChannelCount) {
@@ -1172,7 +1172,7 @@ void tunes_stop_speech(void)
     mem_fill(sStreamMixBuf, 0, 0x2000);
 }
 
-void func_8004F5C8(s32 on)
+void announce_race_start(s32 on)
 {
     if (on) {
         push_3(0x92);
@@ -1201,8 +1201,8 @@ void tunes_mix_callback(s32 *p, s32 n)
 
 void tunes_init_channel(StreamChannel *p) {
     if (p->dmaBuf == 0) {
-        p->dmaBuf = mem_alloc_dbg(0x220, 0, (s32)&D_800D7338, 0x128);
-        p->pcm = mem_alloc_dbg(0x800, 0, (s32)&D_800D7338, 0x129);
+        p->dmaBuf = mem_alloc_dbg(0x220, 0, (s32)&sStrTunesC, 0x128);
+        p->pcm = mem_alloc_dbg(0x800, 0, (s32)&sStrTunesC, 0x129);
         p->unk_00 = 0;
         p->dmaHandle = -1;
         p->sample = -1;

@@ -345,7 +345,7 @@ void path_load(u32 *p)
         gPathNodes[i].pos.z = (f32)r->z / 1000.0f;
         if (gPathNodes[i].prev < i) {
             gPathNodes[i].pos.y = gPathNodes[gPathNodes[i].prev].pos.y + 3.0f;
-            if (gCurTrack == D_800CB3F0) {
+            if (gCurTrack == sTrackLeftysMill) {
                 gPathNodes[i].pos.y = gPathNodes[i].pos.y + 4.0f;
             }
         } else {
@@ -624,14 +624,14 @@ void path_init(u32 *param_1)
     }
     if (*(s32 *)(gCurTrack + 0x2c) != 2) {
         if (gGame.mode == 9 && (gTutorialLessons[gSeason->round].flags & 2)) {
-            iVar1 = D_800D10F0;
+            iVar1 = sTutorialPathResId;
             goto L134;
         }
         if (*(volatile s32 *)&gGame.mode == 7 && (gCheatFlags & 8)) {
-            iVar1 = D_800D0D50;
+            iVar1 = sDownhillPathResId;
             goto L134;
         }
-        iVar1 = track_res_find(D_800D14F8);
+        iVar1 = track_res_find(gGidPathSpline);
 L134:
         res_set_load_buffer(gZBuffer);
         uVar2 = res_load(param_1, iVar1);
@@ -926,7 +926,7 @@ void path_update_bike(Rider *b)
         b->distToGo = gPathLapLength * (f32)(b->lapAdjust + 1 + b->race.lap) - b->segmentDist;
     }
     if (b->isCpu == 0 && b->segment >= 0x13A && b->segment < 0x140 && b->airFrames > 30
-        && gCurTrack_26 == &D_800CB5D0 && b->bike.vel.y < 0.0f && b->bike.pos.y < gPathNodes[0x140].pos.y) {
+        && gCurTrack_26 == &gTrackCanyonChasm && b->bike.vel.y < 0.0f && b->bike.pos.y < gPathNodes[0x140].pos.y) {
         bike_crash_begin(b, 0x1C);
         cam_start_fall_view(b);
     }

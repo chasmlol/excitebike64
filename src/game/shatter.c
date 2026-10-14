@@ -52,7 +52,7 @@ void shatter_init(TrackModelList *p)
     if (j == 0) {
         return;
     }
-    sp = sShatterObjects = mem_alloc_dbg(j * 0x30, 0, (s32)D_800D8D60, 0x74);
+    sp = sShatterObjects = mem_alloc_dbg(j * 0x30, 0, (s32)sStrShatterC, 0x74);
     j = 0;
     for (i = 0; i < p->count; i++) {
         if (gObjectFlags[i] & 1) {
@@ -78,7 +78,7 @@ void shatter_init(TrackModelList *p)
         s = &sShatterObjects[i];
         me = s->obj->model;
         s->numPieces = me->numVtx / 3;
-        s->pieces = mem_alloc_dbg(s->numPieces * 0x2C, 0, (s32)D_800D8D60, 0x96);
+        s->pieces = mem_alloc_dbg(s->numPieces * 0x2C, 0, (s32)sStrShatterC, 0x96);
         for (j = 0; j < s->numPieces; j++) {
             x = y = z = 0;
             for (a = 0; a < 3; a++) {

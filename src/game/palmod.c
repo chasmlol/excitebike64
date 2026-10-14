@@ -10,7 +10,7 @@ void palmod_register(TexSet *set, s32 kind)
         if (sPalModCount >= sPalModMax) fatal_halt(1);
         sPalModEntries[sPalModCount].kind = kind;
         sPalModEntries[sPalModCount].set = set;
-        sPalModEntries[sPalModCount].rgb = mem_alloc_dbg(0x500, 0, D_800D8E10, 0x8C);
+        sPalModEntries[sPalModCount].rgb = mem_alloc_dbg(0x500, 0, sStrPalmodC, 0x8C);
         sPalModEntries[sPalModCount].pal[0] = set->pal;
         sPalModEntries[sPalModCount].pal[1] = (u16 *)(sPalModEntries[sPalModCount].rgb + 0x300);
         __builtin_memcpy(sPalModEntries[sPalModCount].pal[1], sPalModEntries[sPalModCount].pal[0], 0x200);
@@ -159,7 +159,7 @@ void palmod_update(void) {
             if (k > 100) {
                 k = 100;
             }
-            D_800CCD60 = k;
+            gPalBrightness = k;
             if (k != sPalModState[gGfxFrameIndex]) {
                 sPalModState[gGfxFrameIndex] = k;
                 for (i = 0; i < sPalModCount; i++) {
@@ -183,7 +183,7 @@ void palmod_update(void) {
 
 void palmod_init(s32 p)
 {
-    D_800CCD60 = 0;
+    gPalBrightness = 0;
     sPalModCount = 0;
     sPalModState[0] = -1;
     sPalModState[1] = -1;
@@ -193,7 +193,7 @@ void palmod_init(s32 p)
     } else {
         sPalModMax = 8;
     }
-    sPalModEntries = mem_alloc_dbg(sPalModMax * sizeof(PalMod), 0, D_800D8E10, 0x74);
+    sPalModEntries = mem_alloc_dbg(sPalModMax * sizeof(PalMod), 0, sStrPalmodC, 0x74);
 }
 
 void palmod_free(void)

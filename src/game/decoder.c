@@ -15,7 +15,7 @@ SamHeader *decoder_decode_adpcm(SamAdpcm *s)
         return NULL;
     }
     left = s->hdr.length;
-    out = mem_alloc_dbg(((left + 3) & ~3) + sizeof(SamHeader), 0, D_800DB4A0, 0x1DE);
+    out = mem_alloc_dbg(((left + 3) & ~3) + sizeof(SamHeader), 0, sStrDecoderC, 0x1DE);
     if (out == NULL) {
         return NULL;
     }
@@ -52,7 +52,7 @@ SamHeader *decoder_decode_sample(SamHeader *sam)
     case 2:
         return NULL;
     case 3:
-        return func_800C055C((SamAdpcm *)sam);
+        return decoder_decode_ima_adpcm((SamAdpcm *)sam);
     case 4:
     case 5:
         return decoder_decode_adpcm((SamAdpcm *)sam);
@@ -61,7 +61,7 @@ SamHeader *decoder_decode_sample(SamHeader *sam)
     }
 }
 
-SamHeader *func_800C055C(SamAdpcm *p)
+SamHeader *decoder_decode_ima_adpcm(SamAdpcm *p)
 {
     SamHeader *r;
     u8 *d;
@@ -75,7 +75,7 @@ SamHeader *func_800C055C(SamAdpcm *p)
         return 0;
     }
     left = p->hdr.length;
-    r = mem_alloc_dbg(((left + 3) & ~3) + sizeof(SamHeader), 0, D_800DB4A0, 381);
+    r = mem_alloc_dbg(((left + 3) & ~3) + sizeof(SamHeader), 0, sStrDecoderC, 381);
     src = p->data;
     if (r == 0) {
         return 0;

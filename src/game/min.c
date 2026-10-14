@@ -11,7 +11,7 @@ void race_init_replay(void)
     gReplayPlayback = 0;
     if (gGame.mode == 8 && (gGame.flags & 0x80000) != 0) {
         if ((gGame.flags & 0x80) != 0) {
-            func_80019EC0((s32)(gActiveReplay_2 + 0x1900));
+            race_load_ghost_setup((s32)(gActiveReplay_2 + 0x1900));
         }
     }
     if ((gGame.flags & 0x81) == 0 && gGame.mode == 8) {
@@ -37,7 +37,7 @@ void race_init_replay(void)
                 gDemoPlayback = 0;
                 sDemoActive = 0;
             } else {
-                piVar1 = res_load(D_800E7728, *gTutorialLessons[gSeason->round].demo);
+                piVar1 = res_load(gResourceSet, *gTutorialLessons[gSeason->round].demo);
                 *(volatile s32 **)&gActiveReplay_2 = piVar1;
                 gActiveReplaySize = piVar1[1] - piVar1[0];
                 gActiveReplay_2 = piVar1 + 2;
@@ -82,7 +82,7 @@ void race_finish_replay(s32 param_1)
     if (gGhostRace == 0) {
         if (gDemoPlayback != 0) {
             gActiveReplay = 0;
-            res_unload(&D_800E7728->handles[gTutorialLessons[gSeason->round].demo[0]]);
+            res_unload(&gResourceSet->handles[gTutorialLessons[gSeason->round].demo[0]]);
             goto T;
         }
         if (gRaceExitCode == 3 || g->mode == 9) goto T;
@@ -174,7 +174,7 @@ void race_init(s32 arg)
     s32 i;
     s32 v;
 
-    if (!(gGame.flags & 0x81) && (D_800F1BC4 & 2) && gHasExpansionPak != 0
+    if (!(gGame.flags & 0x81) && (gSaveOptions & 2) && gHasExpansionPak != 0
         && (gGame.numPlayers == 1 || gGame.mode == 8) && gCurTrack_14->f2C != 2
         && !(gGame.flags & 0x04040000)) {
         gViModeRequest = 2;
@@ -192,7 +192,7 @@ void race_init(s32 arg)
         gMirrorMode = 0;
     }
     gPodiumMode = 0;
-    D_800C8CE0 = 0;
+    gTimeTrialPlayer = 0;
     gPauseMenu = 0;
     gPauseScreen.timer = -1;
     gPauseScreen.clearFrames = 0;
@@ -206,11 +206,11 @@ void race_init(s32 arg)
         gCamTargetOverride = -1;
     }
     osWritebackDCacheAll();
-    res_open_set(D_800D6160, &D_800E7728);
+    res_open_set(sStrRaceResource, &gResourceSet);
     if (gCurTrack_14 != NULL) {
         track_res_load_map(gCurTrack_14->p80);
     }
-    p = (u16 *)track_res_get(D_800D151C);
+    p = (u16 *)track_res_get(gGidSpCam);
     if (p != NULL && !(gCurTrack_14->f50 & 2)) {
         o = gCurTrack_14;
         o->h76 = p[1];
@@ -225,9 +225,9 @@ void race_init(s32 arg)
         gCurTrack_14->p7C = NULL;
     }
     if (gGame.flags & 0x40080) {
-        font_load_menu_set(D_800E7728);
+        font_load_menu_set(gResourceSet);
     } else if (!(gGame.flags & 1)) {
-        font_load_race_set(D_800E7728);
+        font_load_race_set(gResourceSet);
     }
 
     if (gGame.mode == 4 || gGame.mode == 5) {
@@ -277,7 +277,7 @@ void race_init(s32 arg)
         race_set_grid_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     }
     gPhysDeltaTime = 0.016666668f;
-    func_800358C0();
+    engine_init_dial_vtx();
     mem_fill(gPlayerInputsPrev_2, 0, 0x18);
     palmod_init((gGame.flags >> 18) & 1);
     gTrackSections = 0;
@@ -285,7 +285,7 @@ void race_init(s32 arg)
     gWaterModels = 0;
     gTerrainTexSet = 0;
     gObjectTexSet = 0;
-    D_800E77C4 = 0;
+    gAltTexSet = 0;
     gAnimTexSet = 0;
     gWaterTexSet = 0;
     render_init();
@@ -293,22 +293,22 @@ void race_init(s32 arg)
     palmod_register(gObjectTexSet, 2);
     palmod_register(gAnimTexSet, 0);
     palmod_register(gWaterTexSet, 0);
-    palmod_register(D_800E77C4, 0);
+    palmod_register(gAltTexSet, 0);
     if (gPodiumMode != 0 && gCurTrack_14->f2C == 0) {
         palmod_register(sStandTextures, 0);
     }
     ambient_load();
     announce_reset();
-    particles_load_textures(D_800E7728);
-    race_load_surface_table(D_800E7728, track_res_find(D_800D14F0));
+    particles_load_textures(gResourceSet);
+    race_load_surface_table(gResourceSet, track_res_find(gGidMaterials));
     hacks_init();
-    flash_init(D_800E7728);
-    path_init(D_800E7728);
-    cam_init(D_800E7728);
+    flash_init(gResourceSet);
+    path_init(gResourceSet);
+    cam_init(gResourceSet);
     shadow_init();
     map_init();
     particles_init(gSurfaceTable);
-    rider_anims_load(D_800E7728);
+    rider_anims_load(gResourceSet);
     bikes_init();
     for (i = 0; i < 8; i++) {
         *gRiders[i].riderSkel = *gRiderSkelTemplate;
@@ -335,9 +335,9 @@ void race_init(s32 arg)
         gRacePhase = 4;
         gRacePhaseTimer = -1;
     }
-    D_800C8CE0 = 0;
+    gTimeTrialPlayer = 0;
     if (gGame.mode == 8 && !(gGame.flags & 0x80) && gGhostSlot == 0) {
-        D_800C8CE0 = 1;
+        gTimeTrialPlayer = 1;
     }
 }
 
@@ -366,7 +366,7 @@ void race_exit(void)
     bikes_free();
     event_exit();
     shadow_free();
-    res_close_set(D_800E7728);
+    res_close_set(gResourceSet);
     palmod_free();
     map_free();
     ambient_clear();
@@ -402,14 +402,14 @@ void race_begin(void)
     }
     gNumScreens = gNumViews;
     if (gGame.mode == 9) {
-        path_init(D_800E7728);
+        path_init(gResourceSet);
     }
     if ((gGame.flags & 0x8085) == 0 && (gGame.mode != 1 || gSeason->round == 0)) {
         race_randomize_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
         race_set_grid_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     }
     gPauseMenu = 0;
-    if ((gGame.flags & 0x81) == 0 && (D_800F1BC4 & 2) != 0 && gHasExpansionPak != 0 &&
+    if ((gGame.flags & 0x81) == 0 && (gSaveOptions & 2) != 0 && gHasExpansionPak != 0 &&
         (gGame.numPlayers == 1 || gGame.mode == 8) &&
         gCurTrack_4->f2C != 2 && (gGame.flags & 0x04040000) == 0) {
         gViModeRequest = 2;
@@ -423,7 +423,7 @@ void race_begin(void)
     if (gCurTrack_4->f2C == 2) {
         fractal_reset();
     }
-    cam_init(D_800E7728);
+    cam_init(gResourceSet);
     bikes_init();
     gCamView = 0;
     if (0 < gNumViews) {
@@ -433,7 +433,7 @@ void race_begin(void)
         } while (gCamView < gNumViews);
     }
     decal_init();
-    rider_anims_load(D_800E7728);
+    rider_anims_load(gResourceSet);
     particles_init(gSurfaceTable);
     flash_init_2();
     shadow_init();
@@ -447,9 +447,9 @@ void race_begin(void)
     rain_init();
     snow_init();
     announce_reset();
-    D_800C8CE0 = 0;
+    gTimeTrialPlayer = 0;
     if (gGame.mode == 8 && (gGame.flags & 0x80) == 0 && gGhostSlot == 0) {
-        D_800C8CE0 = 1;
+        gTimeTrialPlayer = 1;
     }
     sky_reset_clip();
     if (gNumScreens >= 2) {
@@ -572,25 +572,25 @@ void race_intro_load(void)
     s32 i;
     s32 r;
 
-    gRaceTextObjs = mem_alloc_dbg(0x148, 0, D_800D6170, 0x52C);
+    gRaceTextObjs = mem_alloc_dbg(0x148, 0, sStrMinFile, 0x52C);
     i = 0;
     do {
         gRaceTextObjs->text[i] = font_text_create(NULL, 0x40, 1, 2, 0x20);
         i = i + 1;
     } while (i < 0x4a);
-    r = res_load(D_800E7728, D_800D088C);
+    r = res_load(gResourceSet, sIntroImagesResId);
     gRaceTextObjs->introImages = (u8 *)r;
-    r = res_load(D_800E7728, D_800D09B0);
+    r = res_load(gResourceSet, sIntroPicResId);
     gRaceTextObjs->introPic = (Pic *)r;
     if (gGame.mode == 1) {
         i = 0;
         do {
-            r = res_load(D_800E7728, *(s32 *)D_800C8D68[gSeason->cup->tracks[i]]);
+            r = res_load(gResourceSet, *(s32 *)sIntroTrackPicResIds[gSeason->cup->tracks[i]]);
             gRaceTextObjs->roundPics[i] = (Pic *)r;
             i = i + 1;
         } while (i < 5);
     }
-    r = res_load(D_800E7728, D_800D085C);
+    r = res_load(gResourceSet, sLapArrowsResId);
     gRaceTextObjs->lapArrows = (Pic *)r;
 }
 
@@ -598,15 +598,15 @@ void race_intro_unload(void) {
     s32 i;
 
     for (i = 0; i < 0x4A; i++) {
-        func_800C204C(gRaceTextObjs->text[i]);
+        font_text_destroy(gRaceTextObjs->text[i]);
         mem_free(gRaceTextObjs->text[i]);
     }
-    res_unload(&D_800E7728->handles[D_800D088C]);
-    res_unload(&D_800E7728->handles[D_800D09B0]);
-    res_unload(&D_800E7728->handles[D_800D085C]);
+    res_unload(&gResourceSet->handles[sIntroImagesResId]);
+    res_unload(&gResourceSet->handles[sIntroPicResId]);
+    res_unload(&gResourceSet->handles[sLapArrowsResId]);
     if (gGame.mode == 1) {
         for (i = 0; i < 5; i++) {
-            res_unload(&D_800E7728->handles[*D_800C8D68_2[gSeason->cup->tracks[i]]]);
+            res_unload(&gResourceSet->handles[*sIntroTrackPicResIds_2[gSeason->cup->tracks[i]]]);
         }
     }
     mem_free(gRaceTextObjs);
@@ -614,7 +614,7 @@ void race_intro_unload(void) {
     if (gRaceExitCode != 3) {
         gGame.flags &= ~0x80;
     }
-    font_load_race_set(D_800E7728);
+    font_load_race_set(gResourceSet);
 }
 
 #define PAD (gGame.playerPad[gPausePlayer])
@@ -669,7 +669,7 @@ void race_pause_update_options(void) {
             gSaveData.f2C4 ^= 1;
             return;
         case 1:
-            sfx_play(D_800C2C4C, 0x2B11, D_800F1BC6, 7, 1, 1);
+            sfx_play(sOptionsTestSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
             return;
         case 2:
             if (sOptionsPreviewDelay == 0) {
@@ -721,7 +721,7 @@ void race_pause_update_options(void) {
             sOptionsPreviewDelay = 0x34;
             break;
         case 1:
-            sfx_play(D_800C2C4C, 0x2B11, D_800F1BC6, 7, 1, 1);
+            sfx_play(sOptionsTestSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
             break;
         }
     }
@@ -745,7 +745,7 @@ void race_pause_update_options(void) {
         if (s0 != 0 && sOptionsPreviewDelay == 0) {
             switch (gOptionsCursor) {
             case 1:
-                sfx_play(D_800C2C4C, 0x2B11, D_800F1BC6, 7, 1, 1);
+                sfx_play(sOptionsTestSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
                 sOptionsPreviewDelay = 0x28;
                 break;
             case 2:
@@ -813,13 +813,13 @@ void race_pause_update_options(void) {
     snd_set_volume(2, 0);
     switch (gOptionsCursor) {
     case 1:
-        snd_set_volume(0, D_800F1BC6);
+        snd_set_volume(0, gSaveSfxVolume);
         break;
     case 0:
-        snd_set_volume(1, D_800F1BC5_2);
+        snd_set_volume(1, gSaveVolumes_2);
         break;
     case 2:
-        snd_set_volume(2, D_800F1BC7);
+        snd_set_volume(2, gSaveSpeechVolume);
         break;
     }
     if (gOptionsCursor != old) {
@@ -956,27 +956,27 @@ void race_update(u32 *arg)
     }
     cfg.w = &w;
     cfg.h = &h;
-    cfg.c = &D_800DC0B4;
+    cfg.c = &gDebugRiderCount;
     cfg.d = &gSfxVolume;
     if (gPauseMenu == 2 || gPauseMenu == 3) {
         if (gPauseScreen.timer == 0 && gPauseScreen.loaded == 0) {
             mem_free(gZBuffer);
             gPauseScreen.loaded = 1;
             if (gPauseMenu == 2) {
-                font_load_menu_set(D_800E7728);
+                font_load_menu_set(gResourceSet);
             }
             res_open_set("guires", &gGuiRes);
             for (j = 0; j < 0x30; j++) {
                 gGame.texts[j] = font_text_create(0, 0x40, 4, 2, 0x20);
             }
             if (gPauseMenu == 2) {
-                gPauseScreen.background = res_load(D_800E7728, D_800D0C24);
+                gPauseScreen.background = res_load(gResourceSet, sControlsBgResId);
             } else {
-                gPauseScreen.volumeBar = res_load(D_800E7728, D_800D108C);
-                gPauseScreen.background = res_load(gGuiRes, D_800D1488);
-                gPauseScreen.cursorImg = res_load(gGuiRes, D_800D1428);
-                gPauseScreen.cursorPal = res_load(gGuiRes, D_800D1424);
-                gPauseScreen.title = res_load(gGuiRes, D_800D1478);
+                gPauseScreen.volumeBar = res_load(gResourceSet, sVolumeBarResId);
+                gPauseScreen.background = res_load(gGuiRes, gMenuBackgroundResId);
+                gPauseScreen.cursorImg = res_load(gGuiRes, gCursorResId);
+                gPauseScreen.cursorPal = res_load(gGuiRes, gCursorPalResId);
+                gPauseScreen.title = res_load(gGuiRes, sOptionsTitleResId);
             }
             gPauseScreen.timer = -1;
             while (sched_get_current_task() != 0) {
@@ -990,14 +990,14 @@ void race_update(u32 *arg)
         gPauseScreen.loaded = 0;
         gPauseScreen.clearFrames = 2;
         for (j = 0; j < 0x30; j++) {
-            func_800C204C(gGame.texts[j]);
+            font_text_destroy(gGame.texts[j]);
             mem_free(gGame.texts[j]);
         }
         res_close_set(gGuiRes);
-        res_unload(&D_800E7728->handles[D_800D0C24]);
-        res_unload(&D_800E7728->handles[D_800D1080]);
-        res_unload(&D_800E7728->handles[D_800D0724]);
-        res_unload(&D_800E7728->handles[D_800D108C]);
+        res_unload(&gResourceSet->handles[sControlsBgResId]);
+        res_unload(&gResourceSet->handles[D_800D1080]);
+        res_unload(&gResourceSet->handles[D_800D0724]);
+        res_unload(&gResourceSet->handles[sVolumeBarResId]);
         font_unload_set();
         gZBuffer = mem_alloc_at_dbg(gZBuffer, gFbAllocWidth * gFbAllocHeight * 2, "min.c", 0x799);
         if (gZBuffer == 0) {
@@ -1015,7 +1015,7 @@ void race_update(u32 *arg)
         while (gViMode != gViModeRequest) {
         }
         render_update_screen_layout();
-        font_load_race_set(D_800E7728);
+        font_load_race_set(gResourceSet);
         gPauseScreen.timer = -1;
     }
     if (gGame.mode != 9 && !(gGame.flags & 0x8010) && (gPadInput_3[0] & 0x400) &&
@@ -1296,12 +1296,12 @@ void race_update(u32 *arg)
             }
             if (gPodiumMode == 0) {
                 rider_update_head_look();
-                func_8003F128();
+                rider_update_crouch();
                 rider_update_fist_pump();
             }
             flash_update();
             snd_update_riders();
-            if (D_800EE140 == 0) {
+            if (gDebugFreeze == 0) {
                 event_update(0);
             }
             for (j = 0; j < 8; j++) {
@@ -1443,11 +1443,11 @@ void race_update(u32 *arg)
     }
     D_800E3718 = D_800E3750;
     gPlayerInputsPrev_4 = gPlayerInputs_3;
-    if (D_800DC0B4 <= 0) {
-        D_800DC0B4 = 1;
+    if (gDebugRiderCount <= 0) {
+        gDebugRiderCount = 1;
     }
-    if (D_800DC0B4 >= 9) {
-        D_800DC0B4 = 8;
+    if (gDebugRiderCount >= 9) {
+        gDebugRiderCount = 8;
     }
     if (gCurTrack_15->f2C == 2) {
         fractal_emit_fire_smoke();
@@ -1482,7 +1482,7 @@ void race_load_surface_table(Res_3 *r, s32 idx)
     File *f;
     s32 i, j;
 
-    tab = res_load(gSfxResSet_3, D_800D123C);
+    tab = res_load(gSfxResSet_3, sSurfaceSoundsResId);
     f = res_load(r, idx);
     for (i = 0; i < 16; i++) {
         str_copy(gSurfaceTable[i].name, f->e[i].name);
@@ -1510,7 +1510,7 @@ void race_load_surface_table(Res_3 *r, s32 idx)
         gSurfaceTable[i].sfxId = tab[j].val;
     }
     res_unload(&r->arr[idx]);
-    res_unload(&gSfxResSet_3->arr[D_800D123C]);
+    res_unload(&gSfxResSet_3->arr[sSurfaceSoundsResId]);
 }
 
 typedef struct { u8 b[48]; } Blk48;
@@ -1552,17 +1552,17 @@ void race_load_frontend_code(s32 x)
     if (x == sFrontendLoaded || (gGame.flags & 1)) {
         return;
     }
-    p3 = D_800731D0;
-    p6 = D_800A42C0;
-    p7 = D_800A9C20;
+    p3 = gFrontendOvlStart;
+    p6 = gUsrTrkOvlStart;
+    p7 = gUsrTrkOvlEnd;
     if ((u32)p3 & 0xF) fatal_halt(0x33);
     if ((u32)p6 & 0xF) fatal_halt(0x34);
     if ((u32)p7 & 0xF) fatal_halt(0x35);
     if (x != 0) {
-        sz = (u32)&D_800A42C0[-0x30] - (u32)p3;
-        mem_alloc_at_dbg(p3 + 0x30, sz, D_800D6170, 0xBDD);
+        sz = (u32)&gUsrTrkOvlStart[-0x30] - (u32)p3;
+        mem_alloc_at_dbg(p3 + 0x30, sz, sStrMinFile, 0xBDD);
         if (!(gCurTrack_16->f50 & 2)) {
-            mem_alloc_at_dbg(p6 + 0x10, (u32)&D_800A9C20[-0x10] - (u32)p6, D_800D6170, 0xBE0);
+            mem_alloc_at_dbg(p6 + 0x10, (u32)&gUsrTrkOvlEnd[-0x10] - (u32)p6, sStrMinFile, 0xBE0);
         }
         osWritebackDCacheAll();
         if (gLoadedByBootLoader == 0) {
@@ -1581,9 +1581,9 @@ void race_load_frontend_code(s32 x)
             while (dma_get_status(h) != 3);
             dma_release(h);
             gSwdDst = p3;
-            D_80100658 = p6;
+            gSwdDstEnd = p6;
             gSwdSrc = gZBuffer;
-            D_80100654 = gZBuffer + gBootHeader_2.fC;
+            gSwdSrcEnd = gZBuffer + gBootHeader_2.fC;
             buf = *(Blk48 *)p3;
             swd_decompress();
             *(Blk48 *)p3 = buf;
@@ -1592,10 +1592,10 @@ void race_load_frontend_code(s32 x)
             while (dma_get_status(h) != 3);
             dma_release(h);
             gSwdDst = p6;
-            D_80100658 = p7;
+            gSwdDstEnd = p7;
             __builtin_memcpy(&buf, p6, 16);
             gSwdSrc = gZBuffer;
-            D_80100654 = gZBuffer + gBootHeader_2.fC;
+            gSwdSrcEnd = gZBuffer + gBootHeader_2.fC;
             swd_decompress();
             *(Blk16 *)p6 = *(Blk16 *)&buf;
         }
@@ -1672,7 +1672,7 @@ void race_apply_volumes(void)
     snd_set_volume(2, s[0x2C7]);
 }
 
-void func_80019EC0(s32 param_1)
+void race_load_ghost_setup(s32 param_1)
 {
     Game *b;
     u8 *gb;
@@ -1704,7 +1704,7 @@ void func_80019EC0(s32 param_1)
 
 void race_set_video_mode(void)
 {
-    if ((gGame.flags & 0x81) == 0 && (D_800F1BC4 & 2) != 0 && gHasExpansionPak != 0 &&
+    if ((gGame.flags & 0x81) == 0 && (gSaveOptions & 2) != 0 && gHasExpansionPak != 0 &&
         (gGame.numPlayers == 1 || gGame.mode == 8) &&
         gCurTrack_3[11] != 2 && (gGame.flags & 0x4040000) == 0) {
         gViModeRequest = 2;
@@ -1736,7 +1736,7 @@ void race_free_text_objs(void)
 
     i = 0;
     do {
-        func_800C204C(gRaceTextObjs->text[i]);
+        font_text_destroy(gRaceTextObjs->text[i]);
         mem_free(gRaceTextObjs->text[i]);
         i++;
     } while (i < 0x4a);

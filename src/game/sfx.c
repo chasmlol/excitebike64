@@ -214,7 +214,7 @@ s32 sfx_play(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 arg5)
         p->prev = NULL;
     }
     if (cnt < sSfxNumVoices) {
-        D_800D33EC++;
+        sSfxVoiceChangeCount++;
     }
     critical_leave();
     return p->handle;
@@ -433,7 +433,7 @@ tail:
         p->prev = 0;
     }
     if (cnt < sSfxNumVoices) {
-        D_800D33EC = D_800D33EC + 1;
+        sSfxVoiceChangeCount = sSfxVoiceChangeCount + 1;
     }
     critical_leave();
 done:
@@ -883,12 +883,12 @@ void sfx_resume_all(void)
     }
 }
 
-void func_800B9138(void)
+void sfx_driver_stub2(void)
 {
     gSfxDriver->unk_68();
 }
 
-void func_800B9160(void)
+void sfx_driver_stub3(void)
 {
     gSfxDriver->unk_6C();
 }
@@ -1230,7 +1230,7 @@ void sfx_echo_free(void)
     gSfxDriver->echoFree();
 }
 
-void func_800B9A68(void)
+void sfx_driver_stub1(void)
 {
     gSfxDriver->unk_64();
 }
@@ -1529,7 +1529,7 @@ void sfx_insert_sound(SfxSound *n) {
         n->prev = 0;
     }
     if (cnt < sSfxNumVoices) {
-        D_800D33EC++;
+        sSfxVoiceChangeCount++;
     }
     critical_leave();
 }
@@ -1657,7 +1657,7 @@ void sfx_lock_sample(s32 i)
     sSfxSamples[i].refCount = -1;
 }
 
-void func_800BA5F0(s32 a0)
+void sfx_unlock_sample(s32 a0)
 {
     sSfxSamples[a0].refCount = 1;
 }

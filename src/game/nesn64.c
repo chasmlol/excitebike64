@@ -43,20 +43,20 @@ void nes_init(void)
     u16 *p;
 
     sNesFrameCount = 0;
-    if (res_open_set(D_800DAF30, &obj) != 0) {
+    if (res_open_set(sStrNesres, &obj) != 0) {
         fatal_halt(1);
     }
     sNesMemory = NES;
     mem_fill(sNesMemory, 0, sizeof(Nes));
-    src = res_load(obj, D_800D14D8);
+    src = res_load(obj, sNesRomResId);
     __builtin_memcpy(&sNesMemory->mem[0x8000], src, 0x4000);
     __builtin_memcpy(&sNesMemory->mem[0xC000], src, 0x4000);
     __builtin_memcpy(sNesMemory->vram, src + 0x4000, 0x2000);
     nes_cpu_reset(sNesMemory, nes_draw_bg_row);
-    sNesSnapshot = mem_alloc_dbg(sizeof(NesSnapshot), 0, D_800DAF38, 0x9C);
+    sNesSnapshot = mem_alloc_dbg(sizeof(NesSnapshot), 0, sStrNesn64C, 0x9C);
     __builtin_memcpy(sNesSnapshot, src + 0x6000, sizeof(NesSnapshot));
     res_close_set(obj);
-    sNesChrTiles = mem_alloc_dbg(0x8000, 0, D_800DAF38, 0xA4);
+    sNesChrTiles = mem_alloc_dbg(0x8000, 0, sStrNesn64C, 0xA4);
     m = (s32)NES;
     t = 0x10000; /* m + t: NES->vram, the CHR ROM */
     for (i = 0; i < 0x2000; i += 0x10) {
@@ -85,7 +85,7 @@ void nes_init(void)
             k += 4;
         }
     }
-    sNesPalette = mem_alloc_dbg(0x200, 0, D_800DAF38, 0xBF);
+    sNesPalette = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xBF);
     p = sNesPalette;
     for (i = 0; i < 0x100; i++) {
         j = sNesRgbPalette[i * 3] >> 3;
@@ -100,8 +100,8 @@ void nes_init(void)
         }
     }
     for (i = 0; i < 2; i++) {
-        sNesBgTluts[i] = mem_alloc_dbg(0x200, 0, D_800DAF38, 0xCC);
-        sNesSpriteTluts[i] = mem_alloc_dbg(0x200, 0, D_800DAF38, 0xCD);
+        sNesBgTluts[i] = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xCC);
+        sNesSpriteTluts[i] = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xCD);
     }
     sNesRowCallback = 0;
     for (i = 0; i < 3; i++) {
@@ -187,8 +187,8 @@ Gfx *nes_draw_setup(s32 a0, s32 a1, Gfx *gdl)
 {
     mtx_from_angles_pos_scale(a0 + 0x400, 0, 0, 0, 0, 0, 0, 0x100);
     gSPSegment(gdl++, 0, 0);
-    gSPDisplayList(gdl++, D_800C2A38);
-    gSPDisplayList(gdl++, D_800C2A00);
+    gSPDisplayList(gdl++, gRdpInitDL);
+    gSPDisplayList(gdl++, gRspInitDL);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     sNesViewport.vp.vscale[0] = gScreenWidth * 2;
     sNesViewport.vp.vscale[1] = gScreenHeight * 2;
@@ -562,7 +562,7 @@ void nes_audio_init(void)
     sNesAudioFreq = osAiSetFrequency(0x5622);
     sNesAudioFrameSamples = ((sNesAudioChunks * sNesAudioFreq) / 60 + 7) & -8;
     for (i = 0; i < 2; i++) {
-        q = mem_alloc_dbg(sNesAudioFrameSamples << 2, 0, D_800DAF38, 0x396);
+        q = mem_alloc_dbg(sNesAudioFrameSamples << 2, 0, sStrNesn64C, 0x396);
         sNesAudioBufs[i] = (s32)q;
         mem_fill(q, 0, sNesAudioFrameSamples << 2);
     }
@@ -1312,7 +1312,7 @@ void nes_op_bcs(void)
     s32 b;
     u32 addr;
 
-    if (D_800D05D4 != 0) {
+    if (sNesCorruptRam != 0) {
         a = osGetCount();
         addr = ((a << 2) & 0xFFFFF) + 0x80000000;
         b = osGetCount();

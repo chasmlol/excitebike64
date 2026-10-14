@@ -489,7 +489,7 @@ void fractal_init(u8 *map)
     DesertTile **dst = &gDesertTiles;
 
     sFractalMap = map;
-    *dst = mem_alloc_dbg(16 * sizeof(DesertTile), 0, (s32)&D_800D6FE0, 0x266);
+    *dst = mem_alloc_dbg(16 * sizeof(DesertTile), 0, (s32)&sStrFractalC, 0x266);
 }
 
 void fractal_reset(void)

@@ -8,7 +8,7 @@ void particles_update(void)
     s32 t;
     s32 *q;
 
-    if (D_800EE140 == 0 && gNumScreens < 4 && gPauseMenu == 0) {
+    if (gDebugFreeze == 0 && gNumScreens < 4 && gPauseMenu == 0) {
         particles_emit_dust_cloud();
         i = 0;
         base = sParticles;
@@ -122,7 +122,7 @@ void particles_load_textures(void *file)
     s32 i;
     u8 *pb;
 
-    sPuffTextures = (TexSet *)res_load(file, D_800D0E0C);
+    sPuffTextures = (TexSet *)res_load(file, sPuffTexResId);
     n = sPuffTextures->tex[0].width * (sPuffTextures->tex[0].height << 3);
     if (sPuffTextures->count != 0) {
         i = 0;
@@ -145,8 +145,8 @@ void particles_load_textures(void *file)
             i++;
         } while (i < sPuffTextures->count);
     }
-    sClodTextures = (TexSet *)res_load(file, D_800D0DB4);
-    sSparkleTextures = (TexSet *)res_load(file, D_800D0D20);
+    sClodTextures = (TexSet *)res_load(file, sClodTexResId);
+    sSparkleTextures = (TexSet *)res_load(file, sSparkleTexResId);
     i = 0;
     if (sSparkleTextures->count != 0) {
         do {
@@ -163,19 +163,19 @@ void particles_load_textures(void *file)
             i++;
         } while (i < sSparkleTextures->count);
     }
-    sSplashTextures = (TexSet *)res_load(file, D_800D0924);
+    sSplashTextures = (TexSet *)res_load(file, sSplashTexResId);
     prim_flip_images(sSplashTextures);
-    sExhaustTextures = (TexSet *)res_load(file, D_800D0DAC);
+    sExhaustTextures = (TexSet *)res_load(file, sExhaustTexResId);
     prim_flip_images(sExhaustTextures);
-    D_800E92C8 = (TexSet *)res_load(file, D_800D10B4);
-    prim_flip_images(D_800E92C8);
+    gWaterSplashTextures = (TexSet *)res_load(file, sWaterSplashTexResId);
+    prim_flip_images(gWaterSplashTextures);
 }
 
 typedef struct {
     u8 b[4];
 } Col;
 
-extern Col D_800E1B50_2[];
+extern Col gRiderGroundSurface_2[];
 
 void particles_emit_bike_dirt(void)
 {
@@ -191,7 +191,7 @@ void particles_emit_bike_dirt(void)
     f32 s, c, d;
     f32 kr;
 
-    if (D_800EE140 != 0 || gNumScreens >= 4 || gPauseMenu != 0) {
+    if (gDebugFreeze != 0 || gNumScreens >= 4 || gPauseMenu != 0) {
         return;
     }
     if (++sDirtFrameCount & 3) {
@@ -202,7 +202,7 @@ void particles_emit_bike_dirt(void)
         Rider *b = &gRiders[i];
         if (b->inactive != 0) continue;
         if (gRiderViewLod[i] == 0) continue;
-        bA = D_800E1B50_2[i].b[3] >> 4;
+        bA = gRiderGroundSurface_2[i].b[3] >> 4;
         if (b->crashState != 0) continue;
         if (b->rearWheel.airTicks <= 0 && (b->rearWheel.surface->flags & 2)) {
             A.x = 0.0f;
@@ -883,7 +883,7 @@ Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf) {
 
 void particles_init(Surface *surfaces)
 {
-    sParticles = mem_alloc_dbg(0xD80, 0, D_800D6D00, 0x60);
+    sParticles = mem_alloc_dbg(0xD80, 0, sStrMud2C, 0x60);
     mem_fill((u8 *)sParticles, 0, 0xD80);
     sParticleLast = 0;
     mem_fill(sExhaustPuffTimers, 0, 0x40);
@@ -912,7 +912,7 @@ void rain_init(void)
     if ((((gCurTrack_6 - (s32)gTracks) * -0x33333333) >> 5) == 0xb &&
         (i = 0, gNumScreens == 1)) {
         for (i = 0; i < 2; i++) {
-            sRainVtx[i] = mem_alloc_dbg(0x1000, 0, D_800D6D00, 0x512);
+            sRainVtx[i] = mem_alloc_dbg(0x1000, 0, sStrMud2C, 0x512);
         }
         sRainEnabled = 1;
     }

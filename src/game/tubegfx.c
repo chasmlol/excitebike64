@@ -23,50 +23,50 @@ void tube_init(void)
     WallMesh **walls;
 
     for (i = 0; i < 2; i++) {
-        sTubeMtxPool[i] = mem_alloc_dbg(0x4B00, 0, D_800D6A50, 0xCA);
+        sTubeMtxPool[i] = mem_alloc_dbg(0x4B00, 0, sStrTubegfxC, 0xCA);
         for (j = 0; j < 300; j++) {
             mtx_from_angles_pos_scale(&sTubeMtxPool[i][j], 0, 0, 0, 0, 0, 0, 0x100);
         }
     }
-    D_800E7820 = -1;
+    sTubeMtxFrame = -1;
     gFarClip = 8000;
-    res_register_type((u8 *)D_800D6A5C, (s32)arn_relocate);
-    res_register_type((u8 *)D_800D6A60, (s32)height_init_walls_reloc);
-    gObjectTexSet = (TexSet *)track_res_get(D_800D1508);
+    res_register_type((u8 *)sStrTubeArn, (s32)arn_relocate);
+    res_register_type((u8 *)sStrTubeWal, (s32)height_init_walls_reloc);
+    gObjectTexSet = (TexSet *)track_res_get(gGidPkgScene);
     terrain = &gTerrainTexSet;
-    *terrain = (TexSet *)track_res_get(D_800D1504);
-    gWaterTexSet = (TexSet *)track_res_get(D_800D1510);
-    gAnimTexSet = (TexSet *)track_res_get(D_800D1500);
-    D_800E77C4 = (TexSet *)track_res_get(D_800D14FC);
-    gTrackObjects = (TrackModelList *)track_res_get(D_800D14E0);
+    *terrain = (TexSet *)track_res_get(gGidPkgGround);
+    gWaterTexSet = (TexSet *)track_res_get(gGidPkgWater);
+    gAnimTexSet = (TexSet *)track_res_get(gGidPkgAnim);
+    gAltTexSet = (TexSet *)track_res_get(gGidPkgAlt);
+    gTrackObjects = (TrackModelList *)track_res_get(gGidArnScene);
     sObjectSegs[0] = gObjectTexSet;
-    sObjectSegs[1] = D_800E77C4;
+    sObjectSegs[1] = gAltTexSet;
     sObjectSegs[2] = gAnimTexSet;
     gObjectDLs = tube_build_dlists(gTrackObjects, sObjectSegs, 0x4C, 1);
-    gTrackSections = (TrackModelList *)track_res_get(D_800D14DC);
+    gTrackSections = (TrackModelList *)track_res_get(gGidArnGround);
     gSectionDLs = tube_build_dlists(gTrackSections, terrain, 0, 0);
-    gWaterModels = (TrackModelList *)track_res_get(D_800D14E4);
+    gWaterModels = (TrackModelList *)track_res_get(gGidArnWater);
     if (gCheatFlags & 0x80) {
         tube_rotate_vertex_colors(gTrackSections);
         tube_rotate_vertex_colors(gTrackObjects);
     }
-    gObjectFlags = mem_alloc_dbg(gTrackObjects->count * 4, 0, D_800D6A50, 0xF9);
+    gObjectFlags = mem_alloc_dbg(gTrackObjects->count * 4, 0, sStrTubegfxC, 0xF9);
     for (i = 0; i < gTrackObjects->count; i++) {
         gObjectFlags[i] = gTrackObjects->e[i].mask;
     }
     shatter_init(gTrackObjects);
-    gSectionMtxs = mem_alloc_dbg(gTrackSections->count * 16, 0, D_800D6A50, 0x103);
+    gSectionMtxs = mem_alloc_dbg(gTrackSections->count * 16, 0, sStrTubegfxC, 0x103);
     tube_load_pvs();
     for (i = 0; i < 256; i++) {
         if (gObjectTexSet->pal[i] == 0xF83F) {
             gObjectTexSet->pal[i] = 0;
         }
     }
-    walls = &D_800C9574;
-    *walls = (WallMesh *)track_res_get(D_800D1518);
+    walls = &gTrackWallMesh;
+    *walls = (WallMesh *)track_res_get(gGidWalCol);
     remove_walls_init(gTrackObjects, *walls);
-    height_init(gTrackSections, gTrackObjects, *walls, (u32 *)track_res_get(D_800D14F4));
-    sSectionBounds = mem_alloc_dbg(gTrackSections->count * 16, 0, D_800D6A50, 0x11D);
+    height_init(gTrackSections, gTrackObjects, *walls, (u32 *)track_res_get(gGidPatches));
+    sSectionBounds = mem_alloc_dbg(gTrackSections->count * 16, 0, sStrTubegfxC, 0x11D);
     for (i = 0; i < gTrackSections->count; i++) {
         sSectionBounds[i].x0 = gTrackSections->e[i].x0;
         sSectionBounds[i].z0 = gTrackSections->e[i].z0;
@@ -77,7 +77,7 @@ void tube_init(void)
     if (gWaterModels != NULL) {
         tube_assign_objects(gWaterModels, gTrackSections);
     }
-    instances_load(D_800E7728, track_res_find(D_800D1528), 0, gTrackSections, gObjectTexSet);
+    instances_load(gResourceSet, track_res_find(gGidInstanceDef), 0, gTrackSections, gObjectTexSet);
 }
 
 void tube_free(void)
@@ -114,7 +114,7 @@ void tube_free(void)
     height_free();
     remove_walls_free();
     gAnimTexSet = 0;
-    D_800E77C4 = 0;
+    gAltTexSet = 0;
     gWaterModels = 0;
     gWaterTexSet = 0;
     gTrackSections = NULL;
@@ -138,10 +138,10 @@ void tube_update_view(s32 n)
             it->mask = (it->mask & 0xFFFF0000) | gTrackSections->e[it->mask >> 16].mask;
         }
     }
-    if (gGfxFrameIndex != D_800E7820) {
+    if (gGfxFrameIndex != sTubeMtxFrame) {
         sTubeMtxCount = 0;
     }
-    D_800E7820 = gGfxFrameIndex;
+    sTubeMtxFrame = gGfxFrameIndex;
 }
 
 Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
@@ -249,8 +249,8 @@ Gfx *tube_draw_far(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     s32 tmp[18];
 
     gSPSegment(gdl++, 1, gObjectTexSet->pal);
-    if (D_800E77C4 != NULL) {
-        gSPSegment(gdl++, 2, D_800E77C4->pal);
+    if (gAltTexSet != NULL) {
+        gSPSegment(gdl++, 2, gAltTexSet->pal);
     }
     if (gAnimTexSet != NULL) {
         gSPSegment(gdl++, 3, gAnimTexSet->pal);
@@ -371,7 +371,7 @@ Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
             if (f >= 5) {
                 f = (f - 2) % 3 + 2;
             }
-            gDPLoadTextureBlock(gdl++, D_800E92C8->tex[f].data, G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
+            gDPLoadTextureBlock(gdl++, gWaterSplashTextures->tex[f].data, G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
                                 G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
             m = getmtx(sSplashPos[i].x, sSplashPos[i].y, sSplashPos[i].z, view);
             if (m != NULL) {
@@ -650,7 +650,7 @@ Gfx **tube_build_dlists(TrackModelList *h, TexSet **sets, u32 flags, s32 animTex
         i = (s32)h->e[0].model->cmds - (s32)h;
         n = mem_get_size(h);
         memcpy(buf, (u8 *)h + i, n - i);
-        h = mem_realloc_dbg(h, i, 0, D_800D6A50, 0x51B);
+        h = mem_realloc_dbg(h, i, 0, sStrTubegfxC, 0x51B);
         do { } while (0);
         sz = 0;
         d = (s32)buf - ((s32)h + i);
@@ -661,17 +661,17 @@ Gfx **tube_build_dlists(TrackModelList *h, TexSet **sets, u32 flags, s32 animTex
             } while (sz < h->count);
         }
     }
-    tbl = mem_alloc_dbg(h->count * 4, 0, D_800D6A50, 0x524);
+    tbl = mem_alloc_dbg(h->count * 4, 0, sStrTubegfxC, 0x524);
     prim_set_tex_mode_callback(animTex ? tube_tex_mode_callback : NULL);
     if (animTex && gAnimTexSet) {
         tube_init_tex_groups();
-        sTexSegListIndex = mem_alloc_dbg((h->count + 1) * 4, 0, D_800D6A50, 0x52E);
-        D_800E77C8 = sTexSegList = (TexSegRef *)(gZBuffer + 0x1E000);
+        sTexSegListIndex = mem_alloc_dbg((h->count + 1) * 4, 0, sStrTubegfxC, 0x52E);
+        sTexSegListCur = sTexSegList = (TexSegRef *)(gZBuffer + 0x1E000);
     }
     for (i = 0; i < h->count; i++) {
         gPrimTexAlphaMode = -1;
         t = mem_alloc_dbg((s32)prim_build_dl(flags | 1, h->e[i].model, sets, (Gfx *)gZBuffer) - gZBuffer, 0,
-                          D_800D6A50, 0x541);
+                          sStrTubegfxC, 0x541);
         tbl[i] = t;
         if (t == NULL) {
             for (;;) {
@@ -679,23 +679,23 @@ Gfx **tube_build_dlists(TrackModelList *h, TexSet **sets, u32 flags, s32 animTex
         }
         if (animTex && gAnimTexSet) {
             prim_set_tex_addr_callback(tube_remap_tex_addr);
-            sTexSegListIndex[i] = D_800E77C8;
-            D_800E7790 = 0;
+            sTexSegListIndex[i] = sTexSegListCur;
+            sTexSegCount = 0;
         }
         gPrimTexAlphaMode = -1;
         prim_build_dl(flags | 1, h->e[i].model, sets, tbl[i]);
         if (animTex && gAnimTexSet) {
-            D_800E77C8 += D_800E7790;
+            sTexSegListCur += sTexSegCount;
             prim_set_tex_addr_callback(NULL);
         }
     }
     if (animTex && gAnimTexSet) {
-        sTexSegListIndex[i] = D_800E77C8;
+        sTexSegListIndex[i] = sTexSegListCur;
         i++;
-        sz = (s32)D_800E77C8 - (s32)sTexSegList;
+        sz = (s32)sTexSegListCur - (s32)sTexSegList;
         if (sz != 0) {
             sz *= 4;
-            nb = mem_alloc_dbg(sz, 0, D_800D6A50, 0x565);
+            nb = mem_alloc_dbg(sz, 0, sStrTubegfxC, 0x565);
             memcpy(nb, sTexSegList, sz);
             for (j = 0; j < (s32)i; j++) {
                 sTexSegListIndex[j] = nb + (((s32)sTexSegListIndex[j] - (s32)sTexSegList) >> 2);
@@ -734,22 +734,22 @@ void tube_remap_tex_addr(u32 *addr)
         }
         if ((k <= last) && (1 < sTexAnimGroupLen[k])) {
             last = 0;
-            while (last < D_800E7790) {
-                if (D_800E77C8[last].offset + D_800E77C8[last].groupStart == k) {
+            while (last < sTexSegCount) {
+                if (sTexSegListCur[last].offset + sTexSegListCur[last].groupStart == k) {
                     break;
                 }
                 last = last + 1;
             }
-            if (last == D_800E7790) {
+            if (last == sTexSegCount) {
                 if (last <= 7) goto store;
                 do {
                 } while (1);
 store:
                 /* the low bytes of the s32 entries */
-                D_800E77C8[D_800E7790].groupStart = ((u8 *)&sTexAnimGroupStart[k])[3];
-                D_800E77C8[D_800E7790].groupLen = ((u8 *)&sTexAnimGroupLen[k])[3];
-                D_800E77C8[D_800E7790].offset = (u8)(k - ((u8 *)&sTexAnimGroupStart[k])[3]);
-                D_800E7790 = D_800E7790 + 1;
+                sTexSegListCur[sTexSegCount].groupStart = ((u8 *)&sTexAnimGroupStart[k])[3];
+                sTexSegListCur[sTexSegCount].groupLen = ((u8 *)&sTexAnimGroupLen[k])[3];
+                sTexSegListCur[sTexSegCount].offset = (u8)(k - ((u8 *)&sTexAnimGroupStart[k])[3]);
+                sTexSegCount = sTexSegCount + 1;
             }
             *addr = (u32)((last + 8) << 24);
         }
@@ -791,7 +791,7 @@ void tube_load_pvs(void)
 
     while (sched_get_current_task() != 0) {
     }
-    sPvsData = (u16 *)track_res_get(D_800D1514);
+    sPvsData = (u16 *)track_res_get(gGidVisInfo);
     if (gTrackSections->count != *sPvsData) {
         fatal_halt(1);
     }
@@ -814,12 +814,12 @@ void tube_load_pvs(void)
         }
     }
     idx = 0;
-    res_unload(&D_800E7728->handles[track_res_find(D_800D1514)]);
+    res_unload(&gResourceSet->handles[track_res_find(gGidVisInfo)]);
     i = dst - gZBuffer;
-    sPvsData = mem_alloc_dbg(i, idx, D_800D6A50, 0x61B);
+    sPvsData = mem_alloc_dbg(i, idx, sStrTubegfxC, 0x61B);
     memcpy(sPvsData, gZBuffer, i);
     i = (s32)offs + (-0x1E000 - (s32)gZBuffer);
-    sPvsIndex = mem_alloc_dbg(i, idx, D_800D6A50, 0x620);
+    sPvsIndex = mem_alloc_dbg(i, idx, sStrTubegfxC, 0x620);
     memcpy(sPvsIndex, gZBuffer + 0x1E000, i);
     p = sPvsData;
     q = (s32 *)sPvsIndex;
@@ -898,8 +898,8 @@ Gfx *tube_draw(Gfx *gdl, s32 a, s32 b, s32 c) {
     Gfx *q;
 
     gSPSegment(gdl++, 1, gObjectTexSet->pal);
-    if (D_800E77C4 != NULL) {
-        gSPSegment(gdl++, 2, D_800E77C4->pal);
+    if (gAltTexSet != NULL) {
+        gSPSegment(gdl++, 2, gAltTexSet->pal);
     }
     if (gAnimTexSet != NULL) {
         gSPSegment(gdl++, 3, gAnimTexSet->pal);

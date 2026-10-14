@@ -83,7 +83,7 @@ void skel_update_world_transforms(Bone *n, s32 count)
     }
 }
 
-s32 func_8003C588(Bone *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx)
+s32 skel_camera_to_bone_space(Bone *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx)
 {
     s32 rel[3];
     s32 wp[3];

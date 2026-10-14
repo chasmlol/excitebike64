@@ -19,7 +19,7 @@ s32 file_init(u8 *src)
     s32 k;
 
     if (sFileInitDone == 0) {
-        sFilePageMem = mem = mem_alloc_dbg((sFilePageCount + 2) * sizeof(FilePage) + (off = (sFilePageCount + 1) << 13), 0, (s32)D_800DB410, 0xC2);
+        sFilePageMem = mem = mem_alloc_dbg((sFilePageCount + 2) * sizeof(FilePage) + (off = (sFilePageCount + 1) << 13), 0, (s32)sStrFileC, 0xC2);
         if (mem == NULL) {
             return -1;
         }
@@ -54,7 +54,7 @@ s32 file_init(u8 *src)
             sFilePageMem = NULL;
             return -1;
         }
-        sFileDir = mem_alloc_dbg(size, 0, (s32)D_800DB410, 0x100);
+        sFileDir = mem_alloc_dbg(size, 0, (s32)sStrFileC, 0x100);
         memcpy(sFileDir, sFileTempPage + 4, size);
         max = 0;
         i = 0;
@@ -76,16 +76,16 @@ s32 file_init(u8 *src)
         }
         i = (max + 0x1FFF) >> 13;
         max = i + 4;
-        D_80100694 = 0;
-        mem_fill((u8 *)&D_80100680, 0, sizeof(FilePage));
+        sFileBigHeaderSize = 0;
+        mem_fill((u8 *)&sFileBigHeaderPage, 0, sizeof(FilePage));
         if (max > 0x800) {
-            D_80100694 = (i + 5) * 4;
-            D_80100680.buf = mem_alloc_dbg(D_80100694, 0, (s32)D_800DB410, 0x13D);
-            if (D_80100680.buf == NULL) {
+            sFileBigHeaderSize = (i + 5) * 4;
+            sFileBigHeaderPage.buf = mem_alloc_dbg(sFileBigHeaderSize, 0, (s32)sStrFileC, 0x13D);
+            if (sFileBigHeaderPage.buf == NULL) {
                 return -1;
             }
-            D_80100680.file = 0;
-            D_80100680.page = -1;
+            sFileBigHeaderPage.file = 0;
+            sFileBigHeaderPage.page = -1;
         }
         for (i = 3; i >= 0; i--) {
             sFileHandles[i].file = 0;
@@ -116,8 +116,8 @@ static inline FilePage *find(FileHandle *so)
     s32 want;
 
     want = -1;
-    if (D_80100680.file == so->file) {
-        return &D_80100680;
+    if (sFileBigHeaderPage.file == so->file) {
+        return &sFileBigHeaderPage;
     }
     nx = sFilePageHead->next;
     for (;;) {
@@ -139,7 +139,7 @@ static inline FilePage *find(FileHandle *so)
             }
         }
     }
-    if (cur != &D_80100680) {
+    if (cur != &sFileBigHeaderPage) {
         nx = sFilePageHead->next;
         if (cur != nx) {
             cur->prev->next = cur->next;
@@ -160,7 +160,7 @@ FilePage *file_load_page(FileHandle *so, s32 si, s8 sf)
     u32 a3, a2;
 
     if (so->file->flags != 0 && si >= 0) {
-        if (so->header == NULL || (so->header == &D_80100680 && D_80100680.file != so->file)) {
+        if (so->header == NULL || (so->header == &sFileBigHeaderPage && sFileBigHeaderPage.file != so->file)) {
             so->header = find(so);
             if (so->header == NULL) {
                 return NULL;
@@ -178,10 +178,10 @@ FilePage *file_load_page(FileHandle *so, s32 si, s8 sf)
     } else if (si < 0) {
         a2 = ((so->file->unpackedSize + 0x1FFF) >> 13) + 4;
         if (a2 > 0x800) {
-            D_80100680.file = so->file;
-            D_80100680.page = -1;
-            file_read_rom(so->file->rom, D_80100680.buf, D_80100694);
-            return &D_80100680;
+            sFileBigHeaderPage.file = so->file;
+            sFileBigHeaderPage.page = -1;
+            file_read_rom(so->file->rom, sFileBigHeaderPage.buf, sFileBigHeaderSize);
+            return &sFileBigHeaderPage;
         }
         e->file = so->file;
         e->page = si;
@@ -226,11 +226,11 @@ s32 file_shutdown(void)
         i = i - 1;
         p = p - 4;
     } while (i >= 0);
-    if (D_80100680.buf != 0) {
-        mem_free(D_80100680.buf);
+    if (sFileBigHeaderPage.buf != 0) {
+        mem_free(sFileBigHeaderPage.buf);
     }
-    D_80100694 = 0;
-    mem_fill((u8 *)&D_80100680, 0, sizeof(FilePage));
+    sFileBigHeaderSize = 0;
+    mem_fill((u8 *)&sFileBigHeaderPage, 0, sizeof(FilePage));
     mem_free(sFileDir);
     mem_free(sFilePageMem);
     sFileDir = 0;
@@ -287,7 +287,7 @@ void file_close(FileHandle *q)
         return;
     }
     n = q->header;
-    if (n != 0 && n != &D_80100680) {
+    if (n != 0 && n != &sFileBigHeaderPage) {
         n->page = n->page + 1;
         h = sFilePageHead->next;
         if (n == h) {
@@ -419,7 +419,7 @@ FilePage *file_get_page(FileHandle *k, s32 id, s8 flag)
     FilePage *nx;
 
     if (id < 0) {
-        p = &D_80100680;
+        p = &sFileBigHeaderPage;
         if (p->file == k->file) {
             return p;
         }
@@ -445,7 +445,7 @@ FilePage *file_get_page(FileHandle *k, s32 id, s8 flag)
             break;
         }
     }
-    if (flag != 0 && p != &D_80100680) {
+    if (flag != 0 && p != &sFileBigHeaderPage) {
         nx = sFilePageHead->next;
         if (p != nx) {
             p->prev->next = p->next;

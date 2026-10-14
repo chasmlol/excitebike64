@@ -27,7 +27,7 @@ void ambient_update(void)
         id = sAmbientZones->r[bi].id;
         if (id == -1) best = 0;
         if (gPauseMenu != 0) best = 0;
-        if (gCurTrack_2 - gTracks == 0xd && id == 0x6c && D_800CCB20 != 0) {
+        if (gCurTrack_2 - gTracks == 0xd && id == 0x6c && gGravelPitMoverTimer != 0) {
             id = 0x72;
         }
         tunes_set_ambient(id, best, -1);
@@ -39,7 +39,7 @@ void ambient_load(void)
     s32 i;
     u32 off;
     u32 r;
-    sAmbientZones_2 = (s32 *)track_res_get(D_800D1524);
+    sAmbientZones_2 = (s32 *)track_res_get(gGidAmbient);
     if (sAmbientZones_2 != 0 && sAmbientZones_2[0] > 0) {
         i = 0;
         do {

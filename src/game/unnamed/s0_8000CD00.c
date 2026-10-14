@@ -67,8 +67,8 @@ void cont_read_pads(void)
     cnt = 0;
     osContGetReadData(sContPadsRaw);
     started = 0;
-    D_800E2000 = sContPadsRaw[i].a;
-    D_800E2001 = sContPadsRaw[i].b;
+    sContStickX = sContPadsRaw[i].a;
+    sContStickY = sContPadsRaw[i].b;
     i = 0;
     do {
         old = gContMask;

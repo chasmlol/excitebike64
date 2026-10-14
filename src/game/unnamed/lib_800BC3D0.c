@@ -327,13 +327,13 @@ insert:
     n->sum = 0xB562439F - ((u32)n->next + (u32)n->prev + n->size);
     return;
 inv:
-    m = D_800DB248;
+    m = sStrMemFreeInvalid;
     goto call;
 overrun:
-    m = D_800DB288;
+    m = sStrMemFreeOverrun;
     goto call;
 alr:
-    m = D_800DB2BC;
+    m = sStrMemFreeTwice;
 call:
     debug_log_3(m, size, sum, flag);
     mem_report_2();
@@ -681,13 +681,13 @@ s32 mem_get_size(s32 *p)
     }
     goto bad_free;
 bad_head:
-    msg = D_800DB2F4;
+    msg = sStrMemSizeInvalid;
     goto fail;
 bad_tail:
-    msg = D_800DB340;
+    msg = sStrMemSizeOverrun;
     goto fail;
 bad_free:
-    msg = D_800DB364;
+    msg = sStrMemSizeFreed;
 fail:
     debug_log_3(msg);
     mem_report_2();

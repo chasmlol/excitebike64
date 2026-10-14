@@ -123,7 +123,7 @@ void edit_init(void)
     s32 v;
     s32 c, q, x, y, w, f, d;
 
-    gCurTrack = D_800CBF30;
+    gCurTrack = gTrackUser;
     if (gEditor == NULL || !(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
         gEditor = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
         mem_fill((u8 *)gEditor, 0, 0x1810);
@@ -133,10 +133,10 @@ void edit_init(void)
     }
     shell_load_gui_res();
     prim_init();
-    if (res_open_set(sStrEditResource, &D_800E7728) != 0) {
+    if (res_open_set(sStrEditResource, &gResourceSet) != 0) {
         fatal_halt(1);
     }
-    font_load_menu_set(D_800E7728);
+    font_load_menu_set(gResourceSet);
     gEditor->first = 0;
     gEditor->last = 0;
     gEditor->cur = 0;
@@ -150,9 +150,9 @@ void edit_init(void)
     res_register_type(sStrEditArn, D_800248EC);
     res_register_type(sStrEditN64, D_80014D20);
     res_open_set(sStrEditPieces, &gEditor->pieceRes);
-    gEditor->cursorTex = res_load(gEditor->pieceRes, D_800D125C);
-    gEditor->cursorModel = res_load(gEditor->pieceRes, D_800D1368);
-    gEditor->objectTex = res_load(gEditor->pieceRes, D_800D1370);
+    gEditor->cursorTex = res_load(gEditor->pieceRes, sEditCursorTexResId);
+    gEditor->cursorModel = res_load(gEditor->pieceRes, sEditCursorModelResId);
+    gEditor->objectTex = res_load(gEditor->pieceRes, gPieceObjectTexResId);
     gEditor->wallTex = res_load(gEditor->pieceRes, *gEditArena.wallTexId);
     gEditor->res170C = res_load(gEditor->pieceRes, D_800D1274);
     if (!(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
@@ -256,8 +256,8 @@ void edit_init(void)
     edit_user_piece_reset_cursor(0);
     gEditor->userPieceCount = 8;
     gui_init();
-    gEditor->warnFrame = res_load(gGuiRes, D_800D13E0);
-    gEditor->warnIcon = res_load(gGuiRes, D_800D142C);
+    gEditor->warnFrame = res_load(gGuiRes, gWarnFrameResId);
+    gEditor->warnIcon = res_load(gGuiRes, gWarnTitleBarResId);
     if (gGame.userTrack != NULL) {
         gEditor->flags &= ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE);
         usrtrk_load_into_editor((u8 *)gGame.userTrack + 4);
@@ -284,7 +284,7 @@ void edit_exit(void)
     } else {
         iVar7 = -1;
     }
-    res_close_set(D_800E7728);
+    res_close_set(gResourceSet);
     prim_exit();
     arned_free_grid();
     mem_free(gEditor->lineVtx[0]);
@@ -527,7 +527,7 @@ void edit_update_main_menu(void)
                             }
                         }
                         gEditor->userPieceCount = 8;
-                        usrtrk_load_into_editor(D_800F1DF4);
+                        usrtrk_load_into_editor(gSaveUserTrack);
                         edit_try_close_loop(gEditor->last);
                         gEditor->mode = EDIT_MODE_IDLE;
                         gEditor->menu->flags |= GUI_MENU_ACTIVE;
@@ -543,7 +543,7 @@ void edit_update_main_menu(void)
                 case 8:
                     gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
                     usrtrk_pack_track_2(gGame.userTrack);
-                    __builtin_memcpy(D_800F1DF4, gGame.userTrack, 0x310);
+                    __builtin_memcpy(gSaveUserTrack, gGame.userTrack, 0x310);
                     save_write(4, 0);
                     mem_free(gGame.userTrack);
                     gGame.userTrack = 0;
@@ -1704,7 +1704,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     PieceType *t;
     PieceType *e;
 
-    D_800F55B0 = arg0;
+    sEditDrawCtx = arg0;
     switch (gEditor->slideState) {
     case 1:
         gEditor->slideOffset = 0;
@@ -1724,7 +1724,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     sEditViewRects[1].w = sEditViewRectsBase[1].w + gEditor->slideOffset;
     sEditViewRects[2].x = sEditViewRectsBase[2].x - gEditor->slideOffset;
     sEditViewRects[3].x = sEditViewRectsBase[3].x - gEditor->slideOffset;
-    func_8008EFFC(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1, gEditor->slideOffset);
+    arned_set_viewport_stretch(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1, gEditor->slideOffset);
     gEditor->views[1].vp.vscale[0] = sEditViewRectsBase[1].w * 2;
     gEditor->views[1].vp.vscale[1] = sEditViewRectsBase[1].h * 2;
     gEditor->views[1].vp.vtrans[0] = (sEditViewRectsBase[1].x + sEditViewRectsBase[1].w / 2) * 4;
@@ -1739,7 +1739,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     gEditor->views[3].vp.vtrans[1] = (sEditViewRects[3].y + sEditViewRects[3].h / 2) * 4;
 
     gdl = *pgdl;
-    gdl = render_load_ucode(gdl, arg1, arg0, D_800A9D00, D_800D15C0);
+    gdl = render_load_ucode(gdl, arg1, arg0, gF3dex2NonText, gF3dex2NonData);
     gdl = render_restore_state(gdl, arg1, arg0);
     gDPSetTextureFilter(gdl++, G_TF_AVERAGE);
     gSPClearGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH | G_CULL_BOTH | G_FOG | G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR | G_LOD);
@@ -2506,7 +2506,7 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
             break;
         case 6:
             gdl = gui_draw_prompt(gdl, arg0, arg1, "Load A Track From...", "Game Pak", "Controller Pak",
-                                (D_800F1BC4 >> 3) & 1, 1);
+                                (gSaveOptions >> 3) & 1, 1);
             break;
         case 8:
             gdl = gui_draw_prompt(gdl, arg0, arg1, "Overwrite Track On Game Pak?", "OK", "Cancel", 1, 1);
@@ -2888,7 +2888,7 @@ typedef struct Rect_4 {
     s32 x0, y0, x1, y1;
 } Rect_4;
 
-extern Grid_3 D_800F56B0;
+extern Grid_3 sEditFitGrid;
 
 s32 edit_update_fitting_pieces(EditPiece *o)
 {
@@ -3025,7 +3025,7 @@ s32 edit_update_fitting_pieces(EditPiece *o)
             p = p->next;
         } while (p != NULL && p != gEditor->first);
     }
-    D_800F56B0 = grid;
+    sEditFitGrid = grid;
 
     for (n = 0; n < 29; n++) {
         e = &gPieceTypes[n];
@@ -3378,7 +3378,7 @@ void edit_user_piece_append_segment(void)
 #define CEA_IDX (gEditor->userPiece)
 #define LIM ((s32)gPieceTypes[CEA_IDX + 0x12].dim[1] << 1)
 
-int func_8009D224(int param_1, u16 *param_2)
+int edit_user_piece_height_max_prev(int param_1, u16 *param_2)
 {
     int t0;
     int q;
@@ -3434,7 +3434,7 @@ int func_8009D224(int param_1, u16 *param_2)
 #define SINS(x) gCosTable[((x) >> 4) & 0xFFF]
 #define COSS(x) gCosTable[(((x) >> 4) - 0x400) & 0xFFF]
 
-s32 func_8009D3D4(s32 p1, s16 *p2)
+s32 edit_user_piece_height_max_next(s32 p1, s16 *p2)
 {
     s32 t0;
     s32 q;
@@ -3453,7 +3453,7 @@ s32 func_8009D3D4(s32 p1, s16 *p2)
 #define OFS(n) (((n) - 1 > 0 && (n) - 1 < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(n) - 2] : 0)
 #define ANG_2(n, p) ((n) - 1 > 0 ? (p)[(n) - 2] : 0)
 
-int func_8009D5D8(int n, u16 *p)
+int edit_user_piece_height_min_prev(int n, u16 *p)
 {
     s32 lo;
     s16 sv;
@@ -3472,7 +3472,7 @@ int func_8009D5D8(int n, u16 *p)
 #define OFS_2(i) (((i) > 0 && (i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(i) - 1] : 0)
 #define ANG_3(i, p) ((i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2 ? (p)[i] : 0)
 
-int func_8009D788(int n, s16 *p)
+int edit_user_piece_height_min_next(int n, s16 *p)
 {
     s32 lo;
     s16 sv;
@@ -3496,7 +3496,7 @@ static inline s16 *At(s16 *b, s32 c, s32 i)
     return &b[c * 15 + i];
 }
 
-s32 func_8009D98C(s32 n)
+s32 edit_user_piece_find_height_max(s32 n)
 {
     u16 r1;
     s32 dummy;
@@ -3540,7 +3540,7 @@ s32 func_8009D98C(s32 n)
 #define LV() (gEditor->userPiece)
 #define CE2() (gPieceTypes[LV() + 0x12].dim[1] << 1)
 
-s32 func_8009DC6C(s32 param_1)
+s32 edit_user_piece_find_height_min(s32 param_1)
 {
     s32 iVar2;
     s32 iVar3;
@@ -3784,7 +3784,7 @@ s32 func_8009EB00(s32 a, s32 b)
 }
 
 /* Unused: whether c's prev can be reached from its next (1 also when either is missing). */
-s32 func_8009EB08(EditPiece *c)
+s32 edit_can_unlink_piece(EditPiece *c)
 {
     EditPiece *n = c->next;
     if (n != NULL && c->prev != NULL) {
@@ -3923,7 +3923,7 @@ s32 edit_ease_delta(s32 mode, s32 v, s32 d, s32 f)
     return res;
 }
 
-void func_8009EF20(GuiMenu *a0)
+void edit_set_menu(GuiMenu *a0)
 {
     Editor *st = gEditor;
     if (st->menu != a0) {
@@ -3987,13 +3987,13 @@ void edit_clear_track(s32 a0) {
 
 typedef struct { u8 b[0x310]; } Blk_24;
 
-extern Blk_24 D_800F1DF4_2;
+extern Blk_24 gSaveUserTrack_2;
 
 void edit_save_track_to_game_pak(void)
 {
     gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x6FE);
     usrtrk_pack_track(gGame.userTrack);
-    D_800F1DF4_2 = *(Blk_24 *)gGame.userTrack;
+    gSaveUserTrack_2 = *(Blk_24 *)gGame.userTrack;
     save_write(4, 0);
     mem_free(gGame.userTrack);
     gGame.userTrack = 0;

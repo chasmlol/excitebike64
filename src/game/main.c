@@ -56,7 +56,7 @@ void game_main(void)
     }
     if (gLoadedByBootLoader != 0) {
         __builtin_memcpy(gBootHeader, (void *)0x803FFFC0, 0x30);
-        gResourceRomAddr = D_800E20D4;
+        gResourceRomAddr = gBootResRomAddr;
         cfg = *(u16 *)0x80000406;
         if (cfg == 0xDEAF) {
             D_800C2954 = 1;
@@ -83,11 +83,11 @@ void game_main(void)
         gFbAllocHeight = 240;
     }
     sz = gFbAllocWidth * gFbAllocHeight * 4 + 0x40;
-    gFramebuffers_2[0] = mem_alloc_at_dbg(base - sz, sz - 0x10, D_800D6014, 361);
+    gFramebuffers_2[0] = mem_alloc_at_dbg(base - sz, sz - 0x10, sStrMainFile, 361);
     gFramebuffers_2[1] = (u16 *)((u8 *)gFramebuffers_2[0] + gFbAllocWidth * gFbAllocHeight * 2);
     {
     void *z;
-    gZBuffer = z = mem_alloc_at_dbg(base, gFbAllocWidth * gFbAllocHeight * 2, D_800D6014, 363);
+    gZBuffer = z = mem_alloc_at_dbg(base, gFbAllocWidth * gFbAllocHeight * 2, sStrMainFile, 363);
     if (gFramebuffers_2[0] == NULL || z == NULL) {
         fatal_halt(1);
     }
@@ -103,9 +103,9 @@ void game_main(void)
     for (i = 0; i < 4; i++) {
         main_convert_pad_input(&gContPads_2[i], &gPadInput_4[i]);
     }
-    gReplayBuffer = mem_alloc_dbg(0xC800, 0, D_800D6014, 405);
-    sGfxDramStack = mem_alloc_dbg(0x401, 0, D_800D6014, 412);
-    sGfxYieldBuffer = mem_alloc_dbg(0xC00, 0, D_800D6014, 413);
+    gReplayBuffer = mem_alloc_dbg(0xC800, 0, sStrMainFile, 405);
+    sGfxDramStack = mem_alloc_dbg(0x401, 0, sStrMainFile, 412);
+    sGfxYieldBuffer = mem_alloc_dbg(0xC00, 0, sStrMainFile, 413);
     file_init(gResourceRomAddr);
     res_set_load_buffer(0);
     gCurGameState = &gGameStates[0];
@@ -115,11 +115,11 @@ void game_main(void)
     osCreateMesgQueue(&sSchedEventQueue, sSchedEventMsgs, 16);
     osCreateThread(&sSchedEventThread, 5, main_sched_event_thread, NULL, gPadInputPrev_4, 12);
     osStartThread(&sSchedEventThread);
-    sched_add_client((s32)D_800E2040, (s32)&sSchedEventQueue);
+    sched_add_client((s32)sSchedClient, (s32)&sSchedEventQueue);
     snd_init();
     gIsDrawing = 0;
     main_init_dev_pi_handle();
-    func_8000E8B0(0);
+    main_set_debug_freeze(0);
 
     for (;;) {
         if (sDebugLagEnable != 0) {
@@ -138,8 +138,8 @@ void game_main(void)
         case 1:
             if (gCurGameState->mode == 0) {
                 if (gGfxContexts[0].dl == NULL) {
-                    gGfxContexts[0].dl = mem_alloc_dbg(gCurGameState->dlSize * 8, 0, D_800D6014, 523);
-                    gGfxContexts[1].dl = mem_alloc_dbg(gCurGameState->dlSize * 8, 0, D_800D6014, 524);
+                    gGfxContexts[0].dl = mem_alloc_dbg(gCurGameState->dlSize * 8, 0, sStrMainFile, 523);
+                    gGfxContexts[1].dl = mem_alloc_dbg(gCurGameState->dlSize * 8, 0, sStrMainFile, 524);
                 }
                 i = gCurGameState - gGameStates;
                 if (i == 0 || i == 2) {
@@ -170,13 +170,13 @@ void game_main(void)
                 cont_read_pads();
             }
             if ((gContPads_2[0].button & 0xC00) == 0xC00) {
-                func_8000E8B0(1);
+                main_set_debug_freeze(1);
                 do {
                     start_controller_read();
                     cont_finish_read();
                     cont_read_pads();
                 } while ((gContPads_2[0].button & 0x300) != 0x300);
-                func_8000E8B0(0);
+                main_set_debug_freeze(0);
                 do {
                     start_controller_read();
                     cont_finish_read();
@@ -225,7 +225,7 @@ void game_main(void)
                         i = 3;
                     } else if (i == 0 && (gGame.flags & 0x20)) {
                         i = 2;
-                    } else if (D_800CA924[0] > 0 && D_800CA924[1] < D_800CA924[0]) {
+                    } else if (gRaceSeries[0] > 0 && gRaceSeries[1] < gRaceSeries[0]) {
                         i = 1;
                     } else {
                         if (gGame.mode == 1 && gSeason != NULL && !(gGame.flags & 0x8000)) {
@@ -304,10 +304,10 @@ void game_main(void)
                     T->list.t.data_size = (sGfxHead - gCurGfxContext->dl) * sizeof(Gfx);
                     T->list.t.type = 1;
                     T->list.t.flags = 6;
-                    T->list.t.ucode_boot = (u64 *)D_800A9C30;
-                    T->list.t.ucode_boot_size = D_800A9D00 - D_800A9C30;
-                    T->list.t.ucode = (u64 *)D_800AB0A0;
-                    T->list.t.ucode_data = (u64 *)D_800D19E0;
+                    T->list.t.ucode_boot = (u64 *)gRspBootText;
+                    T->list.t.ucode_boot_size = gF3dex2NonText - gRspBootText;
+                    T->list.t.ucode = (u64 *)gF3dlx2RejText;
+                    T->list.t.ucode_data = (u64 *)gF3dlx2RejData;
                     T->list.t.ucode_data_size = 0x800;
                     T->list.t.dram_stack = sGfxDramStack;
                     T->list.t.dram_stack_size = 0x400;
@@ -462,9 +462,9 @@ void main_init_memory(void)
     u32 t;
 
     top = ((u32)osMemSize | 0x80000000) - 0x100;
-    s0 = (u32)D_800731D0;
-    s2 = (u32)D_800A42C0;
-    s3 = (u32)D_800A9C20;
+    s0 = (u32)gFrontendOvlStart;
+    s2 = (u32)gUsrTrkOvlStart;
+    s3 = (u32)gUsrTrkOvlEnd;
     if (s0 & 0xF) {
         fatal_halt(0x33);
     }
@@ -474,16 +474,16 @@ void main_init_memory(void)
     if (s3 & 0xF) {
         fatal_halt(0x35);
     }
-    s1 = (u32)D_80105680;
+    s1 = (u32)sBssEnd;
     s1 = (s1 + 0xFF) & ~0xFF;
     osViBlack(1);
     mem_fill((u8 *)s1, 0, top - s1);
     mem_init(0, 0, s0, top - s0);
     t = 0x30;
-    mem_alloc_at_dbg(s0 + 0x30, s2 - t - s0, (u32)D_800D6014, 0x4FA);
+    mem_alloc_at_dbg(s0 + 0x30, s2 - t - s0, (u32)sStrMainFile, 0x4FA);
     t = 0x10;
-    mem_alloc_at_dbg(s2 + 0x10, s3 - t - s2, (u32)D_800D6014, 0x4FB);
-    mem_alloc_at_dbg(s3 + 0x10, s1 - t - s3, (u32)D_800D6014, 0x4FC);
+    mem_alloc_at_dbg(s2 + 0x10, s3 - t - s2, (u32)sStrMainFile, 0x4FB);
+    mem_alloc_at_dbg(s3 + 0x10, s1 - t - s3, (u32)sStrMainFile, 0x4FC);
 }
 
 typedef struct {
@@ -541,7 +541,7 @@ void main_sched_event_thread(void)
     }
 }
 
-void func_8000E8B0(s32 param_1)
+void main_set_debug_freeze(s32 param_1)
 {
     u8 *p = sDevPiHandle;
     s32 flag = 0;
@@ -549,7 +549,7 @@ void func_8000E8B0(s32 param_1)
         flag = -1;
     }
     osEPiWriteIo(p, 0xFF70000, flag);
-    D_800C2930 = param_1;
+    gDebugPadFreeze = param_1;
 }
 
 typedef struct {
@@ -590,7 +590,7 @@ void main_hang(void)
     while (1) {}
 }
 
-void func_8000E9C0(void)
+void main_halt_white_screen(void)
 {
     osCreateViManager(10);
     osViSetMode(osViModeTable);
@@ -604,20 +604,20 @@ void func_8000E9C0(void)
     while (1) {}
 }
 
-void func_8000EA24(void)
+void main_on_dma_start(void)
 {
 }
 
-void func_8000EA2C(void) {
+void main_debug_newline(void) {
     debug_log();
-    debug_log(&D_800D6010);
+    debug_log(&sStrCrLf);
 }
 
 void func_8000EA54(void)
 {
 }
 
-s32 func_8000EA5C(void)
+s32 main_check_cart_ipl3(void)
 {
     __asm__ volatile("addu $9, $30, $0" : : : "$9");
     while ((*(volatile u32 *)0xA4600010 & 3) != 0) {

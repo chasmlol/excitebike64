@@ -52,7 +52,7 @@ void soccer_ball_reset(s32 a0)
     gSoccerBall.quat[0] = 1.0f;
     gSoccerBall.quat[3] = gSoccerBall.quat[2] = gSoccerBall.quat[1] = gSoccerBall.pos.x;
     if (a0 != 0) {
-        gSoccerBall.tree = collide_build_sphere_tree(D_800CC2F4);
+        gSoccerBall.tree = collide_build_sphere_tree(sSoccerBallSphereDesc);
         soccer_ball_init_contacts();
     }
 }

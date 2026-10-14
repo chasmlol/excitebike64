@@ -59,15 +59,15 @@ void game_main(void);
 void main_convert_pad_input(OSContPad *pad, u32 *out);
 void main_init_memory(void);
 void main_sched_event_thread(void);
-void func_8000E8B0(s32 param_1);
+void main_set_debug_freeze(s32 param_1);
 void main_init_dev_pi_handle(void);
 void main_init_sched(void);
 void main_hang(void);
-void func_8000E9C0(void);
-void func_8000EA24(void);
-void func_8000EA2C(void);
+void main_halt_white_screen(void);
+void main_on_dma_start(void);
+void main_debug_newline(void);
 void func_8000EA54(void);
-s32 func_8000EA5C(void);
+s32 main_check_cart_ipl3(void);
 
 /* src/game/unnamed/s0_8000EB00.c */
 void debug_printf(s32 a, ...);
@@ -121,7 +121,7 @@ s32 snd_get_volume(s32 param_1);
 void snd_stop_all_riders(void);
 void snd_load_menu_sounds(void);
 void snd_play_menu_sound(s32 param_1);
-void func_8001106C(void);
+void snd_play_finish_song(void);
 void snd_stop_handle(s32 *p);
 void snd_service(void);
 void snd_engine_callback(void);
@@ -163,7 +163,7 @@ u32 math_sin_rand(f32 *p);
 void mtx_from_rot3i_pos(s32 *src, u16 *aux, s16 *dst);
 void mtx_from_bones(Bone *src, MtxS_2 *dst, s32 n);
 void quat_mul(f32 *o, f32 *p, f32 *q);
-f32 func_80013D3C(f32 x);
+f32 math_double(f32 x);
 
 /* src/game/unnamed/s0_80013D50.c */
 s32 cic_is_6103(void);
@@ -176,7 +176,7 @@ void prim_set_tex_mode_callback(s32 a0);
 void prim_set_tex_addr_callback(s32 a0);
 void prim_init(void);
 void prim_exit(void);
-void func_80014AD8(s32 x);
+void prim_set_tex_size_shift(s32 x);
 void prim_alloc_seg_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags);
 void prim_alloc_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags);
 void prim_flip_image_rows(u8 *p, s32 stride, s32 rows);
@@ -203,7 +203,7 @@ void race_load_frontend_code(s32 x);
 void race_init_ghost_replay(s32 p);
 void race_teardown(void);
 void race_apply_volumes(void);
-void func_80019EC0(s32 param_1);
+void race_load_ghost_setup(s32 param_1);
 void race_set_video_mode(void);
 void race_alloc_text_objs(void);
 void race_free_text_objs(void);
@@ -241,7 +241,7 @@ void bike_update(Rider *b, s32 n);
 u32 bike_remap_buttons(u32 a0, s32 a1);
 void bikes_update(s32 n);
 float bike_get_ground_height(float *p);
-void func_80022908(Rider *p);
+void bike_sync_wheel_contacts(Rider *p);
 void bikes_free(void);
 void bike_apply_surface_bumps(Rider *p);
 void bike_update_finish_celebration(Rider *p);
@@ -318,7 +318,7 @@ void cam_shift_z(s32 p, s32 q);
 void cam_mode_chase_7m(Rider *param_1, CamOut *param_2);
 void cam_mode_chase_far_alt(Rider *a, CamOut *b);
 void cam_mode_side_view(Rider *param_1, CamOut *param_2);
-void func_8002D528(Rider *o, CamOut *out);
+void cam_mode_high_side(Rider *o, CamOut *out);
 void cam_mode_chase_near(Rider *p, CamOut *p2);
 void cam_mode_chase_mid(Rider *param_1, CamOut *param_2);
 void cam_mode_chase_far(Rider *a, CamOut *b);
@@ -354,8 +354,8 @@ void height_free_walls(void);
 s32 point_in_tri_xz(s32 *p1, s32 *p2, s32 x, s32 y);
 int height_get_grid_cell(int x, int y);
 s32 point_in_poly_xz(SurfacePoly *poly, s32 px, s32 pz);
-s32 func_80031FA0(s32 p1, s32 p2, s32 p3);
-s32 func_8003207C(s32 p1, s32 p2, s32 p3);
+s32 height_seg_cross_line_z(s32 p1, s32 p2, s32 p3);
+s32 height_seg_cross_line_x(s32 p1, s32 p2, s32 p3);
 
 /* src/game/sun.c */
 void sun_init(void);
@@ -374,12 +374,12 @@ void sky_update_scroll(void);
 Gfx *sky_draw_strip(s32 a, s32 b, s32 *tex, Gfx *gdl);
 Gfx *sky_draw(Gfx *gdl, s32 unused, TexSet *sky);
 s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view);
-void func_80035630(void);
+void sky_init(void);
 void sky_reset_clip(void);
 Gfx *sky_texrect(Gfx *gdl, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, s32 du, s32 dv, s32 x0, s32 y0, s32 x1, s32 y1, u32 *flag);
 
 /* src/game/unnamed/s0_800358C0.c */
-void func_800358C0(void);
+void engine_init_dial_vtx(void);
 void engine_update_heat(Rider *o);
 void engine_update(s32 idx, s32 dt);
 f32 engine_torque_at_rpm(f32 x);
@@ -417,7 +417,7 @@ void shadow_free(void);
 /* src/game/skel.c */
 void *skel_load(u32 *param_1, s32 param_2);
 void skel_update_world_transforms(Bone *n, s32 count);
-s32 func_8003C588(Bone *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx);
+s32 skel_camera_to_bone_space(Bone *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx);
 void skel_make_verts_bone_local(Bone *tbl, List_6 *list);
 void skel_reset_pose(Bone *param_1, s32 param_2);
 void skel_assign_parents(Ent_35 *base, s32 val, s32 n);
@@ -433,7 +433,7 @@ void bike_update_trick_offset(Rider *param_1);
 void bike_skel_update(BikeSkeleton *p1, s32 p2);
 void rider_update_head_look(void);
 void rider_update_input_history(Rider *p, s32 n);
-void func_8003F128(void);
+void rider_update_crouch(void);
 void rider_update_fist_pump(void);
 void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4);
 s32 rider_anim_get_length(s32 a0, s32 *a1);
@@ -543,14 +543,14 @@ void announce_crash_2(s32 a0);
 void announce_crash_landing(u32 param_1);
 void announce_takeout(u32 a, u32 b);
 void announce_trick(u32 a, s32 b);
-void func_8004E3EC(u32 a, u32 b, s32 c);
+void announce_overtake(u32 a, u32 b, s32 c);
 void announce_place_change(u32 param_1, s32 param_2, u32 param_3);
 void announce_finish(u32 p);
 void announce_early_leader(u32 param_1);
 void announce_best_lap(u32 param_1);
 void announce_record(u32 param_1);
 void announce_goal(void);
-void func_8004F064(u32 param_1);
+void tunes_play_cliff_fall(u32 param_1);
 s32 tunes_is_song_playing(void);
 void tunes_shutdown(void);
 int tunes_play_speech(s32 param_1, s32 param_2, s32 param_3);
@@ -560,7 +560,7 @@ void tunes_queue_crowd(s32 p);
 void announce_reset(void);
 void tunes_queue_speech(s32 a0);
 void tunes_stop_speech(void);
-void func_8004F5C8(s32 on);
+void announce_race_start(s32 on);
 void tunes_mix_callback(s32 *p, s32 n);
 void tunes_init_channel(StreamChannel *p);
 void tunes_free_channel(StreamChannel *param_1);
@@ -617,7 +617,7 @@ void event_reset_places(void);
 void event_clear_season_race_points(void);
 void func_8005B2E8(void);
 void event_hud_free(void);
-Gfx *func_8005B404(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5);
+Gfx *tutorial_draw_bar(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5);
 s32 tutorial_lesson_has_demo(void);
 s32 track_res_find(s32 key);
 
@@ -630,7 +630,7 @@ void ai_set_steering(Rider *b, f32 maxv);
 void ai_update_steering(Rider *b);
 void bike_update_steering(Rider *p, s32 m);
 void func_8005C8F4(void);
-void func_8005C8FC(void);
+void ai_free(void);
 
 /* src/game/decal.c */
 void debug_update_value_display(void);
@@ -752,7 +752,7 @@ void func_80065A5C(void);
 void *sched_get_os_vi_mode(s32 a0);
 
 /* src/game/unnamed/s0_80065AF0.c */
-s32 func_80065AF0(void);
+s32 cic_check_rdram_200(void);
 
 /* src/game/instance.c */
 s32 instances_load(ResSet *resSet, s32 resIndex, s32 flags, TrackModelList *sections, TexSet *texSet);
@@ -837,7 +837,7 @@ void stunt_start(Rider *o, s32 n);
 s32 stunt_animate(Rider *p, s32 k);
 void stunt_add_points(Obj_58 *o);
 s32 stunt_seq_less(u8 *a, u8 *b);
-void func_80070560(Rider *b);
+void stunt_on_takeoff(Rider *b);
 s32 stunt_record_done(Rider *p);
 
 /* src/game/ponytail.c */
@@ -913,7 +913,7 @@ void shell_cb_exhibition(s32 chosen);
 void shell_cb_excite3d(s32 chosen);
 void shell_cb_hill_climb(s32 chosen);
 void shell_cb_custom_tracks(s32 chosen);
-void func_800880DC(s32 a0);
+void shell_cb_desert_unused(s32 a0);
 void shell_cb_original_excitebike(s32 chosen);
 void shell_cb_stunt_course(s32 chosen);
 s32 shell_pak_track_invalid(u32 *p, s32 n);
@@ -922,7 +922,7 @@ void shell_restore_race_results(void);
 s32 shell_is_round_screen_unlocked(Screen *screen);
 void shell_main_menu_or_back_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads);
 s32 shell_is_round_unlocked_tt(s32 p);
-s32 func_800884E0(void);
+s32 shell_check_sp_imem_magic(void);
 
 /* src/game/pak.c */
 void pak_build_note_list(s32 p, s32 z);
@@ -972,7 +972,7 @@ Vtx_t *arned_find_vertex(s32 x, s32 z);
 void arned_free_grid(void);
 void arned_transform_piece_verts(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, s32 dz, s32 flag);
 void arned_set_viewport(s32 x, s32 y, s32 w, s32 h);
-void func_8008EFFC(s32 x, s32 y, s32 w, s32 h, s32 extraH);
+void arned_set_viewport_stretch(s32 x, s32 y, s32 w, s32 h, s32 extraH);
 void arned_set_scissor(s32 a0, s32 a1, s32 a2, s32 a3);
 
 /* src/game/gui.c */
@@ -1018,22 +1018,22 @@ void edit_user_piece_remove_first_segment(void);
 void edit_user_piece_remove_last_segment(void);
 void edit_user_piece_prepend_segment(void);
 void edit_user_piece_append_segment(void);
-int func_8009D224(int param_1, u16 *param_2);
-s32 func_8009D3D4(s32 p1, s16 *p2);
-int func_8009D5D8(int n, u16 *p);
-int func_8009D788(int n, s16 *p);
-s32 func_8009D98C(s32 n);
-s32 func_8009DC6C(s32 param_1);
+int edit_user_piece_height_max_prev(int param_1, u16 *param_2);
+s32 edit_user_piece_height_max_next(s32 p1, s16 *p2);
+int edit_user_piece_height_min_prev(int n, u16 *p);
+int edit_user_piece_height_min_next(int n, s16 *p);
+s32 edit_user_piece_find_height_max(s32 n);
+s32 edit_user_piece_find_height_min(s32 param_1);
 void edit_user_piece_adjust_height(void);
 void edit_update_user_piece(void);
 s32 func_8009EB00(s32 a, s32 b);
-s32 func_8009EB08(EditPiece *c);
+s32 edit_can_unlink_piece(EditPiece *c);
 void edit_find_start_piece(void);
 void edit_user_piece_reset_cursor(s32 arg0);
 void edit_calc_track_cam_elevation(void);
 void edit_calc_piece_cam_elevation(void);
 s32 edit_ease_delta(s32 mode, s32 v, s32 d, s32 f);
-void func_8009EF20(GuiMenu *a0);
+void edit_set_menu(GuiMenu *a0);
 void edit_cam_snap(void);
 void edit_clear_track(s32 a0);
 void edit_save_track_to_game_pak(void);
@@ -1167,7 +1167,7 @@ s32 nes_cpu_read(s32 addr);
 void nes_cpu_write(s32 addr, s32 val);
 
 /* src/game/unnamed/s1_800A42A0.c */
-s32 func_800A42A0(void);
+s32 cic_check_rdram_284(void);
 
 /* src/game/UsrTrk.c */
 s32 usrtrk_pack_track(u8 *buf);
@@ -1205,8 +1205,8 @@ void sfx_stop(s32 id);
 void sfx_stop_all(void);
 void sfx_pause_all(void);
 void sfx_resume_all(void);
-void func_800B9138(void);
-void func_800B9160(void);
+void sfx_driver_stub2(void);
+void sfx_driver_stub3(void);
 void sfx_set_volume(s32 key, s32 val);
 void sfx_set_pan(s32 a, s32 b);
 void sfx_set_rate(s32 key, s32 v);
@@ -1224,7 +1224,7 @@ void (*sfx_get_frame_callback(void))(void);
 void sfx_echo_init(s32 size);
 void sfx_echo_set_level(s32 level);
 void sfx_echo_free(void);
-void func_800B9A68(void);
+void sfx_driver_stub1(void);
 SfxStream *sfx_stream_create(s32 p1);
 void sfx_stream_write(SfxStream *r, u32 n, u8 *src);
 void sfx_stream_set_rate(SfxStream *o, s32 a1);
@@ -1247,7 +1247,7 @@ void sfx_set_sample(s32 p1, s32 p2);
 void sfx_echo_enable(s32 on);
 u32 sfx_stream_read(SfxStream *r, u32 n, u8 *dst);
 void sfx_lock_sample(s32 i);
-void func_800BA5F0(s32 a0);
+void sfx_unlock_sample(s32 a0);
 s32 sfx_get_voice(s32 param_1);
 
 /* src/game/softmix.c */
@@ -1399,13 +1399,13 @@ void *res_load_by_name_2(void *a0, void *a1, void *a2);
 s32 res_find_gid(ResSet *set, char *name);
 s32 res_get_size(ResSet *set, s32 id);
 void res_set_load_buffer(void *buf);
-void func_800C0264(ResSet *set, u32 data);
+void res_unload_by_data(ResSet *set, u32 data);
 u32 res_hash_name(char *name);
 
 /* src/game/decoder.c */
 SamHeader *decoder_decode_adpcm(SamAdpcm *s);
 SamHeader *decoder_decode_sample(SamHeader *sam);
-SamHeader *func_800C055C(SamAdpcm *p);
+SamHeader *decoder_decode_ima_adpcm(SamAdpcm *p);
 
 /* src/game/fontcode.c */
 s32 font_load(ResFile *arc, u32 **ids, u32 *palette);
@@ -1422,11 +1422,11 @@ u32 font_unload(void);
 TextObj *font_text_create(TextObj *t, s32 size, s32 font, s32 color, u32 flags);
 TextObj *font_text_clear(TextObj *t);
 char *font_text_add(TextObj *t, char *s);
-void func_800C204C(TextObj *t);
+void font_text_destroy(TextObj *t);
 void str_make_initials(char *dst, char *src);
-void func_800C20F0(u8 *s);
+void font_str_upper(u8 *s);
 void font_name_upper(u8 *s);
-void func_800C21BC(u8 *s);
+void font_str_lower(u8 *s);
 void func_800C21F0(u8 *s);
 s32 font_reset_queue(void);
 

@@ -18,30 +18,30 @@ typedef struct {
     RecSet prev;
 } Both;
 
-extern Both D_800E8EF0;
+extern Both sEngineDialVtx;
 extern RecSet D_800E9080[];
 
-void func_800358C0(void)
+void engine_init_dial_vtx(void)
 {
     s32 i;
     s32 a;
     s32 u1;
     s32 u3;
 
-    mem_fill((u8 *)&D_800E8EF0, 0, 800);
+    mem_fill((u8 *)&sEngineDialVtx, 0, 800);
     for (i = 0; i < 25; i++) {
-        D_800E8EF0.cur.r[i].z = 0x32;
+        sEngineDialVtx.cur.r[i].z = 0x32;
     }
     for (i = 0; i < 7; i++) {
         a = i * 0x2000 + 0xA000;
-        D_800E8EF0.cur.r[i * 3].x = (gCosTable[((a >> 4) - 0x400) & 0xFFF] * 15) >> 12;
-        D_800E8EF0.cur.r[i * 3].y = (gCosTable[(a >> 4) & 0xFFF] * 5) >> 11;
+        sEngineDialVtx.cur.r[i * 3].x = (gCosTable[((a >> 4) - 0x400) & 0xFFF] * 15) >> 12;
+        sEngineDialVtx.cur.r[i * 3].y = (gCosTable[(a >> 4) & 0xFFF] * 5) >> 11;
         u1 = (a + 0x200) >> 4;
-        D_800E8EF0.cur.r[i * 3 + 1].x = (gCosTable[(u1 - 0x400) & 0xFFF] * 0x41) >> 14;
+        sEngineDialVtx.cur.r[i * 3 + 1].x = (gCosTable[(u1 - 0x400) & 0xFFF] * 0x41) >> 14;
         u3 = (a - 0x200) >> 4;
-        D_800E8EF0.cur.r[i * 3 + 1].y = (gCosTable[u1 & 0xFFF] * 0x2D) >> 14;
-        D_800E8EF0.cur.r[i * 3 + 2].x = (gCosTable[(u3 - 0x400) & 0xFFF] * 0x41) >> 14;
-        D_800E8EF0.cur.r[i * 3 + 2].y = (gCosTable[u3 & 0xFFF] * 0x2D) >> 14;
+        sEngineDialVtx.cur.r[i * 3 + 1].y = (gCosTable[u1 & 0xFFF] * 0x2D) >> 14;
+        sEngineDialVtx.cur.r[i * 3 + 2].x = (gCosTable[(u3 - 0x400) & 0xFFF] * 0x41) >> 14;
+        sEngineDialVtx.cur.r[i * 3 + 2].y = (gCosTable[u3 & 0xFFF] * 0x2D) >> 14;
     }
     D_800E9080[0] = D_800E9080[-1];
 }

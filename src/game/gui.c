@@ -15,13 +15,13 @@ void gui_init(void)
     TextObj *p;
     s32 r;
 
-    gGui = mem_alloc_dbg(100, 0, D_800DA880, 0x3E);
-    res_open_set(D_800DA888, &gGui->res);
+    gGui = mem_alloc_dbg(100, 0, sStrGuiFile, 0x3E);
+    res_open_set(sStrGuiResSet, &gGui->res);
     gGui->unk_18 = 0;
     gGui->unk_0C = 3;
-    r = res_load(gGui->res, D_800D1440);
+    r = res_load(gGui->res, sGuiCursorImagesResId);
     gGui->cursorImages = (TexSet *)r;
-    r = res_load(gGui->res, D_800D1408);
+    r = res_load(gGui->res, sGuiImagesResId);
     gGui->images = (TexSet *)r;
     i = 0;
     do {
@@ -42,7 +42,7 @@ void gui_init(void)
         i++;
     } while (i < 3);
     GUI_IMAGES(gGui->cursorImages)->pal[0] = 0;
-    font_load_menu_set(D_800E7728);
+    font_load_menu_set(gResourceSet);
 }
 
 #define PKT(a, b) { Gfx *_g = (Gfx *)(gdl++); _g->words.w0 = (a); _g->words.w1 = (b); }

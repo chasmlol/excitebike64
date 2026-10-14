@@ -9,7 +9,7 @@ void cam_init(s32 arg0)
 
     mem_fill((u8 *)sCamShakeY, 0, sizeof(sCamShakeY));
     mem_fill((u8 *)sCamFrozen, 0, sizeof(sCamFrozen));
-    order = mem_alloc_dbg(gPathNodeCount << 1, 0, (s32)D_800D6A70, 0x239);
+    order = mem_alloc_dbg(gPathNodeCount << 1, 0, (s32)sStrCameraC, 0x239);
     sCamSegOrder = order; /* through a local: the lui after the call */
     cam_build_segment_order();
     mem_fill((u8 *)sCamHistorySum, 0, sizeof(sCamHistorySum));
@@ -99,9 +99,9 @@ void cam_update(void) {
     if (gEvent.state == 0) {
         m2 = gEvent.countdown;
         if (m2 == 0xFF && gCamView == 0) {
-            func_8004F5C8(0);
+            announce_race_start(0);
         }
-        if ((gPlayerInputs[0] & 0x10) || gCurTrack == D_800CB7B0) {
+        if ((gPlayerInputs[0] & 0x10) || gCurTrack == gTrackLasVegas) {
             if (m2 >= 2) {
                 m2 = 1;
             }
@@ -135,7 +135,7 @@ void cam_update(void) {
         } else {
             gCamZoneState[gCamView].flags &= ~2;
         }
-        if (D_800EE140 != 0) {
+        if (gDebugFreeze != 0) {
             func_8002D888(&gRiders[sCamTarget], &out);
         } else {
             if ((gReplayPlayback != 0 || gCreditsMode != 0 || (gGame.flags & 0x81)) &&
@@ -810,7 +810,7 @@ void cam_start_fall_view(Rider *p)
     if (p->camMode != 9) {
         gCamLastModes[p - gRiders] = 9;
         p->camMode = 9;
-        if (gCurTrack == D_800CB5D0) {
+        if (gCurTrack == gTrackCanyonChasm) {
             loc = sCamFallViewPos;
             math_to_polar(loc.x - p->drawPos.x, p->drawPos.z - loc.z, &ang, &dist);
             loc.yaw = ang;
@@ -842,7 +842,7 @@ void cam_start_fall_view(Rider *p)
         }
         gCamView = idx = p - gRiders;
         cam_snap_to(&loc);
-        func_8004F064(idx);
+        tunes_play_cliff_fall(idx);
     }
 }
 
@@ -986,7 +986,7 @@ s32 cam_find_zone(void)
     CamDollyZone *dolly;
 
     if (gCamView == 0) {
-        D_800C97E4 = -1;
+        sCamDollyZoneIndex = -1;
     }
     g = &gEvent;
     states = gCamZoneState;
@@ -1060,7 +1060,7 @@ s32 cam_find_zone(void)
                                 *pf &= ~8;
                             }
                             if (d == 0) {
-                                D_800C97E4 = k;
+                                sCamDollyZoneIndex = k;
                             }
                             return 1;
                         }
@@ -1433,7 +1433,7 @@ void cam_clamp_to_track(s32 m, s32 n)
     s32 k, h, top, d, r, dz;
     f32 f, g, sx, sz;
 
-    if (D_800EE140 != 0) {
+    if (gDebugFreeze != 0) {
         return;
     }
     if (gCurTrack_21->f2C == 2) {
@@ -1456,7 +1456,7 @@ void cam_clamp_to_track(s32 m, s32 n)
             }
             return;
         }
-        D_800E7F98 = 0;
+        sCamUnderCeiling = 0;
         if (pr->camCeiling < 0) {
             cam_collide_walls(m, n, 0);
             return;
@@ -1465,7 +1465,7 @@ void cam_clamp_to_track(s32 m, s32 n)
             pn = (PathNode *)(nx * sizeof(PathNode) + (u32)tab);
             if (pn->camCeiling > 0) {
                 f32 ya, yb;
-                D_800E7F98 = 1;
+                sCamUnderCeiling = 1;
                 ya = pr->pos.y * 1000.0f + (f32)pr->camCeiling * 16.0f;
                 yb = pn->pos.y * 1000.0f + (f32)pn->camCeiling * 16.0f;
                 lim = (s32)(lerpi(pr->camWidthNeg, pn->camWidthNeg, t) * 16.0f);
@@ -1590,7 +1590,7 @@ void cam_mode_side_view(Rider *param_1, CamOut *param_2)
     cam_snap_to(param_2);
 }
 
-void func_8002D528(Rider *o, CamOut *out) {
+void cam_mode_high_side(Rider *o, CamOut *out) {
     out->x = o->bike.smoothPos.x * 1000.0f + -28000.0f;
     out->y = 0x5BCC;
     out->z = o->bike.smoothPos.z * 1000.0f - 10000.0f;

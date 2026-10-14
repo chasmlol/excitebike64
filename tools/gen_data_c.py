@@ -135,7 +135,7 @@ def code_refs():
         names[k] |= {int(v, 16) for v in lib[k]["symbols"].values()}
         names[k] |= {s.address for s in common.symbols()[k].values()}
     # The listings' `; D_` comments pair each low half with the last lui of its register in a linear scan, which
-    # crosses branches (race_update +0x538 reads D_800E7728; its comment says D_800D7728, inside a string):
+    # crosses branches (race_update +0x538 reads gResourceSet; its comment says D_800D7728, inside a string):
     # they tell how an address is accessed (lwc1, lhu, ...), not where symbols start.
     for fn in common.functions():
         if fn["kind"] == "padding":

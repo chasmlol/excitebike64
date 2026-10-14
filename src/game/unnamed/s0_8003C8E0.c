@@ -259,7 +259,7 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
         mtx3i_from_angles(&m->bones[0].rot, B.drawRot[0] + 4000, 0, B.drawRot[2]);
         m->bones[0].worldRot = m->bones[0].rot;
         r = s3 * 128 - 4000;
-        mtx3i_from_angles(&m->bones[1].rot, D_800F2140[i] = d - r, 0, 0);
+        mtx3i_from_angles(&m->bones[1].rot, sRiderChestPitch[i] = d - r, 0, 0);
         sRiderIkTargets.limb[0].pos = gBikeSkelTemplate->bones[4].worldPos;
         sRiderIkTargets.limb[1].pos = gBikeSkelTemplate->bones[5].worldPos;
         sRiderIkTargets.limb[2].pos = gBikeSkelTemplate->bones[6].worldPos;
@@ -362,7 +362,7 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
         mtx3i_from_angles(sRiderIkTargets.limb[2].rot.m, B.drawRot[0] / 2, 0, B.drawRot[2]);
         mtx3i_from_angles(sRiderIkTargets.limb[3].rot.m, B.drawRot[0] / 2, 0, B.drawRot[2]);
         h = B.headYaw;
-        if (D_800EA7B8[i] == 0) {
+        if (sRiderLookBack[i] == 0) {
             if (h < 0) {
                 h = SINS(h * 2) / 2 - 0x2000;
             } else {
@@ -703,7 +703,7 @@ void rider_update_head_look(void)
     u16 ang, sang;
     s16 v;
 
-    if (D_800EE140 != 0) return;
+    if (gDebugFreeze != 0) return;
     for (i = 0; i < 8; i++) {
         best = 625;
         bi = -1;
@@ -713,10 +713,10 @@ void rider_update_head_look(void)
             continue;
         }
         if (((gPlayerInputs[i] & 0x20) && gRiders[i].rightFootOut && gRiders[i].leftFootOut) || gRiders[i].fistPump) {
-            D_800EA7B8[i] = 1;
+            sRiderLookBack[i] = 1;
             v = 24000;
         } else {
-            D_800EA7B8[i] = 0;
+            sRiderLookBack[i] = 0;
             for (j = 0; j < 8; j++) {
                 if (j == i) continue;
                 dx = (gRiders[j].drawPos.x >> 4) - (gRiders[i].drawPos.x >> 4);
@@ -776,7 +776,7 @@ void rider_update_input_history(Rider *p, s32 n)
     p->inHistAvg = sum2 / 8;
 }
 
-void func_8003F128(void)
+void rider_update_crouch(void)
 {
     s32 i;
     u32 t;
@@ -794,7 +794,7 @@ void func_8003F128(void)
                 gRiders[i].crestCrouch = (u16)gRiders[i].crestCrouch - 2;
             }
         }
-        if (D_800E1B50[i] & 0x2000) {
+        if (gRiderGroundSurface[i] & 0x2000) {
             gRiders[i].unk_778 = t;
         }
         if ((s32)(t - (u32)gRiders[i].unk_778) < 0x3C) {

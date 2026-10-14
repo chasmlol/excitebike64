@@ -17,7 +17,7 @@ void tutorial_init_lesson(s32 a0)
     race_reset_grid_order();
     s = &gEvent;
     if (s->tutorialBuf == 0) {
-        s->tutorialBuf = mem_alloc_dbg(0x80, 0, (s32)D_800D7340, 0x16D);
+        s->tutorialBuf = mem_alloc_dbg(0x80, 0, (s32)sStrEventFile, 0x16D);
     }
     gGame.difficulty = 1;
     if (CUR.flags & 4) {
@@ -55,7 +55,7 @@ void tutorial_init_lesson(s32 a0)
         gEvent.tutorialTimer = 0x3C;
         gEvent.flags |= 0x40;
     }
-    D_800F0738 = 0;
+    sTutorialStep = 0;
     gTutorialResult = 0;
     gTutorialMenuForced = 0;
 }
@@ -237,22 +237,22 @@ void tutorial_update(void)
         break;
     case 15:
         if (TB.flags & 2) {
-            if (gEvent.time >= 3 && D_800F0738 == 0) {
-                D_800F0738 = 2;
+            if (gEvent.time >= 3 && sTutorialStep == 0) {
+                sTutorialStep = 2;
             }
-            if (gRiders[0].unk_3FB == 0 && gRiders[0].trick == TB.steps[D_800F0738].value) {
-                D_800F0738++;
+            if (gRiders[0].unk_3FB == 0 && gRiders[0].trick == TB.steps[sTutorialStep].value) {
+                sTutorialStep++;
             }
-            if (D_800F0738 >= 10) {
+            if (sTutorialStep >= 10) {
                 if (gEvent.flags & 0x2000) {
                     gTutorialResult = 1;
                     if (((gPadInput & 0x40) && !(gPadInputPrev & 0x40)) ||
                         ((gPadInput & 0x10) && !(gPadInputPrev & 0x10))) {
-                        if (D_800F0738 == 10) {
-                            D_800F0738 = 11;
-                        } else if (D_800F0738 == 11) {
+                        if (sTutorialStep == 10) {
+                            sTutorialStep = 11;
+                        } else if (sTutorialStep == 11) {
                             gSeason->cup->progress[0] = TB.level + 1;
-                            D_800F1BC1 = D_800CAAA1;
+                            gSaveTutorialProgress = gTutorialProgress;
                             event_request_exit();
                             gRaceExitCode = 2;
                             gPauseMenu = 0;
@@ -260,8 +260,8 @@ void tutorial_update(void)
                             return;
                         }
                     }
-                    if (D_800F0738 < 10) {
-                        D_800F0738 = 10;
+                    if (sTutorialStep < 10) {
+                        sTutorialStep = 10;
                     }
                 } else if (!(gRiders[0].flags & 0x10)) {
                     gRiders[0].flags |= 0x10;
@@ -285,10 +285,10 @@ void tutorial_update(void)
                     tutorial_lesson_passed_2()) {
                     if (TB.level == gSeason->cup->progress[0]) {
                         gSeason->cup->progress[0] = TB.level + 1;
-                        D_800F1BC1 = D_800CAAA1;
+                        gSaveTutorialProgress = gTutorialProgress;
                     }
                 }
-                if ((gEvent.flags & 0x2000) && D_800F0738 == 0) {
+                if ((gEvent.flags & 0x2000) && sTutorialStep == 0) {
                     snd_stop_all_riders();
                     gEvent.flags &= ~0x2000;
                     gTutorialResult = tutorial_lesson_passed_2() ? 1 : -1;
@@ -325,7 +325,7 @@ typedef struct { s32 n; s32 f4; s32 *p; } Alloc;
 
 extern Track_12 *gCurTrack_28;
 extern Track_12 gTracks_10[];
-extern Alloc D_800CA924_2;
+extern Alloc gRaceSeries_2;
 
 void event_init(s32 a0, s32 a1)
 {
@@ -376,8 +376,8 @@ void event_init(s32 a0, s32 a1)
     gEvent.noPlayers = (gGame.flags & 0x81) != 0;
     mem_fill_2(gRiders, 0, 0x3F00);
     gGame.flags &= ~4;
-    if (D_800CA924_2.n > 0 && D_800CA924_2.f4 == 0) {
-        D_800CA924_2.p = mem_calloc_dbg(D_800CA924_2.n * 4, 0, (s32)D_800D7340, 0x6D9);
+    if (gRaceSeries_2.n > 0 && gRaceSeries_2.f4 == 0) {
+        gRaceSeries_2.p = mem_calloc_dbg(gRaceSeries_2.n * 4, 0, (s32)sStrEventFile, 0x6D9);
     }
     switch (gGame.mode) {
     case 2:
@@ -439,7 +439,7 @@ s32 event_check_record_time(Rider *p)
     ch = gCurTrack_3;
     if (ch[0x14] & 2) goto done;
     if (gEvent.time >= gEvent.record.times[2]) goto done;
-    if (gGame.mode == 8 && p != &gRiders[D_800C8CE0]) goto done;
+    if (gGame.mode == 8 && p != &gRiders[gTimeTrialPlayer]) goto done;
     if (gGame.numLaps != *(s16 *)((u8 *)ch + 0x1E)) goto done;
 
     ret = gEvent.time < gEvent.record.times[0];
@@ -496,8 +496,8 @@ u32 event_rider_finished(s32 p0)
     *(u16 *)(s0 + 8) = a0;
     *(s32 *)(s0 + 0x2C) = v->time;
     if (*(u8 *)((u8 *)&gRiders[0].race + a1 + 0x88) == 0 && gReplayPlayback == 0) {
-        if ((gGame.mode != 8 || p == D_800C8CE0) && gNumScreens == 1) {
-            func_8001106C();
+        if ((gGame.mode != 8 || p == gTimeTrialPlayer) && gNumScreens == 1) {
+            snd_play_finish_song();
         }
     }
     s2 = (u8 *)gRiders + ((((p << 6) - p)) << 5);
@@ -582,7 +582,7 @@ void event_rider_lap_completed(s32 p)
     if (b->lap < gEvent.numLaps) {
         if (gRiders[p].isCpu == 0 && gReplayPlayback == 0 && gGame.mode != 7 && gGame.mode != 5 &&
             !(gCurTrack_29->f50 & 2) && (t = b->lapTimes[b->lap]) < gEvent.record.bestLap &&
-            (gGame.mode != 8 || p == D_800C8CE0)) {
+            (gGame.mode != 8 || p == gTimeTrialPlayer)) {
             gEvent.record.bestLap = t;
             gEvent.record.initials[3][0] = 0xFF;
             gEvent.record.initials[3][1] = 0xFF;
@@ -962,7 +962,7 @@ void event_update_race(void) {
     for (m = 0; m < cnt; m++) {
         if (!buf[m]) break;
     }
-    if (!((m == cnt && n1 == 0 && gGame.mode != 8) || (gGame.mode == 8 && buf[D_800C8CE0]))) return;
+    if (!((m == cnt && n1 == 0 && gGame.mode != 8) || (gGame.mode == 8 && buf[gTimeTrialPlayer]))) return;
     if (gGame.flags & 0x81) return;
     if (gRaceExitCode == 3) return;
     if (gEvent.allFinished == 0) {
@@ -1142,7 +1142,7 @@ void event_hud_init(void)
     Game *s2;
 
     if (gGame.mode == 9) {
-        sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, D_800D7340, 0xB4B);
+        sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, sStrEventFile, 0xB4B);
         *sGreyPalette = 0;
         puVar4 = sGreyPalette + 1;
         iVar3 = 1;
@@ -1153,27 +1153,27 @@ void event_hud_init(void)
             iVar3 = iVar3 + 1;
         } while (iVar3 < 0x100);
     }
-    sCountdownTextures = res_load(D_800E7728, D_800D0D00);
+    sCountdownTextures = res_load(gResourceSet, sCountdownResId);
     s2 = &gGame;
     if (1 < s2->numPlayers) {
-        sTempGaugeTextures = res_load(D_800E7728, D_800D11B0);
+        sTempGaugeTextures = res_load(gResourceSet, sTempGaugeResId);
     }
     if (s2->mode == 9) {
-        s2->hudGlyphs = (HudGlyphs *)res_load(D_800E7728, D_800D09F8);
-        D_800F0740 = res_load(D_800E7728, D_800D10E8);
-        D_800EFD6C = res_load(D_800E7728, D_800D0DEC);
-        D_800EFD68 = res_load(D_800E7728, D_800D09D4);
+        s2->hudGlyphs = (HudGlyphs *)res_load(gResourceSet, gHudGlyphsResId);
+        sTutorialPrevNextIcons = res_load(gResourceSet, sTutorialPrevNextResId);
+        gFinishLineTexSet = res_load(gResourceSet, gFinishLineTexResId);
+        sTutorialTitleImage = res_load(gResourceSet, sTutorialTitleResId);
     }
-    res_register_type(D_800D8424, prim_n64_relocate);
+    res_register_type(sStrEventN64, prim_n64_relocate);
     if (s2->numPlayers == 1) {
-        D_800F0730[0] = mem_alloc_dbg(0x1c0, 0, D_800D7340, 0xB6B);
-        D_800F0730[1] = mem_alloc_dbg(0x1c0, 0, D_800D7340, 0xB6C);
+        D_800F0730[0] = mem_alloc_dbg(0x1c0, 0, sStrEventFile, 0xB6B);
+        D_800F0730[1] = mem_alloc_dbg(0x1c0, 0, sStrEventFile, 0xB6C);
     }
     t13 = *(volatile s32 *)&gScreenHeight;
     guPerspective(auStack_50, sHudPerspNorm, 33.0f, 320.0f / (f32)t13, 50.0f, 4192.0f, 1.0f);
     iVar3 = 0;
     if (s2->mode == 2) {
-        sSoccerMapTexture = res_load(D_800E7728, D_800D1084);
+        sSoccerMapTexture = res_load(gResourceSet, sSoccerMapResId);
     }
     for (i = 0; i < 0x1E; i++) {
         gHudTextObjs[i] = font_text_create(0, 0x40, 2, 2, 0);
@@ -1184,35 +1184,35 @@ void event_hud_init(void)
 typedef struct { char c[9]; } Str9;
 typedef struct { char c[2]; } Str2;
 
-extern Str9 D_800D8438;
+extern Str9 sStrOver3Hours;
 
 void event_format_time(s32 param_1, char *param_2)
 {
     char buf[32];
 
     if (param_1 > 0x9E340) {
-        *(Str9 *)param_2 = D_800D8438;
+        *(Str9 *)param_2 = sStrOver3Hours;
         return;
     }
     int_to_str(param_1 / 0xE10, buf);
     if (strlen(buf) == 1) {
-        *(Str2 *)param_2 = *(Str2 *)D_800D8444;
+        *(Str2 *)param_2 = *(Str2 *)sStrZero;
         str_cat(param_2, buf);
     } else {
         str_copy(param_2, buf);
     }
-    str_cat(param_2, D_800D8448);
+    str_cat(param_2, sStrColon);
     int_to_str((param_1 / 60) % 60, buf);
     if (strlen(buf) == 1) {
-        str_cat(param_2, D_800D8444);
+        str_cat(param_2, sStrZero);
         str_cat(param_2, buf);
     } else {
         str_cat(param_2, buf);
     }
-    str_cat(param_2, D_800D844C);
+    str_cat(param_2, sStrDot);
     int_to_str(((param_1 % 60) * 100) / 60, buf);
     if (strlen(buf) == 1) {
-        str_cat(param_2, D_800D8444);
+        str_cat(param_2, sStrZero);
         str_cat(param_2, buf);
     } else {
         str_cat(param_2, buf);
@@ -1227,19 +1227,19 @@ void event_format_time_short(s32 param_1, char *param_2)
     *param_2 = 0;
     if (param_1 > 0xe0f) {
         int_to_str(param_1 / 0xe10, param_2);
-        str_cat(param_2, D_800D8448);
+        str_cat(param_2, sStrColon);
     }
     int_to_str((param_1 / 0x3c) % 0x3c, acStack_30);
     iVar1 = strlen(acStack_30);
     if ((iVar1 == 1) && (param_1 > 0xe0f)) {
-        str_cat(param_2, D_800D8444);
+        str_cat(param_2, sStrZero);
     }
     str_cat(param_2, acStack_30);
-    str_cat(param_2, D_800D844C);
+    str_cat(param_2, sStrDot);
     int_to_str(((param_1 % 0x3c) * 100) / 0x3c, acStack_30);
     iVar1 = strlen(acStack_30);
     if (iVar1 == 1) {
-        str_cat(param_2, D_800D8444);
+        str_cat(param_2, sStrZero);
     }
     str_cat(param_2, acStack_30);
     return;
@@ -1391,7 +1391,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         if (gEvent.allFinished == 0 || pl != 0) {
             font_text_add(gHudTextObjs[7], "Game Over");
         } else {
-            font_text_add(gHudTextObjs[7], D_800D84A8);
+            font_text_add(gHudTextObjs[7], sStrPressStartToContinue);
         }
         font_draw_text(gHudTextObjs[7],
                       gViewRects_5[gNumScreens - 1][pl][0] + gViewRects_5[gNumScreens - 1][pl][2] / 2,
@@ -1440,10 +1440,10 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                 font_text_add(gHudTextObjs[7], "Winner");
                 break;
             case 1:
-                font_text_add(gHudTextObjs[7], D_800D84E0);
+                font_text_add(gHudTextObjs[7], sStrTie);
                 break;
             default:
-                font_text_add(gHudTextObjs[7], D_800D84E4);
+                font_text_add(gHudTextObjs[7], sStrLoser);
                 break;
             }
             font_draw_text(gHudTextObjs[7],
@@ -1666,7 +1666,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
         font_text_create(gHudTextObjs[2], 0x40, 1, 4, 0x20);
         event_format_time(gEvent.time, buf);
         y = gViewRects_10[gNumScreens - 1][idx].b;
-        font_text_add(gHudTextObjs[1], D_800D8484);
+        font_text_add(gHudTextObjs[1], sStrTime);
         z = y + 0x14;
         font_draw_text(gHudTextObjs[1], 0x23, z);
         font_text_add(gHudTextObjs[2], buf);
@@ -1682,7 +1682,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
         *p = '/';
         if (gViMode == 2) z = y + 0x2C;
         else z = y + 0x20;
-        font_text_add(gHudTextObjs[3], D_800D850C);
+        font_text_add(gHudTextObjs[3], sStrGate);
         font_draw_text(gHudTextObjs[3], 0x23, z);
         font_text_add(gHudTextObjs[4], buf);
         font_draw_text(gHudTextObjs[4], 100, z);
@@ -1691,7 +1691,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
     if (gRiders[0].race.finishPlace != -1) {
         h = font_text_create(gHudTextObjs[6], 0x20, 1, 4, 0x21);
         if (gRiders[0].finishState == 0) {
-            font_text_add(h, D_800D84A8);
+            font_text_add(h, sStrPressStartToContinue);
             font_draw_text(h,
                           gViewRects_10[gNumScreens - 1][idx].a + gViewRects_10[gNumScreens - 1][idx].c / 2,
                           gViewRects_10[gNumScreens - 1][idx].b + gViewRects_10[gNumScreens - 1][idx].d / 2);
@@ -1723,7 +1723,7 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 a)
 
     if (gEvent.state == 5 && gEvent.countdown == 0)
         return gdl;
-    if (D_800C8CE0 != 0)
+    if (gTimeTrialPlayer != 0)
         a = 0;
     switch (gEvent.state) {
     default:
@@ -1884,7 +1884,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     s32 x, y;
     s32 xa, xb, yy, dy;
 
-    lp = &gRiders[(gCamTargetOverride == -1) ? pl + D_800C8CE0 : gCamTargetOverride].race;
+    lp = &gRiders[(gCamTargetOverride == -1) ? pl + gTimeTrialPlayer : gCamTargetOverride].race;
     if (gNumScreens == 1 && gCamTargetOverride != -1) {
         pl = gCamTargetOverride;
     }
@@ -2193,7 +2193,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             if (gGame.numPlayers == 2) {
                 font_text_add(gHudTextObjs[0], "One on One Soccer: First Half");
             } else {
-                font_text_add(gHudTextObjs[0], D_800D865C);
+                font_text_add(gHudTextObjs[0], sStrSoccerFirstHalf);
             }
             font_draw_text(gHudTextObjs[0], gScreenWidth / 2, gScreenHeight / 2);
             break;
@@ -2295,7 +2295,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
                 font_text_add(gHudTextObjs[7], buf);
                 font_text_add(gHudTextObjs[7], " scored for you!");
             } else {
-                font_text_add(gHudTextObjs[7], D_800D871C);
+                font_text_add(gHudTextObjs[7], sStrYouScored);
             }
         } else {
             if (gEvent.flags & 0x20) {
@@ -2386,18 +2386,18 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         }
         gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800EFD68_2 + 4));
+        gDPLoadTLUT_pal256(gdl++, *(u32 *)(sTutorialTitleImage_2 + 4));
         cx = gScreenWidth / 2;
-        w = D_800EFD68_2[0x10] * 4 - 10;
-        gdl = render_draw_image(cx - w, off + 0x1E, D_800EFD68_2 + 0x10, gdl, arg2, 1, 1, 3, 0);
+        w = sTutorialTitleImage_2[0x10] * 4 - 10;
+        gdl = render_draw_image(cx - w, off + 0x1E, sTutorialTitleImage_2 + 0x10, gdl, arg2, 1, 1, 3, 0);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
-        gdl = render_draw_image(gScreenWidth / 2 - D_800EFD6C_2[0x18] * 4, off + 0x1A, D_800EFD6C_2 + 0x18, gdl, arg2, 1, 1, 6, 0);
+        gdl = render_draw_image(gScreenWidth / 2 - gFinishLineTexSet_2[0x18] * 4, off + 0x1A, gFinishLineTexSet_2 + 0x18, gdl, arg2, 1, 1, 6, 0);
         font_text_create(gHudTextObjs[i], 0x40, 1, 2, 0x20);
         font_text_add(gHudTextObjs[i], trk->name);
         font_draw_text(gHudTextObjs[i], 0x4D - i * 3, i * 13 + 0x44 + off);
         font_text_create(gHudTextObjs[3], 0x40, 1, 2, 0x21);
-        __builtin_memcpy(buf, D_800D88D0, 9);
+        __builtin_memcpy(buf, sStrLesson1, 9);
         buf[strlen(buf) - 1] += trk->level;
         font_text_add(gHudTextObjs[3], buf);
         font_draw_text(gHudTextObjs[3], gScreenWidth / 2 + 3, off + 0x29);
@@ -2440,29 +2440,29 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         font_draw_text(gHudTextObjs[1], 0x3D, 0x20);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
-        if ((CUR_FLAGS & 2) && D_800F0738 >= 2 && D_800F0738 < 10) {
+        if ((CUR_FLAGS & 2) && sTutorialStep >= 2 && sTutorialStep < 10) {
             font_text_create(gHudTextObjs[2], 0x40, 2, 2, 0x20);
-            font_text_add(gHudTextObjs[2], trk->steps[D_800F0738].lines[0]);
+            font_text_add(gHudTextObjs[2], trk->steps[sTutorialStep].lines[0]);
             font_draw_text(gHudTextObjs[2], 0x140, 0x28);
             p = gdl;
             gDPSetTextureLUT(p++, G_TT_NONE);
             gDPRaw(p++, 0xFC119623, 0xFF2FFFFF);
             k = 27;
             x0 = 0x2EE;
-            g = D_800EFD6C_2 + 0x58;
-            p = render_draw_image(x0 - g[0] * k * 8 - D_800EFD6C_2[0x60] * 8, 0x1C, D_800EFD6C_2 + 0x60, p, arg2, 1, 1, 6, 0);
+            g = gFinishLineTexSet_2 + 0x58;
+            p = render_draw_image(x0 - g[0] * k * 8 - gFinishLineTexSet_2[0x60] * 8, 0x1C, gFinishLineTexSet_2 + 0x60, p, arg2, 1, 1, 6, 0);
             for (m = 0; m < 27; m++) {
                 p = render_draw_image(x0 - (k - m) * g[0] * 8, 0x1C, g, p, arg2, 1, 1, 6, 0);
             }
-            gdl = event_draw_glyph_string(p, arg2, trk->steps[D_800F0738].lines[1], 0x140, 0x40);
+            gdl = event_draw_glyph_string(p, arg2, trk->steps[sTutorialStep].lines[1], 0x140, 0x40);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         } else {
             if (gTutorialResult == 1) {
-                if (D_800F0738 == 0) {
+                if (sTutorialStep == 0) {
                     i = trk->numSteps - 1;
                 } else {
-                    i = D_800F0738;
+                    i = sTutorialStep;
                 }
                 goto show;
             }
@@ -2505,28 +2505,28 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
                     }
                 }
             }
-            img = D_800EFD6C_2 + 0x30;
+            img = gFinishLineTexSet_2 + 0x30;
             for (i = 0; i < 19; i++) {
                 gdl = render_draw_image(i * img[0] * 8 + 0x10, 0xA9, img, gdl, arg2, 1, 1, 6, 0);
             }
-            p = render_draw_image(img[0] * 0x98 + 0x10, 0xA9, D_800EFD6C_2 + 0x38, gdl, arg2, 1, 1, 6, 0);
+            p = render_draw_image(img[0] * 0x98 + 0x10, 0xA9, gFinishLineTexSet_2 + 0x38, gdl, arg2, 1, 1, 6, 0);
             gdl = event_draw_glyph_string(p, arg2, D_800C9A3C, 0x136, 0xC3);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         }
     skip:
         if (gEvent.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
-            img = D_800EFD6C_2 + 0x30;
+            img = gFinishLineTexSet_2 + 0x30;
         } else {
-            img = D_800EFD6C_2 + 0x40;
+            img = gFinishLineTexSet_2 + 0x40;
         }
         for (i = 0; i < 9; i++) {
             gdl = render_draw_image(i * img[0] * 8 + 0x10, 0x14, img, gdl, arg2, 1, 1, 6, 0);
         }
         if (gEvent.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
-            img2 = D_800EFD6C_2 + 0x38;
+            img2 = gFinishLineTexSet_2 + 0x38;
         } else {
-            img2 = D_800EFD6C_2 + 0x48;
+            img2 = gFinishLineTexSet_2 + 0x48;
         }
         gdl = render_draw_image(img[0] * 0x48 + 0x10, 0x14, img2, gdl, arg2, 1, 1, 6, 0);
         gDPRaw(gdl++, 0xE200001C, 0x404240);
@@ -2535,17 +2535,17 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         if (gSeason->round > 0) {
-            gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
+            gDPLoadTLUT_pal256(gdl++, *(u32 *)(sTutorialPrevNextIcons + 4));
         } else {
             gDPLoadTLUT_pal256(gdl++, sGreyPalette);
         }
-        gdl = render_draw_image(0x21, 0x1B, D_800F0740 + 0x20, gdl, arg2, 1, 1, 3, 0);
+        gdl = render_draw_image(0x21, 0x1B, sTutorialPrevNextIcons + 0x20, gdl, arg2, 1, 1, 3, 0);
         if (gSeason->round < 16 && gTutorialLessons[gSeason->round + 1].level <= gSeason->cup->progress[0]) {
-            gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
+            gDPLoadTLUT_pal256(gdl++, *(u32 *)(sTutorialPrevNextIcons + 4));
         } else {
             gDPLoadTLUT_pal256(gdl++, sGreyPalette);
         }
-        gdl = render_draw_image(0x96, 0x1B, D_800F0740 + 0x10, gdl, arg2, 1, 1, 3, 0);
+        gdl = render_draw_image(0x96, 0x1B, sTutorialPrevNextIcons + 0x10, gdl, arg2, 1, 1, 3, 0);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
     }
@@ -2851,14 +2851,14 @@ typedef struct {
     s32 arg;
 } Ctr_2;
 
-extern Ctr_2 D_800CA924_3;
+extern Ctr_2 gRaceSeries_3;
 
 void event_exit(void)
 {
-    if (0 < D_800CA924_3.limit && (gGame.flags & 4) == 0) {
-        D_800CA924_3.counter = D_800CA924_3.counter + 1;
-        if (D_800CA924_3.counter == D_800CA924_3.limit) {
-            mem_free(D_800CA924_3.arg);
+    if (0 < gRaceSeries_3.limit && (gGame.flags & 4) == 0) {
+        gRaceSeries_3.counter = gRaceSeries_3.counter + 1;
+        if (gRaceSeries_3.counter == gRaceSeries_3.limit) {
+            mem_free(gRaceSeries_3.arg);
         }
     }
     if (gGame.mode == 9 && gEvent.tutorialBuf != 0) {
@@ -2886,13 +2886,13 @@ found:
     if (idx < 0) {
         return 0;
     }
-    return res_load(D_800E7728, idx);
+    return res_load(gResourceSet, idx);
 }
 
 s32 track_res_load_map(s32 *p) {
     s32 r = 0;
     if (p != NULL) {
-        sTrackResMap = res_load(D_800E7728, *p);
+        sTrackResMap = res_load(gResourceSet, *p);
         r = sTrackResMap != 0;
     }
     return r;
@@ -3049,10 +3049,10 @@ void event_hud_free(void)
     p1 = gHudTextObjs;
     do {
         i++;
-        func_800C204C(*p1);
+        font_text_destroy(*p1);
         mem_free(*p1);
         p1++;
-        func_800C204C(*p2);
+        font_text_destroy(*p2);
         mem_free(*p2);
         p2++;
     } while (i < 0x1e);
@@ -3061,7 +3061,7 @@ void event_hud_free(void)
 
 #define PKT_2(a, b) { Gfx *_g = dl++; _g->words.w0 = (a); _g->words.w1 = (b); }
 
-Gfx *func_8005B404(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5)
+Gfx *tutorial_draw_bar(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5)
 {
     s32 i = 0;
     s32 v;
@@ -3070,7 +3070,7 @@ Gfx *func_8005B404(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5)
 
     PKT_2(0xE3001001, 0);
     PKT_2(0xFC119623, 0xFF2FFFFF);
-    base = D_800EFD6C;
+    base = gFinishLineTexSet;
     pb = base + 0x58;
     dl = (Gfx *)render_draw_image(p1 - p3 * *pb * 8 - base[0x60] * 8, p2, base + 0x60, (u32 *)dl, p5, 1, 1, 6, 0);
     for (i = 0; i < p3; i++) {

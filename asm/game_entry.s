@@ -19,8 +19,8 @@ func_80000400:
     /* 8000040C */  ori         $sp, $sp, (0x803FFEF0 & 0xFFFF)
     /* 80000410 */  lui         $t0, %hi(sGaugeTextures)
     /* 80000414 */  addiu       $t0, $t0, %lo(sGaugeTextures)
-    /* 80000418 */  lui         $t1, %hi(D_80105580)
-    /* 8000041C */  addiu       $t1, $t1, %lo(D_80105580)
+    /* 80000418 */  lui         $t1, %hi(gGameBssEnd)
+    /* 8000041C */  addiu       $t1, $t1, %lo(gGameBssEnd)
     /* 80000420 */  beq         $t0, $t1, .L80000438
     /* 80000424 */   nop
 .L80000428:

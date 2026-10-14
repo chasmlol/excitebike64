@@ -47,7 +47,7 @@ void boot_draw_string(u8 *s, s32 x, s32 y, u16 *fb, s32 color)
     osWritebackDCacheAll();
 }
 
-void boot_func_80000FC8(s32 x0, s32 x1, s32 y0)
+void boot_draw_progress_bar(s32 x0, s32 x1, s32 y0)
 {
     s32 x, k, t, q;
     u8 *b;

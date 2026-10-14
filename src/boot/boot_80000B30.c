@@ -26,7 +26,7 @@ void boot_dma_update(void)
     s32 iVar2;
 
     sBootDmaPendingCount = 0;
-    D_80017C00 = 0;
+    sBootDmaStartedCount = 0;
     for (i = 0; i < 8; i++) {
         if (sBootDmaRequests[i].state == 1) {
             iVar2 = osRecvMesg(sBootDmaRequests[i].r4, 0, 0);
@@ -39,7 +39,7 @@ void boot_dma_update(void)
         } else if (sBootDmaRequests[i].state == 2) {
             if (sBootDmaCopyFunc == 0) {
                 sBootDmaRequests[i].rp = sBootDmaRequests[i].r4;
-                D_80017C00 = D_80017C00 + 1;
+                sBootDmaStartedCount = sBootDmaStartedCount + 1;
                 sBootDmaRequests[i].flag = 0;
                 sBootDmaRequests[i].f28 = sBootDmaRequests[i].f3c;
                 sBootDmaRequests[i].f2c = sBootDmaRequests[i].f40;

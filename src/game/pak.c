@@ -48,11 +48,11 @@ void pak_build_note_list(s32 p, s32 z)
                 mem_fill((u8 *)rec->label, 0, sizeof(rec->label));
                 *(Name16 *)rec->label = *(Name16 *)rec->name;
                 if (rec->ext[0] != 0) {
-                    str_cat(rec->label, D_800DA708);
+                    str_cat(rec->label, sStrPakExtDot);
                     *(Ext4 *)&rec->label[strlen(rec->label)] = *(Ext4 *)rec->ext;
                 }
                 if (r != 1) {
-                    str_cat(rec->label, D_800DA70C);
+                    str_cat(rec->label, sStrPakLabelSep);
                     str_cat(rec->label, sPakStrBuf);
                 }
                 rec->status = r;
@@ -177,11 +177,11 @@ void pak_screen_init(void)
     sPakViewport[4] = (s16)(wB << 1);
     sPakViewport[5] = (s16)(hB << 1);
     guOrtho((s32 *)sPakOrthoMtx, fa, fb, fc, fd, 50.0f, 16384.0f, 1.0f);
-    sPakIconTex = res_load(*g, D_800D13A0);
-    sPakBgTex = res_load(*g, D_800D1488);
-    sPakUiTex = res_load(*g, D_800D14A8);
-    sPakLogoTex = res_load(*g, D_800D1418);
-    sPakButtonIcons = res_load(*g, D_800D1434);
+    sPakIconTex = res_load(*g, gControllerIconResId);
+    sPakBgTex = res_load(*g, gMenuBackgroundResId);
+    sPakUiTex = res_load(*g, sPakUiTexResId);
+    sPakLogoTex = res_load(*g, gTitleBarResId);
+    sPakButtonIcons = res_load(*g, sPakButtonIconsResId);
     sPakText = font_text_create(NULL, 0x80, 1, 4, 0);
 }
 
@@ -456,16 +456,16 @@ void pak_screen_update(Pad16 *arg0) {
     sPakSound = -1;
     sPakMessages[5].text = sPakModePrompts[gPakScreen.mode];
     if (gPakScreen.mode == 0) {
-        sPakMessages[12].lines = D_800CDF64;
+        sPakMessages[12].lines = sPakEmptyLines;
     } else if (gGame.pakScreenMode == 1) {
-        sPakMessages[12].lines = D_800CDF6C;
+        sPakMessages[12].lines = sPakNoGhostLines;
     } else {
-        sPakMessages[12].lines = D_800CDF78;
+        sPakMessages[12].lines = sPakNoTrackLines;
     }
     if (gPakScreen.mode == 2) {
-        sPakMessages[0].buttons = D_800CE034;
+        sPakMessages[0].buttons = sPakButtonsSelectNoSave;
     } else {
-        sPakMessages[0].buttons = D_800CE01C;
+        sPakMessages[0].buttons = sPakButtonsSelectCancel;
     }
     pad = gPadInput;
     if (pad & 0x2000) {
@@ -576,10 +576,10 @@ void pak_screen_update(Pad16 *arg0) {
                 SET(17, 2);
             } else {
                 gPakScreenAborted = 0;
-                if (D_800CDE70 != 0) {
+                if (sPakSkipRumblePrompt != 0) {
                     gPakScreenDone = 1;
                     sPakSound = 1;
-                    D_800CDE70 = 0;
+                    sPakSkipRumblePrompt = 0;
                     break;
                 }
                 SET(20, 2);
@@ -740,7 +740,7 @@ void pak_screen_update(Pad16 *arg0) {
         }
         break;
     case 1:
-        D_800CDF00[0][0x11] = gPakScreen.pak + '1';
+        sPakDamagedLines[0][0x11] = gPakScreen.pak + '1';
         if (pad & 0x10) {
             SET(2, 1);
         }
@@ -980,19 +980,19 @@ void pak_screen_update(Pad16 *arg0) {
     if (gPakScreenDone != 0) {
         pak_probe_all();
         if (gPakScreenDone != 0) {
-            D_800CDE70 = 0;
+            sPakSkipRumblePrompt = 0;
         }
     }
 }
 
 void pak_screen_exit(void)
 {
-    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D13A0 * 4));
-    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D1488 * 4));
-    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D14A8 * 4));
-    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D1418 * 4));
-    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D1434 * 4));
-    func_800C204C(sPakText);
+    res_unload((u32 *)(sPakGuiRes_2[1] + gControllerIconResId * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + gMenuBackgroundResId * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + sPakUiTexResId * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + gTitleBarResId * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + sPakButtonIconsResId * 4));
+    font_text_destroy(sPakText);
     mem_free(sPakText);
     pak_free_note_tables();
     pak_probe_all();

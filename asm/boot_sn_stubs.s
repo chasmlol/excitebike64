@@ -289,8 +289,8 @@ sn_exception_handler:
     /* 80002FE4 */  sd          $ra, 0xF8($k0)
     /* 80002FE8 */  jal         boot_func_80003350
     /* 80002FEC */   nop
-    /* 80002FF0 */  lui         $sp, %hi(D_80018AA0)
-    /* 80002FF4 */  addiu       $sp, $sp, %lo(D_80018AA0)
+    /* 80002FF0 */  lui         $sp, %hi(sSnDebugStackEnd)
+    /* 80002FF4 */  addiu       $sp, $sp, %lo(sSnDebugStackEnd)
     /* 80002FF8 */  jal         sn_debug_command_loop
     /* 80002FFC */   nop
     /* 80003000 */  jal         sn_flush_dcache

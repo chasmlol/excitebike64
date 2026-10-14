@@ -37,7 +37,7 @@ extern void n64snd_set_mute();
 u32 sSfxStreams = 0;
 u32 sSfxNextHandle = 0;
 u32 sSfxSounds = 0;
-u32 D_800D33EC = 0;
+u32 sSfxVoiceChangeCount = 0;
 u32 sSfxInitialized = 0;
 u32 sSfxFrameCallback = 0;
 u32 gSfxActiveCount[0x2] = { 0 };
@@ -636,7 +636,7 @@ u32 sFontScaleY = 0x10000;
 u32 sFontTexStepX = 0x400;
 u32 sFontTexStepY = 0x400;
 u32 D_800D5768 = 0;
-u32 D_800D576C = 0;
+u32 sFontScaleFromCorner = 0;
 u32 sFontAllocMasks[0x20] = {
     /* 0x000 */ 0xFFFFFFFF, 0xAAAAAAAA, 0x92492492, 0x88888888,
     /* 0x010 */ 0x84210842, 0x82082082, 0x81020408, 0x80808080,
@@ -715,30 +715,30 @@ char D_800D5EAC[0x4] = "4th";
 char D_800D5EB0[0x4] = "3rd";
 char D_800D5EB4[0x4] = "2nd";
 char D_800D5EB8[0x4] = "1st";
-char D_800D5EBC[0xc] = "render.c";
+char sStrRenderC[0xc] = "render.c";
 /* 0x800d5ec8-0x800d5f04 (60 bytes): literals of the C (build_code.py) */
 u32 D_800D5F04 = 0;
 /* 0x800d5f08-0x800d5f6b (99 bytes): literals of the C (build_code.py) */
 u8 D_800D5F6B = 0;
 /* 0x800d5f6c-0x800d5ff4 (136 bytes): literals of the C (build_code.py) */
 u32 D_800D5FF4[0x3] = { 0 };
-char D_800D6000[0xc] = "podium.c";
+char sStrPodiumFile[0xc] = "podium.c";
 /* 0x800d600c-0x800d6010 (4 bytes): literals of the C (build_code.py) */
-char D_800D6010[0x4] = "\r\n";
-char D_800D6014[0x8] = "main.c";
+char sStrCrLf[0x4] = "\r\n";
+char sStrMainFile[0x8] = "main.c";
 /* 0x800d601c-0x800d602d (17 bytes): literals of the C (build_code.py) */
 u8 D_800D602D[0x3] = { 0 };
 /* 0x800d6030-0x800d6094 (100 bytes): literals of the C (build_code.py) */
 u32 D_800D6094[0x3] = { 0 };
 /* 0x800d60a0-0x800d60c0 (32 bytes): literals of the C (build_code.py) */
-char D_800D60C0[0xc] = "%d %d %d\n";
+char sStrTestAnglesFmt[0xc] = "%d %d %d\n";
 /* 0x800d60cc-0x800d612c (96 bytes): literals of the C (build_code.py) */
 u32 D_800D612C = 0;
 /* 0x800d6130-0x800d614c (28 bytes): literals of the C (build_code.py) */
-char D_800D614C[0x4] = "PKG";
-char D_800D6150[0x4] = "N64";
-char D_800D6154[0xc] = "prim.c";
-char D_800D6160[0xc] = "resource";
+char sStrPrimPkg[0x4] = "PKG";
+char sStrPrimN64[0x4] = "N64";
+char sStrPrimC[0xc] = "prim.c";
+char sStrRaceResource[0xc] = "resource";
 /* 0x800d616c-0x800d6176 (10 bytes): literals of the C (build_code.py) */
 u16 D_800D6176 = 0;
 /* 0x800d6178-0x800d6193 (27 bytes): literals of the C (build_code.py) */

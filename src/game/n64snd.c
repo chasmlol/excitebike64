@@ -25,8 +25,8 @@ s32 n64snd_init(s32 param_1, s32 param_2, s32 param_3, s32 param_4, u32 *param_5
         *param_5 = sN64SndFrames;
         sN64SndFrames = sN64SndFrames * 2;
         sN64SndAiBufSize = iVar1 * sN64SndFrames;
-        sN64SndMixBuf = (s32)mem_alloc_dbg(sN64SndAiBufSize * 4, 0, D_800DB1F0, 0xd7);
-        sN64SndAiBuf = (s32 *)mem_alloc_dbg(sN64SndAiBufSize * 2 + 0x10, 0, D_800DB1F0, 0xd9);
+        sN64SndMixBuf = (s32)mem_alloc_dbg(sN64SndAiBufSize * 4, 0, sStrN64sndC, 0xd7);
+        sN64SndAiBuf = (s32 *)mem_alloc_dbg(sN64SndAiBufSize * 2 + 0x10, 0, sStrN64sndC, 0xd9);
         sN64SndAiBufAlloc = sN64SndAiBuf;
         if (((u32)sN64SndAiBufAlloc & 0xff) == 0) {
             sN64SndAiBuf = sN64SndAiBufAlloc + 4;

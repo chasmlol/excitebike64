@@ -118,24 +118,24 @@ void snd_race_init(Surface *surfaces)
     if (tunes_is_song_playing() == 0) {
         sRaceTuneStarted = 1;
         if (gReplayPlayback != 0) {
-            tunes_play_song(D_800D11D8);
+            tunes_play_song(gReplaySongResId);
         } else {
             idx = gCurTrack_2 - gTracks;
             f = gGame.flags;
             if ((f & 0x91) == 1 || !(f & 1)) {
                 if (f & 0x40000) {
-                    tunes_play_song(D_800D11E4);
+                    tunes_play_song(gPodiumSongResId);
                 } else if (f & 0x1000000) {
-                    tunes_play_song(D_800D11D8);
+                    tunes_play_song(gReplaySongResId);
                 } else if (f & 0x80) {
-                    tunes_play_song(D_800D11EC);
+                    tunes_play_song(sFinishSongResId);
                 } else if (f & 1) {
-                    tunes_play_song(D_800D1214);
+                    tunes_play_song(sDemoSongResId);
                 } else if (gGame.mode != 9) {
                     if (idx < 0x1B) {
                         tunes_play_song(*sTrackTunes[idx]);
                     } else {
-                        tunes_play_song(D_800D1224);
+                        tunes_play_song(sRaceSong5ResId);
                     }
                 }
             }
@@ -848,19 +848,19 @@ void snd_stop_all_riders(void) {
 
 void snd_load_menu_sounds(void)
 {
-    sMenuSounds[0] = sfx_load_sample_id(D_800D11D0);
-    sMenuSounds[1] = sfx_load_sample_id(D_800D1230);
-    sMenuSounds[2] = sfx_load_sample_id(D_800D1240);
-    sMenuSounds[3] = sfx_load_sample_id(D_800D11CC);
+    sMenuSounds[0] = sfx_load_sample_id(sMenuMoveSfxResId);
+    sMenuSounds[1] = sfx_load_sample_id(sMenuSelectSfxResId);
+    sMenuSounds[2] = sfx_load_sample_id(sMenuBackSfxResId);
+    sMenuSounds[3] = sfx_load_sample_id(sMenuErrorSfxResId);
 }
 
 void snd_play_menu_sound(s32 param_1) {
     sfx_play(sMenuSounds[param_1], 0x2B11, 0xFF, 7, 0, 0);
 }
 
-void func_8001106C(void) {
+void snd_play_finish_song(void) {
     tunes_stop_song();
-    tunes_play_song(D_800D11EC);
+    tunes_play_song(sFinishSongResId);
 }
 
 void snd_stop_handle(s32 *p) {

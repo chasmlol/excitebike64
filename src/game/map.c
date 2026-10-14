@@ -67,8 +67,8 @@ void map_init(void)
             if (gViMode == 2) {
                 sMapY = sMapY + 0x34;
             }
-            D_800F1450 = 0x10000 / sMapW;
-            D_800F1454 = 0x10000 / sMapH;
+            sMapStepS = 0x10000 / sMapW;
+            sMapStepT = 0x10000 / sMapH;
             map_build_image();
         }
         break;
@@ -109,7 +109,7 @@ Gfx *map_draw_progress_bar(Gfx *gdl)
         gSPTextureRectangle(gdl++, sMapBarStart << 2, 116 << 2, sMapBarEnd << 2, 124 << 2,
                             G_TX_RENDERTILE, 0, 0, 0, 0x400);
     } else {
-        gDPLoadTextureBlock(gdl++, D_800CCCF8, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 1, 0,
+        gDPLoadTextureBlock(gdl++, sMapBarRow, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 1, 0,
                             G_TX_WRAP, G_TX_WRAP, 3, 0, G_TX_NOLOD, G_TX_NOLOD);
         gSPTextureRectangle(gdl++, (gScreenWidth * 252 / 512) << 2, sMapBarStart << 2,
                             (gScreenWidth * 260 / 512) << 2, sMapBarEnd << 2,
@@ -295,7 +295,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gSPTextureRectangle(gdl++, sMapX * 4, sMapY * 4,
                         (sMapX + sMapW) * 4, (sMapY + sMapH) * 4,
-                        G_TX_RENDERTILE, 0, 0, D_800F1452, D_800F1456);
+                        G_TX_RENDERTILE, 0, 0, sMapStepSLo, sMapStepTLo);
     gDPPipeSync(gdl++);
     WD(gdl++, 0xE200001C, 0x0C084000);
     WD(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
@@ -304,7 +304,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     for (i = 0; i < 6; i++) {
         if (gRiders[i].inactive != 0) continue;
         if (gRiders[i].crashState != 0 && gRaceFrame % 8 < 4) continue;
-        if (gRiders[i].isCpu != 0 || (gGame.mode == 8 && i != D_800C8CE0)) {
+        if (gRiders[i].isCpu != 0 || (gGame.mode == 8 && i != gTimeTrialPlayer)) {
             gdl = map_draw_rider_dot(gdl, i, 0);
         }
     }
@@ -313,7 +313,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
         if (gRiders[i].inactive != 0) continue;
         if (gRiders[i].crashState != 0 && gRaceFrame % 8 < 4) continue;
         if (gRiders[i].isCpu != 0) continue;
-        if (gGame.mode == 8 && i != D_800C8CE0) continue;
+        if (gGame.mode == 8 && i != gTimeTrialPlayer) continue;
         gdl = map_draw_rider_dot(gdl, i, 1);
     }
     gDPPipeSync(gdl++);
@@ -420,9 +420,9 @@ void map_build_image(void) {
     PathNode *m;
 
     for (i = 0; i < 64; i++) {
-        sMapBarTex[i] = D_800CCCF8[i / 8];
+        sMapBarTex[i] = sMapBarRow[i / 8];
     }
-    sMapImage = mem_alloc_dbg(0x1003, 0, (s32)D_800D8DCC, 0x23E);
+    sMapImage = mem_alloc_dbg(0x1003, 0, (s32)sStrMapC, 0x23E);
     for (i = 0; i < gPathNodeCount; i++) {
         if (gPathNodes[i].pos.x < sMapBoundsMin.x || i == 0) sMapBoundsMin.x = gPathNodes[i].pos.x;
         if (gPathNodes[i].pos.z < sMapBoundsMin.z || i == 0) sMapBoundsMin.z = gPathNodes[i].pos.z;
@@ -501,7 +501,7 @@ void map_build_image(void) {
     for (i = 0; i < 0x4000; i++) {
         t = map[i] >> 7;
         if (t >= 16) t = 15;
-        map[i] = D_800CCD20[t];
+        map[i] = sMapShadeRamp[t];
     }
     k = x = 0;
     for (i = 0; i < 128; i += 2) {

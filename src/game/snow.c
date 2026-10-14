@@ -5,8 +5,8 @@ void snow_init(void)
     s32 i;
 
     if (gCurTrack_2 - gTracks == 0x13 && gNumViews == 1) {
-        sSnowflakes = mem_alloc_dbg(0xE00, 0, (s32)D_800D9190, 0x6B);
-        sSnowTextures = (TexSet *)res_load(D_800E7728, D_800D1000);
+        sSnowflakes = mem_alloc_dbg(0xE00, 0, (s32)sStrSnowC, 0x6B);
+        sSnowTextures = (TexSet *)res_load(gResourceSet, sSnowTexResId);
         for (i = 0; i < 0x80; i++) {
             snow_respawn_flake(&sSnowflakes[i]);
         }

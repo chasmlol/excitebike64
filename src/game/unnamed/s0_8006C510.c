@@ -106,8 +106,8 @@ Gfx *finishline_draw_user_track(Gfx *gdl, Mtx *proj, s32 i, s32 j)
     gSPFogPosition(gdl++, gCurTrack_35->a60, gCurTrack_35->a58);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gPrimIATextures = 1;
-    gdl = prim_build_dl(0, D_800F16E0, D_800EFD6C_3, gdl);
-    gdl = prim_build_dl(0, D_800F16E0, D_800EFD6C_3, gdl);
+    gdl = prim_build_dl(0, sFinishLineModel, gFinishLineTexSet_3, gdl);
+    gdl = prim_build_dl(0, sFinishLineModel, gFinishLineTexSet_3, gdl);
     gDPPipeSync(gdl++);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -178,13 +178,13 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
     gSPFogPosition(gdl++, gCurTrack_36->f60, gCurTrack_36->f58);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gPrimIATextures = 1;
-    gdl = prim_build_dl(0, D_800F16E0, D_800EFD6C_3, gdl);
+    gdl = prim_build_dl(0, sFinishLineModel, gFinishLineTexSet_3, gdl);
     if (gTutorialLessons[gSeason->round].flags & 2) {
         gPrimIATextures = 0;
     } else {
         gSPMatrix(gdl++, &sPropMtx_3[n].m[0], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         gDPPipeSync(gdl++);
-        gdl = prim_build_dl(0, D_800F16E0, D_800EFD6C_3, gdl);
+        gdl = prim_build_dl(0, sFinishLineModel, gFinishLineTexSet_3, gdl);
         gDPPipeSync(gdl++);
         gSPTexture(gdl++, 0x8000, 0x8000, 0, 0, G_ON);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -287,12 +287,12 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         font_text_create(gRaceTextObjs->text[4], 0x40, 2, 7, 0x21);
         if (gSeason->cup - gCups == 4) {
             if (gSeason->round == gSeason->cup->numRounds - 1) {
-                font_text_add(gRaceTextObjs->text[4], D_800D8F58);
+                font_text_add(gRaceTextObjs->text[4], sStrBeatOpponentFinal);
             } else {
-                font_text_add(gRaceTextObjs->text[4], D_800D8F84);
+                font_text_add(gRaceTextObjs->text[4], sStrBeatOpponent);
             }
         } else {
-            font_text_add(gRaceTextObjs->text[4], D_800D8FA4);
+            font_text_add(gRaceTextObjs->text[4], sStrPlaceFirstOverall);
         }
         font_draw_text(gRaceTextObjs->text[4], gScreenWidth / 2 - 0x52, 0xAA);
     }
@@ -397,27 +397,27 @@ void hud_draw_congratulations(u32 *param_1, Dyn *arg1, s32 arg2)
         iVar4 = gScreenHeight_2 / 2 - 24;
     }
     font_text_create(gRaceTextObjs->text[0], 0x40, 4, 7, 0x21);
-    font_text_add(gRaceTextObjs->text[0], D_800D8FFC);
+    font_text_add(gRaceTextObjs->text[0], sStrCongratulations);
     font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4);
     if ((gFrameCounter & 0x20) != 0) {
         font_text_create(gRaceTextObjs->text[0], 0x40, 5, 4, 0x21);
-        font_text_add(gRaceTextObjs->text[0], D_800D9010);
+        font_text_add(gRaceTextObjs->text[0], sStrPressStartToExit);
         font_draw_text(gRaceTextObjs->text[0], *(volatile s32 *)&gScreenWidth / 2, *(volatile s32 *)&gScreenHeight_2 * 7 / 8);
     }
     font_text_create(gRaceTextObjs->text[0], 0x40, 4, 2, 0x21);
     if ((gGame.flags & 0x400000) != 0) {
-        font_text_add(gRaceTextObjs->text[0], D_800D9024);
+        font_text_add(gRaceTextObjs->text[0], sStrUnlockedDifficulty);
         goto LAB_after;
     }
     if ((gGame.flags & 0x100000) != 0) {
-        font_text_add(gRaceTextObjs->text[0], D_800D9044);
+        font_text_add(gRaceTextObjs->text[0], sStrUnlockedRound);
         goto LAB_after;
     }
     if ((gGame.flags & 0x800000) != 0) {
-        font_text_add(gRaceTextObjs->text[0], D_800D9060);
+        font_text_add(gRaceTextObjs->text[0], sStrFinishedGame);
         goto LAB_after;
     }
-    font_text_add(gRaceTextObjs->text[0], D_800D9078);
+    font_text_add(gRaceTextObjs->text[0], sStrFinishedRound);
 LAB_after:
     font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4 + 0x18);
     pf = (s32 *)&gGame.flags;
@@ -425,19 +425,19 @@ LAB_after:
         font_text_create(gRaceTextObjs->text[0], 0x40, 4, 4, 0x21);
         switch (pf[0x1D5]) {
         case 1:
-            font_text_add(gRaceTextObjs->text[0], D_800D9090);
+            font_text_add(gRaceTextObjs->text[0], sStrStuntCourseUnlocked);
             break;
         case 2:
-            font_text_add(gRaceTextObjs->text[0], D_800D90A8);
+            font_text_add(gRaceTextObjs->text[0], sStrOriginalExcitebikeUnlocked);
             break;
         case 3:
-            font_text_add(gRaceTextObjs->text[0], D_800D90C8);
+            font_text_add(gRaceTextObjs->text[0], sStrSoccerUnlocked);
             break;
         case 4:
-            font_text_add(gRaceTextObjs->text[0], D_800D90DC);
+            font_text_add(gRaceTextObjs->text[0], sStrHillClimbUnlocked);
             break;
         case 5:
-            font_text_add(gRaceTextObjs->text[0], D_800D90F4);
+            font_text_add(gRaceTextObjs->text[0], sStrExcite3DUnlocked);
             break;
         default:
             goto LAB_end;
@@ -450,20 +450,20 @@ LAB_after:
 
 void soccer_ball_load_model(void)
 {
-    D_800F18E8 = res_load(D_800E7728, D_800D06D0);
-    D_800F18EC = res_load(D_800E7728, D_800D08E0);
-    prim_alloc_dl(sPropDL_2, D_800F18E8, &D_800F18EC, 0xC);
+    sPropModel = res_load(gResourceSet, sSoccerBallModelResId);
+    sPropTextures = res_load(gResourceSet, sSoccerBallTexResId);
+    prim_alloc_dl(sPropDL_2, sPropModel, &sPropTextures, 0xC);
 }
 
 void finishline_load_models(void)
 {
     u32 pa;
-    D_800EFD6C = res_load(D_800E7728, D_800D0DEC);
-    D_800F18E8 = res_load(D_800E7728, D_800D0FB0);
-    pa = (u32)&D_800F18EC;
-    D_800F18EC = res_load(D_800E7728, D_800D10F8);
-    D_800F16E0 = res_load(D_800E7728, D_800D0770);
-    prim_alloc_dl(sPropDL_3, D_800F18E8, pa, 12);
+    gFinishLineTexSet = res_load(gResourceSet, gFinishLineTexResId);
+    sPropModel = res_load(gResourceSet, sFinishPropModelResId);
+    pa = (u32)&sPropTextures;
+    sPropTextures = res_load(gResourceSet, sFinishPropTexResId);
+    sFinishLineModel = res_load(gResourceSet, sFinishLineModelResId);
+    prim_alloc_dl(sPropDL_3, sPropModel, pa, 12);
 }
 
 void soccer_ball_free_model(void) {
@@ -619,7 +619,7 @@ s32 save_update_unlocks(void)
     }
 
     ret = 0;
-    if (D_800F1BC1 == 7) {
+    if (gSaveTutorialProgress == 7) {
         ret = (gSpecialTracksItems[2].flags & 1) << 1;
         gSpecialTracksItems[2].flags &= ~1;
     } else {
@@ -707,7 +707,7 @@ void save_load(s32 arg0)
         gCups[5].laps[i] = gSaveData_7.a8[i] >> 5;
         gCups[5].numRounds++;
     }
-    D_800CAAA1 = gSaveData_7.c1;
+    gTutorialProgress = gSaveData_7.c1;
     gGame.difficulty = gSaveData_7.c0;
     save_update_unlocks();
 }
@@ -716,6 +716,6 @@ void save_write(s32 x, s32 arg1)
 {
     u8 buf[0x50];
     if (x == 1) {
-        D_800F1BC1 = D_800CAAA1;
+        gSaveTutorialProgress = gTutorialProgress;
     }
 }

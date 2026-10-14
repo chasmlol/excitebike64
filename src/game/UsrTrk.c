@@ -716,16 +716,16 @@ void usrtrk_build_track(void)
     }
     switch (gUserTrackLayout->dirtType) {
     case 0:
-        gUserTrackData.dirtTex = res_load(sPiecesResSet, D_800D1348);
+        gUserTrackData.dirtTex = res_load(sPiecesResSet, sDirtTex0ResId);
         break;
     case 1:
-        gUserTrackData.dirtTex = res_load(sPiecesResSet, D_800D134C);
+        gUserTrackData.dirtTex = res_load(sPiecesResSet, sDirtTex1ResId);
         break;
     case 2:
-        gUserTrackData.dirtTex = res_load(sPiecesResSet, D_800D1350);
+        gUserTrackData.dirtTex = res_load(sPiecesResSet, sDirtTex2ResId);
         break;
     }
-    gUserTrackData.objectTex = res_load(sPiecesResSet, D_800D1370);
+    gUserTrackData.objectTex = res_load(sPiecesResSet, gPieceObjectTexResId);
     gUserTrackData.meshA = mem_alloc_dbg(ncells * sizeof(PieceCell) | 4, 0, sStrUsrTrkFile, 0x4F5);
     gUserTrackData.meshA->count = ncells;
     gUserTrackData.meshB = mem_alloc_dbg(ncells * sizeof(PieceCell) | 4, 0, sStrUsrTrkFile, 0x4F8);
@@ -1216,7 +1216,7 @@ void usrtrk_build_track(void)
                 mb->vtxCount = 0;
                 mb->triCount = 0;
                 mb->vtx = NULL;
-                mb->tris = D_800D06B4;
+                mb->tris = sEmptyCellTris;
                 mb->unk_10 = 0;
                 mb->unk_14 = 0;
             }

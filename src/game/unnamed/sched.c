@@ -44,7 +44,7 @@ typedef struct Pair_8 {
 } Pair_8;
 
 extern CurNext sSchedCurTask_2;
-extern Pair_8 D_800F45F0[];
+extern Pair_8 sMainThreadRegs[];
 
 void sched_thread(void)
 {
@@ -65,10 +65,10 @@ void sched_thread(void)
     while (1) {
         osRecvMesg(&sSchedSysEventQueue, &msg, 1);
         if (msg == 1) {
-            if (D_800C2930 != 0) {
+            if (gDebugPadFreeze != 0) {
                 continue;
             }
-            D_800F11F4 = osViGetCurrentLine();
+            sSchedRetraceLine = osViGetCurrentLine();
             sSchedRetraceCount++;
             if (gViModeRequest != gViMode) {
                 sched_set_vi_mode(gViModeRequest);
@@ -102,11 +102,11 @@ void sched_thread(void)
                 sSchedSwapDeferred = 1;
                 continue;
             }
-            if (D_800F141C < n) {
-                D_800F141C = n;
+            if (sSchedSwapLineMax < n) {
+                sSchedSwapLineMax = n;
             }
-            if (n < D_800F1418) {
-                D_800F1418 = n;
+            if (n < sSchedSwapLineMin) {
+                sSchedSwapLineMin = n;
             }
             sSchedRdpIdle = 1;
             osViSwapBuffer(sSchedCurTask_2.cur->f0C);
@@ -130,7 +130,7 @@ void sched_thread(void)
             cont_finish_read();
             for (;;) ;
         } else if (msg == 4) {
-            base = D_800F45F0;
+            base = sMainThreadRegs;
             sched_set_vi_mode(0);
             mem_fill((u8 *)gFramebuffers_3, 0, 0x25800);
             osWritebackDCacheAll();
@@ -139,7 +139,7 @@ void sched_thread(void)
             if (!(gGame.flags & 0x20000000)) {
                 for (;;) ;
             }
-            fault_draw_hex(0x32, 0x1E, D_800F46EC);
+            fault_draw_hex(0x32, 0x1E, sMainThreadPc);
             for (i = 0; i < 0x1F; i++) {
                 fault_draw_hex((i & 1) * 150 + 0x32, (i / 2) * 10 + 0x28, base[i].b);
             }

@@ -7,28 +7,28 @@ void arn_init(void)
 
     gFarClip = 0x4000;
     iVar1 = (s32)(gCurTrack - gTracks_2) * -0x33333333 >> 5;
-    D_800E7718 = 0;
+    sArnNoFarLod = 0;
     if (iVar1 == 0x18) {
-        D_800E7718 = 1;
+        sArnNoFarLod = 1;
     }
     if (iVar1 == 0x16) {
-        D_800E7718 = 1;
+        sArnNoFarLod = 1;
     }
-    res_register_type(D_800D6A30, (s32)D_800248EC);
-    res_register_type(D_800D6A34, (s32)D_80031D08);
+    res_register_type(sStrArnArn, (s32)D_800248EC);
+    res_register_type(sStrArnWal, (s32)D_80031D08);
     if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0) {
         usrtrk_load_pieces();
         usrtrk_build_track();
         if (gUserTrackData.collision != 0) {
-            D_800C9574 = gUserTrackData.collision;
+            gTrackWallMesh = gUserTrackData.collision;
         }
         gWaterModels = 0;
         gWaterTexSet = 0;
         gTerrainTexSet = gUserTrackData.dirtTex;
         gObjectTexSet = gUserTrackData.objectTex;
-        sStandModels = (TrackModelList *)res_load(D_800E7728, D_800D07C0);
-        sStandLowModel = (TrackModelList *)res_load(D_800E7728, D_800D06F4);
-        sStandTextures = (TexSet *)res_load(D_800E7728, D_800D07D4);
+        sStandModels = (TrackModelList *)res_load(gResourceSet, sUserTrackStandResId);
+        sStandLowModel = (TrackModelList *)res_load(gResourceSet, sUserTrackStandLowResId);
+        sStandTextures = (TexSet *)res_load(gResourceSet, sUserTrackStandTexResId);
         sObjectSegs[1] = 0;
         sObjectSegs[2] = 0;
         gAnimTexSet = 0;
@@ -39,31 +39,31 @@ void arn_init(void)
         gObjectDLs = tube_build_dlists((TrackModelList *)gUserTrackData.meshB, sObjectSegs, 0xC, 1);
         arn_apply_noise_shading(gTrackSections);
     } else {
-        D_800C9574 = track_res_get(D_800D1518);
-        gWaterModels = (TrackModelList *)track_res_get(D_800D14E4);
-        gWaterTexSet = (TexSet *)track_res_get(D_800D1510);
-        gTerrainTexSet = (TexSet *)track_res_get(D_800D1504);
-        gObjectTexSet = (TexSet *)track_res_get(D_800D1508);
-        sStandModels = (TrackModelList *)track_res_get(D_800D1584);
-        sStandLowModel = (TrackModelList *)track_res_get(D_800D1588);
-        sStandTextures = (TexSet *)track_res_get(D_800D158C);
-        gAnimTexSet = (TexSet *)track_res_get(D_800D1500);
+        gTrackWallMesh = track_res_get(gGidWalCol);
+        gWaterModels = (TrackModelList *)track_res_get(gGidArnWater);
+        gWaterTexSet = (TexSet *)track_res_get(gGidPkgWater);
+        gTerrainTexSet = (TexSet *)track_res_get(gGidPkgGround);
+        gObjectTexSet = (TexSet *)track_res_get(gGidPkgScene);
+        sStandModels = (TrackModelList *)track_res_get(gGidArnStand);
+        sStandLowModel = (TrackModelList *)track_res_get(gGidArnStandLow);
+        sStandTextures = (TexSet *)track_res_get(gGidPkgStand);
+        gAnimTexSet = (TexSet *)track_res_get(gGidPkgAnim);
         sObjectSegs[1] = gAnimTexSet;
         sObjectSegs[2] = 0;
         sObjectSegs[0] = gObjectTexSet;
-        gTrackSections = (TrackModelList *)track_res_get(D_800D14DC);
+        gTrackSections = (TrackModelList *)track_res_get(gGidArnGround);
         gSectionDLs = tube_build_dlists(gTrackSections, &gTerrainTexSet, 0, 0);
-        gTrackObjects = (TrackModelList *)track_res_get(D_800D14E0);
+        gTrackObjects = (TrackModelList *)track_res_get(gGidArnScene);
         gObjectDLs = tube_build_dlists(gTrackObjects, sObjectSegs, 0xC, 1);
     }
     mtx_from_angles_pos_scale(D_800E7730, 0, 0, 0, 0, 0, 0, 300);
-    height_init(gTrackSections, gTrackObjects, D_800C9574, NULL);
-    iVar1 = track_res_find(D_800D1528);
-    instances_load(D_800E7728, iVar1, 1, gTrackSections, gObjectTexSet);
-    if ((gNumScreens == 1) && (D_800E7718 == 0)) {
+    height_init(gTrackSections, gTrackObjects, gTrackWallMesh, NULL);
+    iVar1 = track_res_find(gGidInstanceDef);
+    instances_load(gResourceSet, iVar1, 1, gTrackSections, gObjectTexSet);
+    if ((gNumScreens == 1) && (sArnNoFarLod == 0)) {
         t = gTrackSections->count;
         sSectionDrawOrderLen = t << 1;
-        sSectionDrawOrder = mem_alloc_dbg(t << 2, 0, (s32)D_800D6A38, 0xC9);
+        sSectionDrawOrder = mem_alloc_dbg(t << 2, 0, (s32)sStrArngfxC, 0xC9);
     } else {
         sSectionDrawOrder = 0;
     }
@@ -463,7 +463,7 @@ void arn_free(void)
 
 void arn_update_view(s32 param_1)
 {
-    s32 f = (D_800E7718 == 0);
+    s32 f = (sArnNoFarLod == 0);
     void *p3 = sSectionDrawOrder;
 
     if (p3 != NULL && param_1 == 0) {

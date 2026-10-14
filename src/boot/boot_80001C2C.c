@@ -167,7 +167,7 @@ void sn_debug_command_loop(void)
             sn_host_mem_access(1);
             break;
         case 0x19:
-            boot_func_800023EC();
+            sn_host_copy_rom();
             break;
         }
         sn_pi_write_word(0xB1FFFFFC, 0);

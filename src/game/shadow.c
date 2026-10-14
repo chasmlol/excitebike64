@@ -93,7 +93,7 @@ Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
 
     for (i = 0; i < 6; i++) {
         gSPMatrix(gdl++, (u8 *)gRiderGfx_9[idx].mtx23C[gGfxFrameIndex] + i * 0x40, G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
-        gSPDisplayList(gdl++, D_800E16C0[i]);
+        gSPDisplayList(gdl++, gBikeShadowDLs[i]);
         gSPPopMatrix(gdl++, G_MTX_MODELVIEW);
     }
     if (blk->crashState) {

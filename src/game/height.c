@@ -86,8 +86,8 @@ void height_init(TrackModelList *area, TrackModelList *objects, WallMesh *walls,
                 i++;
             }
         }
-        sHeightGridData = mem_alloc_dbg((total + 0x100) * 2, 0, (s32)D_800D6C20, 0xDA);
-        sHeightGrid = mem_alloc_dbg(0x400, 0, (s32)D_800D6C20, 0xDB);
+        sHeightGridData = mem_alloc_dbg((total + 0x100) * 2, 0, (s32)sStrHeightC, 0xDA);
+        sHeightGrid = mem_alloc_dbg(0x400, 0, (s32)sStrHeightC, 0xDB);
         n = 0;
         out = gZBuffer_2 + 0x100;
         for (i = 0; (s32)i < 0x100; i++) {
@@ -105,7 +105,7 @@ void height_init(TrackModelList *area, TrackModelList *objects, WallMesh *walls,
     sSurfacePolys = NULL;
     sAreaSurfacePolys = NULL;
     if (polys != NULL) {
-        sSurfacePolys = mem_alloc_dbg(*polys * 4, 0, (s32)D_800D6C20, 0xF6);
+        sSurfacePolys = mem_alloc_dbg(*polys * 4, 0, (s32)sStrHeightC, 0xF6);
         i = 0;
         p = (SurfacePoly *)(polys + 1);
         z = *polys;
@@ -131,12 +131,12 @@ void height_init(TrackModelList *area, TrackModelList *objects, WallMesh *walls,
             }
         }
         i = 0;
-        sAreaSurfacePolys = mem_alloc_dbg(sHeightAreas->count * 4, 0, (s32)D_800D6C20, 0x11C);
+        sAreaSurfacePolys = mem_alloc_dbg(sHeightAreas->count * 4, 0, (s32)sStrHeightC, 0x11C);
         mem_fill((u8 *)sAreaSurfacePolys, 0, sHeightAreas->count * 4);
         out = gZBuffer_2 + sHeightAreas->count;
         for (; i < sHeightAreas->count; i++) {
             if (gZBuffer_2[i] != 0) {
-                buf = mem_alloc_dbg((gZBuffer_2[i] + 1) * 2, 0, (s32)D_800D6C20, 0x123);
+                buf = mem_alloc_dbg((gZBuffer_2[i] + 1) * 2, 0, (s32)sStrHeightC, 0x123);
                 sAreaSurfacePolys[i] = buf;
                 memcpy(buf, out, gZBuffer_2[i] * 2);
                 out += gZBuffer_2[i];
@@ -202,7 +202,7 @@ s32 height_test_area(s32 id, s32 x, s32 y, s32 z)
     s32 k;
     s32 c;
 
-    D_800E8E7C++;
+    sAreaTestCount++;
     a = (TrackModel *)((u8 *)sHeightAreas + (id * 32 + 4));
     x0 = a->x0;
     if (x < x0 * 16) return 0;
@@ -314,7 +314,7 @@ s32 height_get_ground(s32 x, s32 y, s32 z)
     sGroundBestHeight = -99999;
     gGroundFound = 0;
     gGroundSurface = 0;
-    D_800E8938++;
+    sGroundQueryCount++;
     if (gCurTrack_5->mode == 2) {
         return height_get_desert(x, z);
     }
@@ -930,7 +930,7 @@ u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
             result = 1;
             sWallHitEdge = e;
             gWallHitFlags = gWallEdgeFlags[(e - sWallMesh->edges)];
-            D_800E8E78 = (gWallHitFlags >> 1) & 3;
+            sWallHitType = (gWallHitFlags >> 1) & 3;
         }
     }
     if (sWallTriCount != 0) {
@@ -1156,7 +1156,7 @@ void height_init_walls(WallMesh **pp, s32 reloc)
             h->cells[i].edges = (u16 *)((s32)h->cells[i].edges + (s32)h);
         }
     }
-    gWallEdgeFlags = mem_alloc_dbg(h->numEdges, 0, D_800D6C20, 0x87F);
+    gWallEdgeFlags = mem_alloc_dbg(h->numEdges, 0, sStrHeightC, 0x87F);
     mem_fill(gWallEdgeFlags, 0, h->numEdges);
     for (i = 0; i < h->numEdges; i++) {
         gWallEdgeFlags[i] |= 1;
@@ -1264,7 +1264,7 @@ ret0:
     return 0;
 }
 
-s32 func_80031FA0(s32 p1, s32 p2, s32 p3)
+s32 height_seg_cross_line_z(s32 p1, s32 p2, s32 p3)
 {
     s32 t, v;
 
@@ -1282,7 +1282,7 @@ s32 func_80031FA0(s32 p1, s32 p2, s32 p3)
     return 1;
 }
 
-s32 func_8003207C(s32 p1, s32 p2, s32 p3)
+s32 height_seg_cross_line_x(s32 p1, s32 p2, s32 p3)
 {
     s32 t, v;
 
