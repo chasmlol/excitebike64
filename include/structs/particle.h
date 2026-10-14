@@ -12,6 +12,9 @@
 #define PARTICLE_SPARKLE 5 /* camera flashes in the stands (flash.c) */
 #define PARTICLE_SMOKE   6 /* desert campfire smoke (fractal.c) */
 
+#define PARTICLE_COUNT 96
+#define RAIN_NUM_STREAKS 64
+
 /* One entry of the ring of 96 (sParticles); particle_spawn takes the next free one after sParticleLast. */
 typedef struct Particle {
     /* 0x00 */ s16 life;    /* frames left; < 0 free */
