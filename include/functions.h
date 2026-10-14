@@ -872,8 +872,8 @@ void game_boot(void);
 void idle_thread(s32 param_1);
 
 /* src/game/shell.c */
-s32 shell_format_pak_file_label(u8 *src, char *dst, s32 flag);
-void shell_blend_palette_to_gray(s32 alpha, u16 *src);
+s32 shell_format_pak_file_label(u8 *header, char *dst, s32 compact);
+void shell_blend_palette_to_gray(s32 alpha, u16 *pal);
 void shell_init(void);
 void shell_cb_soccer(s32 chosen);
 void shell_cb_season(s32 chosen);
@@ -888,19 +888,19 @@ void shell_rider_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
 void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads);
 s32 shell_is_round_unlocked(s32 n);
 void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads);
-void shell_filter_stick_dirs(u32 *p);
-void shell_update(Pad16 *pad);
+void shell_filter_stick_dirs(u32 *pads);
+void shell_update(Pad16 *pads);
 void shell_exit(void);
 void shell_unload_screen(Screen *screen);
 void shell_build_player_palettes(void);
 void shell_update_season_progress(void);
 void shell_load_screen(Screen *screen);
 void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback);
-void shell_draw_rider_stats(s32 x, s32 y, s32 p3, s32 p4);
-Gfx *shell_draw_results_menu(Gfx *gdl, s32 p2, s32 sel, char **strs);
-Gfx *shell_draw_players_difficulty_popup(Gfx *gdl, s32 p2, s32 p3);
-Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 p2, char *str);
-void shell_draw_rider_bio(s32 p, s32 q);
+void shell_draw_rider_stats(s32 x, s32 y, s32 rider, s32 player);
+Gfx *shell_draw_results_menu(Gfx *gdl, s32 fb, s32 sel, char **strs);
+Gfx *shell_draw_players_difficulty_popup(Gfx *gdl, s32 fb, s32 kind);
+Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 fb, char *question);
+void shell_draw_rider_bio(s32 player, s32 y);
 Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused);
 void shell_draw(Mtx *m, s32 fb, Gfx **pgdl);
 void shell_load_gui_res(void);
@@ -913,15 +913,15 @@ void shell_cb_exhibition(s32 chosen);
 void shell_cb_excite3d(s32 chosen);
 void shell_cb_hill_climb(s32 chosen);
 void shell_cb_custom_tracks(s32 chosen);
-void shell_cb_desert_unused(s32 a0);
+void shell_cb_desert_unused(s32 chosen);
 void shell_cb_original_excitebike(s32 chosen);
 void shell_cb_stunt_course(s32 chosen);
-s32 shell_pak_track_invalid(u32 *p, s32 n);
+s32 shell_pak_track_invalid(u32 *note, s32 size);
 void shell_backup_race_results(void);
 void shell_restore_race_results(void);
 s32 shell_is_round_screen_unlocked(Screen *screen);
 void shell_main_menu_or_back_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads);
-s32 shell_is_round_unlocked_tt(s32 p);
+s32 shell_is_round_unlocked_tt(s32 n);
 s32 shell_check_sp_imem_magic(void);
 
 /* src/game/pak.c */
