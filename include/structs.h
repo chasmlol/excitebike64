@@ -1314,5 +1314,6 @@ typedef struct Spr {
 
 #include "structs/race.h"
 #include "structs/game.h"
+#include "structs/hacks.h"
 
 #endif

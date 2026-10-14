@@ -13,47 +13,37 @@ typedef struct {
 
 extern Track_14 D_800CCB90[2];
 
-typedef struct Ent_61 {
-    s32 key;
-    void (*fn)(void);
-    s32 pad[4];
-    s32 n6;
-    s32 n7;
-    s32 **names;
-} Ent_61;
-
-extern Ent_61 *sCurTrackHack_2;
-extern Ent_61 *sTrackHacks[];
+extern TrackHack *sTrackHacks[];
 
 void hacks_init(void)
 {
     s32 key;
-    Ent_61 **pp;
+    TrackHack **pp;
     s32 i;
 
     key = gCurTrack_7 - gTracks_3;
-    sCurTrackHack_2 = NULL;
+    sCurTrackHack = NULL;
     for (i = 0; sTrackHacks[i] != NULL; i++) {
-        if (sTrackHacks[i]->key == key) {
-            sCurTrackHack_2 = sTrackHacks[i];
+        if (sTrackHacks[i]->track == key) {
+            sCurTrackHack = sTrackHacks[i];
             break;
         }
     }
-    if (sCurTrackHack_2 != NULL) {
+    if (sCurTrackHack != NULL) {
         D_800F0B40[0] = NULL;
         D_800F0B40[1] = NULL;
         sHackResources = NULL;
-        if (sCurTrackHack_2->n6 != 0) {
-            D_800F0B40[0] = mem_alloc_dbg(sCurTrackHack_2->n6 << 7, 0, D_800D8C10, 0x9f);
-            D_800F0B40[1] = (u8 *)D_800F0B40[0] + (sCurTrackHack_2->n6 << 6);
+        if (sCurTrackHack->numBufs != 0) {
+            D_800F0B40[0] = mem_alloc_dbg(sCurTrackHack->numBufs << 7, 0, D_800D8C10, 0x9f);
+            D_800F0B40[1] = (u8 *)D_800F0B40[0] + (sCurTrackHack->numBufs << 6);
         }
-        if (sCurTrackHack_2->n7 != 0) {
-            sHackResources = mem_alloc_dbg(sCurTrackHack_2->n7 << 2, 0, D_800D8C10, 0xa4);
-            for (i = 0; i < sCurTrackHack_2->n7; i++) {
-                sHackResources[i] = res_load(D_800E7728, *sCurTrackHack_2->names[i]);
+        if (sCurTrackHack->numRes != 0) {
+            sHackResources = mem_alloc_dbg(sCurTrackHack->numRes << 2, 0, D_800D8C10, 0xa4);
+            for (i = 0; i < sCurTrackHack->numRes; i++) {
+                sHackResources[i] = res_load(D_800E7728, *sCurTrackHack->resNames[i]);
             }
         }
-        sCurTrackHack_2->fn();
+        sCurTrackHack->init();
     }
 }
 
@@ -327,47 +317,34 @@ store:
 void hacks_update(void)
 {
     if (sCurTrackHack != 0) {
-        ((void (*)(void))(*(u32 *)(sCurTrackHack + 0xC)))();
+        sCurTrackHack->update();
     }
 }
 
-typedef struct Obj_45 {
-    s32 f0;
-    s32 f4;
-    void (*f8)(void);
-    s32 fc;
-    s32 f10;
-    s32 f14;
-    s32 f18;
-    s32 f1c;
-} Obj_45;
-
-extern Obj_45 *sCurTrackHack_3;
-
 void hacks_exit(void) {
-    if (sCurTrackHack_3 != NULL) {
-        if (sCurTrackHack_3->f1c != 0) {
+    if (sCurTrackHack != NULL) {
+        if (sCurTrackHack->numRes != 0) {
             mem_free((void *)sHackResources);
         }
-        if (sCurTrackHack_3->f18 != 0) {
+        if (sCurTrackHack->numBufs != 0) {
             mem_free(D_800F0B40);
         }
-        sCurTrackHack_3->f8();
+        sCurTrackHack->exit();
     }
 }
 
 s32 hacks_draw_pass2(s32 a0, Dyn *arg1, s32 arg2, s32 arg3)
 {
     if (sCurTrackHack != 0) {
-        a0 = ((s32 (*)(s32))(*(u32 *)(sCurTrackHack + 0x14)))(a0);
+        a0 = sCurTrackHack->drawPass2(a0);
     }
     return a0;
 }
 
 s32 hacks_draw_pass1(s32 x, Dyn *arg1, s32 arg2, s32 arg3)
 {
-    if (sCurTrackHack_4 != 0) {
-        x = ((s32 (*)(s32))(sCurTrackHack_4[0x10 / 4]))(x);
+    if (sCurTrackHack != 0) {
+        x = sCurTrackHack->drawPass1(x);
     }
     return x;
 }

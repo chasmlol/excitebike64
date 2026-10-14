@@ -4689,9 +4689,6 @@ gAiRouteToggle                        game  0x800F0B30  data        -
 D_800F0B40                            game  0x800F0B40  data        -
 sGravelPitModels                      game  0x800F0B48  data        -
 sCurTrackHack                         game  0x800F0B58  data        -
-sCurTrackHack_2                       game  0x800F0B58  data        -  sCurTrackHack
-sCurTrackHack_3                       game  0x800F0B58  data        -  sCurTrackHack
-sCurTrackHack_4                       game  0x800F0B58  data        -  sCurTrackHack
 sMillObjCount                         game  0x800F0B5C  data        -
 sHackResources                        game  0x800F0B60  data        -
 sMillObjState                         game  0x800F0B64  data        -
