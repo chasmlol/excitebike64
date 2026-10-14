@@ -105,7 +105,7 @@ typedef struct PieceType {
 /* EditPiece.flags */
 #define EDIT_PIECE_FLIPPED 2
 #define EDIT_PIECE_PREVIEW 4        /* a piece on trial at the open end */
-#define EDIT_PIECE_VISIBLE 8
+#define EDIT_PIECE_VISIBLE 8        /* shown in the 3D view (the height editor hides the pieces away from its piece) */
 
 /* A placed piece, in a list from first to last (a closed circuit links last to first). */
 typedef struct EditPiece {

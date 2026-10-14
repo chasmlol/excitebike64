@@ -600,9 +600,10 @@ floor, the arena walls and the cursor, plus the camera, viewport and scissor set
   piece count, per user piece a segment count and heights, then 3 bytes per piece (x 5 bits, y 5, flags 6, rotation
   2, type 6). `usrtrk_load_layout` unpacks it into `gUserTrackLayout` (`UserTrackLayout`), `usrtrk_load_into_editor` into `gEditor`.
 - For a race, `usrtrk_load_pieces` and `usrtrk_build_track` (called from the stadium code) fill `gUserTrackData` (`UserTrackData`):
-  two mesh sets of 500x500 cells with rotated vertices and 1-bit textures, the dirt texture, the racing line
-  (`gUserTrackData.path`, header 0xAA000003) and the arena's and the pieces' wall meshes merged into one `WallMesh`
-  with its 16x16 hash (allocated one cell short of the struct: the cell lists also set cells[256], past the end).
+  two mesh sets of 500x500 cells with rotated vertices and ground triangle grids (their 8x8 cell bits turned too),
+  the dirt texture, the racing line (`gUserTrackData.path`, header 0xAA000003) and the arena's and the pieces' wall
+  meshes merged into one `WallMesh` with its 16x16 hash (allocated one cell short of the struct: the cell lists also
+  set cells[256], past the end).
 
 ## The LodgeNet build
 
