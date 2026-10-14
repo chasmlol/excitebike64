@@ -55,12 +55,13 @@ enum ScreenType {
     SCREEN_TYPE_BACKUP_LOST = 25
 };
 
-/* Index in sScreens */
+/* Index in sScreens. The data defines sScreens in pieces where other data points into it (sScreenTitle is
+   sScreens[SCREEN_TITLE], ...). */
 enum ScreenId {
     SCREEN_SEASON_RACE_RESULT,  /* 0 */
     SCREEN_RACE_RESULT,         /* 1 */
     SCREEN_SEASON_STANDINGS,    /* 2: sScreenSeasonStandings */
-    SCREEN_ROUND_OVER,          /* 3 */
+    SCREEN_ROUND_OVER,          /* 3: sScreenRoundOver */
     SCREEN_CHEAT_ENTRY,         /* 4 */
     SCREEN_OPTIONS,             /* 5: sScreenOptions */
     SCREEN_SEASON,              /* 6: sScreenSeason */
@@ -77,7 +78,7 @@ enum ScreenId {
     SCREEN_CONTROLLER_SETTINGS, /* 17: sScreenControllerSettings */
     SCREEN_INITIALS,            /* 18 */
     SCREEN_BOOT_SPLASH,         /* 19: sScreenBootSplash, the first screen after power-on */
-    SCREEN_SPLASH_2,            /* 20 */
+    SCREEN_SPLASH_2,            /* 20: sScreenSplash2 (with 21-23) */
     SCREEN_SPLASH_3,            /* 21 */
     SCREEN_PAK_STATUS,          /* 22 */
     SCREEN_BACKUP_LOST,         /* 23 */

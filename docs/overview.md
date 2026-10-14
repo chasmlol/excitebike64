@@ -480,7 +480,7 @@ resource set, puts PRG at $8000 and $C000 and CHR above the CPU space, decodes t
   `gNesActive` keeps the game's sound system off.
 - **Design mode SAVE and LOAD**: the original saved designed tracks to the Famicom Data Recorder. When the 6502 PC
   reaches 0xC661/0xC66A (SAVE) or 0xC641/0xC69A (LOAD), `nes_draw_frame` copies the 0x220-byte track at NES RAM
-  $05E0 to or from the save block (`gSaveNesTrack`); 60 frames later (`sNesRestoreTimer`) the snapshot
+  $05E0 to or from the save block (`gSaveData.nesTrack`); 60 frames later (`sNesRestoreTimer`) the snapshot
   `sNesSnapshot` is restored.
 - Holding L and Z leaves the emulator; "HOLD L AND Z BUTTONS TO EXIT" blinks in the name table.
 
@@ -547,7 +547,7 @@ section, three asm modules at the end of the game image (0x800DB550-0x800DB8B8 a
 tracks (best times and initials, "?????" by default), season progress (+0x2BF rounds done, +0x2C0 highest difficulty
 reached), options (+0x2C4: 1 stereo, 2 high resolution, 0x10 drones off; +0x2C5-0x2C7 music, effects and speech
 volumes), tutorial progress (+0x2C1; 7 unlocks Original Excitebike), the NES design track (+0x2D4, 0x220 bytes,
-`gSaveNesTrack`) and the packed user track (+0x4F4, up to 0x310 bytes). `save_init_defaults` fills it,
+`gSaveData.nesTrack`) and the packed user track (+0x4F4, up to 0x310 bytes). `save_init_defaults` fills it,
 `save_load` applies it (records, controller layout, volumes, unlocked tracks in `gUnlockedTracks`), and
 `save_write` is called with a section number after records, settings or the user track change.
 

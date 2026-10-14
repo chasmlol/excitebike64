@@ -30,7 +30,14 @@ extern Img_3 *sRiderSkinTextures[][6];
 extern Pal_3 *sBikeAltPalettes[];
 extern ColList *sSkyModel;
 
-typedef struct { s32 *f0, *f4, *f8, *fC; u8 pad[0x18]; } Ent28;
+/* A rider's resource ids: sRiderModelTable, per rider in sRiderBios order. */
+typedef struct {
+    /* 0x00 */ s32 *podiumModel;    /* the podium ceremony's model */
+    /* 0x04 */ s32 *podiumTex;      /* its texture set */
+    /* 0x08 */ s32 *modelHi;        /* race model, near LOD */
+    /* 0x0C */ s32 *modelLo;        /* race model, far LOD */
+    /* 0x10 */ s32 *skins[6];       /* the texture sets of the six skins */
+} RiderModelIds; /* size 0x28 */
 
 typedef struct {
     void *f0;
@@ -51,14 +58,14 @@ typedef struct {
     u8 rest[0xA80 - 0x244];
 } Plr;
 
-extern Ent28 sRiderModelTable[];
+extern RiderModelIds sRiderModelTable[];
 extern Plr gRiderGfx_2[];
 
 void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg5)
 {
     s32 buf[2];
     void *tmp;
-    Ent28 *e;
+    RiderModelIds *e;
     s32 c;
     s32 i;
     s32 k;
@@ -113,9 +120,9 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
     }
     if (gPodiumMode != 0) {
         if (n < 6) {
-            gRiderGfx_2[n].f4 = res_load(r, *e->f4);
+            gRiderGfx_2[n].f4 = res_load(r, *e->podiumTex);
         } else {
-            gRiderGfx_2[n].f4 = res_load(r, *sRiderModelTable[0].f4);
+            gRiderGfx_2[n].f4 = res_load(r, *sRiderModelTable[0].podiumTex);
         }
     }
     if (gGame.flags & 0x10) {
@@ -142,11 +149,11 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
                 if (k == 0) {
                     continue;
                 }
-                id = *e->f0;
+                id = *e->podiumModel;
             } else if (k != 0) {
-                id = *e->f8;
+                id = *e->modelHi;
             } else {
-                id = *e->fC;
+                id = *e->modelLo;
             }
             res_set_load_buffer((s32)(gZBuffer + 0x1E000));
             m = (u32 *)((u32)res_load(r, id) & ~3);
@@ -239,10 +246,6 @@ typedef struct {
 } PalEnt;
 
 typedef struct {
-    u8 pad0[0x28];
-} Ent28_2;
-
-typedef struct {
     void *p[2];
 } Pair_5;
 
@@ -254,7 +257,6 @@ typedef struct {
 
 extern Track_3 *gCurTrack_9;
 extern Track_3 gTracks_4[];
-extern Ent28_2 sRiderSkinResIds[];
 extern Res *sMarkerImage;
 extern PalEnt gRiderGfx_3[8];
 extern Pair_5 sBikePartModels[6];
@@ -411,7 +413,7 @@ void render_init(void) {
                 i = gGame.riders[j];
             }
         }
-        render_load_rider(gResourceSet, j, &sRiderSkinResIds[i], gGame.bikeSkins[j % 6] & 1, gGame.bikeSkins[j % 6] >> 1, i);
+        render_load_rider(gResourceSet, j, sRiderModelTable[i].skins, gGame.bikeSkins[j % 6] & 1, gGame.bikeSkins[j % 6] >> 1, i);
     }
     if (!(gGame.flags & 0x81)) {
         event_hud_init();
@@ -446,14 +448,14 @@ void render_init(void) {
             sBikePartModels[i].p[0] = res_load(gResourceSet, *sBikePartResIds[i + 6]);
         }
         sBikeLowModel = res_load(gResourceSet, sBikeLowModelResId);
-        prim_alloc_dl(&sBikeLowDL, sBikeLowModel, D_800DC158, 0x20);
+        prim_alloc_dl(&sBikeLowDL, sBikeLowModel, &gRiderGfx_2[0].f8, 0x20);
         for (i = 0; i < 6; i++) {
             skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].p[1]);
             skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].p[0]);
         }
         for (i = 0; i < 6; i++) {
             for (j = 0; j < 2; j++) {
-                prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].p[j], D_800DC158, 0);
+                prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].p[j], &gRiderGfx_2[0].f8, 0);
             }
             size = (s32)prim_build_dl(3, sBikePartModels[i].p[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
             gBikeShadowDLs[i] = mem_alloc_dbg(size, 0, sStrRenderC, 0x434);
@@ -597,7 +599,7 @@ void render_free(void)
             mem_free(gRiderGfx_4[n].b[i]);
         }
     }
-    mem_free(gRiderShadowDL);
+    mem_free(gRiderGfx_2[0].f220);
     for (i = 0; i < 7; i++) {
         for (k = 0; k < 2; k++) {
             if (sRiderModelCache[i].a[k] != 0) {
@@ -793,7 +795,7 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
                 xi = i * 6 + 282;
                 x = xi - j * 7;
                 y = sSoundMenuRowY[j] - 1;
-                if (i <= gSaveVolumes[j] * 29 / 255) {
+                if (i <= ((u8 *)gSaveData.volumes)[j] * 29 / 255) {
                     if (j == gOptionsCursor) {
                         G(gdl++, 0xFA000000, (((i * 255 / 29) & 0xFF) << 16) | 0xFF0000FF);
                     } else {
@@ -949,6 +951,10 @@ Gfx *render_clear_viewports(Gfx *gdl)
 }
 
 #define GFX_LEFT() (0x1770 - (gdl - dyn->glist))
+
+/* The low byte of gPalBrightness, read as a scalar at a fixed address (indexing it would order the read after the
+   display list stores). */
+#define PAL_BRIGHTNESS_LO (*(u8 *)((u32)&gPalBrightness + 3))
 
 #define CHECK(n)                 \
     if (GFX_LEFT() < (n)) {      \
@@ -1268,7 +1274,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             gSPTexture(gdl++, 0, 0, 0, G_TX_RENDERTILE, G_OFF);
             gDPSetCombine(gdl++, 0x61FEC3, 0x44FE7F3F);
-            gDPSetPrimColor(gdl++, 0, 0, gPalBrightnessLo, gPalBrightnessLo, gPalBrightnessLo, 0);
+            gDPSetPrimColor(gdl++, 0, 0, PAL_BRIGHTNESS_LO, PAL_BRIGHTNESS_LO, PAL_BRIGHTNESS_LO, 0);
             gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
         }
         for (gCurView = 0; gCurView < gNumViews; gCurView++) {
@@ -2186,7 +2192,7 @@ Gfx *render_draw_place_markers(Gfx *gdl, s32 arg1) {
                 g->words.w1 = 0x1C070;
             }
             gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, 0, (tw8 - 1) << G_TEXTURE_IMAGE_FRAC, (th - 1) << G_TEXTURE_IMAGE_FRAC);
-            gDPLoadTLUT_pal256(gdl++, &sRiderMarkerPals[0][pl]);
+            gDPLoadTLUT_pal256(gdl++, (u8 *)gRiderGfx_3[0].pal + pl);   /* pl = j * 0xA80: gRiderGfx_3[j].pal */
             gSPTextureRectangle(gdl++, (sx - w1 / 2) * 4, (y - h1 / 2) * 4, (sx + w1 / 2) * 4, (y + h1 / 2) * 4,
                                 0, 0, 0, s1, t1);
             gDPPipeSync(gdl++);

@@ -31,7 +31,7 @@ u8 ai_route_toggle_from_lap(s8 *p, s16 v)
 }
 
 s32 ai_route_random(void) {
-    return D_800E76D3 & 1;
+    return ((u8 *)&gRaceFrame)[3] & 1;
 }
 
 #define ABS(x) ((x) > 0.0f ? (x) : -(x))

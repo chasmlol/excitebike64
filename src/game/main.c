@@ -56,7 +56,7 @@ void game_main(void)
     }
     if (gLoadedByBootLoader != 0) {
         __builtin_memcpy(gBootHeader, (void *)0x803FFFC0, 0x30);
-        gResourceRomAddr = gBootResRomAddr;
+        gResourceRomAddr = *(s32 *)(gBootHeader + 0x2C);  /* the resources' ROM address the boot loader left */
         cfg = *(u16 *)0x80000406;
         if (cfg == 0xDEAF) {
             D_800C2954 = 1;
@@ -216,7 +216,7 @@ void game_main(void)
                         if (gGame.flags & 2) {
                             gRaceExitCode = 6;
                         } else {
-                            gCurTrack = &gTracks[21];
+                            gCurTrack = &gTracks[TRACK_USER];
                             i = 1;
                         }
                     } else if (i == 3) {
@@ -247,7 +247,7 @@ void game_main(void)
                             gGame.mode = 0;
                             gGame.flags = (gGame.flags | 0x4000000) & 0xFF0BFF7F;
                             gRaceExitCode = 6;
-                            gCurTrack = &gTracks[13];
+                            gCurTrack = &gTracks[TRACK_GRAVEL_PIT];
                             gGame.numPlayers = 1;
                         } else if (!(gGame.flags & 4)) {
                             i ^= 1;

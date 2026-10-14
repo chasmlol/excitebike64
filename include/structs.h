@@ -74,14 +74,6 @@ typedef struct {
     u8 pad[0x1C];
 } Ent1C;
 
-typedef struct {
-    u8 pad0[0x2C4];
-    u8 f2C4;
-    u8 f2C5;
-    u8 f2C6;
-    u8 f2C7;
-} Opt;
-
 typedef struct { u32 w[4]; } Pad16;
 
 typedef struct {

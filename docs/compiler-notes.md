@@ -83,7 +83,11 @@ gDPSetCycleType, gDPSetRenderMode), 0xD9 geometry mode, 0xDA matrix.
 - `D_X - 1` works. `__builtin_sqrtf(x)` is the sqrt with its `jal sqrtf` fallback; a hand-written NaN check gives
   two `jal`s. A pointer to B reused as B-0x30, or hoisted addresses chained off each other: declare the lowest symbol
   (one struct array with pad fields) and use `D_X + 12` (main_sched_event_thread). `D_X[idx*64 + 0x28]` folds 0x28 into the
-  symbol: a typed struct `D_X[idx].flags` does not.
+  symbol: a typed struct `D_X[idx].flags` does not. Likewise a member array indexed by a variable, `G.arr[j]`, puts
+  the member's offset in the load (`lbu 0x2C5($t0)`), where `((u8 *)G.arr)[j]` keeps `G+0x2C5` one constant
+  (render_draw_sound_menu). A byte of a word global read as a scalar of its own (an `lbu` the scheduler moves above
+  display list stores): `*(u8 *)((u32)&G + 3)`; `((u8 *)&G)[3]` is an addition, which GCC marks as an element of an
+  aggregate that the stores may overlap (render_draw_race's `PAL_BRIGHTNESS_LO`).
 - Stack string copies: `strcpy(buf, "y=")`; an odd-size `lwl/lwr` + `lh` + `lb` copy from .rdata is
   `strcpy(buf + 2, " Place")` (event_set_place_text); a 7-byte `lwl/lwr` copy: memcpy + a hand-written tail; 16-byte
   copies: `typedef struct { s32 w[4]; }`; runtime `(src|dst)&3` copy loops: `__builtin_memcpy`.

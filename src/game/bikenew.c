@@ -539,7 +539,7 @@ void bike_update_wheel_contacts(Rider *b) {
         diff = b->bike.pos.y - (f32)h / 1000.0f;
         idx = (D_800E84F4[1] >> 4) & 0xF;
         *(volatile s32 *)&b->surfaceIdx = idx;
-        if ((gGame.mode == 7 || gCurTrack == gTrackGoldmineRush) && diff > 2.0f && (gSurfaceTable[idx].flags & 0x800)) {
+        if ((gGame.mode == 7 || gCurTrack == &gTracks[TRACK_GOLDMINE_RUSH]) && diff > 2.0f && (gSurfaceTable[idx].flags & 0x800)) {
             bike_queue_crash_2(b, -25);
             return;
         }
@@ -2156,7 +2156,7 @@ void bike_update_jump(Rider *b) {
     f32 k;
 
     if (b->roughLanding != 0) {
-        b->roughLanding += gPhysTicksByte;
+        b->roughLanding += ((u8 *)&gPhysTicks)[3];
         if (b->roughLanding >= 60) {
             b->roughLanding = 0;
         }

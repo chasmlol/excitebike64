@@ -41,7 +41,7 @@ void race_spawn_extra_rider(Spawn *sp)
     f32 y, k;
     Vec3f unused;
 
-    if (gSaveOptions & 0x10) return;
+    if (gSaveData.options & 0x10) return;
     if (gEvent.flags & 0x200) return;
 
     b = &gRiders[6];

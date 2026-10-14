@@ -78,7 +78,7 @@ void sky_update_scroll(void)
             v = gCamPitch[i];
             v = v / 32;
             v += 0x80;
-            if (gCurTrack == gTrackHillClimb) {
+            if (gCurTrack == &gTracks[TRACK_HILL_CLIMB]) {
                 v -= 0x50;
             }
             sSkyScrollY[i] = v;

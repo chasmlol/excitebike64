@@ -295,7 +295,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gSPTextureRectangle(gdl++, sMapX * 4, sMapY * 4,
                         (sMapX + sMapW) * 4, (sMapY + sMapH) * 4,
-                        G_TX_RENDERTILE, 0, 0, sMapStepSLo, sMapStepTLo);
+                        G_TX_RENDERTILE, 0, 0, ((u16 *)&sMapStepS)[1], ((u16 *)&sMapStepT)[1]);
     gDPPipeSync(gdl++);
     WD(gdl++, 0xE200001C, 0x0C084000);
     WD(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);

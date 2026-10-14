@@ -123,7 +123,7 @@ void edit_init(void)
     s32 v;
     s32 c, q, x, y, w, f, d;
 
-    gCurTrack = gTrackUser;
+    gCurTrack = &gTracks[TRACK_USER];
     if (gEditor == NULL || !(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
         gEditor = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
         mem_fill((u8 *)gEditor, 0, 0x1810);
@@ -527,7 +527,7 @@ void edit_update_main_menu(void)
                             }
                         }
                         gEditor->userPieceCount = 8;
-                        usrtrk_load_into_editor(gSaveUserTrack);
+                        usrtrk_load_into_editor(gSaveData.userTrack);
                         edit_try_close_loop(gEditor->last);
                         gEditor->mode = EDIT_MODE_IDLE;
                         gEditor->menu->flags |= GUI_MENU_ACTIVE;
@@ -543,7 +543,7 @@ void edit_update_main_menu(void)
                 case 8:
                     gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
                     usrtrk_pack_track_2(gGame.userTrack);
-                    __builtin_memcpy(gSaveUserTrack, gGame.userTrack, 0x310);
+                    __builtin_memcpy(gSaveData.userTrack, gGame.userTrack, 0x310);
                     save_write(4, 0);
                     mem_free(gGame.userTrack);
                     gGame.userTrack = 0;
@@ -2506,7 +2506,7 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
             break;
         case 6:
             gdl = gui_draw_prompt(gdl, arg0, arg1, "Load A Track From...", "Game Pak", "Controller Pak",
-                                (gSaveOptions >> 3) & 1, 1);
+                                (gSaveData.options >> 3) & 1, 1);
             break;
         case 8:
             gdl = gui_draw_prompt(gdl, arg0, arg1, "Overwrite Track On Game Pak?", "OK", "Cancel", 1, 1);
@@ -3987,13 +3987,11 @@ void edit_clear_track(s32 a0) {
 
 typedef struct { u8 b[0x310]; } Blk_24;
 
-extern Blk_24 gSaveUserTrack_2;
-
 void edit_save_track_to_game_pak(void)
 {
     gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x6FE);
     usrtrk_pack_track(gGame.userTrack);
-    gSaveUserTrack_2 = *(Blk_24 *)gGame.userTrack;
+    *(Blk_24 *)gSaveData.userTrack = *(Blk_24 *)gGame.userTrack;
     save_write(4, 0);
     mem_free(gGame.userTrack);
     gGame.userTrack = 0;

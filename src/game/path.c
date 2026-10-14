@@ -345,7 +345,7 @@ void path_load(u32 *p)
         gPathNodes[i].pos.z = (f32)r->z / 1000.0f;
         if (gPathNodes[i].prev < i) {
             gPathNodes[i].pos.y = gPathNodes[gPathNodes[i].prev].pos.y + 3.0f;
-            if (gCurTrack == sTrackLeftysMill) {
+            if (gCurTrack == &gTracks[TRACK_LEFTYS_MILL]) {
                 gPathNodes[i].pos.y = gPathNodes[i].pos.y + 4.0f;
             }
         } else {
@@ -827,7 +827,7 @@ void path_update_bike(Rider *b)
     }
     if (gEvent.state < 5 && gGame.mode != 9) {
         gPathSegmentT = 0.0f;
-        b->segment = D_800EE496;
+        b->segment = ((s16 *)&gPathStartNode)[1];
     } else {
         Vec3f *pos = &b->bike.pos;
         n = path_find_nearest_node(pos, oldSeg, 2, b->pathSearch);
@@ -926,7 +926,7 @@ void path_update_bike(Rider *b)
         b->distToGo = gPathLapLength * (f32)(b->lapAdjust + 1 + b->race.lap) - b->segmentDist;
     }
     if (b->isCpu == 0 && b->segment >= 0x13A && b->segment < 0x140 && b->airFrames > 30
-        && gCurTrack_26 == &gTrackCanyonChasm && b->bike.vel.y < 0.0f && b->bike.pos.y < gPathNodes[0x140].pos.y) {
+        && gCurTrack_26 == &gTracks[TRACK_CANYON_CHASM] && b->bike.vel.y < 0.0f && b->bike.pos.y < gPathNodes[0x140].pos.y) {
         bike_crash_begin(b, 0x1C);
         cam_start_fall_view(b);
     }

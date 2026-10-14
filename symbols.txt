@@ -1501,8 +1501,7 @@ gScreenViewport_2                     game  0x800C25E8  data        -  gScreenVi
 gViewAxisMtx                          game  0x800C25F8  data     0x40
 sMirrorViewAxisMtx                    game  0x800C2638  data     0x40
 gIdentityMtx                          game  0x800C2678  data     0x40
-sRiderModelTable                      game  0x800C26B8  data     0x10
-sRiderSkinResIds                      game  0x800C26C8  data     0xe0
+sRiderModelTable                      game  0x800C26B8  data     0xf0
 sPonytailMesh                         game  0x800C27A8  data      0x4
 sCreditsFont                          game  0x800C27AC  data      0x4
 sCreditsHeaderFont                    game  0x800C27B0  data      0x4
@@ -1708,9 +1707,7 @@ D_800CA6F4                            game  0x800CA6F4  data     0x7c
 sFontSetLoaded                        game  0x800CA770  data      0x4
 sRaceFontIds                          game  0x800CA774  data     0x10
 sMenuFontIds                          game  0x800CA784  data     0x18
-sFontColors                           game  0x800CA79C  data     0x73
-sFontColorFadeAlpha                   game  0x800CA80F  data     0x11
-sFontColorFadeAlpha_2                 game  0x800CA80F  data        -  sFontColorFadeAlpha
+gFontColors                           game  0x800CA79C  data     0x84
 sPlaceClips                           game  0x800CA820  data     0x18
 sCrowdClips                           game  0x800CA838  data      0x8
 sCrowdCheerClip                       game  0x800CA840  data      0x4
@@ -1744,10 +1741,7 @@ gHudLevel                             game  0x800CA934  data      0x4
 gRacePoints                           game  0x800CA938  data     0x20
 sTrackPicIndex                        game  0x800CA958  data     0x6c
 gUnlockedTracks                       game  0x800CA9C4  data      0x4
-gCups                                 game  0x800CA9C8  data     0xb4
-gCustomRound                          game  0x800CAA7C  data     0x24
-sTutorialRound                        game  0x800CAAA0  data      0x1
-gTutorialProgress                     game  0x800CAAA1  data     0x23
+gCups                                 game  0x800CA9C8  data     0xfc
 sTutorialLesson1aSteps                game  0x800CAAC4  data     0x40
 sTutorialLesson1bSteps                game  0x800CAB04  data     0x20
 sTutorialLesson2aSteps                game  0x800CAB24  data     0x20
@@ -1780,7 +1774,7 @@ sStrSplineFileHeader                  game  0x800CB17C  data     0x58
 sStrSplineCountComment                game  0x800CB1D4  data     0x1c
 sStrSplineFileFooter                  game  0x800CB1F0  data     0x18
 D_800CB208                            game  0x800CB208  data      0x8
-gTracks                               game  0x800CB210  data    0x1e0
+gTracks                               game  0x800CB210  data   0x10e4
 gTracks_10                            game  0x800CB210  data        -  gTracks
 gTracks_11                            game  0x800CB210  data        -  gTracks
 gTracks_12                            game  0x800CB210  data        -  gTracks
@@ -1796,23 +1790,6 @@ gTracks_6                             game  0x800CB210  data        -  gTracks
 gTracks_7                             game  0x800CB210  data        -  gTracks
 gTracks_8                             game  0x800CB210  data        -  gTracks
 gTracks_9                             game  0x800CB210  data        -  gTracks
-sTrackLeftysMill                      game  0x800CB3F0  data    0x1e0
-gTrackCanyonChasm                     game  0x800CB5D0  data     0xa0
-sTrackLongIsland                      game  0x800CB670  data    0x140
-gTrackLasVegas                        game  0x800CB7B0  data    0x280
-sTrackGravelPit                       game  0x800CBA30  data    0x140
-gTrackGoldmineRush                    game  0x800CBB70  data    0x320
-D_800CBE9A                            game  0x800CBE9A  data      0x2
-D_800CBE9C                            game  0x800CBE9C  data     0x94
-gTrackUser                            game  0x800CBF30  data     0xa0
-sTrackSoccer                          game  0x800CBFD0  data     0xa0
-gTrackHillClimb                       game  0x800CC070  data     0xa0
-D_800CC11D                            game  0x800CC11D  data      0x3
-D_800CC120                            game  0x800CC120  data     0x90
-sTrackDesert                          game  0x800CC1B0  data        -
-D_800CC1B7                            game  0x800CC1B7  data      0x1
-D_800CC1B8                            game  0x800CC1B8  data     0x98
-sTrackTutorial                        game  0x800CC250  data     0xa4
 sSoccerBallSphereDesc                 game  0x800CC2F4  data     0x18
 sRiderSphereDesc                      game  0x800CC30C  data     0x18
 sBikeSphereTreeDesc                   game  0x800CC324  data    0x3a8
@@ -1847,8 +1824,7 @@ sMapBarEnd                            game  0x800CCCF4  data      0x4
 sMapBarRow                            game  0x800CCCF8  data      0x8
 sMapPos                               game  0x800CCD00  data     0x20
 sMapShadeRamp                         game  0x800CCD20  data     0x40
-gPalBrightness                        game  0x800CCD60  data      0x3
-gPalBrightnessLo                      game  0x800CCD63  data      0x1
+gPalBrightness                        game  0x800CCD60  data      0x4
 gCreditsMode                          game  0x800CCD64  data      0x4
 sLightningPatterns                    game  0x800CCD68  data     0x58
 sExcite3DTimeScales                   game  0x800CCDC0  data     0x20
@@ -1990,63 +1966,7 @@ sNesBorderColors                      game  0x800CEC08  data     0x10
 sNesAudioChunks                       game  0x800CEC18  data      0x4
 sNesInstrCount                        game  0x800CEC1C  data      0x4
 sNesInstrPerFrame                     game  0x800CEC20  data     0x10
-sNesMnemonics                         game  0x800CEC30  data      0x4
-D_800CEC34                            game  0x800CEC34  data      0x4
-D_800CEC38                            game  0x800CEC38  data      0x4
-D_800CEC3C                            game  0x800CEC3C  data      0x4
-D_800CEC40                            game  0x800CEC40  data      0x4
-D_800CEC44                            game  0x800CEC44  data      0x4
-D_800CEC48                            game  0x800CEC48  data      0x4
-D_800CEC4C                            game  0x800CEC4C  data      0x4
-D_800CEC50                            game  0x800CEC50  data      0x4
-D_800CEC54                            game  0x800CEC54  data      0x4
-D_800CEC58                            game  0x800CEC58  data      0x4
-D_800CEC5C                            game  0x800CEC5C  data      0x4
-D_800CEC60                            game  0x800CEC60  data      0x4
-D_800CEC64                            game  0x800CEC64  data      0x4
-D_800CEC68                            game  0x800CEC68  data      0x4
-D_800CEC6C                            game  0x800CEC6C  data      0x4
-D_800CEC70                            game  0x800CEC70  data      0x4
-D_800CEC74                            game  0x800CEC74  data      0x4
-D_800CEC78                            game  0x800CEC78  data      0x4
-D_800CEC7C                            game  0x800CEC7C  data      0x4
-D_800CEC80                            game  0x800CEC80  data      0x4
-D_800CEC84                            game  0x800CEC84  data      0x4
-D_800CEC88                            game  0x800CEC88  data      0x4
-D_800CEC8C                            game  0x800CEC8C  data      0x4
-D_800CEC90                            game  0x800CEC90  data      0x4
-D_800CEC94                            game  0x800CEC94  data      0x4
-D_800CEC98                            game  0x800CEC98  data      0x4
-D_800CEC9C                            game  0x800CEC9C  data      0x4
-D_800CECA0                            game  0x800CECA0  data      0x4
-D_800CECA4                            game  0x800CECA4  data      0x4
-D_800CECA8                            game  0x800CECA8  data      0x4
-D_800CECAC                            game  0x800CECAC  data      0x4
-D_800CECB0                            game  0x800CECB0  data      0x4
-D_800CECB4                            game  0x800CECB4  data      0x4
-D_800CECB8                            game  0x800CECB8  data      0x4
-D_800CECBC                            game  0x800CECBC  data      0x4
-D_800CECC0                            game  0x800CECC0  data      0x4
-D_800CECC4                            game  0x800CECC4  data      0x4
-D_800CECC8                            game  0x800CECC8  data      0x4
-D_800CECCC                            game  0x800CECCC  data      0x4
-D_800CECD0                            game  0x800CECD0  data      0x4
-D_800CECD4                            game  0x800CECD4  data      0x4
-D_800CECD8                            game  0x800CECD8  data      0x4
-D_800CECDC                            game  0x800CECDC  data      0x4
-D_800CECE0                            game  0x800CECE0  data      0x4
-D_800CECE4                            game  0x800CECE4  data      0x4
-D_800CECE8                            game  0x800CECE8  data      0x4
-D_800CECEC                            game  0x800CECEC  data      0x4
-D_800CECF0                            game  0x800CECF0  data      0x4
-D_800CECF4                            game  0x800CECF4  data      0x4
-D_800CECF8                            game  0x800CECF8  data      0x4
-D_800CECFC                            game  0x800CECFC  data      0x4
-D_800CED00                            game  0x800CED00  data      0x4
-D_800CED04                            game  0x800CED04  data      0x4
-D_800CED08                            game  0x800CED08  data      0x4
-D_800CED0C                            game  0x800CED0C  data      0x4
-D_800CED10                            game  0x800CED10  data      0x4
+sNesMnemonics                         game  0x800CEC30  data     0xe4
 sNesOpcodeTable                       game  0x800CED14  data   0x12ec
 sNesOpcodeTableTail                   game  0x800D0000  data    0x514
 sNesRgbPalette                        game  0x800D0514  data     0xc0
@@ -3612,9 +3532,6 @@ gRiderGfx_6                           game  0x800DC150  data        -  gRiderGfx
 gRiderGfx_7                           game  0x800DC150  data        -  gRiderGfx
 gRiderGfx_8                           game  0x800DC150  data        -  gRiderGfx
 gRiderGfx_9                           game  0x800DC150  data        -  gRiderGfx
-D_800DC158                            game  0x800DC158  data        -
-gRiderShadowDL                        game  0x800DC370  data        -
-sRiderMarkerPals                      game  0x800DCBB0  data        -
 sPlaceTexDst                          game  0x800E1550  data        -
 sPlaceTextures                        game  0x800E1558  data        -
 sBikeLowModel                         game  0x800E155C  data        -
@@ -3637,7 +3554,6 @@ gViewRects_5                          game  0x800E1718  data        -  gViewRect
 gViewRects_6                          game  0x800E1718  data        -  gViewRects
 gViewRects_7                          game  0x800E1718  data        -  gViewRects
 gViewRects_8                          game  0x800E1718  data        -  gViewRects
-D_800E171C                            game  0x800E171C  data        -
 D_800E1758                            game  0x800E1758  data        -
 D_800E1774                            game  0x800E1774  data        -
 sRiderTint                            game  0x800E1818  data        -
@@ -3717,7 +3633,6 @@ sLastUpdateFrame                      game  0x800E2064  data        -
 sMainMsgs                             game  0x800E2068  data        -
 gBootHeader                           game  0x800E20A8  data        -
 gBootHeader_2                         game  0x800E20A8  data        -  gBootHeader
-gBootResRomAddr                       game  0x800E20D4  data        -
 sGfxHead                              game  0x800E20E0  data        -
 sAudioTickEnd                         game  0x800E20E4  data        -
 gFbAllocWidth                         game  0x800E20E8  data        -
@@ -3791,11 +3706,9 @@ sExtraRiders                          game  0x800E6700  data        -
 D_800E6EE0                            game  0x800E6EE0  data        -
 D_800E76C0                            game  0x800E76C0  data        -
 gPhysTicks                            game  0x800E76C4  data        -
-gPhysTicksByte                        game  0x800E76C7  data        -
 gPhysDeltaTime                        game  0x800E76C8  data        -
 gRaceFrameDrawn                       game  0x800E76CC  data        -
 gRaceFrame                            game  0x800E76D0  data        -
-D_800E76D3                            game  0x800E76D3  data        -
 gDebugValue0                          game  0x800E76E8  data        -
 gDebugValue1                          game  0x800E76EC  data        -
 gDebugValue2                          game  0x800E76F0  data        -
@@ -4006,7 +3919,6 @@ gPathFinishNode                       game  0x800EE488  data        -
 gPathLapLength                        game  0x800EE48C  data        -
 gPathNodeCount                        game  0x800EE490  data        -
 gPathStartNode                        game  0x800EE494  data        -
-D_800EE496                            game  0x800EE496  data        -
 gPathNodes                            game  0x800EE498  data        -
 sPathRawData                          game  0x800EE49C  data        -
 gPathSegmentT                         game  0x800EE4A0  data        -
@@ -4227,9 +4139,7 @@ gInstanceItems                        game  0x800F143C  data        -
 sShatterModelList                     game  0x800F1440  data        -
 sShatterObjects                       game  0x800F1444  data        -
 sMapStepS                             game  0x800F1450  data        -
-sMapStepSLo                           game  0x800F1452  data        -
 sMapStepT                             game  0x800F1454  data        -
-sMapStepTLo                           game  0x800F1456  data        -
 sMapImage                             game  0x800F1458  data        -
 sMapX                                 game  0x800F145C  data        -
 sMapY                                 game  0x800F1460  data        -
@@ -4278,16 +4188,6 @@ gSaveData_6                           game  0x800F1900  data        -  gSaveData
 gSaveData_7                           game  0x800F1900  data        -  gSaveData
 gSaveData_8                           game  0x800F1900  data        -  gSaveData
 gSaveData_9                           game  0x800F1900  data        -  gSaveData
-gSaveTopDifficulty                    game  0x800F1BC0  data        -
-gSaveTutorialProgress                 game  0x800F1BC1  data        -
-gSaveOptions                          game  0x800F1BC4  data        -
-gSaveVolumes                          game  0x800F1BC5  data        -
-gSaveVolumes_2                        game  0x800F1BC5  data        -  gSaveVolumes
-gSaveSfxVolume                        game  0x800F1BC6  data        -
-gSaveSpeechVolume                     game  0x800F1BC7  data        -
-gSaveNesTrack                         game  0x800F1BD4  data        -
-gSaveUserTrack                        game  0x800F1DF4  data        -
-gSaveUserTrack_2                      game  0x800F1DF4  data        -  gSaveUserTrack
 sStuntSeqByDir                        game  0x800F2110  data        -
 sStuntSeqByDirAlt                     game  0x800F2128  data        -
 sRiderChestPitch                      game  0x800F2140  data        -
@@ -4300,10 +4200,8 @@ sRemoveGroupCount                     game  0x800F21B0  data        -
 sRemoveGroups                         game  0x800F21B8  data        -
 sIdleThread                           game  0x800F2220  data        -
 sIdleThreadStackEnd                   game  0x800F25D0  data        -
-sMainThread                           game  0x800F45D0  data        -
+gMainThread                           game  0x800F45D0  data        -
 sMainThreadStackEnd                   game  0x800F45D0  data        -
-sMainThreadRegs                       game  0x800F45F0  data        -
-sMainThreadPc                         game  0x800F46EC  data        -
 D_800F4780                            game  0x800F4780  data        -
 sTitleSceneViewport                   game  0x800F4790  data        -
 sPrevScreenCursor                     game  0x800F47A0  data        -

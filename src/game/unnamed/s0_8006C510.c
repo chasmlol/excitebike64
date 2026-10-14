@@ -619,7 +619,7 @@ s32 save_update_unlocks(void)
     }
 
     ret = 0;
-    if (gSaveTutorialProgress == 7) {
+    if (gSaveData.tutorialProgress == 7) {
         ret = (gSpecialTracksItems[2].flags & 1) << 1;
         gSpecialTracksItems[2].flags &= ~1;
     } else {
@@ -687,7 +687,7 @@ void save_load(s32 arg0)
             j++;
         }
     }
-    gCustomRound = 0;
+    gCups[5].numRounds = 0;
     for (i = 0; i < 4; i++) {
         gGame.padConfig[i] = (gSaveData_7.c8 >> i) & 3;
     }
@@ -707,7 +707,7 @@ void save_load(s32 arg0)
         gCups[5].laps[i] = gSaveData_7.a8[i] >> 5;
         gCups[5].numRounds++;
     }
-    gTutorialProgress = gSaveData_7.c1;
+    gCups[6].progress[0] = gSaveData_7.c1;
     gGame.difficulty = gSaveData_7.c0;
     save_update_unlocks();
 }
@@ -716,6 +716,6 @@ void save_write(s32 x, s32 arg1)
 {
     u8 buf[0x50];
     if (x == 1) {
-        gSaveTutorialProgress = gTutorialProgress;
+        gSaveData.tutorialProgress = gCups[6].progress[0];
     }
 }

@@ -72,7 +72,7 @@ typedef struct Nes {
 #define NES ((Nes *)0x80380000)
 
 /* Excitebike's design-mode track in NES RAM, which the Famicom version saved to the Data Recorder: the emulator copies
-   it to and from the save block (gSaveNesTrack). */
+   it to and from the save block (gSaveData.nesTrack). */
 #define NES_TRACK_ADDR 0x5E0
 #define NES_TRACK_SIZE 0x220
 

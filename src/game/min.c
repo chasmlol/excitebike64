@@ -174,7 +174,7 @@ void race_init(s32 arg)
     s32 i;
     s32 v;
 
-    if (!(gGame.flags & 0x81) && (gSaveOptions & 2) && gHasExpansionPak != 0
+    if (!(gGame.flags & 0x81) && (gSaveData.options & 2) && gHasExpansionPak != 0
         && (gGame.numPlayers == 1 || gGame.mode == 8) && gCurTrack_14->f2C != 2
         && !(gGame.flags & 0x04040000)) {
         gViModeRequest = 2;
@@ -409,7 +409,7 @@ void race_begin(void)
         race_set_grid_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     }
     gPauseMenu = 0;
-    if ((gGame.flags & 0x81) == 0 && (gSaveOptions & 2) != 0 && gHasExpansionPak != 0 &&
+    if ((gGame.flags & 0x81) == 0 && (gSaveData.options & 2) != 0 && gHasExpansionPak != 0 &&
         (gGame.numPlayers == 1 || gGame.mode == 8) &&
         gCurTrack_4->f2C != 2 && (gGame.flags & 0x04040000) == 0) {
         gViModeRequest = 2;
@@ -666,10 +666,10 @@ void race_pause_update_options(void) {
             break;
         case 3:
             snd_play_menu_sound(1);
-            gSaveData.f2C4 ^= 1;
+            gSaveData.options ^= 1;
             return;
         case 1:
-            sfx_play(sOptionsTestSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
+            sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
             return;
         case 2:
             if (sOptionsPreviewDelay == 0) {
@@ -721,7 +721,7 @@ void race_pause_update_options(void) {
             sOptionsPreviewDelay = 0x34;
             break;
         case 1:
-            sfx_play(sOptionsTestSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
+            sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
             break;
         }
     }
@@ -745,7 +745,7 @@ void race_pause_update_options(void) {
         if (s0 != 0 && sOptionsPreviewDelay == 0) {
             switch (gOptionsCursor) {
             case 1:
-                sfx_play(sOptionsTestSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
+                sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
                 sOptionsPreviewDelay = 0x28;
                 break;
             case 2:
@@ -757,24 +757,24 @@ void race_pause_update_options(void) {
         if (s0 < 0) {
             switch (gOptionsCursor) {
             case 1:
-                if (gSaveData.f2C6 >= -s0) {
-                    gSaveData.f2C6 += s0;
+                if (gSaveData.volumes[1] >= -s0) {
+                    gSaveData.volumes[1] += s0;
                 } else {
-                    gSaveData.f2C6 = 0;
+                    gSaveData.volumes[1] = 0;
                 }
                 break;
             case 0:
-                if (gSaveData.f2C5 >= -s0) {
-                    gSaveData.f2C5 += s0;
+                if (gSaveData.volumes[0] >= -s0) {
+                    gSaveData.volumes[0] += s0;
                 } else {
-                    gSaveData.f2C5 = 0;
+                    gSaveData.volumes[0] = 0;
                 }
                 break;
             case 2:
-                if (gSaveData.f2C7 >= -s0) {
-                    gSaveData.f2C7 += s0;
+                if (gSaveData.volumes[2] >= -s0) {
+                    gSaveData.volumes[2] += s0;
                 } else {
-                    gSaveData.f2C7 = 0;
+                    gSaveData.volumes[2] = 0;
                 }
                 break;
             }
@@ -782,27 +782,27 @@ void race_pause_update_options(void) {
             s32 v;
             switch (gOptionsCursor) {
             case 1:
-                v = gSaveData.f2C6 + s0;
+                v = gSaveData.volumes[1] + s0;
                 if (v >= 0x100) {
-                    gSaveData.f2C6 = 0xFF;
+                    gSaveData.volumes[1] = 0xFF;
                 } else {
-                    gSaveData.f2C6 = v;
+                    gSaveData.volumes[1] = v;
                 }
                 break;
             case 0:
-                v = gSaveData.f2C5 + s0;
+                v = gSaveData.volumes[0] + s0;
                 if (v >= 0x100) {
-                    gSaveData.f2C5 = 0xFF;
+                    gSaveData.volumes[0] = 0xFF;
                 } else {
-                    gSaveData.f2C5 = v;
+                    gSaveData.volumes[0] = v;
                 }
                 break;
             case 2:
-                v = gSaveData.f2C7 + s0;
+                v = gSaveData.volumes[2] + s0;
                 if (v >= 0x100) {
-                    gSaveData.f2C7 = 0xFF;
+                    gSaveData.volumes[2] = 0xFF;
                 } else {
-                    gSaveData.f2C7 = v;
+                    gSaveData.volumes[2] = v;
                 }
                 break;
             }
@@ -813,13 +813,13 @@ void race_pause_update_options(void) {
     snd_set_volume(2, 0);
     switch (gOptionsCursor) {
     case 1:
-        snd_set_volume(0, gSaveSfxVolume);
+        snd_set_volume(0, gSaveData.volumes[1]);
         break;
     case 0:
-        snd_set_volume(1, gSaveVolumes_2);
+        snd_set_volume(1, gSaveData.volumes[0]);
         break;
     case 2:
-        snd_set_volume(2, gSaveSpeechVolume);
+        snd_set_volume(2, gSaveData.volumes[2]);
         break;
     }
     if (gOptionsCursor != old) {
@@ -1704,7 +1704,7 @@ void race_load_ghost_setup(s32 param_1)
 
 void race_set_video_mode(void)
 {
-    if ((gGame.flags & 0x81) == 0 && (gSaveOptions & 2) != 0 && gHasExpansionPak != 0 &&
+    if ((gGame.flags & 0x81) == 0 && (gSaveData.options & 2) != 0 && gHasExpansionPak != 0 &&
         (gGame.numPlayers == 1 || gGame.mode == 8) &&
         gCurTrack_3[11] != 2 && (gGame.flags & 0x4040000) == 0) {
         gViModeRequest = 2;

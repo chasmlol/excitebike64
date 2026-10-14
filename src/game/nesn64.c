@@ -166,7 +166,7 @@ void nes_update_input(volatile s32 *p)
                 NES->apu[k].rate = 0;
                 NES->apu[k].unk_04 = 0;
             }
-            __builtin_memcpy(&NES->mem[NES_TRACK_ADDR], gSaveNesTrack, NES_TRACK_SIZE);
+            __builtin_memcpy(&NES->mem[NES_TRACK_ADDR], gSaveData.nesTrack, NES_TRACK_SIZE);
         }
     }
     v = *p;
@@ -281,13 +281,13 @@ void nes_draw_frame(s32 a0, s32 a1, Gfx **pgdl)
     if (NES->pc == 0xC661 || NES->pc == 0xC66A) {
         if (sNesRestoreTimer == 0) {
             sNesRestoreTimer = 0x3C;
-            __builtin_memcpy(gSaveNesTrack, &NES->mem[NES_TRACK_ADDR], NES_TRACK_SIZE);
+            __builtin_memcpy(gSaveData.nesTrack, &NES->mem[NES_TRACK_ADDR], NES_TRACK_SIZE);
             save_write(0, 0);
         }
     } else if (NES->pc == 0xC641 || NES->pc == 0xC69A) {
         if (sNesRestoreTimer == 0) {
             sNesRestoreTimer = 0x3C;
-            __builtin_memcpy(&NES->mem[NES_TRACK_ADDR], gSaveNesTrack, NES_TRACK_SIZE);
+            __builtin_memcpy(&NES->mem[NES_TRACK_ADDR], gSaveData.nesTrack, NES_TRACK_SIZE);
         }
     }
     if (!(NES->mem[0x2001] & 8) || sNesFrameCount < 10) {

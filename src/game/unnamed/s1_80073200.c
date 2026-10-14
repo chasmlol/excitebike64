@@ -11,8 +11,8 @@ void game_boot(void)
 }
 
 void idle_thread(s32 param_1) {
-    osCreateThread(&sMainThread, 3, (void *)game_main, param_1, sMainThreadStackEnd, 10);
-    osStartThread(&sMainThread);
+    osCreateThread(&gMainThread, 3, (void *)game_main, param_1, sMainThreadStackEnd, 10);
+    osStartThread(&gMainThread);
     osSetThreadPri(NULL, 0);
     main_hang();
 }

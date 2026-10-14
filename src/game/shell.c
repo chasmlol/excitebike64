@@ -1,5 +1,8 @@
 #include "game.h"
 
+/* The alpha of gFontColors[28] (text colour 9, white), which the records screen and shell_draw fade. */
+#define FONT_FADE_ALPHA (*(u8 *)((u32)gFontColors + 28 * 4 + 3))
+
 s32 shell_format_pak_file_label(u8 *src, char *dst, s32 flag)
 {
     s32 trk, q, w, ret;
@@ -306,7 +309,7 @@ void shell_cb_soccer(s32 param_1)
         iVar3 = uVar1;
         base = &gGame;
         base->mode = 2;
-        gCurTrack = sTrackSoccer;
+        gCurTrack = &gTracks[TRACK_SOCCER];
         gSplitVertical = 0;
         base->riders[0] = 4;
         base->riders[1] = 4;
@@ -343,7 +346,7 @@ void shell_cb_season(s32 arg0) {
         mem_fill(&sSeasonState, 0, sizeof(Season));
         gSeason->cup = &gCups[gGame.cupSel];
         if (gGame.difficulty == 0) {
-            gCurTrack = sTrackTutorial;
+            gCurTrack = &gTracks[TRACK_TUTORIAL];
             gGame.mode = 9;
             *(volatile s32 *)&gGame.numPlayers = 1; /* volatile: the store stays before the next one */
             *(volatile s32 *)&gEvent.tutorialBuf = 0;
@@ -1025,15 +1028,15 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
     if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10) && gGame.fadeState == 3) {
         switch (gGame.optionsSel) {
         case 3:
-                        gSaveData.f2C4 ^= 1;
+                        gSaveData.options ^= 1;
             snd_play_menu_sound(1);
             return;
         case 8:
-                        gSaveData.f2C4 ^= 0x10;
+                        gSaveData.options ^= 0x10;
             snd_play_menu_sound(1);
             return;
         case 1:
-            sfx_play(gGame.optionsSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
+            sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
             return;
         case 2:
             if (gGame.repeatTimer == 0) {
@@ -1051,7 +1054,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             if (gHasExpansionPak == 0) {
                 return;
             }
-                        gSaveData.f2C4 ^= 2;
+                        gSaveData.options ^= 2;
             snd_play_menu_sound(1);
             return;
         case 4:
@@ -1066,7 +1069,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             shell_goto_screen(NULL, 0, 1);
                         gCreditsMode = 1;
             gGame.mode = 0;
-            gCurTrack = sTrackGravelPit;
+            gCurTrack = &gTracks[TRACK_GRAVEL_PIT];
             gGame.numPlayers = 1;
             gGame.returnScreen = screen;
             {
@@ -1133,7 +1136,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             tunes_play_song(gReplaySongResId);
             break;
         case 1:
-            sfx_play(gGame.optionsSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
+            sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
             break;
         }
     }
@@ -1164,7 +1167,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
         if (d != 0 && gGame.repeatTimer == 0) {
             switch (gGame.optionsSel) {
             case 1:
-                sfx_play(gGame.optionsSfx, 0x2B11, gSaveSfxVolume, 7, 1, 1);
+                sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
                 gGame.repeatTimer = 0x28;
                 break;
             case 2:
@@ -1176,24 +1179,24 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
         if (d < 0) {
             switch (gGame.optionsSel) {
             case 1:
-                if (gSaveData.f2C6 >= -d) {
-                    gSaveData.f2C6 += d;
+                if (gSaveData.volumes[1] >= -d) {
+                    gSaveData.volumes[1] += d;
                 } else {
-                    gSaveData.f2C6 = 0;
+                    gSaveData.volumes[1] = 0;
                 }
                 break;
             case 0:
-                if (gSaveData.f2C5 >= -d) {
-                    gSaveData.f2C5 += d;
+                if (gSaveData.volumes[0] >= -d) {
+                    gSaveData.volumes[0] += d;
                 } else {
-                    gSaveData.f2C5 = 0;
+                    gSaveData.volumes[0] = 0;
                 }
                 break;
             case 2:
-                if (gSaveData.f2C7 >= -d) {
-                    gSaveData.f2C7 += d;
+                if (gSaveData.volumes[2] >= -d) {
+                    gSaveData.volumes[2] += d;
                 } else {
-                    gSaveData.f2C7 = 0;
+                    gSaveData.volumes[2] = 0;
                 }
                 break;
             }
@@ -1201,34 +1204,34 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             s32 t;
             switch (gGame.optionsSel) {
             case 1:
-                t = gSaveData.f2C6 + d;
+                t = gSaveData.volumes[1] + d;
                 if (t >= 256) {
-                    gSaveData.f2C6 = 255;
+                    gSaveData.volumes[1] = 255;
                 } else {
-                    gSaveData.f2C6 = t;
+                    gSaveData.volumes[1] = t;
                 }
                 break;
             case 0:
-                t = gSaveData.f2C5 + d;
+                t = gSaveData.volumes[0] + d;
                 if (t >= 256) {
-                    gSaveData.f2C5 = 255;
+                    gSaveData.volumes[0] = 255;
                 } else {
-                    gSaveData.f2C5 = t;
+                    gSaveData.volumes[0] = t;
                 }
                 break;
             case 2:
-                t = gSaveData.f2C7 + d;
+                t = gSaveData.volumes[2] + d;
                 if (t >= 256) {
-                    gSaveData.f2C7 = 255;
+                    gSaveData.volumes[2] = 255;
                 } else {
-                    gSaveData.f2C7 = t;
+                    gSaveData.volumes[2] = t;
                 }
                 break;
             }
         }
-        snd_set_volume(1, gSaveData.f2C5);
-        snd_set_volume(2, gSaveData.f2C7);
-        snd_set_volume(0, gSaveData.f2C6);
+        snd_set_volume(1, gSaveData.volumes[0]);
+        snd_set_volume(2, gSaveData.volumes[2]);
+        snd_set_volume(0, gSaveData.volumes[1]);
     }
     if (gGame.optionsSel != old) {
         snd_play_menu_sound(0);
@@ -1387,7 +1390,7 @@ void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, P
             if (++gGame.cupPreviewTrack >= gCups[*screen->cursor].numRounds) gGame.cupPreviewTrack = 0;
             gGame.cupPreviewTimer = 0;
         }
-        if (*screen->cursor == 5 && gCustomRound != 0) {
+        if (*screen->cursor == 5 && gCups[5].numRounds != 0) {
             if (*buttons & 1) {
                 s32 v = gGame.roundSel;
                 gGame.roundSel = v - 1;
@@ -1428,7 +1431,7 @@ void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, P
         if ((*buttons & 0x50) && !OK) {
             snd_play_menu_sound(3);
         } else if ((*buttons & 0x50) && OK) {
-            if (*screen->cursor == 5 && (gGame.roundSel == 1 || gCustomRound == 0)) {
+            if (*screen->cursor == 5 && (gGame.roundSel == 1 || gCups[5].numRounds == 0)) {
                 gGame.seasonMenuState = 1;
                 gGame.roundSel = 0;
             } else if (!(item->flags & SCREEN_ITEM_LOCKED)) {
@@ -1653,9 +1656,9 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                         gGame.flags &= ~0x20;
                         shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
                     } else {
-                        gCurTrack = (s32)gTrackUser;
+                        gCurTrack = &gTracks[TRACK_USER];
                         shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
-                        usrtrk_load_layout(gSaveUserTrack);
+                        usrtrk_load_layout(gSaveData.userTrack);
                         gGame.mode = 0;
                         gGame.flags &= ~0x80;
                         gGame.flags &= ~0x20;
@@ -2073,7 +2076,7 @@ void shell_update(Pad16 *pad) {
                             if (gPakScreenAborted != 0) {
                                 shell_goto_screen(screen->back, 0, 0);
                             } else {
-                                gCurTrack = &gTracks[21];
+                                gCurTrack = &gTracks[TRACK_USER];
                                 shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                                 usrtrk_load_layout(gGame.userTrack + 4);
                                 gGame.flags &= ~0x80;
@@ -2254,7 +2257,7 @@ void shell_exit(void)
         }
         break;
     }
-    if (gCurTrack_39 != &gTrackUser && gUserTrackLayout != 0) {
+    if (gCurTrack_39 != &gTracks[TRACK_USER] && gUserTrackLayout != 0) {
         mem_free(gUserTrackLayout);
         gUserTrackLayout = 0;
     }
@@ -2996,7 +2999,7 @@ void shell_load_screen(Screen *screen) {
             gGame.riderSelectRot[i][0] = (((gFrameCounter & 0x1FF) << 7) + ((-(i & 1) + (i & 2)) << 14)) & 0xFFFF;
             gGame.riderSelectRot[i][1] = 0;
         }
-        gCurTrack_2 = sTrackLongIsland;
+        gCurTrack_2 = &gTracks[TRACK_LONG_ISLAND];
         gGame.mode = 0;
         gGame.flags |= 0x10;
         gGame.unk_390 = LD(sRiderSelectFramesResId);
@@ -3232,7 +3235,7 @@ Gfx *shell_draw_players_difficulty_popup(Gfx *gdl, s32 p2, s32 p3)
             }
         } else {
             font_text_create(gGame.texts[i], 0x40, 1, (i == gGame.difficulty) ? 4 : 2,
-                          (i >= gSaveTopDifficulty + 1) ? 0x20000021 : 0x21);
+                          (i >= gSaveData.topDifficulty + 1) ? 0x20000021 : 0x21);
             font_text_add(gGame.texts[i], sDifficultyNames[i]);
             font_draw_text(gGame.texts[i], gScreenWidth / 2 + 17 - i * 7 + dx,
                           gScreenHeight / 2 - 39 + i * 25 + dy);
@@ -4121,9 +4124,9 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
             trk = &gTracks_16[gGame.recordTracks[gGame.recordsSel]];
 
             if (gGame.screenState == 13) {
-                sFontColorFadeAlpha = 0;
+                FONT_FADE_ALPHA = 0;
             } else {
-                sFontColorFadeAlpha = (0x3B - gGame.screenTimer) * 0xFF / 0x3B;
+                FONT_FADE_ALPHA = (0x3B - gGame.screenTimer) * 0xFF / 0x3B;
             }
             font_reset_queue();
             if (trk->f50 & 0x400) {
@@ -5258,7 +5261,7 @@ done:
         } else if (s != NULL) {
             gdl = shell_draw_screen(m, fb, gdl, item, 0);
             gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
-            sFontColorFadeAlpha_2[0] = alpha;
+            ((u8 *)gFontColors)[28 * 4 + 3] = alpha;  /* FONT_FADE_ALPHA */
         }
     }
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
@@ -5278,7 +5281,7 @@ void shell_free_gui_res(void)
 
 void shell_cb_desert(s32 p) {
     if (p != 0) {
-        gCurTrack = "Desert";
+        gCurTrack = &gTracks[TRACK_DESERT];
         gGame.mode = 5;
         gRaceSeries_5.b = 0;
         gRaceSeries_5.a = 1;
@@ -5318,13 +5321,13 @@ void shell_cb_tutorial(s32 arg)
     s32 i;
 
     if (arg != 0) {
-        gCurTrack = sTrackTutorial;
+        gCurTrack = &gTracks[TRACK_TUTORIAL];
         gGame.numPlayers = 1;
         gGame.mode = 9;
         gEvent.tutorialBuf = 0;
         gGame.riders[0] = 4;
         gGame.flags &= ~0x80;
-        gSeason->cup = sTutorialRound;
+        gSeason->cup = &gCups[6];
         gSeason->round = 0;
         for (i = 0; i < 0x11; i++) {
             if (gTutorialLessons[i].level == gSaveData_14.track) {
@@ -5356,7 +5359,7 @@ void shell_cb_excite3d(s32 p) {
             i++;
         } while (i < 6);
         gGame.mode = 6;
-        gCurTrack = "Excite 3D";
+        gCurTrack = &gTracks[TRACK_EXCITE_3D];
         gGame.numPlayers = 1;
         gGame.difficulty = 2;
         gGame.flags &= 0xFFFFFF7F;
@@ -5381,7 +5384,7 @@ void shell_cb_hill_climb(s32 p)
         gGame.numCpuRiders = 0;
         gSplitVertical = 1;
         gGame.mode = 7;
-        gCurTrack = gTrackHillClimb;
+        gCurTrack = &gTracks[TRACK_HILL_CLIMB];
         gGame.flags &= ~0x80;
     }
 }
@@ -5403,7 +5406,7 @@ void shell_cb_desert_unused(s32 a0) {
     w = &gGame;
     w->numPlayers = 1;
     b = w;
-    gCurTrack = sTrackDesert;
+    gCurTrack = &gTracks[TRACK_DESERT];
     w->mode = 4;
     w->flags = w->flags & 0xFFFFFF7F;
     for (i = 0; i < 4; i++) {
@@ -5434,7 +5437,7 @@ void shell_cb_stunt_course(s32 param_1)
     if (param_1 != 0) {
         Game *b = &gGame;
         b->mode = 10;
-        gCurTrack = "Stunt Course";
+        gCurTrack = &gTracks[TRACK_STUNT_COURSE];
         gGame.flags = gGame.flags & 0xffffff7f;
     }
 }
@@ -5486,7 +5489,7 @@ s32 shell_is_round_screen_unlocked(Screen *screen)
     s32 t;
 
     if (gGame.mode == 8 || gGame.mode == 0) {
-        mode = gSaveTopDifficulty;
+        mode = gSaveData.topDifficulty;
     } else {
         mode = gGame.difficulty;
     }

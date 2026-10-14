@@ -101,7 +101,7 @@ void cam_update(void) {
         if (m2 == 0xFF && gCamView == 0) {
             announce_race_start(0);
         }
-        if ((gPlayerInputs[0] & 0x10) || gCurTrack == gTrackLasVegas) {
+        if ((gPlayerInputs[0] & 0x10) || gCurTrack == &gTracks[TRACK_LAS_VEGAS]) {
             if (m2 >= 2) {
                 m2 = 1;
             }
@@ -810,7 +810,7 @@ void cam_start_fall_view(Rider *p)
     if (p->camMode != 9) {
         gCamLastModes[p - gRiders] = 9;
         p->camMode = 9;
-        if (gCurTrack == gTrackCanyonChasm) {
+        if (gCurTrack == &gTracks[TRACK_CANYON_CHASM]) {
             loc = sCamFallViewPos;
             math_to_polar(loc.x - p->drawPos.x, p->drawPos.z - loc.z, &ang, &dist);
             loc.yaw = ang;

@@ -44,7 +44,6 @@ typedef struct Pair_8 {
 } Pair_8;
 
 extern CurNext sSchedCurTask_2;
-extern Pair_8 sMainThreadRegs[];
 
 void sched_thread(void)
 {
@@ -130,7 +129,7 @@ void sched_thread(void)
             cont_finish_read();
             for (;;) ;
         } else if (msg == 4) {
-            base = sMainThreadRegs;
+            base = (Pair_8 *)&gMainThread.context;  /* the registers as u64 pairs: .b is the low word */
             sched_set_vi_mode(0);
             mem_fill((u8 *)gFramebuffers_3, 0, 0x25800);
             osWritebackDCacheAll();
@@ -139,7 +138,7 @@ void sched_thread(void)
             if (!(gGame.flags & 0x20000000)) {
                 for (;;) ;
             }
-            fault_draw_hex(0x32, 0x1E, sMainThreadPc);
+            fault_draw_hex(0x32, 0x1E, *(u32 *)((u32)&gMainThread + 0x11C));  /* gMainThread.context.pc, as a scalar */
             for (i = 0; i < 0x1F; i++) {
                 fault_draw_hex((i & 1) * 150 + 0x32, (i / 2) * 10 + 0x28, base[i].b);
             }

@@ -9,7 +9,7 @@ void font_load_race_set(void *arc)
         while (sched_get_current_task() != 0) {
         }
         gFontLoadBuffer = gZBuffer;
-        if (font_load(arc, sRaceFontIds, sFontColors) != 0) {
+        if (font_load(arc, sRaceFontIds, gFontColors) != 0) {
             fatal_halt(1);
         }
         gFontLoadBuffer = 0;
@@ -23,7 +23,7 @@ void font_load_menu_set(u32 *param_1)
         if (sFontSetLoaded != 0 && font_unload() != 0) {
             fatal_halt(1);
         }
-        if (font_load(param_1, sMenuFontIds, sFontColors) != 0) {
+        if (font_load(param_1, sMenuFontIds, gFontColors) != 0) {
             fatal_halt(1);
         }
         sFontSetLoaded = 1;

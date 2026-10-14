@@ -12,8 +12,40 @@ typedef struct TrackRecord {
     /* 0x10 */ u8 initials[4][3];   /* of times[0-2] and bestLap; 0xFF 0xFF n: still to be entered by player n */
 } TrackRecord; /* size 0x1C */
 
-/* A cup of the season mode. gCups holds the five cups, then the custom round (gCustomRound) and the tutorial's
-   lessons (sTutorialRound). */
+/* The tracks of gTracks (27 records of 0xA0 bytes), in table order. */
+enum TrackId {
+    TRACK_KYOTO,                /* Kyoto, Japan */
+    TRACK_MOUNTAIN_QUARRY,
+    TRACK_HOUSTON,              /* Houston, TX */
+    TRACK_LEFTYS_MILL,
+    TRACK_ORLANDO,              /* Orlando, FL */
+    TRACK_NASHVILLE,            /* Nashville, TN */
+    TRACK_CANYON_CHASM,
+    TRACK_LONG_ISLAND,          /* Long Island, NY */
+    TRACK_CONGO_COURSE,
+    TRACK_LAS_VEGAS,            /* Las Vegas, NV */
+    TRACK_PHOENIX,              /* Phoenix, AZ */
+    TRACK_RAINFOREST_RUN,
+    TRACK_MADRID,               /* Madrid, Spain */
+    TRACK_GRAVEL_PIT,           /* The Gravel Pit */
+    TRACK_DETROIT,              /* Detroit, MI */
+    TRACK_GOLDMINE_RUSH,
+    TRACK_LOS_ANGELES,          /* Los Angeles, CA */
+    TRACK_CONSTRUCTION_YARD,
+    TRACK_SEATTLE,              /* Seattle, WA */
+    TRACK_BLIZZARD_BLITZ,
+    TRACK_EXCITE_3D,
+    TRACK_USER,                 /* User Track: the editor's track */
+    TRACK_SOCCER,
+    TRACK_HILL_CLIMB,
+    TRACK_STUNT_COURSE,
+    TRACK_DESERT,
+    TRACK_TUTORIAL,
+    TRACK_COUNT
+};
+
+/* A cup of the season mode. gCups holds the five cups, then the custom round (gCups[5]) and the tutorial's
+   lessons (gCups[6]). */
 typedef struct Cup {
     /* 0x00 */ u8 numRounds;
     /* 0x01 */ u8 progress[3];      /* per difficulty 1-3: the last round open (tutorial: lessons open) */

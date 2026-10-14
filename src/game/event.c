@@ -252,7 +252,7 @@ void tutorial_update(void)
                             sTutorialStep = 11;
                         } else if (sTutorialStep == 11) {
                             gSeason->cup->progress[0] = TB.level + 1;
-                            gSaveTutorialProgress = gTutorialProgress;
+                            gSaveData.tutorialProgress = gCups[6].progress[0];
                             event_request_exit();
                             gRaceExitCode = 2;
                             gPauseMenu = 0;
@@ -285,7 +285,7 @@ void tutorial_update(void)
                     tutorial_lesson_passed_2()) {
                     if (TB.level == gSeason->cup->progress[0]) {
                         gSeason->cup->progress[0] = TB.level + 1;
-                        gSaveTutorialProgress = gTutorialProgress;
+                        gSaveData.tutorialProgress = gCups[6].progress[0];
                     }
                 }
                 if ((gEvent.flags & 0x2000) && sTutorialStep == 0) {
@@ -1571,9 +1571,9 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             int_to_str(p->stuntScore, buf);
             font_text_add(gHudTextObjs[3], buf);
             x3 = gScreenWidth / 2;
-            y3 = D_800E171C + 0x28;
+            y3 = gViewRects[0][0].y + 0x28;
             ax = gScreenWidth / 2;
-            ay = D_800E171C + 0x14;
+            ay = gViewRects[0][0].y + 0x14;
             if (p->unk_3FB >= 2) {
                 k = p->unk_3FB * 8;
                 x3 = (x3 * k + (x - (gHudTextObjs[3]->w >> 1)) * (256 - k)) >> 8;
