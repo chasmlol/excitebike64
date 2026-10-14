@@ -2854,64 +2854,69 @@ void shell_update_season_progress(void)
     }
 }
 
-#define LD(x) ((void *)res_load(gGuiRes, x))
+#define LOAD(x) ((void *)res_load(gGuiRes, x))
 
+#define USER_TRACK_NOTE_SIZE 0x400 /* the checksum and the packed user track (shell_pak_track_invalid) */
 
+/* Loads what a screen draws (its pictures from the "guires" set, its text objects) and sets it up: the timers of
+   the splashes, the title's and rider select's race behind, the text entry's name, the Controller Pak screen's
+   mode and data. */
 void shell_load_screen(Screen *screen) {
     s32 i;
-    s32 j;
-    s32 c;
+    s32 player;
+    s32 level;
 
     snd_drain();
     if (screen == NULL) {
         return;
     }
     gGame.idleFrames = 0;
-    gGame.dialogFrame = LD(sDialogFrameResId);
-    gGame.dialogTitleBar = LD(sDialogTitleBarResId);
+    gGame.dialogFrame = LOAD(sDialogFrameResId);
+    gGame.dialogTitleBar = LOAD(sDialogTitleBarResId);
     if ((screen->flags & SCREEN_TEXT_OBJECTS) && screen->left == NULL) {
-        for (i = 0; i < 48; i++) {
+        for (i = 0; i < SHELL_NUM_TEXTS; i++) {
             gGame.texts[i] = font_text_create(0, 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
         }
     }
     if (screen->flags & SCREEN_PANELS) {
-        gGame.frames = LD(sMenuFramesResId);
-        gGame.itemBars = LD(sMenuItemBarsResId);
+        gGame.frames = LOAD(sMenuFramesResId);
+        gGame.itemBars = LOAD(sMenuItemBarsResId);
     }
     if (screen->bgResId != NULL) {
         if (screen->type == SCREEN_TYPE_ROUND_SELECT) {
-            for (i = 0; i < 7; i++) {
-                gGame.screenPics[i] = LD(*((s32 **)screen->bgResId)[i]);
+            for (i = 0; i < NUM_SEASON_BGS; i++) {
+                gGame.screenPics[i] = LOAD(*((s32 **)screen->bgResId)[i]);
             }
         } else {
-            screen->bg = LD(*screen->bgResId);
+            screen->bg = LOAD(*screen->bgResId);
         }
     } else {
         screen->bg = NULL;
     }
-    osViSetSpecialFeatures((screen->flags & SCREEN_DITHER_FILTER) ? 0x6A : 0xAA);
+    osViSetSpecialFeatures((screen->flags & SCREEN_DITHER_FILTER) ? VI_FEATURES_DITHER_FILTER : VI_FEATURES_OFF);
 
     switch (screen->type) {
     case SCREEN_TYPE_SPLASH_3:
-        gGame.flags |= 0x10000000;
+        gGame.flags |= GAME_FLAG_SPLASH_3;
     case SCREEN_TYPE_SPLASH:
-        gGame.screenTimer = 0xB4;
+        gGame.screenTimer = 180;
         break;
     case SCREEN_TYPE_PAK_STATUS:
-        gGame.frames = LD(sPakStatusFrameResId);
-        gGame.itemBars = LD(sPakStatusTitleBarResId);
-        gGame.screenTimer = 0x4B0;
+        gGame.frames = LOAD(sPakStatusFrameResId);
+        gGame.itemBars = LOAD(sPakStatusTitleBarResId);
+        gGame.screenTimer = 1200;
         break;
     case SCREEN_TYPE_BACKUP_LOST:
-        gGame.frames = LD(gWarnFrameResId);
-        gGame.itemBars = LD(gWarnTitleBarResId);
-        gGame.screenTimer = 0x258;
+        gGame.frames = LOAD(gWarnFrameResId);
+        gGame.itemBars = LOAD(gWarnTitleBarResId);
+        gGame.screenTimer = 600;
         break;
     case SCREEN_TYPE_SPLASH_2:
-        gGame.screenTimer = 0x12C;
-        gGame.titleBar = LD(sExpansionPakDetectedResId);
+        gGame.screenTimer = 300;
+        gGame.titleBar = LOAD(sExpansionPakDetectedResId);
         break;
     case SCREEN_TYPE_TITLE:
+        /* an attract race on the first track with the six riders; the player's riders are kept */
         for (i = 0; i < 6; i++) {
             gGame.savedRiders[i] = gGame.riders[i];
             gGame.savedRiderSkins[i] = gGame.riderSkins[i];
@@ -2925,9 +2930,9 @@ void shell_load_screen(Screen *screen) {
         for (i = 0; i < 6; i++) {
             gGame.riderSkins[i] = i;
         }
-        gGame.flags &= ~0x80;
-        gGame.titleLogo = LD(sTitleLogoResId);
-        gGame.frames = LD(sCopyrightResId);
+        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+        gGame.titleLogo = LOAD(sTitleLogoResId);
+        gGame.frames = LOAD(sCopyrightResId);
         gCurTrack_2 = gTracks;
         gGame.mode = GAME_MODE_EXHIBITION;
         gGame.numPlayers = 1;
@@ -2940,26 +2945,28 @@ void shell_load_screen(Screen *screen) {
         softmix_set_decompress_buf(gZBuffer, 0x25800);
         gGame.optionsSfx = sfx_load_sample_id(sOptionsSfxSampleId);
         softmix_set_decompress_buf(0, 0);
-        gGame.frames = LD(sOptionsFrameResId);
-        gGame.cursorImg = LD(gCursorResId);
-        gGame.cursorPal = LD(gCursorPalResId);
-        gGame.titleBar = LD(sOptionsTitleBarResId);
+        gGame.frames = LOAD(sOptionsFrameResId);
+        gGame.cursorImg = LOAD(gCursorResId);
+        gGame.cursorPal = LOAD(gCursorPalResId);
+        gGame.titleBar = LOAD(sOptionsTitleBarResId);
         if (gCreditsMode != 0) {
-            gGame.optionsSel = 6;
+            /* back from the credits */
+            gGame.optionsSel = OPTION_CREDITS;
             gCreditsMode = 0;
         }
-        gGame.optionsSel |= 0x100;
+        gGame.optionsSel |= OPTIONS_JUST_ENTERED;
         break;
     case SCREEN_TYPE_CONTROLLER_SETTINGS:
+        /* a dim grey ramp for the controllers not selected */
         for (i = 1; i < 0x100; i++) {
-            c = (i / 3) >> 3;
-            gGame.greyPalette[i] = (c << 1) | (c << 6) | (c << 11) | 1;
+            level = (i / 3) >> 3;
+            gGame.greyPalette[i] = (level << 1) | (level << 6) | (level << 11) | 1;
         }
         gGame.padConfigSel = 0;
-        gGame.titleBar = LD(sOptionsTitleBarResId);
-        gGame.controllerDiagram = LD(sControllerDiagramResId);
-        gGame.frames = LD(sControllerSettingsFrameResId);
-        gGame.icons = LD(gControllerIconResId);
+        gGame.titleBar = LOAD(sOptionsTitleBarResId);
+        gGame.controllerDiagram = LOAD(sControllerDiagramResId);
+        gGame.frames = LOAD(sControllerSettingsFrameResId);
+        gGame.icons = LOAD(gControllerIconResId);
         shell_build_player_palettes();
         break;
     case SCREEN_TYPE_CHEAT_ENTRY:
@@ -2967,8 +2974,8 @@ void shell_load_screen(Screen *screen) {
         gGame.screenState = SCREEN_STATE_NORMAL;
         i = 0;
         if (screen->type == SCREEN_TYPE_CHEAT_ENTRY) {
-            gGame.itemPics[0] = LD(sCheatPicResId);
-            gGame.name[0] = 0x41;
+            gGame.itemPics[0] = LOAD(sCheatPicResId);
+            gGame.name[0] = 'A';
             for (i = 1; i < 16; i++) {
                 gGame.name[i] = 0;
             }
@@ -2977,6 +2984,7 @@ void shell_load_screen(Screen *screen) {
             gGame.keyCursorY = 0;
             gGame.keyIndex = 0;
         } else {
+            /* the records the race set: their initials are 0xFF 0xFF and the player */
             gGame.entryRecord = -1;
             gGame.bestLapPlayer = 0xFF;
             for (i = 0; i < 4; i++) {
@@ -2989,14 +2997,15 @@ void shell_load_screen(Screen *screen) {
                 }
             }
             if (gGame.playerInitials[gGame.recordPlayer[gGame.entryRecord]][0] != 0) {
+                /* the player's initials of before, the cursor on OK */
                 __builtin_memcpy(gGame.name, gGame.playerInitials[gGame.recordPlayer[gGame.entryRecord]], 3);
                 gGame.name[3] = 0;
                 gGame.nameLen = strlen(gGame.name);
-                gGame.keyCursorX = 0x31F;
-                gGame.keyCursorY = 0x31F;
-                gGame.keyIndex = 0x27;
+                gGame.keyCursorX = KEY_CURSOR_RANGE - 1;
+                gGame.keyCursorY = KEY_CURSOR_RANGE - 1;
+                gGame.keyIndex = KEY_OK;
             } else {
-                gGame.name[0] = 0x41;
+                gGame.name[0] = 'A';
                 gGame.name[1] = 0;
                 gGame.name[2] = 0;
                 gGame.name[3] = 0;
@@ -3010,13 +3019,13 @@ void shell_load_screen(Screen *screen) {
                     break;
                 }
             }
-            gGame.itemPics[0] = LD(*sTrackPicResIds[sTrackPicIndex[i]]);
+            gGame.itemPics[0] = LOAD(*sTrackPicResIds[sTrackPicIndex[i]]);
         }
-        gGame.frames = LD(sTextEntryFramesResId);
-        gGame.titleBar = LD(sTextEntryTitleBarResId);
-        gGame.otherBg = LD(gMenuBackgroundResId);
+        gGame.frames = LOAD(sTextEntryFramesResId);
+        gGame.titleBar = LOAD(sTextEntryTitleBarResId);
+        gGame.otherBg = LOAD(gMenuBackgroundResId);
         gGame.blinkTimer = 0;
-        gGame.icons = LD(gControllerIconResId);
+        gGame.icons = LOAD(gControllerIconResId);
         shell_build_player_palettes();
         break;
     case SCREEN_TYPE_RACE_RESULT:
@@ -3025,67 +3034,69 @@ void shell_load_screen(Screen *screen) {
             && gSeason->cup - gCups == CUP_CHALLENGE) {
             shell_update_season_progress();
         }
-        if (gGame.flags & 0x8000) {
-            gGame.screenState = (screen->type == SCREEN_TYPE_RACE_RESULT) ? 3 : 4;
-            gGame.flags = (gGame.flags | 0x20000) & ~0x8000;
+        if (gGame.flags & GAME_FLAG_REPLAY) {
+            /* back from the replay: the menu again */
+            gGame.screenState = (screen->type == SCREEN_TYPE_RACE_RESULT) ? SCREEN_STATE_RESULTS_MENU : SCREEN_STATE_SEASON_MENU;
+            gGame.flags = (gGame.flags | GAME_FLAG_RESULTS_SEEN) & ~GAME_FLAG_REPLAY;
         } else {
             gGame.screenState = SCREEN_STATE_NORMAL;
         }
         gGame.blinkTimer = 0;
-        gGame.icons = LD(gControllerIconResId);
+        gGame.icons = LOAD(gControllerIconResId);
         shell_build_player_palettes();
-        gGame.frames = LD(sResultsFramesResId);
-        gGame.itemBars = LD(sMenuItemBarsResId);
-        gGame.resultsTitleBars = LD(sResultsTitleBarsResId);
-        gGame.cursorImg = LD(gCursorResId);
-        gGame.cursorPal = LD(gCursorPalResId);
+        gGame.frames = LOAD(sResultsFramesResId);
+        gGame.itemBars = LOAD(sMenuItemBarsResId);
+        gGame.resultsTitleBars = LOAD(sResultsTitleBarsResId);
+        gGame.cursorImg = LOAD(gCursorResId);
+        gGame.cursorPal = LOAD(gCursorPalResId);
         break;
     case SCREEN_TYPE_SEASON_RACE_RESULT:
         shell_update_season_progress();
         gGame.screenState = SCREEN_STATE_NORMAL;
         gGame.blinkTimer = 0;
         shell_build_player_palettes();
-        gGame.icons = LD(gControllerIconResId);
-        gGame.frames = LD(sResultsFramesResId);
-        gGame.cursorImg = LD(gCursorResId);
-        gGame.cursorPal = LD(gCursorPalResId);
-        gGame.resultsTitleBars = LD(sResultsTitleBarsResId);
-        gGame.itemBars = LD(sMenuItemBarsResId);
+        gGame.icons = LOAD(gControllerIconResId);
+        gGame.frames = LOAD(sResultsFramesResId);
+        gGame.cursorImg = LOAD(gCursorResId);
+        gGame.cursorPal = LOAD(gCursorPalResId);
+        gGame.resultsTitleBars = LOAD(sResultsTitleBarsResId);
+        gGame.itemBars = LOAD(sMenuItemBarsResId);
         break;
     case SCREEN_TYPE_PAK:
+        /* what the Controller Pak screen loads or saves, and where */
         gPakScreen.validate = NULL;
         switch (gGame.pakScreenMode) {
-        case 0:
+        case PAK_SCREEN_MANAGER:
             gPakScreen.mode = PAK_MODE_MANAGER;
             gPakScreen.data = NULL;
             gPakScreen.pages = 0;
             break;
-        case 1:
+        case PAK_SCREEN_LOAD_GHOST:
             if (gActiveReplay == 0) {
                 gActiveReplay = gReplayBuffer;
             }
-            gPakScreen.pages = 100;
+            gPakScreen.pages = TIME_TRIAL_REPLAY_SIZE / PAK_PAGE_SIZE;
             gPakScreen.mode = PAK_MODE_LOAD;
             gPakScreen.validate = replay_validate;
-            gPakScreen.data = (u8 *)(gActiveReplay + 0x6400);
+            gPakScreen.data = (u8 *)(gActiveReplay + TIME_TRIAL_REPLAY_SIZE);
             break;
-        case 2:
-            gPakScreen.pages = 40;
+        case PAK_SCREEN_SAVE_GHOST:
+            gPakScreen.pages = GHOST_SIZE / PAK_PAGE_SIZE;
             gPakScreen.mode = PAK_MODE_SAVE;
             gPakScreen.data = (u8 *)gActiveReplay;
             break;
-        case 3:
+        case PAK_SCREEN_LOAD_USER_TRACK:
             if (gGame.userTrack != NULL) {
                 mem_free(gGame.userTrack);
             }
-            gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrShellFile, 0x18E6);
+            gGame.userTrack = mem_alloc_dbg(USER_TRACK_NOTE_SIZE, 0, sStrShellFile, 0x18E6);
             gPakScreen.data = gGame.userTrack;
-            gPakScreen.pages = 4;
+            gPakScreen.pages = USER_TRACK_NOTE_SIZE / PAK_PAGE_SIZE;
             gPakScreen.mode = PAK_MODE_LOAD;
             gPakScreen.validate = (PakValidateFunc)shell_pak_track_invalid;
             break;
-        case 4:
-            gPakScreen.pages = 4;
+        case PAK_SCREEN_SAVE_USER_TRACK:
+            gPakScreen.pages = USER_TRACK_NOTE_SIZE / PAK_PAGE_SIZE;
             gPakScreen.mode = PAK_MODE_SAVE;
             gPakScreen.data = gGame.userTrack;
             break;
@@ -3101,9 +3112,9 @@ void shell_load_screen(Screen *screen) {
                 (*screen->cursor)--;
             }
         }
-        gGame.flags &= 0xFDFFFFFF;
-        gGame.submenuFrame = LD(sSubmenuFrameResId);
-        gGame.submenuItemBar = LD(sSubmenuItemBarResId);
+        gGame.flags &= ~GAME_FLAG_RACE_PAK_TRACK;
+        gGame.submenuFrame = LOAD(sSubmenuFrameResId);
+        gGame.submenuItemBar = LOAD(sSubmenuItemBarResId);
         gGame.screenState = SCREEN_STATE_NORMAL;
         if (screen - sScreens == SCREEN_MAIN_MENU) {
             gGame.numPlayers = 1;
@@ -3112,22 +3123,22 @@ void shell_load_screen(Screen *screen) {
             gGame.trackSel = 0;
         }
     case SCREEN_TYPE_TRACK_LIST:
-        gGame.smallArrows = LD(sSmallArrowsResId);
+        gGame.smallArrows = LOAD(sSmallArrowsResId);
         gGame.menuAnimTimer = 0;
         gGame.blinkTimer = 0;
-        gGame.screenArrows = LD(sScreenArrowsResId);
-        gGame.sponsorLogos = LD(sSponsorLogosResId);
-        gGame.titleBar = LD(gTitleBarResId);
-        gGame.padlock = LD(sPadlockResId);
-        gGame.icons = LD(sTrophyResId);
-        gGame.wonFlag = LD(sWonFlagResId);
-        gGame.cursorImg = LD(gCursorResId);
-        gGame.cursorPal = LD(gCursorPalResId);
+        gGame.screenArrows = LOAD(sScreenArrowsResId);
+        gGame.sponsorLogos = LOAD(sSponsorLogosResId);
+        gGame.titleBar = LOAD(gTitleBarResId);
+        gGame.padlock = LOAD(sPadlockResId);
+        gGame.icons = LOAD(sTrophyResId);
+        gGame.wonFlag = LOAD(sWonFlagResId);
+        gGame.cursorImg = LOAD(gCursorResId);
+        gGame.cursorPal = LOAD(gCursorPalResId);
         for (i = 0; i < screen->numItems; i++) {
             if (screen->type == SCREEN_TYPE_TRACK_LIST) {
-                gGame.itemPics[i + screen->firstItem] = LD(*sTrackPicResIds[sTrackPicIndex[i + screen->firstItem]]);
+                gGame.itemPics[i + screen->firstItem] = LOAD(*sTrackPicResIds[sTrackPicIndex[i + screen->firstItem]]);
             } else {
-                gGame.itemPics[i + screen->firstItem] = LD(*sMenuItemPicResIds[i + screen->firstPic]);
+                gGame.itemPics[i + screen->firstItem] = LOAD(*sMenuItemPicResIds[i + screen->firstPic]);
             }
         }
         break;
@@ -3135,44 +3146,46 @@ void shell_load_screen(Screen *screen) {
         gGame.screenState = SCREEN_STATE_RECORDS_PICTURE;
         gGame.screenTimer = 6;
     case SCREEN_TYPE_ROUND_SELECT:
-        gGame.seasonMenuState = 0;
+        /* the cup within the difficulty's cups; the tutorial at difficulty 0 */
+        gGame.seasonMenuState = SEASON_MENU_CUPS;
         switch (gGame.difficulty) {
         case 1:
-            if (gGame.cupSel >= 2) {
-                gGame.cupSel = 0;
+            if (gGame.cupSel >= CUP_GOLD) {
+                gGame.cupSel = CUP_BRONZE;
             }
             break;
         case 2:
-            if (gGame.cupSel >= 3) {
-                gGame.cupSel = 0;
+            if (gGame.cupSel >= CUP_PLATINUM) {
+                gGame.cupSel = CUP_BRONZE;
             }
             break;
         }
         if (gGame.difficulty == 0) {
-            gGame.cupSel = 6;
-        } else if (gGame.cupSel == 6) {
-            gGame.cupSel = 0;
+            gGame.cupSel = CUP_TUTORIAL;
+        } else if (gGame.cupSel == CUP_TUTORIAL) {
+            gGame.cupSel = CUP_BRONZE;
         }
         gGame.roundSel = 0;
         gGame.menuAnimTimer = 0;
         gGame.blinkTimer = 0;
-        gGame.screenArrows = LD(sScreenArrowsResId);
-        gGame.cursorImg = LD(gCursorResId);
-        gGame.cursorPal = LD(gCursorPalResId);
-        gGame.titleBar = LD(gTitleBarResId);
-        gGame.padlock = LD(sPadlockResId);
-        gGame.icons = LD(sTrophyResId);
-        gGame.wonFlag = LD(sWonFlagResId);
-        gGame.customRoundArrows = LD(sCustomRoundArrowsResId);
-        for (i = 0; i < 24; i++) {
-            gGame.itemPics[i] = LD(*sTrackPicResIds[i]);
+        gGame.screenArrows = LOAD(sScreenArrowsResId);
+        gGame.cursorImg = LOAD(gCursorResId);
+        gGame.cursorPal = LOAD(gCursorPalResId);
+        gGame.titleBar = LOAD(gTitleBarResId);
+        gGame.padlock = LOAD(sPadlockResId);
+        gGame.icons = LOAD(sTrophyResId);
+        gGame.wonFlag = LOAD(sWonFlagResId);
+        gGame.customRoundArrows = LOAD(sCustomRoundArrowsResId);
+        for (i = 0; i < NUM_TRACK_PICS; i++) {
+            gGame.itemPics[i] = LOAD(*sTrackPicResIds[i]);
         }
         gGame.cupPreviewTimer = 0;
         gGame.cupPreviewTrack = 0;
         break;
     case SCREEN_TYPE_RIDER_SELECT:
-        gGame.riderSelectState[0] = 0;
-        gGame.riderSelectState[1] = 0;
+        /* the players' controllers, then a race on Long Island with the riders turning */
+        gGame.riderSelectState[0] = BIO_HIDDEN;
+        gGame.riderSelectState[1] = BIO_HIDDEN;
         for (i = 3; i >= 0; i--) {
             gGame.riderSelectTimer[i] = 0;
         }
@@ -3181,21 +3194,21 @@ void shell_load_screen(Screen *screen) {
         }
         gGame.screenState = SCREEN_STATE_NORMAL;
         if (gGame.numPlayers == 1) {
-            gGame.cButtonIcons = LD(sCButtonIconsResId);
+            gGame.cButtonIcons = LOAD(sCButtonIconsResId);
         }
-        j = 0;
+        player = 0;
         gGame.playerPad[1] = -1;
         gGame.playerPad[2] = -1;
         gGame.playerPad[3] = -1;
         gGame.padPlayer[0] = -1;
         gGame.savedMode = gGame.mode;
         gGame.savedTrack = gCurTrack_2;
-        gGame.flags &= ~0x3C90;
-        for (i = 0; i < 4; i++) {
+        gGame.flags &= ~(GAME_FLAG_PLAYERS_READY | GAME_FLAG_TRACK_CHOSEN | GAME_FLAG_RIDER_SELECT);
+        for (i = 0; i < MAXCONTROLLERS; i++) {
             if ((gContMask >> i) & 1) {
-                gGame.playerPad[j] = i;
-                gGame.padPlayer[i] = j;
-                j++;
+                gGame.playerPad[player] = i;
+                gGame.padPlayer[i] = player;
+                player++;
             }
         }
         for (i = 0; i < 4; i++) {
@@ -3204,10 +3217,10 @@ void shell_load_screen(Screen *screen) {
         }
         gCurTrack_2 = &gTracks[TRACK_LONG_ISLAND];
         gGame.mode = GAME_MODE_EXHIBITION;
-        gGame.flags |= 0x10;
-        gGame.frames = LD(sRiderSelectFramesResId);
-        gGame.itemBars = LD(sRiderSelectBarResId);
-        gGame.smallArrows = LD(sSmallArrowsResId);
+        gGame.flags |= GAME_FLAG_RIDER_SELECT;
+        gGame.frames = LOAD(sRiderSelectFramesResId);
+        gGame.itemBars = LOAD(sRiderSelectBarResId);
+        gGame.smallArrows = LOAD(sSmallArrowsResId);
         race_set_grid_order(0, 6);
         race_init(0);
         gGame.hudGlyphs = (HudGlyphs *)res_load(gResourceSet, gHudGlyphsResId);
@@ -3215,6 +3228,9 @@ void shell_load_screen(Screen *screen) {
     }
 }
 
+/* Goes to a screen (NULL: leave the front end for the race), with a fade; linkBack: B comes back to the current
+   screen; runCallback: run the chosen item's callback first. With no screen up yet (after the init) the screen
+   and its row are loaded at once. */
 void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
 {
     Screen *p;
