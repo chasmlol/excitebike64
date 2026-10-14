@@ -121,6 +121,7 @@ typedef struct Mesh_8 Mesh_8;
 #include "structs/sfx.h"
 #include "structs/tunes.h"
 #include "structs/file.h"
+#include "structs/pak.h"
 typedef struct Blk_29 Blk_29;
 typedef struct Obj_82 Obj_82;
 typedef struct ListHdr ListHdr;

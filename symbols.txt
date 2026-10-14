@@ -618,7 +618,6 @@ replay_play_start_2                   game  0x8005FE10  func        -  replay_pl
 replay_play_start_keep_setup          game  0x8005FEE0  func     0xd0
 replay_play_frame                     game  0x8005FFB0  func     0xc8
 replay_get_info                       game  0x80060078  func     0x5c
-D_800600D4                            game  0x800600D4  data        -
 replay_validate                       game  0x800600D4  func     0x9c
 calc_checksum24                       game  0x80060170  func     0x54
 replay_read_bit                       game  0x800601C4  func     0x40
@@ -782,7 +781,6 @@ screen_draw_wipe                      game  0x80072F70  func    0x25c
 D_800731D0                            game  0x800731D0  data        -
 game_boot                             game  0x80073200  func     0x60
 idle_thread                           game  0x80073260  func     0x6c
-D_800732D0                            game  0x800732D0  data        -
 shell_format_pak_file_label           game  0x800732D0  func    0x394
 shell_blend_palette_to_gray           game  0x80073664  func    0x140
 shell_init                            game  0x800737A4  func    0x7e0
@@ -829,7 +827,6 @@ shell_cb_custom_tracks                game  0x800880B8  func     0x24
 func_800880DC                         game  0x800880DC  func     0x94
 shell_cb_original_excitebike          game  0x80088170  func     0x28
 shell_cb_stunt_course                 game  0x80088198  func     0x3c
-D_800881D4                            game  0x800881D4  data        -
 shell_pak_track_invalid               game  0x800881D4  func     0x48
 shell_backup_race_results             game  0x8008821C  func     0x84
 shell_restore_race_results            game  0x800882A0  func     0x84
@@ -2107,7 +2104,6 @@ sPakMessages                          game  0x800CE068  data     0xfc
 sPakText                              game  0x800CE164  data      0x4
 sPakText_2                            game  0x800CE164  data        -  sPakText
 sPakNewNoteEntry                      game  0x800CE168  data     0x88
-sPakNewNoteEntry_2                    game  0x800CE168  data        -  sPakNewNoteEntry
 sArnedTexResIds                       game  0x800CE1F0  data      0xc
 sArnedCells                           game  0x800CE1FC  data      0x4
 sArnedCells_2                         game  0x800CE1FC  data        -  sArnedCells
@@ -3941,9 +3937,6 @@ gRumblePakMask                        game  0x800E1C60  data        -
 gContStatus                           game  0x800E1C68  data        -
 gContStatus_2                         game  0x800E1C68  data        -  gContStatus
 sPakFs                                game  0x800E1C78  data        -
-sPakFs_2                              game  0x800E1C78  data        -  sPakFs
-sPakFs_3                              game  0x800E1C78  data        -  sPakFs
-sPakFs_4                              game  0x800E1C78  data        -  sPakFs
 gContReadPending                      game  0x800E1E18  data        -
 gContPads                             game  0x800E1E40  data        -
 gContPads_2                           game  0x800E1E40  data        -  gContPads
@@ -5042,9 +5035,6 @@ D_800F483C                            game  0x800F483C  data        -
 sPakViewport                          game  0x800F4868  data        -
 sGbPakFs                              game  0x800F4878  data        -
 sPakNoteList                          game  0x800F48E0  data        -
-sPakNoteList_2                        game  0x800F48E0  data        -  sPakNoteList
-sPakNoteList_3                        game  0x800F48E0  data        -  sPakNoteList
-sPakNoteList_4                        game  0x800F48E0  data        -  sPakNoteList
 sPakBgTex                             game  0x800F49F0  data        -
 sPakBgTex_2                           game  0x800F49F0  data        -  sPakBgTex
 sPakUiTex                             game  0x800F49F4  data        -
@@ -5056,18 +5046,9 @@ sPakSound                             game  0x800F4A00  data        -
 gPakScreenDone                        game  0x800F4A04  data        -
 sPakRepairDeclined                    game  0x800F4A08  data        -
 sPakNoteTables                        game  0x800F4A10  data        -
-sPakNoteTables_2                      game  0x800F4A10  data        -  sPakNoteTables
-sPakNoteTables_3                      game  0x800F4A10  data        -  sPakNoteTables
 sPakIconTex                           game  0x800F4A20  data        -
 sPakIconTex_2                         game  0x800F4A20  data        -  sPakIconTex
 gPakScreen                            game  0x800F4A28  data        -
-gPakScreen_2                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_3                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_4                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_5                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_6                          game  0x800F4A28  data        -  gPakScreen
-D_800F4A50                            game  0x800F4A50  data        -
-D_800F4A54                            game  0x800F4A54  data        -
 sPakButtonIcons                       game  0x800F4A58  data        -
 sPakPlugMask                          game  0x800F4A5C  data        -
 sPakLogoTex                           game  0x800F4A60  data        -
