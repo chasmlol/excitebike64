@@ -1328,4 +1328,21 @@ typedef struct Spr {
     u8 r, g, b, a;
 } Spr;
 
+
+/* The structures of the track, its models and the effects drawn on it. */
+#include "structs/model.h"
+#include "structs/track.h"
+#include "structs/camera.h"
+#include "structs/particle.h"
+#include "structs/snow.h"
+#include "structs/decal.h"
+#include "structs/sun.h"
+#include "structs/desert.h"
+#include "structs/shatter.h"
+#include "structs/palmod.h"
+#include "structs/map.h"
+#include "structs/flash.h"
+#include "structs/arned.h"
+#include "structs/resman.h"
+
 #endif

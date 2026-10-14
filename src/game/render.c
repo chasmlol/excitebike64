@@ -2387,17 +2387,7 @@ typedef struct {
     u8 pad655[0x7E0 - 0x655];
 } Player_5;
 
-typedef struct {
-    u8 pad0[0xC];
-    u8 *tC;
-    u8 pad10[4];
-    u8 *t14;
-    u8 pad18[4];
-    u8 *t1C;
-} TexSet;
-
 extern Player_5 gRiders_9[];
-extern TexSet *sGaugeTextures_2;
 
 Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     s32 p;
@@ -2457,7 +2447,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gDPLoadTLUT_pal256(gdl++, pal);
     for (i = 0; i < 50; i += 25) {
-        gDPLoadTextureBlock(gdl++, sGaugeTextures_2->t14 + i * 80, G_IM_FMT_CI, G_IM_SIZ_8b, 80, 25, 0,
+        gDPLoadTextureBlock(gdl++, sGaugeTextures->tex[1].data + i * 80, G_IM_FMT_CI, G_IM_SIZ_8b, 80, 25, 0,
                             G_TX_CLAMP, G_TX_CLAMP, 7, 7, G_TX_NOLOD, G_TX_NOLOD);
         gSPTextureRectangle(gdl++, sGaugeX * 4, (sGaugeY + i * gScreenHeight / 240) * 4,
                             (sGaugeX + gScreenWidth * 80 / 512) * 4,
@@ -2470,7 +2460,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     if (gRiders_9[p].b654 != 0) {
         gDPSetCombineLERP(gdl++, 0, 0, 0, PRIMITIVE, TEXEL0, 0, PRIMITIVE, 0, 0, 0, 0, PRIMITIVE, TEXEL0, 0,
                           PRIMITIVE, 0);
-        gDPLoadTextureBlock(gdl++, sGaugeTextures_2->tC, G_IM_FMT_IA, G_IM_SIZ_8b, 48, 16, 0,
+        gDPLoadTextureBlock(gdl++, sGaugeTextures->tex[0].data, G_IM_FMT_IA, G_IM_SIZ_8b, 48, 16, 0,
                             G_TX_CLAMP, G_TX_CLAMP, 7, 7, G_TX_NOLOD, G_TX_NOLOD);
         k = (-gRaceFrame * 8) & 0xFF;
         gDPSetPrimColor(gdl++, 0, 0, 255, 0, 0, k);
@@ -2481,7 +2471,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     }
     gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
     for (i = 0; i < 50; i += 25) {
-        gDPLoadTextureBlock(gdl++, sGaugeTextures_2->t1C + i * 80, G_IM_FMT_IA, G_IM_SIZ_8b, 80, 25, 0,
+        gDPLoadTextureBlock(gdl++, sGaugeTextures->tex[2].data + i * 80, G_IM_FMT_IA, G_IM_SIZ_8b, 80, 25, 0,
                             G_TX_CLAMP, G_TX_CLAMP, 7, 7, G_TX_NOLOD, G_TX_NOLOD);
         gSPTextureRectangle(gdl++, sGaugeX * 4, (sGaugeY + i * gScreenHeight / 240) * 4,
                             (sGaugeX + gScreenWidth * 80 / 512) * 4,

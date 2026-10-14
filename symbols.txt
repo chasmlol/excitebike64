@@ -3826,7 +3826,6 @@ sDecoderMsAdpcmAdaptTable             game  0x800DBE74  data     0x20
 decoder_decode_ima_block              game  0x800DBE94  func    0x100
 decoder_decode_msadpcm_block          game  0x800DBF94  func    0x104
 sGaugeTextures                        game  0x800DC0A0  data        -
-sGaugeTextures_2                      game  0x800DC0A0  data        -  sGaugeTextures
 sGaugePalettes                        game  0x800DC0A4  data        -
 sGaugePalettes_2                      game  0x800DC0A4  data        -  sGaugePalettes
 sGaugeNeedleVtx                       game  0x800DC0A8  data        -

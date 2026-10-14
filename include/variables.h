@@ -868,7 +868,7 @@ extern s32 sMixClampMin;
 extern s32 sMixClampMax;
 extern u8 sMixShift;
 extern u8 sMixOverwrite;
-extern void *sGaugeTextures;
+extern TexSet *sGaugeTextures;
 extern u8 *sGaugePalettes;
 extern u16 *sGaugePalettes_2;
 extern void *sGaugeNeedleVtx;
