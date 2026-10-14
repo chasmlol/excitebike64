@@ -319,7 +319,7 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     gDPSetBlendColor(gdl++, 0, 0, 0, 0x10);
     gDPSetAlphaCompare(gdl++, G_AC_THRESHOLD);
     gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, 0x60);
-    gDPLoadTextureBlock(gdl++, sMapImage + 8, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
+    gDPLoadTextureBlock(gdl++, sMapImage->tex, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
                         G_TX_CLAMP, G_TX_CLAMP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gSPTextureRectangle(gdl++, sMapX * 4, sMapY * 4,
@@ -369,8 +369,8 @@ void map_get_rider_pos(s32 player, s32 *px, s32 *py)
 
     base = gRiders;
     pl = &base[player];
-    cx = (sMapBoundsMin_2[0] + sMapBoundsMax_2[0]) * 0.5f;
-    cy = (sMapBoundsMin_2[1] + sMapBoundsMax_2[1]) * 0.5f;
+    cx = (sMapBoundsMin.x + sMapBoundsMax.x) * 0.5f;
+    cy = (sMapBoundsMin.z + sMapBoundsMax.z) * 0.5f;
     o = &gPathNodes_28[pl->obj];
     o2 = &gPathNodes_28[o->next];
     map_get_node_pos((f32 *)o, &a.x, &a.y);
@@ -385,9 +385,9 @@ void map_get_rider_pos(s32 player, s32 *px, s32 *py)
     dx = t * (b.x - a.x);
     dy = t * (b.y - a.y);
     nx = a.x + dx;
-    t = (nx - cx) * (f32)sMapImage_2[0];
+    t = (nx - cx) * (f32)sMapImage->scaleX;
     ny = a.y + dy;
-    fy = (ny - cy) * (f32)sMapImage_2[1];
+    fy = (ny - cy) * (f32)sMapImage->scaleZ;
     t *= 6.1035156e-05f;
     fy *= 6.1035156e-05f;
     w = sMapW;
@@ -426,10 +426,8 @@ typedef struct {
     u8 pad60[0x6C - 0x60];
 } Node_20;
 
-typedef struct { s32 sx, sy; u8 data[0x1000]; } MapImg;
 typedef struct { u8 pad[0x4C]; s32 f4C; } Race_6;
 
-extern MapImg *sMapImage_3;
 extern Node_20 *gPathNodes_29;
 extern Race_6 gGame_47;
 
@@ -475,7 +473,7 @@ void map_build_image(void) {
     for (i = 0; i < 64; i++) {
         sMapBarTex[i] = D_800CCCF8[i / 8];
     }
-    sMapImage_3 = mem_alloc_dbg(0x1003, 0, (s32)D_800D8DCC, 0x23E);
+    sMapImage = mem_alloc_dbg(0x1003, 0, (s32)D_800D8DCC, 0x23E);
     for (i = 0; i < gPathNodeCount; i++) {
         if (gPathNodes_29[i].x < sMapBoundsMin.x || i == 0) sMapBoundsMin.x = gPathNodes_29[i].x;
         if (gPathNodes_29[i].z < sMapBoundsMin.z || i == 0) sMapBoundsMin.z = gPathNodes_29[i].z;
@@ -492,8 +490,8 @@ void map_build_image(void) {
         sx /= 1.3f;
         sy /= 1.3f;
     }
-    sMapImage_3->sx = sx * 16384.0f;
-    sMapImage_3->sy = sy * 16384.0f;
+    sMapImage->scaleX = sx * 16384.0f;
+    sMapImage->scaleZ = sy * 16384.0f;
     steps = sx * 6.0f;
     if (steps < 2) steps = 2;
 
@@ -554,7 +552,7 @@ void map_build_image(void) {
     for (i = 0; i < 0x4000; i++) {
         t = map[i] >> 7;
         if (t >= 16) t = 15;
-        map[i] = D_800CCD20[t].b;
+        map[i] = D_800CCD20[t];
     }
     k = x = 0;
     for (i = 0; i < 128; i += 2) {
@@ -566,7 +564,7 @@ void map_build_image(void) {
             lo = (a & 15) + (b & 15) + (cc & 15) + (d & 15);
             t >>= 2;
             lo >>= 2;
-            sMapImage_3->data[k] = (t << 4) | lo;
+            sMapImage->tex[k] = (t << 4) | lo;
             k++;
         }
         x += 128;

@@ -4828,14 +4828,10 @@ D_800F1452                            game  0x800F1452  data        -
 D_800F1454                            game  0x800F1454  data        -
 D_800F1456                            game  0x800F1456  data        -
 sMapImage                             game  0x800F1458  data        -
-sMapImage_2                           game  0x800F1458  data        -  sMapImage
-sMapImage_3                           game  0x800F1458  data        -  sMapImage
 sMapX                                 game  0x800F145C  data        -
 sMapY                                 game  0x800F1460  data        -
 sMapBoundsMin                         game  0x800F1468  data        -
-sMapBoundsMin_2                       game  0x800F1468  data        -  sMapBoundsMin
 sMapBoundsMax                         game  0x800F1470  data        -
-sMapBoundsMax_2                       game  0x800F1470  data        -  sMapBoundsMax
 sMapBarTex                            game  0x800F1478  data        -
 sMapW                                 game  0x800F14B8  data        -
 sMapH                                 game  0x800F14BC  data        -
