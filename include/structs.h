@@ -119,6 +119,7 @@ typedef struct Mesh_8 Mesh_8;
 #include "structs/nes.h"
 #include "structs/softmix.h"
 #include "structs/sfx.h"
+#include "structs/tunes.h"
 typedef struct Slot_17 Slot_17;
 typedef struct Stream_2 Stream_2;
 typedef struct Blk_29 Blk_29;

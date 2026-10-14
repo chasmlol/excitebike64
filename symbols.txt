@@ -1812,7 +1812,6 @@ sSpeechQueueCount                     game  0x800CA858  data      0x4
 sSpeechQueueCount_2                   game  0x800CA858  data        -  sSpeechQueueCount
 sStreamLock                           game  0x800CA85C  data      0x4
 sCurrentSong                          game  0x800CA860  data      0x4
-sCurrentSong_2                        game  0x800CA860  data        -  sCurrentSong
 sRiderNameClips                       game  0x800CA864  data     0x60
 sLeaderFirstLapClips                  game  0x800CA8C4  data      0xc
 sFinalLapClips                        game  0x800CA8D0  data      0x8
@@ -4529,7 +4528,6 @@ gLastSpeechTime                       game  0x800EECB8  data        -
 sStreamDataEnd                        game  0x800EECBC  data        -
 sAmbientLocked                        game  0x800EECC0  data        -
 sStreamMixBuf                         game  0x800EECC4  data        -
-sStreamMixBuf_2                       game  0x800EECC4  data        -  sStreamMixBuf
 sSpeechPriority                       game  0x800EECC8  data        -
 sStreamChannelCount                   game  0x800EECCC  data        -
 sStreamMixWritePos                    game  0x800EECD0  data        -
@@ -4538,35 +4536,16 @@ sLastLeader                           game  0x800EECD8  data        -
 sLastLeader_2                         game  0x800EECD8  data        -  sLastLeader
 sSpeechUseSfxVolume                   game  0x800EECDC  data        -
 sStreamEchoBuf                        game  0x800EECE0  data        -
-sStreamEchoBuf_2                      game  0x800EECE0  data        -  sStreamEchoBuf
 sCrowdQueue                           game  0x800EFCE0  data        -
-sCrowdQueue_2                         game  0x800EFCE0  data        -  sCrowdQueue
 sLastLeadCollisionTime                game  0x800EFCF0  data        -
 sSongTick                             game  0x800EFCF4  data        -
 sCrowdQueueCount                      game  0x800EFCF8  data        -
 sSpeechQueue                          game  0x800EFD00  data        -
-sSpeechQueue_2                        game  0x800EFD00  data        -  sSpeechQueue
 sStreamMixFill                        game  0x800EFD20  data        -
 sStreamChannels                       game  0x800EFD24  data        -
-sStreamChannels_10                    game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_11                    game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_2                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_3                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_4                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_5                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_6                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_7                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_8                     game  0x800EFD24  data        -  sStreamChannels
-sStreamChannels_9                     game  0x800EFD24  data        -  sStreamChannels
 gAnnounceTimes                        game  0x800EFD28  data        -
-gAnnounceTimes_2                      game  0x800EFD28  data        -  gAnnounceTimes
 sSongCursor                           game  0x800EFD48  data        -
 sStreamSampleTable                    game  0x800EFD4C  data        -
-sStreamSampleTable_2                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_3                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_4                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_5                  game  0x800EFD4C  data        -  sStreamSampleTable
-sStreamSampleTable_6                  game  0x800EFD4C  data        -  sStreamSampleTable
 sStreamMixReadPos                     game  0x800EFD50  data        -
 sStreamEchoPos                        game  0x800EFD54  data        -
 sCountdownTextures                    game  0x800EFD60  data        -
