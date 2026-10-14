@@ -187,8 +187,12 @@ extern u32 sSnMemRegions[];
 extern u32 D_8000F4A4[];
 extern u32 D_8000F4A8;
 extern u32 D_8000F4B8;
+#if VERSION == VERSION_EU
+extern OSViMode sBootViModePal;
+#else
 extern OSViMode sBootViModeNtsc;
 extern OSViMode sBootViModeMpal;
+#endif
 extern char sBootLogFileName[];
 extern u32 gSwdLoadCur;
 extern u32 gSwdLoadEnd;

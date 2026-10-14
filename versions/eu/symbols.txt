@@ -4586,8 +4586,7 @@ sSnMemRegions                         boot  0x8000F4B0  data      0x4
 D_8000F4A4                            boot  0x8000F4B4  data      0x4
 D_8000F4A8                            boot  0x8000F4B8  data     0x10
 D_8000F4B8                            boot  0x8000F4C8  data     0x38
-sBootViModeNtsc                       boot  0x8000FF60  data        -
-sBootViModeMpal                       boot  0x80010800  data        -
+sBootViModePal                        boot  0x800103A0  data        -
 sBootLogFileName                      boot  0x80011250  data     0x10
 D_800112A8                            boot  0x800112B8  data      0x8
 gSwdLoadCur                           boot  0x800113C4  data        -

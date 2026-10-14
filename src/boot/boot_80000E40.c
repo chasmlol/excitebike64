@@ -122,6 +122,13 @@ void boot_thread_main(void)
     boot_init_prenmi_queue();
     boot_check_reset();
     osCreateViManager(10);
+#if VERSION == VERSION_EU
+    osViSetMode(&sBootViModePal);
+    osViBlack(1);
+    if (osTvType != OS_TV_PAL) {
+        for (;;) ;
+    }
+#else
     if (osTvType == OS_TV_NTSC) {
         osViSetMode(&sBootViModeNtsc);
     } else if (osTvType == OS_TV_MPAL) {
@@ -131,6 +138,7 @@ void boot_thread_main(void)
     if (osTvType == OS_TV_PAL) {
         for (;;) ;
     }
+#endif
     osViSetSpecialFeatures(OS_VI_GAMMA_OFF | OS_VI_GAMMA_DITHER_OFF | OS_VI_DIVOT_OFF | OS_VI_DITHER_FILTER_OFF);
     n = 0;
     boot_check_reset();
