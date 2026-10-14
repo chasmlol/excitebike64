@@ -999,7 +999,7 @@ s32 edit_cam_step(void);
 void edit_cam_update_target(void);
 void edit_init(void);
 void edit_exit(void);
-void edit_update_name_entry(Game_36 *arg0, s32 arg1);
+void edit_update_name_entry(Editor *arg0, s32 arg1);
 void edit_update_main_menu(void);
 void edit_update_track_menu(void);
 void edit_update_place_piece(void);

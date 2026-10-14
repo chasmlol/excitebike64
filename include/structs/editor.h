@@ -187,13 +187,13 @@ typedef struct Editor {
     /* 0x1702 */ s16 maxSegments;   /* the longest user piece that fits */
     /* 0x1704 */ u8 unk_1704[8];
     /* 0x170C */ s32 res170C;       /* loaded from the "Pieces" resource set */
-    /* 0x1710 */ s32 res1710;
-    /* 0x1714 */ s32 res1714;
+    /* 0x1710 */ s32 cursorTex;     /* the cursor arrow */
+    /* 0x1714 */ s32 cursorModel;
     /* 0x1718 */ s32 *bigText;      /* font text objects */
     /* 0x171C */ s32 *text;
     /* 0x1720 */ s32 *pieceRes;     /* the "Pieces" resource set */
-    /* 0x1724 */ s32 objectTex;
-    /* 0x1728 */ s32 floorTex;
+    /* 0x1724 */ s32 objectTex;     /* textures of the pieces' B meshes */
+    /* 0x1728 */ s32 wallTex;       /* the arena walls */
     /* 0x172C */ EditCam cam[2];    /* track view, user piece view */
     /* 0x1744 */ EditPiece *lastCur; /* cur as of the last frame */
     /* 0x1748 */ EditPiece *prevCur; /* the one before it */

@@ -185,7 +185,6 @@ extern GuiMenuItem sEditMainMenuItems[];
 extern GuiMenuItem sEditTrackMenuItems[];
 extern Scis sEditViewRects_2;
 extern Game_3 *gEditor_2;
-extern Game_36 *gEditor_10;
 extern s32 *gEditor_33;
 extern Rec_5 gPieceTypes_2[];
 extern Tab64 gPieceTypes_3[];
@@ -296,111 +295,26 @@ void edit_cam_update_target(void)
     }
 }
 
-typedef struct { s16 a, b; s16 pad4[2]; s16 c, d; s16 padC[2]; } Vw;
-
-typedef struct State_11 {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 f170;
-    s32 f174;
-    s32 f178;
-    s32 f17C;
-    s32 f180;
-    s32 f184;
-    s32 f188;
-    s32 f18C;
-    s32 f190;
-    Ent24_2 e[150];
-    s16 * f16AC;
-    u8 pad16B0[0x6];
-    s16 f16B6;
-    s16 f16B8;
-    char name[7];
-    u8 pad16C1[0x1F];
-    void * f16E0;
-    u8 pad16E4[0x4];
-    s32 f16E8;
-    s32 f16EC;
-    u8 pad16F0[0x4];
-    s32 f16F4;
-    u8 pad16F8[0x4];
-    s32 f16FC;
-    u8 pad1700[0xC];
-    s32 f170C;
-    s32 f1710;
-    s32 f1714;
-    s32 f1718;
-    s32 f171C;
-    s32 f1720;
-    s32 f1724;
-    s32 f1728;
-    s32 f172C;
-    u8 pad1730[0x8];
-    s32 f1738;
-    u8 pad173C[0x10];
-    void * f174C;
-    void * f1750;
-    u8 pad1754[0x4C];
-    s16 f17A0;
-    s16 f17A2;
-    s16 f17A4;
-    u8 pad17A6[0x2];
-    s16 f17A8;
-    s16 f17AA;
-    s16 f17AC;
-    u8 pad17AE[0x2];
-    void * f17B0;
-    u8 pad17B4[0x4];
-    Vw vw[4];
-    s32 f17F8;
-    u8 pad17FC[0x8];
-    s32 f1804;
-    s32 f1808;
-    u8 pad180C[0x4];
-} State_11;
-
-typedef struct { s16 c[8]; } Row_5;
-typedef struct { u32 n; Row_5 *v; } VtxList;
-typedef struct { VtxList *vl; u8 pad[0x1C]; } MEnt_2;
-typedef struct { u32 n; MEnt_2 e[1]; } Model_8;
-
-typedef struct {
-    u8 pad0[0xC];
-    u16 flags;
-    u8 padE[0x12];
-    s32 *f20;
-    s32 *f24;
-    u8 pad28[8];
-    Model_8 *f30;
-    Model_8 *f34;
-    u8 pad38[8];
-} Obj_69;
-
 typedef struct { s32 f0; u8 pad4[0x3E4]; void *f3E8; } Glob70;
-typedef struct { s32 f0, f4, f8; } Tri3_4;
 
-extern State_11 *gEditor_8;
 extern Glob70 gGame_87;
-extern Obj_69 gPieceTypes_5[];
-extern Tri3_4 sEditCamTarget_2;
-extern Tri3_4 sEditCamPos_2;
 
 void edit_init(void)
 {
     s32 i, j;
     u32 k, n;
-    Obj_69 *o;
-    VtxList *vl;
+    PieceType *o;
+    PieceMesh *vl;
     s32 v;
     s32 c, q, x, y, w, f, d;
 
     gCurTrack = D_800CBF30;
-    if (gEditor_8 == NULL || !(gEditor_8->f174 & 0x6000)) {
-        gEditor_8 = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
-        mem_fill((u8 *)gEditor_8, 0, 0x1810);
+    if (gEditor == NULL || !(gEditor->flags & 0x6000)) {
+        gEditor = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
+        mem_fill((u8 *)gEditor, 0, 0x1810);
     } else {
         gGame_87.f0 &= ~2;
-        gEditor_8->f174 &= ~0x10;
+        gEditor->flags &= ~0x10;
     }
     shell_load_gui_res();
     prim_init();
@@ -408,102 +322,102 @@ void edit_init(void)
         fatal_halt(1);
     }
     font_load_menu_set(D_800E7728);
-    gEditor_8->f17C = 0;
-    gEditor_8->f180 = 0;
-    gEditor_8->f184 = 0;
-    gEditor_8->f190 = 0;
-    gEditor_8->f16B6 = 0;
-    gEditor_8->f16B8 = 0;
+    gEditor->first = 0;
+    gEditor->last = 0;
+    gEditor->cur = 0;
+    gEditor->start = 0;
+    gEditor->scrollX = 0;
+    gEditor->scrollY = 0;
     for (c = 149; c >= 0; c--) {
-        gEditor_8->e[c].f0 = 0;
+        gEditor->pieces[c].used = 0;
     }
-    strcpy(gEditor_8->name, "<NONE>");
+    strcpy(gEditor->name, "<NONE>");
     res_register_type(sStrEditArn, D_800248EC);
     res_register_type(sStrEditN64, D_80014D20);
-    res_open_set(sStrEditPieces, &gEditor_8->f1720);
-    gEditor_8->f1710 = res_load(gEditor_8->f1720, D_800D125C);
-    gEditor_8->f1714 = res_load(gEditor_8->f1720, D_800D1368);
-    gEditor_8->f1724 = res_load(gEditor_8->f1720, D_800D1370);
-    gEditor_8->f1728 = res_load(gEditor_8->f1720, *D_800CE270[0]);
-    gEditor_8->f170C = res_load(gEditor_8->f1720, D_800D1274);
-    if (!(gEditor_8->f174 & 0x6000)) {
+    res_open_set(sStrEditPieces, &gEditor->pieceRes);
+    gEditor->cursorTex = res_load(gEditor->pieceRes, D_800D125C);
+    gEditor->cursorModel = res_load(gEditor->pieceRes, D_800D1368);
+    gEditor->objectTex = res_load(gEditor->pieceRes, D_800D1370);
+    gEditor->wallTex = res_load(gEditor->pieceRes, *D_800CE270[0]);
+    gEditor->res170C = res_load(gEditor->pieceRes, D_800D1274);
+    if (!(gEditor->flags & 0x6000)) {
         if (gUserTrackLayout != NULL) {
             mem_free(gUserTrackLayout);
             gUserTrackLayout = NULL;
         }
     }
     for (q = 0; q < 4; q++) {
-        gEditor_8->vw[q].a = sEditViewRects[q].w * 2;
-        gEditor_8->vw[q].b = sEditViewRects[q].h * 2;
-        gEditor_8->vw[q].c = (sEditViewRects[q].x + sEditViewRects[q].w / 2) * 4;
-        gEditor_8->vw[q].d = (sEditViewRects[q].y + sEditViewRects[q].h / 2) * 4;
+        gEditor->views[q].vp.vscale[0] = sEditViewRects[q].w * 2;
+        gEditor->views[q].vp.vscale[1] = sEditViewRects[q].h * 2;
+        gEditor->views[q].vp.vtrans[0] = (sEditViewRects[q].x + sEditViewRects[q].w / 2) * 4;
+        gEditor->views[q].vp.vtrans[1] = (sEditViewRects[q].y + sEditViewRects[q].h / 2) * 4;
     }
-    gEditor_8->f17A0 = 1000;
-    gEditor_8->f17A2 = 320;
-    gEditor_8->f17A4 = 0x1FF;
-    gEditor_8->f17A8 = (gScreenWidth / 2) * 4;
-    gEditor_8->f17AA = (gScreenHeight / 2) * 4;
-    gEditor_8->f17AC = 0x1FF;
-    if (!(gEditor_8->f174 & 0x6000)) {
-        gEditor_8->f16E8 = 1;
-        gEditor_8->f16EC = 0;
-        gEditor_8->f16E0 = &sEditMainMenu;
-        gEditor_8->f170 = 0;
+    gEditor->screenVp.vp.vscale[0] = 1000;
+    gEditor->screenVp.vp.vscale[1] = 320;
+    gEditor->screenVp.vp.vscale[2] = 0x1FF;
+    gEditor->screenVp.vp.vtrans[0] = (gScreenWidth / 2) * 4;
+    gEditor->screenVp.vp.vtrans[1] = (gScreenHeight / 2) * 4;
+    gEditor->screenVp.vp.vtrans[2] = 0x1FF;
+    if (!(gEditor->flags & 0x6000)) {
+        gEditor->slideState = 1;
+        gEditor->slideTimer = 0;
+        gEditor->menu = &sEditMainMenu;
+        gEditor->mode = 0;
     }
-    gEditor_8->f16AC = gEditArena;
-    gEditor_8->f184 = 0;
-    gEditor_8->f17B0 = gPieceTypes_5;
-    gEditor_8->f188 = 0;
-    gEditor_8->f18C = 0;
-    gEditor_8->f190 = 0;
-    gEditor_8->f17C = gEditor_8->f184;
-    gEditor_8->f180 = gEditor_8->f184;
-    gEditor_8->f1718 = font_text_create(0, 0x40, 2, 2, 0x21);
-    gEditor_8->f171C = font_text_create(0, 0x20, 2, 2, 0x21);
-    edit_update_piece_ports(gEditor_8->f184);
-    gEditor_8->f16C = 0;
+    gEditor->gridSize = gEditArena;
+    gEditor->cur = 0;
+    gEditor->selType = gPieceTypes;
+    gEditor->markStart = 0;
+    gEditor->markEnd = 0;
+    gEditor->start = 0;
+    gEditor->first = gEditor->cur;
+    gEditor->last = gEditor->cur;
+    gEditor->bigText = font_text_create(0, 0x40, 2, 2, 0x21);
+    gEditor->text = font_text_create(0, 0x20, 2, 2, 0x21);
+    edit_update_piece_ports(gEditor->cur);
+    gEditor->page = 0;
     for (i = 0; i < 29; i++) {
-        gPieceTypes_5[i].flags |= 0x10;
-        if (gPieceTypes_5[i].flags & 0x100) {
-            gPieceTypes_5[i].flags |= 0x20;
+        gPieceTypes[i].flags |= 0x10;
+        if (gPieceTypes[i].flags & 0x100) {
+            gPieceTypes[i].flags |= 0x20;
         } else {
-            gPieceTypes_5[i].flags &= ~0x20;
+            gPieceTypes[i].flags &= ~0x20;
         }
-        if (gPieceTypes_5[i].f20 == NULL) continue;
-        gPieceTypes_5[i].f30 = (Model_8 *)res_load(gEditor_8->f1720, *gPieceTypes_5[i].f20);
-        if (gPieceTypes_5[i].f24 != NULL) {
-            gPieceTypes_5[i].f34 = (Model_8 *)res_load(gEditor_8->f1720, *gPieceTypes_5[i].f24);
+        if (gPieceTypes[i].meshAId == NULL) continue;
+        gPieceTypes[i].meshA = (PieceMeshSet *)res_load(gEditor->pieceRes, *gPieceTypes[i].meshAId);
+        if (gPieceTypes[i].meshBId != NULL) {
+            gPieceTypes[i].meshB = (PieceMeshSet *)res_load(gEditor->pieceRes, *gPieceTypes[i].meshBId);
         } else {
-            gPieceTypes_5[i].f34 = NULL;
+            gPieceTypes[i].meshB = NULL;
         }
-        for (k = 0; k < gPieceTypes_5[i].f30->n; k++) {
-            vl = gPieceTypes_5[i].f30->e[k].vl;
-            for (n = 0; n < vl->n; n++) {
+        for (k = 0; k < gPieceTypes[i].meshA->count; k++) {
+            vl = gPieceTypes[i].meshA->cells[k].mesh;
+            for (n = 0; n < vl->vtxCount; n++) {
                 for (j = 0; j < 3; j += 2) {
-                    v = (s16)vl->v[n].c[j];
+                    v = (s16)vl->vtx[n].v.ob[j];
                     if (v < 0) { s32 w2 = -v; s32 d2 = w2 / 50; s32 f2 = w2 - d2 * 50 >= 15; v = d2 + f2; v = -(v * 50); }
                     else { d = v / 50; f = v - d * 50 >= 15; v = d + f; v = v * 50; }
-                    vl->v[n].c[j] = v;
+                    vl->vtx[n].v.ob[j] = v;
                 }
             }
         }
     }
-    arned_init_grid(gEditor_8->f16AC[0], gEditor_8->f16AC[1]);
-    for (y = 0; y < gEditor_8->f16AC[1]; y++) {
-        for (x = 0; x < gEditor_8->f16AC[0]; x++) {
+    arned_init_grid(gEditor->gridSize[0], gEditor->gridSize[1]);
+    for (y = 0; y < gEditor->gridSize[1]; y++) {
+        for (x = 0; x < gEditor->gridSize[0]; x++) {
             arned_set_cell(x, y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
     arned_set_viewport(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1);
-    gEditor_8->f172C = 90000;
-    gEditor_8->f1738 = 45000;
-    sEditCamTarget_2.f8 = 0;
-    sEditCamPos_2.f8 = 0;
+    gEditor->cam[0].dist = 90000;
+    gEditor->cam[1].dist = 45000;
+    sEditCamTarget.yaw = 0;
+    sEditCamPos.yaw = 0;
     {
-        s32 fl = gEditor_8->f174;
+        s32 fl = gEditor->flags;
         s32 m6 = fl & 0x6000;
         if (m6 != 0) {
-            gEditor_8->f174 = m6;
+            gEditor->flags = m6;
             if (fl & 0x2000) {
                 sEditMainMenu.sel = 2;
                 sEditMainMenu.cursor = 2;
@@ -514,34 +428,34 @@ void edit_init(void)
         } else {
             sEditMainMenu.sel = 1;
             sEditMainMenu.cursor = 1;
-            gEditor_8->f174 = 0;
+            gEditor->flags = 0;
         }
     }
     edit_calc_track_cam_elevation();
     edit_calc_piece_cam_elevation();
-    gEditor_8->f16F4 = 8;
-    gEditor_8->f174C = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E1);
-    gEditor_8->f1750 = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E2);
-    gEditor_8->f16FC = 0;
+    gEditor->userPieceCount = 8;
+    gEditor->lineVtx[0] = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E1);
+    gEditor->lineVtx[1] = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E2);
+    gEditor->userPiece = 0;
     edit_init_user_pieces();
     edit_user_piece_reset_cursor(0);
-    gEditor_8->f16F4 = 8;
+    gEditor->userPieceCount = 8;
     gui_init();
-    gEditor_8->f1804 = res_load(gGuiRes, D_800D13E0);
-    gEditor_8->f1808 = res_load(gGuiRes, D_800D142C);
+    gEditor->warnFrame = res_load(gGuiRes, D_800D13E0);
+    gEditor->warnIcon = res_load(gGuiRes, D_800D142C);
     if (gGame_87.f3E8 != NULL) {
-        gEditor_8->f174 &= ~0x6000;
+        gEditor->flags &= ~0x6000;
         usrtrk_load_into_editor((u8 *)gGame_87.f3E8 + 4);
         mem_free(gGame_87.f3E8);
         gGame_87.f3E8 = NULL;
-        edit_try_close_loop(gEditor_8->f180);
+        edit_try_close_loop(gEditor->last);
     }
     edit_cam_update_target();
-    sEditCamPos_2.f0 = sEditCamTarget_2.f0;
-    sEditCamPos_2.f4 = sEditCamTarget_2.f4;
-    sEditCamPos_2.f8 = ((u32)(sEditCamPos_2.f8 + 0x800) >> 13) << 13;
+    sEditCamPos.x = sEditCamTarget.x;
+    sEditCamPos.z = sEditCamTarget.z;
+    sEditCamPos.yaw = ((u32)(sEditCamPos.yaw + 0x800) >> 13) << 13;
     sEditCamMoving = 0;
-    arned_load_piece_textures(gEditor_8->f17F8, gEditor_8->f1724, gEditor_8->f1728);
+    arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
     osViSetSpecialFeatures(0xAA);
 }
 
@@ -594,22 +508,7 @@ void edit_exit(void)
 
 typedef struct { u8 c[11]; } Name11;
 
-typedef struct {
-    u8 pad0[0x170];
-    s32 f170;
-    u8 pad174[0x16BA - 0x174];
-    Name11 name;
-    u8 buf[11];
-    s32 sel;
-    s32 x;
-    s32 y;
-    s32 len;
-    Obj_2 *obj;
-} Game_35;
-
-extern Game_35 *gEditor_9;
-
-void edit_update_name_entry(Game_36 *arg0, s32 arg1)
+void edit_update_name_entry(Editor *arg0, s32 arg1)
 {
     s32 i;
     s32 old;
@@ -625,65 +524,65 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
     }
 
     if (PRESSED(0x10)) {
-        if (gEditor_9->sel == 0x26 && gEditor_9->len == 0) {
+        if (gEditor->nameKey == 0x26 && gEditor->nameLen == 0) {
             snd_play_menu_sound(3);
         } else {
             snd_play_menu_sound(1);
         }
         {
-            Game_35 *g = gEditor_9;
-            if (g->sel == 0x26) {
-                s32 n = g->len;
+            Editor *g = gEditor;
+            if (g->nameKey == 0x26) {
+                s32 n = g->nameLen;
                 if (n != 0) {
-                    g->buf[n] = 0;
-                    g->len = n - 1;
+                    g->nameBuf[n] = 0;
+                    g->nameLen = n - 1;
                 }
-            } else if (g->sel == 0x27) {
-                g->name = *(Name11 *)g->buf;
-                gEditor_9->f170 = 0;
-                gEditor_9->obj->flags |= 1;
+            } else if (g->nameKey == 0x27) {
+                *(Name11 *)g->name = *(Name11 *)g->nameBuf;
+                gEditor->mode = 0;
+                gEditor->menu->flags |= 1;
             } else {
-                g->len++;
-                if (g->len >= 10) {
-                    g->x = 799;
-                    g->y = 799;
-                    g->sel = 0x27;
+                g->nameLen++;
+                if (g->nameLen >= 10) {
+                    g->nameCursorX = 799;
+                    g->nameCursorY = 799;
+                    g->nameKey = 0x27;
                 }
             }
         }
         return;
     }
     if (PRESSED(0x20)) {
-        if (gEditor_9->len == 0) {
+        if (gEditor->nameLen == 0) {
             snd_play_menu_sound(3);
             return;
         }
         snd_play_menu_sound(1);
-        gEditor_9->buf[gEditor_9->len - 1] = gEditor_9->buf[gEditor_9->len];
+        gEditor->nameBuf[gEditor->nameLen - 1] = gEditor->nameBuf[gEditor->nameLen];
         {
-            Game_35 *g = gEditor_9;
-            s32 n = g->len;
-            g->buf[n--] = 0;
-            g->len = n;
+            Editor *g = gEditor;
+            s32 n = g->nameLen;
+            g->nameBuf[n--] = 0;
+            g->nameLen = n;
         }
         return;
     }
 
     {
         s32 y;
-        y = (s32)gEditor_9;
-        old = ((Game_35 *)y)->sel;
-        if (((Game_35 *)y)->len < 10) {
-            Game_35 *g;
+        y = (s32)gEditor;
+        old = ((Editor *)y)->nameKey;
+        if (((Editor *)y)->nameLen < 10) {
+            Editor *g;
             u32 v;
             s32 x, nx;
             lo = 0;
             lo2 = lo;
             hi = 800;
             v = gPadInput_3[0];
-            g = (Game_35 *)y;
+            g = (Editor *)y;
             hi2 = hi;
-            x = g->x;
+            x = g->nameCursorX;
             if (v & 0xC) {
                 if (v & 8) {
                     nx = x + (((s32)v >> 24) & 0xF);
@@ -693,27 +592,27 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
             } else {
                 nx = x;
             }
-            g->x = nx;
+            g->nameCursorX = nx;
             if (PRESSED(0x2000)) {
-                gEditor_9->x -= 100;
+                gEditor->nameCursorX -= 100;
             }
             if (PRESSED(0x4000)) {
-                gEditor_9->x += 100;
+                gEditor->nameCursorX += 100;
             }
             {
-                Game_35 *h = gEditor_9;
-                s32 c = h->x;
+                Editor *h = gEditor;
+                s32 c = h->nameCursorX;
                 if (c >= hi) {
-                    h->x = lo;
+                    h->nameCursorX = lo;
                 } else if (c < lo) {
-                    h->x = hi - 1;
+                    h->nameCursorX = hi - 1;
                 }
             }
             {
-                Game_35 *h = gEditor_9;
+                Editor *h = gEditor;
                 u32 v2 = gPadInput_3[0];
                 s32 ny;
-                y = h->y;
+                y = h->nameCursorY;
                 if (v2 & 3) {
                     if (v2 & 1) {
                         ny = y - ((s32)((v2 >> 28) * 3) >> 1);
@@ -723,47 +622,47 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
                 } else {
                     ny = y;
                 }
-                h->y = ny;
+                h->nameCursorY = ny;
             }
             if (PRESSED(0x800)) {
-                gEditor_9->y -= 0xA0;
+                gEditor->nameCursorY -= 0xA0;
             }
             if (PRESSED(0x1000)) {
-                gEditor_9->y += 0xA0;
+                gEditor->nameCursorY += 0xA0;
             }
             {
-                Game_35 *h = gEditor_9;
-                s32 c = h->y;
+                Editor *h = gEditor;
+                s32 c = h->nameCursorY;
                 if (c >= hi2) {
-                    h->y = lo2;
+                    h->nameCursorY = lo2;
                 } else if (c < lo2) {
-                    h->y = hi2 - 1;
+                    h->nameCursorY = hi2 - 1;
                 }
             }
-            gEditor_9->sel = gEditor_9->x / 100 + (gEditor_9->y / 0xA0) * 8;
+            gEditor->nameKey = gEditor->nameCursorX / 100 + (gEditor->nameCursorY / 0xA0) * 8;
         } else if (PRESSED(4) || PRESSED(0x2000) || PRESSED(8) || PRESSED(0x4000)) {
-            Game_35 *h = gEditor_9;
-            if (h->sel == 0x27) {
-                h->x = 600;
-                h->y = 799;
-                h->sel = 0x26;
+            Editor *h = gEditor;
+            if (h->nameKey == 0x27) {
+                h->nameCursorX = 600;
+                h->nameCursorY = 799;
+                h->nameKey = 0x26;
             } else {
-                h->x = 799;
-                h->y = 799;
-                h->sel = 0x27;
+                h->nameCursorX = 799;
+                h->nameCursorY = 799;
+                h->nameKey = 0x27;
             }
         }
     }
 
-    if (gEditor_9->sel < 0x26) {
-        if (strlen(gEditor_9->buf) == 0) {
-            gEditor_9->buf[1] = 0;
+    if (gEditor->nameKey < 0x26) {
+        if (strlen(gEditor->nameBuf) == 0) {
+            gEditor->nameBuf[1] = 0;
         }
-        gEditor_9->buf[gEditor_9->len] = *gKeyboardKeys[gEditor_9->sel];
+        gEditor->nameBuf[gEditor->nameLen] = *gKeyboardKeys[gEditor->nameKey];
     } else {
-        gEditor_9->buf[gEditor_9->len] = 0;
+        gEditor->nameBuf[gEditor->nameLen] = 0;
     }
-    if (old != gEditor_9->sel) {
+    if (old != gEditor->nameKey) {
         snd_play_menu_sound(0);
     }
 }
@@ -787,67 +686,60 @@ typedef struct {
     u8 f4F4[0x310];
 } Save_7;
 
-typedef struct {
-    Pair p;
-    u32 f8;
-} Cam_6;
-
 extern Save_7 gSaveData_16;
 extern Sys gGame_89;
-extern Cam_6 sEditCamPos_3;
-extern Cam_6 sEditCamTarget_3;
 
 void edit_update_main_menu(void)
 {
-    Game_36 *p = gEditor_10;
-    s32 flags = p->f174;
+    Editor *p = gEditor;
+    s32 flags = p->flags;
     s32 i, j, k, n;
 
     if (flags & 0x800) {
         if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
-            gEditor_10->f174 &= ~0x800;
-            gEditor_10->f16E0->fC |= 1;
+            gEditor->flags &= ~0x800;
+            gEditor->menu->flags |= 1;
             snd_play_menu_sound(1);
         }
     } else if (flags & 0x1000) {
         if ((gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) {
             gPadInputPrev_2[0] |= 0x20;
-            gEditor_10->f174 &= ~0x1000;
-            gEditor_10->f16E0->fC |= 1;
+            gEditor->flags &= ~0x1000;
+            gEditor->menu->flags |= 1;
             snd_play_menu_sound(2);
         } else if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
             snd_play_menu_sound(1);
-            if (gEditor_10->f17FE) {
-                switch (gEditor_10->f17FC) {
+            if (gEditor->dialogChoice) {
+                switch (gEditor->dialog) {
                 case 7:
-                    gEditor_10->f17FC = 6;
+                    gEditor->dialog = 6;
                     if (gSaveData_16.f2C4 & 8) {
-                        gEditor_10->f17FE = 1;
+                        gEditor->dialogChoice = 1;
                     } else {
-                        gEditor_10->f17FE = 0;
+                        gEditor->dialogChoice = 0;
                     }
                     break;
                 case 6:
                     if (gSaveData_16.f2C4 & 8) {
-                        for (j = 0; j < gEditor_10->f16AC->h; j++) {
-                            for (i = 0; i < gEditor_10->f16AC->w; i++) {
+                        for (j = 0; j < gEditor->gridSize[1]; j++) {
+                            for (i = 0; i < gEditor->gridSize[0]; i++) {
                                 arned_set_cell(i, j, 0, 0, 0, 0, 0, 0, 0);
                             }
                         }
-                        gEditor_10->f16F4 = 8;
+                        gEditor->userPieceCount = 8;
                         usrtrk_load_into_editor(D_800F1DF4);
-                        edit_try_close_loop(gEditor_10->f180);
-                        gEditor_10->f170 = 0;
-                        gEditor_10->f16E0->fC |= 1;
+                        edit_try_close_loop(gEditor->last);
+                        gEditor->mode = 0;
+                        gEditor->menu->flags |= 1;
                         edit_find_start_piece();
-                        arned_load_piece_textures(gEditor_10->f17F8, gEditor_10->f1724, gEditor_10->f1728);
-                        gEditor_10->f16E0->fC |= 1;
-                        gEditor_10->f174 &= ~0x1000;
+                        arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
+                        gEditor->menu->flags |= 1;
+                        gEditor->flags &= ~0x1000;
                     } else {
-                        gEditor_10->f1800 = 0;
-                        gEditor_10->f174 |= 0x800;
+                        gEditor->message = 0;
+                        gEditor->flags |= 0x800;
                     }
                     break;
                 case 8:
@@ -857,13 +749,13 @@ void edit_update_main_menu(void)
                     save_write(4, 0);
                     mem_free(gGame_89.f3E8);
                     gGame_89.f3E8 = 0;
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~0x1000;
                     break;
                 case 5:
                     if (gSaveData_16.f2C4 & 8) {
-                        gEditor_10->f17FC = 8;
-                        gEditor_10->f17FE = 0;
+                        gEditor->dialog = 8;
+                        gEditor->dialogChoice = 0;
                     } else {
                         gGame_89.f3E8 = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
                         usrtrk_pack_track_2(gGame_89.f3E8);
@@ -871,200 +763,200 @@ void edit_update_main_menu(void)
                         save_write(4, 0);
                         mem_free(gGame_89.f3E8);
                         gGame_89.f3E8 = 0;
-                        gEditor_10->f16E0->fC |= 1;
-                        gEditor_10->f174 &= ~0x1000;
+                        gEditor->menu->flags |= 1;
+                        gEditor->flags &= ~0x1000;
                     }
                     break;
                 case 3:
                     gGame_89.f0 |= 2;
-                    gEditor_10->f178 = 0;
-                    gEditor_10->f174 |= 0x10;
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->exitTimer = 0;
+                    gEditor->flags |= 0x10;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~0x1000;
                     break;
                 case 4:
-                    gEditor_10->f17C = 0;
-                    gEditor_10->f180 = 0;
-                    gEditor_10->f184 = 0;
-                    gEditor_10->f190 = 0;
-                    gEditor_10->f16B6 = 0;
-                    gEditor_10->f16B8 = 0;
+                    gEditor->first = 0;
+                    gEditor->last = 0;
+                    gEditor->cur = 0;
+                    gEditor->start = 0;
+                    gEditor->scrollX = 0;
+                    gEditor->scrollY = 0;
                     for (k = 0; k < 150; k++) {
-                        gEditor_10->slots[k].f0 = 0;
+                        gEditor->pieces[k].used = 0;
                     }
-                    gEditor_10->f16F4 = 8;
-                    __builtin_strcpy(gEditor_10->name, "<NONE>");
-                    for (j = 0; j < gEditor_10->f16AC->h; j++) {
-                        for (i = 0; i < gEditor_10->f16AC->w; i++) {
+                    gEditor->userPieceCount = 8;
+                    __builtin_strcpy(gEditor->name, "<NONE>");
+                    for (j = 0; j < gEditor->gridSize[1]; j++) {
+                        for (i = 0; i < gEditor->gridSize[0]; i++) {
                             arned_set_cell(i, j, 0, 0, 0, 0, 0, 0, 0);
                         }
                     }
-                    gEditor_10->f184 = 0;
-                    gEditor_10->f17C = 0;
-                    gEditor_10->f180 = gEditor_10->f184;
-                    edit_update_piece_ports(gEditor_10->f184);
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f17F8 = 0;
-                    gEditor_10->f174 &= ~0x1000;
-                    arned_load_piece_textures(0, gEditor_10->f1724, gEditor_10->f1728);
+                    gEditor->cur = 0;
+                    gEditor->first = 0;
+                    gEditor->last = gEditor->cur;
+                    edit_update_piece_ports(gEditor->cur);
+                    gEditor->menu->flags |= 1;
+                    gEditor->dirtType = 0;
+                    gEditor->flags &= ~0x1000;
+                    arned_load_piece_textures(0, gEditor->objectTex, gEditor->wallTex);
                     edit_cam_update_target();
                     sEditCamMoving = 0;
-                    sEditCamPos_3.p.a = sEditCamTarget_3.p.a;
-                    sEditCamPos_3.p.b = sEditCamTarget_3.p.b;
-                    sEditCamPos_3.f8 = ((sEditCamPos_3.f8 + 0x800) >> 13) << 13;
+                    sEditCamPos.x = sEditCamTarget.x;
+                    sEditCamPos.z = sEditCamTarget.z;
+                    sEditCamPos.yaw = ((sEditCamPos.yaw + 0x800) >> 13) << 13;
                     break;
                 }
             } else {
-                switch (gEditor_10->f17FC) {
+                switch (gEditor->dialog) {
                 case 8:
-                    gEditor_10->f1800 = 1;
-                    gEditor_10->f174 = (gEditor_10->f174 & ~0x1000) | 0x800;
+                    gEditor->message = 1;
+                    gEditor->flags = (gEditor->flags & ~0x1000) | 0x800;
                     break;
                 case 6:
                     gGame_89.f0 |= 2;
-                    gEditor_10->f178 = 0;
-                    gEditor_10->f174 = (gEditor_10->f174 | 0x2010) & ~0x4000;
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->exitTimer = 0;
+                    gEditor->flags = (gEditor->flags | 0x2010) & ~0x4000;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~0x1000;
                     break;
                 case 5:
                     gGame_89.f0 |= 2;
-                    gEditor_10->f178 = 0;
-                    gEditor_10->f174 = (gEditor_10->f174 | 0x4010) & ~0x2000;
+                    gEditor->exitTimer = 0;
+                    gEditor->flags = (gEditor->flags | 0x4010) & ~0x2000;
                     gGame_89.f3E8 = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x7B3);
                     for (n = usrtrk_pack_track_2(gGame_89.f3E8 + 4) + 4; n < 0x400; n++) {
                         gGame_89.f3E8[n] = 0;
                     }
                     *(u32 *)gGame_89.f3E8 = calc_checksum24(gGame_89.f3E8 + 4, 0x3FC);
                 default:
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~0x1000;
                     break;
                 }
             }
         } else if (((gPadInput_2[0] & 0x800) && !(gPadInputPrev_2[0] & 0x800)) ||
                    ((gPadInput_2[0] & 0x1000) && !(gPadInputPrev_2[0] & 0x1000))) {
-            if ((gEditor_10->f17FC != 6 || (gSaveData_16.f2C4 & 8)) && gEditor_10->f17FC != 5) {
-                gEditor_10->f17FE ^= 1;
+            if ((gEditor->dialog != 6 || (gSaveData_16.f2C4 & 8)) && gEditor->dialog != 5) {
+                gEditor->dialogChoice ^= 1;
                 snd_play_menu_sound(0);
             }
         }
     } else {
-        if (p->f184 != NULL && p->f170 != 7) {
-            if (((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && !(gEditor_10->f174 & 1)) ||
-                ((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && (gEditor_10->f174 & 1))) {
-                if (gEditor_10->f184->next) {
-                    gEditor_10->f184 = gEditor_10->f184->next;
+        if (p->cur != NULL && p->mode != 7) {
+            if (((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && !(gEditor->flags & 1)) ||
+                ((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && (gEditor->flags & 1))) {
+                if (gEditor->cur->prev) {
+                    gEditor->cur = gEditor->cur->prev;
                 }
-            } else if (((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && !(gEditor_10->f174 & 1)) ||
-                       ((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && (gEditor_10->f174 & 1))) {
-                if (gEditor_10->f184->prev) {
-                    gEditor_10->f184 = gEditor_10->f184->prev;
+            } else if (((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && !(gEditor->flags & 1)) ||
+                       ((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && (gEditor->flags & 1))) {
+                if (gEditor->cur->next) {
+                    gEditor->cur = gEditor->cur->next;
                 }
             }
         }
-        if (gEditor_10->f170 == 7 || gEditor_10->f170 == 8) {
+        if (gEditor->mode == 7 || gEditor->mode == 8) {
             edit_update_name_entry(p, flags);
-        } else if (gui_menu_input(gEditor_10->f16E0, flags)) {
+        } else if (gui_menu_input(gEditor->menu, flags)) {
             switch (sEditMainMenuChoice) {
             case 1:
-                gEditor_10->f170 = 0;
-                if (gEditor_10->f16E0 != &sEditTrackMenu) {
-                    switch (gEditor_10->f16E8) {
+                gEditor->mode = 0;
+                if (gEditor->menu != &sEditTrackMenu) {
+                    switch (gEditor->slideState) {
                     case 1:
-                        gEditor_10->f16E0 = &sEditTrackMenu;
+                        gEditor->menu = &sEditTrackMenu;
                         break;
                     case 0:
-                        gEditor_10->f16E8 = 1;
-                        gEditor_10->f16E4 = &sEditTrackMenu;
+                        gEditor->slideState = 1;
+                        gEditor->nextMenu = &sEditTrackMenu;
                         break;
                     case 2:
-                        gEditor_10->f16E8 = 3;
-                        gEditor_10->f16E4 = &sEditTrackMenu;
+                        gEditor->slideState = 3;
+                        gEditor->nextMenu = &sEditTrackMenu;
                         break;
                     case 3:
-                        gEditor_10->f16E8 = 1;
-                        gEditor_10->f16E0 = &sEditTrackMenu;
+                        gEditor->slideState = 1;
+                        gEditor->menu = &sEditTrackMenu;
                         break;
                     }
-                    gEditor_10->f174 &= ~0x10000;
+                    gEditor->flags &= ~0x10000;
                 }
                 sEditTrackMenu.sel = 0;
                 sEditTrackMenu.cursor = 0;
-                gEditor_10->f16C = 1;
+                gEditor->page = 1;
                 break;
             case 0:
-                gEditor_10->f17FC = 4;
-                gEditor_10->f174 |= 0x1000;
-                gEditor_10->f16E0->fC &= ~1;
-                gEditor_10->f17FE = 0;
+                gEditor->dialog = 4;
+                gEditor->flags |= 0x1000;
+                gEditor->menu->flags &= ~1;
+                gEditor->dialogChoice = 0;
                 break;
             case 2:
-                gEditor_10->f174 |= 0x1000;
-                if (gEditor_10->f184 != NULL) {
-                    gEditor_10->f17FC = 7;
-                    gEditor_10->f17FE = 0;
+                gEditor->flags |= 0x1000;
+                if (gEditor->cur != NULL) {
+                    gEditor->dialog = 7;
+                    gEditor->dialogChoice = 0;
                 } else {
-                    gEditor_10->f17FC = 6;
+                    gEditor->dialog = 6;
                     if (gSaveData_16.f2C4 & 8) {
-                        gEditor_10->f17FE = 1;
+                        gEditor->dialogChoice = 1;
                     } else {
-                        gEditor_10->f17FE = 0;
+                        gEditor->dialogChoice = 0;
                     }
                 }
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor->menu->flags &= ~1;
                 break;
             case 3:
-                if (gEditor_10->name[0] == '<') {
-                    gEditor_10->f174 |= 0x800;
-                    gEditor_10->f16E0->fC &= ~1;
-                    gEditor_10->f1800 = 4;
+                if (gEditor->name[0] == '<') {
+                    gEditor->flags |= 0x800;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->message = 4;
                     sEditMainMenu.sel = 6;
                     sEditMainMenu.cursor = 6;
                 } else {
-                    gEditor_10->f17FC = 5;
-                    gEditor_10->f174 |= 0x1000;
-                    gEditor_10->f16E0->fC &= ~1;
-                    gEditor_10->f17FE = 0;
+                    gEditor->dialog = 5;
+                    gEditor->flags |= 0x1000;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->dialogChoice = 0;
                 }
                 break;
             case 5:
-                if (++gEditor_10->f17F8 == 3) {
-                    gEditor_10->f17F8 = 0;
+                if (++gEditor->dirtType == 3) {
+                    gEditor->dirtType = 0;
                 }
-                arned_load_piece_textures(gEditor_10->f17F8, gEditor_10->f1724, gEditor_10->f1728);
+                arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
                 break;
             case 7:
-                gEditor_10->f17FC = 3;
-                gEditor_10->f17FE = 0;
-                gEditor_10->f174 = (gEditor_10->f174 & ~0x6000) | 0x1000;
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor->dialog = 3;
+                gEditor->dialogChoice = 0;
+                gEditor->flags = (gEditor->flags & ~0x6000) | 0x1000;
+                gEditor->menu->flags &= ~1;
                 break;
             case 6:
-                gEditor_10->f16DC = 0;
-                gEditor_10->f16D0 = 0;
-                gEditor_10->f16D4 = 0;
-                gEditor_10->f16D8 = 0;
-                mem_fill(gEditor_10->f16C5, 0, 0xB);
-                gEditor_10->f170 = 7;
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor->nameLen = 0;
+                gEditor->nameKey = 0;
+                gEditor->nameCursorX = 0;
+                gEditor->nameCursorY = 0;
+                mem_fill(gEditor->nameBuf, 0, 0xB);
+                gEditor->mode = 7;
+                gEditor->menu->flags &= ~1;
                 break;
             case 4:
                 if (gGame_89.f410 == 0) {
                     gGame_89.f410 = 1;
                 }
-                if (gEditor_10->f17C->next == gEditor_10->f180) {
+                if (gEditor->first->prev == gEditor->last) {
                     gGame_89.f4C = 0xD;
                 } else {
                     gGame_89.f4C = 0xE;
                 }
                 gGame_89.f3C = 1;
                 gGame_89.f0 &= ~2;
-                gEditor_10->f174 &= ~0x6000;
+                gEditor->flags &= ~0x6000;
                 gGame_89.f0 |= 0x4000000;
-                gEditor_10->f174 |= 0x410;
-                gEditor_10->f178 = 0;
-                gEditor_10->f174 &= ~0x1000;
+                gEditor->flags |= 0x410;
+                gEditor->exitTimer = 0;
+                gEditor->flags &= ~0x1000;
                 if (gGame_89.f3E8 == NULL) {
                     gGame_89.f3E8 = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x88C);
                     for (n = usrtrk_pack_track_2(gGame_89.f3E8 + 4) + 4; n < 0x400; n++) {
@@ -1075,11 +967,11 @@ void edit_update_main_menu(void)
             }
         }
     }
-    if (gEditor_10->f184 != NULL) {
-        if (gEditor_10->f184->f10 & 2) {
-            gEditor_10->f174 |= 8;
+    if (gEditor->cur != NULL) {
+        if (gEditor->cur->flags & EDIT_PIECE_FLIPPED) {
+            gEditor->flags |= 8;
         } else {
-            gEditor_10->f174 &= ~8;
+            gEditor->flags &= ~8;
         }
     }
 }
