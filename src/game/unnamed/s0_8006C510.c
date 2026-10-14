@@ -683,9 +683,9 @@ void save_load(s32 unused)
         /* shifted by i, not 2 * i: the layouts of neighbouring controllers overlap */
         gGame.padConfig[i] = (gSaveData.padConfigs >> i) & 3;
     }
-    snd_set_volume(0, gSaveData.volumes[1]);
-    snd_set_volume(1, gSaveData.volumes[0]);
-    snd_set_volume(2, gSaveData.volumes[2]);
+    snd_set_volume(SND_VOLUME_SFX, gSaveData.volumes[1]);
+    snd_set_volume(SND_VOLUME_MUSIC, gSaveData.volumes[0]);
+    snd_set_volume(SND_VOLUME_SPEECH, gSaveData.volumes[2]);
     for (i = 0; i < 5; i++) {
         for (k = 0; k < 3; k++) {
             gCups[i].progress[k] = gSaveData.cupProgress[0][i * 3 + k] >> 5;
