@@ -901,7 +901,7 @@ Gfx *shell_draw_results_menu(Gfx *gdl, s32 p2, s32 sel, char **strs);
 Gfx *shell_draw_players_difficulty_popup(Gfx *gdl, s32 p2, s32 p3);
 Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 p2, char *str);
 void shell_draw_rider_bio(s32 p, s32 q);
-Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e);
+Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused);
 void shell_draw(Mtx *m, s32 fb, Gfx **pgdl);
 void shell_load_gui_res(void);
 void shell_free_gui_res(void);

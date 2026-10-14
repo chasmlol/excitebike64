@@ -3774,9 +3774,11 @@ ret0:
     return 0;
 }
 
-Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
+/* Draws the current screen (the one left while fading out) over its background, by its type, and the fade. The
+   coordinates are of the 512x240 layout render_draw_image scales to the screen. */
+Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
 {
-    char pad[0xE8];
+    char pad[0xE8]; /* stack the original reserves */
     char buf[0x40];
     s16 nameEnd[4];
     char lapsBuf[0x10];
@@ -3797,7 +3799,6 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
     s32 uninit3;
     s32 racer;
     s32 j;
-    s32 unusedCol;
     s32 x;
     s32 y;
     s32 statsSlideX;
@@ -3805,11 +3806,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
     s32 bar;
     s32 textColor;
     s32 place;
-    s32 unusedGr;
-    s32 unusedGc;
     s32 trackIdx;
     s32 textFlags;
-    void *unusedP;
     Img *img;
 
     if (gGame.fadeState == FADE_OUT) {
@@ -3817,20 +3815,22 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
     } else {
         screen = sCurScreen;
     }
+    /* dead reads of the screen width, kept as the original has them */
     switch (gGame.fadeState) {
-    case 0:
+    case FADE_OUT:
         unusedW = gScreenWidth; unusedW2 = gScreenWidth;
         break;
-    case 1:
+    case FADE_SWAP:
         unusedW3 = gScreenWidth;
         break;
-    case 2:
+    case FADE_IN:
         unusedW3 = gScreenWidth;
         break;
     }
     gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
     switch (screen->type) {
     case SCREEN_TYPE_SPLASH_2:
+        /* the Expansion Pak picture blinks when one is present */
         SETUP_TEXTURES();
         if (gHasExpansionPak_2 != 0 && (gFrameCounter & 0x20)) {
             Img *pic = &gGame.titleBar[1];
@@ -3846,6 +3846,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         break;
     case SCREEN_TYPE_LIST:
     case SCREEN_TYPE_TRACK_LIST:
+        /* the track lists sit 12 lower */
         listY = 0;
         if (screen->type == SCREEN_TYPE_TRACK_LIST) {
             listY = 12;
@@ -3853,6 +3854,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         font_reset_queue();
         SETUP_TEXTURES();
         if (screen->type == SCREEN_TYPE_LIST) {
+            /* a faint sponsor logo crossing the screen, the next one each time */
             s32 logoW;
             s32 logoX;
             Img *sp;
@@ -3862,13 +3864,14 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
             gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
             sp = &gGame.sponsorLogos[1];
             logoW = sp[gGame.sponsorLogo].w << 3;
-            logoX = gFrameCounter % (logoW + 0x200);
+            logoX = gFrameCounter % (logoW + 512);
             if (logoX == 0) {
                 gGame.sponsorLogo = (s16)(gGame.sponsorLogo + 1) % 10;
             }
-            gdl = render_draw_image(logoX - logoW, ((0xF0 - (logoW + 0x200) / 2) >> 1) + logoX / 2, &gGame.sponsorLogos[gGame.sponsorLogo + 1], gdl, fb, 1, 1,
+            gdl = render_draw_image(logoX - logoW, ((240 - (logoW + 512) / 2) >> 1) + logoX / 2, &gGame.sponsorLogos[gGame.sponsorLogo + 1], gdl, fb, 1, 1,
                                 6, 0);
         } else if (gGame.blinkTimer < 0x20) {
+            /* the blinking arrows to the track lists on either side */
             gDPSetTextureLUT(gdl++, G_TT_RGBA16);
             gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
             gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
@@ -3883,6 +3886,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
         DRAW_PAL_SYNC(gGame.titleBar, 0x45, listY + 0x1F, 3);
+        /* the item's picture, greyed with "Locked" when it cannot be chosen */
         if ((screen->type == SCREEN_TYPE_TRACK_LIST && !TRACK_OPEN_2(screen->firstItem + *screen->cursor)) || (screen->items[*screen->cursor + screen->firstItem].flags & SCREEN_ITEM_LOCKED)) {
             gDPSetPrimColor(gdl++, 0, 0, 0x64, 0x64, 0x64, 0xFF);
             gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
@@ -3903,12 +3907,13 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+        /* the frame, centred */
         if (screen->type == SCREEN_TYPE_LIST) {
             img = &gGame.frames[2];
-            gdl = render_draw_image((0x200 - img->w * 8) >> 1, (0xF0 - img->h) / 2, img, gdl, fb, 1, 1, 6, 0);
+            gdl = render_draw_image((512 - img->w * 8) >> 1, (240 - img->h) / 2, img, gdl, fb, 1, 1, 6, 0);
         } else {
             img = &gGame.frames[6];
-            gdl = render_draw_image((0x200 - img->w * 8) >> 1, (0xF0 - img->h) / 2, img, gdl, fb, 1, 1, 6, 0);
+            gdl = render_draw_image((512 - img->w * 8) >> 1, (240 - img->h) / 2, img, gdl, fb, 1, 1, 6, 0);
         }
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
@@ -3916,6 +3921,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         font_text_create(gGame.texts[screen->numItems * 2], 0x20, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
         font_text_add(gGame.texts[screen->numItems * 2], screen->title);
         font_draw_text(gGame.texts[screen->numItems * 2], 0xB9, listY + 0x28);
+        /* the items (the tracks and their laps), each row 7 further left; a padlock on a locked track list, else the
+           cursor */
         for (i = 0; i < screen->numItems; i++) {
             if ((screen->type == SCREEN_TYPE_TRACK_LIST && !TRACK_OPEN(screen->firstItem + i)) || (screen->items[i + screen->firstItem].flags & SCREEN_ITEM_LOCKED)) {
                 font_text_create(gGame.texts[i], 0x20, FONT_MAIN, (i == *screen->cursor) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_GREYED | TEXT_LEFT);
@@ -3951,9 +3958,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         }
         gdl = font_render(gdl);
         gDPPipeSync(gdl++);
-        if (gGame.flags & 0x200) {
+        if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
             gdl = shell_draw_players_difficulty_popup(gdl, fb, 1);
         } else if (gGame.screenState >= SCREEN_STATE_ASK_GHOST && gGame.screenState <= SCREEN_STATE_ASK_TRACK_SOURCE) {
+            /* a two-choice prompt over the darkened screen */
             gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0xBE);
             gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
             gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
@@ -3979,28 +3987,28 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                                 3, 0);
             font_reset_queue();
             font_text_create(gGame.texts[0], 0x20, FONT_MAIN, (gGame.dialogSel == 0) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY,
-                          (gGame.screenState == SCREEN_STATE_ASK_TRACK_SOURCE && !(gSaveData_13.options & 8)) ? TEXT_GREYED | TEXT_CENTER : TEXT_CENTER);
+                          (gGame.screenState == SCREEN_STATE_ASK_TRACK_SOURCE && !(gSaveData_13.options & SAVE_OPTION_USER_TRACK)) ? TEXT_GREYED | TEXT_CENTER : TEXT_CENTER);
             switch (gGame.screenState) {
-            case 9:
+            case SCREEN_STATE_ASK_USER_TRACK:
                 font_text_add(gGame.texts[0], sStrRaceSavedTrack);
                 break;
-            case 8:
+            case SCREEN_STATE_ASK_GHOST:
                 font_text_add(gGame.texts[0], sStrContinue);
                 break;
-            case 10:
+            case SCREEN_STATE_ASK_TRACK_SOURCE:
                 font_text_add(gGame.texts[0], sStrLoadFromGamePak);
                 break;
             }
             font_draw_text(gGame.texts[0], 0x113, 0x6A);
             font_text_create(gGame.texts[0], 0x20, FONT_MAIN, (gGame.dialogSel == 1) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
             switch (gGame.screenState) {
-            case 9:
+            case SCREEN_STATE_ASK_USER_TRACK:
                 font_text_add(gGame.texts[0], sStrGoToEditor);
                 break;
-            case 8:
+            case SCREEN_STATE_ASK_GHOST:
                 font_text_add(gGame.texts[0], sStrLoadSavedGhost);
                 break;
-            case 10:
+            case SCREEN_STATE_ASK_TRACK_SOURCE:
                 font_text_add(gGame.texts[0], sStrLoadFromControllerPak);
                 break;
             }
