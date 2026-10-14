@@ -62,6 +62,29 @@ typedef struct FontSprite {
 #define TEXT_SHADOW          0x10000000 /* a black copy 2 texels right and 1 down */
 #define TEXT_GREYED          0x20000000 /* first colour of the colour's triple */
 #define TEXT_HIGHLIGHT       0x40000000 /* third colour of the triple */
+/* The usual alignments: vertically centred on the position, and starting at it, centred on it or ending at it */
+#define TEXT_LEFT   (TEXT_VALIGN_CENTER | TEXT_HALIGN_LEFT)
+#define TEXT_CENTER (TEXT_VALIGN_CENTER | TEXT_HALIGN_CENTER)
+#define TEXT_RIGHT  (TEXT_VALIGN_CENTER | TEXT_HALIGN_RIGHT)
+
+/* TextObj.font: the index in sFontTable of the fonts of sMenuFontIds (the race set, sRaceFontIds, has the first
+   three). Font 0 is the first font again; font_text_create takes 0 as "keep the current one". */
+#define FONT_MAIN   1
+#define FONT_SMALL  2 /* the Controller Pak screen draws its '@' as character 0x7F */
+#define FONT_DIGITS 3
+#define FONT_TITLE  4
+#define FONT_MENU   5
+
+/* TextObj.color: the triple n of gFontColors (greyed, normal, highlighted), named by the normal colour. 0 is black,
+   and font_text_create takes it as "keep the current one". */
+#define TEXT_COLOR_LIGHT_GREY    2  /* most text */
+#define TEXT_COLOR_YELLOW        4  /* the selected item */
+#define TEXT_COLOR_BRIGHT_YELLOW 5
+#define TEXT_COLOR_CYAN          6
+#define TEXT_COLOR_GREEN         7
+#define TEXT_COLOR_RED           8
+#define TEXT_COLOR_WHITE         9  /* its alpha is faded by shell.c */
+#define TEXT_COLOR_GREY          10
 
 /* A text object: font_text_create allocates it with room for the text, font_text_add appends to the text and
    measures it, font_draw_text queues it at a position. */
