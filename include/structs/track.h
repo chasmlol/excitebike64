@@ -125,6 +125,10 @@ typedef struct TrackModel {
 /* TrackModel.mask, per view */
 #define TRACK_MODEL_VISIBLE(view) (1 << ((view) * 2))
 #define TRACK_MODEL_FAR(view)     (2 << ((view) * 2)) /* beyond the level-of-detail distance */
+#define TRACK_MODEL_BITS(view)    (3 << ((view) * 2))
+#define TRACK_MODEL_FOGGED(view)  (0x100 << (view))  /* outdoor tracks: past the start of the fog */
+
+#define TUBE_MTX_POOL 300 /* outdoor tracks: the models' matrices per frame (sTubeMtxPool) */
 
 typedef struct TrackModelList {
     /* 0x00 */ u32 count;
