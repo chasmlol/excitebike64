@@ -4717,10 +4717,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         for (j = 0; j < OPTION_COUNT; j++) {
             if (j < OPTION_SOUND) {
                 x = 0x52 - j * 7;
+                y = sOptionsRowY[j];
             } else {
                 x = 0x52 - ((j - OPTION_SOUND) / 2 + 3) * 7 + ((j - OPTION_SOUND) & 1) * 194;
+                y = sOptionsRowY[j];
             }
-            y = sOptionsRowY[j];
 #if VERSION == VERSION_LODGENET
             if (j == OPTION_RESET_SAVED_DATA || j == OPTION_CONTROLLER_PAK) {
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (j == gGame.optionsSel) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_GREYED | TEXT_LEFT);
