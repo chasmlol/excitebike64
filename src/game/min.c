@@ -1,4 +1,5 @@
 #include "game.h"
+#include "symaddr.h"
 
 
 
@@ -1712,23 +1713,22 @@ void race_load_ghost_setup(s32 replay)
     s32 slot;
 
     if (replay != 0) {
-        /* base + 0x3700 is gGhostSlot */
-        base = (u8 *)0x800E0000;
+        base = (u8 *)SYM_HI(gGhostSlot);
         __asm__ __volatile__("" : "+r"(base));
         game = &gGame;
         rider = game->riders[0];
         __asm__ __volatile__("" : "+r"(rider) : : "memory");
-        *(s32 *)(base + 0x3700) = -1;
+        *(s32 *)(base + SYM_LO(gGhostSlot)) = -1;
         pad = game->playerPad[0];
         riderSkin = game->riderSkins[0];
         bikeSkin = game->bikeSkins[0];
         replay_play_start(replay);
-        slot = *(s32 *)(base + 0x3700) ^ 1;
+        slot = *(s32 *)(base + SYM_LO(gGhostSlot)) ^ 1;
         game->riders[slot] = rider;
         game->playerPad[slot] = pad;
-        game->riderSkins[*(s32 *)(base + 0x3700) ^ 1] = riderSkin;
-        game->bikeSkins[*(s32 *)(base + 0x3700) ^ 1] = bikeSkin;
-        game->playerPad[*(s32 *)(base + 0x3700)] = 0;
+        game->riderSkins[*(s32 *)(base + SYM_LO(gGhostSlot)) ^ 1] = riderSkin;
+        game->bikeSkins[*(s32 *)(base + SYM_LO(gGhostSlot)) ^ 1] = bikeSkin;
+        game->playerPad[*(s32 *)(base + SYM_LO(gGhostSlot))] = 0;
     }
 }
 

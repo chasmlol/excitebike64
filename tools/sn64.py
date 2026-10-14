@@ -64,7 +64,7 @@ def compile(profile: dict, src: Path, obj: Path, include_dirs: list[Path]):
            *profile.get("cppflags", "").split()]
     # The source's own folder is searched for "..." includes anyway; passing it again as -I makes the 2.7.2
     # builds' cppn64 fail with 'ultra64.h: Invalid argument'.
-    for d in include_dirs:
+    for d in [*include_dirs, common.generated_include()]:
         if Path(d).resolve() != src.parent:
             cpp.append(f"-I{Path(d).resolve()}")
     ultralib = Path(common.setting("ULTRALIB"))

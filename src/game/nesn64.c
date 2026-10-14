@@ -1,4 +1,5 @@
 #include "game.h"
+#include "symaddr.h"
 
 /* The NES emulator (overview.md, NES emulator). The machine lives at NES (0x80380000). Some accesses to it are
    written as NES_AT(field), as numeric addresses, or as byte offsets added to the base, rather than NES->field:
@@ -1273,8 +1274,8 @@ void nes_cpu_nmi(void)
     NES->pc |= NES->mem[NES_VECTOR_NMI + 1] << 8;
 }
 
-/* The opcode being run (0x800F5BB4, after sNesFrameCount), reached from a base register. */
-#define CUR_OPCODE (*(NesOpcode **)(glob + 0x5BB4))
+/* The opcode being run (sNesCurOpcode), reached from a base register. */
+#define CUR_OPCODE (*(NesOpcode **)(glob + SYM_LO(sNesCurOpcode)))
 #define PPUCTRL_REG (ram[NES_PPUCTRL])
 #define PPUSTATUS_REG (ram[NES_PPUSTATUS])
 
@@ -1284,7 +1285,7 @@ void nes_run_frame(void)
 {
     s32 i = 0;
     s32 line;
-    u8 *glob = (u8 *)0x800F0000;
+    u8 *glob = (u8 *)SYM_HI(sNesCurOpcode);
     u8 *ram = NES->mem;
     Nes *cpu = NES;
 
@@ -1292,7 +1293,7 @@ void nes_run_frame(void)
         line = (i + NES_VBLANK_LINE) % NES_LINES_PER_FRAME;
         if (NES_AT(cycles) < NES_CYCLES_PER_LINE) {
             NesOpcode *table = sNesOpcodeTable;
-            u8 *dseg = (u8 *)0x800D0000;
+            u8 *dseg = (u8 *)SYM_HI(sNesInstrCount);
             do {
                 NesOpcode *opcode;
                 CUR_OPCODE = (NesOpcode *)((s32)(*(u8 *)(cpu->pc + (s32)ram) * sizeof(NesOpcode)) + (s32)table);
@@ -1300,7 +1301,7 @@ void nes_run_frame(void)
                 opcode = CUR_OPCODE;
                 cpu->pc += opcode->length;
                 opcode->op(opcode);
-                (*(s32 *)(dseg - 0x13E4))++; /* sNesInstrCount */
+                (*(s32 *)(dseg + SYM_LO(sNesInstrCount)))++;
                 cpu->cycles += CUR_OPCODE->cycles;
             } while (cpu->cycles < NES_CYCLES_PER_LINE);
         }

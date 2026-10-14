@@ -1,4 +1,5 @@
 #include "game.h"
+#include "symaddr.h"
 
 /* Starts the sound: the sfx layer on the N64 driver, its echo, the streams, and loads the menu sounds. */
 void snd_init(void)
@@ -886,10 +887,10 @@ void snd_stop_all_riders(void)
     u8 *hb;
 
     i = 0;
-    hb = (u8 *)0x800C0000;
+    hb = (u8 *)SYM_HI(sSndRaceLoaded);
     rs = sRiderSounds;
     do {
-        if (*(s32 *)(hb + 0x2B64) != 0) {   /* sSndRaceLoaded */
+        if (*(s32 *)(hb + SYM_LO(sSndRaceLoaded)) != 0) {
             snd_stop_handle(&rs->engineHandle);
             snd_stop_handle(&rs->idleHandle);
             snd_stop_handle(&rs->skidHandle);

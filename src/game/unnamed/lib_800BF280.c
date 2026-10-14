@@ -1,4 +1,5 @@
 #include "game.h"
+#include "symaddr.h"
 
 /* libultra's osJamMesg, compiled with SN's compiler: puts `msg` at the front of the message queue `mq` (Q_3 is an
    OSMesgQueue: p0 mtqueue, f4 fullqueue, f8 validCount, f0c first, f10 msgCount, f14 msg). While the queue is full
@@ -18,7 +19,7 @@ s32 dma_jam_mesg(Q_3 *mq, s32 msg, s32 flag)
                 return -1;
             }
             /* __osRunningThread->state */
-            *(u16 *)((u8 *)*(s32 **)0x800D1F40 + 0x10) = OS_STATE_WAITING;
+            *(u16 *)((u8 *)*(s32 **)SYM_ADDR(__osRunningThread) + 0x10) = OS_STATE_WAITING;
             __osEnqueueAndYield(&mq->f4);
         } while (mq->f8 >= mq->f10);
     }

@@ -1,12 +1,19 @@
 /* pak.c: the Controller Pak screen (sScreens[SCREEN_PAK]), for the notes of ghosts and user tracks (game code
-   'NMXG', company "01"). The shell sets the mode, the data and its size and the callbacks in gPakScreen, then polls
-   gPakScreenDone and gPakScreenAborted. */
+   PAK_GAME_CODE, company "01"). The shell sets the mode, the data and its size and the callbacks in gPakScreen, then
+   polls gPakScreenDone and gPakScreenAborted. */
 #ifndef STRUCTS_PAK_H
 #define STRUCTS_PAK_H
 
 #include "common.h"
 
+/* the notes' game code: the cartridge's (the ROM header's) */
+#if VERSION == VERSION_LODGENET
 #define PAK_GAME_CODE    0x4E4D5847 /* 'NMXG' */
+#elif VERSION == VERSION_US_REV1
+#define PAK_GAME_CODE    0x4E4D5845 /* 'NMXE' */
+#else
+#error "PAK_GAME_CODE: the version's game code"
+#endif
 #define PAK_COMPANY_CODE 0x3031     /* "01" */
 #define PAK_MAX_NOTES    16         /* notes of a Controller Pak */
 #define PAK_PAGE_SIZE    0x100      /* bytes: notes are counted in pages */

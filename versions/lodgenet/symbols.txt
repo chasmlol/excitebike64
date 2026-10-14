@@ -4285,6 +4285,7 @@ sNesViewport                          game  0x800F5A88  data        -
 sNesClearFrames                       game  0x800F5A98  data        -
 sNesFrameCount                        game  0x800F5AA0  data        -
 sNesEffAddr                           game  0x800F5BB0  data        -
+sNesCurOpcode                         game  0x800F5BB4  data        -
 sNesOperand                           game  0x800F5BB8  data        -
 sNesOperand16                         game  0x800F5BBA  data        -
 sNesOperand8                          game  0x800F5BBB  data        -

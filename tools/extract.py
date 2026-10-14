@@ -58,9 +58,9 @@ def extract(rom_path: Path):
     layout = {
         "version": version,
         "boot": {"vram": VRAM, "vram_end": VRAM + len(boot), "rom": boot_rom[0], "size": len(boot),
-                 "bss": info["boot"]["bss"]},
+                 "bss": info.get("boot", {}).get("bss")},
         "game": {"vram": VRAM, "vram_end": VRAM + len(game), "size": len(game), "segments": segs,
-                 "bss": info["game"]["bss"]},
+                 "bss": info.get("game", {}).get("bss")},
         "resources_rom": pos,
     }
     (out / "layout.json").write_text(json.dumps(layout, indent=1))

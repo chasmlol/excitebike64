@@ -1,0 +1,2732 @@
+{
+ "build": {
+  "objects": {
+   "ultralib": "build/libultra/ultralib (decompals/ultralib build/K/libgultra_rom)",
+   "libgcc": "build/libultra/libgcc (src/libgcc/libgcc2.c)"
+  },
+  "ultralib": "decompals/ultralib e24c836796df",
+  "version": "2.0K",
+  "target": "libgultra_rom",
+  "notes": "tools/build_libultra_objs.sh builds the objects (KMC GCC 2.7.2)"
+ },
+ "images": {
+  "game": {
+   "text_range": [
+    "0x800acb40",
+    "0x800b7fbc"
+   ],
+   "objects": [
+    {
+     "obj": "ultralib/src/io/conteepread.o",
+     ".text": "0x800acb40",
+     "functions": {
+      "osEepromRead": "0x800acb40",
+      "__osPackEepReadData": "0x800accd8"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/conteepwrite.o",
+     ".text": "0x800acd60",
+     "functions": {
+      "osEepromWrite": "0x800acd60",
+      "__osPackEepWriteData": "0x800acec8",
+      "__osEepStatus": "0x800acf70"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/conteepprobe.o",
+     ".text": "0x800ad110",
+     "functions": {
+      "osEepromProbe": "0x800ad110"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/piread.o",
+     ".text": "0x800ad190",
+     "functions": {
+      "osPiReadIo": "0x800ad190"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pirawread.o",
+     ".text": "0x800ad1e0",
+     "functions": {
+      "__osPiRawReadIo": "0x800ad1e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/piacs.o",
+     ".text": "0x800ad230",
+     ".data": "0x800d26f0",
+     ".bss": "0x800f66d0",
+     "functions": {
+      "__osPiCreateAccessQueue": "0x800ad230",
+      "__osPiGetAccess": "0x800ad284",
+      "__osPiRelAccess": "0x800ad2f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/aigetstat.o",
+     ".text": "0x800ad320",
+     "functions": {
+      "osAiGetStatus": "0x800ad320"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/aisetfreq.o",
+     ".text": "0x800ad330",
+     ".rodata": "0x800d6180",
+     "functions": {
+      "osAiSetFrequency": "0x800ad330"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/aisetnextbuf.o",
+     ".text": "0x800ad450",
+     ".data": "0x800d2700",
+     "functions": {
+      "osAiSetNextBuffer": "0x800ad450"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/ai.o",
+     ".text": "0x800ad4f0",
+     "functions": {
+      "__osAiDeviceBusy": "0x800ad4f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/invaldcache.o",
+     ".text": "0x800ad510",
+     "functions": {
+      "osInvalDCache": "0x800ad510"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/invalicache.o",
+     ".text": "0x800ad5c0",
+     "functions": {
+      "osInvalICache": "0x800ad5c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/writebackdcache.o",
+     ".text": "0x800ad640",
+     "functions": {
+      "osWritebackDCache": "0x800ad640"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/writebackdcacheall.o",
+     ".text": "0x800ad6c0",
+     "functions": {
+      "osWritebackDCacheAll": "0x800ad6c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contquery.o",
+     ".text": "0x800ad6f0",
+     "functions": {
+      "osContStartQuery": "0x800ad6f0",
+      "osContGetQuery": "0x800ad770"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contreaddata.o",
+     ".text": "0x800ad790",
+     "functions": {
+      "osContStartReadData": "0x800ad790",
+      "osContGetReadData": "0x800ad818",
+      "__osPackReadData": "0x800ad8b4"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/controller.o",
+     ".text": "0x800ad970",
+     ".data": "0x800d2710",
+     "functions": {
+      "osContInit": "0x800ad970",
+      "__osContGetInitData": "0x800adb0c",
+      "__osPackRequestData": "0x800adbc0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/virtualtophysical.o",
+     ".text": "0x800adc80",
+     "functions": {
+      "osVirtualToPhysical": "0x800adc80"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/sqrtf.o",
+     ".text": "0x800adce0",
+     "functions": {
+      "sqrtf": "0x800adce0"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/cosf.o",
+     ".text": "0x800adcf0",
+     ".rodata": "0x800d6190",
+     "functions": {
+      "__cosf": "0x800adcf0"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/ortho.o",
+     ".text": "0x800ade40",
+     "functions": {
+      "guOrthoF": "0x800ade40",
+      "guOrtho": "0x800adf70"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/perspective.o",
+     ".text": "0x800ae0c0",
+     ".rodata": "0x800d6200",
+     "functions": {
+      "guPerspectiveF": "0x800ae0c0",
+      "guPerspective": "0x800ae270"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/rotaterpy.o",
+     ".text": "0x800ae440",
+     ".data": "0x800d2720",
+     "functions": {
+      "guRotateRPYF": "0x800ae440",
+      "guRotateRPY": "0x800ae5c8"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/sinf.o",
+     ".text": "0x800ae760",
+     ".rodata": "0x800d6240",
+     "functions": {
+      "__sinf": "0x800ae760"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/string.o",
+     ".text": "0x800ae900",
+     "functions": {
+      "strchr": "0x800ae900",
+      "strlen": "0x800ae940",
+      "memcpy": "0x800ae964"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/sprintf.o",
+     ".text": "0x800ae990",
+     "functions": {
+      "sprintf": "0x800ae990",
+      "proutSprintf": "0x800ae9e8"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/xprintf.o",
+     ".text": "0x800aea20",
+     ".data": "0x800d2730",
+     ".rodata": "0x800d62a0",
+     "functions": {
+      "_Printf": "0x800aea20",
+      "_Putfld": "0x800aefa0"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/xlitob.o",
+     ".text": "0x800af470",
+     ".data": "0x800d2780",
+     "functions": {
+      "_Litob": "0x800af470"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/ldiv.o",
+     ".text": "0x800af6c0",
+     "functions": {
+      "ldiv": "0x800af6c0",
+      "lldiv": "0x800af744"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/xldtob.o",
+     ".text": "0x800af880",
+     ".rodata": "0x800d6420",
+     "functions": {
+      "_Ldtob": "0x800af880",
+      "_Ldunscale": "0x800afccc",
+      "_Genld": "0x800afd64"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/createmesgqueue.o",
+     ".text": "0x800b0310",
+     "functions": {
+      "osCreateMesgQueue": "0x800b0310"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/recvmesg.o",
+     ".text": "0x800b0340",
+     "functions": {
+      "osRecvMesg": "0x800b0340"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/exceptasm.o",
+     ".text": "0x800b0470",
+     ".data": "0x800d27b0",
+     ".rodata": "0x800d6490",
+     "functions": {
+      "__osExceptionPreamble": "0x800b0470",
+      "__osException": "0x800b0480",
+      "send_mesg": "0x800b09fc",
+      "handle_CpU": "0x800b0ab8",
+      "__osEnqueueAndYield": "0x800b0aec",
+      "__osEnqueueThread": "0x800b0bf4",
+      "__osPopThread": "0x800b0c3c",
+      "__osNop": "0x800b0c4c",
+      "__osDispatchThread": "0x800b0c54",
+      "__osCleanupThread": "0x800b0dd0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/interrupt.o",
+     ".text": "0x800b0de0",
+     "functions": {
+      "__osDisableInt": "0x800b0de0",
+      "__osRestoreInt": "0x800b0e50"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setintmask.o",
+     ".text": "0x800b0e70",
+     ".rodata": "0x800d64e0",
+     "functions": {
+      "osSetIntMask": "0x800b0e70"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/sendmesg.o",
+     ".text": "0x800b0f10",
+     "functions": {
+      "osSendMesg": "0x800b0f10"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/seteventmesg.o",
+     ".text": "0x800b1040",
+     ".data": "0x800d27e0",
+     "functions": {
+      "osSetEventMesg": "0x800b1040"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getcount.o",
+     ".text": "0x800b10f0",
+     "functions": {
+      "osGetCount": "0x800b10f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/spgetstat.o",
+     ".text": "0x800b1100",
+     "functions": {
+      "__osSpGetStatus": "0x800b1100"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sptask.o",
+     ".text": "0x800b1110",
+     ".bss": "0x800f69c0",
+     "functions": {
+      "osSpTaskLoad": "0x800b1110",
+      "osSpTaskStartGo": "0x800b131c"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/bcopy.o",
+     ".text": "0x800b1350",
+     "functions": {
+      "bcopy": "0x800b1350"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sp.o",
+     ".text": "0x800b1670",
+     "functions": {
+      "__osSpDeviceBusy": "0x800b1670"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/spsetstat.o",
+     ".text": "0x800b1690",
+     "functions": {
+      "__osSpSetStatus": "0x800b1690"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/spsetpc.o",
+     ".text": "0x800b16a0",
+     "functions": {
+      "__osSpSetPc": "0x800b16a0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sprawdma.o",
+     ".text": "0x800b16d0",
+     "functions": {
+      "__osSpRawStartDma": "0x800b16d0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sirawdma.o",
+     ".text": "0x800b1760",
+     "functions": {
+      "__osSiRawStartDma": "0x800b1760"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/siacs.o",
+     ".text": "0x800b1810",
+     ".data": "0x800d27f0",
+     ".bss": "0x800f6a00",
+     "functions": {
+      "__osSiCreateAccessQueue": "0x800b1810",
+      "__osSiGetAccess": "0x800b1864",
+      "__osSiRelAccess": "0x800b18d0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/createthread.o",
+     ".text": "0x800b1900",
+     "functions": {
+      "osCreateThread": "0x800b1900"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/destroythread.o",
+     ".text": "0x800b19d0",
+     "functions": {
+      "osDestroyThread": "0x800b19d0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setthreadpri.o",
+     ".text": "0x800b1ab0",
+     "functions": {
+      "osSetThreadPri": "0x800b1ab0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/startthread.o",
+     ".text": "0x800b1b80",
+     "functions": {
+      "osStartThread": "0x800b1b80"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/thread.o",
+     ".text": "0x800b1ca0",
+     ".data": "0x800d2800",
+     "functions": {
+      "__osDequeueThread": "0x800b1ca0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/gettime.o",
+     ".text": "0x800b1ce0",
+     "functions": {
+      "osGetTime": "0x800b1ce0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/settimer.o",
+     ".text": "0x800b1d70",
+     "functions": {
+      "osSetTimer": "0x800b1d70"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/timerintr.o",
+     ".text": "0x800b1ea0",
+     ".data": "0x800d2820",
+     "functions": {
+      "__osTimerServicesInit": "0x800b1ea0",
+      "__osTimerInterrupt": "0x800b1ef4",
+      "__osSetTimerIntr": "0x800b2030",
+      "__osInsertTimer": "0x800b20b0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setcompare.o",
+     ".text": "0x800b21c0",
+     "functions": {
+      "__osSetCompare": "0x800b21c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/probetlb.o",
+     ".text": "0x800b21d0",
+     "functions": {
+      "__osProbeTLB": "0x800b21d0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/vigetline.o",
+     ".text": "0x800b2290",
+     "functions": {
+      "osViGetCurrentLine": "0x800b2290"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/vimgr.o",
+     ".text": "0x800b22a0",
+     ".data": "0x800d2830",
+     ".bss": "0x800f6a70",
+     "functions": {
+      "osCreateViManager": "0x800b22a0",
+      "viMgrMain": "0x800b2440"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getthreadpri.o",
+     ".text": "0x800b25e0",
+     "functions": {
+      "osGetThreadPri": "0x800b25e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/vi.o",
+     ".text": "0x800b2600",
+     ".data": "0x800d2850",
+     "functions": {
+      "__osViInit": "0x800b2600"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/bzero.o",
+     ".text": "0x800b2710",
+     "functions": {
+      "bzero": "0x800b2710"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/vigetcurrcontext.o",
+     ".text": "0x800b27b0",
+     "functions": {
+      "__osViGetCurrentContext": "0x800b27b0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/visetevent.o",
+     ".text": "0x800b27c0",
+     "functions": {
+      "osViSetEvent": "0x800b27c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/visetmode.o",
+     ".text": "0x800b2820",
+     "functions": {
+      "osViSetMode": "0x800b2820"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/visetspecial.o",
+     ".text": "0x800b2870",
+     "functions": {
+      "osViSetSpecialFeatures": "0x800b2870"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/visetyscale.o",
+     ".text": "0x800b29e0",
+     "functions": {
+      "osViSetYScale": "0x800b29e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/viswapbuf.o",
+     ".text": "0x800b2a30",
+     "functions": {
+      "osViSwapBuffer": "0x800b2a30"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/viswapcontext.o",
+     ".text": "0x800b2a80",
+     ".rodata": "0x800d6560",
+     "functions": {
+      "__osViSwapContext": "0x800b2a80"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/viblack.o",
+     ".text": "0x800b2d90",
+     "functions": {
+      "osViBlack": "0x800b2d90"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/virepeatline.o",
+     ".text": "0x800b2df0",
+     "functions": {
+      "osViRepeatLine": "0x800b2df0"
+     }
+    },
+    {
+     "obj": "ultralib/src/mgu/mtxidentf.o",
+     ".text": "0x800b2e50",
+     "functions": {
+      "guMtxIdentF": "0x800b2e50"
+     }
+    },
+    {
+     "obj": "ultralib/src/mgu/mtxf2l.o",
+     ".text": "0x800b2eb0",
+     "functions": {
+      "guMtxF2L": "0x800b2eb0"
+     }
+    },
+    {
+     "obj": "ultralib/src/mgu/mtxl2f.o",
+     ".text": "0x800b2f30",
+     "functions": {
+      "guMtxL2F": "0x800b2f30"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/mtxcatl.o",
+     ".text": "0x800b2fb0",
+     "functions": {
+      "guMtxCatL": "0x800b2fb0"
+     }
+    },
+    {
+     "obj": "ultralib/src/mgu/mtxcatf.o",
+     ".text": "0x800b3030",
+     "functions": {
+      "guMtxCatF": "0x800b3030"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/gbpakinit.o",
+     ".text": "0x800b3130",
+     "functions": {
+      "osGbpakInit": "0x800b3130"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/motor.o",
+     ".text": "0x800b3330",
+     ".bss": "0x800f7cd0",
+     "functions": {
+      "__osMotorAccess": "0x800b3330",
+      "osMotorInit": "0x800b3474"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/crc.o",
+     ".text": "0x800b36c0",
+     "functions": {
+      "__osContAddressCrc": "0x800b36c0",
+      "__osContDataCrc": "0x800b372c"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsallocatefile.o",
+     ".text": "0x800b37b0",
+     "functions": {
+      "osPfsAllocateFile": "0x800b37b0",
+      "__osPfsDeclearPage": "0x800b3abc"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsdeletefile.o",
+     ".text": "0x800b3be0",
+     "functions": {
+      "osPfsDeleteFile": "0x800b3be0",
+      "__osPfsReleasePages": "0x800b3d8c"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsreadwritefile.o",
+     ".text": "0x800b3e00",
+     "functions": {
+      "osPfsReadWriteFile": "0x800b3e00"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsfilestate.o",
+     ".text": "0x800b4240",
+     "functions": {
+      "osPfsFileState": "0x800b4240"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfssearchfile.o",
+     ".text": "0x800b43e0",
+     "functions": {
+      "osPfsFindFile": "0x800b43e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsisplug.o",
+     ".text": "0x800b45a0",
+     "functions": {
+      "osPfsIsPlug": "0x800b45a0",
+      "__osPfsRequestData": "0x800b471c",
+      "__osPfsGetInitData": "0x800b47c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsfreeblocks.o",
+     ".text": "0x800b4880",
+     "functions": {
+      "osPfsFreeBlocks": "0x800b4880"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsnumfiles.o",
+     ".text": "0x800b4990",
+     "functions": {
+      "osPfsNumFiles": "0x800b4990"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsinitpak.o",
+     ".text": "0x800b4a90",
+     "functions": {
+      "osPfsInitPak": "0x800b4a90",
+      "__osPfsCheckRamArea": "0x800b4c88"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/bcmp.o",
+     ".text": "0x800b4d60",
+     "functions": {
+      "bcmp": "0x800b4d60"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfschecker.o",
+     ".text": "0x800b4e70",
+     "functions": {
+      "osPfsChecker": "0x800b4e70",
+      "corrupted_init": "0x800b52d0",
+      "corrupted": "0x800b5428"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsrepairid.o",
+     ".text": "0x800b5590",
+     "functions": {
+      "osPfsRepairId": "0x800b5590"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsgetstatus.o",
+     ".text": "0x800b55f0",
+     "functions": {
+      "__osPfsGetStatus": "0x800b55f0",
+      "__osPfsRequestOneChannel": "0x800b56e0",
+      "__osPfsGetOneChannelData": "0x800b5774"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsselectbank.o",
+     ".text": "0x800b5800",
+     "functions": {
+      "__osPfsSelectBank": "0x800b5800"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contpfs.o",
+     ".text": "0x800b5870",
+     ".data": "0x800d3c70",
+     "functions": {
+      "__osSumcalc": "0x800b5870",
+      "__osIdCheckSum": "0x800b58a4",
+      "__osRepairPackId": "0x800b58e8",
+      "__osCheckPackId": "0x800b5bd4",
+      "__osGetId": "0x800b5d38",
+      "__osCheckId": "0x800b5f04",
+      "__osPfsRWInode": "0x800b5fbc"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contramread.o",
+     ".text": "0x800b6300",
+     ".data": "0x800d3c80",
+     "functions": {
+      "__osContRamRead": "0x800b6300"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contramwrite.o",
+     ".text": "0x800b64f0",
+     "functions": {
+      "__osContRamWrite": "0x800b64f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/parameters.o",
+     ".text": "0x800b6700",
+     "functions": {}
+    },
+    {
+     "obj": "ultralib/src/os/initialize.o",
+     ".text": "0x800b6760",
+     ".data": "0x800d3c90",
+     "functions": {
+      "__createSpeedParam": "0x800b6760",
+      "__osInitialize_common": "0x800b6818",
+      "__osInitialize_autodetect": "0x800b6af0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pimgr.o",
+     ".text": "0x800b6b00",
+     ".data": "0x800d3cb0",
+     ".bss": "0x800f7f20",
+     "functions": {
+      "osCreatePiManager": "0x800b6b00"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pirawdma.o",
+     ".text": "0x800b6c90",
+     "functions": {
+      "__osPiRawStartDma": "0x800b6c90"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/epirawdma.o",
+     ".text": "0x800b6d60",
+     "functions": {
+      "__osEPiRawStartDma": "0x800b6d60"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/devmgr.o",
+     ".text": "0x800b6f50",
+     ".rodata": "0x800d6570",
+     "functions": {
+      "__osDevMgrMain": "0x800b6f50"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setglobalintmask.o",
+     ".text": "0x800b7310",
+     "functions": {
+      "__osSetGlobalIntMask": "0x800b7310"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/resetglobalintmask.o",
+     ".text": "0x800b7350",
+     "functions": {
+      "__osResetGlobalIntMask": "0x800b7350"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/epirawread.o",
+     ".text": "0x800b73a0",
+     "functions": {
+      "__osEPiRawReadIo": "0x800b73a0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/epirawwrite.o",
+     ".text": "0x800b7510",
+     "functions": {
+      "__osEPiRawWriteIo": "0x800b7510"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getcause.o",
+     ".text": "0x800b7680",
+     "functions": {
+      "__osGetCause": "0x800b7680"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getsr.o",
+     ".text": "0x800b7690",
+     "functions": {
+      "__osGetSR": "0x800b7690"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setfpccsr.o",
+     ".text": "0x800b76a0",
+     "functions": {
+      "__osSetFpcCsr": "0x800b76a0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setsr.o",
+     ".text": "0x800b76b0",
+     "functions": {
+      "__osSetSR": "0x800b76b0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setwatchlo.o",
+     ".text": "0x800b76c0",
+     "functions": {
+      "__osSetWatchLo": "0x800b76c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sirawread.o",
+     ".text": "0x800b76d0",
+     "functions": {
+      "__osSiRawReadIo": "0x800b76d0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/si.o",
+     ".text": "0x800b7720",
+     "functions": {
+      "__osSiDeviceBusy": "0x800b7720"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sirawwrite.o",
+     ".text": "0x800b7740",
+     "functions": {
+      "__osSiRawWriteIo": "0x800b7740"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/yieldthread.o",
+     ".text": "0x800b7790",
+     "functions": {
+      "osYieldThread": "0x800b7790"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/maptlbrdb.o",
+     ".text": "0x800b77e0",
+     "functions": {
+      "osMapTLBRdb": "0x800b77e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/unmaptlball.o",
+     ".text": "0x800b7840",
+     "functions": {
+      "osUnmapTLBAll": "0x800b7840"
+     }
+    },
+    {
+     "obj": "libgcc/_divdi3.o",
+     ".text": "0x800b7890",
+     "functions": {
+      "__divdi3": "0x800b7890"
+     }
+    },
+    {
+     "obj": "libgcc/_udivdi3.o",
+     ".text": "0x800b7930",
+     "functions": {
+      "__udivdi3": "0x800b7930"
+     }
+    },
+    {
+     "obj": "libgcc/_udivmoddi4.o",
+     ".text": "0x800b7950",
+     "functions": {
+      "__udivmoddi4": "0x800b7950"
+     }
+    },
+    {
+     "obj": "libgcc/_umoddi3.o",
+     ".text": "0x800b7f90",
+     "functions": {
+      "__umoddi3": "0x800b7f90"
+     }
+    },
+    {
+     "obj": "ultralib/src/gu/libm_vals.o",
+     ".rodata": "0x800d61f0"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodempallan1.o",
+     ".data": "0x800d3bd0"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodentsclan1.o",
+     ".data": "0x800d3a90"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodepallan1.o",
+     ".data": "0x800d3b30"
+    },
+    {
+     "obj": "libgcc/_clz.o",
+     ".rodata": "0x800db980"
+    },
+    {
+     "obj": "ultralib/src/io/vitbl.o",
+     ".data": "0x800d28c0"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodempalhpf1.o",
+     ".data": "0x800d3c20"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodempallpn1.o",
+     ".data": "0x800d3b80"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodentschpf1.o",
+     ".data": "0x800d3ae0"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodentsclpn1.o",
+     ".data": "0x800d3a40"
+    }
+   ],
+   "symbols": {
+    "_Ldtob": "0x800af880",
+    "_Litob": "0x800af470",
+    "_Printf": "0x800aea20",
+    "__Dom1SpeedParam": "0x800f90f0",
+    "__Dom2SpeedParam": "0x800f9168",
+    "__OSGlobalIntMask": "0x800d3ca0",
+    "__additional_scanline": "0x800d284c",
+    "__clz_tab": "0x800db980",
+    "__cosf": "0x800adcf0",
+    "__createSpeedParam": "0x800b6760",
+    "__divdi3": "0x800b7890",
+    "__libm_qnan_f": "0x800d61f0",
+    "__osActiveQueue": "0x800d280c",
+    "__osAiDeviceBusy": "0x800ad4f0",
+    "__osBaseCounter": "0x800f6a30",
+    "__osBaseTimer": "0x800f6a48",
+    "__osCheckId": "0x800b5f04",
+    "__osCheckPackId": "0x800b5bd4",
+    "__osCleanupThread": "0x800b0dd0",
+    "__osContAddressCrc": "0x800b36c0",
+    "__osContDataCrc": "0x800b372c",
+    "__osContGetInitData": "0x800adb0c",
+    "__osContLastCmd": "0x800f6780",
+    "__osContPifRam": "0x800f6740",
+    "__osContRamRead": "0x800b6300",
+    "__osContRamWrite": "0x800b64f0",
+    "__osContinitialized": "0x800d2710",
+    "__osCurrentHandle": "0x800d3cd0",
+    "__osCurrentTime": "0x800f6a38",
+    "__osDequeueThread": "0x800b1ca0",
+    "__osDevMgrMain": "0x800b6f50",
+    "__osDisableInt": "0x800b0de0",
+    "__osDispatchThread": "0x800b0c54",
+    "__osEPiRawReadIo": "0x800b73a0",
+    "__osEPiRawStartDma": "0x800b6d60",
+    "__osEPiRawWriteIo": "0x800b7510",
+    "__osEepPifRam": "0x800f6690",
+    "__osEepStatus": "0x800acf70",
+    "__osEepromTimerMsg": "0x800f6738",
+    "__osEepromTimerQ": "0x800f6720",
+    "__osEnqueueAndYield": "0x800b0aec",
+    "__osEnqueueThread": "0x800b0bf4",
+    "__osEventStateTab": "0x800f6940",
+    "__osException": "0x800b0480",
+    "__osExceptionPreamble": "0x800b0470",
+    "__osFaultedThread": "0x800d2814",
+    "__osFinalrom": "0x800f7f10",
+    "__osGbpakTimer": "0x800f7c98",
+    "__osGbpakTimerMsg": "0x800f7c90",
+    "__osGbpakTimerQ": "0x800f7cb8",
+    "__osGetCause": "0x800b7680",
+    "__osGetId": "0x800b5d38",
+    "__osGetSR": "0x800b7690",
+    "__osHwIntTable": "0x800d27b0",
+    "__osIdCheckSum": "0x800b58a4",
+    "__osInitialize_autodetect": "0x800b6af0",
+    "__osInitialize_common": "0x800b6818",
+    "__osInsertTimer": "0x800b20b0",
+    "__osMaxControllers": "0x800f673c",
+    "__osMotorAccess": "0x800b3330",
+    "__osNop": "0x800b0c4c",
+    "__osPackRequestData": "0x800adbc0",
+    "__osPfsDeclearPage": "0x800b3abc",
+    "__osPfsGetInitData": "0x800b47c0",
+    "__osPfsGetOneChannelData": "0x800b5774",
+    "__osPfsGetStatus": "0x800b55f0",
+    "__osPfsInodeCache": "0x800f7e10",
+    "__osPfsInodeCacheBank": "0x800d3c74",
+    "__osPfsInodeCacheChannel": "0x800d3c70",
+    "__osPfsLastChannel": "0x800d3c80",
+    "__osPfsPifRam": "0x800f7dd0",
+    "__osPfsRWInode": "0x800b5fbc",
+    "__osPfsReleasePages": "0x800b3d8c",
+    "__osPfsRequestData": "0x800b471c",
+    "__osPfsRequestOneChannel": "0x800b56e0",
+    "__osPfsSelectBank": "0x800b5800",
+    "__osPiAccessQueue": "0x800f66e0",
+    "__osPiAccessQueueEnabled": "0x800d26f0",
+    "__osPiCreateAccessQueue": "0x800ad230",
+    "__osPiDevMgr": "0x800d3cb0",
+    "__osPiGetAccess": "0x800ad284",
+    "__osPiIntTable": "0x800d27d8",
+    "__osPiRawReadIo": "0x800ad1e0",
+    "__osPiRawStartDma": "0x800b6c90",
+    "__osPiRelAccess": "0x800ad2f0",
+    "__osPiTable": "0x800d3ccc",
+    "__osPopThread": "0x800b0c3c",
+    "__osPreNMI": "0x800d27e0",
+    "__osProbeTLB": "0x800b21d0",
+    "__osRcpImTable": "0x800d64e0",
+    "__osRepairPackId": "0x800b58e8",
+    "__osResetGlobalIntMask": "0x800b7350",
+    "__osRestoreInt": "0x800b0e50",
+    "__osRunQueue": "0x800d2808",
+    "__osRunningThread": "0x800d2810",
+    "__osSetCompare": "0x800b21c0",
+    "__osSetFpcCsr": "0x800b76a0",
+    "__osSetGlobalIntMask": "0x800b7310",
+    "__osSetSR": "0x800b76b0",
+    "__osSetTimerIntr": "0x800b2030",
+    "__osSetWatchLo": "0x800b76c0",
+    "__osShutdown": "0x800d3c9c",
+    "__osSiAccessQueue": "0x800f6a10",
+    "__osSiAccessQueueEnabled": "0x800d27f0",
+    "__osSiCreateAccessQueue": "0x800b1810",
+    "__osSiDeviceBusy": "0x800b7720",
+    "__osSiGetAccess": "0x800b1864",
+    "__osSiRawReadIo": "0x800b76d0",
+    "__osSiRawStartDma": "0x800b1760",
+    "__osSiRawWriteIo": "0x800b7740",
+    "__osSiRelAccess": "0x800b18d0",
+    "__osSpDeviceBusy": "0x800b1670",
+    "__osSpGetStatus": "0x800b1100",
+    "__osSpRawStartDma": "0x800b16d0",
+    "__osSpSetPc": "0x800b16a0",
+    "__osSpSetStatus": "0x800b1690",
+    "__osSumcalc": "0x800b5870",
+    "__osThreadSave": "0x800f6790",
+    "__osThreadTail": "0x800d2800",
+    "__osTimerCounter": "0x800f6a40",
+    "__osTimerInterrupt": "0x800b1ef4",
+    "__osTimerList": "0x800d2820",
+    "__osTimerServicesInit": "0x800b1ea0",
+    "__osViCurr": "0x800d28b0",
+    "__osViDevMgr": "0x800d2830",
+    "__osViGetCurrentContext": "0x800b27b0",
+    "__osViInit": "0x800b2600",
+    "__osViIntrCount": "0x800f6a34",
+    "__osViNext": "0x800d28b4",
+    "__osViSwapContext": "0x800b2a80",
+    "__sinf": "0x800ae760",
+    "__udivdi3": "0x800b7930",
+    "__udivmoddi4": "0x800b7950",
+    "__umoddi3": "0x800b7f90",
+    "bcmp": "0x800b4d60",
+    "bcopy": "0x800b1350",
+    "bzero": "0x800b2710",
+    "corrupted": "0x800b5428",
+    "corrupted_init": "0x800b52d0",
+    "cosf": "0x800adcf0",
+    "fcos": "0x800adcf0",
+    "fsin": "0x800ae760",
+    "guMtxCatF": "0x800b3030",
+    "guMtxCatL": "0x800b2fb0",
+    "guMtxF2L": "0x800b2eb0",
+    "guMtxIdentF": "0x800b2e50",
+    "guMtxL2F": "0x800b2f30",
+    "guOrtho": "0x800adf70",
+    "guOrthoF": "0x800ade40",
+    "guPerspective": "0x800ae270",
+    "guPerspectiveF": "0x800ae0c0",
+    "guRotateRPY": "0x800ae5c8",
+    "guRotateRPYF": "0x800ae440",
+    "handle_CpU": "0x800b0ab8",
+    "ldiv": "0x800af6c0",
+    "leoBootID": "0x800001a0",
+    "lldiv": "0x800af744",
+    "memcpy": "0x800ae964",
+    "osAiGetStatus": "0x800ad320",
+    "osAiSetFrequency": "0x800ad330",
+    "osAiSetNextBuffer": "0x800ad450",
+    "osAppNMIBuffer": "0x8000031c",
+    "osCicId": "0x80000310",
+    "osClockRate": "0x800d3c90",
+    "osContGetQuery": "0x800ad770",
+    "osContGetReadData": "0x800ad818",
+    "osContInit": "0x800ad970",
+    "osContStartQuery": "0x800ad6f0",
+    "osContStartReadData": "0x800ad790",
+    "osCreateMesgQueue": "0x800b0310",
+    "osCreatePiManager": "0x800b6b00",
+    "osCreateThread": "0x800b1900",
+    "osCreateViManager": "0x800b22a0",
+    "osDestroyThread": "0x800b19d0",
+    "osEepromProbe": "0x800ad110",
+    "osEepromRead": "0x800acb40",
+    "osEepromWrite": "0x800acd60",
+    "osGbpakInit": "0x800b3130",
+    "osGetCount": "0x800b10f0",
+    "osGetThreadPri": "0x800b25e0",
+    "osGetTime": "0x800b1ce0",
+    "osInvalDCache": "0x800ad510",
+    "osInvalICache": "0x800ad5c0",
+    "osMapTLBRdb": "0x800b77e0",
+    "osMemSize": "0x80000318",
+    "osMotorInit": "0x800b3474",
+    "osPfsAllocateFile": "0x800b37b0",
+    "osPfsChecker": "0x800b4e70",
+    "osPfsDeleteFile": "0x800b3be0",
+    "osPfsFileState": "0x800b4240",
+    "osPfsFindFile": "0x800b43e0",
+    "osPfsFreeBlocks": "0x800b4880",
+    "osPfsInitPak": "0x800b4a90",
+    "osPfsIsPlug": "0x800b45a0",
+    "osPfsNumFiles": "0x800b4990",
+    "osPfsReadWriteFile": "0x800b3e00",
+    "osPfsRepairId": "0x800b5590",
+    "osPiReadIo": "0x800ad190",
+    "osRecvMesg": "0x800b0340",
+    "osResetType": "0x8000030c",
+    "osRomBase": "0x80000308",
+    "osRomType": "0x80000304",
+    "osSendMesg": "0x800b0f10",
+    "osSetEventMesg": "0x800b1040",
+    "osSetIntMask": "0x800b0e70",
+    "osSetThreadPri": "0x800b1ab0",
+    "osSetTimer": "0x800b1d70",
+    "osSpTaskLoad": "0x800b1110",
+    "osSpTaskStartGo": "0x800b131c",
+    "osStartThread": "0x800b1b80",
+    "osTvType": "0x80000300",
+    "osUnmapTLBAll": "0x800b7840",
+    "osVersion": "0x80000314",
+    "osViBlack": "0x800b2d90",
+    "osViClock": "0x800d3c98",
+    "osViGetCurrentLine": "0x800b2290",
+    "osViModeMpalHpf1": "0x800d3c20",
+    "osViModeMpalLan1": "0x800d3bd0",
+    "osViModeMpalLpn1": "0x800d3b80",
+    "osViModeNtscHpf1": "0x800d3ae0",
+    "osViModeNtscLan1": "0x800d3a90",
+    "osViModeNtscLpn1": "0x800d3a40",
+    "osViModePalLan1": "0x800d3b30",
+    "osViModeTable": "0x800d28c0",
+    "osViRepeatLine": "0x800b2df0",
+    "osViSetEvent": "0x800b27c0",
+    "osViSetMode": "0x800b2820",
+    "osViSetSpecialFeatures": "0x800b2870",
+    "osViSetYScale": "0x800b29e0",
+    "osViSwapBuffer": "0x800b2a30",
+    "osVirtualToPhysical": "0x800adc80",
+    "osWritebackDCache": "0x800ad640",
+    "osWritebackDCacheAll": "0x800ad6c0",
+    "osYieldThread": "0x800b7790",
+    "send_mesg": "0x800b09fc",
+    "sinf": "0x800ae760",
+    "sprintf": "0x800ae990",
+    "sqrtf": "0x800adce0",
+    "strchr": "0x800ae900",
+    "strlen": "0x800ae940"
+   },
+   "same_bytes_ambiguous": [
+    {
+     "addr": "0x800b2fb0",
+     "candidates": [
+      "ultralib/src/gu/mtxcatl.o",
+      "ultralib/src/mgu/mtxcatl.o"
+     ]
+    }
+   ],
+   "data_placed_by_content": [
+    "ultralib/src/io/vitbl.o .data 0x800d28c0",
+    "ultralib/src/vimodes/vimodempalhpf1.o .data 0x800d3c20",
+    "ultralib/src/vimodes/vimodempallpn1.o .data 0x800d3b80",
+    "ultralib/src/vimodes/vimodentschpf1.o .data 0x800d3ae0",
+    "ultralib/src/vimodes/vimodentsclpn1.o .data 0x800d3a40"
+   ],
+   "padding": [
+    {
+     "addr": "0x800ad10c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800ad184",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800ad1d8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800ad318",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800ad448",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800ad4e4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800ad504",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800ad96c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800adc7c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800adcd4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800ae0bc",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800ae438",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800ae754",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800ae98c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800aea1c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800af878",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b030c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b0334",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b0464",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b10ec",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1348",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1688",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b175c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1804",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b18f8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1aa8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1b78",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1c98",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1cd4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1d64",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b1e9c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b21b8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b25d8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b25f8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b2704",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b27bc",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b2818",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b286c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b29d4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b2a24",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b2a74",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b2d88",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b2dec",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b2e4c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b3024",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b3324",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b36bc",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b37a8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b3bd4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b3df4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b43d4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b4598",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b4874",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b498c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b4d54",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b55e8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b57f4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b5864",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b62f4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b64e8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b66f4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b6af8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b6f4c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b7308",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b7398",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b7508",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b7674",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800b771c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800b7738",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b7788",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b77d8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800b7928",
+     "size": 8,
+     "zero": false
+    },
+    {
+     "addr": "0x800b7f8c",
+     "size": 4,
+     "zero": false
+    }
+   ],
+   "unexplained": []
+  },
+  "boot": {
+   "text_range": [
+    "0x80005ca0",
+    "0x8000ce40"
+   ],
+   "objects": [
+    {
+     "obj": "ultralib/src/os/interrupt.o",
+     ".text": "0x80005ca0",
+     "functions": {
+      "__osDisableInt": "0x80005ca0",
+      "__osRestoreInt": "0x80005d10"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pimgr.o",
+     ".text": "0x80005d30",
+     ".data": "0x8000fd50",
+     ".bss": "0x80018af0",
+     "functions": {
+      "osCreatePiManager": "0x80005d30"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pirawdma.o",
+     ".text": "0x80005ec0",
+     "functions": {
+      "__osPiRawStartDma": "0x80005ec0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/epirawdma.o",
+     ".text": "0x80005f90",
+     "functions": {
+      "__osEPiRawStartDma": "0x80005f90"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/epidma.o",
+     ".text": "0x80006180",
+     "functions": {
+      "osEPiStartDma": "0x80006180"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pigetcmdq.o",
+     ".text": "0x80006220",
+     "functions": {
+      "osPiGetCmdQueue": "0x80006220"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/cartrominit.o",
+     ".text": "0x80006240",
+     ".data": "0x8000fd80",
+     "functions": {
+      "osCartRomInit": "0x80006240"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/devmgr.o",
+     ".text": "0x800063c0",
+     ".rodata": "0x80011170",
+     "functions": {
+      "__osDevMgrMain": "0x800063c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setglobalintmask.o",
+     ".text": "0x80006780",
+     "functions": {
+      "__osSetGlobalIntMask": "0x80006780"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/resetglobalintmask.o",
+     ".text": "0x800067c0",
+     "functions": {
+      "__osResetGlobalIntMask": "0x800067c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/epirawread.o",
+     ".text": "0x80006810",
+     "functions": {
+      "__osEPiRawReadIo": "0x80006810"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/epirawwrite.o",
+     ".text": "0x80006980",
+     "functions": {
+      "__osEPiRawWriteIo": "0x80006980"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/piacs.o",
+     ".text": "0x80006af0",
+     ".data": "0x8000fd90",
+     ".bss": "0x80019e30",
+     "functions": {
+      "__osPiCreateAccessQueue": "0x80006af0",
+      "__osPiGetAccess": "0x80006b44",
+      "__osPiRelAccess": "0x80006bb0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/invaldcache.o",
+     ".text": "0x80006be0",
+     "functions": {
+      "osInvalDCache": "0x80006be0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/invalicache.o",
+     ".text": "0x80006c90",
+     "functions": {
+      "osInvalICache": "0x80006c90"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/writebackdcache.o",
+     ".text": "0x80006d10",
+     "functions": {
+      "osWritebackDCache": "0x80006d10"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/writebackdcacheall.o",
+     ".text": "0x80006d90",
+     "functions": {
+      "osWritebackDCacheAll": "0x80006d90"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contquery.o",
+     ".text": "0x80006dc0",
+     "functions": {
+      "osContStartQuery": "0x80006dc0",
+      "osContGetQuery": "0x80006e40"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contreaddata.o",
+     ".text": "0x80006e60",
+     "functions": {
+      "osContStartReadData": "0x80006e60",
+      "osContGetReadData": "0x80006ee8",
+      "__osPackReadData": "0x80006f84"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/controller.o",
+     ".text": "0x80007040",
+     ".data": "0x8000fda0",
+     "functions": {
+      "osContInit": "0x80007040",
+      "__osContGetInitData": "0x800071dc",
+      "__osPackRequestData": "0x80007290"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/virtualtophysical.o",
+     ".text": "0x80007350",
+     "functions": {
+      "osVirtualToPhysical": "0x80007350"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/bzero.o",
+     ".text": "0x800073b0",
+     "functions": {
+      "bzero": "0x800073b0"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/string.o",
+     ".text": "0x80007450",
+     "functions": {
+      "strchr": "0x80007450",
+      "strlen": "0x80007490",
+      "memcpy": "0x800074b4"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/createmesgqueue.o",
+     ".text": "0x800074e0",
+     "functions": {
+      "osCreateMesgQueue": "0x800074e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/jammesg.o",
+     ".text": "0x80007510",
+     "functions": {
+      "osJamMesg": "0x80007510"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/exceptasm.o",
+     ".text": "0x80007650",
+     ".data": "0x8000fdb0",
+     ".rodata": "0x80011190",
+     "functions": {
+      "__osExceptionPreamble": "0x80007650",
+      "__osException": "0x80007660",
+      "send_mesg": "0x80007bdc",
+      "handle_CpU": "0x80007c98",
+      "__osEnqueueAndYield": "0x80007ccc",
+      "__osEnqueueThread": "0x80007dd4",
+      "__osPopThread": "0x80007e1c",
+      "__osNop": "0x80007e2c",
+      "__osDispatchThread": "0x80007e34",
+      "__osCleanupThread": "0x80007fb0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setintmask.o",
+     ".text": "0x80007fc0",
+     ".rodata": "0x800111e0",
+     "functions": {
+      "osSetIntMask": "0x80007fc0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/recvmesg.o",
+     ".text": "0x80008060",
+     "functions": {
+      "osRecvMesg": "0x80008060"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/sendmesg.o",
+     ".text": "0x80008190",
+     "functions": {
+      "osSendMesg": "0x80008190"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/seteventmesg.o",
+     ".text": "0x800082c0",
+     ".data": "0x8000fde0",
+     "functions": {
+      "osSetEventMesg": "0x800082c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sirawdma.o",
+     ".text": "0x80008370",
+     "functions": {
+      "__osSiRawStartDma": "0x80008370"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/siacs.o",
+     ".text": "0x80008420",
+     ".data": "0x8000fdf0",
+     ".bss": "0x8001a120",
+     "functions": {
+      "__osSiCreateAccessQueue": "0x80008420",
+      "__osSiGetAccess": "0x80008474",
+      "__osSiRelAccess": "0x800084e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/createthread.o",
+     ".text": "0x80008510",
+     "functions": {
+      "osCreateThread": "0x80008510"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/destroythread.o",
+     ".text": "0x800085e0",
+     "functions": {
+      "osDestroyThread": "0x800085e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getthreadpri.o",
+     ".text": "0x800086c0",
+     "functions": {
+      "osGetThreadPri": "0x800086c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setthreadpri.o",
+     ".text": "0x800086e0",
+     "functions": {
+      "osSetThreadPri": "0x800086e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/startthread.o",
+     ".text": "0x800087b0",
+     "functions": {
+      "osStartThread": "0x800087b0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/thread.o",
+     ".text": "0x800088d0",
+     ".data": "0x8000fe00",
+     "functions": {
+      "__osDequeueThread": "0x800088d0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/yieldthread.o",
+     ".text": "0x80008910",
+     "functions": {
+      "osYieldThread": "0x80008910"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/gettime.o",
+     ".text": "0x80008960",
+     "functions": {
+      "osGetTime": "0x80008960"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getcount.o",
+     ".text": "0x800089f0",
+     "functions": {
+      "osGetCount": "0x800089f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/settimer.o",
+     ".text": "0x80008a00",
+     "functions": {
+      "osSetTimer": "0x80008a00"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/timerintr.o",
+     ".text": "0x80008b30",
+     ".data": "0x8000fe20",
+     "functions": {
+      "__osTimerServicesInit": "0x80008b30",
+      "__osTimerInterrupt": "0x80008b84",
+      "__osSetTimerIntr": "0x80008cc0",
+      "__osInsertTimer": "0x80008d40"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setcompare.o",
+     ".text": "0x80008e50",
+     "functions": {
+      "__osSetCompare": "0x80008e50"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/probetlb.o",
+     ".text": "0x80008e60",
+     "functions": {
+      "__osProbeTLB": "0x80008e60"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/vimgr.o",
+     ".text": "0x80008f20",
+     ".data": "0x8000fe30",
+     ".bss": "0x8001a190",
+     "functions": {
+      "osCreateViManager": "0x80008f20",
+      "viMgrMain": "0x800090c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/vi.o",
+     ".text": "0x80009260",
+     ".data": "0x8000fe50",
+     "functions": {
+      "__osViInit": "0x80009260"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/vigetcurrcontext.o",
+     ".text": "0x80009370",
+     "functions": {
+      "__osViGetCurrentContext": "0x80009370"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/visetevent.o",
+     ".text": "0x80009380",
+     "functions": {
+      "osViSetEvent": "0x80009380"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/visetmode.o",
+     ".text": "0x800093e0",
+     "functions": {
+      "osViSetMode": "0x800093e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/visetspecial.o",
+     ".text": "0x80009430",
+     "functions": {
+      "osViSetSpecialFeatures": "0x80009430"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/viswapbuf.o",
+     ".text": "0x800095a0",
+     "functions": {
+      "osViSwapBuffer": "0x800095a0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/viswapcontext.o",
+     ".text": "0x800095f0",
+     ".rodata": "0x80011260",
+     "functions": {
+      "__osViSwapContext": "0x800095f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/viblack.o",
+     ".text": "0x80009900",
+     "functions": {
+      "osViBlack": "0x80009900"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/gbpakinit.o",
+     ".text": "0x80009960",
+     "functions": {
+      "osGbpakInit": "0x80009960"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/motor.o",
+     ".text": "0x80009b60",
+     ".bss": "0x8001b3f0",
+     "functions": {
+      "__osMotorAccess": "0x80009b60",
+      "osMotorInit": "0x80009ca4"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/crc.o",
+     ".text": "0x80009ef0",
+     "functions": {
+      "__osContAddressCrc": "0x80009ef0",
+      "__osContDataCrc": "0x80009f5c"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsinitpak.o",
+     ".text": "0x80009fe0",
+     "functions": {
+      "osPfsInitPak": "0x80009fe0",
+      "__osPfsCheckRamArea": "0x8000a1d8"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/bcmp.o",
+     ".text": "0x8000a2b0",
+     "functions": {
+      "bcmp": "0x8000a2b0"
+     }
+    },
+    {
+     "obj": "ultralib/src/libc/bcopy.o",
+     ".text": "0x8000a3c0",
+     "functions": {
+      "bcopy": "0x8000a3c0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfschecker.o",
+     ".text": "0x8000a6e0",
+     "functions": {
+      "osPfsChecker": "0x8000a6e0",
+      "corrupted_init": "0x8000ab40",
+      "corrupted": "0x8000ac98"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsgetstatus.o",
+     ".text": "0x8000ae00",
+     "functions": {
+      "__osPfsGetStatus": "0x8000ae00",
+      "__osPfsRequestOneChannel": "0x8000aef0",
+      "__osPfsGetOneChannelData": "0x8000af84"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsisplug.o",
+     ".text": "0x8000b010",
+     "functions": {
+      "osPfsIsPlug": "0x8000b010",
+      "__osPfsRequestData": "0x8000b18c",
+      "__osPfsGetInitData": "0x8000b230"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/pfsselectbank.o",
+     ".text": "0x8000b2f0",
+     "functions": {
+      "__osPfsSelectBank": "0x8000b2f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contpfs.o",
+     ".text": "0x8000b360",
+     ".data": "0x80011130",
+     "functions": {
+      "__osSumcalc": "0x8000b360",
+      "__osIdCheckSum": "0x8000b394",
+      "__osRepairPackId": "0x8000b3d8",
+      "__osCheckPackId": "0x8000b6c4",
+      "__osGetId": "0x8000b828",
+      "__osCheckId": "0x8000b9f4",
+      "__osPfsRWInode": "0x8000baac"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contramread.o",
+     ".text": "0x8000bdf0",
+     ".data": "0x80011140",
+     "functions": {
+      "__osContRamRead": "0x8000bdf0"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/contramwrite.o",
+     ".text": "0x8000bfe0",
+     "functions": {
+      "__osContRamWrite": "0x8000bfe0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/parameters.o",
+     ".text": "0x8000c1f0",
+     "functions": {}
+    },
+    {
+     "obj": "ultralib/src/os/initialize.o",
+     ".text": "0x8000c250",
+     ".data": "0x80011150",
+     "functions": {
+      "__createSpeedParam": "0x8000c250",
+      "__osInitialize_common": "0x8000c308",
+      "__osInitialize_autodetect": "0x8000c5e0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getcause.o",
+     ".text": "0x8000c5f0",
+     "functions": {
+      "__osGetCause": "0x8000c5f0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/getsr.o",
+     ".text": "0x8000c600",
+     "functions": {
+      "__osGetSR": "0x8000c600"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setfpccsr.o",
+     ".text": "0x8000c610",
+     "functions": {
+      "__osSetFpcCsr": "0x8000c610"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setsr.o",
+     ".text": "0x8000c620",
+     "functions": {
+      "__osSetSR": "0x8000c620"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/setwatchlo.o",
+     ".text": "0x8000c630",
+     "functions": {
+      "__osSetWatchLo": "0x8000c630"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sirawread.o",
+     ".text": "0x8000c640",
+     "functions": {
+      "__osSiRawReadIo": "0x8000c640"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/si.o",
+     ".text": "0x8000c690",
+     "functions": {
+      "__osSiDeviceBusy": "0x8000c690"
+     }
+    },
+    {
+     "obj": "ultralib/src/io/sirawwrite.o",
+     ".text": "0x8000c6b0",
+     "functions": {
+      "__osSiRawWriteIo": "0x8000c6b0"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/maptlbrdb.o",
+     ".text": "0x8000c700",
+     "functions": {
+      "osMapTLBRdb": "0x8000c700"
+     }
+    },
+    {
+     "obj": "ultralib/src/os/unmaptlball.o",
+     ".text": "0x8000c760",
+     "functions": {
+      "osUnmapTLBAll": "0x8000c760"
+     }
+    },
+    {
+     "obj": "libgcc/_udivdi3.o",
+     ".text": "0x8000c7b0",
+     "functions": {
+      "__udivdi3": "0x8000c7b0"
+     }
+    },
+    {
+     "obj": "libgcc/_udivmoddi4.o",
+     ".text": "0x8000c7d0",
+     "functions": {
+      "__udivmoddi4": "0x8000c7d0"
+     }
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodempallan1.o",
+     ".data": "0x800110e0"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodentsclan1.o",
+     ".data": "0x80011040"
+    },
+    {
+     "obj": "ultralib/src/vimodes/vimodepallan1.o",
+     ".data": "0x80011090"
+    },
+    {
+     "obj": "libgcc/_clz.o",
+     ".rodata": "0x800112e0"
+    },
+    {
+     "obj": "ultralib/src/io/vitbl.o",
+     ".data": "0x8000fec0"
+    }
+   ],
+   "symbols": {
+    "__CartRomHandle": "0x80019db0",
+    "__Dom1SpeedParam": "0x80019cc0",
+    "__Dom2SpeedParam": "0x80019d38",
+    "__OSGlobalIntMask": "0x80011160",
+    "__additional_scanline": "0x8000fe4c",
+    "__clz_tab": "0x800112e0",
+    "__createSpeedParam": "0x8000c250",
+    "__osActiveQueue": "0x8000fe0c",
+    "__osBaseCounter": "0x8001a150",
+    "__osBaseTimer": "0x8001a168",
+    "__osCheckId": "0x8000b9f4",
+    "__osCheckPackId": "0x8000b6c4",
+    "__osCleanupThread": "0x80007fb0",
+    "__osContAddressCrc": "0x80009ef0",
+    "__osContDataCrc": "0x80009f5c",
+    "__osContGetInitData": "0x800071dc",
+    "__osContLastCmd": "0x80019ee0",
+    "__osContPifRam": "0x80019ea0",
+    "__osContRamRead": "0x8000bdf0",
+    "__osContRamWrite": "0x8000bfe0",
+    "__osContinitialized": "0x8000fda0",
+    "__osCurrentHandle": "0x8000fd70",
+    "__osCurrentTime": "0x8001a158",
+    "__osDequeueThread": "0x800088d0",
+    "__osDevMgrMain": "0x800063c0",
+    "__osDisableInt": "0x80005ca0",
+    "__osDispatchThread": "0x80007e34",
+    "__osEPiRawReadIo": "0x80006810",
+    "__osEPiRawStartDma": "0x80005f90",
+    "__osEPiRawWriteIo": "0x80006980",
+    "__osEepromTimerMsg": "0x80019e98",
+    "__osEepromTimerQ": "0x80019e80",
+    "__osEnqueueAndYield": "0x80007ccc",
+    "__osEnqueueThread": "0x80007dd4",
+    "__osEventStateTab": "0x8001a0a0",
+    "__osException": "0x80007660",
+    "__osExceptionPreamble": "0x80007650",
+    "__osFaultedThread": "0x8000fe14",
+    "__osFinalrom": "0x8001b630",
+    "__osGbpakTimer": "0x8001b3b8",
+    "__osGbpakTimerMsg": "0x8001b3b0",
+    "__osGbpakTimerQ": "0x8001b3d8",
+    "__osGetCause": "0x8000c5f0",
+    "__osGetId": "0x8000b828",
+    "__osGetSR": "0x8000c600",
+    "__osHwIntTable": "0x8000fdb0",
+    "__osIdCheckSum": "0x8000b394",
+    "__osInitialize_autodetect": "0x8000c5e0",
+    "__osInitialize_common": "0x8000c308",
+    "__osInsertTimer": "0x80008d40",
+    "__osMaxControllers": "0x80019e9c",
+    "__osMotorAccess": "0x80009b60",
+    "__osNop": "0x80007e2c",
+    "__osPackRequestData": "0x80007290",
+    "__osPfsGetInitData": "0x8000b230",
+    "__osPfsGetOneChannelData": "0x8000af84",
+    "__osPfsGetStatus": "0x8000ae00",
+    "__osPfsInodeCache": "0x8001b530",
+    "__osPfsInodeCacheBank": "0x80011134",
+    "__osPfsInodeCacheChannel": "0x80011130",
+    "__osPfsLastChannel": "0x80011140",
+    "__osPfsPifRam": "0x8001b4f0",
+    "__osPfsRWInode": "0x8000baac",
+    "__osPfsRequestData": "0x8000b18c",
+    "__osPfsRequestOneChannel": "0x8000aef0",
+    "__osPfsSelectBank": "0x8000b2f0",
+    "__osPiAccessQueue": "0x80019e40",
+    "__osPiAccessQueueEnabled": "0x8000fd90",
+    "__osPiCreateAccessQueue": "0x80006af0",
+    "__osPiDevMgr": "0x8000fd50",
+    "__osPiGetAccess": "0x80006b44",
+    "__osPiIntTable": "0x8000fdd8",
+    "__osPiRawStartDma": "0x80005ec0",
+    "__osPiRelAccess": "0x80006bb0",
+    "__osPiTable": "0x8000fd6c",
+    "__osPopThread": "0x80007e1c",
+    "__osPreNMI": "0x8000fde0",
+    "__osProbeTLB": "0x80008e60",
+    "__osRcpImTable": "0x800111e0",
+    "__osRepairPackId": "0x8000b3d8",
+    "__osResetGlobalIntMask": "0x800067c0",
+    "__osRestoreInt": "0x80005d10",
+    "__osRunQueue": "0x8000fe08",
+    "__osRunningThread": "0x8000fe10",
+    "__osSetCompare": "0x80008e50",
+    "__osSetFpcCsr": "0x8000c610",
+    "__osSetGlobalIntMask": "0x80006780",
+    "__osSetSR": "0x8000c620",
+    "__osSetTimerIntr": "0x80008cc0",
+    "__osSetWatchLo": "0x8000c630",
+    "__osShutdown": "0x8001115c",
+    "__osSiAccessQueue": "0x8001a130",
+    "__osSiAccessQueueEnabled": "0x8000fdf0",
+    "__osSiCreateAccessQueue": "0x80008420",
+    "__osSiDeviceBusy": "0x8000c690",
+    "__osSiGetAccess": "0x80008474",
+    "__osSiRawReadIo": "0x8000c640",
+    "__osSiRawStartDma": "0x80008370",
+    "__osSiRawWriteIo": "0x8000c6b0",
+    "__osSiRelAccess": "0x800084e0",
+    "__osSumcalc": "0x8000b360",
+    "__osThreadSave": "0x80019ef0",
+    "__osThreadTail": "0x8000fe00",
+    "__osTimerCounter": "0x8001a160",
+    "__osTimerInterrupt": "0x80008b84",
+    "__osTimerList": "0x8000fe20",
+    "__osTimerServicesInit": "0x80008b30",
+    "__osViCurr": "0x8000feb0",
+    "__osViDevMgr": "0x8000fe30",
+    "__osViGetCurrentContext": "0x80009370",
+    "__osViInit": "0x80009260",
+    "__osViIntrCount": "0x8001a154",
+    "__osViNext": "0x8000feb4",
+    "__osViSwapContext": "0x800095f0",
+    "__udivdi3": "0x8000c7b0",
+    "__udivmoddi4": "0x8000c7d0",
+    "bcmp": "0x8000a2b0",
+    "bcopy": "0x8000a3c0",
+    "bzero": "0x800073b0",
+    "corrupted": "0x8000ac98",
+    "corrupted_init": "0x8000ab40",
+    "handle_CpU": "0x80007c98",
+    "leoBootID": "0x800001a0",
+    "memcpy": "0x800074b4",
+    "osAppNMIBuffer": "0x8000031c",
+    "osCartRomInit": "0x80006240",
+    "osCicId": "0x80000310",
+    "osClockRate": "0x80011150",
+    "osContGetQuery": "0x80006e40",
+    "osContGetReadData": "0x80006ee8",
+    "osContInit": "0x80007040",
+    "osContStartQuery": "0x80006dc0",
+    "osContStartReadData": "0x80006e60",
+    "osCreateMesgQueue": "0x800074e0",
+    "osCreatePiManager": "0x80005d30",
+    "osCreateThread": "0x80008510",
+    "osCreateViManager": "0x80008f20",
+    "osDestroyThread": "0x800085e0",
+    "osEPiStartDma": "0x80006180",
+    "osGbpakInit": "0x80009960",
+    "osGetCount": "0x800089f0",
+    "osGetThreadPri": "0x800086c0",
+    "osGetTime": "0x80008960",
+    "osInvalDCache": "0x80006be0",
+    "osInvalICache": "0x80006c90",
+    "osJamMesg": "0x80007510",
+    "osMapTLBRdb": "0x8000c700",
+    "osMemSize": "0x80000318",
+    "osMotorInit": "0x80009ca4",
+    "osPfsChecker": "0x8000a6e0",
+    "osPfsInitPak": "0x80009fe0",
+    "osPfsIsPlug": "0x8000b010",
+    "osPiGetCmdQueue": "0x80006220",
+    "osRecvMesg": "0x80008060",
+    "osResetType": "0x8000030c",
+    "osRomBase": "0x80000308",
+    "osRomType": "0x80000304",
+    "osSendMesg": "0x80008190",
+    "osSetEventMesg": "0x800082c0",
+    "osSetIntMask": "0x80007fc0",
+    "osSetThreadPri": "0x800086e0",
+    "osSetTimer": "0x80008a00",
+    "osStartThread": "0x800087b0",
+    "osTvType": "0x80000300",
+    "osUnmapTLBAll": "0x8000c760",
+    "osVersion": "0x80000314",
+    "osViBlack": "0x80009900",
+    "osViClock": "0x80011158",
+    "osViModeMpalLan1": "0x800110e0",
+    "osViModeNtscLan1": "0x80011040",
+    "osViModePalLan1": "0x80011090",
+    "osViModeTable": "0x8000fec0",
+    "osViSetEvent": "0x80009380",
+    "osViSetMode": "0x800093e0",
+    "osViSetSpecialFeatures": "0x80009430",
+    "osViSwapBuffer": "0x800095a0",
+    "osVirtualToPhysical": "0x80007350",
+    "osWritebackDCache": "0x80006d10",
+    "osWritebackDCacheAll": "0x80006d90",
+    "osYieldThread": "0x80008910",
+    "send_mesg": "0x80007bdc",
+    "strchr": "0x80007450",
+    "strlen": "0x80007490"
+   },
+   "same_bytes_ambiguous": [],
+   "data_placed_by_content": [
+    "ultralib/src/io/vitbl.o .data 0x8000fec0"
+   ],
+   "padding": [
+    {
+     "addr": "0x8000617c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x80006214",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800063b8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x80006778",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x80006808",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x80006978",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x80006ae4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x80006bd8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000703c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x8000734c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800073a4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800074dc",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x80007504",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x80007644",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x80008184",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000836c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x80008414",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x80008508",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800086b8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800086d8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800087a8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800088c8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x80008904",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x80008958",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x800089e4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x80008b2c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x80008e48",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x80009258",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x80009364",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000937c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x800093d8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000942c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x80009594",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800095e4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x800098f8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000995c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x80009b54",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x80009eec",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x80009fd8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000a2a4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000b004",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000b2e4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000b354",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000bde4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000bfd8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000c1e4",
+     "size": 12,
+     "zero": true
+    },
+    {
+     "addr": "0x8000c5e8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000c68c",
+     "size": 4,
+     "zero": true
+    },
+    {
+     "addr": "0x8000c6a8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000c6f8",
+     "size": 8,
+     "zero": true
+    },
+    {
+     "addr": "0x8000ce0c",
+     "size": 52,
+     "zero": false
+    }
+   ],
+   "unexplained": [
+    {
+     "addr": "0x8000ce10",
+     "size": 48
+    }
+   ]
+  }
+ }
+}

@@ -23,6 +23,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import tomllib
 from functools import lru_cache
 from pathlib import Path
@@ -224,6 +225,36 @@ def names_at(image: str) -> dict[int, str]:
     for n, a in libultra_names(image).items():
         out.setdefault(a, n)
     return out
+
+
+_GEN_LOCK = threading.Lock()
+
+
+def generated_include() -> Path:
+    """build/<version>/include: symbol_addresses.h, `#define SYMADDR_<name> 0x...` for every symbol of the version's
+    symbols.txt and libultra_map.json (include/symaddr.h's SYM_ADDR), rewritten when they are newer. The compiler
+    searches it."""
+    d = BUILD / VERSION / "include"
+    h = d / "symbol_addresses.h"
+    newest = max(table_path(n).stat().st_mtime for n in ("symbols.txt", "libultra_map.json"))
+    with _GEN_LOCK:
+        if h.exists() and h.stat().st_mtime >= newest:
+            return d
+        lines = [f"/* Generated from versions/{VERSION}/symbols.txt and libultra_map.json by tools/common.py: each "
+                 "symbol's address (the game image's, for a name both images have). */"]
+        done = set()
+        for img in IMAGES:
+            names = {n: s.address for n, s in symbols()[img].items()}
+            names.update({n: a for n, a in libultra_names(img).items() if n not in names})
+            for name, addr in sorted(names.items()):
+                if name not in done:
+                    done.add(name)
+                    lines.append(f"#define SYMADDR_{name} 0x{addr:08X}")
+        d.mkdir(parents=True, exist_ok=True)
+        tmp = h.with_suffix(".tmp")
+        tmp.write_text("\n".join(lines) + "\n", newline="\n")
+        tmp.replace(h)
+    return d
 
 
 @lru_cache(None)

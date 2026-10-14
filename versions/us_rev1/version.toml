@@ -1,0 +1,47 @@
+# Excitebike 64 (USA) (Rev 1): the retail cartridge's second revision.
+# Addresses are VRAM (both code images start at 0x80000400). tools/common.py reads this file (common.layout()).
+# Drafted from LodgeNet's by tools/map_version.py.
+
+title = "Excitebike 64 (USA) (Rev 1)"
+sha1 = "c2fac422af135409c1b38569b309f9d452c81c35"
+cic = "6103"
+
+[rom]
+boot = [0x1000, 0x12230]      # the boot loader, uncompressed, loaded at 0x80000400
+container = 0x12230           # "BRSOHYES": the game image's four SWD segments, then the resources
+
+[game]
+data = [0x800C2BC0, 0x800DC9B8]           # initialized data (to the end of the image)
+bss = [0x800DC9C0, 0x80105F20]
+libultra_text = [0x800ACB40, 0x800B7FBC]
+markers = [[0x80073640, 0x80073670], [0x800A4C90, 0x800A4CA0], [0x800AA5F0, 0x800AA600]]
+# no rspboot: game_main reads it from the IPL3 (ROM 0xB70)
+microcode_text = [[0x800AA600, 0x800ACB40]]
+microcode_data = [[0x800D1EC0, 0x800D22E0, "RSP microcode data: F3DEX.NoN xbus 2.08 (gspF3DEX2.NoN.xbus)"],
+                  [0x800D22E0, 0x800D26F0, "RSP microcode data: F3DLX.Rej xbus 2.08 (gspF3DLX2.Rej.xbus)"]]
+asm = [[0x80000400, 0x80000450], [0x800DBE70, 0x800DC1D8], [0x800DC200, 0x800DC9B8]]
+split_junk = [0x800B7FBC]
+
+[boot]
+data = [0x8000CE40, 0x80011414]
+bss = [0x80011630, 0x8001B640]
+libultra_text = [0x80005CA0, 0x8000CE40]
+markers = []
+microcode_text = [[0x80003690, 0x80005CA0]]
+microcode_data = [[0x8000F520, 0x8000F940, "RSP microcode data: F3DEX.NoN xbus 2.08 (gspF3DEX2.NoN.xbus)"],
+                  [0x8000F940, 0x8000FD50, "RSP microcode data: F3DLX.Rej xbus 2.08 (gspF3DLX2.Rej.xbus)"]]
+asm = [[0x80000400, 0x80000450], [0x80002CE0, 0x80003690], [0x800113E0, 0x80011630]]
+from_rom = [[0x8000CE40, 0x8000DE40, "sBootFontBitmap", "u8", "a bitmap"],
+            [0x8000DE40, 0x8000F4C8, "sBootSplashSwd", "u8", "SWD-compressed data"]]
+split_junk = []
+
+# where each asm/*.s is linked
+[asm_files]
+"boot_entry.s" = [0x80000400, 0x80000450]
+"boot_sn_stubs.s" = [0x80002CE0, 0x80003690]
+"boot_swdexpand.s" = [0x800113E0, 0x800115B4]
+"boot_gamecopy.s" = [0x800115B4, 0x80011630]
+"game_entry.s" = [0x80000400, 0x80000450]
+"game_tunes.s" = [0x800DBE70, 0x800DC1D8]
+"game_softmix.s" = [0x800DC200, 0x800DC6B4]
+"game_decoder.s" = [0x800DC6B4, 0x800DC9B8]

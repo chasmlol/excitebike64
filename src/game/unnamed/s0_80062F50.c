@@ -1,4 +1,5 @@
 #include "game.h"
+#include "symaddr.h"
 
 /* Race positions, rubber-banding, the CPU riders' lanes, the starting grid, and the extra riders (6 and 7, the
    "drones") that appear near the leading human rider and leave once out of sight. */
@@ -1052,9 +1053,9 @@ void race_grid_from_standings(void)
                 j = 0;
                 if (event->numRiders > 0) {
                     season = (u8 *)gSeason;
-                    hb = (u8 *)0x800F0000;
+                    hb = (u8 *)SYM_HI(gEvent);
                     __asm__ __volatile__("" : "+r"(hb)); /* keeps the original's base register */
-                    numRiders = *(s16 *)(hb + 0x5CA); /* gEvent.numRiders */
+                    numRiders = *(s16 *)(hb + SYM_LO(gEvent) + 0x22); /* gEvent.numRiders */
 inner:
                     if (*(u8 *)((u32)season + (u32)j + 0x6c) == i) { /* Season.standings[j] */
                         goto store;
