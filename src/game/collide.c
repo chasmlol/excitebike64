@@ -317,9 +317,10 @@ sideOrRearHit:
             riderB->pendingCrash = -ANIM_CRASH_RIGHT;
         }
         {
-            /* crashVel = bike.vel, copied the way the original does */
-            f64 *dst = (f64 *)&riderB->crashVel;
-            f64 *src = (f64 *)&riderB->bike.vel;
+            /* crashVel = bike.vel, copied the way the original does: through pointers to an 8-byte type (u64, not
+               f64: the game is compiled with 32-bit doubles) */
+            u64 *dst = (u64 *)&riderB->crashVel;
+            u64 *src = (u64 *)&riderB->bike.vel;
             __builtin_memcpy(dst, src, 12);
         }
         return 1;

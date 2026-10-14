@@ -6,6 +6,10 @@ title = "Excitebike 64 (USA) (Rev 1)"
 sha1 = "c2fac422af135409c1b38569b309f9d452c81c35"
 cic = "6103"
 
+# cc1 flags this version adds to a compiler profile of platform.toml
+[cflags]
+sn281 = "-fshort-double"      # the game's C: double is 32 bits, as float
+
 [rom]
 boot = [0x1000, 0x12230]      # the boot loader, uncompressed, loaded at 0x80000400
 container = 0x12230           # "BRSOHYES": the game image's four SWD segments, then the resources

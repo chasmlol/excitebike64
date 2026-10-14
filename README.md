@@ -59,8 +59,9 @@ None of these are included.
 
 - **SN Systems SN64** (`cppn64`, `cc1n64`, `asn64`; proprietary Win32 programs, obtain them from the N64 decomp
   community): GNU C 2.8.1 build for the game (the marijnvdwerf/sn64 1,0,0,2 release), GNU C 2.7.2 builds 0006 and
-  0001 for the boot loader (decomp.me's `n64_sn272_0006` and `n64_sn272_0001`). platform.toml has the flags,
-  functions.csv (versions/<name>/) the compiler of each function.
+  0001 for the boot loader (decomp.me's `n64_sn272_0006` and `n64_sn272_0001`). platform.toml has the flags (a
+  version's version.toml can add some: both versions here add `-fshort-double` to the game's), functions.csv
+  (versions/<name>/) the compiler of each function.
 - **KMC GCC 2.7.2** + binutils 2.6 for Linux (decompals/mips-gcc-2.7.2, decompals/mips-binutils-2.6) for libultra
   and libgcc.
 - **decompals/ultralib** at commit `e24c836`: libultra sources and the headers the C includes (`<ultra64.h>`).

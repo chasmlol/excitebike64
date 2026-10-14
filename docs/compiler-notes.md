@@ -5,10 +5,12 @@ names are examples in this repository where the pattern can be seen.
 
 ## Toolchains
 
-- **Game image:** SN Systems SN64, `cc1n64` (GNU C 2.8.1-based) with `-O2 -G0 -mcpu=vr4300 -mips3 -mgp32 -mfp32`,
-  assembled by SN's `asn64` into Psy-Q LNK objects. MIPS III code with 32-bit registers and the o32 calling
-  convention: arguments in `$a0-$a3` (floats in `$f12`, `$f14`), results in `$v0` / `$f0`. No `$gp` (`-G0`): every
-  global is a `lui`/`%lo` pair. `char` is **unsigned** by default (`lbu`); `s8` for signed bytes.
+- **Game image:** SN Systems SN64, `cc1n64` (GNU C 2.8.1-based) with `-O2 -G0 -mcpu=vr4300 -mips3 -mgp32 -mfp32`
+  and `-fshort-double` (`double` is 32 bits, the same as `float`; added per version by version.toml's `[cflags]`, as
+  not every version of the game was built with it), assembled by SN's `asn64` into Psy-Q LNK objects. MIPS III code
+  with 32-bit registers and the o32 calling convention: arguments in `$a0-$a3` (floats in `$f12`, `$f14`), results
+  in `$v0` / `$f0`. No `$gp` (`-G0`): every global is a `lui`/`%lo` pair. `char` is **unsigned** by default (`lbu`);
+  `s8` for signed bytes.
 - **Boot loader** (`boot_func_*`, a separate program also loaded at 0x80000400): SN64 GNU C 2.7.2, build 0006 for
   most functions, build 0001 for 8 of them and 2.8.1 for 15; functions.csv names the profile of each. 2.7.2's
   epilogues end `addiu $sp; jr $ra; nop`.
@@ -70,7 +72,7 @@ gDPSetCycleType, gDPSetRenderMode), 0xD9 geometry mode, 0xDA matrix.
 
 ## Globals, constants, fixed addresses
 
-- `lui $at` + `lwc1/ldc1 ($at)` is a float/double literal in the C (`x * 0.0625f`), not an extern. A 2^31 compare
+- `lui $at` + `lwc1 ($at)` is a float literal in the C (`x * 0.0625f`), not an extern. A 2^31 compare
   and sub/trunc/`or 0x80000000` arms are a float<->unsigned conversion: assign the float to a u16/u32 field, or cast
   to s32 first.
 - A global loaded via `lui $vN` + `%lo($vN)` is an extern `D_XXXXXXXX`. Data addresses passed as arguments: an extern
@@ -109,7 +111,9 @@ gDPSetCycleType, gDPSetRenderMode), 0xD9 geometry mode, 0xDA matrix.
 
 - `mtc1 $zero, $fN` + `swc1` to two fields: chained `p->x = p->z = 0.0f;`; several zero stores: a local
   `f32 z = 0.0f;` stored first (a bare `= 0.0f` gives `sw $zero`).
-- Prototype float callees with f32 (`void g(s16, f32)`), or the arguments are promoted to double. An early
+- Prototype float callees with f32 (`void g(s16, f32)`). With `-fshort-double` a promoted float stays single
+  precision, and `f64` is 32 bits: something that really is 64 bits needs a 64-bit integer type
+  (collide_resolve_rider_hit's copy). An early
   `return 0.0f` for negative input. An int global in float math: `*(volatile s32 *)&D_X`.
 - FP register allocation: a result in its dead input's register means that variable is reused
   (`sm = __builtin_sqrtf(sm)`); in the mul temp's register or with operands swapped: a fresh variable; split

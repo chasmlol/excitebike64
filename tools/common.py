@@ -263,11 +263,15 @@ def profiles() -> dict:
 
 
 def profile(name: str) -> dict:
-    """A compiler profile from platform.toml with the program paths resolved."""
+    """A compiler profile from platform.toml with the program paths resolved, and the cc1 flags the version being
+    built adds to it (version.toml [cflags], by profile name)."""
     p = dict(profiles()[name])
     base = Path(setting(p["toolchain"]))
     for k in ("cpp", "cc1", "as"):
         p[k] = str(base / p[k])
+    extra = version_info().get("cflags", {}).get(name)
+    if extra:
+        p["cflags"] = f"{p['cflags']} {extra}"
     p["name"] = name
     return p
 
