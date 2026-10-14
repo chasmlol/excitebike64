@@ -1,7 +1,9 @@
-"""Paths, local settings and the function table, shared by the tools. Standard library only.
+"""Paths, local settings, the version to build and its tables, shared by the tools. Standard library only.
 
 Settings (toolchain locations) come from environment variables of the same name, else from config.toml at the
 repository root (not tracked; see config.example.toml):
+  VERSION       the version to build or examine: a directory of versions/ (lodgenet, us_rev1; default lodgenet).
+                Every tool also takes --version NAME, which wins over the setting.
   SN64_GCC281, SN64_GCC272_0006, SN64_GCC272_0001   folders with SN64 cppn64.exe, cc1n64.exe and asn64.exe
   ULTRALIB      decompals/ultralib checkout (commit e24c836): libultra headers and sources
   KMC_GCC       KMC GCC 2.7.2 + binutils 2.6 for Linux (gcc, cc1, cpp, as, ar): libultra and libgcc objects
@@ -9,12 +11,16 @@ repository root (not tracked; see config.example.toml):
   MIPS_PREFIX   GNU binutils for MIPS, command prefix (default mips-linux-gnu-)
   WINE          runs the Win32 tools (SN64, swd32.exe) on a non-Windows host (default wine)
   LIBULTRA_WORK Linux-filesystem folder build_libultra_objs.sh builds in (default ~/excitebike64-libultra)
+
+Each version has a directory versions/<name>/: version.toml (the ROM's SHA-1 and layout), functions.csv,
+symbols.txt and libultra_map.json. Its extracted images and build go to build/<name>/.
 """
 from __future__ import annotations
 
 import csv
 import json
 import os
+import re
 import subprocess
 import sys
 import tomllib
@@ -23,19 +29,95 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
-ORIG = BUILD / "extracted"          # the original images, written by tools/extract.py
-BASEROM = ROOT / "baserom.z64"
+VERSIONS = ROOT / "versions"
 VRAM = 0x80000400
 IMAGES = ("game", "boot")
-ROM_SHA1 = "3a043dc4c8b1351ca56c3ab9bb061bd7fa99c312"
-# Where each image keeps initialized data (code can reference it by value: literals).
-DATA_RANGES = {"game": (0x800C2280, 0x800DC098), "boot": (0x8000CE10, 0x800113E4)}
+DEFAULT_VERSION = "lodgenet"
 
 
 @lru_cache(None)
 def _config() -> dict:
     p = ROOT / "config.toml"
     return tomllib.loads(p.read_text()) if p.exists() else {}
+
+
+def known_versions() -> list[str]:
+    """The versions this tree builds: the directories of versions/ with a version.toml."""
+    return sorted(p.parent.name for p in VERSIONS.glob("*/version.toml"))
+
+
+def version_numbers() -> dict[str, int]:
+    """{version: the value of its VERSION_<NAME> macro} from include/version.h."""
+    text = (ROOT / "include" / "version.h").read_text()
+    return {m.group(1).lower(): int(m.group(2)) for m in re.finditer(r"#define\s+VERSION_(\w+)\s+(\d+)", text)}
+
+
+def _choose_version() -> str:
+    """--version NAME on the command line, else the VERSION setting, else lodgenet."""
+    v = None
+    for i, arg in enumerate(sys.argv[1:], 1):
+        if arg == "--version" and i + 1 < len(sys.argv):
+            v = sys.argv[i + 1]
+        elif arg.startswith("--version="):
+            v = arg.split("=", 1)[1]
+    v = v or os.environ.get("VERSION") or _config().get("VERSION") or DEFAULT_VERSION
+    if v not in known_versions():
+        sys.exit(f"unknown version {v!r}: one of {', '.join(known_versions())} (versions/<name>/version.toml)")
+    if v not in version_numbers():
+        sys.exit(f"include/version.h has no VERSION_{v.upper()}")
+    os.environ["VERSION"] = v     # the tools a tool runs build the same version
+    return v
+
+
+VERSION = _choose_version()
+VERSION_DIR = VERSIONS / VERSION
+VERSION_NUMBER = version_numbers()[VERSION]
+ORIG = BUILD / VERSION / "extracted"     # the original images, written by tools/extract.py
+BASEROM = ORIG / "baserom.z64"           # the original ROM, copied there by tools/extract.py
+OUT = BUILD / VERSION / "out"            # tools/build_all.py's default output
+
+
+def argv() -> list[str]:
+    """sys.argv without --version NAME (for the tools that read their arguments themselves)."""
+    out, skip = [], False
+    for arg in sys.argv:
+        if skip:
+            skip = False
+        elif arg == "--version":
+            skip = True
+        elif not arg.startswith("--version="):
+            out.append(arg)
+    return out
+
+
+def add_version_arg(ap):
+    """Document --version on a tool's command line (common reads it before argparse runs)."""
+    ap.add_argument("--version", default=VERSION, metavar="NAME",
+                    help=f"version to build: {', '.join(known_versions())} (default: the VERSION setting, else "
+                         f"{DEFAULT_VERSION}; now {VERSION})")
+
+
+@lru_cache(None)
+def version_info(version: str | None = None) -> dict:
+    """versions/<version>/version.toml: title, sha1, cic, rom, the per-image layout, asm_files."""
+    return tomllib.loads((VERSIONS / (version or VERSION) / "version.toml").read_text())
+
+
+def layout(image: str) -> dict:
+    """The per-image layout of the version being built (version.toml [game] / [boot]): data, bss, libultra_text,
+    markers, microcode_text, microcode_data, asm, from_rom."""
+    return version_info()[image]
+
+
+ROM_SHA1 = version_info()["sha1"]
+TITLE = version_info()["title"]
+# Where each image keeps initialized data (code can reference it by value: literals).
+DATA_RANGES = {k: tuple(layout(k)["data"]) for k in IMAGES}
+
+
+def table_path(name: str, version: str | None = None) -> Path:
+    """versions/<version>/<name>: functions.csv, symbols.txt, libultra_map.json."""
+    return VERSIONS / (version or VERSION) / name
 
 
 def setting(name: str, default: str | None = None, required: bool = True) -> str | None:
@@ -49,7 +131,7 @@ def setting(name: str, default: str | None = None, required: bool = True) -> str
 def original(image: str) -> bytes:
     p = ORIG / f"{image}.bin"
     if not p.exists():
-        sys.exit(f"missing {p.relative_to(ROOT)}: run `python tools/extract.py baserom.z64` first")
+        sys.exit(f"missing {p.relative_to(ROOT)}: run `python tools/extract.py ROM` with the {TITLE} ROM first")
     return p.read_bytes()
 
 
@@ -62,12 +144,12 @@ def output_dir(path) -> Path:
 
 
 @lru_cache(None)
-def functions() -> tuple[dict, ...]:
-    """functions.csv: every function-sized range of both images, with how it is built.
-    kind: c (src/), copy (a boot copy of a game function, built from its C), asm (asm/), libultra (ultralib or
-    libgcc object), padding (linker fill between objects)."""
+def functions(version: str | None = None) -> tuple[dict, ...]:
+    """functions.csv of the version (default: the one being built): every function-sized range of both images, with
+    how it is built. kind: c (src/), copy (a boot copy of a game function, built from its C), asm (asm/), libultra
+    (ultralib or libgcc object), padding (linker fill between objects)."""
     out = []
-    with open(ROOT / "functions.csv", newline="") as fh:
+    with open(table_path("functions.csv", version), newline="") as fh:
         for r in csv.DictReader(fh):
             r["address"] = int(r["address"], 16)
             r["size"] = int(r["size"])
@@ -76,20 +158,23 @@ def functions() -> tuple[dict, ...]:
 
 
 @lru_cache(None)
-def symbols() -> dict:
-    """symbols.txt: {image: {name: Symbol}}, every name the C, asm and data use (see the file's header)."""
+def symbols(version: str | None = None) -> dict:
+    """symbols.txt of the version (default: the one being built): {image: {name: Symbol}}, every name the C, asm and
+    data use (see the file's header)."""
     out = {k: {} for k in IMAGES}
-    for n, line in enumerate((ROOT / "symbols.txt").read_text().splitlines(), 1):
+    path = table_path("symbols.txt", version)
+    where = path.relative_to(ROOT).as_posix()
+    for n, line in enumerate(path.read_text().splitlines(), 1):
         line = line.split("#", 1)[0].strip()
         if not line:
             continue
         f = line.split()
         if len(f) not in (5, 6) or f[1] not in IMAGES or f[3] not in ("func", "data"):
-            sys.exit(f"symbols.txt:{n}: expected `name image address kind size [shares-address-with]`")
+            sys.exit(f"{where}:{n}: expected `name image address kind size [shares-address-with]`")
         sym = Symbol(f[0], f[1], int(f[2], 16), f[3], None if f[4] == "-" else int(f[4], 0),
                      f[5] if len(f) == 6 else None)
         if sym.name in out[sym.image]:
-            sys.exit(f"symbols.txt:{n}: {sym.name} is listed twice for the {sym.image} image")
+            sys.exit(f"{where}:{n}: {sym.name} is listed twice for the {sym.image} image")
         out[sym.image][sym.name] = sym
     return out
 
@@ -103,9 +188,9 @@ class Symbol:
 
 
 @lru_cache(None)
-def libultra_names(image: str) -> dict[str, int]:
+def libultra_names(image: str, version: str | None = None) -> dict[str, int]:
     """libultra's own names (libultra_map.json): its functions and the symbols its objects define."""
-    m = json.loads((ROOT / "libultra_map.json").read_text())["images"][image]
+    m = json.loads(table_path("libultra_map.json", version).read_text())["images"][image]
     out = {n: int(a, 16) for n, a in m["symbols"].items()}
     for e in m["objects"]:
         out.update({n: int(a, 16) for n, a in e.get("functions", {}).items()})

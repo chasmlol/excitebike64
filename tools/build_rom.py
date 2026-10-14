@@ -1,14 +1,14 @@
 """Assemble the ROM from a build's images: boot.bin (uncompressed at ROM 0x1000) and game.bin compressed again
-into the container's four segment streams, then the header checksum. Everything else (IPL3, the game's resources
-after the container) comes from the original ROM.
+into the container's four segment streams, then the header checksum (the CIC of the version: version.toml `cic`).
+Everything else (IPL3, the game's resources after the container) comes from the original ROM.
 
-The container at ROM 0x12200: the tag "BRSOHYES", the (raw, packed) sizes of the four segments, then the SWD
-streams, each padded with 0xFF to a multiple of 4. Each segment is compressed with John Brandwood's SWD32 (setting
+The container (ROM 0x12200 in LodgeNet; version.toml [rom] container): the tag "BRSOHYES", the (raw, packed) sizes
+of the four segments, then the SWD streams, each padded with 0xFF to a multiple of 4. Each segment is compressed with John Brandwood's SWD32 (setting
 SWD32), which reproduces the original streams; --packer own uses tools/swd_pack.py instead (a valid ROM, but the
 streams and so the ROM differ from the original).
 
-usage: python tools/build_rom.py [BUILD_DIR] [OUT.z64] [--baserom FILE] [--packer swd32|own]
-       (defaults: build/out, BUILD_DIR/excitebike64.z64, baserom.z64)
+usage: python tools/build_rom.py [BUILD_DIR] [OUT.z64] [--baserom FILE] [--packer swd32|own] [--version NAME]
+       (defaults: build/<version>/out, BUILD_DIR/excitebike64.z64, build/<version>/extracted/baserom.z64)
 """
 import argparse
 import hashlib
@@ -66,21 +66,24 @@ def swd32(raw: bytes) -> bytes:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("build", nargs="?", default=str(common.BUILD / "out"))
+    ap.add_argument("build", nargs="?", default=str(common.OUT))
     ap.add_argument("out", nargs="?")
     ap.add_argument("--baserom", default=str(common.BASEROM))
     ap.add_argument("--packer", choices=("swd32", "own"), default="swd32")
+    common.add_version_arg(ap)
     a = ap.parse_args()
     build = Path(a.build)
     out = Path(a.out) if a.out else build / "excitebike64.z64"
     base = Path(a.baserom).read_bytes()
     if hashlib.sha1(base).hexdigest() != common.ROM_SHA1:
-        sys.exit(f"{a.baserom} is not the Excitebike 64 (USA) (LodgeNet) z64 ROM")
+        sys.exit(f"{a.baserom} is not the {common.TITLE} z64 ROM")
     layout = json.loads((common.ORIG / "layout.json").read_text())
     want = struct.unpack_from(">II", base, 0x10)
     cic = next((c for c in SEEDS if crc(base, c) == want), None)
     if cic is None:
         sys.exit("could not identify the CIC (no seed reproduces the original header checksum)")
+    if common.version_info()["cic"] not in cic.split("/"):
+        sys.exit(f"the header checksum is CIC-{cic}'s, version.toml says CIC-{common.version_info()['cic']}")
     print(f"CIC-{cic}: the checksum algorithm reproduces the original header ({want[0]:08X} {want[1]:08X})")
     rom = bytearray(base)
     boot = (build / "boot.bin").read_bytes()

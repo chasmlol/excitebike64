@@ -16,6 +16,7 @@ KMC_GCC = "/path/to/kmc-gcc-2.7.2"
 SWD32 = "/path/to/swd32.exe"
 
 # Optional
+# VERSION = "lodgenet"                            # the version the tools build: a directory of versions/
 # MIPS_PREFIX = "mips-linux-gnu-"                 # GNU binutils for MIPS (run through WSL on Windows)
 # WINE = "wine"                                   # runs the Win32 tools on a non-Windows host
 # LIBULTRA_WORK = "~/excitebike64-libultra"       # Linux-filesystem folder the libultra objects are built in

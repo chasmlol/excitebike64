@@ -1,6 +1,6 @@
 # game_softmix.s -- softmix.c's voice mixers and output converters (hand-written asm)
 # image: game
-# vram: 0x800DB8E0-0x800DBD94
+# vram: 0x800DB8E0-0x800DBD94 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # The inner loops of the software mixer (src/game/softmix.c), written in assembly and linked among the game's
 # initialized data, right after the mixer state they use. softmix_mix calls softmix_mix_voices_mono or

@@ -1,8 +1,10 @@
-"""Full build of Excitebike 64 from source, with proof of what is reused from the original images.
+"""Full build of one version of Excitebike 64 from source, with proof of what is reused from the original images.
 
-1. Copy the original images (build/extracted/game.bin, boot.bin) to OUT and poison every byte -- replace it with
-   its complement (default; no original byte can survive unnoticed, not even one that equals a fixed poison value)
-   or with --poison 0xNN -- except the ranges in KEEP below (RSP microcode text and data, segment markers): every
+The version: --version NAME, else the VERSION setting, else lodgenet (tools/common.py; versions/<name>/).
+1. Copy the original images (build/<version>/extracted/game.bin, boot.bin) to OUT and poison every byte -- replace
+   it with its complement (default; no original byte can survive unnoticed, not even one that equals a fixed poison
+   value) or with --poison 0xNN -- except the ranges keep() lists (RSP microcode text and data, segment markers;
+   version.toml): every
    function -- C, libultra, hand-written asm, linker padding alike --, all initialized data, the gaps between
    objects.
 2. build_code.py      decompiled C (game, boot loader, boot copies of game functions), the compilers' literals
@@ -18,7 +20,8 @@
 4. build_rom.py       boot.bin + SWD32-packed game.bin into the original ROM layout, header checksum; SHA1 check.
 5. Coverage: every byte of both images, by where it came from.
 
-usage: python tools/build_all.py [OUT] [--poison invert|0xNN] [--jobs N]     (default OUT: build/out)
+usage: python tools/build_all.py [OUT] [--version NAME] [--poison invert|0xNN] [--jobs N]
+       (default OUT: build/<version>/out)
 """
 import argparse
 import subprocess
@@ -34,15 +37,17 @@ import build_data  # noqa: E402
 VRAM = common.VRAM
 IMAGES = common.IMAGES
 DATA_RANGES = common.DATA_RANGES
-# Taken from the original images, never poisoned (tools/split.py not_code, build_data.NOT_C).
-KEEP = {
-    "game": [(0x800731D0, 0x80073200, "segment markers"), (0x800A42C0, 0x800A42D0, "segment markers"),
-             (0x800A9C20, 0x800A9C30, "segment markers"),
-             (0x800A9C30, 0x800AC240, "RSP microcode text")] + [(a, b, "RSP microcode data")
-                                                                 for a, b, _ in build_data.NOT_C["game"]],
-    "boot": [(0x80003660, 0x80005C70, "RSP microcode text")] + [(a, b, "RSP microcode data")
-                                                               for a, b, _ in build_data.NOT_C["boot"]],
-}
+
+
+def keep(image):
+    """Taken from the original images, never poisoned (version.toml: markers, microcode_text, microcode_data)."""
+    lay = common.layout(image)
+    return ([(a, b, "segment markers") for a, b in lay["markers"]]
+            + [(a, b, "RSP microcode text") for a, b in lay["microcode_text"]]
+            + [(a, b, "RSP microcode data") for a, b, _ in lay["microcode_data"]])
+
+
+KEEP = {k: keep(k) for k in IMAGES}
 STEPS = [("build_code.py", "C"), ("build_asm.py", "asm"), ("build_libultra.py", "libultra"),
          ("build_data.py", "data C")]
 
@@ -60,10 +65,12 @@ def run(args, check=True):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("out", nargs="?", default=str(common.BUILD / "out"))
+    ap.add_argument("out", nargs="?", default=str(common.OUT))
     ap.add_argument("--poison", default="invert", help="invert (each byte's complement, default) or a byte value")
     ap.add_argument("--jobs", type=int, default=8)
+    common.add_version_arg(ap)
     a = ap.parse_args()
+    print(f"building {common.TITLE} (version {common.VERSION})")
     out = common.output_dir(a.out)
     fixed = None if a.poison == "invert" else int(a.poison, 0)
     bad_byte = lambda k, i: orig[k][i] ^ 0xFF if fixed is None else fixed  # noqa: E731

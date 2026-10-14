@@ -1,6 +1,6 @@
 # game_decoder.s -- DECODER.C's ADPCM block decoders and their tables (hand-written asm)
 # image: game
-# vram: 0x800DBD94-0x800DC098
+# vram: 0x800DBD94-0x800DC098 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # Linked among the game's initialized data, after game_softmix.s; the last bytes of the game image. decoder.c
 # decodes a "SAM" sample one chunk at a time through these and compands the 16-bit output to 8 bits

@@ -1,0 +1,47 @@
+# Excitebike 64 (USA) (LodgeNet): the hotel pay-per-play build, the reference version of this tree.
+# Addresses are VRAM (both code images start at 0x80000400). tools/common.py reads this file (common.layout()).
+
+title = "Excitebike 64 (USA) (LodgeNet)"
+sha1 = "3a043dc4c8b1351ca56c3ab9bb061bd7fa99c312"
+cic = "6102"
+
+[rom]
+boot = [0x1000, 0x12200]      # the boot loader, uncompressed, loaded at 0x80000400
+container = 0x12200           # "BRSOHYES": the game image's four SWD segments, then the resources
+
+[game]
+data = [0x800C2280, 0x800DC098]           # initialized data (to the end of the image)
+bss = [0x800DC0A0, 0x80105580]
+libultra_text = [0x800AC240, 0x800B767C]
+markers = [[0x800731D0, 0x80073200], [0x800A42C0, 0x800A42D0], [0x800A9C20, 0x800A9C30]]
+microcode_text = [[0x800A9C30, 0x800AC240]]
+microcode_data = [[0x800D15C0, 0x800D19E0, "RSP microcode data: F3DEX.NoN xbus 2.08 (gspF3DEX2.NoN.xbus)"],
+                  [0x800D19E0, 0x800D1DF0, "RSP microcode data: F3DLX.Rej xbus 2.08 (gspF3DLX2.Rej.xbus)"]]
+# hand-written asm (functions.csv kind `asm`, with the data around it that the same files build)
+asm = [[0x80000400, 0x80000450], [0x800DB550, 0x800DB8B8], [0x800DB8E0, 0x800DC098]]
+split_junk = [0x800B767C]                 # linker junk that decodes as code (tools/split.py)
+
+[boot]
+data = [0x8000CE10, 0x800113E4]
+bss = [0x80011600, 0x8001B610]
+libultra_text = [0x80005C70, 0x8000CE10]
+markers = []
+microcode_text = [[0x80003660, 0x80005C70]]
+microcode_data = [[0x8000F4F0, 0x8000F910, "RSP microcode data: F3DEX.NoN xbus 2.08 (gspF3DEX2.NoN.xbus)"],
+                  [0x8000F910, 0x8000FD20, "RSP microcode data: F3DLX.Rej xbus 2.08 (gspF3DLX2.Rej.xbus)"]]
+asm = [[0x80000400, 0x80000450], [0x80002CB0, 0x80003660], [0x800113B0, 0x80011600]]
+# not built from C: copied from the extracted image (start, end, symbol, element type, what it is)
+from_rom = [[0x8000CE10, 0x8000DE10, "sBootFontBitmap", "u8", "a bitmap"],
+            [0x8000DE10, 0x8000F498, "sBootSplashSwd", "u8", "SWD-compressed data"]]
+split_junk = []
+
+# where each asm/*.s is linked
+[asm_files]
+"boot_entry.s" = [0x80000400, 0x80000450]
+"boot_sn_stubs.s" = [0x80002CB0, 0x80003660]
+"boot_swdexpand.s" = [0x800113B0, 0x80011584]
+"boot_gamecopy.s" = [0x80011584, 0x80011600]
+"game_entry.s" = [0x80000400, 0x80000450]
+"game_tunes.s" = [0x800DB550, 0x800DB8B8]
+"game_softmix.s" = [0x800DB8E0, 0x800DBD94]
+"game_decoder.s" = [0x800DBD94, 0x800DC098]

@@ -1,6 +1,6 @@
 # game_entry.s -- entry point of the main game image (hand-written asm)
 # image: game
-# vram: 0x80000400-0x80000450
+# vram: 0x80000400-0x80000450 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # The boot loader copies the decompressed game to 0x80000400 and jumps here. Sets the stack to 0x803FFEF0,
 # clears the BSS (0x800DC0A0-0x80105580), calls the game's main (game_boot) and stops on `break` if it

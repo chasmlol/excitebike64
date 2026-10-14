@@ -1,6 +1,6 @@
 # game_tunes.s -- tunes.c's ADPCM block decoder and its tables (hand-written asm)
 # image: game
-# vram: 0x800DB550-0x800DB8B8
+# vram: 0x800DB550-0x800DB8B8 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # Linked among the game's initialized data, after fontcode.c's and just before the mixer state of game_softmix.s.
 # tunes_mix_streams decodes each 0x220-byte DMA of a stream channel as 8 blocks of 0x44 bytes, 128 samples each:

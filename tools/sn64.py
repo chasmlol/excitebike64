@@ -1,6 +1,7 @@
 """The SN Systems SN64 toolchain: compile a C file to an SN LNK object, list code.
 
-compile(): cppn64 -> cc1n64 -> asn64 with a platform.toml profile, producing a Psy-Q LNK object (tools/snobj.py).
+compile(): cppn64 -> cc1n64 -> asn64 with a platform.toml profile, producing a Psy-Q LNK object (tools/snobj.py),
+for the version being built (VERSION, the value of include/version.h's VERSION_<NAME>).
 
 Listings (need rabbitizer: pip install rabbitizer), one instruction per line, the same notation for the original
 and for an object: relocations resolved to the original's addresses through symbols.txt (`lui $v0, 0x800C` /
@@ -12,6 +13,7 @@ tables as `jtbl=L+0x1c,...`.
 usage: python tools/sn64.py NAME                  listing of a function of the original images (functions.csv)
        python tools/sn64.py file.c [profile]     compile (default: the file's profile in functions.csv, else sn281)
                                                  and list the object's functions
+       --version NAME                            the version (default: the VERSION setting, else lodgenet)
 """
 from __future__ import annotations
 
@@ -58,7 +60,8 @@ def compile(profile: dict, src: Path, obj: Path, include_dirs: list[Path]):
     work = obj.parent
     stem = obj.stem
     pre, asm = work / f"{stem}.i", work / f"{stem}.s"
-    cpp = [*common.exe_command(profile["cpp"]), "-lang-c", *CPP_DEFINES, *profile.get("cppflags", "").split()]
+    cpp = [*common.exe_command(profile["cpp"]), "-lang-c", *CPP_DEFINES, f"-DVERSION={common.VERSION_NUMBER}",
+           *profile.get("cppflags", "").split()]
     # The source's own folder is searched for "..." includes anyway; passing it again as -I makes the 2.7.2
     # builds' cppn64 fail with 'ultra64.h: Invalid argument'.
     for d in include_dirs:
@@ -331,13 +334,14 @@ def disassemble(obj: Path, image: str = "game") -> dict[str, list[tuple[int, str
 
 
 def main():
-    if len(sys.argv) < 2:
+    argv = common.argv()
+    if len(argv) < 2:
         sys.exit(__doc__)
-    arg = sys.argv[1]
+    arg = argv[1]
     if arg.endswith(".c"):
         rel = Path(arg).resolve().relative_to(ROOT).as_posix() if Path(arg).resolve().is_relative_to(ROOT) else arg
         row = next((f for f in common.functions() if f["source"] == rel and f["kind"] == "c"), None)
-        name = sys.argv[2] if len(sys.argv) > 2 else (row["profile"] or "sn281") if row else "sn281"
+        name = argv[2] if len(argv) > 2 else (row["profile"] or "sn281") if row else "sn281"
         image = row["image"] if row else ("boot" if "/boot/" in rel else "game")
         with tempfile.TemporaryDirectory() as td:
             obj = Path(td) / "m.o"

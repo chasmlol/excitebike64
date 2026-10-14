@@ -1,17 +1,17 @@
-"""Rename symbols everywhere: the C (src/, include/), the asm, the data C, symbols.txt, functions.csv, the tools
-and the docs; then rebuild to show that nothing else changed.
+"""Rename symbols everywhere: the C (src/, include/), the asm, the data C, every version's symbols.txt and
+functions.csv (versions/*/), the tools and the docs; then rebuild every version to show that nothing else changed.
 
 usage: python tools/rename.py OLD NEW [OLD NEW ...] [--no-aliases] [--no-build]
        python tools/rename.py --file PAIRS.txt          (one `OLD NEW` pair per line, # comments)
 
-OLD must be in symbols.txt. The second names of OLD (`OLD_<n>`, listed in symbols.txt as sharing OLD's address)
+OLD must be in a symbols.txt. The second names of OLD (`OLD_<n>`, listed in symbols.txt as sharing OLD's address)
 become `NEW_<n>` too, unless --no-aliases. Refused, with nothing changed, when a new name is not a C identifier or
 is already used: by a symbol, by any identifier of the sources or the headers, by libultra (unless it is libultra's
 name for that very address: naming a libultra function or variable after the library), or by another pair.
 libultra's own names (libultra_map.json) are not renamed. Names are replaced as whole identifiers: in the C and
 asm outside string literals (comments included), in symbols.txt and functions.csv only in their name fields,
-elsewhere as words that are not part of a path. Then tools/build_all.py runs (unless --no-build) and must end with
-the ROM's SHA-1 == ORIGINAL.
+elsewhere as words that are not part of a path. Then tools/build_all.py runs for every version whose ROM is
+extracted (unless --no-build) and must end with that ROM's SHA-1 == ORIGINAL.
 """
 import argparse
 import csv
@@ -148,22 +148,26 @@ def ultra_identifiers():
 
 
 def plan(pairs, aliases):
-    """-> {old: new} for every name, aliases included; exits on a collision."""
-    tabs = common.symbols()
-    known = {n for t in tabs.values() for n in t}
+    """-> {old: new} for every name, aliases included; exits on a collision. Checked against every version."""
+    vers = common.known_versions()
+    tabs = {v: common.symbols(v) for v in vers}
+    lib = {(v, img): common.libultra_names(img, v) for v in vers for img in common.IMAGES}
+    known = {n for tv in tabs.values() for t in tv.values() for n in t}
     mapping = {}
     for old, new in pairs:
         if old not in known:
-            sys.exit(f"{old} is not in symbols.txt")
-        if any(common.libultra_names(img).get(old) == t[old].address for img, t in tabs.items() if old in t):
+            sys.exit(f"{old} is not in a symbols.txt")
+        if any(lib[v, img].get(old) == t[old].address for v, tv in tabs.items() for img, t in tv.items()
+               if old in t):
             sys.exit(f"{old} is libultra's own name (libultra_map.json): it stays")
         mapping[old] = new
         if aliases:
-            for t in tabs.values():
-                for s in t.values():
-                    m = re.fullmatch(re.escape(old) + r"_(\d+)", s.name)
-                    if m and s.alias_of == old:
-                        mapping[s.name] = f"{new}_{m.group(1)}"
+            for tv in tabs.values():
+                for t in tv.values():
+                    for s in t.values():
+                        m = re.fullmatch(re.escape(old) + r"_(\d+)", s.name)
+                        if m and s.alias_of == old:
+                            mapping[s.name] = f"{new}_{m.group(1)}"
     olds, news = set(mapping), list(mapping.values())
     if len(set(news)) != len(news):
         sys.exit("two symbols would get the same name")
@@ -183,15 +187,14 @@ def plan(pairs, aliases):
             problems.append(f"{new}: is renamed itself")
             continue
         # libultra's name for the same address is allowed (that is what the library calls it)
-        lib_ok = all(common.libultra_names(img).get(new) in (None, tabs[img][old].address)
-                     for img in common.IMAGES if old in tabs[img]) and \
-            any(common.libultra_names(img).get(new) == tabs[img][old].address
-                for img in common.IMAGES if old in tabs[img])
+        where = [(v, img) for v in vers for img in common.IMAGES if old in tabs[v][img]]
+        lib_ok = all(lib[v, img].get(new) in (None, tabs[v][img][old].address) for v, img in where) and \
+            any(lib[v, img].get(new) == tabs[v][img][old].address for v, img in where)
         if new in known:
             problems.append(f"{new}: already a symbol")
         elif new in used and not lib_ok:
             problems.append(f"{new}: already an identifier of the sources")
-        elif any(new in common.libultra_names(img) for img in common.IMAGES) and not lib_ok:
+        elif any(new in names for names in lib.values()) and not lib_ok:
             problems.append(f"{new}: a libultra name for another address")
         elif new in ultra and not lib_ok:
             problems.append(f"{new}: an identifier of libultra's headers")
@@ -210,20 +213,23 @@ def rewrite(mapping):
             changed[p.relative_to(ROOT).as_posix()] = True
     for p in source_files():
         put(p, replace_code(p.read_text(), mapping, "asm" if p.suffix == ".s" else "c"))
-    # symbols.txt: the name and shares-address-with fields (columns realigned)
-    put(ROOT / "symbols.txt", format_symbols((ROOT / "symbols.txt").read_text(), mapping))
-    # functions.csv: name and copy_of
-    with open(ROOT / "functions.csv", newline="") as fh:
-        rows = list(csv.DictReader(fh))
-    for r in rows:
-        for k in ("name", "copy_of"):
-            if r.get(k) in mapping:
-                r[k] = mapping[r[k]]
-    buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=list(rows[0].keys()), lineterminator="\n")
-    w.writeheader()
-    w.writerows(rows)
-    put(ROOT / "functions.csv", buf.getvalue())
+    for v in common.known_versions():
+        # symbols.txt: the name and shares-address-with fields (columns realigned)
+        sp = common.table_path("symbols.txt", v)
+        put(sp, format_symbols(sp.read_text(), mapping))
+        # functions.csv: name and copy_of
+        fp = common.table_path("functions.csv", v)
+        with open(fp, newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        for r in rows:
+            for k in ("name", "copy_of"):
+                if r.get(k) in mapping:
+                    r[k] = mapping[r[k]]
+        buf = io.StringIO()
+        w = csv.DictWriter(buf, fieldnames=list(rows[0].keys()), lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+        put(fp, buf.getvalue())
     # the tools (names they hold, examples in their comments) and the docs
     for p in sorted((ROOT / "tools").glob("*.py")):
         put(p, _replace_words(p.read_text(), mapping))
@@ -252,13 +258,22 @@ def main():
           + ", ".join(f"{o} -> {n}" for o, n in list(mapping.items())[:8]) + (" ..." if len(mapping) > 8 else ""))
     if a.no_build:
         return
-    r = subprocess.run([sys.executable, str(ROOT / "tools" / "build_all.py")], cwd=ROOT, capture_output=True,
-                       text=True)
-    lines = (r.stdout + r.stderr).splitlines()
-    sha = [ln.strip() for ln in lines if "sha1" in ln]
-    print(sha[-1] if sha else "\n".join(lines[-15:]))
-    if r.returncode or not any("== ORIGINAL" in ln for ln in sha):
-        sys.exit("the build no longer matches: see tools/build_all.py's output")
+    built, bad = [], []
+    for v in common.known_versions():
+        if not (common.BUILD / v / "extracted" / "game.bin").exists():
+            continue
+        r = subprocess.run([sys.executable, str(ROOT / "tools" / "build_all.py"), "--version", v], cwd=ROOT,
+                           capture_output=True, text=True)
+        lines = (r.stdout + r.stderr).splitlines()
+        sha = [ln.strip() for ln in lines if "sha1" in ln]
+        print(f"{v}: " + (sha[-1] if sha else "\n".join(lines[-15:])))
+        built.append(v)
+        if r.returncode or not any("== ORIGINAL" in ln for ln in sha):
+            bad.append(v)
+    if not built:
+        print("no version is extracted (tools/extract.py): nothing built")
+    if bad:
+        sys.exit(f"the build no longer matches ({', '.join(bad)}): see tools/build_all.py's output")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # boot_swdexpand.s -- SwdExpand decompressor (from the original source)
 # image: boot
-# vram: 0x800113B0-0x80011584
+# vram: 0x800113B0-0x80011584 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # John Brandwood's SWDN64.ASM (https://github.com/jbrandwood/SWD32, Boost Software License 1.0),
 # converted from SN Systems' native assembler syntax (ASMN64) to GNU as syntax. The shipped boot image holds

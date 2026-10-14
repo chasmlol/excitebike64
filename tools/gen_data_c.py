@@ -25,8 +25,11 @@ Needs rabbitizer (the code's accesses to each address come from listings of the 
 Output: include/data.h and one file per block of leftover runs (runs less than 0x400 bytes apart):
 src/data/<image>_<start>.c. Existing src/data/*.c files are replaced. A symbol takes the name symbols.txt has for its
 address, else D_XXXXXXXX, which is added to symbols.txt.
+It generates the data of one version (the one being built), so replacing src/data loses the other versions' data
+(the `#if VERSION` blocks) and every edit since: a tool to start a tree with. --out DIR writes the generated files
+to DIR instead and changes nothing else (to see a version's data as generated C).
 
-usage: python tools/gen_data_c.py [--reuse]
+usage: python tools/gen_data_c.py [--reuse] [--out DIR] [--version NAME]
 """
 import argparse
 import bisect
@@ -51,7 +54,7 @@ ROOT = common.ROOT
 VRAM = BD.VRAM
 IMAGES = BD.IMAGES
 SRC = BD.SRC
-LEFT_JSON = common.BUILD / "data_left.json"
+LEFT_JSON = common.BUILD / common.VERSION / "data_left.json"
 STEPS = ["build_code.py", "build_asm.py", "build_libultra.py"]
 PRINTABLE = set(range(0x20, 0x7F)) | {0x09, 0x0A, 0x0D}
 GROUP_GAP = 0x400
@@ -130,7 +133,7 @@ def code_refs():
         text = (ROOT / src).read_text(errors="replace")
         for a, cat in extern_decls(text, common.symbols()[k]):
             decls[k][a].add(cat)
-    lib = json.loads((ROOT / "libultra_map.json").read_text())["images"]
+    lib = json.loads(common.table_path("libultra_map.json").read_text())["images"]
     for k in IMAGES:
         names[k] |= {int(v, 16) for v in lib[k]["symbols"].values()}
         names[k] |= {s.address for s in common.symbols()[k].values()}
@@ -186,7 +189,7 @@ def known_names(image):
         if f["image"] == image:
             names[f["address"]] = f["name"]
     funcs = set(names)
-    m = json.loads((ROOT / "libultra_map.json").read_text())["images"][image]
+    m = json.loads(common.table_path("libultra_map.json").read_text())["images"][image]
     for e in m["objects"]:
         for n, a in e.get("functions", {}).items():
             names[int(a, 16)] = n
@@ -216,7 +219,7 @@ def add_symbols(syms):
     new = [f"{s.name}  {k}  0x{s.addr:08X}  data  {s.size:#x}" for k in IMAGES for s in syms[k]
            if s.name not in tab[k]]
     if new:
-        with open(ROOT / "symbols.txt", "a", newline="\n") as fh:
+        with open(common.table_path("symbols.txt"), "a", newline="\n") as fh:
             fh.write("\n".join(new) + "\n")
         common.symbols.cache_clear()
         common.names_at.cache_clear()
@@ -584,6 +587,7 @@ def gap_comment(a, b, written):
 DATA_H = """/* Types for the data files in src/data (tools/gen_data_c.py). */
 #ifndef DATA_H
 #define DATA_H
+#include "version.h"
 typedef signed char s8;
 typedef unsigned char u8;
 typedef short s16;
@@ -599,6 +603,9 @@ typedef double f64;
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--reuse", action="store_true", help=f"reuse {LEFT_JSON.name} instead of rebuilding")
+    ap.add_argument("--out", help="write the files to this folder instead of replacing src/data (and leave "
+                                  "symbols.txt and include/data.h alone)")
+    common.add_version_arg(ap)
     a = ap.parse_args()
     if a.reuse and LEFT_JSON.exists():
         res = json.loads(LEFT_JSON.read_text())
@@ -610,6 +617,14 @@ def main():
         n = sum(hi - lo for lo, hi in res["left"][k])
         print(f"{k}: {n} data bytes need C, in {len(res['left'][k])} runs")
     no_float = set()
+    if a.out:
+        files, syms = generate(res, no_float)
+        out = Path(a.out)
+        out.mkdir(parents=True, exist_ok=True)
+        for name, text in files.items():
+            (out / name).write_text(text, newline="\n")
+        print(f"wrote {len(files)} files to {out}, {sum(len(v) for v in syms.values())} symbols")
+        return
     for _ in range(3):
         files, syms = generate(res, no_float)
         SRC.mkdir(parents=True, exist_ok=True)

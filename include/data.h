@@ -1,6 +1,7 @@
 /* Types for the data files in src/data (tools/gen_data_c.py). */
 #ifndef DATA_H
 #define DATA_H
+#include "version.h"
 typedef signed char s8;
 typedef unsigned char u8;
 typedef short s16;

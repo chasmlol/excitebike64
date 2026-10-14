@@ -1,6 +1,6 @@
 # boot_gamecopy.s -- copy-and-jump stub after SwdExpand in the boot loader (hand-written asm)
 # image: boot
-# vram: 0x80011584-0x80011600
+# vram: 0x80011584-0x80011600 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # Not part of SWDN64.ASM. Copies gBootStubSize bytes from gBootStubSrc to gBootStubDst, invalidates the
 # instruction cache and jumps to gBootStubEntry. The boot loader's C code (0x800014B8-0x8000162C) copies the

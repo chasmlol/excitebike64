@@ -1,14 +1,16 @@
 """Assemble the hand-written asm (asm/*.s) and write it into a build's code images.
 
-usage: python tools/build_asm.py [OUT]      (default: build/out)
+usage: python tools/build_asm.py [OUT] [--version NAME]      (default: build/<version>/out)
 
-Each asm/*.s names its image and range in its header (`# image: boot`, `# vram: 0x80002CB0-0x80003660`).
-Every file is assembled with GNU as for MIPS (MIPS_PREFIX, default mips-linux-gnu-; -march=vr4300 -mabi=32 -G0
--EB) and linked with ld at its range's start (through WSL on Windows); the symbols of its image (symbols.txt) it
-uses but doesn't define are given to as and ld with --defsym (as needs them as numbers for what a relocation can't
-express, like the halves of a lui/ori pair: `(sym >> 16)`, `(sym & 0xFFFF)`). Then, in OUT/boot.bin and
-OUT/game.bin, every asm block (BLOCKS below) and every file's range is zeroed and the assembled bytes are written
-there, and each image is compared with the original. Nothing is written if a file fails to assemble.
+Each asm/*.s names its image in its header (`# image: boot`); version.toml's [asm_files] gives its range in the
+version being built (the addresses in the files' comments are LodgeNet's). Every file is assembled with GNU as for
+MIPS (MIPS_PREFIX, default mips-linux-gnu-; -march=vr4300 -mabi=32 -G0 -EB) and linked with ld at its range's
+start (through WSL on Windows); the symbols of its image (symbols.txt) it uses but doesn't define are given to as
+and ld with --defsym (as needs them as numbers for what a relocation can't express, like the halves of a lui/ori
+pair: `(sym >> 16)`, `(sym & 0xFFFF)`), and so are VERSION and the VERSION_<NAME> values of include/version.h, for
+`.if VERSION == VERSION_US_REV1` blocks. Then, in OUT/boot.bin and OUT/game.bin, every asm block (version.toml
+`asm`) and every file's range is zeroed and the assembled bytes are written there, and each image is compared
+with the original. Nothing is written if a file fails to assemble.
 """
 import re
 import shlex
@@ -25,27 +27,29 @@ VRAM = common.VRAM
 # The ranges of the original images that are hand-written asm (functions.csv kind `asm`; the SN stub and SwdExpand
 # ranges include the bytes around their functions, SwdExpand's starts at its module's variables, the sound
 # routines among the game's data include the decoders' tables). Every byte of these must come from some asm/*.s.
-BLOCKS = {"game": [(0x80000400, 0x80000450), (0x800DB550, 0x800DB8B8), (0x800DB8E0, 0x800DC098)],
-          "boot": [(0x80000400, 0x80000450), (0x80002CB0, 0x80003660), (0x800113B0, 0x80011600)]}
+BLOCKS = {k: [tuple(r) for r in common.layout(k)["asm"]] for k in common.IMAGES}
 
 
 def parse(src: Path):
     text = src.read_text()
     img = re.search(r"^#\s*image:\s*(\w+)", text, re.M)
-    rng = re.search(r"^#\s*vram:\s*(0x[0-9A-Fa-f]+)\s*-\s*(0x[0-9A-Fa-f]+)", text, re.M)
-    if not img or not rng:
-        sys.exit(f"{src.name}: header needs `# image: <boot|game>` and `# vram: 0xSTART-0xEND`")
+    if not img:
+        sys.exit(f"{src.name}: header needs `# image: <boot|game>`")
+    rng = common.version_info()["asm_files"].get(src.name)
+    if not rng:
+        sys.exit(f"{src.name}: no range in versions/{common.VERSION}/version.toml [asm_files]")
     defined = set(re.findall(r"^\s*([A-Za-z_.$][\w.$]*):", text, re.M))
     code = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
     code = re.sub(r"#.*", "", code)
     resolve = common.resolver(img.group(1))
     used = {n for n in re.findall(r"(?<![\w.$])([A-Za-z_]\w*)", code) if n not in defined}
     ext = sorted((n, resolve(n)) for n in used if resolve(n) is not None)
-    return img.group(1), int(rng.group(1), 16), int(rng.group(2), 16), ext
+    return img.group(1), rng[0], rng[1], ext
 
 
 def main():
-    build = common.output_dir(sys.argv[1] if len(sys.argv) > 1 else common.BUILD / "out")
+    args = common.argv()
+    build = common.output_dir(args[1] if len(args) > 1 else common.OUT)
     files = sorted(ASM.glob("*.s"))
     if not files:
         sys.exit(f"no .s files in {ASM}")
@@ -61,8 +65,10 @@ def main():
                 print(f"warning: {f.name} uses {', '.join(inside)} inside its own range but doesn't define it")
             stem = shlex.quote(common.posix_path(tdir / f.stem))
             defs = " ".join(f"--defsym {n}=0x{a:08X}" for n, a in ext)
+            vdefs = " ".join([f"--defsym VERSION={common.VERSION_NUMBER}"]
+                             + [f"--defsym VERSION_{v.upper()}={n}" for v, n in common.version_numbers().items()])
             script += [f"echo '== {f.name}'",
-                       f"{x}as -march=vr4300 -mabi=32 -G0 -EB {defs} -o {stem}.o "
+                       f"{x}as -march=vr4300 -mabi=32 -G0 -EB {vdefs} {defs} -o {stem}.o "
                        f"{shlex.quote(common.posix_path(f))}",
                        # as gives .text 16-byte alignment; ld would pad a start like 0x80011584 up to 0x80011590
                        f"{x}objcopy --set-section-alignment .text=4 {stem}.o",

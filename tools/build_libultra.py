@@ -3,18 +3,19 @@
 Objects (built by tools/build_libultra_objs.sh with KMC GCC 2.7.2, on Linux or in WSL):
   build/libultra/ultralib/src/**.o   decompals/ultralib 2.0K libgultra_rom
   build/libultra/libgcc/*.o          src/libgcc/libgcc2.c: __divdi3 __udivdi3 __udivmoddi4 __umoddi3 __clz_tab
-libultra_map.json says where each object's sections sit in each image and what every symbol resolves to.
+versions/<version>/libultra_map.json says where each object's sections sit in each image and what every symbol
+resolves to. The objects are the same for every version; the maps differ (link order, osPiReadIo in retail).
 
   python tools/build_libultra.py --objects     build the objects: runs tools/build_libultra_objs.sh with bash
                                                (through WSL on Windows), settings ULTRALIB and KMC_GCC
   python tools/build_libultra.py [OUT]         zero libultra (functions.csv's `libultra` functions, the objects'
                                                code and placed .data/.rodata) in OUT/{game,boot}.bin (default
-                                               build/out), write it back from the objects with relocations
+                                               build/<version>/out), write it back from the objects with relocations
                                                resolved, report bytes that differ from the original images
   python tools/build_libultra.py --make-maps   derive libultra_map.json from the original images: tile the
                                                libultra .text ranges with the objects, solve the symbols, place
                                                data sections by reference (or by content for vimode tables)
-Options: --map FILE, --check (report only, don't write). Standard library only.
+Options: --map FILE, --check (report only, don't write), --version NAME. Standard library only.
 """
 import argparse
 import json
@@ -31,11 +32,11 @@ VRAM = common.VRAM
 OBJ_ROOT = common.BUILD / "libultra"
 SOURCES = ["ultralib", "libgcc"]  # object trees, relative to OBJ_ROOT
 SKIP = {"monutil.o"}  # rmon, IDO-assembled, not in libgultra_rom
-DEFAULT_MAP = ROOT / "libultra_map.json"
+DEFAULT_MAP = common.table_path("libultra_map.json")
 IMAGES = common.IMAGES
-# libultra .text ranges (tools/split.py EXCLUDE) and where its data may be
-TEXT_RANGE = {"game": (0x800AC240, 0x800B767C), "boot": (0x80005C70, 0x8000CE10)}
-DATA_RANGE = {"game": (0x800C2280, 0x800DC098), "boot": (0x8000CE10, 0x80011600)}
+# libultra .text ranges (version.toml libultra_text) and where its data may be: the image's data to its end
+TEXT_RANGE = {k: tuple(common.layout(k)["libultra_text"]) for k in IMAGES}
+DATA_RANGE = {k: (common.layout(k)["data"][0], common.layout(k)["bss"][0]) for k in IMAGES}
 
 R_MIPS_32, R_MIPS_26, R_MIPS_HI16, R_MIPS_LO16 = 2, 4, 5, 6
 RMASK = {R_MIPS_32: 0xFFFFFFFF, R_MIPS_26: 0x03FFFFFF, R_MIPS_HI16: 0xFFFF, R_MIPS_LO16: 0xFFFF}
@@ -628,11 +629,12 @@ def build(args):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("build_dir", nargs="?", default=str(common.BUILD / "out"))
+    ap.add_argument("build_dir", nargs="?", default=str(common.OUT))
     ap.add_argument("--objects", action="store_true", help="build the objects (tools/build_libultra_objs.sh)")
     ap.add_argument("--make-maps", action="store_true")
     ap.add_argument("--map", default=str(DEFAULT_MAP))
     ap.add_argument("--check", action="store_true", help="report only, leave BUILD_DIR untouched")
+    common.add_version_arg(ap)
     args = ap.parse_args()
     if args.objects:
         make_objects()

@@ -10,8 +10,8 @@ A source file holds several functions (one object file); each is linked by its s
 (.rdata: strings, float literals, jump tables) are placed whole where all of its functions' original lui/lo pairs
 agree they sit, or else literal by literal at the address each pair forms.
 
-usage: python tools/build_code.py OUT [--base DIR] [--jobs N] [--only NAME ...]
-  --base DIR   start from the images in DIR (default: the original images, build/extracted)
+usage: python tools/build_code.py OUT [--base DIR] [--jobs N] [--only NAME ...] [--version NAME]
+  --base DIR   start from the images in DIR (default: the original images, build/<version>/extracted)
   --only NAME  build only these functions (e.g. after editing them); the rest stays as in the base images
 """
 import argparse
@@ -276,6 +276,7 @@ def main():
     ap.add_argument("--jobs", type=int, default=8)
     ap.add_argument("--base", help="start from the images in this dir (default: the original images)")
     ap.add_argument("--only", nargs="+", metavar="NAME")
+    common.add_version_arg(ap)
     a = ap.parse_args()
     out = common.output_dir(a.outdir)
     table = {f["name"]: f for f in common.functions()}

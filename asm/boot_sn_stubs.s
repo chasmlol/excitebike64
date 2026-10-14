@@ -1,6 +1,6 @@
 # boot_sn_stubs.s -- SN Systems debug/exception stub linked into the boot loader (hand-written asm)
 # image: boot
-# vram: 0x80002CB0-0x80003660
+# vram: 0x80002CB0-0x80003660 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # SN64 runtime code (hand-written asm in SN's library) that hooks the R4300 exception vectors for SN's
 # development hardware: sn_install_exception_hooks (called from sn_debug_init) copies the two 5-instruction

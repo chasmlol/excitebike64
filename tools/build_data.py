@@ -9,7 +9,7 @@ written at its address in OUT/<image>.bin. The ranges in FROM_ROM are not built 
 the C only declares them extern, and they are copied from the extracted images. Then the written bytes are compared
 with the originals.
 
-usage: python tools/build_data.py [OUT] [--check]    (default OUT: build/out)
+usage: python tools/build_data.py [OUT] [--check] [--version NAME]    (default OUT: build/<version>/out)
   --check   compile and compare only, leave OUT untouched
 Exit status 1 if a byte differs or a symbol can't be placed.
 """
@@ -35,20 +35,12 @@ PROFILE = {"game": "sn281", "boot": "sn272_0006"}
 DATA_RANGES = common.DATA_RANGES
 
 # Data bytes that are not C: RSP microcode data sections (Nintendo's F3DEX2 xbus 2.08 binaries, the DMEM image of
-# the microcode whose text is at game 0x800A9D00 / boot 0x800036xx). They stay as in the original images, like the
-# microcode text (tools/split.py not_code).
-NOT_C = {
-    "game": [(0x800D15C0, 0x800D19E0, "RSP microcode data: F3DEX.NoN xbus 2.08 (gspF3DEX2.NoN.xbus)"),
-             (0x800D19E0, 0x800D1DF0, "RSP microcode data: F3DLX.Rej xbus 2.08 (gspF3DLX2.Rej.xbus)")],
-    "boot": [(0x8000F4F0, 0x8000F910, "RSP microcode data: F3DEX.NoN xbus 2.08 (gspF3DEX2.NoN.xbus)"),
-             (0x8000F910, 0x8000FD20, "RSP microcode data: F3DLX.Rej xbus 2.08 (gspF3DLX2.Rej.xbus)")],
-}
-# Ranges not built from C: its src/data file declares it extern (rom_decl) and the build
+# the microcode whose text is in the code; version.toml microcode_data). They stay as in the original images, like
+# the microcode text.
+NOT_C = {k: [tuple(r) for r in common.layout(k)["microcode_data"]] for k in IMAGES}
+# Ranges not built from C (version.toml from_rom): its src/data file declares it extern (rom_decl) and the build
 # copies it from the extracted image. (start, end, symbol, element type, what it is)
-FROM_ROM = {
-    "boot": [(0x8000CE10, 0x8000DE10, "sBootFontBitmap", "u8", "a bitmap"),
-             (0x8000DE10, 0x8000F498, "sBootSplashSwd", "u8", "SWD-compressed data")],
-}
+FROM_ROM = {k: [tuple(r) for r in common.layout(k).get("from_rom", [])] for k in IMAGES}
 
 
 def rom_decl(lo, hi, name, ctype, what):
@@ -179,9 +171,10 @@ def build_all(files, jobs=8):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("build_dir", nargs="?", default=str(common.BUILD / "out"))
+    ap.add_argument("build_dir", nargs="?", default=str(common.OUT))
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--jobs", type=int, default=8)
+    common.add_version_arg(ap)
     a = ap.parse_args()
     build = common.output_dir(a.build_dir)
     files = sorted(SRC.glob("*.c"))

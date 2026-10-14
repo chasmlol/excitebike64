@@ -1,14 +1,17 @@
-"""Extract the code images of Excitebike 64 (USA) (LodgeNet) from the ROM.
+"""Extract the code images of an Excitebike 64 ROM. The ROM's SHA-1 says which version it is (versions/*/version.toml).
 
-build/extracted/boot.bin     ROM 0x1000-0x12200, VRAM 0x80000400 (boot loader + its libultra + SwdExpand)
-build/extracted/game.bin     the four SWD streams of the container at ROM 0x12200, decompressed and concatenated,
-                             VRAM 0x80000400
-build/extracted/layout.json  segment table (VRAM ranges, ROM offsets, sizes)
+build/<version>/extracted/boot.bin     the boot loader, uncompressed at ROM 0x1000 (version.toml [rom] boot), VRAM
+                                       0x80000400 (boot loader + its libultra + SwdExpand)
+build/<version>/extracted/game.bin     the four SWD streams of the container (version.toml [rom] container),
+                                       decompressed and concatenated, VRAM 0x80000400
+build/<version>/extracted/layout.json  segment table (VRAM ranges, ROM offsets, sizes)
+build/<version>/extracted/baserom.z64  a copy of the ROM (tools/build_rom.py takes the IPL3 and resources from it)
 
-usage: python tools/extract.py [baserom.z64]      (default: baserom.z64 at the repository root)
+usage: python tools/extract.py [ROM ...]      (default: every baserom*.z64 at the repository root)
 """
 import hashlib
 import json
+import shutil
 import struct
 import sys
 from pathlib import Path
@@ -18,23 +21,30 @@ import common  # noqa: E402
 from swd import expand  # noqa: E402
 
 VRAM = common.VRAM
-BOOT_ROM = (0x1000, 0x12200)
-CONTAINER = 0x12200
 
 
-def main(rom_path=None):
-    rom = Path(rom_path or common.BASEROM).read_bytes()
-    if hashlib.sha1(rom).hexdigest() != common.ROM_SHA1:
-        sys.exit("not the Excitebike 64 (USA) (LodgeNet) z64 ROM (sha1 mismatch; byte-swapped .v64/.n64 dumps "
-                 "need converting to .z64 first)")
-    out = common.ORIG
+def identify(rom: bytes) -> str | None:
+    h = hashlib.sha1(rom).hexdigest()
+    return next((v for v in common.known_versions() if common.version_info(v)["sha1"] == h), None)
+
+
+def extract(rom_path: Path):
+    rom = rom_path.read_bytes()
+    version = identify(rom)
+    if version is None:
+        sys.exit(f"{rom_path}: not a known Excitebike 64 z64 ROM (no SHA-1 of versions/*/version.toml matches; "
+                 "byte-swapped .v64/.n64 dumps need converting to .z64 first)")
+    info = common.version_info(version)
+    out = common.BUILD / version / "extracted"
     out.mkdir(parents=True, exist_ok=True)
-    boot = rom[BOOT_ROM[0]:BOOT_ROM[1]]
+    boot_rom = info["rom"]["boot"]
+    con = info["rom"]["container"]
+    boot = rom[boot_rom[0]:boot_rom[1]]
     (out / "boot.bin").write_bytes(boot)
-    if rom[CONTAINER:CONTAINER + 8] != b"BRSOHYES":
-        sys.exit("container tag not found")
-    sizes = struct.unpack(">8I", rom[CONTAINER + 8:CONTAINER + 0x28])
-    pos, vram, game, segs = CONTAINER + 0x28, VRAM, bytearray(), []
+    if rom[con:con + 8] != b"BRSOHYES":
+        sys.exit(f"container tag not found at {con:#x}")
+    sizes = struct.unpack(">8I", rom[con + 8:con + 0x28])
+    pos, vram, game, segs = con + 0x28, VRAM, bytearray(), []
     for i in range(4):
         raw, packed = sizes[2 * i], sizes[2 * i + 1]
         data, end = expand(rom, pos)
@@ -46,17 +56,30 @@ def main(rom_path=None):
         vram += raw
     (out / "game.bin").write_bytes(bytes(game))
     layout = {
-        "boot": {"vram": VRAM, "vram_end": VRAM + len(boot), "rom": BOOT_ROM[0], "size": len(boot),
-                 "bss": [0x80011600, 0x8001B610]},
+        "version": version,
+        "boot": {"vram": VRAM, "vram_end": VRAM + len(boot), "rom": boot_rom[0], "size": len(boot),
+                 "bss": info["boot"]["bss"]},
         "game": {"vram": VRAM, "vram_end": VRAM + len(game), "size": len(game), "segments": segs,
-                 "bss": [0x800DC0A0, 0x80105580]},
+                 "bss": info["game"]["bss"]},
         "resources_rom": pos,
     }
     (out / "layout.json").write_text(json.dumps(layout, indent=1))
-    print(f"boot.bin {len(boot):#x}  game.bin {len(game):#x} ({VRAM:#x}-{VRAM + len(game):#x}) in {out}")
+    if rom_path.resolve() != (out / "baserom.z64").resolve():
+        shutil.copyfile(rom_path, out / "baserom.z64")
+    print(f"{info['title']} ({version}): boot.bin {len(boot):#x}  game.bin {len(game):#x} "
+          f"({VRAM:#x}-{VRAM + len(game):#x}) in {out.relative_to(common.ROOT).as_posix()}")
     for s in segs:
         print(f"  {s['name']} {s['vram']:#x}-{s['vram_end']:#x} from ROM {s['rom']:#x} ({s['packed']:#x} packed)")
 
 
+def main(paths):
+    if not paths:
+        paths = sorted(common.ROOT.glob("baserom*.z64"))
+        if not paths:
+            sys.exit(__doc__)
+    for p in paths:
+        extract(Path(p))
+
+
 if __name__ == "__main__":
-    main(*sys.argv[1:2])
+    main(common.argv()[1:])

@@ -4,10 +4,10 @@ Seeds are jal targets and region starts; each function's extent is what is reach
 (branches, in-function jumps, jump tables) up to the next seed; the first non-nop word after a function
 starts the next one. Modules are the source file names the functions' strings give (__FILE__ arguments),
 or segment_address for groups of functions between two object-file boundaries that name none.
-Output: build/split.json, one record per function: {image, address, size, name, segment, module, exclude?},
+Output: build/<version>/split.json, one record per function: {image, address, size, name, segment, module, exclude?},
 and a comparison with functions.csv (which was made from it; its `kind` column says how each range is built).
 
-usage: python tools/split.py
+usage: python tools/split.py [--version NAME]
 """
 import json
 import re
@@ -24,39 +24,42 @@ except ImportError:
     sys.exit("split.py needs rabbitizer: python -m pip install rabbitizer")
 
 rabbitizer.config.regNames_gprAbiNames = rabbitizer.Abi.O32
-VRAM = 0x80000400
-# Ranges that are not SN-compiled C (listed with the reason).
-EXCLUDE = {
-    "game": [(0x80000400, 0x80000450, "entry point stub (hand-written asm)"),
-             (0x800AC240, 0x800B767C, "libultra (Nintendo's libgultra_rom, built with KMC GCC 2.7.2)")],
-    "boot": [(0x80000400, 0x80000450, "entry point stub (hand-written asm)"),
-             (0x80002CB0, 0x80003660, "SN debug/exception stub (hand-written asm)"),
-             (0x80005C70, 0x8000CE10, "libultra (same code as the game's copy)"),
-             (0x800113E4, 0x80011600, "SwdExpand decompressor (hand-written asm, Brandwood's SWDN64.ASM)")],
-}
-# Junk padding found by hand (not caught by the rules below).
-JUNK = {"game": {0x800B767C}}
+VRAM = common.VRAM
+def image_specs():
+    """Per image, from the version's layout (version.toml) and its extracted segments: the code ranges (the image
+    minus its initialized data), the ranges in them that are not CPU code (segment markers, RSP microcode text),
+    the segments, the ranges that are not SN-compiled C (EXCLUDE: hand-written asm, libultra) and the junk padding
+    found by hand (not caught by the rules below)."""
+    segs = json.loads((common.ORIG / "layout.json").read_text())["game"]["segments"]
+    specs, exclude, junk = {}, {}, {}
+    for name in common.IMAGES:
+        lay = common.layout(name)
+        end = VRAM + len(common.original(name))
+        d0, d1 = lay["data"]
+        code = [(VRAM, d0)] + ([(d1, end)] if d1 < end else [])
+        specs[name] = {
+            "code": code,
+            "data": (d0, None),
+            "not_code": [(a, b, "segment markers") for a, b in lay["markers"]]
+                        + [(a, b, "RSP microcode text") for a, b in lay["microcode_text"]],
+            "segments": [(s["name"], s["vram"], s["vram_end"]) for s in segs] if name == "game"
+                        else [("boot", VRAM, end)],
+        }
+        ex = []
+        files = {f: r for f, r in common.version_info()["asm_files"].items() if f.startswith(name + "_")}
+        for a, b in lay["asm"]:          # the asm blocks' code (not the tables among the data)
+            for c0, c1 in code:
+                lo, hi = max(a, c0), min(b, c1)
+                if lo < hi:
+                    src = [f for f, (f0, f1) in files.items() if f0 < hi and lo < f1]
+                    ex.append((lo, hi, f"hand-written asm ({', '.join(f'asm/{f}' for f in src)})"))
+        ex.append((*lay["libultra_text"], "libultra (Nintendo's libgultra_rom, built with KMC GCC 2.7.2)"))
+        exclude[name] = sorted(ex)
+        junk[name] = set(lay.get("split_junk", []))
+    return specs, exclude, junk
 
-# Code ranges per image, and ranges inside them that are not CPU code.
-IMAGES = {
-    "game": {
-        "code": [(0x80000400, 0x800C2280)],
-        "data": (0x800C2280, None),
-        "not_code": [
-            (0x800731D0, 0x80073200, "segment markers"),
-            (0x800A42C0, 0x800A42D0, "segment marker"),
-            (0x800A9C20, 0x800AC240, "segment marker + RSP microcode text"),
-        ],
-        "segments": [("s0", 0x80000400, 0x800731D0), ("s1", 0x800731D0, 0x800A42C0),
-                     ("s2", 0x800A42C0, 0x800A9C20), ("s3", 0x800A9C20, 0x800DC098)],
-    },
-    "boot": {
-        "code": [(0x80000400, 0x8000CE10), (0x800113E4, 0x80011600)],
-        "data": (0x8000CE10, 0x800113E4),
-        "not_code": [(0x80003660, 0x80005C70, "RSP microcode text (rspboot, F3DEX, F3DLX)")],
-        "segments": [("boot", 0x80000400, 0x80011600)],
-    },
-}
+
+IMAGES, EXCLUDE, JUNK = image_specs()
 
 
 class Image:
@@ -390,9 +393,10 @@ def main():
         for r in recs:
             r["name"] = f"{'boot_' if name == 'boot' else ''}func_{r['address']:08X}"
             r.setdefault("module", "padding")
-            if name == "game" and 0x800AC240 <= r["address"] < 0x800B767C:
+            lib0, lib1 = common.layout(name)["libultra_text"]
+            if name == "game" and lib0 <= r["address"] < lib1:
                 r["module"] = "libultra"
-            elif name == "game" and r["address"] >= 0x800B767C and r["module"].startswith("s3_"):
+            elif name == "game" and r["address"] >= lib1 and r["module"].startswith("s3_"):
                 r["module"] = "lib_" + r["module"][3:]
             elif name == "boot":
                 r["module"] = "boot"
@@ -403,10 +407,10 @@ def main():
             mark_duplicates(recs, out, img)
         out += recs
         print(f"{name}: {len(recs)} functions, code end {code_hi:#x}")
-    (common.BUILD / "split.json").write_text(json.dumps(out, indent=0))
+    (common.BUILD / common.VERSION / "split.json").write_text(json.dumps(out, indent=0))
     have = {(f["image"], f["address"], f["size"]) for f in common.functions()}
     got = {(r["image"], r["address"], r["size"]) for r in out}
-    print(f"wrote build/split.json: {len(out)} records; functions.csv has {len(have)}, "
+    print(f"wrote build/{common.VERSION}/split.json: {len(out)} records; functions.csv has {len(have)}, "
           f"{len(have & got)} with the same address and size")
     for k, a, n in sorted(have ^ got)[:20]:
         print(f"  only in {'functions.csv' if (k, a, n) in have else 'split.json'}: {k} {a:#010x} +{n:#x}")

@@ -1,6 +1,6 @@
 # boot_entry.s -- entry point of the boot loader image (hand-written asm)
 # image: boot
-# vram: 0x80000400-0x80000450
+# vram: 0x80000400-0x80000450 in LodgeNet (each version: versions/<name>/version.toml [asm_files])
 #
 # 0x80000400 (hand-written asm): stack 0x803FFEF0, clear the BSS (0x80011600-0x8001B610), call
 # boot_main, `break` if it returns. 0x80000444-0x80000450 is zero fill to the next object.
