@@ -78,6 +78,12 @@
 #define GAME_FLAG_SPLASH_3        0x10000000 /* SCREEN_SPLASH_3 is up: screen_draw_wipe draws at full level */
 #define GAME_FLAG_DEBUG           0x20000000 /* the Debug cheat */
 
+/* gGame.fadeState: the fade between two screens (gGame.fadeLevel) */
+#define FADE_OUT  0 /* the screen left fades out */
+#define FADE_SWAP 1 /* black: the screens are unloaded and loaded */
+#define FADE_IN   2
+#define FADE_DONE 3 /* the screen takes input */
+
 /* gGame.pakScreenMode: what the Controller Pak screen is opened for */
 #define PAK_SCREEN_MANAGER         0
 #define PAK_SCREEN_LOAD_GHOST      1

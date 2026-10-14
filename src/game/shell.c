@@ -181,7 +181,7 @@ void shell_init(void)
     if (gRaceExitCode == 7) {
         gGame.flags &= ~GAME_FLAG_UNLOCK_MESSAGES;
     }
-    gGame.fadeState = 3;
+    gGame.fadeState = FADE_DONE;
     res_set_load_buffer((s32)gZBuffer_3);
     i = res_open_set("resource", &gResourceSet);
     res_set_load_buffer(0);
@@ -418,7 +418,7 @@ void shell_splash_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *p
         }
     }
     if (--gGame.screenTimer == 0 || skip) {
-        if (skip && gGame.fadeState == 3) {
+        if (skip && gGame.fadeState == FADE_DONE) {
             snd_play_menu_sound(MENU_SOUND_SELECT);
         }
         shell_goto_screen(item->target, 0, 1);
@@ -1105,7 +1105,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             tunes_play_song(gReplaySongResId);
         }
     }
-    if ((gPadInput & INPUT_B) && !(gPadInputPrev & INPUT_B) && gGame.fadeState == 3) {
+    if ((gPadInput & INPUT_B) && !(gPadInputPrev & INPUT_B) && gGame.fadeState == FADE_DONE) {
         if (gGame.screenState == SCREEN_STATE_ERASE_DIALOG) {
             gGame.screenState = SCREEN_STATE_NORMAL;
             snd_play_menu_sound(MENU_SOUND_BACK);
@@ -1121,7 +1121,7 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
         gCreditsMode = 0;
         return;
     }
-    if ((gPadInput & INPUT_A) && !(gPadInputPrev & INPUT_A) && gGame.fadeState == 3) {
+    if ((gPadInput & INPUT_A) && !(gPadInputPrev & INPUT_A) && gGame.fadeState == FADE_DONE) {
         switch (gGame.optionsSel) {
         case OPTION_SOUND:
             gSaveData.options ^= SAVE_OPTION_STEREO;
@@ -1410,7 +1410,7 @@ void shell_rider_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
         }
     }
     game4 = &gGame;
-    if (game4->fadeState != 3) return;
+    if (game4->fadeState != FADE_DONE) return;
     for (i = 0; i < gGame.numPlayers; i++) {
         if (!((gContMask >> (pad = gGame.playerPad[i])) & 1)) continue;
         if (gGame.riderSelectState[i] == BIO_HIDDEN && !(gGame.flags & GAME_FLAG_PLAYER_READY(i))) {
@@ -1990,7 +1990,7 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                 }
             }
         }
-        if (gGame.fadeState != 1) {
+        if (gGame.fadeState != FADE_SWAP) {
             /* left and right: the neighbouring screen of the row (the track lists) */
             prev = sCurScreen_2;
             if (*buttons & INPUT_LEFT) {
@@ -2053,84 +2053,94 @@ void shell_filter_stick_dirs(u32 *pads)
     }
 }
 
-void shell_update(Pad16 *pad) {
-    u32 buf[4];
-    s32 sp20;
-    s32 sp24;
-    s32 sp28;
+#define REPLAY_SIZE            0xC800 /* gReplayBuffer */
+#define TIME_TRIAL_REPLAY_SIZE 0x6400 /* a time trial records into the first half, a loaded ghost sits in the second */
+#define SPECIAL_TRACKS_SOCCER  3      /* gSpecialTracksItems: Soccer needs two controllers */
+
+/* The front end's frame (game state 0): polls the controllers, gives the current screen the buttons pressed this
+   frame (the D-pad as the stick), runs the screen's input, and runs the fade between two screens: at black the
+   old screen (and its row) is unloaded and the new one loaded, or, with no new screen, the game state ends for
+   the race. */
+void shell_update(Pad16 *pads) {
+    u32 pressed[4];
+    s32 track;
+    s32 rider;
+    s32 time;
     Screen *screen;
     ScreenItem *item;
     Screen *p;
-    s32 vol;
+    s32 volume;
     s32 i;
-    s32 any;
+    s32 anyInput;
 
-    mem_fill((u8 *)buf, 0, 16);
+    mem_fill((u8 *)pressed, 0, 16);
     if (!(gFrameCounter & 0xF)) {
         pak_query_controllers();
     }
     if (gContFirst || !gContMask) {
-        gGame.flags |= 0x08000000;
+        gGame.flags |= GAME_FLAG_NO_CONTROLLER;
     } else {
-        gGame.flags &= ~0x08000000;
+        gGame.flags &= ~GAME_FLAG_NO_CONTROLLER;
     }
     if (gContCount < 2) {
-        gSpecialTracksItems[3].flags |= SCREEN_ITEM_LOCKED;
+        gSpecialTracksItems[SPECIAL_TRACKS_SOCCER].flags |= SCREEN_ITEM_LOCKED;
     } else {
         save_update_unlocks();
     }
-    if (gGame.fadeState == 0) {
+    if (gGame.fadeState == FADE_OUT) {
         screen = sPrevScreen;
+        /* the music fades out with the screen when the next one does not keep it */
         if (screen == &sScreens[SCREEN_OPTIONS] ||
             (!(screen->flags & SCREEN_KEEP_MUSIC) && (sCurScreen == NULL || (sCurScreen->flags & SCREEN_KEEP_MUSIC)))) {
-            if (gGame.fadeState == 0) {
-                vol = gGame.fadeLevel;
+            if (gGame.fadeState == FADE_OUT) {
+                volume = gGame.fadeLevel;
             }
-            snd_set_master_volume(vol);
+            snd_set_master_volume(volume);
         }
     } else {
         screen = sCurScreen;
     }
     if (screen != NULL && (screen->flags & SCREEN_STICK_FILTER)) {
-        shell_filter_stick_dirs(pad->w);
+        shell_filter_stick_dirs(pads->w);
     }
-    any = 0;
-    for (i = 0; i < 4; i++) {
-        if (((gContMask >> i) & 1) && pad->w[i] != 0) {
-            any = 1;
+    /* idle frames, and no stick direction under 6 */
+    anyInput = 0;
+    for (i = 0; i < MAXCONTROLLERS; i++) {
+        if (((gContMask >> i) & 1) && pads->w[i] != 0) {
+            anyInput = 1;
         }
-        if ((((s32)pad->w[i] >> 24) & 0xF) < 6) {
-            pad->w[i] &= ~0xC;
+        if ((((s32)pads->w[i] >> 24) & 0xF) < 6) {
+            pads->w[i] &= ~(INPUT_LEFT | INPUT_RIGHT);
         }
-        if ((s32)(pad->w[i] >> 28) < 6) {
-            pad->w[i] &= ~3;
+        if ((s32)(pads->w[i] >> 28) < 6) {
+            pads->w[i] &= ~(INPUT_UP | INPUT_DOWN);
         }
     }
-    if (any) {
+    if (anyInput) {
         gGame.idleFrames = 0;
     } else {
         gGame.idleFrames++;
     }
-    for (i = 0; i < 4; i++) {
-        buf[i] = 0;
-        if (gGame.fadeState == 3) {
-            buf[i] = pad->w[i] & ~sPrevPadButtons.w[i];
-            if (buf[i] & 0x800) {
-                buf[i] |= 1;
+    for (i = 0; i < MAXCONTROLLERS; i++) {
+        pressed[i] = 0;
+        if (gGame.fadeState == FADE_DONE) {
+            pressed[i] = pads->w[i] & ~sPrevPadButtons.w[i];
+            if (pressed[i] & INPUT_DPAD_UP) {
+                pressed[i] |= INPUT_UP;
             }
-            if (buf[i] & 0x1000) {
-                buf[i] |= 2;
+            if (pressed[i] & INPUT_DPAD_DOWN) {
+                pressed[i] |= INPUT_DOWN;
             }
-            if (buf[i] & 0x2000) {
-                buf[i] |= 4;
+            if (pressed[i] & INPUT_DPAD_LEFT) {
+                pressed[i] |= INPUT_LEFT;
             }
-            if (buf[i] & 0x4000) {
-                buf[i] |= 8;
+            if (pressed[i] & INPUT_DPAD_RIGHT) {
+                pressed[i] |= INPUT_RIGHT;
             }
         }
     }
     if (screen != NULL) {
-        if (gGame.fadeState == 0) {
+        if (gGame.fadeState == FADE_OUT) {
             item = &screen->items[sPrevScreenCursor];
         } else {
             item = screen->items;
@@ -2138,110 +2148,116 @@ void shell_update(Pad16 *pad) {
                 item += *screen->cursor + screen->firstItem;
             }
         }
-        if (gGame.fadeState != 1) {
+        if (gGame.fadeState != FADE_SWAP) {
             switch (screen->type) {
             case SCREEN_TYPE_SPLASH:
             case SCREEN_TYPE_SPLASH_2:
             case SCREEN_TYPE_SPLASH_3:
             case SCREEN_TYPE_PAK_STATUS:
             case SCREEN_TYPE_BACKUP_LOST:
-                shell_splash_input(screen, item, buf, pad);
+                shell_splash_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_CHEAT_ENTRY:
             case SCREEN_TYPE_INITIALS:
-                shell_text_entry_input(screen, item, buf, pad);
+                shell_text_entry_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_RECORDS:
-                shell_records_input(screen, item, buf, pad);
+                shell_records_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_SEASON_RACE_RESULT:
             case SCREEN_TYPE_RACE_RESULT:
-                shell_race_results_input(screen, item, buf, pad);
+                shell_race_results_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_STANDINGS:
-                shell_season_standings_input(screen, item, buf, pad);
+                shell_season_standings_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_ROUND_OVER:
-                if (buf[0] & 0x50) {
+                if (pressed[0] & (INPUT_A | INPUT_START)) {
                     shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
                     snd_play_menu_sound(MENU_SOUND_SELECT);
-                } else if ((buf[0] & 0x20) && screen->back != NULL) {
+                } else if ((pressed[0] & INPUT_B) && screen->back != NULL) {
                     shell_goto_screen(screen->back, 0, 0);
                     snd_play_menu_sound(MENU_SOUND_BACK);
                 }
                 break;
             case SCREEN_TYPE_LIST:
                 if (screen - sScreens == SCREEN_MAIN_MENU) {
+                    /* the main menu goes back to the title, also when left alone */
                     screen->back = &sScreens[SCREEN_TITLE];
-                    if (gGame.idleFrames > 0xE10 && gGame.fadeState == 3) {
+                    if (gGame.idleFrames > SHELL_IDLE_TIMEOUT && gGame.fadeState == FADE_DONE) {
                         shell_goto_screen(&sScreens[SCREEN_TITLE], 0, 0);
                     }
                 }
             case SCREEN_TYPE_TRACK_LIST:
-                shell_list_menu_input(screen, item, buf, pad);
+                shell_list_menu_input(screen, item, pressed, pads);
                 if (screen->type == SCREEN_TYPE_TRACK_LIST) {
                     gGame.trackSel = screen->firstItem + gGame.trackListSel;
                 }
                 break;
             case SCREEN_TYPE_CONTROLLER_SETTINGS:
-                shell_controller_settings_input(screen, item, buf, pad);
+                shell_controller_settings_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_PAK:
-                pak_screen_update(pad);
-                if (gPakScreenDone == 1 && gGame.fadeState == 3) {
+                pak_screen_update(pads);
+                if (gPakScreenDone == 1 && gGame.fadeState == FADE_DONE) {
+                    /* the Controller Pak screen is done: where to now */
                     switch (gGame.pakScreenMode) {
-                    case 0:
+                    case PAK_SCREEN_MANAGER:
                         if (screen->back == NULL) {
                             shell_goto_screen(&sScreens[SCREEN_SPLASH_3], 0, 1);
                         } else {
                             shell_goto_screen(screen->back, 0, 0);
                         }
                         break;
-                    case 1:
+                    case PAK_SCREEN_LOAD_GHOST:
                         if (gPakScreenAborted == 0) {
-                            if (replay_get_info(gActiveReplay + 0x6400, &sp20, &sp24, &sp28)) {
+                            /* race the ghost's track */
+                            if (replay_get_info(gActiveReplay + TIME_TRIAL_REPLAY_SIZE, &track, &rider, &time)) {
                                 shell_goto_screen(screen->back, 0, 0);
                                 gActiveReplay = 0;
-                                gGame.flags &= ~0x80000;
+                                gGame.flags &= ~GAME_FLAG_GHOST_LOADED;
                             } else {
-                                gGame.flags |= 0x80000;
-                                gCurTrack = &gTracks[sp20];
-                                gGame.trackSel = sp20;
+                                gGame.flags |= GAME_FLAG_GHOST_LOADED;
+                                gCurTrack = &gTracks[track];
+                                gGame.trackSel = track;
                                 shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                             }
                         } else {
-                            gGame.flags &= ~0x80000;
+                            gGame.flags &= ~GAME_FLAG_GHOST_LOADED;
                             gActiveReplay = 0;
                             shell_goto_screen(screen->back, 0, 0);
                         }
                         break;
-                    case 2:
+                    case PAK_SCREEN_SAVE_GHOST:
                         shell_goto_screen(screen->back, 0, 0);
                         break;
-                    case 4:
-                        gGame.flags |= 0x20;
+                    case PAK_SCREEN_SAVE_USER_TRACK:
+                        /* back to the editor */
+                        gGame.flags |= GAME_FLAG_EDITOR;
                         shell_goto_screen(0, 0, 1);
                         break;
-                    case 3:
-                        if (gGame.flags & 0x02000000) {
-                            gGame.flags &= ~0x20;
+                    case PAK_SCREEN_LOAD_USER_TRACK:
+                        if (gGame.flags & GAME_FLAG_RACE_PAK_TRACK) {
+                            /* race it */
+                            gGame.flags &= ~GAME_FLAG_EDITOR;
                             if (gPakScreenAborted != 0) {
                                 shell_goto_screen(screen->back, 0, 0);
                             } else {
                                 gCurTrack = &gTracks[TRACK_USER];
                                 shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
-                                usrtrk_load_layout(gGame.userTrack + 4);
-                                gGame.flags &= ~0x80;
+                                usrtrk_load_layout(gGame.userTrack + 4); /* after its checksum */
+                                gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
                             }
                             gGame.mode = GAME_MODE_EXHIBITION;
                             mem_free(gGame.userTrack);
                             gGame.userTrack = 0;
                         } else {
+                            /* back to the editor with it */
                             if (gPakScreenAborted != 0) {
                                 mem_free(gGame.userTrack);
                                 gGame.userTrack = 0;
                             }
-                            gGame.flags |= 0x20;
+                            gGame.flags |= GAME_FLAG_EDITOR;
                             shell_goto_screen(0, 0, 1);
                         }
                         break;
@@ -2249,31 +2265,32 @@ void shell_update(Pad16 *pad) {
                 }
                 break;
             case SCREEN_TYPE_OPTIONS:
-                shell_options_input(screen, item, buf, pad);
+                shell_options_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_TITLE:
+                /* the attract race runs; left alone, the title goes on to the main menu */
                 race_update(sNoInputPads);
-                if (gGame.idleFrames > 0xE10 && gGame.fadeState == 3 &&
-                    !(gGame.flags & 0x08000000)) {
+                if (gGame.idleFrames > SHELL_IDLE_TIMEOUT && gGame.fadeState == FADE_DONE &&
+                    !(gGame.flags & GAME_FLAG_NO_CONTROLLER)) {
                     shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 1, 1);
                 }
                 break;
             case SCREEN_TYPE_RIDER_SELECT:
-                shell_rider_select_input(screen, item, buf, pad);
+                shell_rider_select_input(screen, item, pressed, pads);
                 break;
             case SCREEN_TYPE_ROUND_SELECT:
-                shell_season_select_input(screen, item, buf, pad);
+                shell_season_select_input(screen, item, pressed, pads);
                 break;
             }
-            if (gGame.fadeState == 3 && (screen->flags & SCREEN_A_B_NAVIGATION)) {
+            if (gGame.fadeState == FADE_DONE && (screen->flags & SCREEN_A_B_NAVIGATION)) {
                 if (screen->type == SCREEN_TYPE_TITLE && D_800E3704 != 0) {
                     shell_goto_screen(screen->items->target, 1, 1);
-                } else if (buf[0] & 0x50) {
-                    if ((screen->type != SCREEN_TYPE_TITLE || !(gGame.flags & 0x08000000)) && !(item->flags & SCREEN_ITEM_LOCKED)) {
+                } else if (pressed[0] & (INPUT_A | INPUT_START)) {
+                    if ((screen->type != SCREEN_TYPE_TITLE || !(gGame.flags & GAME_FLAG_NO_CONTROLLER)) && !(item->flags & SCREEN_ITEM_LOCKED)) {
                         snd_play_menu_sound(MENU_SOUND_SELECT);
                         shell_goto_screen(item->target, 1, 1);
                     }
-                } else if (buf[0] & 0x20) {
+                } else if (pressed[0] & INPUT_B) {
                     if (screen->back != NULL) {
                         snd_play_menu_sound(MENU_SOUND_BACK);
                         shell_goto_screen(screen->back, 0, 0);
@@ -2285,10 +2302,10 @@ void shell_update(Pad16 *pad) {
         }
     }
     switch (gGame.fadeState) {
-    case 0:
+    case FADE_OUT:
         if (gGame.fadeLevel == 0) {
             gGame.fadeLevel = 30;
-            gGame.fadeState = 1;
+            gGame.fadeState = FADE_SWAP;
             gGame.fadeTimer = 2;
         } else {
             gGame.fadeLevel -= 16;
@@ -2297,7 +2314,7 @@ void shell_update(Pad16 *pad) {
             }
         }
         break;
-    case 1:
+    case FADE_SWAP:
         if (gGame.fadeTimer == 0) {
             snd_drain();
             snd_set_master_volume(0xFF);
@@ -2326,30 +2343,32 @@ void shell_update(Pad16 *pad) {
                     snd_set_master_volume(0xFF);
                 }
                 if (sCurScreen->type == SCREEN_TYPE_TRACK_LIST) {
+                    /* the track list holding gGame.trackSel */
                     while (sCurScreen->left != NULL) {
                         sCurScreen = sCurScreen->left;
                     }
-                    for (i = gGame.trackSel - 5; i >= 0; i -= 5) {
+                    for (i = gGame.trackSel - TRACKS_PER_PAGE; i >= 0; i -= TRACKS_PER_PAGE) {
                         sCurScreen = sCurScreen->right;
                     }
-                    *sCurScreen->cursor = gGame.trackSel % 5;
+                    *sCurScreen->cursor = gGame.trackSel % TRACKS_PER_PAGE;
                 }
             } else {
+                /* no next screen: end the game state (gGameStates), the race comes next */
                 gCurGameState->mode = 3;
                 if (gGame.mode == GAME_MODE_TUTORIAL) {
-                    gCurTrack = &gTracks[26];
+                    gCurTrack = &gTracks[TRACK_TUTORIAL];
                 } else if (gGame.mode == GAME_MODE_SEASON) {
                     gCurTrack = &gTracks[gSeason->cup->tracks[gSeason->round]];
                 }
-                if (!(gGame.flags & 0x8000)) {
-                    if (!(gGame.flags & 0x20)) {
+                if (!(gGame.flags & GAME_FLAG_REPLAY)) {
+                    if (!(gGame.flags & GAME_FLAG_EDITOR)) {
                         if (gGame.mode == GAME_MODE_TIME_TRIAL) {
                             if (gActiveReplay == 0) {
                                 gActiveReplay = gReplayBuffer;
                             }
-                            gActiveReplaySize = 0x6400;
+                            gActiveReplaySize = TIME_TRIAL_REPLAY_SIZE;
                         } else if (gGame.mode != GAME_MODE_TUTORIAL) {
-                            gActiveReplaySize = 0xC800;
+                            gActiveReplaySize = REPLAY_SIZE;
                             gActiveReplay = gReplayBuffer;
                         }
                     }
@@ -2361,20 +2380,20 @@ void shell_update(Pad16 *pad) {
             if (gGame.fadeTimer != -2) {
                 gGame.fadeLevel++;
             } else {
-                gGame.fadeState = 2;
+                gGame.fadeState = FADE_IN;
                 gGame.fadeLevel = 255;
             }
         }
         break;
-    case 2:
+    case FADE_IN:
         gGame.fadeLevel -= 16;
         if (gGame.fadeLevel <= 0) {
-            gGame.fadeState = 3;
+            gGame.fadeState = FADE_DONE;
             gGame.fadeLevel = 0;
         }
         break;
     }
-    sPrevPadButtons = *pad;
+    sPrevPadButtons = *pads;
 }
 
 typedef struct {
@@ -3168,7 +3187,7 @@ void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
 {
     Screen *p;
 
-    if (gGame.fadeState != 0) {
+    if (gGame.fadeState != FADE_OUT) {
         if (sCurScreen == NULL) {
             if (screen != NULL) {
                 p = screen;
@@ -3189,7 +3208,7 @@ void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
                     tunes_play_song(sMenuSongId);
                 }
             }
-            gGame.fadeState = 1;
+            gGame.fadeState = FADE_SWAP;
             gGame.fadeLevel = 1;
             gGame.fadeTimer = -1;
         } else {
@@ -3200,7 +3219,7 @@ void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
                     (cursor != NULL ? &items[*cursor] : items)->callback(1);
                 }
             }
-            gGame.fadeState = 0;
+            gGame.fadeState = FADE_OUT;
             gGame.fadeLevel = 0xFF;
             sPrevScreenCursor = sCurScreen->cursor != NULL ? *sCurScreen->cursor : 0;
         }
@@ -3716,7 +3735,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
     void *p;
     Img *img;
 
-    if (gGame.fadeState == 0) {
+    if (gGame.fadeState == FADE_OUT) {
         s = sPrevScreen;
     } else {
         s = sCurScreen;
@@ -3744,7 +3763,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         }
         break;
     case SCREEN_TYPE_PAK:
-        if (gGame.fadeState != 1) {
+        if (gGame.fadeState != FADE_SWAP) {
             pak_screen_draw(m, fb, &gdl);
         }
         break;
@@ -4937,7 +4956,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         break;
     }
     case SCREEN_TYPE_TITLE:
-        if (gGame.fadeState != 1) {
+        if (gGame.fadeState != FADE_SWAP) {
             render_draw_race(m, fb, &gdl);
             gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
             gDPSetTexturePersp(gdl++, G_TP_NONE);
@@ -5286,7 +5305,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
     }
     gDPPipeSync(gdl++);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
-    if (gGame.fadeState != 3) {
+    if (gGame.fadeState != FADE_DONE) {
         gdl = screen_draw_wipe(gdl, m, gGfxFrameIndex);
     }
     {
@@ -5317,13 +5336,13 @@ void shell_draw(Mtx *m, s32 fb, Gfx **pgdl)
     u16 alpha;
 
     gdl = *pgdl;
-    if (gGame.fadeState == 0) {
+    if (gGame.fadeState == FADE_OUT) {
         s = sPrevScreen;
     } else {
         s = sCurScreen;
     }
     if (s != NULL) {
-        if (gGame.fadeState == 0) {
+        if (gGame.fadeState == FADE_OUT) {
             item = s->items + sPrevScreenCursor;
         } else {
             item = s->items;
@@ -5333,9 +5352,9 @@ void shell_draw(Mtx *m, s32 fb, Gfx **pgdl)
         }
     }
     alpha = 0xFF;
-    if (gGame.fadeState == 1) goto c1;
-    if (gGame.fadeState == 0) goto c0;
-    if (gGame.fadeState == 2) goto c2;
+    if (gGame.fadeState == FADE_SWAP) goto c1;
+    if (gGame.fadeState == FADE_OUT) goto c0;
+    if (gGame.fadeState == FADE_IN) goto c2;
     goto done;
 c1:
     alpha = 0;
@@ -5366,7 +5385,7 @@ done:
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     gDPPipeSync(gdl++);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
-    if (gGame.fadeState == 1 || s == NULL || s->bgResId == NULL) {
+    if (gGame.fadeState == FADE_SWAP || s == NULL || s->bgResId == NULL) {
         gDPSetFillColor(gdl++, 0);
         gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     }
@@ -5387,7 +5406,7 @@ done:
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     font_reset_queue();
     gDPPipeSync(gdl++);
-    if (gGame.fadeState == 1) {
+    if (gGame.fadeState == FADE_SWAP) {
         if (gGame.fadeTimer > 0 || gGame.fadeTimer == -1) {
             gGame.fadeTimer--;
         }
