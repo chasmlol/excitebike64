@@ -167,6 +167,24 @@ Entering a code in the front end toggles a bit of `sCheatMask`; Debug Mode sets 
 **Debug draw switches**: `gDrawFlags` bit n is debug menu item n: Bikes, Sky, HiArn, LoArn, Stand, Bales, Shadows,
 Mud, ClrScrn, Collision, Vtx Wind, Hud.
 
+**Structures**: include/structs.h declares the types several source files share; the named structures of the game's
+subsystems are in include/structs/ (119 structs in 31 headers, which structs.h includes):
+
+- the track and what is drawn on it: model.h (`PrimModel`, the compact models prim.c compiles; `TexSet`, texture
+  sets), track.h (`TrackModelList` of sections, objects and water; `CollGrid`, a section's ground triangles;
+  `WallMesh`, the wall mesh, which UsrTrk.c also builds for a user track; `SurfacePoly`; `Instance`), camera.h
+  (`CamOut`, `CamMode`, the camera zones), particle.h, snow.h, decal.h (`TireTrack`), sun.h (`FlareList`), desert.h,
+  shatter.h, palmod.h, map.h (`MapImage`), flash.h, arned.h (the editor's 3D view) and resman.h (`ResSet`, the
+  resource sets);
+- the racing line and the track editor: path.h (`PathNode`) and editor.h (`Editor`, `EditPiece`, `PieceType`,
+  `EditArena`, the user track's layout and data);
+- the front end: font.h (`Font`, `TextObj`), shell.h (`Screen`, `ScreenItem`, `Cheat`, `RiderBio`), gui.h (`Gui`,
+  `GuiMenu`), hud.h (`RaceTexts`) and pak.h (`PakScreen`, `PakNote`, `PakMessage`);
+- sound, the NES emulator and files: nes.h (`Nes`), softmix.h, sfx.h, tunes.h, snd.h (`RiderSound`) and file.h
+  (`FileDirEntry`, `FileHandle`);
+- the game and the race: race.h (`Event`, `TrackRecord`, `Season`, `Cup`, `TutorialLesson`, `PauseScreen`,
+  `HudGlyphs`), game.h (`Game`, `GameState`), hacks.h (`TrackHack`) and podium.h (the ceremony's clips).
+
 ## The rider struct
 
 `gRiders`, 8 entries of 0x7E0 bytes. Positions are in millimetres (s32) for drawing and in metres (float) for the
@@ -407,12 +425,12 @@ their names say what they hold or where they start.
   (which sets the game mode) and changes `sCurScreen`. `snd_play_menu_sound` plays 0 move, 1 select, 2 back,
   3 error.
 - **pak.c**: the Controller Pak screen (manager, load, save of ghost and user-track notes) and the Pfs calls behind
-  it. The shell fills `gPakScreen` {mode 0 manager / 1 load / 2 save, state, pak, selection, buffer, pages,
-  validator} and polls `gPakScreenDone` / `gPakScreenAborted`. Notes are created with game code 'NMXG', company
+  it. The shell fills `gPakScreen` (a `PakScreen`: mode 0 manager / 1 load / 2 save, state, pak, selection, data,
+  pages, validator, describe callback) and polls `gPakScreenDone` / `gPakScreenAborted`. Notes are created with game code 'NMXG', company
   "01", name "EB64" and extensions 'A'-'Z', and read back to verify; names go through `sPakCharset`. Probing
   (`pak_probe_all`) also finds Rumble Paks, Transfer Paks and the EEPROM.
-- **gui.c**: the track editor's dialog kit (`gGui`): one-line message boxes, two-choice prompts and menus {title,
-  count, selection, items {text, flags}, flags} with value slots.
+- **gui.c**: the track editor's dialog kit (`gGui`): one-line message boxes, two-choice prompts and menus
+  (`GuiMenu`: title, items, cursor, choice; `GuiMenuItem`: text, flags and a row of values).
 
 ### Track editor
 
@@ -561,7 +579,8 @@ floor, the arena walls and the cursor, plus the camera, viewport and scissor set
   2, type 6). `usrtrk_load_layout` unpacks it into `gUserTrackLayout` (`UserTrackLayout`), `usrtrk_load_into_editor` into `gEditor`.
 - For a race, `usrtrk_load_pieces` and `usrtrk_build_track` (called from the stadium code) fill `gUserTrackData` (`UserTrackData`):
   two mesh sets of 500x500 cells with rotated vertices and 1-bit textures, the dirt texture, the racing line
-  (`gUserTrackData.path`, header 0xAA000003) and the merged collision with a 16x16 hash.
+  (`gUserTrackData.path`, header 0xAA000003) and the arena's and the pieces' wall meshes merged into one `WallMesh`
+  with its 16x16 hash (allocated one cell short of the struct: the cell lists also set cells[256], past the end).
 
 ## The LodgeNet build
 

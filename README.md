@@ -20,9 +20,13 @@ All code and data are decompiled and matching: the build reproduces the original
   starts the game, and the sound code the linker placed among the game's data (tunes.c's ADPCM block decoder,
   softmix.c's voice mixers and output converters, DECODER.C's ADPCM block decoders, and the decoders' tables:
   asm/game_tunes.s, asm/game_softmix.s, asm/game_decoder.s).
-- Names: 1218 of the 1278 functions of C (1178 of 1234 in the game, 40 of 44 in the boot loader) and 1071 of the
-  2947 data symbols are named; the rest are still `func_XXXXXXXX` / `D_XXXXXXXX`. The game's C is split into its
+- Names: 1218 of the 1278 functions of C (1178 of 1234 in the game, 40 of 44 in the boot loader) and 1062 of the
+  2898 data symbols are named; the rest are still `func_XXXXXXXX` / `D_XXXXXXXX`. The game's C is split into its
   original source files where the game's strings name them.
+- Structures: the data the game's subsystems share has named structs, 119 in 31 headers under include/structs/
+  (the game's setup and the race, the track and its models, the camera and effects, the racing line, the track
+  editor, the front end, fonts and the Controller Pak screen, sound, the NES emulator, files); include/structs.h
+  includes them.
 - [docs/overview.md](docs/overview.md) describes how the game works: threads and game states, the main structures
   (the rider struct field by field), each source file, the NES emulator, sound, saves, the track editor and what is
   particular to the LodgeNet build.
@@ -121,6 +125,7 @@ functions.csv        every function-sized range of both images: name, image, add
                      a boot loader copy is built from)
 include/             common.h (<ultra64.h> and basics), game.h (what the game's C includes: structs.h, functions.h,
                      variables.h), boot.h (the boot loader's declarations), data.h (types for src/data)
+include/structs/     the named structs, one header per subsystem (overview.md lists them)
 src/game/<module>.c  the game's C, one file per original source file, functions in address order
 src/game/unnamed/    object files whose name is unknown: named after what they do (desert.c, replay.c, sched.c) or
                      after their segment and start address
@@ -138,14 +143,14 @@ docs/                overview.md: how the game works; compiler-notes.md: the com
 
 ## Notes
 
-- The `func_XXXXXXXX` / `D_XXXXXXXX` names left are code and data not understood well enough yet, and many structs
-  are still offsets and pad fields. Naming and documentation are welcome; tools/build_all.py checks that the build
-  still matches.
+- The `func_XXXXXXXX` / `D_XXXXXXXX` names left are code and data not understood well enough yet, and many of the
+  structs local to one source file are still offsets and pad fields. Naming and documentation are welcome;
+  tools/build_all.py checks that the build still matches.
 - Each function was matched with its own declarations, and they don't always agree: a global seen as a different
   struct, a function declared with other parameters. Where a function's code depends on its own view, it uses a
-  second name for the same symbol, the shared name plus `_<n>` (`gGame_3`, `nes_read_io_2`; same address,
-  listed in the symbol table). Struct names ending in `_<n>` are different layouts that functions gave the same
-  name. Unifying these is part of naming the game's data.
+  second name for the same symbol, the shared name plus `_<n>` (`gRiders_25`, `nes_read_io_2`; same address,
+  listed in the symbol table; 402 are left). Struct names ending in `_<n>` are different layouts that functions gave
+  the same name. Unifying these is part of naming the game's data.
 - 6 functions keep inline asm because the original holds instructions C does not produce (the `break 0x407` halts,
   a debug `break 0x400`, a library function from another compiler). A few others use empty asm statements to force a
   register allocation (docs/compiler-notes.md).
