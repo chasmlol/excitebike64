@@ -1064,21 +1064,48 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
     }
 }
 
+/* The options screen's items (gGame.optionsSel, gOptionsLabels): the volumes in a column, then the others in two
+   columns: 3 4, 5 6, 7 8, 9 10. */
+enum OptionItem {
+    OPTION_MUSIC_VOLUME,
+    OPTION_SFX_VOLUME,
+    OPTION_SPEECH_VOLUME,
+    OPTION_SOUND,             /* mono / stereo */
+    OPTION_CONTROL_SETTINGS,
+    OPTION_RECORDS,
+    OPTION_CREDITS,
+    OPTION_HI_RES,            /* needs the Expansion Pak */
+    OPTION_DRONES,
+    OPTION_RESET_SAVED_DATA,  /* greyed out in this build */
+    OPTION_CONTROLLER_PAK,    /* greyed out in this build */
+    OPTION_COUNT
+};
+#define OPTIONS_JUST_ENTERED 0x100 /* in gGame.optionsSel: the screen was just loaded */
+
+/* gSaveData.volumes */
+#define VOLUME_MUSIC  0
+#define VOLUME_SFX    1
+#define VOLUME_SPEECH 2
+
+#define SPEECH_SAMPLE 0x9B /* the speech clip the speech volume plays */
+
+/* Options: up and down move over the items, A toggles or opens one, left and right change the volumes (playing
+   the music, a sound effect or a speech clip at the new volume). */
 void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
-    s32 m;
-    s32 old;
-    s32 d;
+    s32 state;
+    s32 oldSel;
+    s32 step;
 
     if (++gGame.menuAnimTimer == 60) {
         gGame.menuAnimTimer = 0;
     }
-    if (gGame.optionsSel & 0x100) {
-        gGame.optionsSel &= ~0x100;
-        if (gGame.optionsSel == 0) {
+    if (gGame.optionsSel & OPTIONS_JUST_ENTERED) {
+        gGame.optionsSel &= ~OPTIONS_JUST_ENTERED;
+        if (gGame.optionsSel == OPTION_MUSIC_VOLUME) {
             tunes_play_song(gReplaySongResId);
         }
     }
-    if ((gPadInput & 0x20) && !(gPadInputPrev & 0x20) && gGame.fadeState == 3) {
+    if ((gPadInput & INPUT_B) && !(gPadInputPrev & INPUT_B) && gGame.fadeState == 3) {
         if (gGame.screenState == SCREEN_STATE_ERASE_DIALOG) {
             gGame.screenState = SCREEN_STATE_NORMAL;
             snd_play_menu_sound(MENU_SOUND_BACK);
@@ -1094,232 +1121,241 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
         gCreditsMode = 0;
         return;
     }
-    if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10) && gGame.fadeState == 3) {
+    if ((gPadInput & INPUT_A) && !(gPadInputPrev & INPUT_A) && gGame.fadeState == 3) {
         switch (gGame.optionsSel) {
-        case 3:
-                        gSaveData.options ^= 1;
+        case OPTION_SOUND:
+            gSaveData.options ^= SAVE_OPTION_STEREO;
             snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
-        case 8:
-                        gSaveData.options ^= 0x10;
+        case OPTION_DRONES:
+            gSaveData.options ^= SAVE_OPTION_DRONES_OFF;
             snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
-        case 1:
-            sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
+        case OPTION_SFX_VOLUME:
+            sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
             return;
-        case 2:
+        case OPTION_SPEECH_VOLUME:
             if (gGame.repeatTimer == 0) {
-                tunes_queue_speech(0x9B);
-                gGame.repeatTimer = 0x34;
+                tunes_queue_speech(SPEECH_SAMPLE);
+                gGame.repeatTimer = 52;
             }
             return;
-        case 10:
-                        snd_play_menu_sound(MENU_SOUND_ERROR);
+        case OPTION_CONTROLLER_PAK:
+            snd_play_menu_sound(MENU_SOUND_ERROR);
             return;
-        case 9:
-                        snd_play_menu_sound(MENU_SOUND_ERROR);
+        case OPTION_RESET_SAVED_DATA:
+            snd_play_menu_sound(MENU_SOUND_ERROR);
             return;
-        case 7:
+        case OPTION_HI_RES:
             if (gHasExpansionPak == 0) {
                 return;
             }
-                        gSaveData.options ^= 2;
+            gSaveData.options ^= SAVE_OPTION_HI_RES;
             snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
-        case 4:
+        case OPTION_CONTROL_SETTINGS:
             shell_goto_screen(&sScreens[SCREEN_CONTROLLER_SETTINGS], 1, 1);
-                        snd_play_menu_sound(MENU_SOUND_SELECT);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
-        case 5:
+        case OPTION_RECORDS:
             shell_goto_screen(&sScreens[SCREEN_RECORDS], 1, 1);
-                        snd_play_menu_sound(MENU_SOUND_SELECT);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
-        case 6:
+        case OPTION_CREDITS:
+            /* the credits are a race on The Gravel Pit */
             shell_goto_screen(NULL, 0, 1);
-                        gCreditsMode = 1;
+            gCreditsMode = 1;
             gGame.mode = GAME_MODE_EXHIBITION;
             gCurTrack = &gTracks[TRACK_GRAVEL_PIT];
             gGame.numPlayers = 1;
             gGame.returnScreen = screen;
             {
-                s32 f = gGame.flags & ~0x80;
-                *(volatile s32 *)&gGame.flags = f;
-                gGame.flags = f | 0x05000000;
+                s32 flags = gGame.flags & ~GAME_FLAG_TRACK_CHOSEN;
+                *(volatile s32 *)&gGame.flags = flags;
+                gGame.flags = flags | (GAME_FLAG_LOW_RES | GAME_FLAG_CREDITS_FROM_OPTIONS);
             }
             snd_play_menu_sound(MENU_SOUND_SELECT);
             return;
         }
         return;
     }
-    m = gGame.screenState;
-    if (m == 6 || m == 15 || m == 14) {
-        if (m == 15) {
+    state = gGame.screenState;
+    if (state == SCREEN_STATE_ERASE_DIALOG || state == SCREEN_STATE_ERASE || state == SCREEN_STATE_ERASING) {
+        if (state == SCREEN_STATE_ERASE) {
             save_load(1);
             gGame.screenState = SCREEN_STATE_NORMAL;
-        } else if (m != 14) {
-            if (*buttons & 3) {
+        } else if (state != SCREEN_STATE_ERASING) {
+            if (*buttons & (INPUT_UP | INPUT_DOWN)) {
                 gGame.dialogSel ^= 1;
                 snd_play_menu_sound(MENU_SOUND_MOVE);
             }
         }
         return;
     }
-    old = gGame.optionsSel;
-    if (*buttons & 2) {
-        if (old < 3) {
+    oldSel = gGame.optionsSel;
+    if (*buttons & INPUT_DOWN) {
+        if (oldSel < OPTION_SOUND) {
             gGame.optionsSel += 1;
         } else {
             gGame.optionsSel += 2;
         }
-        if (gGame.optionsSel >= 11) {
-            gGame.optionsSel = 0;
+        if (gGame.optionsSel >= OPTION_COUNT) {
+            gGame.optionsSel = OPTION_MUSIC_VOLUME;
         }
     }
-    if (*buttons & 1) {
-        if (gGame.optionsSel < 4) {
+    if (*buttons & INPUT_UP) {
+        if (gGame.optionsSel < OPTION_CONTROL_SETTINGS) {
             gGame.optionsSel -= 1;
         } else {
             gGame.optionsSel -= 2;
         }
         if (gGame.optionsSel < 0) {
-            gGame.optionsSel = 9;
+            gGame.optionsSel = OPTION_RESET_SAVED_DATA;
         }
     }
-    if (old != gGame.optionsSel) {
-        switch (old) {
-        case 2:
+    if (oldSel != gGame.optionsSel) {
+        /* stop the sound of the item left, start the one of the new item */
+        switch (oldSel) {
+        case OPTION_SPEECH_VOLUME:
             tunes_stop_speech();
             break;
-        case 0:
+        case OPTION_MUSIC_VOLUME:
             tunes_stop_song();
             break;
-        case 1:
+        case OPTION_SFX_VOLUME:
             break;
         }
         switch (gGame.optionsSel) {
-        case 2:
-            tunes_queue_speech(0x9B);
-            gGame.repeatTimer = 0x34;
+        case OPTION_SPEECH_VOLUME:
+            tunes_queue_speech(SPEECH_SAMPLE);
+            gGame.repeatTimer = 52;
             break;
-        case 0:
+        case OPTION_MUSIC_VOLUME:
             tunes_play_song(gReplaySongResId);
             break;
-        case 1:
-            sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
+        case OPTION_SFX_VOLUME:
+            sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
             break;
         }
     }
-    if (gGame.optionsSel >= 3) {
-        if (*buttons & 0xC) {
-            if ((gGame.optionsSel - 3) & 1) {
+    if (gGame.optionsSel >= OPTION_SOUND) {
+        /* left and right: the other item of the row */
+        if (*buttons & (INPUT_LEFT | INPUT_RIGHT)) {
+            if ((gGame.optionsSel - OPTION_SOUND) & 1) {
                 gGame.optionsSel--;
             } else {
                 gGame.optionsSel++;
             }
         }
     } else {
+        /* a volume: 8 a D-pad press, or by how far the stick is pushed */
         if (gGame.repeatTimer != 0) {
             gGame.repeatTimer--;
         }
-        if ((gPadInput & 0x2000) && !(gPadInputPrev & 0x2000)) {
-            d = -8;
-        } else if ((gPadInput & 0x4000) && !(gPadInputPrev & 0x4000)) {
-            d = 8;
+        if ((gPadInput & INPUT_DPAD_LEFT) && !(gPadInputPrev & INPUT_DPAD_LEFT)) {
+            step = -8;
+        } else if ((gPadInput & INPUT_DPAD_RIGHT) && !(gPadInputPrev & INPUT_DPAD_RIGHT)) {
+            step = 8;
         } else {
-            s32 b = gPadInput;
-            if (b & 0xC) {
-                d = ((b & 8) ? ((b >> 24) & 0xF) : -((b >> 24) & 0xF)) / 3;
+            s32 input = gPadInput;
+            if (input & (INPUT_LEFT | INPUT_RIGHT)) {
+                step = ((input & INPUT_RIGHT) ? ((input >> 24) & 0xF) : -((input >> 24) & 0xF)) / 3;
             } else {
-                d = 0;
+                step = 0;
             }
         }
-        if (d != 0 && gGame.repeatTimer == 0) {
+        if (step != 0 && gGame.repeatTimer == 0) {
             switch (gGame.optionsSel) {
-            case 1:
-                sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[1], 7, 1, 1);
-                gGame.repeatTimer = 0x28;
+            case OPTION_SFX_VOLUME:
+                sfx_play(gGame.optionsSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
+                gGame.repeatTimer = 40;
                 break;
-            case 2:
-                tunes_queue_speech(0x9B);
-                gGame.repeatTimer = 0x34;
+            case OPTION_SPEECH_VOLUME:
+                tunes_queue_speech(SPEECH_SAMPLE);
+                gGame.repeatTimer = 52;
                 break;
             }
         }
-        if (d < 0) {
+        if (step < 0) {
             switch (gGame.optionsSel) {
-            case 1:
-                if (gSaveData.volumes[1] >= -d) {
-                    gSaveData.volumes[1] += d;
+            case OPTION_SFX_VOLUME:
+                if (gSaveData.volumes[VOLUME_SFX] >= -step) {
+                    gSaveData.volumes[VOLUME_SFX] += step;
                 } else {
-                    gSaveData.volumes[1] = 0;
+                    gSaveData.volumes[VOLUME_SFX] = 0;
                 }
                 break;
-            case 0:
-                if (gSaveData.volumes[0] >= -d) {
-                    gSaveData.volumes[0] += d;
+            case OPTION_MUSIC_VOLUME:
+                if (gSaveData.volumes[VOLUME_MUSIC] >= -step) {
+                    gSaveData.volumes[VOLUME_MUSIC] += step;
                 } else {
-                    gSaveData.volumes[0] = 0;
+                    gSaveData.volumes[VOLUME_MUSIC] = 0;
                 }
                 break;
-            case 2:
-                if (gSaveData.volumes[2] >= -d) {
-                    gSaveData.volumes[2] += d;
+            case OPTION_SPEECH_VOLUME:
+                if (gSaveData.volumes[VOLUME_SPEECH] >= -step) {
+                    gSaveData.volumes[VOLUME_SPEECH] += step;
                 } else {
-                    gSaveData.volumes[2] = 0;
+                    gSaveData.volumes[VOLUME_SPEECH] = 0;
                 }
                 break;
             }
         } else {
-            s32 t;
+            s32 volume;
             switch (gGame.optionsSel) {
-            case 1:
-                t = gSaveData.volumes[1] + d;
-                if (t >= 256) {
-                    gSaveData.volumes[1] = 255;
+            case OPTION_SFX_VOLUME:
+                volume = gSaveData.volumes[VOLUME_SFX] + step;
+                if (volume >= 256) {
+                    gSaveData.volumes[VOLUME_SFX] = 255;
                 } else {
-                    gSaveData.volumes[1] = t;
+                    gSaveData.volumes[VOLUME_SFX] = volume;
                 }
                 break;
-            case 0:
-                t = gSaveData.volumes[0] + d;
-                if (t >= 256) {
-                    gSaveData.volumes[0] = 255;
+            case OPTION_MUSIC_VOLUME:
+                volume = gSaveData.volumes[VOLUME_MUSIC] + step;
+                if (volume >= 256) {
+                    gSaveData.volumes[VOLUME_MUSIC] = 255;
                 } else {
-                    gSaveData.volumes[0] = t;
+                    gSaveData.volumes[VOLUME_MUSIC] = volume;
                 }
                 break;
-            case 2:
-                t = gSaveData.volumes[2] + d;
-                if (t >= 256) {
-                    gSaveData.volumes[2] = 255;
+            case OPTION_SPEECH_VOLUME:
+                volume = gSaveData.volumes[VOLUME_SPEECH] + step;
+                if (volume >= 256) {
+                    gSaveData.volumes[VOLUME_SPEECH] = 255;
                 } else {
-                    gSaveData.volumes[2] = t;
+                    gSaveData.volumes[VOLUME_SPEECH] = volume;
                 }
                 break;
             }
         }
-        snd_set_volume(1, gSaveData.volumes[0]);
-        snd_set_volume(2, gSaveData.volumes[2]);
-        snd_set_volume(0, gSaveData.volumes[1]);
+        /* the sound channels: 0 effects, 1 music, 2 speech */
+        snd_set_volume(1, gSaveData.volumes[VOLUME_MUSIC]);
+        snd_set_volume(2, gSaveData.volumes[VOLUME_SPEECH]);
+        snd_set_volume(0, gSaveData.volumes[VOLUME_SFX]);
     }
-    if (gGame.optionsSel != old) {
+    if (gGame.optionsSel != oldSel) {
         snd_play_menu_sound(MENU_SOUND_MOVE);
     }
 }
 
+/* Rider select: the race runs behind (the riders turning on the spot). Each player picks a rider with left and
+   right and confirms with A or START (B takes it back); with one player the C buttons pick the colours and Z
+   holds the rider's bio up. When every player has confirmed, A or START starts. */
 void shell_rider_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
-    Game *g;
-    Game *h;
-    Game *k;
-    Game *m;
+    Game *game;
+    Game *game2;
+    Game *game3;
+    Game *game4;
     s32 i;
-    s32 ok;
-    s32 idx;
-    s32 t;
-    u32 mask;
+    s32 allReady;
+    s32 pad;
+    s32 rider;
+    u32 readyFlag;
 
-    g = &gGame;
+    /* game..game4: separate pointers to gGame, as the original's code has them */
+    game = &gGame;
     for (i = 0; i < 4; i++) {
         if (gGame.riderSelectTimer[i] != 0) {
             gGame.riderSelectTimer[i]--;
@@ -1327,27 +1363,28 @@ void shell_rider_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
         gGame.riderSelectRot[i][0] = (gGame.riderSelectRot[i][0] + 0x23) & 0xFFFF;
     }
 
-    ok = 1;
-    h = &gGame;
-    for (i = 0; i < h->numPlayers; i++) {
+    allReady = 1;
+    game2 = &gGame;
+    for (i = 0; i < game2->numPlayers; i++) {
         if (!(gGame.flags & GAME_FLAG_PLAYER_READY(i))) {
-            ok = 0;
+            allReady = 0;
         }
     }
     race_update(sNoInputPads);
 
-    k = &gGame;
-    if (k->numPlayers == 1) {
-        if (*buttons & 0x780) snd_play_menu_sound(MENU_SOUND_MOVE);
-        if (*buttons & 0x200) k->riderSkinSel = (k->riderSkinSel + 5) % 6;
-        if (*buttons & 0x400) k->riderSkinSel = (k->riderSkinSel + 1) % 6;
-        if (k->mode != GAME_MODE_TIME_TRIAL) {
-            if (*buttons & 0x80) k->bikeSkinSel = (k->bikeSkinSel + 5) % 6;
-            if (*buttons & 0x100) k->bikeSkinSel = (k->bikeSkinSel + 1) % 6;
+    game3 = &gGame;
+    if (game3->numPlayers == 1) {
+        /* C left / right: the rider's colours; C up / down: the bike's (not in a time trial) */
+        if (*buttons & (INPUT_C_UP | INPUT_C_DOWN | INPUT_C_LEFT | INPUT_C_RIGHT)) snd_play_menu_sound(MENU_SOUND_MOVE);
+        if (*buttons & INPUT_C_LEFT) game3->riderSkinSel = (game3->riderSkinSel + 5) % 6;
+        if (*buttons & INPUT_C_RIGHT) game3->riderSkinSel = (game3->riderSkinSel + 1) % 6;
+        if (game3->mode != GAME_MODE_TIME_TRIAL) {
+            if (*buttons & INPUT_C_UP) game3->bikeSkinSel = (game3->bikeSkinSel + 5) % 6;
+            if (*buttons & INPUT_C_DOWN) game3->bikeSkinSel = (game3->bikeSkinSel + 1) % 6;
         }
     }
 
-    if ((*buttons & 0x50) && ok) {
+    if ((*buttons & (INPUT_A | INPUT_START)) && allReady) {
         snd_play_menu_sound(MENU_SOUND_SELECT);
         if (gGame.savedMode < GAME_MODE_TIME_TRIAL) {
             if (gGame.savedMode >= GAME_MODE_SOCCER) {
@@ -1360,11 +1397,11 @@ void shell_rider_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
         }
         return;
     }
-    if (*buttons & 0x20) {
-        if (!(gGame.flags & 0x400)) {
+    if (*buttons & INPUT_B) {
+        if (!(gGame.flags & GAME_FLAG_PLAYER_READY(0))) {
             if (screen->back != NULL) {
                 if (screen->back == &sScreens[SCREEN_PAK] && gUserTrackLayout != 0) {
-                    gGame.flags |= 0x2000000;
+                    gGame.flags |= GAME_FLAG_RACE_PAK_TRACK;
                 }
                 shell_goto_screen(screen->back, 0, 0);
                 snd_play_menu_sound(MENU_SOUND_BACK);
@@ -1372,120 +1409,140 @@ void shell_rider_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
             return;
         }
     }
-    m = &gGame;
-    if (m->fadeState != 3) return;
+    game4 = &gGame;
+    if (game4->fadeState != 3) return;
     for (i = 0; i < gGame.numPlayers; i++) {
-        if (!((gContMask >> (idx = gGame.playerPad[i])) & 1)) continue;
-        if (gGame.riderSelectState[i] == 0 && !(gGame.flags & GAME_FLAG_PLAYER_READY(i))) {
-            if (buttons[idx] & 4) {
-                t = gGame.riders[i];
-                gGame.riders[i] = t - 1;
-                if (t - 1 < 0) gGame.riders[i] = t + 5;
+        if (!((gContMask >> (pad = gGame.playerPad[i])) & 1)) continue;
+        if (gGame.riderSelectState[i] == BIO_HIDDEN && !(gGame.flags & GAME_FLAG_PLAYER_READY(i))) {
+            if (buttons[pad] & INPUT_LEFT) {
+                rider = gGame.riders[i];
+                gGame.riders[i] = rider - 1;
+                if (rider - 1 < 0) gGame.riders[i] = rider + 5;
                 if (gGame.numPlayers == 1) gGame.riderSkinSel = (gGame.riderSkinSel + 5) % 6;
                 snd_play_menu_sound(MENU_SOUND_MOVE);
             }
-            if (buttons[gGame.playerPad[i]] & 8) {
-                t = gGame.riders[i];
-                gGame.riders[i] = t + 1;
-                if (t + 1 >= 6) gGame.riders[i] = t - 5;
+            if (buttons[gGame.playerPad[i]] & INPUT_RIGHT) {
+                rider = gGame.riders[i];
+                gGame.riders[i] = rider + 1;
+                if (rider + 1 >= 6) gGame.riders[i] = rider - 5;
                 if (gGame.numPlayers == 1) gGame.riderSkinSel = (gGame.riderSkinSel + 1) % 6;
                 snd_play_menu_sound(MENU_SOUND_MOVE);
             }
         }
-        if (gGame.numPlayers >= 3 || gGame.riderSelectState[i] == 0) {
-            if (!(gGame.flags & GAME_FLAG_PLAYER_READY(i)) && (buttons[gGame.playerPad[i]] & 0x50)) {
-                gGame.riderSelectTimer[i] = 0x28 - gGame.riderSelectTimer[i];
+        if (gGame.numPlayers >= 3 || gGame.riderSelectState[i] == BIO_HIDDEN) {
+            if (!(gGame.flags & GAME_FLAG_PLAYER_READY(i)) && (buttons[gGame.playerPad[i]] & (INPUT_A | INPUT_START))) {
+                /* the panel slides away over 40 frames */
+                gGame.riderSelectTimer[i] = 40 - gGame.riderSelectTimer[i];
                 gGame.flags |= GAME_FLAG_PLAYER_READY(i);
                 snd_play_menu_sound(MENU_SOUND_SELECT);
-            } else if ((gPadInput & 0x20000) && gGame.numPlayers == 1) {
-                gGame.riderSelectState[i] = 1;
-                gGame.riderSelectAnim[i] = 0x3D;
+            } else if ((gPadInput & INPUT_Z) && gGame.numPlayers == 1) {
+                gGame.riderSelectState[i] = BIO_OPENING;
+                gGame.riderSelectAnim[i] = 61;
             }
         } else {
-            if (gGame.riderSelectState[i] == 1) {
+            /* the bio slides in over 61 frames while Z is held, and out when it is let go */
+            if (gGame.riderSelectState[i] == BIO_OPENING) {
                 if (--gGame.riderSelectAnim[i] <= 0) {
-                    gGame.riderSelectState[i] = 2;
-                } else if (!(gPadInput & 0x20000)) {
-                    gGame.riderSelectState[i] = 3;
-                    gGame.riderSelectAnim[i] = 0x3E - gGame.riderSelectAnim[i];
+                    gGame.riderSelectState[i] = BIO_SHOWN;
+                } else if (!(gPadInput & INPUT_Z)) {
+                    gGame.riderSelectState[i] = BIO_CLOSING;
+                    gGame.riderSelectAnim[i] = 62 - gGame.riderSelectAnim[i];
                 }
-            } else if (gGame.riderSelectState[i] == 2) {
-                if (!(gPadInput & 0x20000)) {
-                    gGame.riderSelectState[i] = 3;
-                    gGame.riderSelectAnim[i] = 0x3D;
+            } else if (gGame.riderSelectState[i] == BIO_SHOWN) {
+                if (!(gPadInput & INPUT_Z)) {
+                    gGame.riderSelectState[i] = BIO_CLOSING;
+                    gGame.riderSelectAnim[i] = 61;
                 }
-            } else if (gGame.riderSelectState[i] == 3) {
-                if (gPadInput & 0x20000) {
-                    gGame.riderSelectState[i] = 1;
-                    gGame.riderSelectAnim[i] = 0x3E - gGame.riderSelectAnim[i];
+            } else if (gGame.riderSelectState[i] == BIO_CLOSING) {
+                if (gPadInput & INPUT_Z) {
+                    gGame.riderSelectState[i] = BIO_OPENING;
+                    gGame.riderSelectAnim[i] = 62 - gGame.riderSelectAnim[i];
                 }
                 if (--gGame.riderSelectAnim[i] <= 0) {
-                    gGame.riderSelectState[i] = 0;
+                    gGame.riderSelectState[i] = BIO_HIDDEN;
                 }
             }
         }
-        mask = GAME_FLAG_PLAYER_READY(i);
-        if ((gGame.flags & mask) && (buttons[gGame.playerPad[i]] & 0x20)) {
+        readyFlag = GAME_FLAG_PLAYER_READY(i);
+        if ((gGame.flags & readyFlag) && (buttons[gGame.playerPad[i]] & INPUT_B)) {
             snd_play_menu_sound(MENU_SOUND_BACK);
-            gGame.riderSelectTimer[i] = 0x28 - gGame.riderSelectTimer[i];
-            gGame.flags &= ~mask;
+            gGame.riderSelectTimer[i] = 40 - gGame.riderSelectTimer[i];
+            gGame.flags &= ~readyFlag;
         }
     }
 }
 
-#define OK (gSaveData_9.f2C0 > gGame.difficulty \
-    || (gSaveData_9.f2C0 == gGame.difficulty && (*screen->cursor == 0 || ((gSaveData_9.f2BF >> (*screen->cursor - 1)) & 1))) \
+/* What the season screen shows (gGame.seasonMenuState) */
+#define SEASON_MENU_CUPS          0
+#define SEASON_MENU_CUSTOM_SLOTS  1 /* the custom round: choose a slot (a race) */
+#define SEASON_MENU_CUSTOM_TRACKS 2 /* the custom round: choose the slot's track */
+
+#define CUSTOM_MAX_RACES   5
+#define CUSTOM_NUM_TRACKS  20 /* the tracks of the four rounds */
+#define CUSTOM_MAX_LAPS    6
+#define CUSTOM_EMPTY_SLOT  0x3F
+
+/* The cup under the season screen's cursor can be raced: below the highest difficulty reached; at it, the first
+   cup or one whose previous cup was won; the custom round once Platinum was won. */
+#define CUP_UNLOCKED (gSaveData_9.topDifficulty > gGame.difficulty \
+    || (gSaveData_9.topDifficulty == gGame.difficulty && (*screen->cursor == 0 || ((gSaveData_9.roundsWon >> (*screen->cursor - 1)) & 1))) \
     || (gGame.mode == GAME_MODE_SEASON && gSeason != NULL && gSeason->cup - gCups == CUP_CUSTOM \
-        && gSaveData_9.f2C0 == gGame.difficulty && (gSaveData_9.f2BF & 8)))
+        && gSaveData_9.topDifficulty == gGame.difficulty && (gSaveData_9.roundsWon & (1 << CUP_PLATINUM))))
 
 typedef struct {
     u8 pad0[0x2A8];
-    u8 f2A8[5];
+    u8 customRound[5];  /* per race: track | laps << 5; CUSTOM_EMPTY_SLOT */
     u8 pad2AD[0x2BF - 0x2AD];
-    u8 f2BF;
-    u8 f2C0;
+    u8 roundsWon;       /* at the highest difficulty reached, bit n: cup n won */
+    u8 topDifficulty;
 } Save_3;
 
 extern Save_3 gSaveData_9;
 
+/* The season screen: left and right pick the cup (as far as the difficulty allows), A starts it. The custom
+   round (up and down: Play or Edit) is put together here: a slot per race, left and right its laps, Z deletes
+   it, A picks its track from the 20 tracks of the rounds; B saves the round. */
 void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
-    s32 k, j, i;
+    s32 pressed, j, i;
 
     if (++gGame.menuAnimTimer == 60) gGame.menuAnimTimer = 0;
     if (++gGame.blinkTimer == 64) gGame.blinkTimer = 0;
     switch (gGame.seasonMenuState) {
-    case 0:
+    case SEASON_MENU_CUPS:
+        /* the cup's tracks are shown in turn, 60 frames each */
         if (++gGame.cupPreviewTimer == 60) {
             if (++gGame.cupPreviewTrack >= gCups[*screen->cursor].numRounds) gGame.cupPreviewTrack = 0;
             gGame.cupPreviewTimer = 0;
         }
         if (*screen->cursor == CUP_CUSTOM && gCups[CUP_CUSTOM].numRounds != 0) {
-            if (*buttons & 1) {
-                s32 v = gGame.roundSel;
-                gGame.roundSel = v - 1;
-                if (v - 1 < 0) gGame.roundSel = v + 1;
+            /* Play or Edit */
+            if (*buttons & INPUT_UP) {
+                s32 sel = gGame.roundSel;
+                gGame.roundSel = sel - 1;
+                if (sel - 1 < 0) gGame.roundSel = sel + 1;
             }
-            if (*buttons & 2) {
-                s32 v = gGame.roundSel;
+            if (*buttons & INPUT_DOWN) {
+                s32 sel = gGame.roundSel;
                 if (++gGame.roundSel >= 2) gGame.roundSel -= 2;
             }
         }
-        if (gGame.difficulty != 0 && (*buttons & 0xC)) {
-            if (*buttons & 8) {
-                s32 *p = screen->cursor;
-                s32 v = *p;
+        if (gGame.difficulty != 0 && (*buttons & (INPUT_LEFT | INPUT_RIGHT))) {
+            if (*buttons & INPUT_RIGHT) {
+                /* difficulty 1: up to Silver, 2: Gold, 3: the custom round */
+                s32 *cursor = screen->cursor;
+                s32 cup = *cursor;
                 switch (gGame.difficulty) {
                 case 1:
-                    if (v <= 0) *p = v + 1;
+                    if (cup <= CUP_BRONZE) *cursor = cup + 1;
                     break;
                 case 2:
-                    if (v < 2) *p = v + 1;
+                    if (cup < CUP_GOLD) *cursor = cup + 1;
                     break;
                 case 3:
-                    if (v < 5) *p = v + 1;
+                    if (cup < CUP_CUSTOM) *cursor = cup + 1;
                     break;
                 }
-                if (v != *screen->cursor) {
+                if (cup != *screen->cursor) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                     gGame.cupPreviewTimer = 0;
                     gGame.cupPreviewTrack = 0;
@@ -1497,11 +1554,12 @@ void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, P
                 gGame.cupPreviewTrack = 0;
             }
         }
-        if ((*buttons & 0x50) && !OK) {
+        if ((*buttons & (INPUT_A | INPUT_START)) && !CUP_UNLOCKED) {
             snd_play_menu_sound(MENU_SOUND_ERROR);
-        } else if ((*buttons & 0x50) && OK) {
+        } else if ((*buttons & (INPUT_A | INPUT_START)) && CUP_UNLOCKED) {
             if (*screen->cursor == CUP_CUSTOM && (gGame.roundSel == 1 || gCups[CUP_CUSTOM].numRounds == 0)) {
-                gGame.seasonMenuState = 1;
+                /* Edit (or Create) */
+                gGame.seasonMenuState = SEASON_MENU_CUSTOM_SLOTS;
                 gGame.roundSel = 0;
             } else if (!(item->flags & SCREEN_ITEM_LOCKED)) {
                 shell_goto_screen(item->target, 1, 1);
@@ -1509,29 +1567,30 @@ void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, P
             } else {
                 snd_play_menu_sound(MENU_SOUND_ERROR);
             }
-        } else if ((*buttons & 0x20) && screen->back != NULL) {
+        } else if ((*buttons & INPUT_B) && screen->back != NULL) {
             shell_goto_screen(screen->back, 0, 0);
             snd_play_menu_sound(MENU_SOUND_BACK);
         }
         break;
-    case 1:
-        if ((*buttons & 1) && gGame.roundSel != 0) gGame.roundSel--;
+    case SEASON_MENU_CUSTOM_SLOTS:
+        if ((*buttons & INPUT_UP) && gGame.roundSel != 0) gGame.roundSel--;
         if (gGame.roundSel < gCups[*screen->cursor].numRounds) {
-            if (*buttons & 4) {
+            if (*buttons & INPUT_LEFT) {
                 if (gCups[*screen->cursor].laps[gGame.roundSel] >= 2) gCups[*screen->cursor].laps[gGame.roundSel]--;
             }
-            if (*buttons & 8) {
-                if (gCups[*screen->cursor].laps[gGame.roundSel] < 6) gCups[*screen->cursor].laps[gGame.roundSel]++;
+            if (*buttons & INPUT_RIGHT) {
+                if (gCups[*screen->cursor].laps[gGame.roundSel] < CUSTOM_MAX_LAPS) gCups[*screen->cursor].laps[gGame.roundSel]++;
             }
         }
-        if ((*buttons & 2) && gGame.roundSel < gCups[*screen->cursor].numRounds) {
-            s32 v = gGame.roundSel + 1;
-            if (v < 5) gGame.roundSel = v;
+        if ((*buttons & INPUT_DOWN) && gGame.roundSel < gCups[*screen->cursor].numRounds) {
+            s32 sel = gGame.roundSel + 1;
+            if (sel < CUSTOM_MAX_RACES) gGame.roundSel = sel;
         }
-        k = *buttons;
-        if (k & 0x50) {
-            u16 w;
-            gGame.seasonMenuState = 2;
+        pressed = *buttons;
+        if (pressed & (INPUT_A | INPUT_START)) {
+            /* the slot's track, or a new race after the last */
+            u16 track;
+            gGame.seasonMenuState = SEASON_MENU_CUSTOM_TRACKS;
             if (gGame.roundSel == gCups[*screen->cursor].numRounds) {
                 gGame.customTrackSel = 0;
                 gCups[*screen->cursor].progress[0]++;
@@ -1540,55 +1599,59 @@ void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, P
                 gCups[*screen->cursor].numRounds++;
                 gGame.customTrackPrev = -1;
             } else {
-                w = gCups[*screen->cursor].tracks[gGame.roundSel];
-                gGame.customTrackSel = w;
-                gGame.customTrackPrev = w;
+                track = gCups[*screen->cursor].tracks[gGame.roundSel];
+                gGame.customTrackSel = track;
+                gGame.customTrackPrev = track;
             }
             gCups[*screen->cursor].tracks[gGame.roundSel] = gGame.customTrackSel;
-        } else if (k & 0x20) {
-            gGame.seasonMenuState = 0;
+        } else if (pressed & INPUT_B) {
+            /* done: save the round */
+            gGame.seasonMenuState = SEASON_MENU_CUPS;
             gGame.roundSel = 0;
-            for (i = 0; i < 5; i++) {
-                if (i < gCups[CUP_CUSTOM].numRounds) gSaveData_9.f2A8[i] = gCups[CUP_CUSTOM].tracks[i] & 0x1F;
-                else gSaveData_9.f2A8[i] = 0x3F;
-                gSaveData_9.f2A8[i] |= (gCups[CUP_CUSTOM].laps[i] & 7) << 5;
+            for (i = 0; i < CUSTOM_MAX_RACES; i++) {
+                if (i < gCups[CUP_CUSTOM].numRounds) gSaveData_9.customRound[i] = gCups[CUP_CUSTOM].tracks[i] & 0x1F;
+                else gSaveData_9.customRound[i] = CUSTOM_EMPTY_SLOT;
+                gSaveData_9.customRound[i] |= (gCups[CUP_CUSTOM].laps[i] & 7) << 5;
             }
             save_write(1, 0);
         } else {
-            if (gGame.roundSel != gCups[*screen->cursor].numRounds && (k & 0x20000)) {
+            if (gGame.roundSel != gCups[*screen->cursor].numRounds && (pressed & INPUT_Z)) {
+                /* delete the race */
                 for (j = gGame.roundSel; j < gCups[*screen->cursor].numRounds - 1; j++) {
                     gCups[*screen->cursor].tracks[j] = gCups[*screen->cursor].tracks[j + 1];
                 }
-                { u8 m = --gCups[*screen->cursor].numRounds;
-                gCups[*screen->cursor].tracks[m] = 0; }
+                { u8 last = --gCups[*screen->cursor].numRounds;
+                gCups[*screen->cursor].tracks[last] = 0; }
             }
         }
         break;
-    case 2:
-        if (*buttons & 4) {
-            u16 v = gGame.customTrackSel;
-            gGame.customTrackSel = v - 1;
-            if ((s16)v % 5 == 0) gGame.customTrackSel = v + 4;
+    case SEASON_MENU_CUSTOM_TRACKS:
+        /* a page of 5 tracks a round, wrapping around */
+        if (*buttons & INPUT_LEFT) {
+            u16 sel = gGame.customTrackSel;
+            gGame.customTrackSel = sel - 1;
+            if ((s16)sel % TRACKS_PER_PAGE == 0) gGame.customTrackSel = sel + 4;
         }
-        if (*buttons & 8) {
-            u16 v = gGame.customTrackSel;
-            gGame.customTrackSel = v + 1;
-            if ((s16)(v + 1) % 5 == 0) gGame.customTrackSel = v - 4;
+        if (*buttons & INPUT_RIGHT) {
+            u16 sel = gGame.customTrackSel;
+            gGame.customTrackSel = sel + 1;
+            if ((s16)(sel + 1) % TRACKS_PER_PAGE == 0) gGame.customTrackSel = sel - 4;
         }
-        if (*buttons & 1) {
-            gGame.customTrackSel -= 5;
-            if (gGame.customTrackSel < 0) gGame.customTrackSel += 20;
+        if (*buttons & INPUT_UP) {
+            gGame.customTrackSel -= TRACKS_PER_PAGE;
+            if (gGame.customTrackSel < 0) gGame.customTrackSel += CUSTOM_NUM_TRACKS;
         }
-        if (*buttons & 2) {
-            u16 v = gGame.customTrackSel;
-            gGame.customTrackSel = v + 5;
-            if (gGame.customTrackSel >= 20) gGame.customTrackSel = v - 15;
+        if (*buttons & INPUT_DOWN) {
+            u16 sel = gGame.customTrackSel;
+            gGame.customTrackSel = sel + TRACKS_PER_PAGE;
+            if (gGame.customTrackSel >= CUSTOM_NUM_TRACKS) gGame.customTrackSel = sel - 15;
         }
-        k = *buttons;
-        if (k & 0x50) {
-            gGame.seasonMenuState = 1;
-        } else if (k & 0x20) {
-            gGame.seasonMenuState = 1;
+        pressed = *buttons;
+        if (pressed & (INPUT_A | INPUT_START)) {
+            gGame.seasonMenuState = SEASON_MENU_CUSTOM_SLOTS;
+        } else if (pressed & INPUT_B) {
+            /* undo: the track before, or no new race */
+            gGame.seasonMenuState = SEASON_MENU_CUSTOM_SLOTS;
             if (gGame.customTrackPrev == -1) gCups[*screen->cursor].numRounds--;
             else gGame.customTrackSel = gGame.customTrackPrev;
         }

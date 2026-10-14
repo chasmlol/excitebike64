@@ -94,6 +94,12 @@
 #define CUP_CUSTOM    5 /* the custom round the player puts together */
 #define CUP_TUTORIAL  6
 
+/* gSaveData.options */
+#define SAVE_OPTION_STEREO     0x01
+#define SAVE_OPTION_HI_RES     0x02
+#define SAVE_OPTION_USER_TRACK 0x08 /* a user track is saved on the Game Pak */
+#define SAVE_OPTION_DRONES_OFF 0x10
+
 /* gTracks flags (+0x50) the front end tests */
 #define TRACK_FLAG_USER         0x0002 /* the user track: no records */
 #define TRACK_FLAG_NEW_TIME     0x0080 /* the race set a record: initials to enter */
