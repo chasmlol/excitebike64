@@ -433,25 +433,25 @@ void edit_update_name_entry(Editor *editor, s32 flags)
         oldKey = ((Editor *)y)->nameKey;
         if (((Editor *)y)->nameLen < EDIT_NAME_LEN) {
             Editor *ed;
-            u32 v;
-            s32 x, nx;
+            u32 pad;
+            s32 x, newX;
             lo = 0;
             lo2 = lo;
             hi = EDIT_KEY_AREA;
-            v = gPadInput_3[0];
+            pad = gPadInput_3[0];
             ed = (Editor *)y;
             hi2 = hi;
             x = ed->nameCursorX;
-            if (v & (PAD_STICK_LEFT | PAD_STICK_RIGHT)) {
-                if (v & PAD_STICK_RIGHT) {
-                    nx = x + (((s32)v >> 24) & 0xF);
+            if (pad & (PAD_STICK_LEFT | PAD_STICK_RIGHT)) {
+                if (pad & PAD_STICK_RIGHT) {
+                    newX = x + (((s32)pad >> 24) & 0xF);
                 } else {
-                    nx = x - (((s32)v >> 24) & 0xF);
+                    newX = x - (((s32)pad >> 24) & 0xF);
                 }
             } else {
-                nx = x;
+                newX = x;
             }
-            ed->nameCursorX = nx;
+            ed->nameCursorX = newX;
             if (PRESSED(PAD_D_LEFT)) {
                 gEditor->nameCursorX -= EDIT_KEY_W;
             }
@@ -469,19 +469,19 @@ void edit_update_name_entry(Editor *editor, s32 flags)
             }
             {
                 Editor *e = gEditor;
-                u32 v2 = gPadInput_3[0];
-                s32 ny;
+                u32 pad2 = gPadInput_3[0];
+                s32 newY;
                 y = e->nameCursorY;
-                if (v2 & (PAD_STICK_UP | PAD_STICK_DOWN)) {
-                    if (v2 & PAD_STICK_UP) {
-                        ny = y - ((s32)((v2 >> 28) * 3) >> 1);
+                if (pad2 & (PAD_STICK_UP | PAD_STICK_DOWN)) {
+                    if (pad2 & PAD_STICK_UP) {
+                        newY = y - ((s32)((pad2 >> 28) * 3) >> 1);
                     } else {
-                        ny = y - (-(s32)(v2 >> 28) * 3) / 2;
+                        newY = y - (-(s32)(pad2 >> 28) * 3) / 2;
                     }
                 } else {
-                    ny = y;
+                    newY = y;
                 }
-                e->nameCursorY = ny;
+                e->nameCursorY = newY;
             }
             if (PRESSED(PAD_D_UP)) {
                 gEditor->nameCursorY -= EDIT_KEY_H;
@@ -837,88 +837,107 @@ void edit_update_main_menu(void)
 }
 
 #define PRESSED_2(m) ((gPadInput & (m)) && !(gPadInputPrev_3[0] & (m)))
-#define DEL()                                                                          if (gEditor->cur != NULL) {                                                         if (gEditor->cur->prev == NULL) {                                                   n = gEditor->cur;                                                               gEditor->cur = n->next;                                                         edit_delete_piece(n);                                                                  edit_pick_start_piece();                                                                         } else if (gEditor->cur->next == NULL || gEditor->first->prev == gEditor->last) {             n = gEditor->cur;                                                               gEditor->cur = n->prev;                                                         edit_delete_piece(n);                                                                  edit_pick_start_piece();                                                                         }                                                                              }
+/* Delete: the current piece, at an end of the track (or anywhere in a closed one); the cursor moves to its
+   neighbour and a new start piece is picked if it was the start. */
+#define DELETE_CUR_PIECE()                                                              \
+    if (gEditor->cur != NULL) {                                                         \
+        if (gEditor->cur->prev == NULL) {                                               \
+            piece = gEditor->cur;                                                       \
+            gEditor->cur = piece->next;                                                 \
+            edit_delete_piece(piece);                                                   \
+            edit_pick_start_piece();                                                    \
+        } else if (gEditor->cur->next == NULL || gEditor->first->prev == gEditor->last) { \
+            piece = gEditor->cur;                                                       \
+            gEditor->cur = piece->prev;                                                 \
+            edit_delete_piece(piece);                                                   \
+            edit_pick_start_piece();                                                    \
+        }                                                                               \
+    }
 
 
-static inline s32 chk(Editor *e, EditPiece *c) {
-    EditPiece *n;
-    s32 r;
+/* Whether piece may be deleted: not the start piece of a track, or another piece can start it. */
+static inline s32 can_delete(Editor *ed, EditPiece *piece) {
+    EditPiece *other;
+    s32 ok;
 
-    if (c == NULL || c != e->start || (c->prev == NULL && c->next == NULL)) {
+    if (piece == NULL || piece != ed->start || (piece->prev == NULL && piece->next == NULL)) {
         return 1;
     }
-    r = 0;
-    n = e->first;
-    while (n != NULL) {
-        if (n != c && (n->type->flags & PIECE_START)) {
-            r = 1;
+    ok = 0;
+    other = ed->first;
+    while (other != NULL) {
+        if (other != piece && (other->type->flags & PIECE_START)) {
+            ok = 1;
             break;
         }
-        n = n->next;
-        if (n == e->first) {
+        other = other->next;
+        if (other == ed->first) {
             break;
         }
     }
-    return r;
+    return ok;
 }
 
-static inline s32 chkg(void) {
-    EditPiece *n;
-    s32 r;
+/* The same for the current piece. */
+static inline s32 can_delete_cur(void) {
+    EditPiece *other;
+    s32 ok;
 
     if (gEditor->cur == NULL || gEditor->cur != gEditor->start) {
         return 1;
     }
     if (gEditor->cur->prev != NULL || gEditor->cur->next != NULL) {
-        r = 0;
-        n = gEditor->first;
-        while (n != NULL) {
-            if (n != gEditor->cur && (n->type->flags & PIECE_START)) {
-                r = 1;
+        ok = 0;
+        other = gEditor->first;
+        while (other != NULL) {
+            if (other != gEditor->cur && (other->type->flags & PIECE_START)) {
+                ok = 1;
                 break;
             }
-            n = n->next;
-            if (n == gEditor->first) {
+            other = other->next;
+            if (other == gEditor->first) {
                 break;
             }
         }
-        return r;
+        return ok;
     }
     return 1;
 }
 
+/* The edit menu page: which items are enabled, the message box, the warnings, placing pieces, moving the track, the
+   menu's choices, B to delete, and stepping along the pieces. */
 void edit_update_track_menu(void) {
     s16 minx, miny, maxx, maxy;
-    s16 d[2];
-    EditPiece *n;
-    s32 ok;
+    s16 delta[2];
+    EditPiece *piece;
+    s32 moved;
     s32 i, j;
-    Editor *e;
-    EditPiece *c;
-    EditPiece *s;
+    Editor *ed;
+    EditPiece *cur;
+    EditPiece *fitFrom;
 
     minx = 1000;
     maxx = -1000;
     miny = 1000;
     maxy = -1000;
-    gEditor->flags &= ~0x1E0;
+    gEditor->flags &= ~EDIT_ROOM_ANY;
     if (gEditor->cur != NULL) {
-        n = gEditor->first;
+        piece = gEditor->first;
         do {
-            if (n->x < minx) {
-                minx = n->x;
+            if (piece->x < minx) {
+                minx = piece->x;
             }
-            if (n->y < miny) {
-                miny = n->y;
+            if (piece->y < miny) {
+                miny = piece->y;
             }
-            if (n->x + n->w > maxx) {
-                maxx = n->x + n->w;
+            if (piece->x + piece->w > maxx) {
+                maxx = piece->x + piece->w;
             }
-            if (n->y + n->h > maxy) {
-                maxy = n->y + n->h;
+            if (piece->y + piece->h > maxy) {
+                maxy = piece->y + piece->h;
             }
-            n = n->next;
-        } while (n != NULL && n != gEditor->first);
+            piece = piece->next;
+        } while (piece != NULL && piece != gEditor->first);
         if (minx > 0) {
             gEditor->flags |= EDIT_ROOM_X_NEG;
         }
@@ -932,49 +951,49 @@ void edit_update_track_menu(void) {
             gEditor->flags |= EDIT_ROOM_Y_POS;
         }
     }
-    if (gEditor->cur != NULL && (gEditor->cur->flags & 4)) {
-        sEditTrackMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
-        sEditTrackMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
-        sEditTrackMenuItems[7].flags &= ~GUI_ITEM_ENABLED;
-        sEditTrackMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
+    if (gEditor->cur != NULL && (gEditor->cur->flags & EDIT_PIECE_PREVIEW)) {
+        sEditTrackMenuItems[EDIT_ITEM_DELETE].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[EDIT_ITEM_MOVE_TRACK].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[EDIT_ITEM_MAIN_MENU].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[EDIT_ITEM_MOVE_START].flags &= ~GUI_ITEM_ENABLED;
         gEditor->flags &= ~EDIT_CAN_DELETE;
     } else {
-        sEditTrackMenuItems[7].flags |= GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[EDIT_ITEM_MAIN_MENU].flags |= GUI_ITEM_ENABLED;
         if (gEditor->cur == NULL ||
             (gEditor->cur->next != NULL && gEditor->cur->prev != NULL && gEditor->first->prev == NULL) ||
-            (e = gEditor, c = e->cur, !chk(e, c))) {
-            sEditTrackMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
+            (ed = gEditor, cur = ed->cur, !can_delete(ed, cur))) {
+            sEditTrackMenuItems[EDIT_ITEM_DELETE].flags &= ~GUI_ITEM_ENABLED;
             gEditor->flags &= ~EDIT_CAN_DELETE;
         } else {
             gEditor->flags |= EDIT_CAN_DELETE;
-            sEditTrackMenuItems[6].flags |= GUI_ITEM_ENABLED;
+            sEditTrackMenuItems[EDIT_ITEM_DELETE].flags |= GUI_ITEM_ENABLED;
         }
-        if (gEditor->flags & 0x1E0) {
-            sEditTrackMenuItems[4].flags |= GUI_ITEM_ENABLED;
+        if (gEditor->flags & EDIT_ROOM_ANY) {
+            sEditTrackMenuItems[EDIT_ITEM_MOVE_TRACK].flags |= GUI_ITEM_ENABLED;
         } else {
-            sEditTrackMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
+            sEditTrackMenuItems[EDIT_ITEM_MOVE_TRACK].flags &= ~GUI_ITEM_ENABLED;
         }
     }
     if (gEditor->menu != NULL) {
         gui_menu_fix_cursor(gEditor->menu);
     }
     if (gEditor->flags & EDIT_MESSAGE) {
-        if (PRESSED_2(0x10)) {
-            gPadInputPrev_3[0] |= 0x10;
+        if (PRESSED_2(PAD_A)) {
+            gPadInputPrev_3[0] |= PAD_A;
             gEditor->flags &= ~EDIT_MESSAGE;
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
         }
     } else {
         if (gEditor->mode == EDIT_MODE_WARN_MULTI || gEditor->mode == EDIT_MODE_WARN_LOCKED) {
-            if (PRESSED_2(0x10)) {
+            if (PRESSED_2(PAD_A)) {
                 gEditor->mode = EDIT_MODE_USER_PIECE;
-            } else if (PRESSED_2(0x20)) {
+            } else if (PRESSED_2(PAD_B)) {
                 gEditor->menu->flags |= GUI_MENU_ACTIVE;
                 gEditor->mode = EDIT_MODE_PLACE;
                 gEditor->flags &= ~EDIT_DIALOG;
             }
         } else if (gEditor->mode == EDIT_MODE_PLACE || gEditor->mode == EDIT_MODE_USER_PIECE) {
-            if (PRESSED_2(0x20)) {
+            if (PRESSED_2(PAD_B)) {
                 if (gEditor->mode == EDIT_MODE_PLACE) {
                     edit_remove_preview_pieces(gEditor->cur);
                     gEditor->mode = EDIT_MODE_IDLE;
@@ -984,63 +1003,64 @@ void edit_update_track_menu(void) {
                 edit_update_place_piece();
             }
         } else if (gEditor->mode == EDIT_MODE_MOVE_TRACK) {
-            ok = 0;
-            if (PRESSED_2(0x20)) {
-                d[0] = gEditor->first->x - gEditor->moveFromX;
-                d[1] = gEditor->first->y - gEditor->moveFromY;
-                n = gEditor->first;
+            /* B puts the track back, A keeps it, the D-pad moves it a cell where there is room */
+            moved = 0;
+            if (PRESSED_2(PAD_B)) {
+                delta[0] = gEditor->first->x - gEditor->moveFromX;
+                delta[1] = gEditor->first->y - gEditor->moveFromY;
+                piece = gEditor->first;
                 do {
-                    n->x -= d[0];
-                    n->y -= d[1];
-                    n = n->next;
-                } while (n != NULL && n != gEditor->first);
+                    piece->x -= delta[0];
+                    piece->y -= delta[1];
+                    piece = piece->next;
+                } while (piece != NULL && piece != gEditor->first);
                 gEditor->mode = EDIT_MODE_IDLE;
                 gEditor->menu->flags |= GUI_MENU_ACTIVE;
-                ok = 1;
-                snd_play_menu_sound(2);
-            } else if (PRESSED_2(0x10)) {
+                moved = 1;
+                snd_play_menu_sound(MENU_SFX_BACK);
+            } else if (PRESSED_2(PAD_A)) {
                 gEditor->mode = EDIT_MODE_IDLE;
                 gEditor->menu->flags |= GUI_MENU_ACTIVE;
-                snd_play_menu_sound(1);
-            } else if ((gEditor->flags & EDIT_ROOM_X_NEG) && PRESSED_2(0x2000)) {
-                n = gEditor->first;
+                snd_play_menu_sound(MENU_SFX_SELECT);
+            } else if ((gEditor->flags & EDIT_ROOM_X_NEG) && PRESSED_2(PAD_D_LEFT)) {
+                piece = gEditor->first;
                 do {
-                    n->x--;
-                    n = n->next;
-                } while (n != NULL && n != gEditor->first);
-                snd_play_menu_sound(0);
-                ok = 1;
-            } else if ((gEditor->flags & EDIT_ROOM_X_POS) && PRESSED_2(0x4000)) {
-                n = gEditor->first;
+                    piece->x--;
+                    piece = piece->next;
+                } while (piece != NULL && piece != gEditor->first);
+                snd_play_menu_sound(MENU_SFX_MOVE);
+                moved = 1;
+            } else if ((gEditor->flags & EDIT_ROOM_X_POS) && PRESSED_2(PAD_D_RIGHT)) {
+                piece = gEditor->first;
                 do {
-                    n->x++;
-                    n = n->next;
-                } while (n != NULL && n != gEditor->first);
-                snd_play_menu_sound(0);
-                ok = 1;
-            } else if ((gEditor->flags & EDIT_ROOM_Y_POS) && PRESSED_2(0x800)) {
-                n = gEditor->first;
+                    piece->x++;
+                    piece = piece->next;
+                } while (piece != NULL && piece != gEditor->first);
+                snd_play_menu_sound(MENU_SFX_MOVE);
+                moved = 1;
+            } else if ((gEditor->flags & EDIT_ROOM_Y_POS) && PRESSED_2(PAD_D_UP)) {
+                piece = gEditor->first;
                 do {
-                    n->y++;
-                    n = n->next;
-                } while (n != NULL && n != gEditor->first);
-                snd_play_menu_sound(0);
-                ok = 1;
-            } else if ((gEditor->flags & EDIT_ROOM_Y_NEG) && PRESSED_2(0x1000)) {
-                n = gEditor->first;
+                    piece->y++;
+                    piece = piece->next;
+                } while (piece != NULL && piece != gEditor->first);
+                snd_play_menu_sound(MENU_SFX_MOVE);
+                moved = 1;
+            } else if ((gEditor->flags & EDIT_ROOM_Y_NEG) && PRESSED_2(PAD_D_DOWN)) {
+                piece = gEditor->first;
                 do {
-                    n->y--;
-                    n = n->next;
-                } while (n != NULL && n != gEditor->first);
-                snd_play_menu_sound(0);
-                ok = 1;
+                    piece->y--;
+                    piece = piece->next;
+                } while (piece != NULL && piece != gEditor->first);
+                snd_play_menu_sound(MENU_SFX_MOVE);
+                moved = 1;
             }
-            if (ok) {
-                n = gEditor->first;
+            if (moved) {
+                piece = gEditor->first;
                 do {
-                    edit_update_piece_ports(gEditor->first);
-                    n = n->next;
-                } while (n != NULL && n != gEditor->first);
+                    edit_update_piece_ports(gEditor->first); /* the first piece each time, as in the original */
+                    piece = piece->next;
+                } while (piece != NULL && piece != gEditor->first);
                 for (i = 0; i < gEditor->gridSize[1]; i++) {
                     for (j = 0; j < gEditor->gridSize[0]; j++) {
                         arned_set_cell(j, i, 0, 0, 0, 0, 0, 0, 0);
@@ -1049,20 +1069,21 @@ void edit_update_track_menu(void) {
             }
         } else if (gui_menu_input(gEditor->menu)) {
             switch (sEditTrackMenu.choice) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
+            case EDIT_ITEM_STRAIGHT:
+            case EDIT_ITEM_TURN:
+            case EDIT_ITEM_JUMP:
+            case EDIT_ITEM_USER:
+                /* a preview piece of the selected type at the open end */
                 if (gEditor->cur == NULL) {
                     gEditor->cur = edit_insert_piece(NULL, NULL, gEditor->selType);
-                    gEditor->cur->flags |= 4;
+                    gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
                     gEditor->mode = EDIT_MODE_PLACE;
                     gEditor->first = gEditor->cur;
                     gEditor->last = gEditor->cur;
                 } else if (gEditor->cur->next == NULL) {
                     if (gEditor->cur->prev == NULL) {
                         gEditor->cur = edit_insert_piece(gEditor->cur, NULL, gEditor->selType);
-                        gEditor->cur->flags |= 4;
+                        gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
                         gEditor->mode = EDIT_MODE_IDLE;
                         gEditor->last = gEditor->cur;
                         gEditor->menu->flags |= GUI_MENU_ACTIVE;
@@ -1070,23 +1091,23 @@ void edit_update_track_menu(void) {
                         gEditor->flags |= EDIT_OPEN_END;
                     } else {
                         gEditor->cur = edit_insert_piece(gEditor->cur, NULL, gEditor->selType);
-                        gEditor->cur->flags |= 4;
+                        gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
                         gEditor->mode = EDIT_MODE_PLACE;
                         gEditor->last = gEditor->cur;
                     }
                 } else if (gEditor->cur->prev == NULL) {
                     gEditor->cur = edit_insert_piece(NULL, gEditor->cur, gEditor->selType);
-                    gEditor->cur->flags |= 4;
+                    gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
                     gEditor->mode = EDIT_MODE_PLACE;
                     gEditor->first = gEditor->cur;
                 }
                 break;
-            case 5:
+            case EDIT_ITEM_MOVE_START:
                 if (gEditor->cur != NULL) {
                     gEditor->start = gEditor->cur;
                 }
                 break;
-            case 4:
+            case EDIT_ITEM_MOVE_TRACK:
                 if (gEditor->cur != NULL) {
                     gEditor->moveFromX = gEditor->first->x;
                     gEditor->moveFromY = gEditor->first->y;
@@ -1094,67 +1115,68 @@ void edit_update_track_menu(void) {
                     gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 }
                 break;
-            case 7:
-                snd_play_menu_sound(2);
+            case EDIT_ITEM_MAIN_MENU:
+                snd_play_menu_sound(MENU_SFX_BACK);
                 if (gEditor->menu != &sEditMainMenu) {
                     switch (gEditor->slideState) {
-                    case 0:
-                        gEditor->slideState = 1;
+                    case EDIT_SLIDE_IN:
+                        gEditor->slideState = EDIT_SLIDE_SHOWN;
                         gEditor->nextMenu = &sEditMainMenu;
                         break;
-                    case 1:
+                    case EDIT_SLIDE_SHOWN:
                         gEditor->menu = &sEditMainMenu;
                         break;
-                    case 2:
-                        gEditor->slideState = 3;
+                    case EDIT_SLIDE_OUT:
+                        gEditor->slideState = EDIT_SLIDE_SWAP;
                         gEditor->nextMenu = &sEditMainMenu;
                         break;
-                    case 3:
-                        gEditor->slideState = 1;
+                    case EDIT_SLIDE_SWAP:
+                        gEditor->slideState = EDIT_SLIDE_SHOWN;
                         gEditor->menu = &sEditMainMenu;
                         break;
                     }
                     gEditor->flags &= ~EDIT_A_HELD;
                 }
-                gEditor->page = 0;
+                gEditor->page = EDIT_PAGE_MAIN;
                 break;
-            case 6:
-                if (gEditor->cur != NULL && chkg()) {
-                    DEL();
+            case EDIT_ITEM_DELETE:
+                if (gEditor->cur != NULL && can_delete_cur()) {
+                    DELETE_CUR_PIECE();
                 }
                 break;
             }
-        } else if (PRESSED_2(0x20)) {
-            e = gEditor;
-            if (e->flags & EDIT_CAN_DELETE) {
-                c = e->cur;
-                if (chk(e, c)) {
-                    DEL();
+        } else if (PRESSED_2(PAD_B)) {
+            /* B deletes too */
+            ed = gEditor;
+            if (ed->flags & EDIT_CAN_DELETE) {
+                cur = ed->cur;
+                if (can_delete(ed, cur)) {
+                    DELETE_CUR_PIECE();
                 }
             }
         }
         if (gEditor->cur != NULL) {
-            s = gEditor->cur;
-            if (s->flags & 4) {
-                if (s->next == NULL) {
-                    s = s->prev;
+            fitFrom = gEditor->cur;
+            if (fitFrom->flags & EDIT_PIECE_PREVIEW) {
+                if (fitFrom->next == NULL) {
+                    fitFrom = fitFrom->prev;
                 } else {
-                    s = s->next;
+                    fitFrom = fitFrom->next;
                 }
             }
-            if (s != NULL) {
-                edit_update_fitting_pieces(s);
+            if (fitFrom != NULL) {
+                edit_update_fitting_pieces(fitFrom);
             } else {
                 edit_set_start_piece_choices();
             }
         }
         if (gEditor->mode == EDIT_MODE_IDLE && gEditor->cur != NULL) {
-            if ((PRESSED_2(0x2000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_2(0x4000) && (gEditor->flags & EDIT_REVERSED))) {
+            if ((PRESSED_2(PAD_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_2(PAD_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
                 if (gEditor->cur->prev != NULL) {
                     gEditor->cur = gEditor->cur->prev;
                 }
-            } else if ((PRESSED_2(0x4000) && !(gEditor->flags & EDIT_REVERSED)) ||
-                       (PRESSED_2(0x2000) && (gEditor->flags & EDIT_REVERSED))) {
+            } else if ((PRESSED_2(PAD_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) ||
+                       (PRESSED_2(PAD_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
                 if (gEditor->cur->next != NULL) {
                     gEditor->cur = gEditor->cur->next;
                 }
@@ -1162,7 +1184,7 @@ void edit_update_track_menu(void) {
         }
     }
     if (gEditor->cur != NULL) {
-        if (gEditor->cur->flags & 2) {
+        if (gEditor->cur->flags & EDIT_PIECE_FLIPPED) {
             gEditor->flags |= EDIT_FLIP;
         } else {
             gEditor->flags &= ~EDIT_FLIP;
@@ -1171,66 +1193,73 @@ void edit_update_track_menu(void) {
 }
 
 #define PRESSED_3(m) ((gPadInput & (m)) && !(gPadInputPrev & (m)))
-#define IDX (sEditTrackMenu.items[sEditTrackMenu.choice].value)
+/* The value chosen in the selected item's row */
+#define MENU_VALUE (sEditTrackMenu.items[sEditTrackMenu.choice].value)
 
-#define INSERT(B)                                                                          \
-    if (gEditor->cur == NULL) {                                                         \
-        gEditor->cur = edit_insert_piece(NULL, NULL, &gPieceTypes[(B) + IDX]);                              \
-        gEditor->first = gEditor->cur;                                                \
-        gEditor->last = gEditor->cur;                                                \
-        gEditor->start = gEditor->cur;                                                \
-    } else if (gEditor->cur->prev != NULL ||                                            \
-               ((gEditor->flags & EDIT_OPEN_END) && gEditor->cur->next == NULL)) {          \
-        gEditor->cur = edit_insert_piece(gEditor->cur, gEditor->cur->next, &gPieceTypes[(B) + IDX]);  \
-        gEditor->last = gEditor->cur;                                                \
-    } else {                                                                               \
-        gEditor->cur = edit_insert_piece(NULL, gEditor->cur, &gPieceTypes[(B) + IDX]);                   \
-        gEditor->first = gEditor->cur;                                                \
+/* Inserts a piece of type base + MENU_VALUE: the first piece, or at the open end */
+#define INSERT_PIECE(base)                                                                         \
+    if (gEditor->cur == NULL) {                                                                    \
+        gEditor->cur = edit_insert_piece(NULL, NULL, &gPieceTypes[(base) + MENU_VALUE]);           \
+        gEditor->first = gEditor->cur;                                                             \
+        gEditor->last = gEditor->cur;                                                              \
+        gEditor->start = gEditor->cur;                                                             \
+    } else if (gEditor->cur->prev != NULL ||                                                       \
+               ((gEditor->flags & EDIT_OPEN_END) && gEditor->cur->next == NULL)) {                 \
+        gEditor->cur = edit_insert_piece(gEditor->cur, gEditor->cur->next, &gPieceTypes[(base) + MENU_VALUE]); \
+        gEditor->last = gEditor->cur;                                                              \
+    } else {                                                                                       \
+        gEditor->cur = edit_insert_piece(NULL, gEditor->cur, &gPieceTypes[(base) + MENU_VALUE]);   \
+        gEditor->first = gEditor->cur;                                                             \
     }
 
 
+/* Placing pieces (EDIT_MODE_PLACE): moving a lone piece, R to flip, Z to edit a user piece, A to place the previewed
+   piece, and the preview following the menu. */
 void edit_update_place_piece(void) {
+    EditPiece *placed;
     EditPiece *cur;
-    EditPiece *c;
-    EditPiece *p;
-    EditPiece *n;
+    EditPiece *mark;
+    EditPiece *fitFrom;
     s32 i;
     s32 j;
-    s32 ok;
+    s32 inserted;
 
-    c = gEditor->cur;
-    p = gEditor->markStart;
-    if (c != NULL && c->prev == NULL && c->next == NULL) {
-        if ((PRESSED_3(0x2000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x4000) && (gEditor->flags & EDIT_REVERSED))) {
+    cur = gEditor->cur;
+    mark = gEditor->markStart;
+    /* a lone piece: the D-pad moves where it goes on the grid */
+    if (cur != NULL && cur->prev == NULL && cur->next == NULL) {
+        if ((PRESSED_3(PAD_D_LEFT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_RIGHT) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollX >= -30) {
                 gEditor->scrollX--;
             }
         }
-        if ((PRESSED_3(0x4000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x2000) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_3(PAD_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollX < 31) {
                 gEditor->scrollX++;
             }
         }
-        if ((PRESSED_3(0x1000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x800) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_3(PAD_D_DOWN) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_UP) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollY >= -30) {
                 gEditor->scrollY--;
             }
         }
-        if ((PRESSED_3(0x800) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x1000) && (gEditor->flags & EDIT_REVERSED))) {
+        if ((PRESSED_3(PAD_D_UP) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(PAD_D_DOWN) && (gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->scrollY < 31) {
                 gEditor->scrollY++;
             }
         }
     }
-    if (p != NULL) {
+    /* walks to the end of the marked range (the result is not used) */
+    if (mark != NULL) {
         do {
-            p = p->next;
-        } while (p->prev != gEditor->markEnd);
+            mark = mark->next;
+        } while (mark->prev != gEditor->markEnd);
     }
-    if (PRESSED_3(0x10000)) {
-        if ((*(u32 *)&gEditor->cur->type->flags & 0x300000) == 0x300000 /* flags 0x30 tested as a word */) {
-            gPadInput &= 0x10000;
-            snd_play_menu_sound(0);
+    if (PRESSED_3(PAD_R)) {
+        /* R flips the piece if it fits both ways (PIECE_FITS | PIECE_FITS_FLIPPED, the flags tested as a word) */
+        if ((*(u32 *)&gEditor->cur->type->flags & ((PIECE_FITS | PIECE_FITS_FLIPPED) << 16)) == ((PIECE_FITS | PIECE_FITS_FLIPPED) << 16)) {
+            gPadInput &= PAD_R; /* clears all but R */
+            snd_play_menu_sound(MENU_SFX_MOVE);
             for (i = 0; i < gEditor->cur->type->dim[(gEditor->cur->rot + 1) & 1]; i++) {
                 for (j = 0; j < gEditor->cur->type->dim[gEditor->cur->rot & 1]; j++) {
                     if (gEditor->cur->x + j >= 0 && gEditor->cur->x + j < gEditor->gridSize[0] &&
@@ -1239,21 +1268,22 @@ void edit_update_place_piece(void) {
                     }
                 }
             }
-            gEditor->flags ^= 8;
+            gEditor->flags ^= EDIT_FLIP;
             if (gEditor->flags & EDIT_FLIP) {
-                gEditor->cur->flags |= 2;
+                gEditor->cur->flags |= EDIT_PIECE_FLIPPED;
             } else {
-                gEditor->cur->flags &= ~2;
+                gEditor->cur->flags &= ~EDIT_PIECE_FLIPPED;
             }
         }
-        p = gEditor->first;
-        if (p != NULL) {
+        mark = gEditor->first;
+        if (mark != NULL) {
             do {
-                edit_update_piece_ports(p);
-                p = p->next;
-            } while (p != NULL && p != gEditor->first);
+                edit_update_piece_ports(mark);
+                mark = mark->next;
+            } while (mark != NULL && mark != gEditor->first);
         }
-    } else if (PRESSED_3(0x20000)) {
+    } else if (PRESSED_3(PAD_Z)) {
+        /* Z edits a user piece's heights (after a warning when it is used twice or locked) */
         if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_USER)) {
             gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
             edit_update_user_piece_usage();
@@ -1267,16 +1297,16 @@ void edit_update_place_piece(void) {
             }
         }
     }
-    n = gEditor->cur;
-    if (n->flags & 4) {
-        if (n->next == NULL) {
-            n = n->prev;
+    fitFrom = gEditor->cur;
+    if (fitFrom->flags & EDIT_PIECE_PREVIEW) {
+        if (fitFrom->next == NULL) {
+            fitFrom = fitFrom->prev;
         } else {
-            n = n->next;
+            fitFrom = fitFrom->next;
         }
     }
-    if (n != NULL) {
-        edit_update_fitting_pieces(n);
+    if (fitFrom != NULL) {
+        edit_update_fitting_pieces(fitFrom);
     } else {
         edit_set_start_piece_choices();
     }
@@ -1284,49 +1314,51 @@ void edit_update_place_piece(void) {
         edit_update_user_piece();
         gEditor->flags |= EDIT_OPEN_END;
     } else if (gui_menu_input(gEditor->menu)) {
-        ok = 0;
+        inserted = 0;
+        /* A places the piece */
         switch (sEditTrackMenu.choice) {
-        case 3:
+        case EDIT_ITEM_USER:
             edit_remove_preview_pieces_2();
-            gEditor->userPiece = IDX;
-            INSERT(PIECE_TYPE_USER);
-            ok = 1;
+            gEditor->userPiece = MENU_VALUE;
+            INSERT_PIECE(PIECE_TYPE_USER);
+            inserted = 1;
             break;
-        case 0:
+        case EDIT_ITEM_STRAIGHT:
             edit_remove_preview_pieces_2();
-            INSERT(PIECE_TYPE_STRAIGHT);
-            ok = 1;
+            INSERT_PIECE(PIECE_TYPE_STRAIGHT);
+            inserted = 1;
             break;
-        case 1:
+        case EDIT_ITEM_TURN:
             edit_remove_preview_pieces_2();
-            INSERT(PIECE_TYPE_TURN);
-            ok = 1;
+            INSERT_PIECE(PIECE_TYPE_TURN);
+            inserted = 1;
             break;
-        case 2:
+        case EDIT_ITEM_JUMP:
             edit_remove_preview_pieces_2();
-            INSERT(PIECE_TYPE_JUMP);
-            ok = 1;
+            INSERT_PIECE(PIECE_TYPE_JUMP);
+            inserted = 1;
             break;
         }
         gEditor->flags &= ~EDIT_OPEN_END;
-        if (ok) {
-            gEditor->cur->flags &= ~4;
+        if (inserted) {
+            gEditor->cur->flags &= ~EDIT_PIECE_PREVIEW;
+            /* a new preview piece after it, or the track is closed or out of room */
             if (edit_update_fitting_pieces(gEditor->cur)) {
-                cur = gEditor->cur;
-                if (cur->prev == NULL) {
-                    if (cur->next == NULL) {
-                        gEditor->cur = edit_insert_piece(cur, NULL, gEditor->selType);
-                        gEditor->cur->flags |= 4;
+                placed = gEditor->cur;
+                if (placed->prev == NULL) {
+                    if (placed->next == NULL) {
+                        gEditor->cur = edit_insert_piece(placed, NULL, gEditor->selType);
+                        gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
                         gEditor->last = gEditor->cur;
                         gEditor->flags |= EDIT_OPEN_END;
                     } else {
-                        gEditor->cur = edit_insert_piece(NULL, cur, gEditor->selType);
-                        gEditor->cur->flags |= 4;
+                        gEditor->cur = edit_insert_piece(NULL, placed, gEditor->selType);
+                        gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
                         gEditor->first = gEditor->cur;
                     }
                 } else {
-                    gEditor->cur = edit_insert_piece(cur, NULL, gEditor->selType);
-                    gEditor->cur->flags |= 4;
+                    gEditor->cur = edit_insert_piece(placed, NULL, gEditor->selType);
+                    gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
                     gEditor->last = gEditor->cur;
                 }
             } else {
@@ -1334,162 +1366,165 @@ void edit_update_place_piece(void) {
                 gEditor->mode = EDIT_MODE_IDLE;
                 gEditor->flags |= EDIT_MESSAGE;
                 if (gEditor->first->prev != NULL) {
-                    gEditor->message = 2;
-                    sEditTrackMenu.choice = 7;
-                    sEditTrackMenu.cursor = 7;
+                    gEditor->message = EDIT_MSG_TRACK_COMPLETE;
+                    sEditTrackMenu.choice = EDIT_ITEM_MAIN_MENU;
+                    sEditTrackMenu.cursor = EDIT_ITEM_MAIN_MENU;
                 } else {
-                    gEditor->message = 3;
+                    gEditor->message = EDIT_MSG_OUT_OF_ROOM;
                 }
                 gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
             }
         }
     } else {
+        /* the preview follows the menu's selection */
         switch (sEditTrackMenu.choice) {
-        case 3:
+        case EDIT_ITEM_USER:
             edit_remove_preview_pieces_2();
-            gEditor->userPiece = IDX;
-            INSERT(PIECE_TYPE_USER);
-            gEditor->cur->flags |= 4;
+            gEditor->userPiece = MENU_VALUE;
+            INSERT_PIECE(PIECE_TYPE_USER);
+            gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
             break;
-        case 0:
+        case EDIT_ITEM_STRAIGHT:
             edit_remove_preview_pieces_2();
-            INSERT(PIECE_TYPE_STRAIGHT);
-            gEditor->cur->flags |= 4;
+            INSERT_PIECE(PIECE_TYPE_STRAIGHT);
+            gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
             break;
-        case 1:
+        case EDIT_ITEM_TURN:
             edit_remove_preview_pieces_2();
-            INSERT(PIECE_TYPE_TURN);
-            gEditor->cur->flags |= 4;
+            INSERT_PIECE(PIECE_TYPE_TURN);
+            gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
             break;
-        case 2:
+        case EDIT_ITEM_JUMP:
             edit_remove_preview_pieces_2();
-            INSERT(PIECE_TYPE_JUMP);
-            gEditor->cur->flags |= 4;
+            INSERT_PIECE(PIECE_TYPE_JUMP);
+            gEditor->cur->flags |= EDIT_PIECE_PREVIEW;
             break;
         }
     }
     edit_update_piece_ports(gEditor->cur);
 }
 
+/* Deletes the preview pieces at the open end; the current piece becomes the last placed one (or the first). */
 void edit_remove_preview_pieces(EditPiece *piece) {
-    EditPiece *n;
-    EditPiece *cur;
-    s32 f;
+    EditPiece *p;
+    EditPiece *del;
+    s32 forward;
 
-    n = gEditor->cur;
-    while (n != 0 && (n->flags & 4) != 0) {
-        n = n->prev;
+    p = gEditor->cur;
+    while (p != 0 && (p->flags & EDIT_PIECE_PREVIEW) != 0) {
+        p = p->prev;
     }
-    f = 1;
-    if (n == 0) {
-        n = gEditor->cur;
-        while (n != 0) {
-            if ((n->flags & 4) == 0) {
+    forward = 1;
+    if (p == 0) {
+        p = gEditor->cur;
+        while (p != 0) {
+            if ((p->flags & EDIT_PIECE_PREVIEW) == 0) {
                 break;
             }
-            n = n->next;
+            p = p->next;
         }
-        f = 0;
+        forward = 0;
     }
-    gEditor->cur = n;
-    if (n == 0) {
-        n = gEditor->first;
-        f = 1;
+    gEditor->cur = p;
+    if (p == 0) {
+        p = gEditor->first;
+        forward = 1;
         gEditor->first = 0;
         gEditor->last = 0;
-    } else if (f != 0) {
-        gEditor->last = n;
+    } else if (forward != 0) {
+        gEditor->last = p;
     } else {
-        gEditor->first = n;
+        gEditor->first = p;
     }
-    while (n != 0) {
-        cur = n;
-        if (f != 0) {
-            n = cur->next;
+    while (p != 0) {
+        del = p;
+        if (forward != 0) {
+            p = del->next;
         } else {
-            n = cur->prev;
+            p = del->prev;
         }
-        if ((cur->flags & 4) != 0) {
-            edit_delete_piece(cur);
+        if ((del->flags & EDIT_PIECE_PREVIEW) != 0) {
+            edit_delete_piece(del);
         }
     }
 }
 
-void edit_try_close_loop(EditPiece *n)
+/* Closes the circuit if piece `end`'s open connector meets the other open end of the track. */
+void edit_try_close_loop(EditPiece *end)
 {
-    EditPiece *c;
+    EditPiece *piece;
 
-    for (c = gEditor->first; c != NULL; c = c->next) {
-        if (c->prev == gEditor->last) {
+    for (piece = gEditor->first; piece != NULL; piece = piece->next) {
+        if (piece->prev == gEditor->last) {
             return;
         }
-        if (c->next != NULL && c->prev != NULL) {
+        if (piece->next != NULL && piece->prev != NULL) {
             continue;
         }
-        if (c == n) {
+        if (piece == end) {
             continue;
         }
-        if (c->prev == NULL) {
-            if (n->next == NULL && ((n->dir[1] - c->dir[0]) & 3) == 2) {
-                switch (n->dir[1]) {
-                case 0:
-                    if (n->y + n->h == c->y && n->x + n->off[1] == c->x + c->off[0]) {
-                        n->next = c;
-                        c->prev = n;
+        if (piece->prev == NULL) {
+            if (end->next == NULL && ((end->dir[1] - piece->dir[0]) & 3) == 2) {
+                switch (end->dir[1]) {
+                case SIDE_POS_Y:
+                    if (end->y + end->h == piece->y && end->x + end->off[1] == piece->x + piece->off[0]) {
+                        end->next = piece;
+                        piece->prev = end;
                         return;
                     }
                     break;
-                case 2:
-                    if (c->y + c->h == n->y && n->x + n->off[1] == c->x + c->off[0]) {
-                        n->next = c;
-                        c->prev = n;
+                case SIDE_NEG_Y:
+                    if (piece->y + piece->h == end->y && end->x + end->off[1] == piece->x + piece->off[0]) {
+                        end->next = piece;
+                        piece->prev = end;
                         return;
                     }
                     break;
-                case 1:
-                    if (n->x + n->w == c->x && n->y + n->off[1] == c->y + c->off[0]) {
-                        n->next = c;
-                        c->prev = n;
+                case SIDE_POS_X:
+                    if (end->x + end->w == piece->x && end->y + end->off[1] == piece->y + piece->off[0]) {
+                        end->next = piece;
+                        piece->prev = end;
                         return;
                     }
                     break;
-                case 3:
-                    if (n->x == c->x + c->w && n->y + n->off[1] == c->y + c->off[0]) {
-                        n->next = c;
-                        c->prev = n;
+                case SIDE_NEG_X:
+                    if (end->x == piece->x + piece->w && end->y + end->off[1] == piece->y + piece->off[0]) {
+                        end->next = piece;
+                        piece->prev = end;
                         return;
                     }
                     break;
                 }
             }
         } else {
-            if (n->prev == NULL && ((n->dir[0] - c->dir[1]) & 3) == 2) {
-                switch (n->dir[0]) {
-                case 0:
-                    if (n->y + n->h == c->y && n->x + n->off[0] == c->x + c->off[1]) {
-                        n->prev = c;
-                        c->next = n;
+            if (end->prev == NULL && ((end->dir[0] - piece->dir[1]) & 3) == 2) {
+                switch (end->dir[0]) {
+                case SIDE_POS_Y:
+                    if (end->y + end->h == piece->y && end->x + end->off[0] == piece->x + piece->off[1]) {
+                        end->prev = piece;
+                        piece->next = end;
                         return;
                     }
                     break;
-                case 2:
-                    if (c->y + c->h == n->y && n->x + n->off[0] == c->x + c->off[1]) {
-                        n->prev = c;
-                        c->next = n;
+                case SIDE_NEG_Y:
+                    if (piece->y + piece->h == end->y && end->x + end->off[0] == piece->x + piece->off[1]) {
+                        end->prev = piece;
+                        piece->next = end;
                         return;
                     }
                     break;
-                case 1:
-                    if (n->x + n->w == c->x && n->y + n->off[0] == c->y + c->off[1]) {
-                        n->prev = c;
-                        c->next = n;
+                case SIDE_POS_X:
+                    if (end->x + end->w == piece->x && end->y + end->off[0] == piece->y + piece->off[1]) {
+                        end->prev = piece;
+                        piece->next = end;
                         return;
                     }
                     break;
-                case 3:
-                    if (n->x == c->x + c->w && n->y + n->off[0] == c->y + c->off[1]) {
-                        n->prev = c;
-                        c->next = n;
+                case SIDE_NEG_X:
+                    if (end->x == piece->x + piece->w && end->y + end->off[0] == piece->y + piece->off[1]) {
+                        end->prev = piece;
+                        piece->next = end;
                         return;
                     }
                     break;
