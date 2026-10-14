@@ -111,7 +111,6 @@ snd_play_sfx                          game  0x80010D84  func     0x74
 snd_set_master_volume                 game  0x80010DF8  func     0x20
 snd_get_master_volume                 game  0x80010E18  func     0x10
 snd_trigger_impact                    game  0x80010E28  func     0x34
-snd_trigger_impact_2                  game  0x80010E28  func        -  snd_trigger_impact
 snd_set_volume                        game  0x80010E5C  func     0x78
 snd_get_volume                        game  0x80010ED4  func     0x6c
 snd_stop_all_riders                   game  0x80010F40  func     0x88

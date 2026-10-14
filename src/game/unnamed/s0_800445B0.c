@@ -445,7 +445,7 @@ s32 phys_body_step(Body_3 *b, Pt_4 *t, s32 n, u8 m)
                     if (b->type < 2) {
                         b->owner->f354 = t[k].v;
                         b->owner->f350 = 10;
-                        snd_trigger_impact_2(b->owner - gRiders_48, (s32)(ln * 16.0f));
+                        snd_trigger_impact(b->owner - gRiders_48, (s32)(ln * 16.0f));
                     } else if (b->type == 2) {
                         Bike_25 *o = b->owner;
                         if (sImpactSlideSpeed > o->f384) {

@@ -828,7 +828,7 @@ s32 snd_get_master_volume(void) {
     return gSndMasterVolume;
 }
 
-void snd_trigger_impact(s32 a0, s32 a1, s32 a2, s32 a3)
+void snd_trigger_impact(s32 a0, s32 a1)
 {
     u8 *base;
     RiderSound *rec;
