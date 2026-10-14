@@ -7,6 +7,7 @@
 /* The driver's output modes (SndDriver.init, getCaps; also softmix.c's sSoftmixFlags). */
 #define SFX_MODE_STEREO     1
 #define SFX_MODE_16BIT      2
+#define SFX_MODE_STEREO_16BIT 3 /* SFX_MODE_STEREO | SFX_MODE_16BIT: the only mode n64snd accepts */
 
 /* The highest output rate the driver mixes at, in Hz. */
 #define SFX_MAX_RATE        22050
