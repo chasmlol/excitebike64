@@ -19,12 +19,13 @@ typedef struct {
     Col16 *vtx;
 } ColList;
 
+/* The matrices of a frame (the graphics context's), then its display list */
 struct Dyn {
-    Mtx m0[4];  /* 0x000 */
-    Mtx m1[4];  /* 0x100 */
-    Mtx m2[4];  /* 0x200 */
-    Mtx m3[4];  /* 0x300 */
-    Mtx m4;     /* 0x400 */
+    Mtx m0[4];  /* 0x000 per view: view and projection */
+    Mtx m1[4];  /* 0x100 the same with the near plane pushed out (shadows, tire tracks) */
+    Mtx m2[4];  /* 0x200 the sky's placement */
+    Mtx m3[4];  /* 0x300 the orthographic projection of 2D drawing */
+    Mtx m4;     /* 0x400 identity modelview */
     Gfx *glist; /* 0x440 */
 };
 
@@ -65,6 +66,9 @@ typedef struct {
 extern RiderModelIds sRiderModelTable[];
 extern Plr gRiderGfx_2[];
 
+/* Loads what rider `index` draws with: the bike's and the skin's texture sets and palettes (all six skins on the
+   rider select screen), the body models of its rider type (built once per type and cached, with their vertices),
+   and its matrix buffers. */
 void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s32 bikePalette, s32 riderType)
 {
     s32 texSets[2];
@@ -86,12 +90,12 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
         }
         gRiderGfx_2[index].bikeTex = res_load(resSet, *sBikeTexResIds[bikeModel]);
     }
-    if (gGame.flags & 0x10) {
-        gRiderGfx_2[index].selectPals = mem_alloc_dbg(0xC00, 0, sStrRenderC, 0x1FF);
+    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
+        gRiderGfx_2[index].selectPals = mem_alloc_dbg(6 * sizeof(Pal_3), 0, sStrRenderC, 0x1FF);
     } else {
-        gRiderGfx_2[index].riderPal = mem_alloc_dbg(0x200, 0, sStrRenderC, 0x203);
+        gRiderGfx_2[index].riderPal = mem_alloc_dbg(sizeof(Pal_3), 0, sStrRenderC, 0x203);
     }
-    if (!(gGame.flags & 0x10)) {
+    if (!(gGame.flags & GAME_FLAG_RIDER_SELECT)) {
         skin = gGame.riderSkins[index];
     } else {
         skin = gGame.riders[index & 3] & 3;
@@ -99,7 +103,7 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
     color = &gRiderGfx_2[index].color;
     mem_fill((u8 *)color, 0xFF, 3);
     k = res_get_size(resSet, *skins[skin]);
-    if (gGame.flags & 0x10) {
+    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
         for (i = 0; i < 6; i++) {
             sRiderSkinTextures[index][i] = mem_alloc_dbg(k, 0, sStrRenderC, 0x220);
             tmp = res_load(resSet, *skins[i]);
@@ -129,7 +133,7 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
             gRiderGfx_2[index].podiumTex = res_load(resSet, *sRiderModelTable[0].podiumTex);
         }
     }
-    if (gGame.flags & 0x10) {
+    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
         for (i = 0; i < 6; i++) {
             gRiderGfx_2[index].selectPals[i] = *sRiderSkinTextures[index][i]->pal;
         }
@@ -143,6 +147,7 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
             gRiderGfx_2[index].bikePalSrc = sBikeAltPalettes[bikeModel * 3 + (bikePalette - 1)];
         }
         __builtin_memcpy(gRiderGfx_2[index].bikePal, gRiderGfx_2[index].bikePalSrc, sizeof(Pal_3));
+        /* colour 0 transparent */
         gRiderGfx_2[index].bikePal[0] &= 0xFFFE;
         gRiderGfx_2[index].bikePalSrc->c[0] &= 0xFFFE;
         gRiderGfx_2[index].bikeTex->pal->c[0] &= 0xFFFE;
@@ -159,14 +164,14 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
             } else {
                 id = *modelIds->modelLo;
             }
-            res_set_load_buffer((s32)(gZBuffer + 0x1E000));
+            res_set_load_buffer((s32)(gZBuffer + 0x1E000)); /* loaded into the Z buffer, then dropped */
             model = (u32 *)((u32)res_load(resSet, id) & ~3);
             skel_make_verts_bone_local(gRiderSkelTemplate->bones, model);
             texSets[0] = (s32)gRiderGfx_2[index].riderTex;
-            gPrimBoneMtx = (Mtx *)0x06000000;
+            gPrimBoneMtx = (Mtx *)0x06000000; /* the bone matrices in segment 6 */
             texSets[1] = (s32)gRiderGfx_2[index].podiumTex;
             if (gPodiumMode != 0) {
-                prim_alloc_seg_dl(&sRiderModelCache[riderType].dl[k], model, (s32)texSets, 0xC);
+                prim_alloc_seg_dl(&sRiderModelCache[riderType].dl[k], model, (s32)texSets, PRIM_LOAD_TLUT | PRIM_RESET_TLUT);
                 palmod_register((s32)gRiderGfx_2[index].podiumTex, 0);
                 palmod_register((s32)gRiderGfx_2[index].riderTex, 0);
             } else {
@@ -176,9 +181,10 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
             sRiderModelCache[riderType].vtx[k] = copy;
             memcpy(copy, (void *)model[1], model[0] << 4);
             if (k == 0 && index == 0) {
+                /* the untextured low body, for the shadows */
                 model[1] = 0x01000000;
                 gPrimBoneMtx = (Mtx *)0x06000000;
-                len = (u32)prim_build_dl(0x23, model, 0, gZBuffer) - (u32)gZBuffer;
+                len = (u32)prim_build_dl(PRIM_SEGMENTED | PRIM_NO_TEXTURES | PRIM_END_DL, model, 0, gZBuffer) - (u32)gZBuffer;
                 copy = mem_alloc_dbg(len, 0, sStrRenderC, 0x2A0);
                 gRiderGfx_2[0].shadowDL = copy;
                 memcpy(copy, gZBuffer, len);
@@ -192,18 +198,20 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
     gRiderGfx_2[index].riderDL[0] = sRiderModelCache[riderType].dl[0];
     gRiderGfx_2[index].riderDL[1] = sRiderModelCache[riderType].dl[1];
     for (k = 0; k < 2; k++) {
-        gRiderGfx_2[index].boneMtx[k] = mem_alloc_dbg(0x3C0, 0, sStrRenderC, 0x2B3);
+        gRiderGfx_2[index].boneMtx[k] = mem_alloc_dbg(15 * sizeof(Mtx), 0, sStrRenderC, 0x2B3);
         if (gPodiumMode == 0) {
-            gRiderGfx_2[index].partMtx[k] = mem_alloc_dbg(0x280, 0, sStrRenderC, 0x2B6);
+            gRiderGfx_2[index].partMtx[k] = mem_alloc_dbg(10 * sizeof(Mtx), 0, sStrRenderC, 0x2B6);
         }
     }
 }
 
+/* Lays out the views and the temperature gauge for the screen's resolution, and turns the sky off with three or
+   more screens (four on Congo Course and Rainforest Run). */
 void render_update_screen_layout(void)
 {
     s32 limit;
 
-    if (gViMode == 2) {
+    if (gViMode == 2) { /* 640x480 */
         gViewLayouts = sLayout1PHiRes;
         sGaugeY = 300;
     } else {
@@ -218,17 +226,17 @@ void render_update_screen_layout(void)
     sGaugeNeedleX = gScreenWidth * 0x28 / 512;
     sGaugeNeedleY = gScreenHeight * 0x19 / 240;
     render_reset_viewports();
-    if ((gCurTrack_2 - gTracks) == 8 && gNumScreens >= 2) {
+    if ((gCurTrack_2 - gTracks) == TRACK_CONGO_COURSE && gNumScreens >= 2) {
         mem_fill(gFogColor, 0, 3);
     }
     limit = gCurTrack_2 - gTracks;
-    if (limit == 8 || limit == 0xB) {
+    if (limit == TRACK_CONGO_COURSE || limit == TRACK_RAINFOREST_RUN) {
         limit = 4;
     } else {
         limit = 3;
     }
     if (gNumScreens >= limit) {
-        gSkyMode = 0;
+        gSkyMode = SKY_FILL;
         gSkyImage = 0;
     }
 }
@@ -268,6 +276,8 @@ extern Res *sMarkerImage;
 extern PalEnt gRiderGfx_3[8];
 extern Pair_5 sBikePartModels[6];
 
+/* Sets up the drawing of a race: cheats, the credits, place glyph textures, the number of views, the track's
+   environment, the riders and bikes, the sky and the fog colour. */
 void render_init(void) {
     u8 textBuf[0x60];
     s32 red, green, blue;
@@ -277,17 +287,17 @@ void render_init(void) {
     s32 trackIdx;
     s32 cr, cg, cb;
 
-    if (gGame.flags & 0x40000) {
+    if (gGame.flags & GAME_FLAG_PODIUM) {
         gPodiumMode = 1;
     } else {
         gPodiumMode = 0;
     }
-    if (gCheatFlags & 1) {
+    if (gCheatFlags & CHEAT_BIG_HEAD) {
         sBigHeadCheat = 1;
     } else {
         sBigHeadCheat = 0;
     }
-    if (gCheatFlags & 0x2000) {
+    if (gCheatFlags & CHEAT_PIN_HEAD) {
         sPinHeadCheat = 1;
     } else {
         sPinHeadCheat = 0;
@@ -314,11 +324,12 @@ void render_init(void) {
     prim_flip_images(sMarkerImage);
     *sMarkerImage->pal = 0;
     gFontDirectDrawFunc = render_blit_place_glyph;
-    sPlaceTextures = mem_alloc_dbg(0xC00, 0, sStrRenderC, 0x349);
-    mem_fill(sPlaceTextures, 0, 0xC00);
+    /* the place numbers 1-6 drawn into 32x16 8-bit textures through render_blit_place_glyph */
+    sPlaceTextures = mem_alloc_dbg(6 * 0x200, 0, sStrRenderC, 0x349);
+    mem_fill(sPlaceTextures, 0, 6 * 0x200);
     for (i = 0; i < 6; i++) {
         sPlaceTexDst = sPlaceTextures + i * 0x200;
-        font_text_create((TextObj *)textBuf, 3, 1, 1, 0x08000000);
+        font_text_create((TextObj *)textBuf, 3, 1, 1, TEXT_DIRECT);
         font_text_add((TextObj *)textBuf, sPlaceStrings[i]);
         font_draw_text((TextObj *)textBuf, 0, 0);
     }
@@ -333,31 +344,31 @@ void render_init(void) {
     sGaugeNeedleVtx = mem_alloc_dbg(0x100, 0, sStrRenderC, 0x359);
     sPonytailMesh = 0;
     if (gMirrorMode != 0) {
-        gCullMode = 0x200;
+        gCullMode = G_CULL_FRONT; /* the mirrored view turns the triangles around */
     } else {
-        gCullMode = 0x400;
+        gCullMode = G_CULL_BACK;
     }
     gDebugRiderCount = 8;
     sRiderColors = res_load(gResourceSet, sRiderColorsResId);
-    if (gCurTrack_9->envType != 2) {
-        if (gReplayPlayback != 0 || (gGame.flags & 0x80) || gGhostRace != 0) {
+    if (gCurTrack_9->envType != TRACK_ENV_DESERT) {
+        if (gReplayPlayback != 0 || (gGame.flags & GAME_FLAG_TRACK_CHOSEN) || gGhostRace != 0) {
             gNumViews = 1;
         } else {
             gNumViews = gGame.numPlayers;
         }
     }
-    if (gCurTrack_9->envType == 2) {
+    if (gCurTrack_9->envType == TRACK_ENV_DESERT) {
         gNumViews = 1;
     }
     sClearFrames = 5;
     gNumScreens = gNumViews;
     mem_fill(gRiderSection, 0, 0x20);
     prim_init();
-    if (gCurTrack_9->envType == 0) {
+    if (gCurTrack_9->envType == TRACK_ENV_STADIUM) {
         arn_init();
-    } else if (gCurTrack_9->envType == 1) {
+    } else if (gCurTrack_9->envType == TRACK_ENV_OUTDOOR) {
         tube_init();
-    } else if (gCurTrack_9->envType == 2) {
+    } else if (gCurTrack_9->envType == TRACK_ENV_DESERT) {
         des_init();
     }
     sGaugeTextures = res_load(gResourceSet, sGaugeTexResId);
@@ -365,16 +376,16 @@ void render_init(void) {
     sGaugePalettes = mem_alloc_dbg(0x400, 0, sStrRenderC, 0x38B);
     mem_fill(sGaugePalettes, 0, 0x400);
     switch (gGame.mode) {
-    case 2:
+    case GAME_MODE_SOCCER:
         soccer_ball_load_model();
         break;
-    case 0:
-    case 13:
-    case 14:
-        if (!(gCurTrack_9->flags & 2)) {
+    case GAME_MODE_EXHIBITION:
+    case GAME_MODE_TEST_LOOP:
+    case GAME_MODE_TEST_OPEN:
+        if (!(gCurTrack_9->flags & TRACK_FLAG_USER)) {
             break;
         }
-    case 9:
+    case GAME_MODE_TUTORIAL:
         finishline_load_models();
         break;
     }
@@ -385,18 +396,18 @@ void render_init(void) {
         mtx3i_from_angles(gRiderSkelTemplate->bones[i].worldRot.m, 0, 0, 0);
     }
     skel_update_world_transforms(gRiderSkelTemplate->bones, 15);
-    if (gCurTrack_9->envType == 0) {
+    if (gCurTrack_9->envType == TRACK_ENV_STADIUM) {
         j = i;
-    } else if (gCurTrack_9->envType == 1) {
+    } else if (gCurTrack_9->envType == TRACK_ENV_OUTDOOR) {
         j = count;
     }
     mem_fill(sRiderModelCache, 0, 0x70);
     mem_fill((u8 *)gRiderGfx_3, 0, 0x5400);
     count = 8;
-    if (gGame.numPlayers >= 2 && !(gGame.flags & 0x10)) {
+    if (gGame.numPlayers >= 2 && !(gGame.flags & GAME_FLAG_RIDER_SELECT)) {
         count = 4;
     }
-    if ((gGame.flags & 1) && gEvent.numRiders == 1) {
+    if ((gGame.flags & GAME_FLAG_FRONT_END_RACE) && gEvent.numRiders == 1) {
         count = 2;
     }
     if (gPodiumMode != 0) {
@@ -409,7 +420,7 @@ void render_init(void) {
         sBikeAltPalettes[i] = (s32)((Res *)res_load(gResourceSet, *sBikeAltPalResIds[i]))->pal;
     }
     for (j = 0; j < count; j++) {
-        if (gGame.flags & 0x10) {
+        if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
             if (j >= 6) {
                 break;
             }
@@ -422,7 +433,7 @@ void render_init(void) {
         }
         render_load_rider(gResourceSet, j, sRiderModelTable[i].skins, gGame.bikeSkins[j % 6] & 1, gGame.bikeSkins[j % 6] >> 1, i);
     }
-    if (!(gGame.flags & 0x81)) {
+    if (!(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN))) {
         event_hud_init();
     }
     for (i = 0; i < 8; i++) {
@@ -455,7 +466,7 @@ void render_init(void) {
             sBikePartModels[i].model[0] = res_load(gResourceSet, *sBikePartResIds[i + 6]);
         }
         sBikeLowModel = res_load(gResourceSet, sBikeLowModelResId);
-        prim_alloc_dl(&sBikeLowDL, sBikeLowModel, &gRiderGfx_2[0].bikeTex, 0x20);
+        prim_alloc_dl(&sBikeLowDL, sBikeLowModel, &gRiderGfx_2[0].bikeTex, PRIM_SEGMENTED);
         for (i = 0; i < 6; i++) {
             skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].model[1]);
             skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].model[0]);
@@ -464,7 +475,8 @@ void render_init(void) {
             for (j = 0; j < 2; j++) {
                 prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].model[j], &gRiderGfx_2[0].bikeTex, 0);
             }
-            size = (s32)prim_build_dl(3, sBikePartModels[i].model[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
+            /* the untextured bike parts, for the shadows */
+            size = (s32)prim_build_dl(PRIM_NO_TEXTURES | PRIM_END_DL, sBikePartModels[i].model[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
             gBikeShadowDLs[i] = mem_alloc_dbg(size, 0, sStrRenderC, 0x434);
             memcpy(gBikeShadowDLs[i], gZBuffer, size);
         }
@@ -473,21 +485,22 @@ void render_init(void) {
     gSkyImage = (TexSet *)track_res_get(gGidPkgSky);
     if (sSkyModel != NULL) {
         if (gSkyImage != NULL) {
-            gSkyMode = 3;
+            gSkyMode = SKY_MODEL_IMAGE;
         } else {
-            gSkyMode = 2;
+            gSkyMode = SKY_MODEL;
         }
     } else if (gSkyImage != NULL) {
-        gSkyMode = 1;
+        gSkyMode = SKY_IMAGE;
         prim_flip_image_rows(gSkyImage->tex[0].data, 0x100, 0x100);
     } else {
-        gSkyMode = 0;
+        gSkyMode = SKY_FILL;
     }
     if (gSkyImage != NULL) {
         palmod_register(gSkyImage, 0);
     }
     sun_init();
     sky_init();
+    /* the fog colour: the sky image's first colour, the sky model's average colour, the track's, or black */
     if (gSkyImage != NULL) {
         gFogColor[0] = (*gSkyImage->pal >> 11) << 3;
         gFogColor[1] = ((*gSkyImage->pal >> 6) & 0x1F) << 3;
@@ -514,7 +527,7 @@ void render_init(void) {
         gFogColor[0] = sumR;
         gFogColor[1] = sumG;
         gFogColor[2] = sumB;
-    } else if (gCurTrack_9->envType == 1) {
+    } else if (gCurTrack_9->envType == TRACK_ENV_OUTDOOR) {
         gFogColor[0] = gCurTrack_9->fogR;
         gFogColor[1] = gCurTrack_9->fogG;
         gFogColor[2] = gCurTrack_9->fogB;
@@ -524,19 +537,19 @@ void render_init(void) {
         gFogColor[2] = 0;
     }
     trackIdx = gCurTrack_9 - gTracks_4;
-    if (trackIdx == 3 || trackIdx == 20) {
+    if (trackIdx == TRACK_LEFTYS_MILL || trackIdx == TRACK_EXCITE_3D) {
         gSkyImage = NULL;
-        gSkyMode = 0;
+        gSkyMode = SKY_FILL;
     }
-    if (gCheatFlags & 0x40) {
+    if (gCheatFlags & CHEAT_NIGHT) {
         gSkyImage = NULL;
-        gSkyMode = 0;
+        gSkyMode = SKY_FILL;
         mem_fill(gFogColor, 0, 3);
     }
     if (gEvent.noPlayers != 0) {
-        gDrawFlags &= ~0x800;
+        gDrawFlags &= ~DRAW_HUD;
     } else {
-        gDrawFlags |= 0x800;
+        gDrawFlags |= DRAW_HUD;
     }
     gInsetViewActive = -1;
     render_reset_viewports();
@@ -549,6 +562,7 @@ typedef struct { u8 pad[0x2C]; s32 envType; u8 pad30[0x20]; u32 flags; } Cfg_4;
 extern Cfg_4 *gCurTrack_10;
 extern Plr_2 gRiderGfx_4[];
 
+/* Frees what render_init and render_load_rider loaded. */
 void render_free(void)
 {
     s32 i, k, rider;
@@ -561,36 +575,36 @@ void render_free(void)
     }
     mem_free(sPlaceTextures);
     mem_free(sGaugeNeedleVtx);
-    if (gCurTrack_10->envType == 0) {
+    if (gCurTrack_10->envType == TRACK_ENV_STADIUM) {
         arn_free();
-    } else if (gCurTrack_10->envType == 1) {
+    } else if (gCurTrack_10->envType == TRACK_ENV_OUTDOOR) {
         tube_free();
-    } else if (gCurTrack_10->envType == 2) {
+    } else if (gCurTrack_10->envType == TRACK_ENV_DESERT) {
         des_free();
     }
     mem_free(gBikeSkelTemplate);
     mem_free(gRiderSkelTemplate);
     mem_free(sGaugePalettes);
-    if ((gGame.flags & 0x81) == 0) {
+    if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)) == 0) {
         event_hud_free();
     }
     switch (gGame.mode) {
-    case 2:
+    case GAME_MODE_SOCCER:
         soccer_ball_free_model();
         break;
-    case 0:
-    case 13:
-    case 14:
-        if ((gCurTrack_10->flags & 2) == 0) {
+    case GAME_MODE_EXHIBITION:
+    case GAME_MODE_TEST_LOOP:
+    case GAME_MODE_TEST_OPEN:
+        if ((gCurTrack_10->flags & TRACK_FLAG_USER) == 0) {
             break;
         }
-    case 9:
+    case GAME_MODE_TUTORIAL:
         finishline_free_models();
         break;
     }
     prim_exit();
     for (rider = 0; rider < 8; rider++) {
-        if (gGame.flags & 0x10) {
+        if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
             if (rider >= 6) {
                 break;
             }
@@ -628,6 +642,8 @@ void render_free(void)
     sun_free();
 }
 
+/* Switches to a view: its scissor, viewport and (with loadProj) its projection from projMtx. Nothing when it is
+   the current one. */
 Gfx *render_set_viewport(Gfx *gdl, Mtx *projMtx, s32 view, s32 loadProj)
 {
     Rect *rect;
@@ -653,6 +669,8 @@ typedef struct { u8 pad0[0x2C]; s32 envType; u8 pad1[0xA0 - 0x30]; } Trk_4;
 extern Trk_4 *gCurTrack_11;
 extern Trk_4 gTracks_5[];
 
+/* The level of detail (RIDER_LOD_*) to draw a rider at (x, y, z) (mm) in a view: hidden when its section is not
+   visible or it is off the screen, else by its distance. */
 s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 view, s32 section, s32 dyn, s32 rider)
 {
     s32 sx, sy, sz, depth;
@@ -662,30 +680,30 @@ s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 view, s32 section, s32 dyn, s3
     u8 *rects;
 
     if (gInsetViewActive != 0 && rider == 0) {
-        return 3;
+        return RIDER_LOD_HIGH;
     }
-    if (!(gRiders[rider].camMode == 9 && gCamTargets[view] == rider)) {
-        if ((u32)gCurTrack_11->envType < 2 && section != -1) {
+    if (!(gRiders[rider].camMode == CAM_MODE_FALL_VIEW && gCamTargets[view] == rider)) {
+        if ((u32)gCurTrack_11->envType < TRACK_ENV_DESERT && section != -1) {
             if (!((gTrackSections->e[section].mask >> (view * 2)) & 1)) {
-                return 0;
+                return RIDER_LOD_HIDDEN;
             }
         }
     }
-    if (gCurTrack_11->envType == 0) {
+    if (gCurTrack_11->envType == TRACK_ENV_STADIUM) {
         if (project_to_screen(x >> 4, y >> 4, z >> 4, &sx, &sy, &sz, &depth, dyn, view) != 0) {
-            return 0;
+            return RIDER_LOD_HIDDEN;
         }
     } else {
         if (project_to_screen((x - gCamPos[view].x) >> 4, (y - gCamPos[view].y) >> 4,
                           (z - gCamPos[view].z) >> 4, &sx, &sy, &sz, &depth, dyn, view) != 0) {
-            return 0;
+            return RIDER_LOD_HIDDEN;
         }
     }
     if (depth <= 0) {
-        return 0;
+        return RIDER_LOD_HIDDEN;
     }
-    if (gCurTrack_11->envType == 2 && depth > 8000) {
-        return 0;
+    if (gCurTrack_11->envType == TRACK_ENV_DESERT && depth > 8000) {
+        return RIDER_LOD_HIDDEN;
     }
     sRiderCamDist[rider] = depth;
     rects = (u8 *)gViewRects;
@@ -696,31 +714,33 @@ s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 view, s32 section, s32 dyn, s3
     y1 = rect->h + y0;
     halfW = (sProjScaleX[view] * 90.0f) / depth;
     halfH = (sProjScaleY[view] * 90.0f) / depth;
+    /* off the view's rectangle, with a margin of 90 units around the rider */
     if (sx + halfW < x0) {
-        return 0;
+        return RIDER_LOD_HIDDEN;
     }
     if (x1 < sx - halfW) {
-        return 0;
+        return RIDER_LOD_HIDDEN;
     }
     if (sy + halfH < y0) {
-        return 0;
+        return RIDER_LOD_HIDDEN;
     }
     if (y1 < sy - halfH) {
-        return 0;
+        return RIDER_LOD_HIDDEN;
     }
-    if (gCurTrack_11 - gTracks_5 == 20 && gRiders[0].camMode == 4) {
-        return 3;
+    if (gCurTrack_11 - gTracks_5 == TRACK_EXCITE_3D && gRiders[0].camMode == CAM_MODE_SIDE_VIEW) {
+        return RIDER_LOD_HIGH;
     }
     lodDist = gLoDetailThresh[gNumScreens - 1];
     if (lodDist * 6 / 10 < depth) {
-        return 1;
+        return RIDER_LOD_LOW;
     }
     if (lodDist * 4 / 10 < depth) {
-        return 2;
+        return RIDER_LOD_MID;
     }
-    return 3;
+    return RIDER_LOD_HIGH;
 }
 
+/* Starts a frame of a pause screen: the RDP and RSP set up, the framebuffer cleared, 2D drawing. */
 Gfx *render_begin_menu_frame(Gfx *gdl, s32 fb, u8 *mtx) {
     gSPSegment(gdl++, 0, 0);
     gSPDisplayList(gdl++, gRdpInitDL);
@@ -740,7 +760,7 @@ Gfx *render_begin_menu_frame(Gfx *gdl, s32 fb, u8 *mtx) {
                   gViewRects_4[0] + gViewRects_4[2], gViewRects_4[1] + gViewRects_4[3]);
     gSPSetGeometryMode(gdl++, gCullMode);
     gDPSetColorDither(gdl++, G_CD_MAGICSQ);
-    gSPMatrix(gdl++, mtx + 0x400, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, mtx + 0x400 /* Dyn.m4 */, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPClearGeometryMode(gdl++, G_ZBUFFER);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
@@ -756,6 +776,8 @@ typedef struct {
 
 extern Opts gSaveData_2;
 
+/* The pause menu's sound options screen: the background, the title, the three volume bars of 29 segments, the
+   labels, the cursor and mono or stereo. Drawn only once the screen is open (timer -1). */
 Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
 {
     s32 seg;
@@ -804,6 +826,7 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
                 col = seg * 6 + 282;
                 x = col - row * 7;
                 y = sSoundMenuRowY[row] - 1;
+                /* (u8 *) keeps the field's address one constant, as in the original */
                 if (seg <= ((u8 *)gSaveData.volumes)[row] * 29 / 255) {
                     if (row == gOptionsCursor) {
                         G(gdl++, 0xFA000000, (((seg * 255 / 29) & 0xFF) << 16) | 0xFF0000FF);
@@ -855,6 +878,8 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
 }
 
 
+/* The pause menu's controller setup screen: the controller and its configuration, the action of each button and
+   the camera buttons. */
 Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
 {
     char buf[32];
@@ -926,6 +951,7 @@ Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
     return gdl;
 }
 
+/* Fills each screen's rectangle with the fog colour (no sky). */
 Gfx *render_clear_viewports(Gfx *gdl)
 {
     s32 i;
@@ -959,6 +985,7 @@ Gfx *render_clear_viewports(Gfx *gdl)
     return gdl;
 }
 
+/* Packets left of the frame's 6000 (Dyn.glist): render_draw_race stops when fewer than needed are left */
 #define GFX_LEFT() (0x1770 - (gdl - dyn->glist))
 
 /* The low byte of gPalBrightness, read as a scalar at a fixed address (indexing it would order the read after the
@@ -998,6 +1025,9 @@ extern Track_4 *gCurTrack_12;
 extern Track_4 gTracks_6[];
 extern PG gRiderGfx_5[8];
 
+/* Draws a race frame (game state 1's draw): each view's projection and rider levels of detail, the sky, the
+   riders (opaque), the far and near track, props, shadows, tire tracks, water, particles, place markers, flares,
+   rain and snow, the translucent riders, the HUD and the fades. Stops early when the display list runs out. */
 void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     Mtx rot;
     Mtx tmpB;
@@ -1014,19 +1044,22 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     s32 alpha;
     s32 section;
     s32 ang;
-    s32 lod;
+    s32 bits;
     Mtx *proj;
 
     sCurViewport = -1;
     sRidersDrawn = 0;
-    if (gCheatFlags & 0x100) {
+    if (gCheatFlags & CHEAT_TRANSPARENT_RIDER) {
         for (i = 0; i < 8; i++) {
-            gRiderAlpha[i] = 0x80;
+            gRiderAlpha[i] = 0x80; /* half */
         }
     }
-    if (gGame.numPlayers == 1 && gRiders[0].pipTimer != 0 && !(gGame.flags & 0x81) && gReplayPlayback == 0 &&
-        gGame.mode != 6 && gGame.mode != 7 && gGame.mode != 8 && gGame.mode != 9 &&
-        gGame.mode != 13 && gGame.mode != 14 && gCurTrack_12->envType != 2) {
+    /* the stunt replay inset while the player's timer runs */
+    if (gGame.numPlayers == 1 && gRiders[0].pipTimer != 0 &&
+        !(gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)) && gReplayPlayback == 0 &&
+        gGame.mode != GAME_MODE_EXCITE_3D && gGame.mode != GAME_MODE_HILL_CLIMB &&
+        gGame.mode != GAME_MODE_TIME_TRIAL && gGame.mode != GAME_MODE_TUTORIAL && gGame.mode != GAME_MODE_TEST_LOOP &&
+        gGame.mode != GAME_MODE_TEST_OPEN && gCurTrack_12->envType != TRACK_ENV_DESERT) {
         sInsetViewWanted = gGame.numPlayers;
     } else {
         sInsetViewWanted = 0;
@@ -1043,23 +1076,24 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     palmod_update();
 
     for (gCurView = 0; gCurView < gNumViews; gCurView++) {
-        if (gCurTrack_12->envType == 0) {
+        if (gCurTrack_12->envType == TRACK_ENV_STADIUM) {
             arn_update_view(gCurView);
-        } else if (gCurTrack_12->envType == 1) {
+        } else if (gCurTrack_12->envType == TRACK_ENV_OUTDOOR) {
             tube_update_view(gCurView);
-        } else if (gCurTrack_12->envType == 2) {
+        } else if (gCurTrack_12->envType == TRACK_ENV_DESERT) {
             des_update_view(gCurView);
         }
     }
 
+    /* every fourth frame per rider: the section, ground surface and ground colour under it */
     for (i = 0; i < 8; i++) {
-        if (gRiders[i].inactive == 0 && ((i + sRenderFrame) & 3) == 0 && gRiders[i].camMode != 9) {
+        if (gRiders[i].inactive == 0 && ((i + sRenderFrame) & 3) == 0 && gRiders[i].camMode != CAM_MODE_FALL_VIEW) {
             gGroundFound = 0;
             height_get_ground(gRiders[i].drawPos.x, gRiders[i].drawPos.y, gRiders[i].drawPos.z);
             if (gGroundFound != 0) {
                 gRiderSection[i] = gGroundArea;
                 gRiderGroundSurface[i] = gGroundSurface;
-                if (gCurTrack_12->envType != 2) {
+                if (gCurTrack_12->envType != TRACK_ENV_DESERT) {
                     height_get_ground_color(gRiders[i].drawPos.x, gRiders[i].drawPos.z, &sRiderTint[i * 3]);
                 } else {
                     sRiderTint[i * 3] = 0xFF;
@@ -1071,7 +1105,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     }
 
     for (gCurView = 0; gCurView < gNumViews; gCurView++) {
-        sFovY = 0x21;
+        sFovY = 33; /* degrees */
         guOrtho(&dyn->m3[gCurView], -gScreenWidth / 2, gScreenWidth / 2, -gScreenHeight / 2, gScreenHeight / 2,
                       50.0f, gFarClip, 1.0f);
         for (i = 0; i < 2; i++) {
@@ -1079,6 +1113,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gProjScale = gScreenHeight * 0.5f * gCosTable[(ang >> 4) & 0xFFF] /
                          gCosTable[((ang >> 4) - 0x400) & 0xFFF];
             gProjScale = gProjScale * gScreenHeight * 0.00390625f;
+            /* i 1: the near and far planes 2 units further (dyn->m1) */
             k = (i != 0) * 2;
             if (gNumViews == 2 && gInsetViewActive == 0) {
                 if (gSplitVertical != 0) {
@@ -1088,7 +1123,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                     guPerspective(&persp, &gPerspNorm, sFovY, 480.0f / gScreenHeight, k + 50.0f,
                                   gFarClip + k, 1.0f);
                 }
-            } else if (gViMode == 2) {
+            } else if (gViMode == 2) { /* 640x480 */
                 guPerspective(&persp, &gPerspNorm, sFovY, 640.0f / gScreenHeight, k + 50.0f,
                               gFarClip + k, 1.0f);
             } else {
@@ -1097,15 +1132,16 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             }
             proj = &persp;
             mtx_mul(&gViewAxisMtx, proj, &gHudPerspMtx[gGfxFrameIndex]);
-            lod = ((s16 *)proj)[0];
-            lod <<= 16;
-            lod |= ((u16 *)proj)[16];
-            sProjScaleX[gCurView] = lod * (1.0f / 65536);
+            /* the projection's x and y scales (s15.16, integer and fraction halves) to pixels */
+            bits = ((s16 *)proj)[0];
+            bits <<= 16;
+            bits |= ((u16 *)proj)[16];
+            sProjScaleX[gCurView] = bits * (1.0f / 65536);
             sProjScaleX[gCurView] = sProjScaleX[gCurView] * (gViewRects[gNumViews - 1][gCurView].w * 0.5f);
-            lod = ((s16 *)proj)[5];
-            lod <<= 16;
-            lod |= ((u16 *)proj)[21];
-            sProjScaleY[gCurView] = lod * (1.0f / 65536);
+            bits = ((s16 *)proj)[5];
+            bits <<= 16;
+            bits |= ((u16 *)proj)[21];
+            sProjScaleY[gCurView] = bits * (1.0f / 65536);
             sProjScaleY[gCurView] = sProjScaleY[gCurView] * (gViewRects[gNumViews - 1][gCurView].h * 0.5f);
             D_800E19C4 = proj;
             guRotateRPY(&tmpA, gCamPitch[gCurView] * 360.0f * (1.0f / 65536),
@@ -1113,7 +1149,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             guRotateRPY(&tmpB, 0.0f, 0.0f, gCamRoll[gCurView] * 360.0f * (1.0f / 65536));
             guMtxCatL(&tmpB, &tmpA, &rot);
             mtx_transpose_rot(&rot);
-            if (gCurTrack_12->envType == 0) {
+            if (gCurTrack_12->envType == TRACK_ENV_STADIUM) {
                 mtx_from_angles_pos_scale(&tmpB, 0, 0, 0, -gCamPos[gCurView].x, -gCamPos[gCurView].y,
                               -gCamPos[gCurView].z, 0x100);
             } else {
@@ -1132,10 +1168,10 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                 dyn->m1[gCurView] = viewProj;
             }
         }
-        if (gCurTrack_12->envType == 0) {
+        if (gCurTrack_12->envType == TRACK_ENV_STADIUM) {
             mtx_from_angles_pos_scale(&dyn->m2[gCurView], 0, 0, 0, gCamPos[gCurView].x,
                           gCamPos[gCurView].y - 500, gCamPos[gCurView].z, 0x10);
-        } else if (gCurTrack_12->envType == 1) {
+        } else if (gCurTrack_12->envType == TRACK_ENV_OUTDOOR) {
             mtx_from_angles_pos_scale(&dyn->m2[gCurView], 0, 0, 0, 0, 0, 0, 0x10);
         } else {
             mtx_from_angles_pos_scale(&dyn->m2[gCurView], 0, 0, 0, 0, -2000, 0, 0x10);
@@ -1147,24 +1183,25 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             section = gRiderSection[i];
             gRiderViewLod[i] = 0;
             for (k = 0; k < gNumViews; k++) {
-                lod = render_get_rider_lod((s32)((f32)(s32)gRiders[i].bike.pos.x * 1000.0f),
+                bits = render_get_rider_lod((s32)((f32)(s32)gRiders[i].bike.pos.x * 1000.0f),
                                   (s32)((f32)(s32)gRiders[i].bike.pos.y * 1000.0f),
                                   (s32)((f32)(s32)gRiders[i].bike.pos.z * 1000.0f), k, section, dyn, i) &
                     0xF;
                 if (gRiders[i].crashState != 0) {
-                    lod |= (render_get_rider_lod(gRiders[i].drawBodyPos.x, gRiders[i].drawBodyPos.y, gRiders[i].drawBodyPos.z, k, section, dyn, i) & 0xF)
+                    bits |= (render_get_rider_lod(gRiders[i].drawBodyPos.x, gRiders[i].drawBodyPos.y, gRiders[i].drawBodyPos.z, k, section, dyn, i) & 0xF)
                          << 4;
                 } else {
-                    lod |= lod << 4;
+                    bits |= bits << 4;
                 }
-                gRiderViewLod[i] |= lod << (k * 8);
+                gRiderViewLod[i] |= bits << (k * 8);
             }
         }
     }
 
     gdl = *pgdl;
     mtx_from_angles_pos_scale(&dyn->m4, 0, 0, 0, 0, 0, 0, 0x100);
-    if (gRacePhase_2 == 3 || gRacePhase_2 == 7) {
+    /* between the intro and the race, and at the end: a black frame */
+    if (gRacePhase_2 == RACE_PHASE_INTRO_DONE || gRacePhase_2 == RACE_PHASE_DONE) {
         gSPSegment(gdl++, 0, 0);
         gSPDisplayList(gdl++, gRdpInitDL);
         gSPDisplayList(gdl++, gRspInitDL);
@@ -1192,13 +1229,13 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         goto end;
     }
     switch (gPauseMenu) {
-        case 3:
+        case PAUSE_OPTIONS:
             gdl = render_draw_sound_menu(gdl, fb, dyn);
             goto end;
-        case 2:
+        case PAUSE_CONTROLLER:
             gdl = render_draw_controls_menu(gdl, fb, dyn);
             goto end;
-        case 1:
+        case PAUSE_MAIN:
             if (gPauseScreen.timer != -1) {
                 if (gPauseScreen.timer > 0) {
                     gPauseScreen.timer--;
@@ -1212,7 +1249,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     gSPDisplayList(gdl++, gRspInitDL);
     gCurView = 0;
     CHECK(1000);
-    if ((gDrawFlags & 0x40) && gPodiumMode == 0) {
+    if ((gDrawFlags & DRAW_SHADOWS) && gPodiumMode == 0) {
         for (i = 0; i < 8; i++) {
             if (gRiders[i].inactive == 0 && !((i ^ sRenderFrame) & 1) && gRiderViewLod[i] != 0) {
                 gdl = shadow_render_caster(i, shadow_clear_texture(gdl, dyn, i), dyn);
@@ -1255,9 +1292,9 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     }
     gSPMatrix(gdl++, &dyn->m4, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
-    if (gSkyMode == 0) {
+    if (gSkyMode == SKY_FILL) {
         gdl = render_clear_viewports(gdl);
-    } else if (gSkyMode == 1) {
+    } else if (gSkyMode == SKY_IMAGE) {
         if (gNumScreens < 4) {
             gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
             gSPClearGeometryMode(gdl++, G_ZBUFFER);
@@ -1270,11 +1307,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         }
     }
     skyMode = gSkyMode;
-    if (skyMode == 2 || skyMode == 3) {
+    if (skyMode == SKY_MODEL || skyMode == SKY_MODEL_IMAGE) {
         gSPClearGeometryMode(gdl++, G_ZBUFFER);
         gDPSetRenderMode(gdl++, 0x0C084000, 0);
         gSPClipRatio(gdl++, FRUSTRATIO_3);
-        if (skyMode == 3) {
+        if (skyMode == SKY_MODEL_IMAGE) {
             gDPLoadTLUT_pal256(gdl++, gSkyImage->pal);
             gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
             gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -1290,7 +1327,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         for (gCurView = 0; gCurView < gNumViews; gCurView++) {
             gdl = render_set_viewport(gdl, dyn, gCurView, 1);
             gSPMatrix(gdl++, &dyn->m2[gCurView], G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
-            if (gDrawFlags & 2) {
+            if (gDrawFlags & DRAW_SKY) {
                 gdl = prim_build_dl(0, sSkyModel, &gSkyImage, gdl);
             }
             gDPPipeSync(gdl++);
@@ -1302,21 +1339,22 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gDPPipeSync(gdl++);
         gDPSetCycleType(gdl++, G_CYC_FILL);
         gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gZBuffer + 0x80000000);
-        gDPSetFillColor(gdl++, 0x7FFC7FFC);
+        gDPSetFillColor(gdl++, 0x7FFC7FFC); /* the inset's Z buffer cleared to the far plane */
         gDPFillRectangle(gdl++, gViewRects[1][1].x, gViewRects[1][1].y,
                          gViewRects[1][1].x + gViewRects[1][1].w - 4, gViewRects[1][1].y + gViewRects[1][1].h - 4);
         gDPPipeSync(gdl++);
         gDPSetCycleType(gdl++, G_CYC_1CYCLE);
         gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
     }
-    if (gNumScreens == 1 && (gReplayPlayback != 0 || (gGame.flags & 0x81))) {
+    if (gNumScreens == 1 && (gReplayPlayback != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)))) {
         gdl = sun_draw_stars(render_set_viewport(gdl, dyn, 0, 1), dyn);
     }
+    /* skeletons and matrices of the riders seen in any view */
     mem_fill((u8 *)sRiderDrawFlags, 0, 0x20);
 
     for (i = 0; i < 8; i++) {
         if (gRiders[i].inactive == 0) {
-            if (gRiderViewLod[i] & 0x0F0F0F0F) {
+            if (gRiderViewLod[i] & 0x0F0F0F0F) { /* the bike in any view */
                 bike_skel_update(gBikeSkelTemplate, i);
                 *gRiders[i].bikeSkel = *gBikeSkelTemplate;
                 if (gPodiumMode == 0) {
@@ -1326,12 +1364,14 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                     }
                 }
             }
-            if (gRiderViewLod[i] & 0xF0F0F0F0) {
+            if (gRiderViewLod[i] & 0xF0F0F0F0) { /* the body in any view */
+                /* far CPU riders' poses every other frame */
                 if (gRiders[i].isCpu == 0 || !((sRenderFrame / 2 + i) & 1) || gNumScreens != 1 ||
-                    ((gRiderViewLod[i] >> 4) & 0xF) == 3 || gRiders[i].crashState != 0 || (gGame.flags & 1)) {
+                    ((gRiderViewLod[i] >> 4) & 0xF) == RIDER_LOD_HIGH || gRiders[i].crashState != 0 || (gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
                     rider_update_pose(gRiders[i].riderSkel, i);
                 }
                 mtx_from_bones(gRiders[i].riderSkel->bones, gRiderGfx_5[i].boneMtx[fb], 0xF);
+                /* Big Head and Pin Head: the head bone's rotation (bone 2) scaled by 2 or 1/2 */
                 if (gPodiumMode == 0 && (sBigHeadCheat != 0 || sPinHeadCheat != 0)) {
                     u16 *m = (u16 *)&gRiderGfx_5[i].boneMtx[fb][2];
 
@@ -1355,7 +1395,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             }
             for (gCurView = 0; gCurView < gNumViews; gCurView++) {
                 if (gRiderViewLod[i] & (0xFF << (gCurView * 8))) {
-                    if (gCurTrack_12->envType == 0) {
+                    if (gCurTrack_12->envType == TRACK_ENV_STADIUM) {
                         mtx_from_angles_pos_scale(&gRiderGfx_5[i].bikeMtx[fb * 4 + gCurView], 0, 0, 0, gRiders[i].drawPos.x,
                                       gRiders[i].drawPos.y, gRiders[i].drawPos.z, 0x10);
                         if (gRiders[i].crashState != 0) {
@@ -1398,12 +1438,12 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     for (gCurView = 0; gCurView < gNumViews; gCurView++) {
         CHECK(500);
         gdl = render_set_viewport(gdl, dyn, gCurView, 1);
-        if (gDrawFlags & 8) {
-            if (gCurTrack_12->envType == 0) {
+        if (gDrawFlags & DRAW_LO_ARN) {
+            if (gCurTrack_12->envType == TRACK_ENV_STADIUM) {
                 gdl = arn_draw_far(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->envType == 1) {
+            } else if (gCurTrack_12->envType == TRACK_ENV_OUTDOOR) {
                 gdl = tube_draw_far(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->envType == 2) {
+            } else if (gCurTrack_12->envType == TRACK_ENV_DESERT) {
                 gdl = des_draw_terrain(gdl, dyn, fb, gCurView);
             }
         }
@@ -1412,15 +1452,15 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     CHECK(500);
     gdl = render_restore_state(render_load_ucode(gdl, fb, dyn, gF3dex2NonText, gF3dex2NonData), fb, dyn);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
-    if (gDrawFlags & 4) {
+    if (gDrawFlags & DRAW_HI_ARN) {
         for (gCurView = 0; gCurView < gNumViews; gCurView++) {
             CHECK(500);
             gdl = render_set_viewport(gdl, dyn, gCurView, 1);
-            if (gCurTrack_12->envType == 0) {
+            if (gCurTrack_12->envType == TRACK_ENV_STADIUM) {
                 gdl = arn_draw(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->envType == 1) {
+            } else if (gCurTrack_12->envType == TRACK_ENV_OUTDOOR) {
                 gdl = tube_draw(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->envType == 2) {
+            } else if (gCurTrack_12->envType == TRACK_ENV_DESERT) {
                 gdl = des_draw_near_terrain(gdl, dyn, fb, gCurView);
             }
             gdl = hacks_draw_pass2(gdl, dyn, fb, gCurView);
@@ -1431,18 +1471,18 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     }
     gDPPipeSync(gdl++);
     switch (gGame.mode) {
-        case 2:
+        case GAME_MODE_SOCCER:
             CHECK(2000);
             gdl = soccer_ball_draw(gdl, dyn, fb);
             break;
-        case 9:
+        case GAME_MODE_TUTORIAL:
             CHECK(500);
             gdl = finishline_draw_tutorial(gdl, dyn, fb);
             break;
-        case 0:
-        case 13:
-        case 14:
-            if (gCurTrack_12->flags & 2) {
+        case GAME_MODE_EXHIBITION:
+        case GAME_MODE_TEST_LOOP:
+        case GAME_MODE_TEST_OPEN:
+            if (gCurTrack_12->flags & TRACK_FLAG_USER) {
                 CHECK(1000);
                 for (gCurView = 0; gCurView < gNumViews; gCurView++) {
                     gdl = finishline_draw_user_track(gdl, dyn, fb, gCurView);
@@ -1451,14 +1491,14 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             break;
     }
     CHECK(1000);
-    if ((gDrawFlags & 0x40) && gPodiumMode == 0) {
+    if ((gDrawFlags & DRAW_SHADOWS) && gPodiumMode == 0) {
         gDPPipeSync(gdl++);
         gSPClipRatio(gdl++, FRUSTRATIO_1);
         for (i = 0; i < 8; i++) {
             if (gRiders[i].inactive == 0) {
                 for (gCurView = 0; gCurView < gNumViews; gCurView++) {
                     if ((gRiderViewLod[i] >> (gCurView * 8)) & 0xF) {
-                        if (!(sRiderDrawFlags[i] & 0x10)) {
+                        if (!(sRiderDrawFlags[i] & 0x10)) { /* the bike's shadow mesh is built */
                             shadow_build_mesh(i);
                             sRiderDrawFlags[i] |= 0x10;
                         }
@@ -1472,7 +1512,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                 if (gRiders[i].crashState != 0) {
                     for (gCurView = 0; gCurView < gNumViews; gCurView++) {
                         if ((gRiderViewLod[i] >> (gCurView * 8)) & 0xF0) {
-                            if (!(sRiderDrawFlags[i] & 0x20)) {
+                            if (!(sRiderDrawFlags[i] & 0x20)) { /* the body's */
                                 shadow_build_mesh(i + 8);
                                 sRiderDrawFlags[i] |= 0x20;
                             }
@@ -1499,24 +1539,26 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     CHECK(1000);
     for (gCurView = 0; gCurView < gNumViews; gCurView++) {
         gdl = render_set_viewport(gdl, dyn, gCurView, 1);
-        if (gCurTrack_12->envType == 1) {
+        if (gCurTrack_12->envType == TRACK_ENV_OUTDOOR) {
             gdl = tube_draw_water(gdl, dyn, fb, gCurView);
-        } else if (gCurTrack_12->envType == 0) {
+        } else if (gCurTrack_12->envType == TRACK_ENV_STADIUM) {
             gdl = arn_draw_water(gdl, dyn, fb, gCurView);
-        } else if (gCurTrack_12->envType == 2) {
+        } else if (gCurTrack_12->envType == TRACK_ENV_DESERT) {
             gdl = des_draw_waypoint_marker(gdl, dyn, fb, gCurView);
         }
     }
-    if ((gDrawFlags & 0x80) && gDebugFreeze == 0) {
+    if ((gDrawFlags & DRAW_MUD) && gDebugFreeze == 0) {
         for (gCurView = 0; gCurView < gNumViews; gCurView++) {
             CHECK(1000);
             gdl = particles_draw(render_set_viewport(gdl, dyn, gCurView, 1), gCurView, dyn);
         }
     }
-    if (!(gGame.flags & 1) && gRaceFrame >= 0x259 && gReplayPlayback == 0 && gGame.mode != 8) {
+    /* the markers over the rider ahead, from ten seconds into the race */
+    if (!(gGame.flags & GAME_FLAG_FRONT_END_RACE) && gRaceFrame >= 601 && gReplayPlayback == 0 &&
+        gGame.mode != GAME_MODE_TIME_TRIAL) {
         s32 tr = gCurTrack_12 - gTracks_6;
 
-        if (tr != 20 && tr != 23 && tr != 24) {
+        if (tr != TRACK_EXCITE_3D && tr != TRACK_HILL_CLIMB && tr != TRACK_STUNT_COURSE) {
             gdl = render_draw_place_markers(gdl, dyn);
         }
     }
@@ -1524,7 +1566,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     if (gNumScreens == 1) {
         s32 tr = gCurTrack_12 - gTracks_6;
 
-        if (tr != 11 && tr != 20) {
+        if (tr != TRACK_RAINFOREST_RUN && tr != TRACK_EXCITE_3D) {
             if (gNumViews != gNumScreens) {
                 gdl = render_set_viewport(gdl, dyn, 0, 1);
             }
@@ -1534,6 +1576,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     CHECK(1000);
     gdl = snow_draw(rain_draw(gdl, dyn, fb), dyn, fb);
     if (gInsetViewActive != 0) {
+        /* the inset's black frame */
         s32 x = gViewRects[1][1].x;
         s32 y = gViewRects[1][1].y;
         s32 w = gViewRects[1][1].w;
@@ -1550,7 +1593,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gDPFillRectangle(gdl++, x - 2, b1, x + w + 1, col + 1);
         gDPFillRectangle(gdl++, x + w - 1, y, x + w + 1, col + 1);
     }
-    if (gCurTrack_12->envType == 2) {
+    if (gCurTrack_12->envType == TRACK_ENV_DESERT) {
         gdl = des_draw_arrow(gdl, dyn, fb, 0);
     }
     CHECK(1000);
@@ -1571,8 +1614,8 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     CHECK(800);
     if (gPodiumMode != 0) {
         gdl = hud_draw_congratulations_2(gdl, dyn, fb);
-    } else if (gDrawFlags & 0x800) {
-        if (gCreditsMode == 0 && !(gGame.flags & 1)) {
+    } else if (gDrawFlags & DRAW_HUD) {
+        if (gCreditsMode == 0 && !(gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
             if (gNumViews == 1 || gPauseMenu == 0) {
                 gdl = map_draw_minimap(gdl, dyn, fb);
             }
@@ -1587,39 +1630,39 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gSPSetGeometryMode(gdl++, gCullMode);
         }
     }
-    if (gGame.flags & 0x80) {
+    if (gGame.flags & GAME_FLAG_TRACK_CHOSEN) {
         gdl = hud_draw_track_intro(gdl, dyn, fb, gCurView);
     }
     if (gCreditsMode != 0) {
         gdl = render_draw_credits(render_set_viewport(gdl, dyn, 0, 0));
     }
-    if (!(gGame.flags & 1)) {
+    if (!(gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
         switch (gRacePhase_2) {
-            case 0:
-            case 4:
-                if (gRacePhaseTimer == -1) {
+            case RACE_PHASE_INTRO_FADE_IN:
+            case RACE_PHASE_FADE_IN:
+                if (gRacePhaseTimer == PHASE_TIMER_START) {
                     gRacePhaseTimer = 20;
                 }
-                gGame.fadeState = 2;
+                gGame.fadeState = FADE_IN;
                 alpha = gRacePhaseTimer * 255 / 20;
                 gGame.fadeLevel = alpha;
                 break;
-            case 2:
-            case 6:
-                if (gRacePhaseTimer == -2) {
-                    gRacePhaseTimer = -3;
+            case RACE_PHASE_INTRO_FADE_OUT:
+            case RACE_PHASE_FADE_OUT:
+                if (gRacePhaseTimer == PHASE_TIMER_OVER) {
+                    gRacePhaseTimer = PHASE_TIMER_FADED;
                     alpha = 255;
-                } else if (gRacePhaseTimer == -1) {
+                } else if (gRacePhaseTimer == PHASE_TIMER_START) {
                     gRacePhaseTimer = 20;
                     alpha = 0;
                 } else {
                     alpha = 255 - gRacePhaseTimer * 255 / 20;
                 }
-                gGame.fadeState = 0;
+                gGame.fadeState = FADE_OUT;
                 gGame.fadeLevel = 255 - alpha;
                 break;
             default:
-                gGame.fadeState = 3;
+                gGame.fadeState = FADE_DONE;
                 alpha = -1;
                 break;
         }
@@ -1679,6 +1722,8 @@ extern Bike gRiderGfx_6[];
 extern DlPair sBikePartDLs_3[];
 extern SegPair sBikePartModels_2[];
 
+/* Draws the riders, opaque or translucent ones (gRiderAlpha), in each view: the palettes, the body at its level of
+   detail (the ponytail too), then the six bike parts or, far away, the one-piece bike. */
 Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
     s32 view;
     s32 rider;
@@ -1702,33 +1747,33 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
             if (k != translucent) {
                 continue;
             }
-            if (gGame.flags & 0x10) {
-                lod = 2;
+            if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
+                lod = RIDER_LOD_MID;
                 if (rider == gGame.riders[view]) {
-                    lod = 3;
+                    lod = RIDER_LOD_HIGH;
                 }
             } else {
                 lod = lodBits & 0xF;
                 if (gNumScreens >= 3) {
-                    if (lod == 3) {
-                        lod = 2;
+                    if (lod == RIDER_LOD_HIGH) {
+                        lod = RIDER_LOD_MID;
                     }
-                    if (view == rider && lod == 1) {
-                        lod = 2;
+                    if (view == rider && lod == RIDER_LOD_LOW) {
+                        lod = RIDER_LOD_MID;
                     }
                 }
                 if (gNumScreens == 2 && view == rider) {
-                    lod = 3;
+                    lod = RIDER_LOD_HIGH;
                 }
                 if (gEvent.noPlayers != 0 && rider == 0) {
-                    lod = 3;
+                    lod = RIDER_LOD_HIGH;
                 }
                 if (gNumScreens == 1 && (rider == gCamTargetOverride || (gCamTargetOverride == -1 && rider == 0))) {
-                    lod = 3;
+                    lod = RIDER_LOD_HIGH;
                 }
             }
             if (gPodiumMode != 0) {
-                lod = 3;
+                lod = RIDER_LOD_HIGH;
                 if (gRiderGfx_6[rider].riderDLHigh == 0) {
                     continue;
                 }
@@ -1738,13 +1783,13 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
                 viewSet = 1;
             }
             sRidersDrawn++;
-            if (!(sRiderDrawFlags[rider] & 4)) {
+            if (!(sRiderDrawFlags[rider] & 4)) { /* the palette is up to date this frame */
                 render_update_rider_palette(rider, view);
-                if (!(gGame.flags & 0x10)) {
+                if (!(gGame.flags & GAME_FLAG_RIDER_SELECT)) {
                     sRiderDrawFlags[rider] |= 4;
                 }
             }
-            if (gGame.flags & 0x10) {
+            if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
                 if (gGame.numPlayers == 1) {
                     gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[rider].selectPals + gGame.riderSkinSel * 0x200);
                 } else {
@@ -1765,10 +1810,10 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
                 gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, gRiderAlpha[rider]);
             }
             gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF67B);
-            if (gDrawFlags & 1) {
-                if (lod == 3) {
+            if (gDrawFlags & DRAW_BIKES) {
+                if (lod == RIDER_LOD_HIGH) {
                     gSPSegment(gdl++, 1, gRiderGfx_6[rider].riderVtxHigh & 0xFFFFFF);
-                    if (gGame.flags & 0x10) {
+                    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
                         if (gGame.numPlayers == 1) {
                             gSPSegment(gdl++, 2, sRiderSkinTextures_2[rider][gGame.riderSkinSel] & 0xFFFFFF);
                         } else {
@@ -1779,12 +1824,12 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
                         gSPSegment(gdl++, 3, gRiderGfx_6[rider].podiumTex & 0xFFFFFF);
                     }
                     gSPSegment(gdl++, 6, gRiderGfx_6[rider].boneMtx[gGfxFrameIndex]);
-                    if (!(gCheatFlags & 0x20)) {
+                    if (!(gCheatFlags & CHEAT_INVISIBLE_RIDER)) {
                         gSPDisplayList(gdl++, gRiderGfx_6[rider].riderDLHigh);
                     }
                 } else {
                     gSPSegment(gdl++, 1, gRiderGfx_6[rider].riderVtxLow & 0xFFFFFF);
-                    if (gGame.flags & 0x10) {
+                    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
                         if (gGame.numPlayers == 1) {
                             gSPSegment(gdl++, 2, sRiderSkinTextures_2[rider][gGame.riderSkinSel % 5] & 0xFFFFFF);
                         } else {
@@ -1794,14 +1839,14 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
                         gSPSegment(gdl++, 2, gRiderGfx_6[rider].riderTex & 0xFFFFFF);
                     }
                     gSPSegment(gdl++, 6, gRiderGfx_6[rider].boneMtx[gGfxFrameIndex]);
-                    if (!(gCheatFlags & 0x20)) {
+                    if (!(gCheatFlags & CHEAT_INVISIBLE_RIDER)) {
                         gSPDisplayList(gdl++, gRiderGfx_6[rider].riderDLLow);
                     }
                 }
                 if (gRiderGfx_6[rider].ponytailModel != 0) {
                     gPrimBoneMtx = (Mtx *)(gRiderGfx_6[rider].ponytailMtx + fb * 0xC0);
-                    if (!(gCheatFlags & 0x20)) {
-                        if (gGame.flags & 0x10) {
+                    if (!(gCheatFlags & CHEAT_INVISIBLE_RIDER)) {
+                        if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
                             segs = sRiderSkinTextures_2[rider];
                             gdl = prim_build_dl(0, gRiderGfx_6[rider].ponytailModel,
                                                 (gGame.numPlayers == 1) ? segs + gGame.riderSkinSel : segs + view, gdl);
@@ -1815,14 +1860,14 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
                 if (gRiders[rider].crashState != 0) {
                     gSPMatrix(gdl++, &gRiderGfx_6[rider].bikeViewMtx[fb * 4 + view], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
                 }
-                if (gGame.flags & 0x10) {
+                if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
                     gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[(rider + gGame.bikeSkinSel) % 6].bikePal);
                 } else {
                     gDPLoadTLUT_pal256(gdl++, gRiderGfx_6[rider].bikePal);
                 }
                 for (k = 0; k < 6; k++) {
                     if (translucent != 1) {
-                        if (k != 5 && k != 2 && lod != 1) {
+                        if (k != 5 && k != 2 && lod != RIDER_LOD_LOW) {
                             gDPSetRenderMode(gdl++, 0x442230, 0);
                         } else {
                             gDPSetRenderMode(gdl++, 0x553078, 0);
@@ -1832,19 +1877,20 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
                         gDPSetRenderMode(gdl++, 0x404A70, 0);
                         gDPSetCombine(gdl++, 0xFF97FF, 0xFF2CFE7F);
                     }
-                    if (gDrawFlags & 1) {
+                    if (gDrawFlags & DRAW_BIKES) {
                         gSPMatrix(gdl++, gRiderGfx_6[rider].partMtx[gGfxFrameIndex] + k, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                        if (gGame.flags & 0x10) {
+                        if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
+                            /* gSPSegment(2, ...), written by hand with a dead store between, as in the original */
                             { Gfx *g = gdl++; g->words.w0 = 0xDB060008; if (rider == 0) lodBits = 0; gdl[-1].words.w1 = gRiderGfx_6[(rider + gGame.bikeSkinSel) & 1].bikeTex; }
                         } else {
                             gSPSegment(gdl++, 2, gRiderGfx_6[rider].bikeTex);
                         }
-                        if (lod == 1) {
+                        if (lod == RIDER_LOD_LOW) {
                             gSPSegment(gdl++, 2, gRiderGfx_6[rider].bikeTex);
                             gSPDisplayList(gdl++, sBikeLowDL);
                             break;
                         }
-                        if (lod == 3) {
+                        if (lod == RIDER_LOD_HIGH) {
                             gSPSegment(gdl++, 1, sBikePartModels_2[k].p4->seg);
                             gSPDisplayList(gdl++, sBikePartDLs_3[k].dl4);
                         } else {
@@ -1855,6 +1901,7 @@ Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent) {
                 }
             }
             {
+                /* never true (an uninitialised value's top nibble & 16): kept for the original's code */
                 s32 t;
                 if (((u32)t >> 28) & 16) {
                     k = 5;
@@ -1894,6 +1941,8 @@ extern Tex *sRiderSkinTextures_3[][6];
 extern Track_5 *gCurTrack_13;
 extern Track_5 gTracks_7[];
 
+/* Rewrites a rider's palettes for this frame: the credits' sepia, the lightning's grey, red flashes when
+   overheating (split screen) or invincible, fog on the desert, or the colour of the ground it stands on. */
 void render_update_rider_palette(s32 rider, s32 view)
 {
     s32 r, g, b;
@@ -1904,7 +1953,7 @@ void render_update_rider_palette(s32 rider, s32 view)
     if (gPodiumMode != 0) {
         return;
     }
-    if (gGame.flags & 0x10) {
+    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
         if (gGame.numPlayers == 1) {
             gRiderGfx_7[rider].riderPalSrc = sRiderSkinTextures_3[rider][(view + gGame.riderSkinSel) % 5]->pal;
             gRiderGfx_7[rider].riderPal = gRiderGfx_7[rider].selectPals + ((view + gGame.riderSkinSel) % 5) * 0x100;
@@ -1970,7 +2019,7 @@ void render_update_rider_palette(s32 rider, s32 view)
         return;
     }
     if ((gRiders[rider].engine.overheated != 0 && gRaceFrame % 30 < 15 && gNumScreens >= 2) ||
-        (gRiders[rider].isCpu == 0 && (gCheatFlags & 0x400) && gRaceFrame % 32 < 16)) {
+        (gRiders[rider].isCpu == 0 && (gCheatFlags & CHEAT_INVINCIBLE) && gRaceFrame % 32 < 16)) {
         for (i = 0; i < 0x100; i++) {
             s32 x, y, z;
 
@@ -1992,11 +2041,11 @@ void render_update_rider_palette(s32 rider, s32 view)
         sRiderPalDirty[rider] = 1;
         return;
     }
-    if (gCurTrack_13->envType == 2 && sRiderCamDist[rider] > 0xC48) {
+    if (gCurTrack_13->envType == TRACK_ENV_DESERT && sRiderCamDist[rider] > 3144) {
         fogR = gFogColor[0] * 31 / 256;
         fogG = gFogColor[1] * 31 / 256;
         fogB = gFogColor[2] * 31 / 256;
-        fade = (sRiderCamDist[rider] - 0xC48) * 255 / 5241;
+        fade = (sRiderCamDist[rider] - 3144) * 255 / 5241;
         if (fade > 255) {
             fade = 255;
         }
@@ -2023,7 +2072,7 @@ void render_update_rider_palette(s32 rider, s32 view)
         return;
     }
     sRiderDrawFlags[rider] |= 4;
-    if (gRiderGroundSurface[rider] & 0x200) {
+    if (gRiderGroundSurface[rider] & COLL_TRI_TINT) {
         if (sRiderTint[rider * 3] == sRiderLightColor[rider][0] && sRiderTint[rider * 3 + 1] == sRiderLightColor[rider][1] &&
             sRiderTint[rider * 3 + 2] == sRiderLightColor[rider][2] && sRiderPalDirty[rider] == 0) {
             return;
@@ -2032,7 +2081,7 @@ void render_update_rider_palette(s32 rider, s32 view)
         tintR = sRiderTint[rider * 3];
         tintG = sRiderTint[rider * 3 + 1];
         tintB = sRiderTint[rider * 3 + 2];
-        if (gCurTrack_13 - gTracks_7 == 15) {
+        if (gCurTrack_13 - gTracks_7 == TRACK_GOLDMINE_RUSH) { /* lighter */
             tintR += (255 - tintR) / 3;
             tintG += (255 - tintG) / 3;
             tintB += (255 - tintB) / 3;
@@ -2073,6 +2122,8 @@ void render_update_rider_palette(s32 rider, s32 view)
     }
 }
 
+/* After a microcode load: the RSP and RDP state again (scissor, viewport, perspective normalisation, Z and
+   color images, cycle type, culling, other modes, the view's matrices, clip ratio), written as raw packets. */
 Gfx *render_restore_state(Gfx *gdl, s32 fb, s32 dyn)
 {
     Gfx *g0, *g1, *g2, *g3, *g4, *g5, *g6, *g7, *g8, *g9, *g10, *g11, *g12, *g13, *g14;
@@ -2140,6 +2191,7 @@ typedef struct {
 
 extern TexInfo_2 *sMarkerImage_2;
 
+/* Over the rider one place ahead of each player: a marker in the rider's colour with its place number. */
 Gfx *render_draw_place_markers(Gfx *gdl, s32 dyn) {
     s32 sx, sy, sz, sw;
     s32 markW, markH, markS, markT, digitW, digitH, digitS, digitT;
@@ -2171,14 +2223,14 @@ Gfx *render_draw_place_markers(Gfx *gdl, s32 dyn) {
     for (i = 0; i < gNumScreens; i++) {
         gdl = render_set_viewport(gdl, dyn, i, 0);
         for (j = 0; j < 8; j++) {
-            gfxOfs = (j << 11) + (j << 9) + (j << 7);
+            gfxOfs = (j << 11) + (j << 9) + (j << 7); /* j * sizeof(gRiderGfx[0]) */
             rider = &gRiders[j];
             if (rider->inactive != 0) continue;
             if (j >= 6) continue;
             if (!((gRiderViewLod[j] >> (i * 8)) & 0xF)) continue;
             if (rider->crashState != 0) continue;
             if (rider->race.place != gRiders[i].race.place - 1) continue;
-            if (gCurTrack_4->f2C == 0) {
+            if (gCurTrack_4->f2C == TRACK_ENV_STADIUM) {
                 if (project_to_screen(rider->drawPos.x >> 4, (rider->drawPos.y + 2000) >> 4, rider->drawPos.z >> 4, &sx, &sy, &sz, &sw, dyn, i) != 0) continue;
             } else {
                 if (project_to_screen((rider->drawPos.x - gCamPos[i].x) >> 4, (rider->drawPos.y - gCamPos[i].y + 2000) >> 4,
@@ -2204,7 +2256,7 @@ Gfx *render_draw_place_markers(Gfx *gdl, s32 dyn) {
                 g->words.w1 = 0x1C070;
             }
             gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, 0, (texW - 1) << G_TEXTURE_IMAGE_FRAC, (texH - 1) << G_TEXTURE_IMAGE_FRAC);
-            gDPLoadTLUT_pal256(gdl++, (u8 *)gRiderGfx_3[0].markerPal + gfxOfs);   /* pl = j * 0xA80: gRiderGfx_3[j].markerPal */
+            gDPLoadTLUT_pal256(gdl++, (u8 *)gRiderGfx_3[0].markerPal + gfxOfs); /* gRiderGfx_3[j].markerPal */
             gSPTextureRectangle(gdl++, (sx - markW / 2) * 4, (y - markH / 2) * 4, (sx + markW / 2) * 4, (y + markH / 2) * 4,
                                 0, 0, 0, markS, markT);
             gDPPipeSync(gdl++);
@@ -2225,6 +2277,8 @@ Gfx *render_draw_place_markers(Gfx *gdl, s32 dyn) {
     return gdl;
 }
 
+/* The engine temperature gauge of a player (the ghost's player in time trial): the scale lit up to the heat, the
+   overheat warning blinking, and the needle. */
 Gfx *render_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 view, s32 player) {
     s32 rider;
     s32 stepS, stepT;
@@ -2233,7 +2287,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 view, s32 player) {
     u16 *pal;
     s32 x, y;
 
-    if (gGame.mode == 8) {
+    if (gGame.mode == GAME_MODE_TIME_TRIAL) {
         rider = gTimeTrialPlayer;
     } else {
         rider = player;
@@ -2257,6 +2311,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 view, s32 player) {
         heat = 255;
     }
     pal = sGaugePalettes + view * 256;
+    /* palette entries 148-234 are the scale: green, yellow, red, lit up to the heat */
     level = heat * 87 / 256;
     level += 148;
     for (i = 148; i < 192; i++) {
@@ -2318,9 +2373,10 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 view, s32 player) {
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
     gDPSetRenderMode(gdl++, 0x00404240, 0);
     gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0x80);
-    gSPMatrix(gdl++, dyn + 0x300, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, dyn + 0x300 /* Dyn.m3 */, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPViewport(gdl++, &gScreenViewport);
+    /* the needle's angle */
     level = 55000 - heat * 175;
     for (i = 0; i < 4; i++) {
         s32 x0 = sGaugeNeedleShape[i * 2];
@@ -2355,6 +2411,10 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 view, s32 player) {
     return gdl;
 }
 
+/* Draws an image (a texture set entry) at (x, y) in bands of rows that fit the texture memory. alignX and alignY: 0
+   pixels, else 512x240 units from the left/top (1), the centre (2) or the right/bottom (3). flags: 1 halves the
+   band, 2 8-bit (else 4-bit CI), 4 IA, 0x20 not flipped, 0x40 turned 180 degrees, 0x80 drawn `width` wide, 0x100 at half
+   size. */
 Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32 alignY, s32 flags, s32 width) {
     s32 rows, row, n, scale, screenRow, screenRows, clip, drawW;
     s32 texScale;
@@ -2421,7 +2481,7 @@ Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32
                 gDPLoadTextureTile(gdl++, addr, G_IM_FMT_IA, G_IM_SIZ_8b, img->w * 8, 0, clip, 0, img->w * 8 - 1, n - 1,
                                    0, 0, 0, 0, 0, 0, 0);
             } else {
-                while (1);
+                while (1); /* 4-bit IA: not supported */
             }
         } else if (flags & 2) {
             gDPLoadTextureTile(gdl++, addr, G_IM_FMT_CI, G_IM_SIZ_8b, img->w * 8, 0, clip, 0, img->w * 8 - 1, n - 1,
@@ -2440,7 +2500,7 @@ Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32
         } else {
             if (flags & 0x80) drawW = width;
             else drawW = img->w * 8;
-            if (gScreenWidth == 640) {
+            if (gScreenWidth == 640) { /* stretched to 640x480: 5/4 wide, rows doubled */
                 gSPTextureRectangle(gdl++, x * 4, (y + screenRow * 2) * 4, x * 4 + (drawW - clip) * 5, (y + screenRow * 2 + screenRows * 2) * 4,
                                     0, clip << 5, (n - 1) << 5, scale * 0x333, -(scale << 9));
             } else {
@@ -2458,6 +2518,8 @@ typedef struct { s16 v[8]; } Q;
 extern Q sInsetViewports[];
 extern Q sViewports[];
 
+/* Switches between the normal views and the one-player view with the stunt inset when sInsetViewWanted changes:
+   the view rectangles (from gViewLayouts, in 512x240 units) and their near and far viewports. */
 void render_update_viewports(void)
 {
     s32 i;
@@ -2487,13 +2549,14 @@ void render_update_viewports(void)
             }
         }
         if (sInsetViewWanted != 0) {
+            /* the inset: the second view of the two-view layout, small at the top left */
             screenW = *gScreenWidth_2;
             D_800E1758[0] = D_800E1758[-4];
             rects = D_800E1758 - 4;
             rects[5].x = screenW / 16;
             rects[5].z = *gScreenWidth_2 * 130 / 512;
             rects[5].w = gScreenHeight_3[0] * 70 / 240;
-            if (gViMode == 2) {
+            if (gViMode == 2) { /* 640x480 */
                 rects[5].y = 100;
             } else {
                 rects[5].y = 30;
@@ -2517,6 +2580,7 @@ void render_update_viewports(void)
             vps[gCurView + 4].v[6] = 0x1FF;
         }
         if (sInsetViewWanted != 0) {
+            /* the two views in separate halves of the depth range */
             sInsetViewports[0].v[2] = 0xFF;
             sInsetViewports[0].v[6] = 0x2FF;
             sInsetViewports[4].v[2] = 0xFF;
@@ -2534,6 +2598,8 @@ typedef struct { s32 x, y, w, h; s32 pad[12]; } View;
 
 extern View gViewRects_8[];
 
+/* The credits scrolling up over the race (the Team Photo cheat puts the team photo behind them). The text has
+   lines ending in CR; "@H" makes the next line a heading, "@1" to "@3" pick the column, "@E" ends it. */
 Gfx *render_draw_credits(Gfx *gdl)
 {
     View *e;
@@ -2546,7 +2612,7 @@ Gfx *render_draw_credits(Gfx *gdl)
     sCreditsScrollY = 0xF0 - (gRaceFrame / 2) % (sCreditsLineCount << 4);
     font_reset_queue();
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, gViewRects_8[gNumViews - 1].x, gViewRects_8[gNumViews - 1].y, gViewRects_8[gNumViews - 1].x + gViewRects_8[gNumViews - 1].w, gViewRects_8[gNumViews - 1].y + gViewRects_8[gNumViews - 1].h);
-    if (gCheatFlags & 0x800) {
+    if (gCheatFlags & CHEAT_TEAM_PHOTO) {
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
@@ -2616,10 +2682,11 @@ Gfx *render_draw_credits(Gfx *gdl)
     return font_render(gdl);
 }
 
+/* mtx_from_angles_pos_scale with (x, y, z) relative to the view's camera off the stadium tracks. */
 void render_make_world_mtx(s32 mtx, s32 rx, s32 ry, s32 rz, s32 x, s32 y, s32 z, s32 scale, s32 view)
 {
     s32 *cam;
-    if (gCurTrack_3[11] == 0) {
+    if (gCurTrack_3[11] == TRACK_ENV_STADIUM) { /* gTracks +0x2C */
         mtx_from_angles_pos_scale(mtx, rx, ry, rz, x, y, z, scale);
     } else {
         s32 *tb = gCamPos;
@@ -2630,6 +2697,7 @@ void render_make_world_mtx(s32 mtx, s32 rx, s32 ry, s32 rz, s32 x, s32 y, s32 z,
 
 #define PKT(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (unsigned int)(b); }
 
+/* gSPLoadUcode, written out */
 #define LOADUCODE(pkt, s, d) { \
     Gfx *_g = (Gfx *)(pkt); \
     _g->words.w0 = 0xE1000000; \
@@ -2639,6 +2707,7 @@ void render_make_world_mtx(s32 mtx, s32 rx, s32 ry, s32 rz, s32 x, s32 y, s32 z,
     _g->words.w1 = (unsigned int)(s); \
 }
 
+/* Switches the RSP to another microcode (text, data) and runs the init display lists again. */
 Gfx *render_load_ucode(Gfx *gdl, s32 fb, s32 dyn, s32 text, s32 data)
 {
     PKT(gdl++, 0xE7000000, 0);
@@ -2649,12 +2718,14 @@ Gfx *render_load_ucode(Gfx *gdl, s32 fb, s32 dyn, s32 text, s32 data)
     return gdl;
 }
 
+/* Forces render_update_viewports to set the normal views up again. */
 void render_reset_viewports(void) {
     gInsetViewActive = 1;
     sInsetViewWanted = 0;
     render_update_viewports();
 }
 
+/* Copies the vertical or horizontal two-player layout into the multi-view layouts. */
 void render_apply_split_layout(void)
 {
     Blk *src;
@@ -2683,6 +2754,7 @@ void render_apply_split_layout(void)
     render_reset_viewports();
 }
 
+/* gFontDirectDrawFunc while render_init draws the place numbers: copies a glyph into the 32x16 texture. */
 void render_blit_place_glyph(u8 *src, s32 x, s32 y, s32 w, s32 h)
 {
     s32 i, j, px;
@@ -2705,6 +2777,7 @@ void render_blit_place_glyph(u8 *src, s32 x, s32 y, s32 w, s32 h)
     } while (0);
 }
 
+/* out = a + (b - a) * t / 256 for count r, g, b triples. */
 void render_lerp_rgb(u8 *a, u8 *b, u8 *out, s32 t, s32 count)
 {
     s32 total = count * 3;
@@ -2725,6 +2798,7 @@ void render_lerp_rgb(u8 *a, u8 *b, u8 *out, s32 t, s32 count)
     }
 }
 
+/* out = palA + (palB - palA) * t / 256 for count RGBA5551 colours (alpha cleared). */
 void render_lerp_palette(u16 *palA, u16 *palB, u16 *out, s32 t, s32 count)
 {
     s32 i;

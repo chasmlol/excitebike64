@@ -77,6 +77,21 @@
 #define PAUSE_CONTROLLER    2   /* the controller setup screen */
 #define PAUSE_OPTIONS       3   /* the sound options screen */
 
+/* gGame.fadeState: the fade of the front end and of the race's start and end */
+#define FADE_OUT    0
+#define FADE_SWAP   1       /* faded out: the screen changes */
+#define FADE_IN     2
+#define FADE_DONE   3
+
+/* Surface.flags (gSurfaceTable): what the effects do on the ground under a wheel */
+#define SURFACE_TIRE_TRACKS         0x0001 /* a slipping rear wheel leaves tracks (decal.c) */
+#define SURFACE_DUST                0x0002 /* the rear wheel throws dust */
+#define SURFACE_CLODS               0x0004 /* turbo and landings throw clods */
+#define SURFACE_WATER               0x0008 /* splashes where the bike crosses the water level */
+#define SURFACE_SHAKE               0x0010 /* the camera shakes with the rear wheel's bump noise */
+#define SURFACE_CRASH_ON_TOUCH      0x0080 /* a wheel on it crashes the rider */
+#define SURFACE_OUT_OF_BOUNDS       0x0100 /* both wheels on it for 10 frames: respawn */
+
 /* gCheatFlags: bit n is cheat n of sCheatTable */
 #define CHEAT_BIG_HEAD              0x0001
 #define CHEAT_MIRROR                0x0002
@@ -129,6 +144,7 @@ typedef struct CollTri {
 /* CollTri.flags (gGroundSurface) */
 #define COLL_TRI_SURFACE(flags) (((flags) >> 4) & 0xF) /* the gSurfaceTable entry */
 #define COLL_TRI_SKIP   0x100 /* left out of the triangles near a point (shadows, tire tracks) */
+#define COLL_TRI_TINT   0x200 /* riders on it are tinted with its vertex colours */
 #define COLL_TRI_BRIDGE 0x400 /* may lie over other ground: only counts below the point, the highest wins */
 
 #define COLL_GRID_VALID    1

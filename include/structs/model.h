@@ -34,6 +34,13 @@ typedef struct PrimModel {
     /* 0x14 */ void *unk_14; /* relocated when not 0 (track models) */
 } PrimModel; /* size >= 0x18; the vertices and commands follow */
 
+/* gRiderViewLod: per rider, a byte per view (view * 8): the bike's level of detail in the low nibble, the thrown
+   rider's in the high one (render_get_rider_lod). */
+#define RIDER_LOD_HIDDEN 0
+#define RIDER_LOD_LOW    1 /* far: the one-piece bike (sBikeLowDL), the low body */
+#define RIDER_LOD_MID    2
+#define RIDER_LOD_HIGH   3
+
 /* TexEntry.flags */
 #define TEX_8BIT      0x01 /* 8-bit texels, else 4-bit */
 #define TEX_CUTOUT    0x02 /* alpha-tested: the model switches the render mode (prim_build_dl's callback) */
