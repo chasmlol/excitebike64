@@ -5450,7 +5450,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
     return gdl;
 }
 
-#define IMG(s) ((s)->type == SCREEN_TYPE_ROUND_SELECT ? gGame.screenPics[*(s)->cursor] : (s)->bg)
+/* The screen's background: the season screen's is the cup's */
+#define SCREEN_BG(s) ((s)->type == SCREEN_TYPE_ROUND_SELECT ? gGame.screenPics[*(s)->cursor] : (s)->bg)
 
 typedef struct {
     s16 x, y, w, h;
@@ -5458,44 +5459,46 @@ typedef struct {
 
 extern Rect_3 sTitleSceneRect;
 
+/* The front end's draw (game state 0): clears the depth buffer (and the frame when there is no background), draws
+   the background and the screen; the title's race goes in sTitleSceneRect. The white text fades with the screen. */
 void shell_draw(Mtx *m, s32 fb, Gfx **pgdl)
 {
-    u8 unk28[0x70];
+    u8 pad[0x70];
     Mtx persp;
-    u16 pn;
+    u16 perspNorm;
     Gfx *gdl;
-    Screen *s;
+    Screen *screen;
     ScreenItem *item;
     u16 alpha;
 
     gdl = *pgdl;
     if (gGame.fadeState == FADE_OUT) {
-        s = sPrevScreen;
+        screen = sPrevScreen;
     } else {
-        s = sCurScreen;
+        screen = sCurScreen;
     }
-    if (s != NULL) {
+    if (screen != NULL) {
         if (gGame.fadeState == FADE_OUT) {
-            item = s->items + sPrevScreenCursor;
+            item = screen->items + sPrevScreenCursor;
         } else {
-            item = s->items;
-            if (s->cursor != NULL) {
-                item += *s->cursor;
+            item = screen->items;
+            if (screen->cursor != NULL) {
+                item += *screen->cursor;
             }
         }
     }
     alpha = 0xFF;
-    if (gGame.fadeState == FADE_SWAP) goto c1;
-    if (gGame.fadeState == FADE_OUT) goto c0;
-    if (gGame.fadeState == FADE_IN) goto c2;
+    if (gGame.fadeState == FADE_SWAP) goto swap;
+    if (gGame.fadeState == FADE_OUT) goto fadeOut;
+    if (gGame.fadeState == FADE_IN) goto fadeIn;
     goto done;
-c1:
+swap:
     alpha = 0;
     goto done;
-c0:
+fadeOut:
     alpha = gGame.fadeLevel;
     goto done;
-c2:
+fadeIn:
     alpha = 0xFF - gGame.fadeLevel;
 done:
     mtx_from_angles_pos_scale(&m[16], 0, 0, 0, 0, 0, 0, 0x100);
@@ -5506,19 +5509,20 @@ done:
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     gSPViewport(gdl++, &sShellViewport);
     gDPPipeSync(gdl++);
-    guPerspective(&persp, &pn, 33.0f, 1.9512196f, 25.0f, 4192.0f, 1.0f);
+    guPerspective(&persp, &perspNorm, 33.0f, 1.9512196f, 25.0f, 4192.0f, 1.0f);
     mtx_mul(&gViewAxisMtx, &persp, m);
-    gSPPerspNormalize(gdl++, pn);
+    gSPPerspNormalize(gdl++, perspNorm);
+    /* clear the depth buffer */
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gZBuffer);
     gDPSetCycleType(gdl++, G_CYC_FILL);
     gDPSetRenderMode(gdl++, G_RM_OPA_SURF, G_RM_NOOP2);
     gDPSetCombineMode(gdl++, G_CC_DECALRGB, G_CC_DECALRGB);
     gSPClearGeometryMode(gdl++, G_ZBUFFER);
-    gDPSetFillColor(gdl++, 0xFFFCFFFC);
+    gDPSetFillColor(gdl++, GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0));
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     gDPPipeSync(gdl++);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
-    if (gGame.fadeState == FADE_SWAP || s == NULL || s->bgResId == NULL) {
+    if (gGame.fadeState == FADE_SWAP || screen == NULL || screen->bgResId == NULL) {
         gDPSetFillColor(gdl++, 0);
         gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     }
@@ -5540,27 +5544,29 @@ done:
     font_reset_queue();
     gDPPipeSync(gdl++);
     if (gGame.fadeState == FADE_SWAP) {
+        /* black while shell_update swaps the screens */
         if (gGame.fadeTimer > 0 || gGame.fadeTimer == -1) {
             gGame.fadeTimer--;
         }
     } else {
-        if (s->type == SCREEN_TYPE_ROUND_SELECT || s->bgResId != NULL) {
-            gDPLoadTLUT_pal256(gdl++, s->type == SCREEN_TYPE_ROUND_SELECT ? gGame.screenPics[*s->cursor]->pal : s->bg->pal);
-            gdl = render_draw_image(0, 0, IMG(s)->img, gdl, fb, 1, 1, 3, 0);
+        if (screen->type == SCREEN_TYPE_ROUND_SELECT || screen->bgResId != NULL) {
+            gDPLoadTLUT_pal256(gdl++, screen->type == SCREEN_TYPE_ROUND_SELECT ? gGame.screenPics[*screen->cursor]->pal : screen->bg->pal);
+            gdl = render_draw_image(0, 0, SCREEN_BG(screen)->img, gdl, fb, 1, 1, 3, 0);
         }
-        if (s->type == SCREEN_TYPE_TITLE) {
-            Rect_3 *r = &sTitleSceneRect;
+        if (screen->type == SCREEN_TYPE_TITLE) {
+            /* the viewport of the attract race */
+            Rect_3 *rect = &sTitleSceneRect;
             sTitleSceneViewport.vp.vscale[2] = 0x1FF;
             sTitleSceneViewport.vp.vscale[3] = 0;
             sTitleSceneViewport.vp.vtrans[2] = 0x1FF;
             sTitleSceneViewport.vp.vtrans[3] = 0;
-            sTitleSceneViewport.vp.vscale[0] = r->w * 2;
-            sTitleSceneViewport.vp.vscale[1] = r->h * 2;
-            sTitleSceneViewport.vp.vtrans[0] = (r->x + r->w / 2) * 4;
-            sTitleSceneViewport.vp.vtrans[1] = (r->y + r->h / 2) * 4;
+            sTitleSceneViewport.vp.vscale[0] = rect->w * 2;
+            sTitleSceneViewport.vp.vscale[1] = rect->h * 2;
+            sTitleSceneViewport.vp.vtrans[0] = (rect->x + rect->w / 2) * 4;
+            sTitleSceneViewport.vp.vtrans[1] = (rect->y + rect->h / 2) * 4;
             gSPViewport(gdl++, &sTitleSceneViewport);
             gdl = shell_draw_screen(m, fb, gdl, item, 0);
-        } else if (s != NULL) {
+        } else if (screen != NULL) {
             gdl = shell_draw_screen(m, fb, gdl, item, 0);
             gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
             ((u8 *)gFontColors)[28 * 4 + 3] = alpha;  /* FONT_FADE_ALPHA */
