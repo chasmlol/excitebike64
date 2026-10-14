@@ -1351,7 +1351,7 @@ void event_format_time_short(s32 param_1, char *param_2)
     return;
 }
 
-void event_set_place_text(u8 *p, s32 n, s32 arg2)
+void event_set_place_text(TextObj *p, s32 n, s32 arg2)
 {
     char buf[0x28];
     s32 m;
@@ -1387,14 +1387,14 @@ Gfx *event_draw_hud_testride(Gfx *gdl, s32 p1, s32 p2, s32 p3)
 
     font_reset_queue();
     if (gFrameCounter & 0x20) {
-        font_text_create(gHudTextObjs_2, 0x40, 1, 2, 0x10);
-        font_text_add(gHudTextObjs_2, "Testing User Track");
+        font_text_create(gHudTextObjs[0], 0x40, 1, 2, 0x10);
+        font_text_add(gHudTextObjs[0], "Testing User Track");
         tab = gViewRects_4;
         x = gScreenWidth * 0x12;
         if (x < 0) {
             x = x + 0x1ff;
         }
-        font_draw_text(gHudTextObjs_2, gViewRects_4[0] + (x >> 9), tab[1] + (gScreenHeight * 0x11) / 0xf0);
+        font_draw_text(gHudTextObjs[0], gViewRects_4[0] + (x >> 9), tab[1] + (gScreenHeight * 0x11) / 0xf0);
     }
     fa = gRiders_62[0x108 + p3 * 0x1f8];
     if (0.0f < fa) {
@@ -1402,8 +1402,8 @@ Gfx *event_draw_hud_testride(Gfx *gdl, s32 p1, s32 p2, s32 p3)
     } else {
         int_to_str((s32)(-fa * 3600.0f / 1612.9f), buf);
     }
-    font_text_create(gHudTextObjs_2, 0x40, 3, 2, 0x12);
-    font_text_add(gHudTextObjs_2, buf);
+    font_text_create(gHudTextObjs[0], 0x40, 3, 2, 0x12);
+    font_text_add(gHudTextObjs[0], buf);
     x = 0x1ba;
     if (gViMode == 2) {
         x = 0x228;
@@ -1412,7 +1412,7 @@ Gfx *event_draw_hud_testride(Gfx *gdl, s32 p1, s32 p2, s32 p3)
     if (gViMode == 2) {
         y = 0x180;
     }
-    font_draw_text(gHudTextObjs_2, x, y);
+    font_draw_text(gHudTextObjs[0], x, y);
     gdl = font_render(gdl);
     gdl = render_draw_temp_gauge(gdl, p1, p2, p3);
     return gdl;
@@ -1524,9 +1524,9 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                       gViewRects_5[gNumScreens - 1][pl][1] + gViewRects_5[gNumScreens - 1][pl][3] / 2);
     }
     if (gGame.flags & 0x20000000) {
-        s32 *p1;
-        s32 *p2;
-        s32 *p3;
+        TextObj *p1;
+        TextObj *p2;
+        TextObj *p3;
         p1 = font_text_create(gHudTextObjs[9], 0x20, 2, 2, 0x10);
         debug_ftoa(buf, gRiders_63[0].f48, 5);
         font_text_add(p1, buf);
@@ -1542,11 +1542,6 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     }
     return font_render(gdl);
 }
-
-typedef struct {
-    u8 pad0[0x18];
-    u32 w18;
-} Txt;
 
 typedef struct {
     u8 pad0[0x18];
@@ -1575,7 +1570,6 @@ typedef struct {
     u8 pad66A[0x7E0 - 0x66A];
 } Player_15;
 
-extern Txt *gHudTextObjs_3[];
 extern Player_15 gRiders_64[];
 extern Trick gRiderAnims_11[];
 
@@ -1596,43 +1590,43 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     font_reset_queue();
     if (gGame.numPlayers >= 2) {
         if (gEvent.allFinished != 0) {
-            font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
+            font_text_create(gHudTextObjs[7], 0x40, 1, 4, 0x21);
             switch (p->h668) {
             case 0:
-                font_text_add(gHudTextObjs_3[7], "Winner");
+                font_text_add(gHudTextObjs[7], "Winner");
                 break;
             case 1:
-                font_text_add(gHudTextObjs_3[7], D_800D84E0);
+                font_text_add(gHudTextObjs[7], D_800D84E0);
                 break;
             default:
-                font_text_add(gHudTextObjs_3[7], D_800D84E4);
+                font_text_add(gHudTextObjs[7], D_800D84E4);
                 break;
             }
-            font_draw_text(gHudTextObjs_3[7],
+            font_draw_text(gHudTextObjs[7],
                           gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w / 2,
                           gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h / 2);
         }
         yt = gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h - 11;
-        font_text_create(gHudTextObjs_3[0], 0x40, 2, 2, 0x20);
-        font_text_create(gHudTextObjs_3[1], 0x40, 2, 4, 0x20);
+        font_text_create(gHudTextObjs[0], 0x40, 2, 2, 0x20);
+        font_text_create(gHudTextObjs[1], 0x40, 2, 4, 0x20);
         idx = -1;
         do {
         } while (0);
         event_format_time(gEvent.time, buf);
-        font_text_add(gHudTextObjs_3[0], "Time:");
-        font_draw_text(gHudTextObjs_3[0], 0x3C, yt);
-        font_text_add(gHudTextObjs_3[1], buf);
-        font_draw_text(gHudTextObjs_3[1], 100, yt);
+        font_text_add(gHudTextObjs[0], "Time:");
+        font_draw_text(gHudTextObjs[0], 0x3C, yt);
+        font_text_add(gHudTextObjs[1], buf);
+        font_draw_text(gHudTextObjs[1], 100, yt);
         xa = gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w - 20;
         yy = gViewRects[gNumScreens - 1][pl].y;
-        font_text_create(gHudTextObjs_3[4], 0x40, 2, 2, 0x22);
-        font_text_add(gHudTextObjs_3[4], "Total");
+        font_text_create(gHudTextObjs[4], 0x40, 2, 2, 0x22);
+        font_text_add(gHudTextObjs[4], "Total");
         ty = yy + 8;
-        font_draw_text(gHudTextObjs_3[4], xa, ty);
-        font_text_create(gHudTextObjs_3[5], 0x40, 2, 4, 0x22);
+        font_draw_text(gHudTextObjs[4], xa, ty);
+        font_text_create(gHudTextObjs[5], 0x40, 2, 4, 0x22);
         int_to_str(p->w3C8, buf);
-        font_text_add(gHudTextObjs_3[5], buf);
-        font_draw_text(gHudTextObjs_3[5], xa, yy + 16);
+        font_text_add(gHudTextObjs[5], buf);
+        font_draw_text(gHudTextObjs[5], xa, yy + 16);
         c = p->b3D0;
         if (c < 16) {
             idx = (s8)c;
@@ -1643,41 +1637,41 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             }
         }
         if (idx >= 0) {
-            font_text_create(gHudTextObjs_3[2], 0x40, 2, 2, 0x21);
+            font_text_create(gHudTextObjs[2], 0x40, 2, 2, 0x21);
             x3 = 0x100;
-            font_text_add(gHudTextObjs_3[2], gRiderAnims_11[idx].name);
+            font_text_add(gHudTextObjs[2], gRiderAnims_11[idx].name);
             y3 = ty + 8;
-            font_text_create(gHudTextObjs_3[3], 0x40, 2, 4, 0x21);
+            font_text_create(gHudTextObjs[3], 0x40, 2, 4, 0x21);
             int_to_str(p->w3C4, buf);
-            font_text_add(gHudTextObjs_3[3], buf);
+            font_text_add(gHudTextObjs[3], buf);
             ax = 0x100;
             ay = ty;
             if (p->b3FB >= 2) {
                 k = p->b3FB * 8;
-                x3 = (x3 * k + (xa - (gHudTextObjs_3[3]->w18 >> 1)) * (256 - k)) >> 8;
+                x3 = (x3 * k + (xa - (gHudTextObjs[3]->w >> 1)) * (256 - k)) >> 8;
                 for (i = 0; i < p->b3EA; i++) {
                     if (idx == p->s3EB[i]) {
                         break;
                     }
                 }
                 if (i == p->b3EA) {
-                    ax = (ax * k + ((gHudTextObjs_3[4]->w18 >> 1) + 0x23) * (256 - k)) >> 8;
+                    ax = (ax * k + ((gHudTextObjs[4]->w >> 1) + 0x23) * (256 - k)) >> 8;
                     ay = (ay * k + (ty + i * 8) * (256 - k)) / 256;
                 }
             }
-            font_draw_text(gHudTextObjs_3[2], ax, ay);
-            font_draw_text(gHudTextObjs_3[3], x3, y3);
+            font_draw_text(gHudTextObjs[2], ax, ay);
+            font_draw_text(gHudTextObjs[3], x3, y3);
         }
         for (i = 0; i < p->b3EA; i++) {
-            font_text_create(gHudTextObjs_3[i + 8], 0x40, 2, 2, 0x20);
-            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->s3EB[i]].name);
-            font_draw_text(gHudTextObjs_3[i + 8], 0x3C, ty + i * 8);
+            font_text_create(gHudTextObjs[i + 8], 0x40, 2, 2, 0x20);
+            font_text_add(gHudTextObjs[i + 8], gRiderAnims_11[p->s3EB[i]].name);
+            font_draw_text(gHudTextObjs[i + 8], 0x3C, ty + i * 8);
         }
-        font_text_create(gHudTextObjs_3[6], 0x40, 3, 2, 0x12);
+        font_text_create(gHudTextObjs[6], 0x40, 3, 2, 0x12);
         v = p->f420;
         int_to_str((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
-        font_text_add(gHudTextObjs_3[6], buf);
-        font_draw_text(gHudTextObjs_3[6],
+        font_text_add(gHudTextObjs[6], buf);
+        font_draw_text(gHudTextObjs[6],
                       gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w - 0x2D,
                       gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h - 0xB);
         gdl = event_draw_temp_gauge(gdl, a1, a2, pl);
@@ -1685,30 +1679,30 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         if (gViMode == 2) {
             font_set_scale(0x10000, 0x20000, 0, 0);
         }
-        font_text_create(gHudTextObjs_3[0], 0x40, 1, 2, 0x10);
-        font_text_create(gHudTextObjs_3[1], 0x40, 1, 4, 0x10);
+        font_text_create(gHudTextObjs[0], 0x40, 1, 2, 0x10);
+        font_text_create(gHudTextObjs[1], 0x40, 1, 4, 0x10);
         event_format_time(gEvent.time, buf);
-        font_text_add(gHudTextObjs_3[0], "Time:");
-        font_draw_text(gHudTextObjs_3[0], 0x23, gViMode == 2 ? 0x180 : 0xD6);
-        font_text_add(gHudTextObjs_3[1], buf);
-        font_draw_text(gHudTextObjs_3[1], 100, gViMode == 2 ? 0x180 : 0xD6);
+        font_text_add(gHudTextObjs[0], "Time:");
+        font_draw_text(gHudTextObjs[0], 0x23, gViMode == 2 ? 0x180 : 0xD6);
+        font_text_add(gHudTextObjs[1], buf);
+        font_draw_text(gHudTextObjs[1], 100, gViMode == 2 ? 0x180 : 0xD6);
         y = 0x19;
         x = gScreenWidth - 62;
         if (gViMode == 2) {
             y = 0x69;
         }
-        font_text_create(gHudTextObjs_3[4], 0x40, 1, 2, 0x22);
-        font_text_add(gHudTextObjs_3[4], "Total");
-        font_draw_text(gHudTextObjs_3[4], x, y);
+        font_text_create(gHudTextObjs[4], 0x40, 1, 2, 0x22);
+        font_text_add(gHudTextObjs[4], "Total");
+        font_draw_text(gHudTextObjs[4], x, y);
         if (gViMode == 2) {
             y += 0x19;
         } else {
             y += 0xC;
         }
-        font_text_create(gHudTextObjs_3[5], 0x40, 1, 4, 0x22);
+        font_text_create(gHudTextObjs[5], 0x40, 1, 4, 0x22);
         int_to_str(p->w3C8, buf);
-        font_text_add(gHudTextObjs_3[5], buf);
-        font_draw_text(gHudTextObjs_3[5], x, y);
+        font_text_add(gHudTextObjs[5], buf);
+        font_draw_text(gHudTextObjs[5], x, y);
         if (gViMode == 2) {
             by = 0x69;
             dy = 0x14;
@@ -1727,18 +1721,18 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             }
         }
         if (idx >= 0) {
-            font_text_create(gHudTextObjs_3[2], 0x40, 1, 2, 0x21);
-            font_text_add(gHudTextObjs_3[2], gRiderAnims_11[idx].name);
-            font_text_create(gHudTextObjs_3[3], 0x40, 1, 4, 0x21);
+            font_text_create(gHudTextObjs[2], 0x40, 1, 2, 0x21);
+            font_text_add(gHudTextObjs[2], gRiderAnims_11[idx].name);
+            font_text_create(gHudTextObjs[3], 0x40, 1, 4, 0x21);
             int_to_str(p->w3C4, buf);
-            font_text_add(gHudTextObjs_3[3], buf);
+            font_text_add(gHudTextObjs[3], buf);
             x3 = gScreenWidth / 2;
             y3 = D_800E171C + 0x28;
             ax = gScreenWidth / 2;
             ay = D_800E171C + 0x14;
             if (p->b3FB >= 2) {
                 k = p->b3FB * 8;
-                x3 = (x3 * k + (x - (gHudTextObjs_3[3]->w18 >> 1)) * (256 - k)) >> 8;
+                x3 = (x3 * k + (x - (gHudTextObjs[3]->w >> 1)) * (256 - k)) >> 8;
                 y3 = (y3 * k + y * (256 - k)) / 256;
                 for (i = 0; i < p->b3EA; i++) {
                     if (idx == p->s3EB[i]) {
@@ -1746,17 +1740,17 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                     }
                 }
                 if (i == p->b3EA) {
-                    ax = (ax * k + ((gHudTextObjs_3[4]->w18 >> 1) + 0x23) * (256 - k)) >> 8;
+                    ax = (ax * k + ((gHudTextObjs[4]->w >> 1) + 0x23) * (256 - k)) >> 8;
                     ay = (ay * k + (by + i * dy) * (256 - k)) / 256;
                 }
             }
-            font_draw_text(gHudTextObjs_3[2], ax, ay);
-            font_draw_text(gHudTextObjs_3[3], x3, y3);
+            font_draw_text(gHudTextObjs[2], ax, ay);
+            font_draw_text(gHudTextObjs[3], x3, y3);
         }
         v = gRiders_64[pl].f420;
         int_to_str((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
-        font_text_create(gHudTextObjs_3[6], 0x40, 3, 2, 0x12);
-        font_text_add(gHudTextObjs_3[6], buf);
+        font_text_create(gHudTextObjs[6], 0x40, 3, 2, 0x12);
+        font_text_add(gHudTextObjs[6], buf);
         x1 = 0x1BA;
         if (gViMode == 2) {
             x1 = 0x228;
@@ -1765,16 +1759,16 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         if (gViMode == 2) {
             y1 = 0x180;
         }
-        font_draw_text(gHudTextObjs_3[6], x1, y1);
+        font_draw_text(gHudTextObjs[6], x1, y1);
         for (i = 0; i < p->b3EA; i++) {
-            font_text_create(gHudTextObjs_3[i + 8], 0x40, 2, 2, 0x20);
-            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->s3EB[i]].name);
-            font_draw_text(gHudTextObjs_3[i + 8], 0x23, by + i * dy);
+            font_text_create(gHudTextObjs[i + 8], 0x40, 2, 2, 0x20);
+            font_text_add(gHudTextObjs[i + 8], gRiderAnims_11[p->s3EB[i]].name);
+            font_draw_text(gHudTextObjs[i + 8], 0x23, by + i * dy);
         }
         if (gEvent.allFinished != 0) {
-            font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
-            font_text_add(gHudTextObjs_3[7], D_800E3BBF >= 3 ? "Press START to Continue" : "Game Over");
-            font_draw_text(gHudTextObjs_3[7],
+            font_text_create(gHudTextObjs[7], 0x40, 1, 4, 0x21);
+            font_text_add(gHudTextObjs[7], D_800E3BBF >= 3 ? "Press START to Continue" : "Game Over");
+            font_draw_text(gHudTextObjs[7],
                           gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w / 2,
                           gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h / 2);
         }
@@ -1803,7 +1797,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
     char buf[32];
     f32 fv;
     s32 y;
-    s32 *h;
+    TextObj *h;
     s32 n;
     s32 x;
     s32 yy;
@@ -1819,7 +1813,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
     PKT(0xD7000002, 0x80008000);
     gdl = render_draw_temp_gauge(gdl, a1, a2, idx);
     font_reset_queue();
-    gdl = event_draw_position(gdl, 0, font_text_create(D_800F0544, 0x20, 3, 2, 0x21));
+    gdl = event_draw_position(gdl, 0, font_text_create(gHudTextObjs[5], 0x20, 3, 2, 0x21));
 
     fv = gRiders_65[idx].f420;
     int_to_str((s32)(((0.0f < fv) ? fv * 3600.0f : -fv * 3600.0f) / 1612.9f), buf);
@@ -1853,14 +1847,14 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
         *p = '/';
         if (gViMode == 2) z = y + 0x2C;
         else z = y + 0x20;
-        font_text_add(gHudTextObjs_4[3], D_800D850C);
-        font_draw_text(gHudTextObjs_4[3], 0x23, z);
-        font_text_add(gHudTextObjs_4[4], buf);
-        font_draw_text(gHudTextObjs_4[4], 100, z);
+        font_text_add(gHudTextObjs[3], D_800D850C);
+        font_draw_text(gHudTextObjs[3], 0x23, z);
+        font_text_add(gHudTextObjs[4], buf);
+        font_draw_text(gHudTextObjs[4], 100, z);
     }
 
     if (gRiders_65[0].f668 != -1) {
-        h = font_text_create(D_800F0548, 0x20, 1, 4, 0x21);
+        h = font_text_create(gHudTextObjs[6], 0x20, 1, 4, 0x21);
         if (gRiders_65[0].f3FF == 0) {
             font_text_add(h, D_800D84A8);
             font_draw_text(h,
@@ -1871,7 +1865,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
         }
     }
 
-    gdl = event_draw_position(gdl, 0, font_text_create(D_800F0544, 0x20, 3, 2, 0x21));
+    gdl = event_draw_position(gdl, 0, font_text_create(gHudTextObjs[5], 0x20, 3, 2, 0x21));
     gdl = font_render(gdl);
     if (gEvent.countdown != 0 && gEvent.state != 0 &&
         (gEvent.state != 1 || gEvent.countdown < 0x5B)) {
@@ -2007,7 +2001,7 @@ typedef struct {
     u8 pad2[0x7E0 - 0x668];
 } Player_16;
 
-void *event_draw_position(void *param_1, s32 param_2, void *param_3)
+void *event_draw_position(void *param_1, s32 param_2, TextObj *param_3)
 {
     Player_16 *base = gRiders;
     Player_16 *pl = &base[param_2];
@@ -2041,13 +2035,6 @@ void *event_draw_position(void *param_1, s32 param_2, void *param_3)
 }
 
 #define VP gViewRects[gNumScreens - 1][gCurView]
-
-typedef struct {
-    u8 pad0[4];
-    s32 w4;
-    u8 pad8[0x18 - 0x8];
-    u32 w18;
-} Txt_2;
 
 typedef struct {
     s16 h0;
@@ -2085,16 +2072,16 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     char buf[88];
     char *p;
     Lap *lp;
-    Txt_2 *tRace;
-    Txt_2 *tLap;
-    Txt_2 *tBest;
-    Txt_2 *tPlace;
-    Txt_2 *tRaceL;
-    Txt_2 *tLapL;
-    Txt_2 *tBestL;
-    Txt_2 *tSpeed;
-    Txt_2 *tMsg;
-    Txt_2 *t;
+    TextObj *tRace;
+    TextObj *tLap;
+    TextObj *tBest;
+    TextObj *tPlace;
+    TextObj *tRaceL;
+    TextObj *tLapL;
+    TextObj *tBestL;
+    TextObj *tSpeed;
+    TextObj *tMsg;
+    TextObj *t;
     s32 v;
     f32 f;
     s32 x, y;
@@ -2135,7 +2122,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             tLapL = font_text_create(gHudTextObjs[8], 0x20, 2, 2, 0x10);
         }
         if (gGame.flags & 0x20000000) {
-            Txt_2 *t1, *t2, *t3;
+            TextObj *t1, *t2, *t3;
             t1 = font_text_create(gHudTextObjs[9], 0x20, 2, 2, 0x10);
             debug_ftoa(buf, gRiders_66[0].f48, 5);
             font_text_add(t1, buf);
@@ -2182,10 +2169,10 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                 if (v < 0) {
                     v = -v;
                     buf[0] = '+';
-                    tMsg->w4 = 8;
+                    tMsg->color = 8;
                 } else if (v > 0) {
                     buf[0] = '-';
-                    tMsg->w4 = 7;
+                    tMsg->color = 7;
                 }
                 buf[1] = 0;
                 event_format_time_short(v, buf + 1);
@@ -2533,9 +2520,9 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
                 int_to_str(n, msg + strlen(msg));
                 str_cat(msg, " scored!");
             }
-            font_text_add(D_800F054C, msg);
+            font_text_add(gHudTextObjs[7], msg);
         }
-        font_draw_text(D_800F054C, gViewRects[gNumScreens - 1][p3].x + gViewRects[gNumScreens - 1][p3].w / 2,
+        font_draw_text(gHudTextObjs[7], gViewRects[gNumScreens - 1][p3].x + gViewRects[gNumScreens - 1][p3].w / 2,
                       gViewRects[gNumScreens - 1][p3].y + gViewRects[gNumScreens - 1][p3].h / 2);
     }
     return font_render(gdl);
@@ -2663,7 +2650,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
                 font_text_add(gHudTextObjs[0], "Time: ");
                 font_text_add(gHudTextObjs[0], buf);
                 if (gEvent.time < 0) {
-                    gHudTextObjs[0][1] = 8;
+                    gHudTextObjs[0]->color = 8;
                 }
                 font_draw_text(gHudTextObjs[0], 0x21, 0x2D);
               }
@@ -3293,8 +3280,8 @@ void func_8005B2E8(void)
 void event_hud_free(void)
 {
     s32 i;
-    s32 *p1;
-    s32 *p2;
+    TextObj **p1;
+    TextObj **p2;
 
     if (gGame.mode == 9) {
         mem_free(sGreyPalette);

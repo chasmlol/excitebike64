@@ -7,6 +7,7 @@
 #include "structs/model.h"
 #include "structs/resman.h"
 #include "structs/track.h"
+#include "structs/font.h"
 #include "structs/gui.h"
 
 /* A piece's meshes: one cell of 500x500 units per grid cell, in rows of dim[0] cells. */
@@ -190,8 +191,8 @@ typedef struct Editor {
     /* 0x170C */ void *res170C;     /* loaded from the "Pieces" resource set */
     /* 0x1710 */ TexSet *cursorTex; /* the cursor arrow */
     /* 0x1714 */ PrimModel *cursorModel;
-    /* 0x1718 */ s32 *bigText;      /* font text objects */
-    /* 0x171C */ s32 *text;
+    /* 0x1718 */ TextObj *bigText;  /* font text objects */
+    /* 0x171C */ TextObj *text;
     /* 0x1720 */ ResSet *pieceRes;  /* the "Pieces" resource set */
     /* 0x1724 */ TexSet *objectTex; /* textures of the pieces' B meshes */
     /* 0x1728 */ TexSet *wallTex;   /* the arena walls */

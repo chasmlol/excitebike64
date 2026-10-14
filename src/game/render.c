@@ -316,9 +316,9 @@ void render_init(void) {
     mem_fill(sPlaceTextures, 0, 0xC00);
     for (i = 0; i < 6; i++) {
         sPlaceTexDst = sPlaceTextures + i * 0x200;
-        font_text_create(buf, 3, 1, 1, 0x08000000);
-        font_text_add(buf, sPlaceStrings[i]);
-        font_draw_text(buf, 0, 0);
+        font_text_create((TextObj *)buf, 3, 1, 1, 0x08000000);
+        font_text_add((TextObj *)buf, sPlaceStrings[i]);
+        font_draw_text((TextObj *)buf, 0, 0);
     }
     gFontDirectDrawFunc = NULL;
     gLightningFlash = 0;
@@ -2599,7 +2599,7 @@ Gfx *render_draw_credits(Gfx *gdl)
     View *e;
     s32 i, y, done, alt, col;
     s32 c;
-    s32 *font;
+    TextObj *font;
     s32 n;
     char buf[64];
 
@@ -2636,9 +2636,9 @@ Gfx *render_draw_credits(Gfx *gdl)
                 } else {
                     font = sCreditsFont;
                 }
-                font_text_clear((u8 *)font);
+                font_text_clear(font);
                 font_text_add(font, buf);
-                font_draw_text(font, col * 128 - font[6] / 2, y);
+                font_draw_text(font, col * 128 - (s32)font->w / 2, y);
                 alt = 0;
             }
             n = 0;

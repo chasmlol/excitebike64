@@ -93,19 +93,7 @@ typedef struct {
     u8 pad54[0xA0 - 0x54];
 } Course_2;
 
-typedef struct {
-    u8 pad0[4];
-    void *p4;
-} Link;
-
-typedef struct {
-    u8 pad0[0xC];
-    Link *pC;
-    u8 pad10[0x2C - 0x10];
-} Menu;
-
 extern Course_2 gTracks_14[];
-extern Menu sScreens[];
 
 void shell_init(void)
 {
@@ -115,7 +103,7 @@ void shell_init(void)
     TrackRecord *dst;
     s32 n;
     Course_2 *c;
-    void *m;
+    Screen *m;
     u8 *p;
     u8 *q;
 
@@ -230,15 +218,15 @@ void shell_init(void)
     if (gEditor != NULL) {
         if (gEditor->flags & EDIT_PAK_LOAD) {
             gGame.pakScreenMode = 3;
-            shell_goto_screen_3(&sScreens[15], 0, 1);
+            shell_goto_screen(&sScreens[SCREEN_PAK], 0, 1);
         } else {
             gGame.pakScreenMode = 4;
-            shell_goto_screen_3(&sScreens[15], 0, 1);
+            shell_goto_screen(&sScreens[SCREEN_PAK], 0, 1);
         }
     } else {
         mode = gRaceExitCode;
         if (mode == 0) {
-            shell_goto_screen_3(&sScreens[19], 0, 1);
+            shell_goto_screen(&sScreens[SCREEN_BOOT_SPLASH], 0, 1);
         } else if ((gGame.flags & 0x8000) || gCreditsMode != 0 || mode == 3) {
             if (gActiveReplay != 0) {
                 if (!(gGame.flags & 0x8000)) {
@@ -256,38 +244,38 @@ void shell_init(void)
             if (gGame.flags & 0x8000) {
                 shell_restore_race_results();
             }
-            if (gCreditsMode != 0 && gGame.returnScreen != &sScreens[5]) {
+            if (gCreditsMode != 0 && gGame.returnScreen != &sScreens[SCREEN_OPTIONS]) {
                 gCreditsMode = 0;
-                shell_goto_screen_3(&sScreens[8], 0, 1);
+                shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
             } else {
-                shell_goto_screen_3(gGame.returnScreen, 0, 1);
+                shell_goto_screen(gGame.returnScreen, 0, 1);
             }
             gGame.flags &= 0xFEFF7FFF;
         } else if (flag) {
-            shell_goto_screen_3(&sScreens[10], 1, 1);
+            shell_goto_screen(&sScreens[SCREEN_BRONZE_TRACKS], 1, 1);
         } else {
             if (gEvent.allFinished != 0 && mode != 0 && mode != 6 && gGame.mode == 1) {
                 if (gSeason != NULL && gSeason->cup - gCups == 4) {
-                    m = &sScreens[2];
+                    m = &sScreens[SCREEN_SEASON_STANDINGS];
                 } else {
-                    m = &sScreens[0];
+                    m = &sScreens[SCREEN_SEASON_RACE_RESULT];
                 }
             } else if ((gEvent.allFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGame.mode == 0)
                        || (gEvent.allFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGame.mode == 8)) {
-                m = &sScreens[1];
+                m = &sScreens[SCREEN_RACE_RESULT];
             } else {
                 if (gActiveReplay != 0) {
                     gActiveReplay = 0;
                 }
                 switch (gRaceExitCode) {
                 case 0:
-                    m = &sScreens[14];
+                    m = &sScreens[SCREEN_TITLE];
                     break;
                 case 1:
-                    m = &sScreens[1];
+                    m = &sScreens[SCREEN_RACE_RESULT];
                     break;
                 default:
-                    m = &sScreens[8];
+                    m = &sScreens[SCREEN_MAIN_MENU];
                     if (gUserTrackLayout != 0) {
                         mem_free(gUserTrackLayout);
                         gUserTrackLayout = 0;
@@ -296,10 +284,10 @@ void shell_init(void)
                 }
             }
             if (gRaceExitCode != 0 && gCurTrack_8 != NULL && (gCurTrack_8->w50 & 0x180)) {
-                sScreens[18].pC->p4 = m;
-                shell_goto_screen_3(&sScreens[18], 1, 1);
+                sScreens[SCREEN_INITIALS].items->target = m;
+                shell_goto_screen(&sScreens[SCREEN_INITIALS], 1, 1);
             } else {
-                shell_goto_screen_3(m, 1, 1);
+                shell_goto_screen(m, 1, 1);
             }
         }
     }
@@ -385,24 +373,19 @@ void shell_cb_season(s32 arg0) {
 
 #define PRESSED(m) ((gPadInput & (m)) != 0 && (gPadInputPrev & (m)) == 0)
 
-struct Item_8 {
-    u8 pad0[0x16];
-    s16 type;
-};
-
-void shell_splash_input(Item_8 *a, Pal *b, u32 *arg2, Pad16 *arg3)
+void shell_splash_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
     s32 flag;
     s32 ok;
     s16 type;
 
     flag = 0;
-    type = a->type;
-    if (type == 0x15 || type == 0x17) {
+    type = screen->type;
+    if (type == SCREEN_TYPE_SPLASH || type == SCREEN_TYPE_SPLASH_3) {
         ok = gGame.screenTimer < 0x78;
-    } else if (type == 0x18) {
+    } else if (type == SCREEN_TYPE_PAK_STATUS) {
         ok = gGame.screenTimer < 0x474;
-    } else if (type == 0x19) {
+    } else if (type == SCREEN_TYPE_BACKUP_LOST) {
         ok = gGame.screenTimer < 0x21C;
     } else {
         ok = gGame.screenTimer < 0xF0;
@@ -416,11 +399,11 @@ void shell_splash_input(Item_8 *a, Pal *b, u32 *arg2, Pad16 *arg3)
         if (flag && gGame.fadeState == 3) {
             snd_play_menu_sound(1);
         }
-        shell_goto_screen_2(b->f4, 0, 1);
+        shell_goto_screen(item->target, 0, 1);
     }
 }
 
-void shell_controller_settings_input(s32 param_1, s32 param_2, u32 *param_3, s8 *param_4)
+void shell_controller_settings_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
     s32 iv4;
     s32 uv5;
@@ -435,9 +418,9 @@ void shell_controller_settings_input(s32 param_1, s32 param_2, u32 *param_3, s8 
     if (gGame.blinkTimer == 0x78) {
         gGame.blinkTimer = 0;
     }
-    flags = *param_3;
+    flags = *buttons;
     if ((flags & 0x20) != 0) {
-        shell_goto_screen_2(*(s32 *)(param_1 + 0x28), 0, 0);
+        shell_goto_screen(screen->back, 0, 0);
         iv4 = 2;
         goto CALLPT;
     }
@@ -491,7 +474,7 @@ LAB_800743d8:
     return;
 }
 
-void shell_records_input(s32 param_1, s32 param_2, u32 *param_3, s32 param_4)
+void shell_records_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
     s32 t;
     s32 t1;
@@ -517,7 +500,6 @@ void shell_records_input(s32 param_1, s32 param_2, u32 *param_3, s32 param_4)
         c3 = gGame.screenTimer - 1;
         gGame.screenTimer = c3;
         if (c3 == 0) {
-            param_4 = 0xb;
             if (gGame.screenState != 0xb) {
                 if (gGame.screenState == 0xd) {
                     gGame.screenState = 0xb;
@@ -528,9 +510,9 @@ void shell_records_input(s32 param_1, s32 param_2, u32 *param_3, s32 param_4)
             }
         }
     }
-    flags = *param_3;
+    flags = *buttons;
     if ((flags & 0x20) != 0) {
-        shell_goto_screen(*(s32 *)(param_1 + 0x28), 0, 0, param_4);
+        shell_goto_screen(screen->back, 0, 0);
         snd_play_menu_sound(2);
         return;
     }
@@ -540,19 +522,19 @@ void shell_records_input(s32 param_1, s32 param_2, u32 *param_3, s32 param_4)
             gGame.recordsSel = gGame.recordsSel - 1;
         }
     }
-    if ((*param_3 & 2) != 0) {
+    if ((*buttons & 2) != 0) {
         c4 = gGame.recordsSel;
         if (c4 % 5 < 4 && c4 + 1 < gGame.numRecordTracks) {
             gGame.recordsSel = c4 + 1;
         }
     }
-    if ((*param_3 & 4) != 0) {
+    if ((*buttons & 4) != 0) {
         c5 = gGame.recordsSel;
         if (c5 / 5 + (c5 >> 31) != (c5 >> 31)) {
             gGame.recordsSel = c5 - 5;
         }
     }
-    if ((*param_3 & 8) != 0) {
+    if ((*buttons & 8) != 0) {
         t = gGame.recordsSel;
         w = gGame.numRecordTracks;
         if (t + 5 < w) {
@@ -575,24 +557,8 @@ typedef struct {
     u8 c[3];
 } Trip;
 
-typedef struct {
-    s32 f0;
-    char *name;
-} NameEnt;
-
-struct Obj_61 {
-    u8 pad0[0xC];
-    Pal *fC;
-    u8 pad10[0x16 - 0x10];
-    s16 f16;
-    u8 pad18[0x24 - 0x18];
-    s32 f24;
-};
-
-extern NameEnt sCheatTable[];
-
-void shell_text_entry_input(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
-    s32 isNine;
+void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
+    s32 isCheat;
     s32 pad;
     s32 sel;
     s32 found;
@@ -605,31 +571,31 @@ void shell_text_entry_input(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
     u8 *q;
     s32 m;
 
-    isNine = o->f16 == 9;
+    isCheat = screen->type == SCREEN_TYPE_CHEAT_ENTRY;
     if (++gGame.blinkTimer == 120) {
         gGame.blinkTimer = 0;
     }
-    if (isNine) {
+    if (isCheat) {
         pad = 0;
     } else {
         sel = gGame.recordPlayer[gGame.entryRecord];
         pad = gGame.playerPad[sel];
     }
     if ((u32)(gGame.screenState - 0x11) < 2) {
-        if (btn[pad] & 0x10) {
-            shell_goto_screen_2((s32)sScreenMainMenu, 0, 0);
+        if (buttons[pad] & 0x10) {
+            shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 0);
         }
         return;
     }
-    b = btn[pad];
+    b = buttons[pad];
     if (b & 0x10) {
         found = 0;
         if (gGame.keyIndex == 0x26 && gGame.nameLen == 0) {
             snd = 3;
-        } else if (isNine && gGame.keyIndex == 0x27) {
+        } else if (isCheat && gGame.keyIndex == 0x27) {
             {
                 for (i = 0; i < 14; i++) {
-                    p = (u8 *)sCheatTable[i].name;
+                    p = (u8 *)sCheatTable[i].code;
                     q = gGame.name;
                 loop:
                     m = *p;
@@ -665,7 +631,7 @@ void shell_text_entry_input(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
                 gGame.name[gGame.nameLen--] = 0;
             }
         } else if (gGame.keyIndex == 0x27) {
-            if (isNine) {
+            if (isCheat) {
                 if (found) {
                     gGame.screenState = 0x11;
                 } else {
@@ -714,16 +680,16 @@ void shell_text_entry_input(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
                     gGame.keyIndex = 0;
                 }
                 {
-                    s32 t = o->f24;
-                    o->f24 = gGame.unk_478;
-                    gGame.unk_478 = t;
+                    Pic *t = screen->bg;
+                    screen->bg = (Pic *)gGame.unk_478;
+                    gGame.unk_478 = (Img *)t;
                 }
                 return;
             }
-            shell_goto_screen_2(o->fC->f4, 0, 0);
+            shell_goto_screen(screen->items->target, 0, 0);
         } else {
             s32 n = (s16)++gGame.nameLen;
-            if (n >= (isNine ? 10 : 3)) {
+            if (n >= (isCheat ? 10 : 3)) {
                 gGame.keyCursorX = 0x31F;
                 gGame.keyCursorY = 0x31F;
                 gGame.keyIndex = 0x27;
@@ -743,7 +709,7 @@ void shell_text_entry_input(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
         return;
     }
     old = gGame.keyIndex;
-    if (gGame.nameLen < (isNine ? 10 : 3)) {
+    if (gGame.nameLen < (isCheat ? 10 : 3)) {
         s32 x, v;
         s32 col, row;
         lo = 0;
@@ -777,7 +743,7 @@ void shell_text_entry_input(Obj_61 *o, s32 unused, s32 *btn, Pad16 *arg3) {
         col = gGame.keyCursorX;
         row = gGame.keyCursorY;
         gGame.keyIndex = col / 100 + row / 160 * 8;
-    } else if (btn[pad] & 0xC) {
+    } else if (buttons[pad] & 0xC) {
         if (gGame.keyIndex == 0x27) {
             gGame.keyCursorX = 0x258;
             gGame.keyCursorY = 0x31F;
@@ -806,14 +772,9 @@ typedef struct {
     u32 f50;
 } Trk_11;
 
-struct Obj_62 {
-    u8 pad[0x16];
-    s16 f16;
-};
-
 extern Trk_11 *gCurTrack_38;
 
-void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
+void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
     u32 fl;
     s32 orig, v, i;
@@ -826,7 +787,7 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
     if (gGame.blinkTimer == 120) {
         gGame.blinkTimer = 0;
     }
-    fl = *p3;
+    fl = *buttons;
     if (fl & 0x20) {
         if (gGame.screenState == 3) {
             gGame.screenState = 0;
@@ -842,19 +803,19 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
                     if (!(gGame.flags & 0x80000)) {
                         gActiveReplay = 0;
                     }
-                    shell_goto_screen_2(0, 0, 0);
+                    shell_goto_screen(0, 0, 0);
                 } else if (gCurTrack_38->f50 & 2) {
-                    shell_goto_screen_2(0, 0, 0);
+                    shell_goto_screen(0, 0, 0);
                     gActiveReplay = 0;
                 } else {
                     gActiveReplay = 0;
-                    shell_goto_screen_2((s32)sScreenBronzeTracks, 0, 1);
+                    shell_goto_screen(&sScreens[SCREEN_BRONZE_TRACKS], 0, 1);
                 }
                 break;
             case 1:
                 if (gGame.mode == 8) {
                     gGame.pakScreenMode = 2;
-                    shell_goto_screen_2((s32)sScreenPak, 1, 1);
+                    shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
                 } else {
                     gGame.resultsNumRiders = gEvent.numRiders;
                     for (i = 0; i < 6; i++) {
@@ -865,9 +826,9 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
                             gGame.resultsSeasonOrder[i] = gSeason->standings[i];
                         }
                     }
-                    shell_goto_screen_2(0, 0, 1);
+                    shell_goto_screen(0, 0, 1);
                     gReplayPlayback = 1;
-                    gGame.returnScreen = p1;
+                    gGame.returnScreen = screen;
                     gGame.flags |= 0x8000;
                 }
                 break;
@@ -877,12 +838,12 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
                     mem_free((void *)gUserTrackLayout);
                     gUserTrackLayout = 0;
                 }
-                shell_goto_screen_2((s32)sScreenMainMenu, 0, 1);
+                shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
                 gActiveReplay = 0;
                 break;
             }
-        } else if (p1->f16 == 7) {
-            shell_goto_screen_2((s32)sScreenSeasonStandings, 1, 1);
+        } else if (screen->type == SCREEN_TYPE_SEASON_RACE_RESULT) {
+            shell_goto_screen(&sScreens[SCREEN_SEASON_STANDINGS], 1, 1);
         } else {
             gGame.menuSel = 0;
             gGame.screenState = 3;
@@ -903,7 +864,7 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
             }
         }
     }
-    if (*p3 & 0x1002) {
+    if (*buttons & 0x1002) {
         if (gReplayWritePtr - gReplayBuf >= gReplayBufSize || gGame.mode == 8) {
             gGame.menuSel ^= 2;
         } else {
@@ -920,7 +881,7 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
 }
 
 
-void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
+void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
     u32 b;
     Cup *t;
@@ -933,7 +894,7 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
     if (++gGame.blinkTimer == 0x78) {
         gGame.blinkTimer = 0;
     }
-    b = *arg2;
+    b = *buttons;
     if (b & 0x20) {
         snd_play_menu_sound(2);
         if (gGame.screenState == 4) {
@@ -944,8 +905,8 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
             gGame.screenState = 4;
             return;
         }
-        if (arg0->f28 != 0) {
-            shell_goto_screen_2(arg0->f28, 0, 0);
+        if (screen->back != NULL) {
+            shell_goto_screen(screen->back, 0, 0);
         }
     } else if (b & 0x10) {
         snd_play_menu_sound(1);
@@ -957,19 +918,19 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
                 if (gSeason->round + 1 >= t->numRounds) {
                     if (gSeason->standings[0] == 0 && (t - gCups != 4 || gEvent.finishOrder[0] == 0)) {
                         gGame.flags = (gGame.flags & ~0x80) | 0x40000;
-                        shell_goto_screen_2(0, 0, 1);
+                        shell_goto_screen(0, 0, 1);
                         gActiveReplay = 0;
                         return;
                     }
                 } else if (t - gCups != 4 || gEvent.finishOrder[0] == 0) {
-                    shell_goto_screen_2(0, 0, 1);
+                    shell_goto_screen(0, 0, 1);
                     gSeason->round++;
                     race_jitter_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
                     race_grid_from_standings();
                     gActiveReplay = 0;
                     return;
                 }
-                shell_goto_screen_2((s32)D_800CD6C0, 0, 1);
+                shell_goto_screen(&sScreens[SCREEN_ROUND_OVER], 0, 1);
                 gActiveReplay = 0;
                 return;
             case 1:
@@ -982,9 +943,9 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
                         gGame.resultsSeasonOrder[i] = gSeason->standings[i];
                     }
                 }
-                shell_goto_screen_2(0, 0, 1);
+                shell_goto_screen(0, 0, 1);
                 gReplayPlayback = 1;
-                gGame.returnScreen = arg0;
+                gGame.returnScreen = screen;
                 gGame.flags |= 0x8000;
                 return;
             case 2:
@@ -996,7 +957,7 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
             if (gGame.screenState == 7) {
                 switch (gGame.dialogSel) {
                 case 1:
-                    shell_goto_screen_2((s32)sScreenMainMenu, 0, 1);
+                    shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
                     gActiveReplay = 0;
                     return;
                 case 0:
@@ -1026,7 +987,7 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
                 }
                 snd_play_menu_sound(0);
             }
-            if (*arg2 & 0x1002) {
+            if (*buttons & 0x1002) {
                 snd_play_menu_sound(0);
                 d = gReplayWritePtr - gReplayBuf;
                 if (gGame.mode != 8 ? d >= gReplayBufSize : d >= 0x2800) {
@@ -1041,7 +1002,7 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
     }
 }
 
-void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
+void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
     s32 m;
     s32 old;
     s32 d;
@@ -1060,7 +1021,7 @@ void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
             gGame.screenState = 0;
             snd_play_menu_sound(2);
         } else if (gGame.screenState != 14 && gGame.screenState != 15) {
-            shell_goto_screen_3((void *)arg0->f28, 0, 0);
+            shell_goto_screen(screen->back, 0, 0);
             sfx_stop_all();
             tunes_stop_speech();
             if (tunes_is_song_playing() != 0) {
@@ -1104,20 +1065,20 @@ void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
             snd_play_menu_sound(1);
             return;
         case 4:
-            shell_goto_screen_3(sScreenControllerSettings, 1, 1);
+            shell_goto_screen(&sScreens[SCREEN_CONTROLLER_SETTINGS], 1, 1);
                         snd_play_menu_sound(1);
             return;
         case 5:
-            shell_goto_screen_3(sScreenRecords, 1, 1);
+            shell_goto_screen(&sScreens[SCREEN_RECORDS], 1, 1);
                         snd_play_menu_sound(1);
             return;
         case 6:
-            shell_goto_screen_3(NULL, 0, 1);
+            shell_goto_screen(NULL, 0, 1);
                         gCreditsMode = 1;
             gGame.mode = 0;
             gCurTrack = sTrackGravelPit;
             gGame.numPlayers = 1;
-            gGame.returnScreen = arg0;
+            gGame.returnScreen = screen;
             {
                 s32 f = gGame.flags & ~0x80;
                 *(volatile s32 *)&gGame.flags = f;
@@ -1134,7 +1095,7 @@ void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
             save_load(1);
             gGame.screenState = 0;
         } else if (m != 14) {
-            if (*arg2 & 3) {
+            if (*buttons & 3) {
                 gGame.dialogSel ^= 1;
                 snd_play_menu_sound(0);
             }
@@ -1142,7 +1103,7 @@ void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
         return;
     }
     old = gGame.optionsSel;
-    if (*arg2 & 2) {
+    if (*buttons & 2) {
         if (old < 3) {
             gGame.optionsSel += 1;
         } else {
@@ -1152,7 +1113,7 @@ void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
             gGame.optionsSel = 0;
         }
     }
-    if (*arg2 & 1) {
+    if (*buttons & 1) {
         if (gGame.optionsSel < 4) {
             gGame.optionsSel -= 1;
         } else {
@@ -1187,7 +1148,7 @@ void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
         }
     }
     if (gGame.optionsSel >= 3) {
-        if (*arg2 & 0xC) {
+        if (*buttons & 0xC) {
             if ((gGame.optionsSel - 3) & 1) {
                 gGame.optionsSel--;
             } else {
@@ -1284,19 +1245,7 @@ void shell_options_input(Info *arg0, s32 arg1, s32 *arg2, Pad16 *arg3) {
     }
 }
 
-typedef struct {
-    s32 pad0;
-    s32 f4;
-} Sub_11;
-
-struct Obj_63 {
-    u8 pad0[0xC];
-    Sub_11 *fC;
-    u8 pad10[0x18];
-    s32 f28;
-};
-
-void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
+void shell_rider_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
     Game *g;
     Game *h;
@@ -1327,35 +1276,35 @@ void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
 
     k = &gGame;
     if (k->numPlayers == 1) {
-        if (*p3 & 0x780) snd_play_menu_sound(0);
-        if (*p3 & 0x200) k->riderSkinSel = (k->riderSkinSel + 5) % 6;
-        if (*p3 & 0x400) k->riderSkinSel = (k->riderSkinSel + 1) % 6;
+        if (*buttons & 0x780) snd_play_menu_sound(0);
+        if (*buttons & 0x200) k->riderSkinSel = (k->riderSkinSel + 5) % 6;
+        if (*buttons & 0x400) k->riderSkinSel = (k->riderSkinSel + 1) % 6;
         if (k->mode != 8) {
-            if (*p3 & 0x80) k->bikeSkinSel = (k->bikeSkinSel + 5) % 6;
-            if (*p3 & 0x100) k->bikeSkinSel = (k->bikeSkinSel + 1) % 6;
+            if (*buttons & 0x80) k->bikeSkinSel = (k->bikeSkinSel + 5) % 6;
+            if (*buttons & 0x100) k->bikeSkinSel = (k->bikeSkinSel + 1) % 6;
         }
     }
 
-    if ((*p3 & 0x50) && ok) {
+    if ((*buttons & 0x50) && ok) {
         snd_play_menu_sound(1);
         if (gGame.savedMode < 8) {
             if (gGame.savedMode >= 2) {
-                shell_goto_screen_2(0, 1, 1);
+                shell_goto_screen(0, 1, 1);
             } else {
-                shell_goto_screen_2(p1->fC->f4, 1, 1);
+                shell_goto_screen(screen->items->target, 1, 1);
             }
         } else {
-            shell_goto_screen_2(p1->fC->f4, 1, 1);
+            shell_goto_screen(screen->items->target, 1, 1);
         }
         return;
     }
-    if (*p3 & 0x20) {
+    if (*buttons & 0x20) {
         if (!(gGame.flags & 0x400)) {
-            if (p1->f28 != 0) {
-                if (p1->f28 == (s32)sScreenPak && gUserTrackLayout != 0) {
+            if (screen->back != NULL) {
+                if (screen->back == &sScreens[SCREEN_PAK] && gUserTrackLayout != 0) {
                     gGame.flags |= 0x2000000;
                 }
-                shell_goto_screen_2(p1->f28, 0, 0);
+                shell_goto_screen(screen->back, 0, 0);
                 snd_play_menu_sound(2);
             }
             return;
@@ -1366,14 +1315,14 @@ void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
     for (i = 0; i < gGame.numPlayers; i++) {
         if (!((gContMask >> (idx = gGame.playerPad[i])) & 1)) continue;
         if (gGame.riderSelectState[i] == 0 && !(gGame.flags & (0x400 << i))) {
-            if (p3[idx] & 4) {
+            if (buttons[idx] & 4) {
                 t = gGame.riders[i];
                 gGame.riders[i] = t - 1;
                 if (t - 1 < 0) gGame.riders[i] = t + 5;
                 if (gGame.numPlayers == 1) gGame.riderSkinSel = (gGame.riderSkinSel + 5) % 6;
                 snd_play_menu_sound(0);
             }
-            if (p3[gGame.playerPad[i]] & 8) {
+            if (buttons[gGame.playerPad[i]] & 8) {
                 t = gGame.riders[i];
                 gGame.riders[i] = t + 1;
                 if (t + 1 >= 6) gGame.riders[i] = t - 5;
@@ -1382,7 +1331,7 @@ void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
             }
         }
         if (gGame.numPlayers >= 3 || gGame.riderSelectState[i] == 0) {
-            if (!(gGame.flags & (0x400 << i)) && (p3[gGame.playerPad[i]] & 0x50)) {
+            if (!(gGame.flags & (0x400 << i)) && (buttons[gGame.playerPad[i]] & 0x50)) {
                 gGame.riderSelectTimer[i] = 0x28 - gGame.riderSelectTimer[i];
                 gGame.flags |= 0x400 << i;
                 snd_play_menu_sound(1);
@@ -1414,7 +1363,7 @@ void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
             }
         }
         mask = 0x400 << i;
-        if ((gGame.flags & mask) && (p3[gGame.playerPad[i]] & 0x20)) {
+        if ((gGame.flags & mask) && (buttons[gGame.playerPad[i]] & 0x20)) {
             snd_play_menu_sound(2);
             gGame.riderSelectTimer[i] = 0x28 - gGame.riderSelectTimer[i];
             gGame.flags &= ~mask;
@@ -1423,7 +1372,7 @@ void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
 }
 
 #define OK (gSaveData_9.f2C0 > gGame.difficulty \
-    || (gSaveData_9.f2C0 == gGame.difficulty && (*a0->f20 == 0 || ((gSaveData_9.f2BF >> (*a0->f20 - 1)) & 1))) \
+    || (gSaveData_9.f2C0 == gGame.difficulty && (*screen->cursor == 0 || ((gSaveData_9.f2BF >> (*screen->cursor - 1)) & 1))) \
     || (gGame.mode == 1 && gSeason != NULL && gSeason->cup - gCups == 5 \
         && gSaveData_9.f2C0 == gGame.difficulty && (gSaveData_9.f2BF & 8)))
 
@@ -1435,12 +1384,9 @@ typedef struct {
     u8 f2C0;
 } Save_3;
 
-struct Arg0 { u8 pad[0x20]; s32 *f20; u8 pad24[4]; s32 f28; };
-struct Arg1 { u8 pad[4]; s32 f4; u16 f8; };
-
 extern Save_3 gSaveData_9;
 
-void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
+void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
     s32 k, j, i;
 
     if (++gGame.menuAnimTimer == 60) gGame.menuAnimTimer = 0;
@@ -1448,23 +1394,23 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
     switch (gGame.seasonMenuState) {
     case 0:
         if (++gGame.cupPreviewTimer == 60) {
-            if (++gGame.cupPreviewTrack >= gCups[*a0->f20].numRounds) gGame.cupPreviewTrack = 0;
+            if (++gGame.cupPreviewTrack >= gCups[*screen->cursor].numRounds) gGame.cupPreviewTrack = 0;
             gGame.cupPreviewTimer = 0;
         }
-        if (*a0->f20 == 5 && gCustomRound != 0) {
-            if (*pad & 1) {
+        if (*screen->cursor == 5 && gCustomRound != 0) {
+            if (*buttons & 1) {
                 s32 v = gGame.roundSel;
                 gGame.roundSel = v - 1;
                 if (v - 1 < 0) gGame.roundSel = v + 1;
             }
-            if (*pad & 2) {
+            if (*buttons & 2) {
                 s32 v = gGame.roundSel;
                 if (++gGame.roundSel >= 2) gGame.roundSel -= 2;
             }
         }
-        if (gGame.difficulty != 0 && (*pad & 0xC)) {
-            if (*pad & 8) {
-                s32 *p = a0->f20;
+        if (gGame.difficulty != 0 && (*buttons & 0xC)) {
+            if (*buttons & 8) {
+                s32 *p = screen->cursor;
                 s32 v = *p;
                 switch (gGame.difficulty) {
                 case 1:
@@ -1477,66 +1423,66 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
                     if (v < 5) *p = v + 1;
                     break;
                 }
-                if (v != *a0->f20) {
+                if (v != *screen->cursor) {
                     snd_play_menu_sound(0);
                     gGame.cupPreviewTimer = 0;
                     gGame.cupPreviewTrack = 0;
                 }
-            } else if (*a0->f20 > 0) {
+            } else if (*screen->cursor > 0) {
                 snd_play_menu_sound(0);
-                (*a0->f20)--;
+                (*screen->cursor)--;
                 gGame.cupPreviewTimer = 0;
                 gGame.cupPreviewTrack = 0;
             }
         }
-        if ((*pad & 0x50) && !OK) {
+        if ((*buttons & 0x50) && !OK) {
             snd_play_menu_sound(3);
-        } else if ((*pad & 0x50) && OK) {
-            if (*a0->f20 == 5 && (gGame.roundSel == 1 || gCustomRound == 0)) {
+        } else if ((*buttons & 0x50) && OK) {
+            if (*screen->cursor == 5 && (gGame.roundSel == 1 || gCustomRound == 0)) {
                 gGame.seasonMenuState = 1;
                 gGame.roundSel = 0;
-            } else if (!(a1->f8 & 1)) {
-                shell_goto_screen_2(a1->f4, 1, 1);
+            } else if (!(item->flags & SCREEN_ITEM_LOCKED)) {
+                shell_goto_screen(item->target, 1, 1);
                 snd_play_menu_sound(1);
             } else {
                 snd_play_menu_sound(3);
             }
-        } else if ((*pad & 0x20) && a0->f28 != 0) {
-            shell_goto_screen_2(a0->f28, 0, 0);
+        } else if ((*buttons & 0x20) && screen->back != NULL) {
+            shell_goto_screen(screen->back, 0, 0);
             snd_play_menu_sound(2);
         }
         break;
     case 1:
-        if ((*pad & 1) && gGame.roundSel != 0) gGame.roundSel--;
-        if (gGame.roundSel < gCups[*a0->f20].numRounds) {
-            if (*pad & 4) {
-                if (gCups[*a0->f20].laps[gGame.roundSel] >= 2) gCups[*a0->f20].laps[gGame.roundSel]--;
+        if ((*buttons & 1) && gGame.roundSel != 0) gGame.roundSel--;
+        if (gGame.roundSel < gCups[*screen->cursor].numRounds) {
+            if (*buttons & 4) {
+                if (gCups[*screen->cursor].laps[gGame.roundSel] >= 2) gCups[*screen->cursor].laps[gGame.roundSel]--;
             }
-            if (*pad & 8) {
-                if (gCups[*a0->f20].laps[gGame.roundSel] < 6) gCups[*a0->f20].laps[gGame.roundSel]++;
+            if (*buttons & 8) {
+                if (gCups[*screen->cursor].laps[gGame.roundSel] < 6) gCups[*screen->cursor].laps[gGame.roundSel]++;
             }
         }
-        if ((*pad & 2) && gGame.roundSel < gCups[*a0->f20].numRounds) {
+        if ((*buttons & 2) && gGame.roundSel < gCups[*screen->cursor].numRounds) {
             s32 v = gGame.roundSel + 1;
             if (v < 5) gGame.roundSel = v;
         }
-        k = *pad;
+        k = *buttons;
         if (k & 0x50) {
             u16 w;
             gGame.seasonMenuState = 2;
-            if (gGame.roundSel == gCups[*a0->f20].numRounds) {
+            if (gGame.roundSel == gCups[*screen->cursor].numRounds) {
                 gGame.customTrackSel = 0;
-                gCups[*a0->f20].progress[0]++;
-                gCups[*a0->f20].progress[1]++;
-                gCups[*a0->f20].progress[2]++;
-                gCups[*a0->f20].numRounds++;
+                gCups[*screen->cursor].progress[0]++;
+                gCups[*screen->cursor].progress[1]++;
+                gCups[*screen->cursor].progress[2]++;
+                gCups[*screen->cursor].numRounds++;
                 gGame.customTrackPrev = -1;
             } else {
-                w = gCups[*a0->f20].tracks[gGame.roundSel];
+                w = gCups[*screen->cursor].tracks[gGame.roundSel];
                 gGame.customTrackSel = w;
                 gGame.customTrackPrev = w;
             }
-            gCups[*a0->f20].tracks[gGame.roundSel] = gGame.customTrackSel;
+            gCups[*screen->cursor].tracks[gGame.roundSel] = gGame.customTrackSel;
         } else if (k & 0x20) {
             gGame.seasonMenuState = 0;
             gGame.roundSel = 0;
@@ -1547,47 +1493,47 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
             }
             save_write(1, 0);
         } else {
-            if (gGame.roundSel != gCups[*a0->f20].numRounds && (k & 0x20000)) {
-                for (j = gGame.roundSel; j < gCups[*a0->f20].numRounds - 1; j++) {
-                    gCups[*a0->f20].tracks[j] = gCups[*a0->f20].tracks[j + 1];
+            if (gGame.roundSel != gCups[*screen->cursor].numRounds && (k & 0x20000)) {
+                for (j = gGame.roundSel; j < gCups[*screen->cursor].numRounds - 1; j++) {
+                    gCups[*screen->cursor].tracks[j] = gCups[*screen->cursor].tracks[j + 1];
                 }
-                { u8 m = --gCups[*a0->f20].numRounds;
-                gCups[*a0->f20].tracks[m] = 0; }
+                { u8 m = --gCups[*screen->cursor].numRounds;
+                gCups[*screen->cursor].tracks[m] = 0; }
             }
         }
         break;
     case 2:
-        if (*pad & 4) {
+        if (*buttons & 4) {
             u16 v = gGame.customTrackSel;
             gGame.customTrackSel = v - 1;
             if ((s16)v % 5 == 0) gGame.customTrackSel = v + 4;
         }
-        if (*pad & 8) {
+        if (*buttons & 8) {
             u16 v = gGame.customTrackSel;
             gGame.customTrackSel = v + 1;
             if ((s16)(v + 1) % 5 == 0) gGame.customTrackSel = v - 4;
         }
-        if (*pad & 1) {
+        if (*buttons & 1) {
             gGame.customTrackSel -= 5;
             if (gGame.customTrackSel < 0) gGame.customTrackSel += 20;
         }
-        if (*pad & 2) {
+        if (*buttons & 2) {
             u16 v = gGame.customTrackSel;
             gGame.customTrackSel = v + 5;
             if (gGame.customTrackSel >= 20) gGame.customTrackSel = v - 15;
         }
-        k = *pad;
+        k = *buttons;
         if (k & 0x50) {
             gGame.seasonMenuState = 1;
         } else if (k & 0x20) {
             gGame.seasonMenuState = 1;
-            if (gGame.customTrackPrev == -1) gCups[*a0->f20].numRounds--;
+            if (gGame.customTrackPrev == -1) gCups[*screen->cursor].numRounds--;
             else gGame.customTrackSel = gGame.customTrackPrev;
         }
-        gCups[*a0->f20].tracks[gGame.roundSel] = gGame.customTrackSel;
+        gCups[*screen->cursor].tracks[gGame.roundSel] = gGame.customTrackSel;
         break;
     }
-    gSeason->cup = &gCups[*a0->f20];
+    gSeason->cup = &gCups[*screen->cursor];
 }
 
 typedef struct {
@@ -1621,12 +1567,6 @@ s32 shell_is_round_unlocked(s32 n)
     return 0;
 }
 
-struct Ctl_19 {
-    u8 pad0[4];
-    s32 p4;
-    u16 h8;
-};
-
 typedef struct {
     u8 pad0[0x2C0];
     u8 b2C0;
@@ -1636,7 +1576,7 @@ typedef struct {
 
 extern S1900 gSaveData_11;
 
-static inline s32 canGo(Item_9 *n) {
+static inline s32 canGo(Screen *n) {
     s32 k;
     if (gGame.mode == 8 || gGame.mode == 0) {
         k = gSaveData_11.b2C0;
@@ -1645,10 +1585,10 @@ static inline s32 canGo(Item_9 *n) {
     }
     switch (k) {
     case 1:
-        if (n->h14 < 10) return 1;
+        if (n->firstItem < 10) return 1;
         break;
     case 2:
-        if (n->h14 < 15) return 1;
+        if (n->firstItem < 15) return 1;
         break;
     case 3:
         return 1;
@@ -1656,14 +1596,17 @@ static inline s32 canGo(Item_9 *n) {
     return 0;
 }
 
-void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
+/* sCurScreen again: the read takes its own lui, which the stores below do not share */
+extern Screen *sCurScreen_2;
+
+void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
     s32 snd;
     s32 m;
     s32 b;
     s32 s;
     s32 v;
-    Item_9 *prev;
-    Item_9 *n;
+    Screen *prev;
+    Screen *n;
     s32 k;
     s32 ok;
 
@@ -1672,22 +1615,22 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
     D_800CDB60 -= (gPadInput & 3) ? ((gPadInput & 1) ? (s32)(gPadInput >> 28) / 6.0f : -(s32)(gPadInput >> 28) / 6.0f) : 0.0f;
     if (++gGame.menuAnimTimer == 60) gGame.menuAnimTimer = 0;
     if (++gGame.blinkTimer == 64) gGame.blinkTimer = 0;
-    b = *btn;
+    b = *buttons;
     if (b & 0x50) {
         snd = 0;
-        if (!(ctl->h8 & 1)) {
+        if (!(item->flags & SCREEN_ITEM_LOCKED)) {
             snd = 1;
         } else {
             snd_play_menu_sound(3);
         }
-        if (item - sScreens_2 == 8 && (gPadInput & 0x8500) == 0x8500) {
-            shell_goto_screen_2((s32)&sScreens_2[4], 1, 0);
-        } else if ((ctl->h8 & 0x800) && gGame.screenState != 8) {
+        if (screen - sScreens == SCREEN_MAIN_MENU && (gPadInput & 0x8500) == 0x8500) {
+            shell_goto_screen(&sScreens[SCREEN_CHEAT_ENTRY], 1, 0);
+        } else if ((item->flags & SCREEN_ITEM_ASK_GHOST) && gGame.screenState != 8) {
             gGame.screenState = 8;
             gGame.dialogSel = 0;
-        } else if ((ctl->h8 & 0x1000) && gGame.screenState != 16 && gGame.screenState != 9
+        } else if ((item->flags & SCREEN_ITEM_ASK_USER_TRACK) && gGame.screenState != 16 && gGame.screenState != 9
                    && gGame.screenState != 10 && !(gGame.flags & 0x200)) {
-            if (!(ctl->h8 & 1)) {
+            if (!(item->flags & SCREEN_ITEM_LOCKED)) {
                 gGame.screenState = 9;
                 gGame.dialogSel = 0;
             }
@@ -1695,11 +1638,11 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
             gGame.mode = 0;
             gGame.screenState = 0;
             gGame.flags |= 0x200;
-        } else if (!(ctl->h8 & 0x100) || gGame.screenState == 5) {
-          if (!(ctl->h8 & 1)) {
+        } else if (!(item->flags & SCREEN_ITEM_ASK_PLAYERS) || gGame.screenState == 5) {
+          if (!(item->flags & SCREEN_ITEM_LOCKED)) {
             if (gGame.screenState == 8 && gGame.dialogSel == 1) {
                 gGame.pakScreenMode = 1;
-                shell_goto_screen_2((s32)&sScreens_2[15], 1, 1);
+                shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
             } else if (gGame.screenState == 10 && !(gGame.flags & 0x200)) {
                 gGame.screenState = 16;
                 if (gGame.difficulty == 0) {
@@ -1718,10 +1661,10 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                         gGame.flags |= 0x2000000;
                         gGame.pakScreenMode = 3;
                         gGame.flags &= ~0x20;
-                        shell_goto_screen_2((s32)&sScreens_2[15], 1, 1);
+                        shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
                     } else {
                         gCurTrack = (s32)D_800CBF30;
-                        shell_goto_screen_2((s32)&sScreens_2[9], 1, 1);
+                        shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                         usrtrk_load_layout(D_800F1DF4);
                         gGame.mode = 0;
                         gGame.flags &= ~0x80;
@@ -1729,15 +1672,15 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                     }
                 }
                 if (gGame.screenState == 5 && gGame.difficulty == 0) {
-                    shell_goto_screen_2(0, 0, 1);
+                    shell_goto_screen(0, 0, 1);
                 } else {
-                    shell_goto_screen_2(ctl->p4, 1, 1);
+                    shell_goto_screen(item->target, 1, 1);
                 }
             }
           }
         } else {
             gGame.screenState = 5;
-            if ((ctl->h8 & 0x400) && gGame.difficulty == 0) {
+            if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) && gGame.difficulty == 0) {
                 gGame.difficulty = 1;
             }
         }
@@ -1759,9 +1702,9 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
             snd_play_menu_sound(2);
             gGame.screenState = 0;
             gGame.flags &= ~0x20;
-        } else if (item->p28) {
+        } else if (screen->back) {
             snd_play_menu_sound(2);
-            shell_goto_screen_2(item->p28, 0, 0);
+            shell_goto_screen(screen->back, 0, 0);
         } else {
             snd_play_menu_sound(3);
         }
@@ -1777,7 +1720,7 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                 snd_play_menu_sound(0);
                 gGame.numPlayers = 2;
             }
-            if (gContCount == 4 && (*btn & 3)) {
+            if (gContCount == 4 && (*buttons & 3)) {
                 snd_play_menu_sound(0);
                 if (gGame.numPlayers == 2) {
                     gGame.numPlayers = 4;
@@ -1812,7 +1755,7 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
             if (v < gGame.numPlayers) {
                 gGame.numPlayers = v;
             }
-            if (*btn & 1) {
+            if (*buttons & 1) {
                 s32 old = gGame.numPlayers;
                 if ((gGame.numPlayers = old - 1) <= 0) {
                     gGame.numPlayers = v;
@@ -1821,7 +1764,7 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                     snd_play_menu_sound(0);
                 }
             }
-            if (*btn & 2) {
+            if (*buttons & 2) {
                 s32 old = gGame.numPlayers;
                 gGame.numPlayers = old + 1;
                 if (gContCount < old + 1) {
@@ -1832,7 +1775,7 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                 }
             }
             if (gGame.mode == 0 && gGame.numPlayers == 2) {
-                if (*btn & 4) {
+                if (*buttons & 4) {
                     s32 old;
                     snd_play_menu_sound(0);
                     old = gGame.twoPlayerCpuRiders;
@@ -1840,7 +1783,7 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                         gGame.twoPlayerCpuRiders = old + 2;
                     }
                 }
-                if (*btn & 8) {
+                if (*buttons & 8) {
                     snd_play_menu_sound(0);
                     if (++gGame.twoPlayerCpuRiders >= 3) {
                         gGame.twoPlayerCpuRiders -= 3;
@@ -1862,29 +1805,29 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                 s32 old = gGame.difficulty;
                 if ((gGame.difficulty = old - 1) < 0) {
                     gGame.difficulty = gSaveData_11.b2C0;
-                } else if (gGame.difficulty == 0 && ((ctl->h8 & 0x400) || s == 16)) {
+                } else if (gGame.difficulty == 0 && ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) || s == 16)) {
                     gGame.difficulty = gSaveData_11.b2C0;
                 }
                 if (gGame.difficulty != old) {
                     snd_play_menu_sound(0);
                 }
             } else {
-                s32 old = *item->p20;
-                if ((*item->p20 = old - 1) < 0) {
-                    *item->p20 = item->h18 - 1;
+                s32 old = *screen->cursor;
+                if ((*screen->cursor = old - 1) < 0) {
+                    *screen->cursor = screen->numItems - 1;
                 }
-                if (*item->p20 != old) {
+                if (*screen->cursor != old) {
                     snd_play_menu_sound(0);
                 }
             }
         }
-        if (*btn & 2) {
+        if (*buttons & 2) {
             s32 t = gGame.screenState;
             if ((t == 16 || t == 5) && gSaveData_11.b2C0) {
                 s32 old = gGame.difficulty;
                 gGame.difficulty = old + 1;
                 if (gSaveData_11.b2C0 < old + 1) {
-                    if ((ctl->h8 & 0x400) || t == 16) {
+                    if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) || t == 16) {
                         gGame.difficulty = 1;
                     } else {
                         gGame.difficulty = 0;
@@ -1894,38 +1837,38 @@ void shell_list_menu_input(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
                     snd_play_menu_sound(0);
                 }
             } else {
-                s32 old = *item->p20;
-                *item->p20 = old + 1;
-                if (old + 1 >= item->h18) {
-                    *item->p20 = 0;
+                s32 old = *screen->cursor;
+                *screen->cursor = old + 1;
+                if (old + 1 >= screen->numItems) {
+                    *screen->cursor = 0;
                 }
-                if (*item->p20 != old) {
+                if (*screen->cursor != old) {
                     snd_play_menu_sound(0);
                 }
             }
         }
         if (gGame.fadeState != 1) {
-            prev = sCurScreen_4;
-            if (*btn & 4) {
-                if (item->p4 == NULL) {
-                    if (item->p8) {
-                        sCurScreen = item;
+            prev = sCurScreen_2;
+            if (*buttons & 4) {
+                if (screen->left == NULL) {
+                    if (screen->right) {
+                        sCurScreen = screen;
                     }
                 } else {
-                    item = item->p4;
-                    sCurScreen = item;
+                    screen = screen->left;
+                    sCurScreen = screen;
                 }
             }
-            if (*btn & 8) {
-                if (item->p8 == NULL) {
-                    if (item->p4) {
-                        sCurScreen = item;
+            if (*buttons & 8) {
+                if (screen->right == NULL) {
+                    if (screen->left) {
+                        sCurScreen = screen;
                     }
                 } else {
-                    if (canGo(item->p8)) {
-                        item = item->p8;
+                    if (canGo(screen->right)) {
+                        screen = screen->right;
                     }
-                    sCurScreen = item;
+                    sCurScreen = screen;
                 }
             }
             if (prev != sCurScreen) {
@@ -1965,44 +1908,16 @@ void shell_filter_stick_dirs(u32 *p)
     }
 }
 
-typedef struct {
-    u8 pad0[4];
-    s32 p4;
-    u16 h8;
-    u8 padA[6];
-} Ctl_20;
-
-typedef struct Item_10 {
-    u8 pad0[4];
-    struct Item_10 *p4;
-    struct Item_10 *p8;
-    Ctl_20 *pC;
-    u16 h10;
-    u8 pad12[2];
-    s16 h14;
-    s16 h16;
-    u8 pad18[0x20 - 0x18];
-    s32 *p20;
-    u8 pad24[4];
-    s32 p28;
-} Item_10;
-
 typedef struct { u8 pad0[8]; s16 h8[1]; } Trk_13;
-typedef struct { u8 pad[0x38]; u16 h38; } S370;
-
-extern Item_10 sScreens_3[];
-extern Item_10 *sPrevScreen_2;
-extern Item_10 *sCurScreen_2;
-extern S370 gSpecialTracksItems_2;
 
 void shell_update(Pad16 *pad) {
     u32 buf[4];
     s32 sp20;
     s32 sp24;
     s32 sp28;
-    Item_10 *item;
-    Ctl_20 *ctl;
-    Item_10 *p;
+    Screen *screen;
+    ScreenItem *item;
+    Screen *p;
     s32 vol;
     s32 i;
     s32 any;
@@ -2017,23 +1932,23 @@ void shell_update(Pad16 *pad) {
         gGame.flags &= ~0x08000000;
     }
     if (gContCount < 2) {
-        gSpecialTracksItems_2.h38 |= 1;
+        gSpecialTracksItems[3].flags |= SCREEN_ITEM_LOCKED;
     } else {
         save_update_unlocks();
     }
     if (gGame.fadeState == 0) {
-        item = sPrevScreen_2;
-        if (item == &sScreens_3[5] ||
-            (!(item->h10 & 0x200) && (sCurScreen_2 == NULL || (sCurScreen_2->h10 & 0x200)))) {
+        screen = sPrevScreen;
+        if (screen == &sScreens[SCREEN_OPTIONS] ||
+            (!(screen->flags & SCREEN_KEEP_MUSIC) && (sCurScreen == NULL || (sCurScreen->flags & SCREEN_KEEP_MUSIC)))) {
             if (gGame.fadeState == 0) {
                 vol = gGame.fadeLevel;
             }
             snd_set_master_volume(vol);
         }
     } else {
-        item = sCurScreen_2;
+        screen = sCurScreen;
     }
-    if (item != NULL && (item->h10 & 0x2000)) {
+    if (screen != NULL && (screen->flags & SCREEN_STICK_FILTER)) {
         shell_filter_stick_dirs(pad->w);
     }
     any = 0;
@@ -2071,107 +1986,107 @@ void shell_update(Pad16 *pad) {
             }
         }
     }
-    if (item != NULL) {
+    if (screen != NULL) {
         if (gGame.fadeState == 0) {
-            ctl = &item->pC[sPrevScreenCursor];
+            item = &screen->items[sPrevScreenCursor];
         } else {
-            ctl = item->pC;
-            if (item->p20 != NULL) {
-                ctl += *item->p20 + item->h14;
+            item = screen->items;
+            if (screen->cursor != NULL) {
+                item += *screen->cursor + screen->firstItem;
             }
         }
         if (gGame.fadeState != 1) {
-            switch (item->h16) {
-            case 21:
-            case 22:
-            case 23:
-            case 24:
-            case 25:
-                shell_splash_input(item, ctl, buf, pad);
+            switch (screen->type) {
+            case SCREEN_TYPE_SPLASH:
+            case SCREEN_TYPE_SPLASH_2:
+            case SCREEN_TYPE_SPLASH_3:
+            case SCREEN_TYPE_PAK_STATUS:
+            case SCREEN_TYPE_BACKUP_LOST:
+                shell_splash_input(screen, item, buf, pad);
                 break;
-            case 9:
-            case 20:
-                shell_text_entry_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_CHEAT_ENTRY:
+            case SCREEN_TYPE_INITIALS:
+                shell_text_entry_input(screen, item, buf, pad);
                 break;
-            case 18:
-                shell_records_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_RECORDS:
+                shell_records_input(screen, item, buf, pad);
                 break;
-            case 7:
-            case 13:
-                shell_race_results_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_SEASON_RACE_RESULT:
+            case SCREEN_TYPE_RACE_RESULT:
+                shell_race_results_input(screen, item, buf, pad);
                 break;
-            case 14:
-                shell_season_standings_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_STANDINGS:
+                shell_season_standings_input(screen, item, buf, pad);
                 break;
-            case 8:
+            case SCREEN_TYPE_ROUND_OVER:
                 if (buf[0] & 0x50) {
-                    shell_goto_screen_2((s32)&sScreens_3[8], 0, 1);
+                    shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
                     snd_play_menu_sound(1);
-                } else if ((buf[0] & 0x20) && item->p28 != 0) {
-                    shell_goto_screen_2(item->p28, 0, 0);
+                } else if ((buf[0] & 0x20) && screen->back != NULL) {
+                    shell_goto_screen(screen->back, 0, 0);
                     snd_play_menu_sound(2);
                 }
                 break;
-            case 3:
-                if (item - sScreens_3 == 8) {
-                    item->p28 = (s32)&sScreens_3[14];
+            case SCREEN_TYPE_LIST:
+                if (screen - sScreens == SCREEN_MAIN_MENU) {
+                    screen->back = &sScreens[SCREEN_TITLE];
                     if (gGame.idleFrames > 0xE10 && gGame.fadeState == 3) {
-                        shell_goto_screen_2((s32)&sScreens_3[14], 0, 0);
+                        shell_goto_screen(&sScreens[SCREEN_TITLE], 0, 0);
                     }
                 }
-            case 11:
-                shell_list_menu_input(item, ctl, buf, pad);
-                if (item->h16 == 11) {
-                    gGame.trackSel = item->h14 + gGame.trackListSel;
+            case SCREEN_TYPE_TRACK_LIST:
+                shell_list_menu_input(screen, item, buf, pad);
+                if (screen->type == SCREEN_TYPE_TRACK_LIST) {
+                    gGame.trackSel = screen->firstItem + gGame.trackListSel;
                 }
                 break;
-            case 19:
-                shell_controller_settings_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_CONTROLLER_SETTINGS:
+                shell_controller_settings_input(screen, item, buf, pad);
                 break;
-            case 12:
+            case SCREEN_TYPE_PAK:
                 pak_screen_update(pad);
                 if (gPakScreenDone == 1 && gGame.fadeState == 3) {
                     switch (gGame.pakScreenMode) {
                     case 0:
-                        if (item->p28 == 0) {
-                            shell_goto_screen_2((s32)&sScreens_3[21], 0, 1);
+                        if (screen->back == NULL) {
+                            shell_goto_screen(&sScreens[SCREEN_SPLASH_3], 0, 1);
                         } else {
-                            shell_goto_screen_2(item->p28, 0, 0);
+                            shell_goto_screen(screen->back, 0, 0);
                         }
                         break;
                     case 1:
                         if (gPakScreenAborted == 0) {
                             if (replay_get_info(gActiveReplay + 0x6400, &sp20, &sp24, &sp28)) {
-                                shell_goto_screen_2(item->p28, 0, 0);
+                                shell_goto_screen(screen->back, 0, 0);
                                 gActiveReplay = 0;
                                 gGame.flags &= ~0x80000;
                             } else {
                                 gGame.flags |= 0x80000;
                                 gCurTrack = &gTracks[sp20];
                                 gGame.trackSel = sp20;
-                                shell_goto_screen_2((s32)&sScreens_3[9], 1, 1);
+                                shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                             }
                         } else {
                             gGame.flags &= ~0x80000;
                             gActiveReplay = 0;
-                            shell_goto_screen_2(item->p28, 0, 0);
+                            shell_goto_screen(screen->back, 0, 0);
                         }
                         break;
                     case 2:
-                        shell_goto_screen_2(item->p28, 0, 0);
+                        shell_goto_screen(screen->back, 0, 0);
                         break;
                     case 4:
                         gGame.flags |= 0x20;
-                        shell_goto_screen_2(0, 0, 1);
+                        shell_goto_screen(0, 0, 1);
                         break;
                     case 3:
                         if (gGame.flags & 0x02000000) {
                             gGame.flags &= ~0x20;
                             if (gPakScreenAborted != 0) {
-                                shell_goto_screen_2(item->p28, 0, 0);
+                                shell_goto_screen(screen->back, 0, 0);
                             } else {
                                 gCurTrack = &gTracks[21];
-                                shell_goto_screen_2((s32)&sScreens_3[9], 1, 1);
+                                shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                                 usrtrk_load_layout(gGame.userTrack + 4);
                                 gGame.flags &= ~0x80;
                             }
@@ -2184,41 +2099,41 @@ void shell_update(Pad16 *pad) {
                                 gGame.userTrack = 0;
                             }
                             gGame.flags |= 0x20;
-                            shell_goto_screen_2(0, 0, 1);
+                            shell_goto_screen(0, 0, 1);
                         }
                         break;
                     }
                 }
                 break;
-            case 6:
-                shell_options_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_OPTIONS:
+                shell_options_input(screen, item, buf, pad);
                 break;
-            case 0:
+            case SCREEN_TYPE_TITLE:
                 race_update(D_800CD090);
                 if (gGame.idleFrames > 0xE10 && gGame.fadeState == 3 &&
                     !(gGame.flags & 0x08000000)) {
-                    shell_goto_screen_2((s32)&sScreens_3[8], 1, 1);
+                    shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 1, 1);
                 }
                 break;
-            case 2:
-                shell_rider_select_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_RIDER_SELECT:
+                shell_rider_select_input(screen, item, buf, pad);
                 break;
-            case 4:
-                shell_season_select_input(item, ctl, buf, pad);
+            case SCREEN_TYPE_ROUND_SELECT:
+                shell_season_select_input(screen, item, buf, pad);
                 break;
             }
-            if (gGame.fadeState == 3 && (item->h10 & 0x10)) {
-                if (item->h16 == 0 && D_800E3704 != 0) {
-                    shell_goto_screen_2(item->pC->p4, 1, 1);
+            if (gGame.fadeState == 3 && (screen->flags & SCREEN_A_B_NAVIGATION)) {
+                if (screen->type == SCREEN_TYPE_TITLE && D_800E3704 != 0) {
+                    shell_goto_screen(screen->items->target, 1, 1);
                 } else if (buf[0] & 0x50) {
-                    if ((item->h16 != 0 || !(gGame.flags & 0x08000000)) && !(ctl->h8 & 1)) {
+                    if ((screen->type != SCREEN_TYPE_TITLE || !(gGame.flags & 0x08000000)) && !(item->flags & SCREEN_ITEM_LOCKED)) {
                         snd_play_menu_sound(1);
-                        shell_goto_screen_2(ctl->p4, 1, 1);
+                        shell_goto_screen(item->target, 1, 1);
                     }
                 } else if (buf[0] & 0x20) {
-                    if (item->p28 != 0) {
+                    if (screen->back != NULL) {
                         snd_play_menu_sound(2);
-                        shell_goto_screen_2(item->p28, 0, 0);
+                        shell_goto_screen(screen->back, 0, 0);
                     } else {
                         snd_play_menu_sound(3);
                     }
@@ -2243,38 +2158,38 @@ void shell_update(Pad16 *pad) {
         if (gGame.fadeTimer == 0) {
             snd_drain();
             snd_set_master_volume(0xFF);
-            if (sPrevScreen_2 != NULL) {
-                if (tunes_is_song_playing() && (sCurScreen_2 == NULL || (sCurScreen_2->h10 & 0x200))) {
+            if (sPrevScreen != NULL) {
+                if (tunes_is_song_playing() && (sCurScreen == NULL || (sCurScreen->flags & SCREEN_KEEP_MUSIC))) {
                     tunes_stop_song();
                 }
-                for (p = sPrevScreen_2; p != NULL; p = p->p8) {
+                for (p = sPrevScreen; p != NULL; p = p->right) {
                     shell_unload_screen(p);
                 }
-                for (p = sPrevScreen_2->p4; p != NULL; p = p->p4) {
+                for (p = sPrevScreen->left; p != NULL; p = p->left) {
                     shell_unload_screen(p);
                 }
             }
-            if (sCurScreen_2 != NULL) {
-                for (p = sCurScreen_2; p != NULL; p = p->p8) {
-                    p->p28 = sCurScreen_2->p28;
+            if (sCurScreen != NULL) {
+                for (p = sCurScreen; p != NULL; p = p->right) {
+                    p->back = sCurScreen->back;
                     shell_load_screen(p);
                 }
-                for (p = sCurScreen_2->p4; p != NULL; p = p->p4) {
-                    p->p28 = sCurScreen_2->p28;
+                for (p = sCurScreen->left; p != NULL; p = p->left) {
+                    p->back = sCurScreen->back;
                     shell_load_screen(p);
                 }
-                if (!tunes_is_song_playing() && !(sCurScreen_2->h10 & 0x200)) {
+                if (!tunes_is_song_playing() && !(sCurScreen->flags & SCREEN_KEEP_MUSIC)) {
                     tunes_play_song(D_800D11D4);
                     snd_set_master_volume(0xFF);
                 }
-                if (sCurScreen_2->h16 == 11) {
-                    while (sCurScreen_2->p4 != NULL) {
-                        sCurScreen_2 = sCurScreen_2->p4;
+                if (sCurScreen->type == SCREEN_TYPE_TRACK_LIST) {
+                    while (sCurScreen->left != NULL) {
+                        sCurScreen = sCurScreen->left;
                     }
                     for (i = gGame.trackSel - 5; i >= 0; i -= 5) {
-                        sCurScreen_2 = sCurScreen_2->p8;
+                        sCurScreen = sCurScreen->right;
                     }
-                    *sCurScreen_2->p20 = gGame.trackSel % 5;
+                    *sCurScreen->cursor = gGame.trackSel % 5;
                 }
             } else {
                 gCurGameState->mode = 3;
@@ -2433,61 +2348,48 @@ typedef struct {
     u8 pad54[0xA0 - 0x54];
 } Bike_41;
 
-struct Scr {
-    s32 f0;
-    s32 f4;
-    u8 pad8[0x10 - 0x8];
-    u16 f10;
-    s16 f12;
-    s16 f14;
-    s16 f16;
-    s16 f18;
-    u8 pad1A[0x1C - 0x1A];
-    void *f1C;
-};
-
 extern Bike_41 *gCurTrack_40;
 extern Bike_41 *D_800F0634;
 extern Bike_41 gTracks_15[];
 
-void shell_unload_screen(Scr *s)
+void shell_unload_screen(Screen *screen)
 {
     s32 i;
 
-    if (s == NULL) {
+    if (screen == NULL) {
         return;
     }
     gGame.flags &= ~0x200;
     LOAD(D_800D1398);
     LOAD(D_800D1410);
-    if ((s->f10 & 0x20) && s->f4 == 0) {
+    if ((screen->flags & SCREEN_TEXT_OBJECTS) && screen->left == NULL) {
         for (i = 0; i < 0x30; i++) {
             func_800C204C(gGame.texts[i]);
             mem_free(gGame.texts[i]);
         }
     }
-    if (s->f10 & 0x80) {
+    if (screen->flags & SCREEN_PANELS) {
         LOAD(D_800D1450);
         LOAD(D_800D14C8);
     }
-    if (s->f1C != NULL) {
-        if (s->f16 == 4) {
+    if (screen->bgResId != NULL) {
+        if (screen->type == SCREEN_TYPE_ROUND_SELECT) {
             for (i = 0; i < 7; i++) {
-                LOAD(*((s32 **)s->f1C)[i]);
+                LOAD(*((s32 **)screen->bgResId)[i]);
             }
         } else {
-            LOAD(*(s32 *)s->f1C);
+            LOAD(*screen->bgResId);
         }
     }
-    switch (s->f16) {
-    case 23:
+    switch (screen->type) {
+    case SCREEN_TYPE_SPLASH_3:
         gGame.flags &= ~0x10000000;
         break;
-    case 22:
+    case SCREEN_TYPE_SPLASH_2:
         pak_probe_all();
         LOAD(D_800D13B4);
         break;
-    case 0:
+    case SCREEN_TYPE_TITLE:
         i = 0;
         LOAD(D_800D1490);
         LOAD(D_800D14A4);
@@ -2499,7 +2401,7 @@ void shell_unload_screen(Scr *s)
             gGame.riderSkins[i] = gGame.savedRiderSkins[i];
         }
         break;
-    case 2:
+    case SCREEN_TYPE_RIDER_SELECT:
         race_exit();
         if (!(gGame.flags & 0x400)) {
             gSplitVertical = 0;
@@ -2542,7 +2444,7 @@ void shell_unload_screen(Scr *s)
             gGame.bikeSkins[i] %= 6;
         }
         break;
-    case 19:
+    case SCREEN_TYPE_CONTROLLER_SETTINGS:
         shell_blend_palette_to_gray(0xFF, NULL);
         LOAD(D_800D1470);
         LOAD(D_800D1498);
@@ -2550,7 +2452,7 @@ void shell_unload_screen(Scr *s)
         LOAD(D_800D13A0);
         mem_free(gGame.playerPalettes);
         break;
-    case 6:
+    case SCREEN_TYPE_OPTIONS:
         save_write(5, 0);
         save_write(1, 0);
         sfx_free_sample(gGame.optionsSfx);
@@ -2559,17 +2461,17 @@ void shell_unload_screen(Scr *s)
         LOAD(D_800D1444);
         LOAD(D_800D1428);
         break;
-    case 24:
+    case SCREEN_TYPE_PAK_STATUS:
         LOAD(D_800D14A0);
         LOAD(D_800D13BC);
         break;
-    case 25:
+    case SCREEN_TYPE_BACKUP_LOST:
         LOAD(D_800D13E0);
         LOAD(D_800D142C);
         break;
-    case 9:
-    case 20:
-        if (s->f16 == 9) {
+    case SCREEN_TYPE_CHEAT_ENTRY:
+    case SCREEN_TYPE_INITIALS:
+        if (screen->type == SCREEN_TYPE_CHEAT_ENTRY) {
             LOAD(D_800D13CC);
         } else {
             gCurTrack_40->f34 = *(TrackRecord *)&gEvent.record; /* copied through a pointer, as in event_init */
@@ -2588,9 +2490,9 @@ void shell_unload_screen(Scr *s)
         LOAD(D_800D148C);
         LOAD(D_800D13A0);
         break;
-    case 7:
-    case 13:
-    case 14:
+    case SCREEN_TYPE_SEASON_RACE_RESULT:
+    case SCREEN_TYPE_RACE_RESULT:
+    case SCREEN_TYPE_STANDINGS:
         mem_free(gGame.playerPalettes);
         LOAD(D_800D13A0);
         LOAD(D_800D143C);
@@ -2598,14 +2500,14 @@ void shell_unload_screen(Scr *s)
         LOAD(D_800D1428);
         LOAD(D_800D1424);
         break;
-    case 12:
+    case SCREEN_TYPE_PAK:
         pak_screen_exit();
         gGame.flags &= ~0x02000000;
         break;
-    case 3:
+    case SCREEN_TYPE_LIST:
         LOAD(D_800D141C);
         LOAD(D_800D1430);
-    case 11:
+    case SCREEN_TYPE_TRACK_LIST:
         LOAD(D_800D149C);
         gGame.screenState = 0;
         LOAD(D_800D14AC);
@@ -2616,16 +2518,16 @@ void shell_unload_screen(Scr *s)
         LOAD(D_800D1418);
         LOAD(D_800D1428);
         LOAD(D_800D1424);
-        for (i = 0; i < s->f18; i++) {
-            if (s->f16 == 11) {
-                LOAD(*sTrackPicResIds[sTrackPicIndex[i + s->f14]]);
+        for (i = 0; i < screen->numItems; i++) {
+            if (screen->type == SCREEN_TYPE_TRACK_LIST) {
+                LOAD(*sTrackPicResIds[sTrackPicIndex[i + screen->firstItem]]);
             } else {
-                LOAD(*sMenuItemPicResIds[i + s->f12]);
+                LOAD(*sMenuItemPicResIds[i + screen->firstPic]);
             }
         }
         break;
-    case 4:
-    case 18:
+    case SCREEN_TYPE_ROUND_SELECT:
+    case SCREEN_TYPE_RECORDS:
         i = 0;
         LOAD(D_800D14AC);
         LOAD(D_800D1394);
@@ -2760,74 +2662,62 @@ void shell_update_season_progress(void)
 
 #define LD(x) ((void *)res_load(gGuiRes, x))
 
-typedef struct { u8 pad[8]; u16 h8; u8 padA[6]; } Rec10;
-typedef struct {
-    s32 w0;
-    u8 pad4[0x1C - 0x4];
-    s32 w1C;
-    u8 pad20[0x24 - 0x20];
-    s32 w24;
-    void *w28;
-} Snd_4;
 
-extern Rec10 gSpecialTracksItems_3[];
-extern Snd_4 gPakScreen;
-
-void shell_load_screen(Item_11 *p) {
+void shell_load_screen(Screen *screen) {
     s32 i;
     s32 j;
     s32 c;
 
     snd_drain();
-    if (p == NULL) {
+    if (screen == NULL) {
         return;
     }
     gGame.idleFrames = 0;
     gGame.unk_480 = LD(D_800D1410);
     gGame.unk_484 = LD(D_800D1398);
-    if ((p->h10 & 0x20) && p->w4 == 0) {
+    if ((screen->flags & SCREEN_TEXT_OBJECTS) && screen->left == NULL) {
         for (i = 0; i < 48; i++) {
             gGame.texts[i] = font_text_create(0, 0x40, 4, 2, 0x20);
         }
     }
-    if (p->h10 & 0x80) {
+    if (screen->flags & SCREEN_PANELS) {
         gGame.unk_390 = LD(D_800D1450);
         gGame.unk_3DC = LD(D_800D14C8);
     }
-    if (p->p1C != NULL) {
-        if (p->h16 == 4) {
+    if (screen->bgResId != NULL) {
+        if (screen->type == SCREEN_TYPE_ROUND_SELECT) {
             for (i = 0; i < 7; i++) {
-                gGame.screenPics[i] = LD(*p->p1C[i]);
+                gGame.screenPics[i] = LD(*((s32 **)screen->bgResId)[i]);
             }
         } else {
-            p->w24 = res_load(gGuiRes, (s32)*p->p1C);
+            screen->bg = LD(*screen->bgResId);
         }
     } else {
-        p->w24 = 0;
+        screen->bg = NULL;
     }
-    osViSetSpecialFeatures((p->h10 & 4) ? 0x6A : 0xAA);
+    osViSetSpecialFeatures((screen->flags & SCREEN_DITHER_FILTER) ? 0x6A : 0xAA);
 
-    switch (p->h16) {
-    case 23:
+    switch (screen->type) {
+    case SCREEN_TYPE_SPLASH_3:
         gGame.flags |= 0x10000000;
-    case 21:
+    case SCREEN_TYPE_SPLASH:
         gGame.screenTimer = 0xB4;
         break;
-    case 24:
+    case SCREEN_TYPE_PAK_STATUS:
         gGame.unk_390 = LD(D_800D14A0);
         gGame.unk_3DC = LD(D_800D13BC);
         gGame.screenTimer = 0x4B0;
         break;
-    case 25:
+    case SCREEN_TYPE_BACKUP_LOST:
         gGame.unk_390 = LD(D_800D13E0);
         gGame.unk_3DC = LD(D_800D142C);
         gGame.screenTimer = 0x258;
         break;
-    case 22:
+    case SCREEN_TYPE_SPLASH_2:
         gGame.screenTimer = 0x12C;
         gGame.unk_3A0 = LD(D_800D13B4);
         break;
-    case 0:
+    case SCREEN_TYPE_TITLE:
         for (i = 0; i < 6; i++) {
             gGame.savedRiders[i] = gGame.riders[i];
             gGame.savedRiderSkins[i] = gGame.riderSkins[i];
@@ -2850,7 +2740,7 @@ void shell_load_screen(Item_11 *p) {
         race_set_grid_order(0, 6);
         race_init(0);
         break;
-    case 6:
+    case SCREEN_TYPE_OPTIONS:
         gGame.repeatTimer = 0;
         gGame.screenState = 0;
         softmix_set_decompress_buf(gZBuffer, 0x25800);
@@ -2866,7 +2756,7 @@ void shell_load_screen(Item_11 *p) {
         }
         gGame.optionsSel |= 0x100;
         break;
-    case 19:
+    case SCREEN_TYPE_CONTROLLER_SETTINGS:
         for (i = 1; i < 0x100; i++) {
             c = (i / 3) >> 3;
             gGame.greyPalette[i] = (c << 1) | (c << 6) | (c << 11) | 1;
@@ -2878,11 +2768,11 @@ void shell_load_screen(Item_11 *p) {
         gGame.unk_39C = LD(D_800D13A0);
         shell_build_player_palettes();
         break;
-    case 9:
-    case 20:
+    case SCREEN_TYPE_CHEAT_ENTRY:
+    case SCREEN_TYPE_INITIALS:
         gGame.screenState = 0;
         i = 0;
-        if (p->h16 == 9) {
+        if (screen->type == SCREEN_TYPE_CHEAT_ENTRY) {
             gGame.itemPics[0] = LD(D_800D13CC);
             gGame.name[0] = 0x41;
             for (i = 1; i < 16; i++) {
@@ -2935,14 +2825,14 @@ void shell_load_screen(Item_11 *p) {
         gGame.unk_39C = LD(D_800D13A0);
         shell_build_player_palettes();
         break;
-    case 13:
-    case 14:
-        if (p->h16 == 14 && gGame.mode == 1 && gSeason != NULL
+    case SCREEN_TYPE_RACE_RESULT:
+    case SCREEN_TYPE_STANDINGS:
+        if (screen->type == SCREEN_TYPE_STANDINGS && gGame.mode == 1 && gSeason != NULL
             && gSeason->cup - gCups == 4) {
             shell_update_season_progress();
         }
         if (gGame.flags & 0x8000) {
-            gGame.screenState = (p->h16 == 13) ? 3 : 4;
+            gGame.screenState = (screen->type == SCREEN_TYPE_RACE_RESULT) ? 3 : 4;
             gGame.flags = (gGame.flags | 0x20000) & ~0x8000;
         } else {
             gGame.screenState = 0;
@@ -2956,7 +2846,7 @@ void shell_load_screen(Item_11 *p) {
         gGame.cursorImg = LD(D_800D1428);
         gGame.cursorPal = LD(D_800D1424);
         break;
-    case 7:
+    case SCREEN_TYPE_SEASON_RACE_RESULT:
         shell_update_season_progress();
         gGame.screenState = 0;
         gGame.blinkTimer = 0;
@@ -2968,66 +2858,66 @@ void shell_load_screen(Item_11 *p) {
         gGame.unk_414 = LD(D_800D13C0);
         gGame.unk_3DC = LD(D_800D14C8);
         break;
-    case 12:
-        D_800F4A50 = 0;
+    case SCREEN_TYPE_PAK:
+        gPakScreen.validate = NULL;
         switch (gGame.pakScreenMode) {
         case 0:
-            gPakScreen.w0 = 0;
-            gPakScreen.w24 = 0;
-            gPakScreen.w1C = 0;
+            gPakScreen.mode = 0;
+            gPakScreen.data = NULL;
+            gPakScreen.pages = 0;
             break;
         case 1:
             if (gActiveReplay == 0) {
                 gActiveReplay = gReplayBuffer;
             }
-            gPakScreen.w1C = 100;
-            gPakScreen.w0 = 1;
-            gPakScreen.w28 = D_800600D4;
-            gPakScreen.w24 = gActiveReplay + 0x6400;
+            gPakScreen.pages = 100;
+            gPakScreen.mode = 1;
+            gPakScreen.validate = replay_validate;
+            gPakScreen.data = (u8 *)(gActiveReplay + 0x6400);
             break;
         case 2:
-            gPakScreen.w1C = 40;
-            gPakScreen.w0 = 2;
-            gPakScreen.w24 = gActiveReplay;
+            gPakScreen.pages = 40;
+            gPakScreen.mode = 2;
+            gPakScreen.data = (u8 *)gActiveReplay;
             break;
         case 3:
             if (gGame.userTrack != NULL) {
                 mem_free(gGame.userTrack);
             }
             gGame.userTrack = mem_alloc_dbg(0x400, 0, D_800D94B0, 0x18E6);
-            gPakScreen.w24 = (s32)gGame.userTrack;
-            gPakScreen.w1C = 4;
-            gPakScreen.w0 = 1;
-            gPakScreen.w28 = D_800881D4;
+            gPakScreen.data = gGame.userTrack;
+            gPakScreen.pages = 4;
+            gPakScreen.mode = 1;
+            gPakScreen.validate = (PakValidateFunc)shell_pak_track_invalid;
             break;
         case 4:
-            gPakScreen.w1C = 4;
-            gPakScreen.w0 = 2;
-            gPakScreen.w24 = (s32)gGame.userTrack;
+            gPakScreen.pages = 4;
+            gPakScreen.mode = 2;
+            gPakScreen.data = gGame.userTrack;
             break;
         }
-        D_800F4A54 = D_800732D0;
+        gPakScreen.label = shell_format_pak_file_label;
         pak_screen_init();
         break;
-    case 3:
+    case SCREEN_TYPE_LIST:
         gSplitVertical = 0;
-        if (p - sScreens_4 == 7) {
+        if (screen - sScreens == SCREEN_SPECIAL_TRACKS) {
             gGame.mode = 0;
-            while (gSpecialTracksItems_3[*p->p20].h8 & 1) {
-                (*p->p20)--;
+            while (gSpecialTracksItems[*screen->cursor].flags & SCREEN_ITEM_LOCKED) {
+                (*screen->cursor)--;
             }
         }
         gGame.flags &= 0xFDFFFFFF;
         gGame.unk_744 = LD(D_800D141C);
         gGame.unk_748 = LD(D_800D1430);
         gGame.screenState = 0;
-        if (p - sScreens_4 == 8) {
+        if (screen - sScreens == SCREEN_MAIN_MENU) {
             gGame.numPlayers = 1;
         }
-        if (p - sScreens_4 == 10) {
+        if (screen - sScreens == SCREEN_BRONZE_TRACKS) {
             gGame.trackSel = 0;
         }
-    case 11:
+    case SCREEN_TYPE_TRACK_LIST:
         gGame.unk_74C = LD(D_800D149C);
         gGame.menuAnimTimer = 0;
         gGame.blinkTimer = 0;
@@ -3039,18 +2929,18 @@ void shell_load_screen(Item_11 *p) {
         gGame.unk_3A8 = LD(D_800D13C8);
         gGame.cursorImg = LD(D_800D1428);
         gGame.cursorPal = LD(D_800D1424);
-        for (i = 0; i < p->h18; i++) {
-            if (p->h16 == 11) {
-                gGame.itemPics[i + p->h14] = LD(*sTrackPicResIds[sTrackPicIndex[i + p->h14]]);
+        for (i = 0; i < screen->numItems; i++) {
+            if (screen->type == SCREEN_TYPE_TRACK_LIST) {
+                gGame.itemPics[i + screen->firstItem] = LD(*sTrackPicResIds[sTrackPicIndex[i + screen->firstItem]]);
             } else {
-                gGame.itemPics[i + p->h14] = LD(*sMenuItemPicResIds[i + p->h12]);
+                gGame.itemPics[i + screen->firstItem] = LD(*sMenuItemPicResIds[i + screen->firstPic]);
             }
         }
         break;
-    case 18:
+    case SCREEN_TYPE_RECORDS:
         gGame.screenState = 13;
         gGame.screenTimer = 6;
-    case 4:
+    case SCREEN_TYPE_ROUND_SELECT:
         gGame.seasonMenuState = 0;
         switch (gGame.difficulty) {
         case 1:
@@ -3086,7 +2976,7 @@ void shell_load_screen(Item_11 *p) {
         gGame.cupPreviewTimer = 0;
         gGame.cupPreviewTrack = 0;
         break;
-    case 2:
+    case SCREEN_TYPE_RIDER_SELECT:
         gGame.riderSelectState[0] = 0;
         gGame.riderSelectState[1] = 0;
         for (i = 3; i >= 0; i--) {
@@ -3131,28 +3021,28 @@ void shell_load_screen(Item_11 *p) {
     }
 }
 
-void shell_goto_screen(Item_12 *p1, s32 p2, s32 p3, s32 arg3)
+void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
 {
-    Item_12 *p;
+    Screen *p;
 
     if (gGame.fadeState != 0) {
-        if (sCurScreen_3 == NULL) {
-            if (p1 != NULL) {
-                p = p1;
+        if (sCurScreen == NULL) {
+            if (screen != NULL) {
+                p = screen;
                 do {
                     if (gRaceExitCode != 3 && gCreditsMode == 0) {
-                        p->parent = NULL;
+                        p->back = NULL;
                     }
                     shell_load_screen(p);
-                    p = p->next;
+                    p = p->right;
                 } while (p != NULL);
-                for (p = p1->child; p != NULL; p = p->child) {
+                for (p = screen->left; p != NULL; p = p->left) {
                     if (gRaceExitCode != 3 && gCreditsMode == 0) {
-                        p->parent = NULL;
+                        p->back = NULL;
                     }
                     shell_load_screen(p);
                 }
-                if (tunes_is_song_playing() == 0 && (p1->flags & 0x200) == 0) {
+                if (tunes_is_song_playing() == 0 && (screen->flags & SCREEN_KEEP_MUSIC) == 0) {
                     tunes_play_song(D_800D11D4);
                 }
             }
@@ -3160,31 +3050,29 @@ void shell_goto_screen(Item_12 *p1, s32 p2, s32 p3, s32 arg3)
             gGame.fadeLevel = 1;
             gGame.fadeTimer = -1;
         } else {
-            if (p3 != 0) {
-                MenuItem *items = sCurScreen_3->items;
-                s32 *sel = sCurScreen_3->sel;
-                if ((sel != NULL ? &items[*sel] : items)->func != NULL) {
-                    (sel != NULL ? &items[*sel] : items)->func(1);
+            if (runCallback != 0) {
+                ScreenItem *items = sCurScreen->items;
+                s32 *cursor = sCurScreen->cursor;
+                if ((cursor != NULL ? &items[*cursor] : items)->callback != NULL) {
+                    (cursor != NULL ? &items[*cursor] : items)->callback(1);
                 }
             }
             gGame.fadeState = 0;
             gGame.fadeLevel = 0xFF;
-            sPrevScreenCursor = sCurScreen_3->sel != NULL ? *sCurScreen_3->sel : 0;
+            sPrevScreenCursor = sCurScreen->cursor != NULL ? *sCurScreen->cursor : 0;
         }
-        if (sCurScreen_3 != NULL) {
-            sPrevScreen = sCurScreen_3;
+        if (sCurScreen != NULL) {
+            sPrevScreen = sCurScreen;
         }
-        if (p1 != NULL && p2 != 0) {
-            p1->parent = sCurScreen_3;
+        if (screen != NULL && linkBack != 0) {
+            screen->back = sCurScreen;
         }
         gGame.returnScreen = sPrevScreen;
-        sCurScreen_3 = p1;
+        sCurScreen = screen;
     }
 }
 
-typedef struct { s32 f0; s32 f4; s32 pad[16]; s32 a48[4]; } Tb;
 
-extern Tb sRiderBios[];
 
 void shell_draw_rider_stats(s32 x, s32 y, s32 p3, s32 p4)
 {
@@ -3212,7 +3100,7 @@ void shell_draw_rider_stats(s32 x, s32 y, s32 p3, s32 p4)
     for (i = 1; i < 9; i++) {
         font_text_create(gGame.texts[i + p4 * 9], 0x40, 1, 2, 0x20);
     }
-    font_text_add(gGame.texts[p4 * 9], (char *)sRiderBios[p3].f4);
+    font_text_add(gGame.texts[p4 * 9], sRiderBios[p3].fullName);
     font_draw_text(gGame.texts[p4 * 9], x, y - 0x1F);
     i = 0;
     do {
@@ -3222,7 +3110,7 @@ void shell_draw_rider_stats(s32 x, s32 y, s32 p3, s32 p4)
         sy = yy + t;
         font_draw_text(gGame.texts[p4 * 9 + k], x - 0x46, sy);
         j = i + 5;
-        font_text_add(gGame.texts[p4 * 9 + j], (char *)sRiderStatRatings[sRiderBios[p3].a48[i]]);
+        font_text_add(gGame.texts[p4 * 9 + j], (char *)sRiderStatRatings[sRiderBios[p3].stats[i]]);
         font_draw_text(gGame.texts[p4 * 9 + j], x + 0x12, sy);
         i = k;
     } while (i < 4);
@@ -3442,13 +3330,6 @@ Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 p2, char *str)
                          &gGame.cursorImg[gGame.menuAnimTimer / 2 % 30 + 1], gdl, p2, 1, 1, 3, 0);
 }
 
-typedef struct {
-    s32 pad0[2];
-    char *names[20];
-} Entry_5; /* 0x58 */
-
-extern Entry_5 sRiderBios_2[];
-
 void shell_draw_rider_bio(s32 p, s32 q)
 {
     s32 i, n, off;
@@ -3459,23 +3340,23 @@ void shell_draw_rider_bio(s32 p, s32 q)
     font_text_create(gGame.texts[20], 0x40, 2, 2, 0x20);
     font_text_add(gGame.texts[20], D_800D9AD4);
     font_draw_text(gGame.texts[20], 0x140, 0x34);
-    font_text_add(gGame.texts[p * 20 + 17], sRiderBios_2[gGame.riders[p]].names[0]);
+    font_text_add(gGame.texts[p * 20 + 17], sRiderBios[gGame.riders[p]].text[0]);
     font_draw_text(gGame.texts[p * 20 + 17], gViewRects_12.x + 0x10E, q + gViewRects_12.y - 0x6F);
-    font_text_add(gGame.texts[p * 20 + 18], sRiderBios_2[gGame.riders[p]].names[1]);
+    font_text_add(gGame.texts[p * 20 + 18], sRiderBios[gGame.riders[p]].text[1]);
     font_draw_text(gGame.texts[p * 20 + 18], gViewRects_12.x + 0x10B, q + gViewRects_12.y - 0x62);
-    font_text_add(gGame.texts[p * 20 + 19], sRiderBios_2[gGame.riders[p]].names[2]);
+    font_text_add(gGame.texts[p * 20 + 19], sRiderBios[gGame.riders[p]].text[2]);
     font_draw_text(gGame.texts[p * 20 + 19], gViewRects_12.x + 0x108, q + gViewRects_12.y - 0x55);
     for (i = 0; i < 4; i++) {
-        font_text_add(gGame.texts[p * 20 + 6 + i], sRiderBios_2[gGame.riders[p]].names[i + 4]);
+        font_text_add(gGame.texts[p * 20 + 6 + i], sRiderBios[gGame.riders[p]].text[i + 4]);
         font_draw_text(gGame.texts[p * 20 + 6 + i], gViewRects_12.x + 60 - i * 3, q + gViewRects_12.y - 0x6F + i * 13);
     }
     n = 4;
-    while (sRiderBios_2[gGame.riders[p]].names[n + 4] != 0) {
+    while (sRiderBios[gGame.riders[p]].text[n + 4] != 0) {
         n++;
     }
     off = -100;
-    for (; sRiderBios_2[gGame.riders[p]].names[i + 4] != 0; i++) {
-        font_text_add(gGame.texts[p * 20 + 6 + i], sRiderBios_2[gGame.riders[p]].names[i + 4]);
+    for (; sRiderBios[gGame.riders[p]].text[i + 4] != 0; i++) {
+        font_text_add(gGame.texts[p * 20 + 6 + i], sRiderBios[gGame.riders[p]].text[i + 4]);
         font_draw_text(gGame.texts[p * 20 + 6 + i], gViewRects_12.x + 60 - i * 3, q + gViewRects_12.y + off + i * 13);
     }
 }
@@ -3509,38 +3390,6 @@ void shell_draw_rider_bio(s32 p, s32 q)
 #define TDRAWP(spr, x, y, f) { Img *_t = &(spr)[1]; gDPLoadTLUT_pal256(gdl++, (spr)->addr); gDPPipeSync(gdl++); DRAW((x), (y), _t, (f)); }
 
 typedef struct {
-    char *name;
-    s32 w4;
-    u16 flags;
-    u8 padA[6];
-} Item_13;
-
-typedef struct {
-    s16 h0;
-    s16 h2;
-    u8 pad4[0x14 - 4];
-    s16 h14;
-} Obj_64;
-
-typedef struct {
-    char *title;
-    s32 w4;
-    Obj_64 *p8;
-    Item_13 *items;
-    u8 pad10[4];
-    s16 h14;
-    s16 state;
-    s16 count;
-    u8 pad1A[6];
-    s32 *sel;
-} Menu_4;
-
-struct Ctl_21 {
-    u8 pad0[8];
-    u16 h8;
-};
-
-typedef struct {
     char name[0x1E];
     s16 h1E;
     u8 pad20[0x34 - 0x20];
@@ -3562,20 +3411,6 @@ typedef struct {
 } Save_5;
 
 typedef struct {
-    char *name;
-    s32 x;
-} Cheat;
-
-typedef struct {
-    char *name;
-    char *f4;
-    u8 pad8[8];
-    char *f10;
-    u8 pad14[0x48 - 0x14];
-    s32 stats[4];
-} Rider_8;
-
-typedef struct {
     u8 pad0[0x14];
     void *f14;
     char *f18;
@@ -3591,11 +3426,9 @@ typedef struct {
 } Racer_3;
 
 extern Track_17 *gCurTrack_41;
-extern Cheat sCheatTable_2[];
 extern Save_5 gSaveData_13;
 extern Track_17 gTracks_16[];
 extern BikeDef gRiderAnims_17[];
-extern Rider_8 sRiderBios_3[];
 extern Racer_3 gRiders_91[];
 
 static inline s32 avail8(s32 n)
@@ -3694,7 +3527,7 @@ ret0:
     return 0;
 }
 
-static inline s32 objOk(Obj_64 *p)
+static inline s32 objOk(Screen *p)
 {
     s32 lvl;
     s32 v;
@@ -3706,10 +3539,10 @@ static inline s32 objOk(Obj_64 *p)
     }
     switch (lvl) {
     case 1:
-        v = p->h14 < 10;
+        v = p->firstItem < 10;
         break;
     case 2:
-        v = p->h14 < 15;
+        v = p->firstItem < 15;
         break;
     case 3:
         goto ret1;
@@ -3725,14 +3558,14 @@ ret0:
     return 0;
 }
 
-Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
+Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
 {
     char unk[0xE8];
     char buf[0x40];
     s16 wid[4];
     char buf2[0x10];
     char buf3[0x20];
-    Menu_4 *s;
+    Screen *s;
     s32 k;
     s32 rowh;
     s32 i;
@@ -3780,8 +3613,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         break;
     }
     gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-    switch (s->state) {
-    case 22:
+    switch (s->type) {
+    case SCREEN_TYPE_SPLASH_2:
         PREAMBLE();
         if (gHasExpansionPak_2 != 0 && (gFrameCounter & 0x20)) {
             Img *t = &gGame.unk_3A0[1];
@@ -3790,20 +3623,20 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             gdl = render_draw_image(0x77, 0x8D, t, gdl, fb, 1, 1, 3, 0);
         }
         break;
-    case 12:
+    case SCREEN_TYPE_PAK:
         if (gGame.fadeState != 1) {
             pak_screen_draw(m, fb, &gdl);
         }
         break;
-    case 3:
-    case 11:
+    case SCREEN_TYPE_LIST:
+    case SCREEN_TYPE_TRACK_LIST:
         yoff3 = 0;
-        if (s->state == 11) {
+        if (s->type == SCREEN_TYPE_TRACK_LIST) {
             yoff3 = 12;
         }
         font_reset_queue();
         PREAMBLE();
-        if (s->state == 3) {
+        if (s->type == SCREEN_TYPE_LIST) {
             s32 w;
             s32 r;
             Img *sp;
@@ -3824,17 +3657,17 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             gDPSetRenderMode(gdl++, 0x00404240, 0);
             gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
             gDPLoadTLUT_pal256(gdl++, gGame.unk_438->addr);
-            if (s->w4 != 0) {
+            if (s->left != NULL) {
                 gdl = render_draw_image(0x1C, yoff3 + 0x17, &gGame.unk_438[1], gdl, fb, 1, 1, 3, 0);
             }
-            if (s->p8 != NULL && objOk(s->p8)) {
+            if (s->right != NULL && objOk(s->right)) {
                 gdl = render_draw_image(0x128, yoff3 + 0x17, &gGame.unk_438[2], gdl, fb, 1, 1, 3, 0);
             }
         }
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
         TDRAWP(gGame.unk_3A0, 0x45, yoff3 + 0x1F, 3);
-        if ((s->state == 11 && !AVAILD(s->h14 + *s->sel)) || (s->items[*s->sel + s->h14].flags & 1)) {
+        if ((s->type == SCREEN_TYPE_TRACK_LIST && !AVAILD(s->firstItem + *s->cursor)) || (s->items[*s->cursor + s->firstItem].flags & SCREEN_ITEM_LOCKED)) {
             gDPSetPrimColor(gdl++, 0, 0, 0x64, 0x64, 0x64, 0xFF);
             gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
             gDPLoadTLUT_pal256(gdl++, gGame.greyPalette);
@@ -3843,10 +3676,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             font_draw_text(gGame.texts[0], 0x16B, 0x82);
         } else {
             gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-            gDPLoadTLUT_pal256(gdl++, gGame.itemPics[s->h14 + *s->sel]->addr);
+            gDPLoadTLUT_pal256(gdl++, gGame.itemPics[s->firstItem + *s->cursor]->addr);
         }
-        img = &gGame.itemPics[s->h14 + *s->sel][1];
-        if (s->state != 11) {
+        img = &gGame.itemPics[s->firstItem + *s->cursor][1];
+        if (s->type != SCREEN_TYPE_TRACK_LIST) {
             gdl = render_draw_image(0x102, yoff3 + 0x3B, img, gdl, fb, 1, 1, 3, 0);
         } else {
             gdl = render_draw_image(0x108, yoff3 + 0x3B, img, gdl, fb, 1, 1, 3, 0);
@@ -3854,7 +3687,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        if (s->state == 3) {
+        if (s->type == SCREEN_TYPE_LIST) {
             img = &gGame.unk_390[2];
             gdl = render_draw_image((0x200 - img->w * 8) >> 1, (0xF0 - img->h) / 2, img, gdl, fb, 1, 1, 6, 0);
         } else {
@@ -3864,25 +3697,25 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetRenderMode(gdl++, 0x00404240, 0);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-        font_text_create(gGame.texts[s->count * 2], 0x20, 4, 2, 0x21);
-        font_text_add(gGame.texts[s->count * 2], s->title);
-        font_draw_text(gGame.texts[s->count * 2], 0xB9, yoff3 + 0x28);
-        for (i = 0; i < s->count; i++) {
-            if ((s->state == 11 && !AVAIL(s->h14 + i)) || (s->items[i + s->h14].flags & 1)) {
-                font_text_create(gGame.texts[i], 0x20, 1, (i == *s->sel) ? 4 : 2, 0x20000020);
-                font_text_create(gGame.texts[i + s->count], 0x20, 1, (i == *s->sel) ? 4 : 2, 0x20000021);
+        font_text_create(gGame.texts[s->numItems * 2], 0x20, 4, 2, 0x21);
+        font_text_add(gGame.texts[s->numItems * 2], s->title);
+        font_draw_text(gGame.texts[s->numItems * 2], 0xB9, yoff3 + 0x28);
+        for (i = 0; i < s->numItems; i++) {
+            if ((s->type == SCREEN_TYPE_TRACK_LIST && !AVAIL(s->firstItem + i)) || (s->items[i + s->firstItem].flags & SCREEN_ITEM_LOCKED)) {
+                font_text_create(gGame.texts[i], 0x20, 1, (i == *s->cursor) ? 4 : 2, 0x20000020);
+                font_text_create(gGame.texts[i + s->numItems], 0x20, 1, (i == *s->cursor) ? 4 : 2, 0x20000021);
             } else {
-                font_text_create(gGame.texts[i], 0x20, 1, (i == *s->sel) ? 4 : 2, 0x20);
-                font_text_create(gGame.texts[i + s->count], 0x20, 1, (i == *s->sel) ? 4 : 2, 0x21);
+                font_text_create(gGame.texts[i], 0x20, 1, (i == *s->cursor) ? 4 : 2, 0x20);
+                font_text_create(gGame.texts[i + s->numItems], 0x20, 1, (i == *s->cursor) ? 4 : 2, 0x21);
             }
-            if (s->state == 11 && !AVAIL(gGame.trackSel)) {
+            if (s->type == SCREEN_TYPE_TRACK_LIST && !AVAIL(gGame.trackSel)) {
                 gDPSetTextureLUT(gdl++, G_TT_RGBA16);
                 gDPSetRenderMode(gdl++, 0x00404240, 0);
                 gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
                 gDPLoadTLUT_pal256(gdl++, gGame.unk_398->addr);
                 gdl = render_draw_image(0x44 - i * 7, 0x3E + i * 25 + yoff3, &gGame.unk_398[(gGame.menuAnimTimer / 2 + i * 4) % 30 + 1], gdl,
                                     fb, 1, 1, 3, 0);
-            } else if (i == *s->sel) {
+            } else if (i == *s->cursor) {
                 gDPSetTextureLUT(gdl++, G_TT_RGBA16);
                 gDPSetRenderMode(gdl++, 0x00404240, 0);
                 gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
@@ -3890,13 +3723,13 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 gdl = render_draw_image(0x45 - i * 7, 0x3D + i * 25 + yoff3, &gGame.cursorImg[gGame.menuAnimTimer / 2 % 30 + 1], gdl, fb, 1,
                                     1, 3, 0);
             }
-            if (s->state == 11) {
-                font_text_add(gGame.texts[i], gTracks_16[s->h14 + i].name);
-                int_to_str(gTracks_16[s->h14 + i].h1E, buf);
-                font_text_add(gGame.texts[i + s->count], buf);
-                font_draw_text(gGame.texts[i + s->count], 0x112 - i * 7, 0x46 + i * 25 + yoff3);
+            if (s->type == SCREEN_TYPE_TRACK_LIST) {
+                font_text_add(gGame.texts[i], gTracks_16[s->firstItem + i].name);
+                int_to_str(gTracks_16[s->firstItem + i].h1E, buf);
+                font_text_add(gGame.texts[i + s->numItems], buf);
+                font_draw_text(gGame.texts[i + s->numItems], 0x112 - i * 7, 0x46 + i * 25 + yoff3);
             } else {
-                font_text_add(gGame.texts[i], s->items[i].name);
+                font_text_add(gGame.texts[i], s->items[i].text);
             }
             font_draw_text(gGame.texts[i], 0x6E - i * 7, 0x46 + i * 25 + yoff3);
         }
@@ -3958,20 +3791,20 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             font_draw_text(gGame.texts[0], 0x10C, 0x83);
             gdl = font_render(gdl);
         } else if (gGame.screenState == 5 || gGame.screenState == 16) {
-            if ((pad->h8 & 0x400) || gGame.screenState == 16) {
+            if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) || gGame.screenState == 16) {
                 gdl = shell_draw_players_difficulty_popup(gdl, fb, -1);
             } else {
                 gdl = shell_draw_players_difficulty_popup(gdl, fb, 0);
             }
         }
         break;
-    case 4:
-    case 18: {
+    case SCREEN_TYPE_ROUND_SELECT:
+    case SCREEN_TYPE_RECORDS: {
         s32 xoff;
         s32 yoff;
         s32 u4;
 
-        if (s->state == 18) {
+        if (s->type == SCREEN_TYPE_RECORDS) {
             xoff = 0;
             yoff = 0;
         } else {
@@ -3982,25 +3815,25 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         font_reset_queue();
         gDPLoadTLUT_pal256(gdl++, gGame.unk_438->addr);
         {
-        if (gGame.blinkTimer < 0x20 && (s->state == 18 || gGame.seasonMenuState == 0)) {
-            if ((s->state == 18 && *s->sel / 5 < (gGame.numRecordTracks + 4) / 5 - 1) ||
-                (s->state == 4 &&
-                 ((gGame.difficulty == 1 && *s->sel < 1) || (gGame.difficulty == 2 && *s->sel < 2) || (gGame.difficulty == 3 && *s->sel < 5)))) {
+        if (gGame.blinkTimer < 0x20 && (s->type == SCREEN_TYPE_RECORDS || gGame.seasonMenuState == 0)) {
+            if ((s->type == SCREEN_TYPE_RECORDS && *s->cursor / 5 < (gGame.numRecordTracks + 4) / 5 - 1) ||
+                (s->type == SCREEN_TYPE_ROUND_SELECT &&
+                 ((gGame.difficulty == 1 && *s->cursor < 1) || (gGame.difficulty == 2 && *s->cursor < 2) || (gGame.difficulty == 3 && *s->cursor < 5)))) {
                 DRAW(xoff + 0x128, yoff + 0x22, &gGame.unk_438[2], 3);
             }
-            if (((s->state != 18) ? *s->sel : *s->sel / 5) > 0) {
+            if (((s->type != SCREEN_TYPE_RECORDS) ? *s->cursor : *s->cursor / 5) > 0) {
                 DRAW(xoff + 0x1C, yoff + 0x22, &gGame.unk_438[1], 3);
             }
         }
         }
         TDRAWP(gGame.unk_3A0, xoff + 0x49, yoff + 0x2A, 3);
         {
-        if (gCups[*s->sel / 5].numRounds != 0) {
+        if (gCups[*s->cursor / 5].numRounds != 0) {
             s32 a;
             void *p;
 
-            if (s->state == 18) {
-                t = *s->sel;
+            if (s->type == SCREEN_TYPE_RECORDS) {
+                t = *s->cursor;
             } else {
                 switch (gGame.seasonMenuState) {
                 case 2:
@@ -4014,7 +3847,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     break;
                 }
             }
-            if (s->state == 18) {
+            if (s->type == SCREEN_TYPE_RECORDS) {
                 if (gGame.screenState == 13) {
                     shell_blend_palette_to_gray(0, gGame.itemPics[sTrackPicIndex[t]]->addr);
                 } else {
@@ -4024,11 +3857,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 shell_blend_palette_to_gray(0xFF, NULL);
             }
             img = &gGame.itemPics[sTrackPicIndex[t]][1];
-            if (s->state != 18 &&
-                !((CUSTOM5 || ((gGame.seasonMenuState != 0 || UNLOCKED(*s->sel)) && gGame.seasonMenuState != 3 &&
+            if (s->type != SCREEN_TYPE_RECORDS &&
+                !((CUSTOM5 || ((gGame.seasonMenuState != 0 || UNLOCKED(*s->cursor)) && gGame.seasonMenuState != 3 &&
                               (gGame.seasonMenuState != 2 || (gUnlockedTracks & (1 << gGame.customTrackSel))))) &&
                  (!CUSTOM5 || LVLDONE))) {
-                if (gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3 || s->state == 18) {
+                if (gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3 || s->type == SCREEN_TYPE_RECORDS) {
                     font_text_create(gGame.texts[20], 0x40, 4, 2, 0x21);
                     font_text_add(gGame.texts[20], D_800D9C18);
                     font_draw_text(gGame.texts[20], xoff + 0x16F, yoff + 0x82);
@@ -4047,7 +3880,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 gDPLoadTLUT_pal256(gdl++, gGame.greyPalette);
                 CMB_PRIM();
             } else {
-                if (s->state == 18) {
+                if (s->type == SCREEN_TYPE_RECORDS) {
                     if (gGame.screenState == 13) {
                         gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
                     } else {
@@ -4067,16 +3900,16 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         CMB_PRIM();
-        img = &gGame.unk_390[(s->state == 18) ? 6 : 7];
+        img = &gGame.unk_390[(s->type == SCREEN_TYPE_RECORDS) ? 6 : 7];
         DRAW(((0x200 - img->w * 8) >> 1) + 4, (0xF0 - img->h) / 2, img, 6);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetRenderMode(gdl++, 0x00404240, 0);
         CMB_TEX();
         for (i = 0; i < 5; i++) {
-            if (s->state == 18 || ((gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3) && i < gCups[*s->sel].numRounds) ||
-                (gGame.seasonMenuState != 0 && i <= gCups[*s->sel].numRounds)) {
-                if (s->state == 18) {
-                    if (i == *s->sel % 5) {
+            if (s->type == SCREEN_TYPE_RECORDS || ((gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3) && i < gCups[*s->cursor].numRounds) ||
+                (gGame.seasonMenuState != 0 && i <= gCups[*s->cursor].numRounds)) {
+                if (s->type == SCREEN_TYPE_RECORDS) {
+                    if (i == *s->cursor % 5) {
                         gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 4);
                         DRAW(0x48 - i * 7 + xoff, 0x49 + i * 25 + yoff, img = &gGame.cursorImg[(gGame.menuAnimTimer / 2 + i * 4) % 30 + 1], 3);
                         font_text_create(gGame.texts[i], 0x20, 1, 4, 0x20);
@@ -4100,15 +3933,15 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         font_text_create(gGame.texts[i + 5], 0x20, 1, 2, 0x22);
                     }
                 } else {
-                    if (!((UNLOCKED(*s->sel) || CUSTOM5) && (!CUSTOM5 || LVLDONE))) {
+                    if (!((UNLOCKED(*s->cursor) || CUSTOM5) && (!CUSTOM5 || LVLDONE))) {
                         gDPLoadTLUT_pal256(gdl++, gGame.unk_398->addr);
                         DRAW(0x48 - i * 7 + xoff, 0x49 + i * 25 + yoff, img = &gGame.unk_398[(gGame.menuAnimTimer / 2 + i * 4) % 30 + 1], 3);
-                    } else if (((gCups[*s->sel].won[gGame.difficulty - 1] >> i) & 1) && !CUSTOM5) {
+                    } else if (((gCups[*s->cursor].won[gGame.difficulty - 1] >> i) & 1) && !CUSTOM5) {
                         gDPLoadTLUT_pal256(gdl++, gGame.unk_3A8->addr);
                         DRAW(0x49 - i * 7 + xoff, 0x49 + i * 25 + yoff, img = &gGame.unk_3A8[(gGame.menuAnimTimer / 2 + i * 4) % 30 + 1], 3);
                     }
                     if (i == gGame.cupPreviewTrack) {
-                        if (!((UNLOCKED(*s->sel) || CUSTOM5) && (!CUSTOM5 || LVLDONE))) {
+                        if (!((UNLOCKED(*s->cursor) || CUSTOM5) && (!CUSTOM5 || LVLDONE))) {
                             font_text_create(gGame.texts[i], 0x20, 1, 4, 0x20000020);
                             font_text_create(gGame.texts[i + 5], 0x20, 1, 4, 0x20000022);
                         } else {
@@ -4116,7 +3949,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                             font_text_create(gGame.texts[i + 5], 0x20, 1, 4, 0x22);
                         }
                     } else {
-                        if (!((UNLOCKED(*s->sel) || CUSTOM5) && (!CUSTOM5 || LVLDONE))) {
+                        if (!((UNLOCKED(*s->cursor) || CUSTOM5) && (!CUSTOM5 || LVLDONE))) {
                             font_text_create(gGame.texts[i], 0x20, 1, 2, 0x20000020);
                             font_text_create(gGame.texts[i + 5], 0x20, 1, 2, 0x20000022);
                         } else {
@@ -4125,41 +3958,41 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         }
                     }
                 }
-                if (s->state == 18 || i < gCups[*s->sel].numRounds) {
-                    if ((s->state != 18 && gGame.seasonMenuState != 2) || (s->state == 18 && (*s->sel / 5) * 5 + i < gGame.numRecordTracks)) {
-                        if (s->state == 18) {
-                            switch ((*s->sel / 5) * 5 + i) {
+                if (s->type == SCREEN_TYPE_RECORDS || i < gCups[*s->cursor].numRounds) {
+                    if ((s->type != SCREEN_TYPE_RECORDS && gGame.seasonMenuState != 2) || (s->type == SCREEN_TYPE_RECORDS && (*s->cursor / 5) * 5 + i < gGame.numRecordTracks)) {
+                        if (s->type == SCREEN_TYPE_RECORDS) {
+                            switch ((*s->cursor / 5) * 5 + i) {
                             case 0x15:
                             case 0x16:
                             case 0x17:
                                 strcpy(buf2, "-");
                                 break;
                             default:
-                                int_to_str(gTracks_16[gGame.recordTracks[(*s->sel / 5) * 5 + i]].h1E, buf2);
+                                int_to_str(gTracks_16[gGame.recordTracks[(*s->cursor / 5) * 5 + i]].h1E, buf2);
                                 break;
                             }
-                        } else if (*s->sel == 5) {
+                        } else if (*s->cursor == 5) {
                             int_to_str(gCups[5].laps[i], buf2);
-                        } else if (*s->sel == 4) {
+                        } else if (*s->cursor == 4) {
                             int_to_str(1, buf2);
                         } else {
-                            int_to_str(gTracks_16[gCups[*s->sel].tracks[i]].h1E, buf2);
+                            int_to_str(gTracks_16[gCups[*s->cursor].tracks[i]].h1E, buf2);
                         }
                         font_text_add(gGame.texts[i + 5], buf2);
                         font_draw_text(gGame.texts[i + 5], 0x11A - i * 7 + xoff, 0x52 + i * 25 + yoff);
                     }
-                    if (s->state == 18) {
-                        if ((*s->sel / 5) * 5 + i < gGame.numRecordTracks) {
-                            font_text_add(gGame.texts[i], gTracks_16[gGame.recordTracks[(*s->sel / 5) * 5 + i]].name);
+                    if (s->type == SCREEN_TYPE_RECORDS) {
+                        if ((*s->cursor / 5) * 5 + i < gGame.numRecordTracks) {
+                            font_text_add(gGame.texts[i], gTracks_16[gGame.recordTracks[(*s->cursor / 5) * 5 + i]].name);
                         }
                     } else {
-                        font_text_add(gGame.texts[i], gTracks_16[gCups[*s->sel].tracks[i]].name);
+                        font_text_add(gGame.texts[i], gTracks_16[gCups[*s->cursor].tracks[i]].name);
                     }
                     font_draw_text(gGame.texts[i], 0x6F - i * 7 + xoff, 0x52 + i * 25 + yoff);
                 } else {
                     gDPSetTextureLUT(gdl++, G_TT_NONE);
                     CMB_PRIM();
-                    if (*s->sel == 5) {
+                    if (*s->cursor == 5) {
                         img = &gGame.unk_390[5];
                     }
                     gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
@@ -4175,17 +4008,17 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 img = &gGame.unk_390[4];
                 gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xF0);
                 DRAW(0x47 - i * 7 + xoff, 0x46 + i * 25 + yoff, img, 6);
-                if (*s->sel == 5) {
+                if (*s->cursor == 5) {
                     img = &gGame.unk_390[5];
                 }
                 DRAW(0x63 - i * 7 + xoff, 0x45 + i * 25 + yoff, img, 6);
             }
         }
-        if (s->state == 18) {
+        if (s->type == SCREEN_TYPE_RECORDS) {
             strcpy(buf, "Records");
-        } else if (*s->sel == 4) {
+        } else if (*s->cursor == 4) {
             strcpy(buf, "Challenge");
-        } else if (*s->sel == 5) {
+        } else if (*s->cursor == 5) {
             if (gGame.seasonMenuState == 2 && (gFrameCounter & 0x20)) {
                 gDPSetTextureLUT(gdl++, G_TT_RGBA16);
                 CMB_TEX();
@@ -4202,7 +4035,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     for (i = 0; i < 3; i++) {
                         font_text_create(gGame.texts[i + 12], 0x40, 1, (i == gGame.roundSel) ? 4 : 2, 0x21);
                     }
-                    if (gCups[*s->sel].numRounds == 0) {
+                    if (gCups[*s->cursor].numRounds == 0) {
                         font_text_add(gGame.texts[12], D_800D9CDC);
                         font_draw_text(gGame.texts[12], xoff + 0x16E, yoff + 0x80);
                     } else {
@@ -4216,7 +4049,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             case 1:
                 strcpy(buf, "Select Slot");
                 font_text_create(gGame.texts[12], 0x40, 5, 4, 0x20);
-                if (gGame.roundSel == gCups[*s->sel].numRounds) {
+                if (gGame.roundSel == gCups[*s->cursor].numRounds) {
                     font_text_add(gGame.texts[12], D_800D9CF0);
                 } else {
                     font_text_add(gGame.texts[12], D_800D9D14);
@@ -4244,7 +4077,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 break;
             }
         } else {
-            switch (*s->sel) {
+            switch (*s->cursor) {
             case 0:
                 strcpy(buf, "Bronze Round");
                 break;
@@ -4262,27 +4095,27 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         font_text_create(gGame.texts[11], 0x40, 4, 2, 0x21);
         font_text_add(gGame.texts[11], buf);
         font_draw_text(gGame.texts[11], xoff + 0xBD, yoff + 0x34);
-        if (s->state != 18 && gGame.seasonMenuState == 0) {
+        if (s->type != SCREEN_TYPE_RECORDS && gGame.seasonMenuState == 0) {
             font_text_create(gGame.texts[10], 0x40, 1, 2, 0x20);
-            if (gGame.difficulty < SAVE.b2C0 || (SAVE.b2C0 == gGame.difficulty && ((SAVE.b2BF >> *s->sel) & 1))) {
+            if (gGame.difficulty < SAVE.b2C0 || (SAVE.b2C0 == gGame.difficulty && ((SAVE.b2BF >> *s->cursor) & 1))) {
                 font_text_add(gGame.texts[10], D_800D9DE4);
-            } else if ((SAVE.b2C0 > gGame.difficulty || (SAVE.b2C0 == gGame.difficulty && (*s->sel == 0 || ((SAVE.b2BF >> (*s->sel - 1)) & 1)))) || (CUSTOM5 && SAVE.b2C0 == gGame.difficulty && (SAVE.b2BF & 8))) {
+            } else if ((SAVE.b2C0 > gGame.difficulty || (SAVE.b2C0 == gGame.difficulty && (*s->cursor == 0 || ((SAVE.b2BF >> (*s->cursor - 1)) & 1)))) || (CUSTOM5 && SAVE.b2C0 == gGame.difficulty && (SAVE.b2BF & 8))) {
                 s32 fl;
 
                 fl = 0;
                 switch (gGame.difficulty) {
                 case 1:
-                    if (*s->sel == 1) {
+                    if (*s->cursor == 1) {
                         fl = 1;
                     }
                     break;
                 case 2:
-                    if (*s->sel == 2) {
+                    if (*s->cursor == 2) {
                         fl = 1;
                     }
                     break;
                 case 3:
-                    if (*s->sel == 4) {
+                    if (*s->cursor == 4) {
                         fl = 1;
                     }
                     break;
@@ -4293,7 +4126,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     } else {
                         font_text_add(gGame.texts[10], D_800D9E24);
                     }
-                } else if (*s->sel == 5) {
+                } else if (*s->cursor == 5) {
                     if (gCups[5].numRounds != 0) {
                         if (gGame.roundSel == 0) {
                             font_text_add(gGame.texts[10], D_800D9E50);
@@ -4315,7 +4148,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         }
         gdl = font_render(gdl);
         PSYNCK(u4);
-        if (s->state == 18) {
+        if (s->type == SCREEN_TYPE_RECORDS) {
             s32 dx, dy;
 
             trk = &gTracks_16[gGame.recordTracks[gGame.recordsSel]];
@@ -4384,7 +4217,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         }
         break;
     }
-    case 6: {
+    case SCREEN_TYPE_OPTIONS: {
         s32 u5;
 
         font_reset_queue();
@@ -4481,8 +4314,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         }
         break;
     }
-    case 24:
-    case 25:
+    case SCREEN_TYPE_PAK_STATUS:
+    case SCREEN_TYPE_BACKUP_LOST:
         font_reset_queue();
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetRenderMode(gdl++, 0x00404240, 0);
@@ -4490,7 +4323,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         CMB_TEX();
         img = &gGame.unk_3DC[1];
         gDPLoadTLUT_pal256(gdl++, gGame.unk_3DC->addr);
-        if (s->state == 25) {
+        if (s->type == SCREEN_TYPE_BACKUP_LOST) {
             DRAW(0x106 - img->w * 4, 0x41, img, 3);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             CMB_PRIM();
@@ -4575,14 +4408,14 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         }
         gdl = font_render(gdl);
         break;
-    case 9:
-    case 20: {
+    case SCREEN_TYPE_CHEAT_ENTRY:
+    case SCREEN_TYPE_INITIALS: {
         s32 u6;
         s32 plr;
         s32 cheat;
 
         font_reset_queue();
-        cheat = (s->state == 9);
+        cheat = (s->type == SCREEN_TYPE_CHEAT_ENTRY);
         if (!cheat) {
             plr = gGame.recordPlayer[gGame.entryRecord];
         }
@@ -4622,7 +4455,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         }
         if (cheat && gGame.screenState == 17) {
             font_text_create(gGame.texts[0], 0x20, 1, 2, 0x21);
-            font_text_add(gGame.texts[0], sCheatTable_2[gGame.cheatEntered].name);
+            font_text_add(gGame.texts[0], sCheatTable[gGame.cheatEntered].name);
             if (((1 << gGame.cheatEntered) == 4 && (gGame.flags & 0x20000000)) || ((sCheatMask >> gGame.cheatEntered) & 1)) {
                 font_text_add(gGame.texts[0], D_800DA020);
             } else {
@@ -4702,7 +4535,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gdl = font_render(gdl);
         break;
     }
-    case 19: {
+    case SCREEN_TYPE_CONTROLLER_SETTINGS: {
         Game *gp = &gGame;
 
         font_reset_queue();
@@ -4795,17 +4628,17 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gdl = font_render(gdl);
         break;
     }
-    case 7:
+    case SCREEN_TYPE_SEASON_RACE_RESULT:
 #define YR (0x46 + j * rowh + ry)
-    case 13:
-    case 14: {
+    case SCREEN_TYPE_RACE_RESULT:
+    case SCREEN_TYPE_STANDINGS: {
         s32 x;
         s32 y;
         s32 px;
 
         font_reset_queue();
         rx = 0;
-        if (s->state == 14) {
+        if (s->type == SCREEN_TYPE_STANDINGS) {
             if (CHAMP4) {
                 rx = -8;
                 ry = 0x1B;
@@ -4821,7 +4654,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         for (j = 0; j < 3; j++) {
             font_text_create(gGame.texts[j], 0x20, 4, 2, 0x20);
         }
-        if (s->state == 14 && !CHAMP4) {
+        if (s->type == SCREEN_TYPE_STANDINGS && !CHAMP4) {
             font_text_add(gGame.texts[0], D_800DA0A4);
             font_text_add(gGame.texts[1], D_800DA0B8);
             font_draw_text(gGame.texts[1], 0x18F, ry + 0x28);
@@ -4832,11 +4665,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 font_text_add(gGame.texts[0], D_800DA0D0);
             }
             font_text_add(gGame.texts[2], D_800DA0E0);
-            if (s->state == 7) {
+            if (s->type == SCREEN_TYPE_SEASON_RACE_RESULT) {
                 font_text_add(gGame.texts[1], D_800DA0B8);
                 font_draw_text(gGame.texts[1], 0x147, ry + 0x28);
                 font_draw_text(gGame.texts[2], 0x18D, ry + 0x28);
-            } else if (s->state == 14 && CHAMP4) {
+            } else if (s->type == SCREEN_TYPE_STANDINGS && CHAMP4) {
                 font_draw_text(gGame.texts[2], 0x14D, ry + 0x2A);
             } else if (gGame.mode == 8) {
                 font_draw_text(gGame.texts[2], 0x178, ry + 0x28);
@@ -4844,7 +4677,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 font_draw_text(gGame.texts[2], 0x184, ry + 0x28);
             }
         }
-        if (s->state == 14 && CHAMP4) {
+        if (s->type == SCREEN_TYPE_STANDINGS && CHAMP4) {
             font_draw_text(gGame.texts[0], 0x50, ry + 0x2A);
             font_text_create(gGame.texts[0], 0x20, 4, 2, 0x21);
             if (gEvent.finishOrder[0] == 0) {
@@ -4857,11 +4690,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             font_draw_text(gGame.texts[0], 0x55, ry + 0x28);
         }
         rowh = 0x19;
-        if (s->state == 14 && CHAMP4) {
+        if (s->type == SCREEN_TYPE_STANDINGS && CHAMP4) {
             rowh = 0x17;
         }
         for (j = 0; j < gEvent.numRiders; j++) {
-            if (s->state == 14 && !CHAMP4) {
+            if (s->type == SCREEN_TYPE_STANDINGS && !CHAMP4) {
                 r = gSeason->standings[j];
             } else {
                 r = gEvent.finishOrder[j];
@@ -4869,7 +4702,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             img = (Img *)((r < gGame.numPlayers || gGame.mode == 8) ? ((gGame.mode == 8) ? ((r == D_800C8CE0) ? 4 : 2) : 4) : 2);
             font_text_create(gGame.texts[j * 4 + 5], 0x20, 1, (s32)img, 0x20);
             pl = j;
-            while (pl > 0 && s->state == 13 && gRiders_91[gEvent.finishOrder[pl]].f68C == gRiders_91[gEvent.finishOrder[pl - 1]].f68C) {
+            while (pl > 0 && s->type == SCREEN_TYPE_RACE_RESULT && gRiders_91[gEvent.finishOrder[pl]].f68C == gRiders_91[gEvent.finishOrder[pl - 1]].f68C) {
                 s32 d0;
 
                 pl--;
@@ -4877,15 +4710,15 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             int_to_str(pl + 1, buf);
             font_text_add(gGame.texts[j * 4 + 5], buf);
             x = rx + 0x4E - j * 7;
-            font_draw_text(gGame.texts[j * 4 + 5], (s->state == 14 && CHAMP4) ? x - 2 : x, YR);
-            str_copy(buf, sRiderBios_3[gGame.riders[r]].name);
+            font_draw_text(gGame.texts[j * 4 + 5], (s->type == SCREEN_TYPE_STANDINGS && CHAMP4) ? x - 2 : x, YR);
+            str_copy(buf, sRiderBios[gGame.riders[r]].name);
             font_text_create(gGame.texts[j * 4 + 6], 0x20, 1, (s32)img, 0x20);
             font_text_add(gGame.texts[j * 4 + 6], buf);
             font_draw_text(gGame.texts[j * 4 + 6], rx - (j * 7 - 0x6A), YR);
             if (r < 4) {
                 wid[r] = font_get_char_pos(gGame.texts[j * 4 + 6], 0x6A - j * 7, YR, strlen_2(buf) - 1) >> 16;
             }
-            if (s->state == 7 && gRacePoints[j] != 0) {
+            if (s->type == SCREEN_TYPE_SEASON_RACE_RESULT && gRacePoints[j] != 0) {
                 font_text_create(gGame.texts[j * 4 + 7], 0x20, 1, (s32)img, 0x20);
                 int_to_str(gRacePoints[j], buf + 1);
                 buf[0] = '+';
@@ -4893,24 +4726,24 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 font_draw_text(gGame.texts[j * 4 + 7], 0x14C - j * 7, YR);
             }
             font_text_create(gGame.texts[j * 4 + 7], 0x20, 1, (s32)img, 0x20);
-            if (s->state == 14 && !CHAMP4) {
+            if (s->type == SCREEN_TYPE_STANDINGS && !CHAMP4) {
                 int_to_str(gSeason->points[r], buf);
             } else {
                 event_format_time(gRiders_91[r].f68C, buf);
             }
             font_text_add(gGame.texts[j * 4 + 7], buf);
-            switch (s->state) {
-            case 7:
+            switch (s->type) {
+            case SCREEN_TYPE_SEASON_RACE_RESULT:
                 font_draw_text(gGame.texts[j * 4 + 7], 0x186 - j * 7, YR);
                 break;
-            case 13:
+            case SCREEN_TYPE_RACE_RESULT:
                 if (gGame.mode == 8) {
                     font_draw_text(gGame.texts[j * 4 + 7], 0x170 - j * 7, YR);
                 } else {
                     font_draw_text(gGame.texts[j * 4 + 7], 0x17C - j * 7, YR);
                 }
                 break;
-            case 14:
+            case SCREEN_TYPE_STANDINGS:
                 if (CHAMP4) {
                     font_draw_text(gGame.texts[j * 4 + 7], 0x146 - j * 7, YR);
                 } else {
@@ -4926,14 +4759,14 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         CMB_PRIM();
-        if (s->state == 14 && CHAMP4) {
+        if (s->type == SCREEN_TYPE_STANDINGS && CHAMP4) {
             img = &gGame.unk_390[1];
             DRAWV(((0x200 - img->w * 8) >> 1) | 1, (0xF0 - img->h) / 2, img, 6);
         } else if (gGame.mode == 8) {
             img = &gGame.unk_390[4];
             DRAWV(((0x200 - img->w * 8) >> 1) | 1, (0xF0 - img->h) / 2, img, 6);
         } else {
-            img = &gGame.unk_390[(s->state == 7) ? 2 : 3];
+            img = &gGame.unk_390[(s->type == SCREEN_TYPE_SEASON_RACE_RESULT) ? 2 : 3];
             DRAWV(((0x200 - img->w * 8) >> 1) | 1, (0xF0 - img->h) / 2 + ry, img, 6);
         }
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -4947,11 +4780,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 buf[1] = '\0';
                 font_text_add(gGame.texts[gEvent.numRiders * 4 + 5 + j], buf);
                 font_draw_text(gGame.texts[gEvent.numRiders * 4 + 5 + j], wid[j] + 5 + img->w * 4,
-                              (img->h >> 1) + 0x37 + gRiders_91[j].h668 * 25 + ((s->state != 14) ? 7 : 0));
+                              (img->h >> 1) + 0x37 + gRiders_91[j].h668 * 25 + ((s->type != SCREEN_TYPE_STANDINGS) ? 7 : 0));
             } else {
                 gDPLoadTLUT_pal256(gdl++, gGame.unk_39C->addr);
             }
-            if (s->state == 14) {
+            if (s->type == SCREEN_TYPE_STANDINGS) {
                 for (k = 0; k < gEvent.numRiders; k++) {
                     if (gSeason->standings[k] == j) {
                         break;
@@ -4959,7 +4792,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 }
             }
             px = 5 + wid[j + D_800C8CE0] + rx;
-            if (s->state != 14 || CHAMP4) {
+            if (s->type != SCREEN_TYPE_STANDINGS || CHAMP4) {
                 y = 0x3E + rowh * gRiders_91[j + D_800C8CE0].h668 + ry;
             } else {
                 y = 0x3E + rowh * k + ry;
@@ -4983,7 +4816,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gDPPipeSync(gdl++);
         break;
     }
-    case 0:
+    case SCREEN_TYPE_TITLE:
         if (gGame.fadeState != 1) {
             render_draw_race(m, fb, &gdl);
             gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -5012,7 +4845,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gdl = font_render(gdl);
         gDPPipeSync(gdl++);
         break;
-    case 2: {
+    case SCREEN_TYPE_RIDER_SELECT: {
         s32 u7;
         s32 u8;
         s32 u9;
@@ -5112,7 +4945,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     }
                 }
                 font_text_create(gGame.texts[i * 20], 0x40, 5, 4, 0x21);
-                font_text_add(gGame.texts[i * 20], sRiderBios_3[gGame.riders[i]].f4);
+                font_text_add(gGame.texts[i * 20], sRiderBios[gGame.riders[i]].fullName);
                 if (gGame.numPlayers == 1) {
                     if (gGame.flags & (0x400 << i)) {
                         font_draw_text(gGame.texts[i * 20], VP[0][0].x + VP[0][0].w / 2, VP[0][0].y + VP[0][0].h / 2 + 0x46);
@@ -5157,7 +4990,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         img = &gGame.unk_390[2];
                         DRAWV(VP[0][0].x, VP[0][0].y - img->h + yo, img, 6);
                         for (j = 0; j < 16; j++) {
-                            if (str_icmp(sRiderBios_3[gGame.riders[i]].f10, gRiderAnims_17[j].f18) == 0) {
+                            if (str_icmp(sRiderBios[gGame.riders[i]].text[2], gRiderAnims_17[j].f18) == 0) {
                                 break;
                             }
                         }
@@ -5173,7 +5006,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         s32 oy;
 
                         ox = j * 6 - 0x55;
-                        n = (sRiderBios_3[gGame.riders[i]].stats[j] + 1) * 2;
+                        n = (sRiderBios[gGame.riders[i]].stats[j] + 1) * 2;
                         switch (n >> 1) {
                         case 5:
                             gDPSetPrimColor(gdl++, 0, 0, 0x14, 0xC8, 0x14, 0xFF);
@@ -5219,7 +5052,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 if (!(gGame.flags & (0x400 << i))) {
                     img = &gGame.unk_390[7];
                     for (j = 0; j < 4; j++) {
-                        nn = (sRiderBios_3[gGame.riders[i]].stats[j] + 1) * 2;
+                        nn = (sRiderBios[gGame.riders[i]].stats[j] + 1) * 2;
                         nn &= ~1;
                         switch (nn >> 1) {
                         case 5:
@@ -5268,7 +5101,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     DRAWV(VP[gNumViews - 1][i].x, VP[gNumViews - 1][i].y + VP[gNumViews - 1][i].h - img->h, img, 6);
                 }
                 font_text_create(gGame.texts[i * 4], 0x40, 5, 4, 0x21);
-                font_text_add(gGame.texts[i * 4], sRiderBios_3[gGame.riders[i]].f4);
+                font_text_add(gGame.texts[i * 4], sRiderBios[gGame.riders[i]].fullName);
                 {
                     s32 yy = VP[gNumViews - 1][i].y + VP[gNumViews - 1][i].h / 2;
                     s32 xx = VP[gNumViews - 1][i].x + VP[gNumViews - 1][i].w / 2;
@@ -5345,18 +5178,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
     return gdl;
 }
 
-#define IMG(s) ((s)->type == 4 ? gGame.screenPics[*(s)->idx] : (s)->img)
-
-typedef struct {
-    u8 pad0[0xC];
-    u8 *tbl;            /* 0x0C */
-    u8 pad10[6];
-    s16 type;           /* 0x16 */
-    u8 pad18[4];
-    s32 f1C;            /* 0x1C */
-    s32 *idx;           /* 0x20 */
-    Pic *img;           /* 0x24 */
-} Obj_65;
+#define IMG(s) ((s)->type == SCREEN_TYPE_ROUND_SELECT ? gGame.screenPics[*(s)->cursor] : (s)->bg)
 
 typedef struct {
     s16 x, y, w, h;
@@ -5370,8 +5192,8 @@ void shell_draw(Mtx *m, s32 fb, Gfx **pgdl)
     Mtx persp;
     u16 pn;
     Gfx *gdl;
-    Obj_65 *s;
-    u8 *tbl;
+    Screen *s;
+    ScreenItem *item;
     u16 alpha;
 
     gdl = *pgdl;
@@ -5382,11 +5204,11 @@ void shell_draw(Mtx *m, s32 fb, Gfx **pgdl)
     }
     if (s != NULL) {
         if (gGame.fadeState == 0) {
-            tbl = s->tbl + sPrevScreenCursor * 16;
+            item = s->items + sPrevScreenCursor;
         } else {
-            tbl = s->tbl;
-            if (s->idx != NULL) {
-                tbl += *s->idx * 16;
+            item = s->items;
+            if (s->cursor != NULL) {
+                item += *s->cursor;
             }
         }
     }
@@ -5424,7 +5246,7 @@ done:
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     gDPPipeSync(gdl++);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
-    if (gGame.fadeState == 1 || s == NULL || s->f1C == 0) {
+    if (gGame.fadeState == 1 || s == NULL || s->bgResId == NULL) {
         gDPSetFillColor(gdl++, 0);
         gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     }
@@ -5450,11 +5272,11 @@ done:
             gGame.fadeTimer--;
         }
     } else {
-        if (s->type == 4 || s->f1C != 0) {
-            gDPLoadTLUT_pal256(gdl++, s->type == 4 ? gGame.screenPics[*s->idx]->pal : s->img->pal);
+        if (s->type == SCREEN_TYPE_ROUND_SELECT || s->bgResId != NULL) {
+            gDPLoadTLUT_pal256(gdl++, s->type == SCREEN_TYPE_ROUND_SELECT ? gGame.screenPics[*s->cursor]->pal : s->bg->pal);
             gdl = render_draw_image(0, 0, IMG(s)->img, gdl, fb, 1, 1, 3, 0);
         }
-        if (s->type == 0) {
+        if (s->type == SCREEN_TYPE_TITLE) {
             Rect_3 *r = &sTitleSceneRect;
             sTitleSceneViewport.vp.vscale[2] = 0x1FF;
             sTitleSceneViewport.vp.vscale[3] = 0;
@@ -5465,9 +5287,9 @@ done:
             sTitleSceneViewport.vp.vtrans[0] = (r->x + r->w / 2) * 4;
             sTitleSceneViewport.vp.vtrans[1] = (r->y + r->h / 2) * 4;
             gSPViewport(gdl++, &sTitleSceneViewport);
-            gdl = shell_draw_screen(m, fb, gdl, tbl, 0);
+            gdl = shell_draw_screen(m, fb, gdl, item, 0);
         } else if (s != NULL) {
-            gdl = shell_draw_screen(m, fb, gdl, tbl, 0);
+            gdl = shell_draw_screen(m, fb, gdl, item, 0);
             gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
             D_800CA80F_2[0] = alpha;
         }
@@ -5634,13 +5456,13 @@ void func_800880DC(s32 a0) {
     D_800CA924[2] = 0;
 }
 
-void shell_cb_original_excitebike(void)
+void shell_cb_original_excitebike(s32 chosen)
 {
     gGame.mode = 12;
     gGame.flags = (gGame.flags & ~0x80) | 0x40;
 }
 
-void shell_cb_stunt_course(int param_1)
+void shell_cb_stunt_course(s32 param_1)
 {
     if (param_1 != 0) {
         Game *b = &gGame;
@@ -5711,12 +5533,7 @@ void shell_restore_race_results(void)
     }
 }
 
-struct Obj_67 {
-    u8 pad0[0x14];
-    s16 h14;
-};
-
-s32 shell_is_round_screen_unlocked(Obj_67 *o)
+s32 shell_is_round_screen_unlocked(Screen *screen)
 {
     s32 mode;
     s32 t;
@@ -5740,7 +5557,7 @@ s32 shell_is_round_screen_unlocked(Obj_67 *o)
     }
     goto ret0;
 one:
-    t = o->h14 < 10;
+    t = screen->firstItem < 10;
 tail:
     if (t == 0) {
         goto ret0;
@@ -5748,29 +5565,29 @@ tail:
 ret1:
     return 1;
 two:
-    t = o->h14 < 0xF;
+    t = screen->firstItem < 0xF;
     goto tail;
 ret0:
     return 0;
 }
 
-void shell_main_menu_or_back_input(u8 *p, s32 x, u32 *f, void *s)
+void shell_main_menu_or_back_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
     s32 n;
-    void *q;
+    Screen *back;
 
-    if ((*f & 0x50) != 0) {
-        shell_goto_screen(sScreenMainMenu, 0, 1, s);
+    if ((*buttons & 0x50) != 0) {
+        shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
         n = 1;
     } else {
-        if ((*f & 0x20) == 0) {
+        if ((*buttons & 0x20) == 0) {
             return;
         }
-        q = *(void **)(p + 0x28);
-        if (q == 0) {
+        back = screen->back;
+        if (back == NULL) {
             return;
         }
-        shell_goto_screen(q, 0, 0, s);
+        shell_goto_screen(back, 0, 0);
         n = 2;
     }
     snd_play_menu_sound(n);

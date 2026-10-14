@@ -4,6 +4,8 @@
 #define STRUCTS_GAME_H
 
 #include "common.h"
+#include "structs/font.h"
+#include "structs/shell.h"
 #include "structs/race.h"
 
 /* flags: 0x1 a race run by the front end (title, rider select), 0x2 leaving the editor returns to the front end,
@@ -37,7 +39,7 @@ typedef struct Game {
     /* 0x068 */ s32 cupPreviewTrack;
     /* 0x06C */ s32 roundSel;
     /* 0x070 */ u32 seasonMenuState;
-    /* 0x074 */ s32 *texts[48];         /* text objects (font_text_create) */
+    /* 0x074 */ TextObj *texts[48];     /* text objects (font_text_create) */
     /* 0x134 */ s16 customTrackSel;     /* custom cup: the track picker */
     /* 0x136 */ s16 unk_136;
     /* 0x138 */ s16 customTrackPrev;
@@ -86,7 +88,7 @@ typedef struct Game {
     /* 0x3E8 */ u8 *userTrack;          /* a packed user track (0x400 bytes) for the editor or the Controller Pak */
     /* 0x3EC */ s32 blinkTimer;         /* 0-119 */
     /* 0x3F0 */ u8 unk_3F0[0x3FC - 0x3F0];
-    /* 0x3FC */ void *returnScreen;     /* the screen to return to after a race */
+    /* 0x3FC */ Screen *returnScreen;   /* the screen to return to after a race */
     /* 0x400 */ s32 menuSel;
     /* 0x404 */ Img *unk_404;
     /* 0x408 */ s16 riderSelectAnim[2];

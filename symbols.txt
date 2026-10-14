@@ -612,7 +612,6 @@ replay_play_start_2                   game  0x8005FE10  func        -  replay_pl
 replay_play_start_keep_setup          game  0x8005FEE0  func     0xd0
 replay_play_frame                     game  0x8005FFB0  func     0xc8
 replay_get_info                       game  0x80060078  func     0x5c
-D_800600D4                            game  0x800600D4  data        -
 replay_validate                       game  0x800600D4  func     0x9c
 calc_checksum24                       game  0x80060170  func     0x54
 replay_read_bit                       game  0x800601C4  func     0x40
@@ -776,7 +775,6 @@ screen_draw_wipe                      game  0x80072F70  func    0x25c
 D_800731D0                            game  0x800731D0  data        -
 game_boot                             game  0x80073200  func     0x60
 idle_thread                           game  0x80073260  func     0x6c
-D_800732D0                            game  0x800732D0  data        -
 shell_format_pak_file_label           game  0x800732D0  func    0x394
 shell_blend_palette_to_gray           game  0x80073664  func    0x140
 shell_init                            game  0x800737A4  func    0x7e0
@@ -801,8 +799,6 @@ shell_build_player_palettes           game  0x80079AA4  func     0xc0
 shell_update_season_progress          game  0x80079B64  func    0x29c
 shell_load_screen                     game  0x80079E00  func   0x1138
 shell_goto_screen                     game  0x8007AF38  func    0x1fc
-shell_goto_screen_2                   game  0x8007AF38  func        -  shell_goto_screen
-shell_goto_screen_3                   game  0x8007AF38  func        -  shell_goto_screen
 shell_draw_rider_stats                game  0x8007B134  func    0x268
 shell_draw_results_menu               game  0x8007B39C  func    0x618
 shell_draw_players_difficulty_popup   game  0x8007B9B4  func    0xc8c
@@ -823,7 +819,6 @@ shell_cb_custom_tracks                game  0x800880B8  func     0x24
 func_800880DC                         game  0x800880DC  func     0x94
 shell_cb_original_excitebike          game  0x80088170  func     0x28
 shell_cb_stunt_course                 game  0x80088198  func     0x3c
-D_800881D4                            game  0x800881D4  data        -
 shell_pak_track_invalid               game  0x800881D4  func     0x48
 shell_backup_race_results             game  0x8008821C  func     0x84
 shell_restore_race_results            game  0x800882A0  func     0x84
@@ -882,8 +877,6 @@ gui_init                              game  0x8008F0B0  func    0x180
 gui_draw_message                      game  0x8008F230  func    0x228
 gui_draw_prompt                       game  0x8008F458  func    0x420
 gui_menu_input                        game  0x8008F878  func    0x290
-gui_menu_input_2                      game  0x8008F878  func        -  gui_menu_input
-gui_menu_input_3                      game  0x8008F878  func        -  gui_menu_input
 gui_draw_menu                         game  0x8008FB08  func    0x890
 gui_menu_fix_cursor                   game  0x80090398  func     0xec
 gui_free                              game  0x80090484  func     0xd8
@@ -1488,10 +1481,8 @@ func_800C21F0                         game  0x800C21F0  func     0x34
 font_reset_queue                      game  0x800C2224  func     0x54
 gCheatFlags                           game  0x800C2280  data      0x4
 sCheatTable                           game  0x800C2284  data     0xcc
-sCheatTable_2                         game  0x800C2284  data        -  sCheatTable
 gDrawFlags                            game  0x800C2350  data      0x4
 gRaceTextObjs                         game  0x800C2354  data      0x4
-gRaceTextObjs_2                       game  0x800C2354  data        -  gRaceTextObjs
 gPodiumMode                           game  0x800C2358  data      0x4
 sPinHeadCheat                         game  0x800C235C  data      0x4
 sBigHeadCheat                         game  0x800C2360  data      0x4
@@ -1933,8 +1924,6 @@ sSeasonRoundItems                     game  0x800CD2D0  data     0x70
 D_800CD340                            game  0x800CD340  data     0x10
 D_800CD350                            game  0x800CD350  data     0x20
 gSpecialTracksItems                   game  0x800CD370  data     0x60
-gSpecialTracksItems_2                 game  0x800CD370  data        -  gSpecialTracksItems
-gSpecialTracksItems_3                 game  0x800CD370  data        -  gSpecialTracksItems
 D_800CD3D0                            game  0x800CD3D0  data     0x60
 sTrackListItems                       game  0x800CD430  data    0x140
 sMainMenuItems                        game  0x800CD570  data     0x60
@@ -1943,9 +1932,6 @@ D_800CD5E0                            game  0x800CD5E0  data     0x10
 D_800CD5F0                            game  0x800CD5F0  data     0x30
 D_800CD620                            game  0x800CD620  data     0x1c
 sScreens                              game  0x800CD63C  data     0x58
-sScreens_2                            game  0x800CD63C  data        -  sScreens
-sScreens_3                            game  0x800CD63C  data        -  sScreens
-sScreens_4                            game  0x800CD63C  data        -  sScreens
 sScreenSeasonStandings                game  0x800CD694  data     0x2c
 D_800CD6C0                            game  0x800CD6C0  data     0x58
 sScreenOptions                        game  0x800CD718  data     0x2c
@@ -1975,8 +1961,6 @@ D_800CDB5C                            game  0x800CDB5C  data      0x4
 D_800CDB60                            game  0x800CDB60  data      0x4
 sTitleSceneRect                       game  0x800CDB64  data     0x14
 sRiderBios                            game  0x800CDB78  data    0x210
-sRiderBios_2                          game  0x800CDB78  data        -  sRiderBios
-sRiderBios_3                          game  0x800CDB78  data        -  sRiderBios
 sRiderStatLabels                      game  0x800CDD88  data     0x10
 sRiderStatRatings                     game  0x800CDD98  data     0x20
 sSeasonResultOptions                  game  0x800CDDB8  data      0xc
@@ -2022,17 +2006,10 @@ D_800CE034                            game  0x800CE034  data     0x28
 sPakModePrompts                       game  0x800CE05C  data      0xc
 sPakMessages                          game  0x800CE068  data     0xfc
 sPakText                              game  0x800CE164  data      0x4
-sPakText_2                            game  0x800CE164  data        -  sPakText
 sPakNewNoteEntry                      game  0x800CE168  data     0x88
-sPakNewNoteEntry_2                    game  0x800CE168  data        -  sPakNewNoteEntry
 sArnedTexResIds                       game  0x800CE1F0  data      0xc
 sArnedCells                           game  0x800CE1FC  data      0x4
 gGui                                  game  0x800CE200  data     0x10
-gGui_2                                game  0x800CE200  data        -  gGui
-gGui_3                                game  0x800CE200  data        -  gGui
-gGui_4                                game  0x800CE200  data        -  gGui
-gGui_5                                game  0x800CE200  data        -  gGui
-gGui_6                                game  0x800CE200  data        -  gGui
 sEditCamTarget                        game  0x800CE210  data      0xc
 sEditCamPos                           game  0x800CE21C  data      0xc
 sEditCamPosFixed                      game  0x800CE228  data      0xc
@@ -4322,12 +4299,6 @@ sTempGaugeTextures_3                  game  0x800F0524  data        -  sTempGaug
 sSoccerMapTexture                     game  0x800F0528  data        -
 sSoccerMapTexture_2                   game  0x800F0528  data        -  sSoccerMapTexture
 gHudTextObjs                          game  0x800F0530  data        -
-gHudTextObjs_2                        game  0x800F0530  data        -  gHudTextObjs
-gHudTextObjs_3                        game  0x800F0530  data        -  gHudTextObjs
-gHudTextObjs_4                        game  0x800F0530  data        -  gHudTextObjs
-D_800F0544                            game  0x800F0544  data        -
-D_800F0548                            game  0x800F0548  data        -
-D_800F054C                            game  0x800F054C  data        -
 gEvent                                game  0x800F05A8  data        -
 gEventTime                            game  0x800F05D4  data        -
 gEventFlags                           game  0x800F0600  data        -
@@ -4547,22 +4518,16 @@ D_800F4780                            game  0x800F4780  data        -
 sTitleSceneViewport                   game  0x800F4790  data        -
 sPrevScreenCursor                     game  0x800F47A0  data        -
 sPrevScreen                           game  0x800F47A4  data        -
-sPrevScreen_2                         game  0x800F47A4  data        -  sPrevScreen
 sPrevPadButtons                       game  0x800F47B0  data        -
 gGuiRes                               game  0x800F47C0  data        -
 sCurScreen                            game  0x800F47C4  data        -
 sCurScreen_2                          game  0x800F47C4  data        -  sCurScreen
-sCurScreen_3                          game  0x800F47C4  data        -  sCurScreen
-sCurScreen_4                          game  0x800F47C4  data        -  sCurScreen
 sPakStrBuf                            game  0x800F47D0  data        -
 sPakScreenSaved                       game  0x800F4838  data        -
 D_800F483C                            game  0x800F483C  data        -
 sPakViewport                          game  0x800F4868  data        -
 sGbPakFs                              game  0x800F4878  data        -
 sPakNoteList                          game  0x800F48E0  data        -
-sPakNoteList_2                        game  0x800F48E0  data        -  sPakNoteList
-sPakNoteList_3                        game  0x800F48E0  data        -  sPakNoteList
-sPakNoteList_4                        game  0x800F48E0  data        -  sPakNoteList
 sPakBgTex                             game  0x800F49F0  data        -
 sPakBgTex_2                           game  0x800F49F0  data        -  sPakBgTex
 sPakUiTex                             game  0x800F49F4  data        -
@@ -4574,18 +4539,9 @@ sPakSound                             game  0x800F4A00  data        -
 gPakScreenDone                        game  0x800F4A04  data        -
 sPakRepairDeclined                    game  0x800F4A08  data        -
 sPakNoteTables                        game  0x800F4A10  data        -
-sPakNoteTables_2                      game  0x800F4A10  data        -  sPakNoteTables
-sPakNoteTables_3                      game  0x800F4A10  data        -  sPakNoteTables
 sPakIconTex                           game  0x800F4A20  data        -
 sPakIconTex_2                         game  0x800F4A20  data        -  sPakIconTex
 gPakScreen                            game  0x800F4A28  data        -
-gPakScreen_2                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_3                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_4                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_5                          game  0x800F4A28  data        -  gPakScreen
-gPakScreen_6                          game  0x800F4A28  data        -  gPakScreen
-D_800F4A50                            game  0x800F4A50  data        -
-D_800F4A54                            game  0x800F4A54  data        -
 sPakButtonIcons                       game  0x800F4A58  data        -
 sPakPlugMask                          game  0x800F4A5C  data        -
 sPakLogoTex                           game  0x800F4A60  data        -
@@ -4768,19 +4724,15 @@ sResTypeHandlers                      game  0x80100AB8  data        -
 sFontAllocX                           game  0x80101350  data        -
 sFontAllocY                           game  0x80101354  data        -
 sFontAllocW                           game  0x80101358  data        -
-sFontAllocW_2                         game  0x80101358  data        -  sFontAllocW
 sFontAllocH                           game  0x8010135C  data        -
 sFontSprPoolEnd                       game  0x80101360  data        -
 sFontSprPool                          game  0x80101368  data        -
 gFontDirectDrawFunc                   game  0x80105368  data        -
 sFontSprNext                          game  0x8010536C  data        -
 sFontPageMaps                         game  0x80105370  data        -
-sFontPageMaps_2                       game  0x80105370  data        -  sFontPageMaps
 sFontPageCount                        game  0x80105374  data        -
 sFontPageTop                          game  0x80105378  data        -
-sFontPageTop_2                        game  0x80105378  data        -  sFontPageTop
 sFontPalette                          game  0x8010537C  data        -
-sFontPalette_2                        game  0x8010537C  data        -  sFontPalette
 sFontTable                            game  0x80105380  data        -
 D_801053C0                            game  0x801053C0  data        -
 D_80105440                            game  0x80105440  data        -

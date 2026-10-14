@@ -4,19 +4,6 @@ typedef struct { char c[16]; } Name16;
 typedef struct { char c[4]; } Ext4;
 
 typedef struct {
-    s32 size;
-    s32 magic;
-    u16 company;
-    Ext4 ext;
-    Name16 name;
-    s16 used;
-    u8 data[0x20];
-    char buf[0x30];
-    u8 status;
-    u8 pad[3];
-} Rec_47;
-
-typedef struct {
     u8 w;
     u8 pad[7];
 } Glyph_2;
@@ -35,55 +22,49 @@ typedef struct {
 
 typedef struct { u8 b[0x68]; } Ctl;
 
-extern Rec_47 *sPakNoteTables[];
-extern Rec_47 sPakNewNoteEntry;
 extern Font_2 *sPakButtonIcons;
 extern Msg sPakMessages[];
 extern Ctl sPakFs_2[4];
 
-extern Rec_47 *sPakNoteList[];
 
 void pak_build_note_list(s32 p, s32 z)
 {
-    s32 *cnt;
     s32 i;
     s32 r;
-    s32 j;
-    Rec_47 *rec;
+    PakNote *rec;
 
     sPakNoteCount[p] = 0;
     if (z != 0) {
-        sPakNoteList[p * 17] = &sPakNewNoteEntry;
+        sPakNoteList[p][0] = &sPakNewNoteEntry;
         sPakNoteCount[p] = 1;
     }
     for (i = 0; i < 16; i++) {
         rec = &sPakNoteTables[p][i];
-        if (rec->used != -1) {
-            if (rec->magic != 0x4E4D5847) {
+        if (rec->fileNo != -1) {
+            if (rec->gameCode != 0x4E4D5847) {
                 r = 1;
             } else {
-                r = gPakScreen_2.fn(rec->data, sPakStrBuf, gPakScreen_2.v == 0);
+                r = gPakScreen.label(rec->header, sPakStrBuf, gPakScreen.mode == 0);
                 if (r == 2) {
-                    if (gPakScreen_2.v == 1) {
+                    if (gPakScreen.mode == 1) {
                         continue;
                     }
                     r = 1;
                 }
             }
-            if (r != 1 || gPakScreen_2.v != 1) {
-                mem_fill((u8 *)rec->buf, 0, 0x30);
-                *(Name16 *)rec->buf = rec->name;
-                if (rec->ext.c[0] != 0) {
-                    str_cat(rec->buf, D_800DA708);
-                    *(Ext4 *)&rec->buf[strlen(rec->buf)] = rec->ext;
+            if (r != 1 || gPakScreen.mode != 1) {
+                mem_fill((u8 *)rec->text, 0, 0x30);
+                *(Name16 *)rec->text = *(Name16 *)rec->name;
+                if (rec->ext[0] != 0) {
+                    str_cat(rec->text, D_800DA708);
+                    *(Ext4 *)&rec->text[strlen(rec->text)] = *(Ext4 *)rec->ext;
                 }
                 if (r != 1) {
-                    str_cat(rec->buf, D_800DA70C);
-                    str_cat(rec->buf, sPakStrBuf);
+                    str_cat(rec->text, D_800DA70C);
+                    str_cat(rec->text, sPakStrBuf);
                 }
                 rec->status = r;
-                j = p * 17; j += sPakNoteCount[p];
-                sPakNoteList[j] = rec;
+                sPakNoteList[p][sPakNoteCount[p]] = rec;
                 sPakNoteCount[p]++;
             }
         }
@@ -128,7 +109,7 @@ Gfx *pak_draw_button_text(Gfx *gdl, u8 *s, s32 p3, s32 p4, s32 x, s32 y)
                     font_text_create(sPakText, 0x80, p3, p4, 0);
                     font_text_add(sPakText, (char *)sPakStrBuf);
                 }
-                x += sPakText[6];
+                x += sPakText->w;
             }
             i++;
             k = 0;
@@ -155,7 +136,7 @@ Gfx *pak_draw_button_text(Gfx *gdl, u8 *s, s32 p3, s32 p4, s32 x, s32 y)
                     font_text_create(sPakText, 0x80, p3, p4, 0);
                     font_text_add(sPakText, (char *)sPakStrBuf);
                 }
-        x += sPakText[6];
+        x += sPakText->w;
     }
     if (gdl != NULL) {
         return gdl;
@@ -177,12 +158,12 @@ void pak_screen_init(void)
     gPakScreenDone = 0;
     D_800F483C = -1;
     sPakWaitTimer = 0;
-    gPakScreen_3[1] = 0;
-    gPakScreen_3[2] = 0;
-    gPakScreen_3[3] = 0;
-    gPakScreen_3[4] = 0;
-    gPakScreen_3[5] = 0;
-    gPakScreen_3[6] = 0;
+    gPakScreen.state = 0;
+    gPakScreen.subState = 0;
+    gPakScreen.pak = 0;
+    gPakScreen.sel = 0;
+    gPakScreen.unk_14 = 0;
+    gPakScreen.scroll = 0;
     g = &sPakGuiRes;
     *g = gGuiRes;
     pak_alloc_note_tables();
@@ -208,7 +189,7 @@ void pak_screen_init(void)
     sPakUiTex = res_load(*g, D_800D14A8);
     sPakLogoTex = res_load(*g, D_800D1418);
     sPakButtonIcons = res_load(*g, D_800D1434);
-    sPakText = font_text_create((s32 *)0, 0x80, 1, 4, 0);
+    sPakText = font_text_create(NULL, 0x80, 1, 4, 0);
 }
 
 typedef struct {
@@ -217,28 +198,10 @@ typedef struct {
     Img g[1];
 } Font_3;
 
-typedef struct {
-    u32 size;
-    u8 pad[0x3C];
-    char name[1];
-} Entry_6;
-
-typedef struct {
-    s32 mode;
-    s32 msg;
-    s32 f8;
-    s32 pak;
-    s32 sel;
-    s32 f14;
-    s32 scroll;
-} PakState;
-
 extern Font_3 *sPakBgTex_2;
 extern Font_3 *sPakUiTex_2;
 extern Font_3 *sPakIconTex_2;
 extern Font_3 *sPakLogoTex_2;
-extern PakState gPakScreen_4;
-extern Entry_6 *sPakNoteList_2[4][17];
 
 static inline Gfx *drawStr_2(Gfx *gdl, u8 *str, s32 p3, s32 p4, s32 x, s32 y)
 {
@@ -251,18 +214,18 @@ static inline Gfx *drawStr_2(Gfx *gdl, u8 *str, s32 p3, s32 p4, s32 x, s32 y)
             }
         }
     }
-    font_text_create(sPakText_2, 0x80, p3, p4, 0);
-    font_text_add(sPakText_2, (char *)str);
-    font_draw_text(sPakText_2, x, y);
+    font_text_create(sPakText, 0x80, p3, p4, 0);
+    font_text_add(sPakText, (char *)str);
+    font_draw_text(sPakText, x, y);
     gdl = font_render(gdl);
     return gdl;
 }
 
 static inline Gfx *drawCtr(Gfx *gdl, char *str, s32 p3, s32 p4, s32 cx, s32 y)
 {
-    font_text_create(sPakText_2, 0x80, p3, p4, 0);
-    font_text_add(sPakText_2, str);
-    font_draw_text(sPakText_2, cx - (sPakText_2[6] >> 1), y);
+    font_text_create(sPakText, 0x80, p3, p4, 0);
+    font_text_add(sPakText, str);
+    font_draw_text(sPakText, cx - (sPakText->w >> 1), y);
     return font_render(gdl);
 }
 
@@ -277,7 +240,7 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     s32 y;
     s32 col;
     u32 n;
-    Entry_6 *e;
+    PakNote *e;
     char **lines;
     char **p;
     s32 w;
@@ -299,7 +262,7 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     gdl = render_draw_image(0x4E, 0x13, &sPakUiTex_2->g[3], gdl, arg1, 1, 1, 6, 0);
     gDPSetCombine(gdl++, 0x11FE23, 0xFFFFF3F9);
     c = 0xFF;
-    if (gPakScreen_4.msg == 0) {
+    if (gPakScreen.state == 0) {
         c = 0x80;
     }
     gDPSetPrimColor(gdl++, 0, 0, c, c, c, 255);
@@ -325,25 +288,25 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
                                 arg1, 1, 1, 3, 0);
         }
     }
-    gdl = drawStr_2(gdl, (u8 *)sPakTitles[gPakScreen_4.mode], 1, 2, 0x62, 0x1D);
+    gdl = drawStr_2(gdl, (u8 *)sPakTitles[gPakScreen.mode], 1, 2, 0x62, 0x1D);
     __builtin_strcpy((char *)sPakStrBuf, "Pak  ");
     for (i = 0; i < 4; i++) {
         if ((sPakValidMask | sPakBadMask) & (1 << i)) {
             sPakStrBuf[4] = i + '1';
-            gdl = drawStr_2(gdl, sPakStrBuf, 1, (i == gPakScreen_4.pak) ? 4 : 2, 0x55 + i * 100, 0x9F);
+            gdl = drawStr_2(gdl, sPakStrBuf, 1, (i == gPakScreen.pak) ? 4 : 2, 0x55 + i * 100, 0x9F);
         }
     }
-    if (sPakValidMask & (1 << gPakScreen_4.pak)) {
-        for (i = 0; i < sPakNoteCount[gPakScreen_4.pak]; i++) {
-            c = i - gPakScreen_4.scroll;
+    if (sPakValidMask & (1 << gPakScreen.pak)) {
+        for (i = 0; i < sPakNoteCount[gPakScreen.pak]; i++) {
+            c = i - gPakScreen.scroll;
             if (c >= 0) if (c < 8) {
-                e = sPakNoteList_2[gPakScreen_4.pak][i];
+                e = sPakNoteList[gPakScreen.pak][i];
                 x = 0x58 - c * 5 / 2;
                 y = c * 10 + 0x3B;
-                str_copy((char *)sPakStrBuf, e->name);
-                if (gPakScreen_4.msg == 0) {
+                str_copy((char *)sPakStrBuf, e->text);
+                if (gPakScreen.state == 0) {
                     c = 6;
-                } else if (i == gPakScreen_4.sel) {
+                } else if (i == gPakScreen.sel) {
                     c = 5;
                 } else if (e == &sPakNewNoteEntry) {
                     c = 7;
@@ -357,9 +320,9 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
                     n += 0xFF;
                     n >>= 8;
                     int_to_str(n, (char *)sPakStrBuf);
-                    font_text_create(sPakText_2, 0x80, 2, c, 0);
-                    font_text_add(sPakText_2, (char *)sPakStrBuf);
-                    font_draw_text(sPakText_2, x + (0x140 - sPakText_2[6]), y);
+                    font_text_create(sPakText, 0x80, 2, c, 0);
+                    font_text_add(sPakText, (char *)sPakStrBuf);
+                    font_draw_text(sPakText, x + (0x140 - sPakText->w), y);
                     gdl = font_render(gdl);
                     __builtin_strcpy((char *)sPakStrBuf, "page");
                     if (n != 1) {
@@ -369,22 +332,22 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
                 }
             }
         }
-    } else if (sPakBadMask & (1 << gPakScreen_4.pak)) {
+    } else if (sPakBadMask & (1 << gPakScreen.pak)) {
         gdl = drawCtr(gdl, "Damaged or Corrupted Controller Pak!", 2, 6, 0x100, 0x5C);
     }
-    if (gPakScreen_4.mode == 2 || gPakScreen_4.mode == 0) {
-        if (sPakValidMask & (1 << gPakScreen_4.pak)) {
-            int_to_str(sPakFreePages[gPakScreen_4.pak], (char *)sPakStrBuf);
+    if (gPakScreen.mode == 2 || gPakScreen.mode == 0) {
+        if (sPakValidMask & (1 << gPakScreen.pak)) {
+            int_to_str(sPakFreePages[gPakScreen.pak], (char *)sPakStrBuf);
             str_cat((char *)sPakStrBuf, " page");
-            if (sPakFreePages[gPakScreen_4.pak] != 1) {
+            if (sPakFreePages[gPakScreen.pak] != 1) {
                 str_cat((char *)sPakStrBuf, "s");
             }
             str_cat((char *)sPakStrBuf, " free");
             gdl = drawCtr(gdl, (char *)sPakStrBuf, 1, 2, 0x18B, 0x1E);
         }
     }
-    if (sPakMessages[gPakScreen_4.msg].lines != NULL) {
-        lines = sPakMessages[gPakScreen_4.msg].lines;
+    if (sPakMessages[gPakScreen.state].lines != NULL) {
+        lines = sPakMessages[gPakScreen.state].lines;
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
         gDPSetRenderMode(gdl++, 0x404240, 0);
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0xC0);
@@ -405,15 +368,15 @@ void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         for (i = 0; lines[i] != NULL; i++) {
             gdl = drawCtr(gdl, lines[i], 1, 2, 0x100, 0x53 + i * 14);
         }
-        if (sPakMessages[gPakScreen_4.msg].extra != NULL) {
-            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0, 0);
-            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0x100 - w / 2, 0xC6);
+        if (sPakMessages[gPakScreen.state].extra != NULL) {
+            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0, 0);
+            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0x100 - w / 2, 0xC6);
         }
-    } else if (sPakMessages[gPakScreen_4.msg].text != NULL) {
-        gdl = drawCtr(gdl, sPakMessages[gPakScreen_4.msg].text, 1, 2, 0x100, 0xBE);
-        if (sPakMessages[gPakScreen_4.msg].extra != NULL) {
-            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0, 0);
-            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0x100 - w / 2, 0xCE);
+    } else if (sPakMessages[gPakScreen.state].text != NULL) {
+        gdl = drawCtr(gdl, sPakMessages[gPakScreen.state].text, 1, 2, 0x100, 0xBE);
+        if (sPakMessages[gPakScreen.state].extra != NULL) {
+            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0, 0);
+            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen.state].extra, 1, 4, 0x100 - w / 2, 0xCE);
         }
     }
     if (sPakWaitTimer != 0) {
@@ -457,42 +420,13 @@ void pak_refresh(s32 p)
 }
 
 typedef struct {
-    u32 size;
-    u32 code;
-    u16 company;
-    u8 ext;
-    u8 padB[0x1E - 0xB];
-    s16 fileNo;
-    u8 pad20[0x74 - 0x20];
-} Entry_7;
-
-typedef struct {
-    Entry_7 *e[16];
+    PakNote *e[16];
 } EntryRow;
 
-typedef struct {
-    s32 mode;
-    s32 state;
-    s32 sub;
-    s32 pak;
-    s32 sel;
-    s32 f14;
-    s32 scroll;
-    s32 pages;
-    s32 f20;
-    u8 *buf;
-    s32 (*cb)(u8 *, s32);
-    s32 f2C;
-} PakState_2;
-
-extern PakState_2 gPakScreen_5;
-extern PakState_2 sPakScreenSaved;
-extern Entry_7 *sPakNoteTables_2[];
-extern Entry_7 *sPakNoteList_3[4][17];
 
 static inline void SET(s32 s, s32 m) {
-    gPakScreen_5.state = s;
-    gPakScreen_5.sub = 0;
+    gPakScreen.state = s;
+    gPakScreen.subState = 0;
     sPakSound = m;
 }
 
@@ -501,13 +435,13 @@ static inline void SND(s32 m) {
 }
 
 static inline void SET2(s32 s) {
-    gPakScreen_5.state = s;
-    gPakScreen_5.sub = 0;
+    gPakScreen.state = s;
+    gPakScreen.subState = 0;
 }
 
 static inline void compact(s32 pak) {
-    if (sPakNoteList_3[pak][0] == &sPakNewNoteEntry && sPakNoteCount[pak] > 0) {
-        *(EntryRow *)&sPakNoteList_3[pak][0] = *(EntryRow *)&sPakNoteList_3[pak][1];
+    if (sPakNoteList[pak][0] == &sPakNewNoteEntry && sPakNoteCount[pak] > 0) {
+        *(EntryRow *)&sPakNoteList[pak][0] = *(EntryRow *)&sPakNoteList[pak][1];
         sPakNoteCount[pak]--;
     }
 }
@@ -521,21 +455,21 @@ void pak_screen_update(Pad16 *arg0) {
     s32 j;
     s32 cnt;
     s32 bit;
-    Entry_7 *e;
+    PakNote *e;
 
     if (gPakScreenDone != 0) {
         return;
     }
     sPakSound = -1;
-    sPakMessages[5].text = sPakModePrompts[gPakScreen_5.mode];
-    if (gPakScreen_5.mode == 0) {
+    sPakMessages[5].text = sPakModePrompts[gPakScreen.mode];
+    if (gPakScreen.mode == 0) {
         sPakMessages[12].lines = D_800CDF64;
     } else if (gGame.pakScreenMode == 1) {
         sPakMessages[12].lines = D_800CDF6C;
     } else {
         sPakMessages[12].lines = D_800CDF78;
     }
-    if (gPakScreen_5.mode == 2) {
+    if (gPakScreen.mode == 2) {
         sPakMessages[0].extra = D_800CE034;
     } else {
         sPakMessages[0].extra = D_800CE01C;
@@ -565,10 +499,10 @@ void pak_screen_update(Pad16 *arg0) {
                 if (sPakValidMask & (1 << i)) {
                     pak_refresh(i);
                 } else {
-                    mem_fill((u8 *)sPakNoteTables_2[i], 0, 0x740);
+                    mem_fill((u8 *)sPakNoteTables[i], 0, 0x740);
                 }
-                if ((sPakBadMask & (1 << i)) && (gPakScreen_5.state == 0 || gPakScreen_5.state == 14)) {
-                    gPakScreen_5.pak = i;
+                if ((sPakBadMask & (1 << i)) && (gPakScreen.state == 0 || gPakScreen.state == 14)) {
+                    gPakScreen.pak = i;
                     SET(1, 3);
                 }
             }
@@ -579,46 +513,46 @@ void pak_screen_update(Pad16 *arg0) {
     sPakValidMask &= gContMask;
     gRumblePakMask &= gContMask;
     sPakRepairDeclined &= sPakBadMask;
-    if (gPakScreen_5.state == 0 || gPakScreen_5.state == 14) {
+    if (gPakScreen.state == 0 || gPakScreen.state == 14) {
         for (i = 0; i < 4; i++) {
-            n = (gPakScreen_5.pak + i) % 4;
+            n = (gPakScreen.pak + i) % 4;
             if ((sPakBadMask & (1 << n)) && !((sPakRepairDeclined >> n) & 1)) {
-                gPakScreen_5.pak = n;
+                gPakScreen.pak = n;
                 SET(1, 3);
             }
         }
     }
-    if (gPakScreen_5.state == 5 && sPakNoteCount[gPakScreen_5.pak] == 0) {
-        gPakScreen_5.state = 0;
-        gPakScreen_5.sub = 0;
+    if (gPakScreen.state == 5 && sPakNoteCount[gPakScreen.pak] == 0) {
+        gPakScreen.state = 0;
+        gPakScreen.subState = 0;
     }
-    if ((gPakScreen_5.state < 14 || gPakScreen_5.state > 16) && gPakScreen_5.state != 20) {
-        if ((sPakValidMask | sPakBadMask) == 0 && gPakScreen_5.state != 14) {
-            gPakScreen_5.state = 14;
-            gPakScreen_5.sub = 0;
-        } else if (!((sPakValidMask | sPakBadMask) & (1 << gPakScreen_5.pak)) && gPakScreen_5.state != 0) {
-            gPakScreen_5.state = 0;
-            gPakScreen_5.sub = 0;
+    if ((gPakScreen.state < 14 || gPakScreen.state > 16) && gPakScreen.state != 20) {
+        if ((sPakValidMask | sPakBadMask) == 0 && gPakScreen.state != 14) {
+            gPakScreen.state = 14;
+            gPakScreen.subState = 0;
+        } else if (!((sPakValidMask | sPakBadMask) & (1 << gPakScreen.pak)) && gPakScreen.state != 0) {
+            gPakScreen.state = 0;
+            gPakScreen.subState = 0;
         }
     }
     for (i = 0; i < 4; i++) {
-        if (!((sPakBadMask | sPakValidMask) & (1 << gPakScreen_5.pak))) {
-            gPakScreen_5.pak = (gPakScreen_5.pak + 1) % 4;
+        if (!((sPakBadMask | sPakValidMask) & (1 << gPakScreen.pak))) {
+            gPakScreen.pak = (gPakScreen.pak + 1) % 4;
         }
     }
-    if (sPakScreenSaved.state != -1 && gPakScreen_5.state == 0 && gPakScreen_5.mode == 0) {
-        gPakScreen_5 = sPakScreenSaved;
+    if (sPakScreenSaved.state != -1 && gPakScreen.state == 0 && gPakScreen.mode == 0) {
+        gPakScreen = sPakScreenSaved;
         sPakScreenSaved.state = -1;
-        gPakScreen_5.state = 0;
-        gPakScreen_5.sub = 0;
+        gPakScreen.state = 0;
+        gPakScreen.subState = 0;
     }
-    switch (gPakScreen_5.state) {
+    switch (gPakScreen.state) {
     case 0:
-        compact(gPakScreen_5.pak);
-        gPakScreen_5.sel = 0;
-        gPakScreen_5.scroll = 0;
+        compact(gPakScreen.pak);
+        gPakScreen.sel = 0;
+        gPakScreen.scroll = 0;
         if (pad & 4) {
-            for (i = gPakScreen_5.pak - 1; i >= 0; i--) {
+            for (i = gPakScreen.pak - 1; i >= 0; i--) {
                 if ((sPakValidMask | sPakBadMask) & (1 << i)) {
                     break;
                 }
@@ -626,11 +560,11 @@ void pak_screen_update(Pad16 *arg0) {
             if (i < 0) {
                 sPakSound = 3;
             } else {
-                gPakScreen_5.pak = i;
+                gPakScreen.pak = i;
                 sPakSound = 0;
             }
         } else if (pad & 8) {
-            for (i = gPakScreen_5.pak + 1; i < 4; i++) {
+            for (i = gPakScreen.pak + 1; i < 4; i++) {
                 if ((sPakValidMask | sPakBadMask) & (1 << i)) {
                     break;
                 }
@@ -638,14 +572,14 @@ void pak_screen_update(Pad16 *arg0) {
             if (i >= 4) {
                 sPakSound = 3;
             } else {
-                gPakScreen_5.pak = i;
+                gPakScreen.pak = i;
                 sPakSound = 0;
             }
         }
         if (pad & 0x20) {
-            if (gPakScreen_5.mode == 1) {
+            if (gPakScreen.mode == 1) {
                 SET(18, 2);
-            } else if (gPakScreen_5.mode == 2) {
+            } else if (gPakScreen.mode == 2) {
                 SET(17, 2);
             } else {
                 gPakScreenAborted = 0;
@@ -658,41 +592,41 @@ void pak_screen_update(Pad16 *arg0) {
                 SET(20, 2);
             }
         } else if (pad & 0x10) {
-            if (sPakValidMask & (1 << gPakScreen_5.pak)) {
+            if (sPakValidMask & (1 << gPakScreen.pak)) {
                 n = 0;
                 for (i = 0; i < 16; i++) {
-                    if (sPakNoteTables_2[gPakScreen_5.pak][i].fileNo != -1) {
+                    if (sPakNoteTables[gPakScreen.pak][i].fileNo != -1) {
                         n++;
                     }
                 }
-                gPakScreen_5.sel = 0;
-                if (gPakScreen_5.mode == 2) {
+                gPakScreen.sel = 0;
+                if (gPakScreen.mode == 2) {
                     if (n == 16) {
                         SET(8, 1);
                     } else {
-                        pak_build_note_list(gPakScreen_5.pak, 1);
+                        pak_build_note_list(gPakScreen.pak, 1);
                         SET(5, 1);
                     }
-                } else if (gPakScreen_5.mode == 0 && n == 0) {
+                } else if (gPakScreen.mode == 0 && n == 0) {
                     SET(12, 3);
-                } else if (gPakScreen_5.mode == 1 && sPakNoteCount[gPakScreen_5.pak] == 0) {
+                } else if (gPakScreen.mode == 1 && sPakNoteCount[gPakScreen.pak] == 0) {
                     SET(12, 3);
                 } else {
                     SET(5, 1);
                 }
-            } else if (sPakBadMask & (1 << gPakScreen_5.pak)) {
+            } else if (sPakBadMask & (1 << gPakScreen.pak)) {
                 SET(1, 3);
             }
         }
         break;
     case 5:
-        if (gPakScreen_5.sel >= sPakNoteCount[gPakScreen_5.pak]) {
-            gPakScreen_5.sel = sPakNoteCount[gPakScreen_5.pak] - 1;
+        if (gPakScreen.sel >= sPakNoteCount[gPakScreen.pak]) {
+            gPakScreen.sel = sPakNoteCount[gPakScreen.pak] - 1;
         }
-        if (gPakScreen_5.sel < 0) {
-            gPakScreen_5.sel = 0;
+        if (gPakScreen.sel < 0) {
+            gPakScreen.sel = 0;
         }
-        j = gPakScreen_5.sel;
+        j = gPakScreen.sel;
         n = 0;
         if (pad & 2) {
             n = 1;
@@ -702,16 +636,16 @@ void pak_screen_update(Pad16 *arg0) {
             n = -1;
         }
         j += n;
-        cnt = sPakNoteCount[gPakScreen_5.pak];
+        cnt = sPakNoteCount[gPakScreen.pak];
         do {
             if (j < 0) {
                 if (n != 0) {
                     j = i;
                     goto done;
                 }
-                j = sPakNoteCount[gPakScreen_5.pak] - 1;
+                j = sPakNoteCount[gPakScreen.pak] - 1;
             }
-            if (j >= sPakNoteCount[gPakScreen_5.pak]) {
+            if (j >= sPakNoteCount[gPakScreen.pak]) {
                 if (n == 0) {
                     j = 0;
                 } else {
@@ -719,25 +653,25 @@ void pak_screen_update(Pad16 *arg0) {
                     goto done;
                 }
             }
-            if (gPakScreen_5.mode != 2 || sPakNoteList_3[gPakScreen_5.pak][j] == &sPakNewNoteEntry ||
-                sPakNoteList_3[gPakScreen_5.pak][j]->code == 0x4E4D5847) {
+            if (gPakScreen.mode != 2 || sPakNoteList[gPakScreen.pak][j] == &sPakNewNoteEntry ||
+                sPakNoteList[gPakScreen.pak][j]->gameCode == 0x4E4D5847) {
                 goto done;
             }
             j += n;
         } while (n != 0 || (n = 1, --cnt != 0));
     done:
-        gPakScreen_5.sel = j;
-        if (j < gPakScreen_5.scroll) {
-            gPakScreen_5.scroll = j;
+        gPakScreen.sel = j;
+        if (j < gPakScreen.scroll) {
+            gPakScreen.scroll = j;
         }
-        if (gPakScreen_5.scroll < j - 7) {
-            gPakScreen_5.scroll = j - 7;
+        if (gPakScreen.scroll < j - 7) {
+            gPakScreen.scroll = j - 7;
         }
-        if (sPakNoteCount[gPakScreen_5.pak] - 8 < gPakScreen_5.scroll) {
-            gPakScreen_5.scroll = sPakNoteCount[gPakScreen_5.pak] - 8;
+        if (sPakNoteCount[gPakScreen.pak] - 8 < gPakScreen.scroll) {
+            gPakScreen.scroll = sPakNoteCount[gPakScreen.pak] - 8;
         }
-        if (gPakScreen_5.scroll < 0) {
-            gPakScreen_5.scroll = 0;
+        if (gPakScreen.scroll < 0) {
+            gPakScreen.scroll = 0;
         }
         if (pad & 3) {
             if (i == j) {
@@ -750,18 +684,18 @@ void pak_screen_update(Pad16 *arg0) {
             SET(0, 2);
         }
         if (pad & 0x10) {
-            if (gPakScreen_5.mode == 0) {
+            if (gPakScreen.mode == 0) {
                 SET(7, 1);
-            } else if (gPakScreen_5.mode == 2) {
-                e = sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel];
+            } else if (gPakScreen.mode == 2) {
+                e = sPakNoteList[gPakScreen.pak][gPakScreen.sel];
                 if (e == &sPakNewNoteEntry) {
-                    if (sPakFreePages[gPakScreen_5.pak] < gPakScreen_5.pages) {
+                    if (sPakFreePages[gPakScreen.pak] < gPakScreen.pages) {
                         SET(8, 1);
                         break;
                     }
                 } else {
                     j = (e->size + 0xFF) >> 8;
-                    if (sPakFreePages[gPakScreen_5.pak] + j < gPakScreen_5.pages) {
+                    if (sPakFreePages[gPakScreen.pak] + j < gPakScreen.pages) {
                         SET(8, 1);
                         break;
                     }
@@ -785,25 +719,25 @@ void pak_screen_update(Pad16 *arg0) {
         }
         break;
     case 13:
-        switch (gPakScreen_5.sub) {
+        switch (gPakScreen.subState) {
         case 0:
             sPakWaitTimer = 30;
-            gPakScreen_5.sub = 1;
+            gPakScreen.subState = 1;
             break;
         case 1:
             if (sPakWaitTimer == 0) {
-                gPakScreen_5.sub = 2;
+                gPakScreen.subState = 2;
             }
             break;
         case 2:
-            if (pak_delete_note(gPakScreen_5.pak, sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel]->fileNo) != 0) {
+            if (pak_delete_note(gPakScreen.pak, sPakNoteList[gPakScreen.pak][gPakScreen.sel]->fileNo) != 0) {
                 SET(11, 3);
-            } else if (gPakScreen_5.mode != 0) {
-                pak_refresh(gPakScreen_5.pak);
+            } else if (gPakScreen.mode != 0) {
+                pak_refresh(gPakScreen.pak);
                 SET(0, 1);
             } else {
-                pak_refresh(gPakScreen_5.pak);
-                if (sPakNoteList_3[gPakScreen_5.pak] == NULL) {
+                pak_refresh(gPakScreen.pak);
+                if (sPakNoteList[gPakScreen.pak] == NULL) {
                     SET(0, 1);
                 } else {
                     SET(5, 1);
@@ -813,14 +747,14 @@ void pak_screen_update(Pad16 *arg0) {
         }
         break;
     case 1:
-        D_800CDF00[0][0x11] = gPakScreen_5.pak + '1';
+        D_800CDF00[0][0x11] = gPakScreen.pak + '1';
         if (pad & 0x10) {
             SET(2, 1);
         }
         if (pad & 0x20) {
             SND(2);
             SET2(0);
-            sPakRepairDeclined |= 1 << gPakScreen_5.pak;
+            sPakRepairDeclined |= 1 << gPakScreen.pak;
         }
         break;
     case 12:
@@ -829,24 +763,24 @@ void pak_screen_update(Pad16 *arg0) {
         }
         break;
     case 2:
-        switch (gPakScreen_5.sub) {
+        switch (gPakScreen.subState) {
         case 0:
             sPakWaitTimer = 30;
-            gPakScreen_5.sub = 1;
+            gPakScreen.subState = 1;
             break;
         case 1:
             if (sPakWaitTimer == 0) {
-                gPakScreen_5.sub = 2;
+                gPakScreen.subState = 2;
             }
             break;
         case 2:
-            if (pak_repair(gPakScreen_5.pak) != 0) {
+            if (pak_repair(gPakScreen.pak) != 0) {
                 SET(4, 3);
             } else {
-                gPakScreen_5.state = 3;
+                gPakScreen.state = 3;
                 sPakSound = 1;
-                gPakScreen_5.sub = 0;
-                sPakPlugMask &= ~(1 << gPakScreen_5.pak);
+                gPakScreen.subState = 0;
+                sPakPlugMask &= ~(1 << gPakScreen.pak);
             }
             break;
         }
@@ -857,7 +791,7 @@ void pak_screen_update(Pad16 *arg0) {
         }
         if (pad & 0x20) {
             SET(0, 1);
-            sPakRepairDeclined |= 1 << gPakScreen_5.pak;
+            sPakRepairDeclined |= 1 << gPakScreen.pak;
         }
         break;
     case 3:
@@ -870,12 +804,12 @@ void pak_screen_update(Pad16 *arg0) {
             SET(5, 2);
         }
         if (pad & 0x10) {
-            e = sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel];
-            if (pak_delete_note(gPakScreen_5.pak, e->fileNo) != 0) {
+            e = sPakNoteList[gPakScreen.pak][gPakScreen.sel];
+            if (pak_delete_note(gPakScreen.pak, e->fileNo) != 0) {
                 SET(11, 3);
             } else {
-                if (e->code == 0x4E4D5847) {
-                    sPakOverwriteExt = e->ext;
+                if (e->gameCode == 0x4E4D5847) {
+                    sPakOverwriteExt = e->ext[0];
                 } else {
                     sPakOverwriteExt = -1;
                 }
@@ -893,8 +827,8 @@ void pak_screen_update(Pad16 *arg0) {
         break;
     case 14:
         if (sPakBadMask | sPakValidMask) {
-            gPakScreen_5.state = 0;
-            gPakScreen_5.sub = 0;
+            gPakScreen.state = 0;
+            gPakScreen.subState = 0;
         } else if (pad & 0x20) {
             gPakScreenAborted = 1;
             gPakScreenDone = 1;
@@ -902,28 +836,28 @@ void pak_screen_update(Pad16 *arg0) {
         }
         break;
     case 9:
-        switch (gPakScreen_5.sub) {
+        switch (gPakScreen.subState) {
         case 0:
             sPakWaitTimer = 30;
-            gPakScreen_5.sub = 1;
+            gPakScreen.subState = 1;
             break;
         case 1:
             if (sPakWaitTimer == 0) {
-                gPakScreen_5.sub = 2;
+                gPakScreen.subState = 2;
             }
             break;
         case 2:
-            e = sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel];
-            if (gPakScreen_5.pages < (e->size + 0xFF) >> 8) {
+            e = sPakNoteList[gPakScreen.pak][gPakScreen.sel];
+            if (gPakScreen.pages < (e->size + 0xFF) >> 8) {
                 SET(19, 3);
                 return;
             }
-            mem_fill(gPakScreen_5.buf, 0, gPakScreen_5.pages << 8);
-            if (pak_read_note(gPakScreen_5.pak, e->fileNo, 0, (e->size + 0xFF) & ~0xFF, gPakScreen_5.buf) != 0) {
+            mem_fill(gPakScreen.data, 0, gPakScreen.pages << 8);
+            if (pak_read_note(gPakScreen.pak, e->fileNo, 0, (e->size + 0xFF) & ~0xFF, gPakScreen.data) != 0) {
                 SET(11, 3);
                 return;
             }
-            if (gPakScreen_5.cb != NULL && gPakScreen_5.cb(gPakScreen_5.buf, (e->size + 0xFF) & ~0xFF) != 0) {
+            if (gPakScreen.validate != NULL && gPakScreen.validate(gPakScreen.data, (e->size + 0xFF) & ~0xFF) != 0) {
                 SET(19, 3);
                 return;
             }
@@ -932,27 +866,27 @@ void pak_screen_update(Pad16 *arg0) {
         }
         break;
     case 10:
-        switch (gPakScreen_5.sub) {
+        switch (gPakScreen.subState) {
         case 0:
             sPakWaitTimer = 30;
-            gPakScreen_5.sub = 1;
+            gPakScreen.subState = 1;
             break;
         case 1:
             if (sPakWaitTimer == 0) {
-                gPakScreen_5.sub = 2;
+                gPakScreen.subState = 2;
             }
             break;
         case 2:
             if (sPakOverwriteExt == -1) {
                 n = 'A';
                 for (;;) {
-                    for (i = 0; i < sPakNoteCount[gPakScreen_5.pak]; i++) {
-                        e = sPakNoteList_3[gPakScreen_5.pak][i];
-                        if (e->code == 0x4E4D5847 && e->ext == n) {
+                    for (i = 0; i < sPakNoteCount[gPakScreen.pak]; i++) {
+                        e = sPakNoteList[gPakScreen.pak][i];
+                        if (e->gameCode == 0x4E4D5847 && e->ext[0] == n) {
                             break;
                         }
                     }
-                    if (i == sPakNoteCount[gPakScreen_5.pak]) {
+                    if (i == sPakNoteCount[gPakScreen.pak]) {
                         break;
                     }
                     if (++n > 'Z') {
@@ -965,31 +899,31 @@ void pak_screen_update(Pad16 *arg0) {
             sPakOverwriteExt = -1;
             mem_fill(sPakStrBuf, 0, 4);
             sPakStrBuf[0] = n;
-            j = pak_create_note(gPakScreen_5.pak, sPakGameName, sPakStrBuf, 0x3031, 0x4E4D5847, gPakScreen_5.pages << 8);
+            j = pak_create_note(gPakScreen.pak, sPakGameName, sPakStrBuf, 0x3031, 0x4E4D5847, gPakScreen.pages << 8);
             if (j < 0) {
                 SET(11, 3);
             }
-            if (pak_write_note(gPakScreen_5.pak, j, 0, gPakScreen_5.pages << 8, gPakScreen_5.buf) != 0) {
-                pak_delete_note(gPakScreen_5.pak, j);
+            if (pak_write_note(gPakScreen.pak, j, 0, gPakScreen.pages << 8, gPakScreen.data) != 0) {
+                pak_delete_note(gPakScreen.pak, j);
                 SET(11, 3);
             }
-            sPakVerifyBuf = mem_alloc_dbg(gPakScreen_5.pages << 8, 0, "pak.c", 0x5E6);
-            n = pak_read_note(gPakScreen_5.pak, j, 0, gPakScreen_5.pages << 8, sPakVerifyBuf);
+            sPakVerifyBuf = mem_alloc_dbg(gPakScreen.pages << 8, 0, "pak.c", 0x5E6);
+            n = pak_read_note(gPakScreen.pak, j, 0, gPakScreen.pages << 8, sPakVerifyBuf);
             if (n == 0) {
-                for (i = 0; i < gPakScreen_5.pages << 8; i++) {
-                    if (sPakVerifyBuf[i] != gPakScreen_5.buf[i]) {
+                for (i = 0; i < gPakScreen.pages << 8; i++) {
+                    if (sPakVerifyBuf[i] != gPakScreen.data[i]) {
                         n = 1;
                     }
                 }
             }
             mem_free(sPakVerifyBuf);
             if (n != 0) {
-                pak_delete_note(gPakScreen_5.pak, j);
+                pak_delete_note(gPakScreen.pak, j);
                 SET(11, 3);
             }
-            pak_refresh(gPakScreen_5.pak);
-            gPakScreen_5.state = 15;
-            gPakScreen_5.sub = 0;
+            pak_refresh(gPakScreen.pak);
+            gPakScreen.state = 15;
+            gPakScreen.subState = 0;
             break;
         }
         break;
@@ -1007,10 +941,10 @@ void pak_screen_update(Pad16 *arg0) {
         if (pad & 0x20) {
             SET(0, 2);
         } else if (pad & 0x10) {
-            sPakScreenSaved = gPakScreen_5;
-            gPakScreen_5.mode = 0;
-            pak_build_note_list(gPakScreen_5.pak, 0);
-            compact(gPakScreen_5.pak);
+            sPakScreenSaved = gPakScreen;
+            gPakScreen.mode = 0;
+            pak_build_note_list(gPakScreen.pak, 0);
+            compact(gPakScreen.pak);
             SET(5, 1);
         }
         break;
@@ -1041,10 +975,10 @@ void pak_screen_update(Pad16 *arg0) {
         break;
     }
     if (gPakScreenDone != 0 && sPakScreenSaved.state != -1) {
-        gPakScreen_5 = sPakScreenSaved;
+        gPakScreen = sPakScreenSaved;
         sPakScreenSaved.state = -1;
-        gPakScreen_5.state = 0;
-        gPakScreen_5.sub = 0;
+        gPakScreen.state = 0;
+        gPakScreen.subState = 0;
         gPakScreenDone = 0;
     }
     if (sPakSound != -1) {
@@ -1073,18 +1007,6 @@ void pak_screen_exit(void)
 
 typedef struct { u32 w[8]; } Hdr_10;
 
-typedef struct {
-    u32 f0;
-    u32 magic;
-    u8 p8[2];
-    u8 a[4];
-    u8 b[0x10];
-    s16 id;
-    Hdr_10 hdr;
-    u8 rest[0x74 - 0x40];
-} Slot_13;
-
-extern Slot_13 *sPakNoteTables_3[];
 
 s32 pak_read_note_states(u32 p)
 {
@@ -1096,24 +1018,24 @@ s32 pak_read_note_states(u32 p)
     }
     cont_finish_read();
     for (i = 0; i < 16; i++) {
-        sPakNoteTables_3[p][i].id = -1;
+        sPakNoteTables[p][i].fileNo = -1;
     }
     k = 0;
     i = 0;
     do {
-        r = osPfsFileState(&sPakFs_2[p], i, &sPakNoteTables_3[p][k]);
+        r = osPfsFileState(&sPakFs_2[p], i, (OSPfsState *)&sPakNoteTables[p][k]);
         if (r == 5) {
-            mem_fill((u8 *)&sPakNoteTables_3[p][k], 0, 0x74);
-            sPakNoteTables_3[p][k].id = -1;
+            mem_fill((u8 *)&sPakNoteTables[p][k], 0, 0x74);
+            sPakNoteTables[p][k].fileNo = -1;
         } else if (r == 0) {
-            sPakNoteTables_3[p][k].id = i;
-            pak_pfs_to_ascii(sPakNoteTables_3[p][k].b, 0x10);
-            pak_pfs_to_ascii(sPakNoteTables_3[p][k].a, 4);
-            if (sPakNoteTables_3[p][k].magic == 0x4E4D5847) {
+            sPakNoteTables[p][k].fileNo = i;
+            pak_pfs_to_ascii((u8 *)sPakNoteTables[p][k].name, 0x10);
+            pak_pfs_to_ascii((u8 *)sPakNoteTables[p][k].ext, 4);
+            if (sPakNoteTables[p][k].gameCode == 0x4E4D5847) {
                 if (pak_read_note(p, i, 0, 0x20, (u8 *)&tmp) != 0) {
-                    sPakNoteTables_3[p][k].magic = 0;
+                    sPakNoteTables[p][k].gameCode = 0;
                 }
-                sPakNoteTables_3[p][k].hdr = tmp;
+                *(Hdr_10 *)sPakNoteTables[p][k].header = tmp;
             }
             k++;
         } else {
@@ -1523,12 +1445,6 @@ void pak_free_note_tables(void) {
     }
 }
 
-typedef struct {
-    s32 f0;
-    s32 w[16];
-} Ent_84;
-
-extern Ent_84 sPakNoteList_4[];
 
 void pak_remove_new_note_entry(s32 idx)
 {
@@ -1536,9 +1452,9 @@ void pak_remove_new_note_entry(s32 idx)
     Quad *src;
     Quad *end;
 
-    if (sPakNoteList_4[idx].f0 == (s32)sPakNewNoteEntry_2 && sPakNoteCount[idx] > 0) {
-        dst = (Quad *)&sPakNoteList_4[idx];
-        src = (Quad *)sPakNoteList_4[idx].w;
+    if (sPakNoteList[idx][0] == &sPakNewNoteEntry && sPakNoteCount[idx] > 0) {
+        dst = (Quad *)&sPakNoteList[idx][0];
+        src = (Quad *)&sPakNoteList[idx][1];
         end = src + 4;
         do {
             *dst = *src;
@@ -1578,7 +1494,7 @@ void pak_draw_text_centered(void *param_1, void *param_2, s32 param_3, s32 param
 {
     font_text_create(sPakText, 0x80, param_3, param_4, 0);
     font_text_add(sPakText, param_2);
-    font_draw_text(sPakText, param_5 - ((u32)sPakText[6] >> 1), param_6);
+    font_draw_text(sPakText, param_5 - (sPakText->w >> 1), param_6);
     font_render(param_1);
 }
 
@@ -1586,17 +1502,17 @@ void pak_draw_text_right(void *param_1, void *param_2, s32 param_3, s32 param_4,
 {
     font_text_create(sPakText, 0x80, param_3, param_4, 0);
     font_text_add(sPakText, param_2);
-    font_draw_text(sPakText, param_5 - sPakText[6], param_6);
+    font_draw_text(sPakText, param_5 - sPakText->w, param_6);
     font_render(param_1);
 }
 
 void pak_set_state(s32 a0, s32 a1)
 {
-    u8 *p;
+    PakScreen *p;
 
-    p = gPakScreen_6;
-    *(s32 *)(p + 4) = a0;
-    *(s32 *)(p + 8) = 0;
+    p = &gPakScreen;
+    p->state = a0;
+    p->subState = 0;
     if (a1 != -1) {
         sPakSound = a1;
     }

@@ -234,14 +234,14 @@ void edit_init(void)
         if (m6 != 0) {
             gEditor->flags = m6;
             if (fl & 0x2000) {
-                sEditMainMenu.sel = 2;
+                sEditMainMenu.choice = 2;
                 sEditMainMenu.cursor = 2;
             } else {
-                sEditMainMenu.sel = 3;
+                sEditMainMenu.choice = 3;
                 sEditMainMenu.cursor = 3;
             }
         } else {
-            sEditMainMenu.sel = 1;
+            sEditMainMenu.choice = 1;
             sEditMainMenu.cursor = 1;
             gEditor->flags = 0;
         }
@@ -351,7 +351,7 @@ void edit_update_name_entry(Editor *arg0, s32 arg1)
             } else if (g->nameKey == 0x27) {
                 *(Name11 *)g->name = *(Name11 *)g->nameBuf;
                 gEditor->mode = EDIT_MODE_IDLE;
-                gEditor->menu->flags |= 1;
+                gEditor->menu->flags |= GUI_MENU_ACTIVE;
             } else {
                 g->nameLen++;
                 if (g->nameLen >= 10) {
@@ -497,14 +497,14 @@ void edit_update_main_menu(void)
         if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
             gEditor->flags &= ~EDIT_MESSAGE;
-            gEditor->menu->flags |= 1;
+            gEditor->menu->flags |= GUI_MENU_ACTIVE;
             snd_play_menu_sound(1);
         }
     } else if (flags & 0x1000) {
         if ((gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) {
             gPadInputPrev_2[0] |= 0x20;
             gEditor->flags &= ~EDIT_DIALOG;
-            gEditor->menu->flags |= 1;
+            gEditor->menu->flags |= GUI_MENU_ACTIVE;
             snd_play_menu_sound(2);
         } else if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
@@ -530,10 +530,10 @@ void edit_update_main_menu(void)
                         usrtrk_load_into_editor(D_800F1DF4);
                         edit_try_close_loop(gEditor->last);
                         gEditor->mode = EDIT_MODE_IDLE;
-                        gEditor->menu->flags |= 1;
+                        gEditor->menu->flags |= GUI_MENU_ACTIVE;
                         edit_find_start_piece();
                         arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
-                        gEditor->menu->flags |= 1;
+                        gEditor->menu->flags |= GUI_MENU_ACTIVE;
                         gEditor->flags &= ~EDIT_DIALOG;
                     } else {
                         gEditor->message = 0;
@@ -547,7 +547,7 @@ void edit_update_main_menu(void)
                     save_write(4, 0);
                     mem_free(gGame.userTrack);
                     gGame.userTrack = 0;
-                    gEditor->menu->flags |= 1;
+                    gEditor->menu->flags |= GUI_MENU_ACTIVE;
                     gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 case 5:
@@ -561,7 +561,7 @@ void edit_update_main_menu(void)
                         save_write(4, 0);
                         mem_free(gGame.userTrack);
                         gGame.userTrack = 0;
-                        gEditor->menu->flags |= 1;
+                        gEditor->menu->flags |= GUI_MENU_ACTIVE;
                         gEditor->flags &= ~EDIT_DIALOG;
                     }
                     break;
@@ -569,7 +569,7 @@ void edit_update_main_menu(void)
                     gGame.flags |= 2;
                     gEditor->exitTimer = 0;
                     gEditor->flags |= EDIT_EXIT;
-                    gEditor->menu->flags |= 1;
+                    gEditor->menu->flags |= GUI_MENU_ACTIVE;
                     gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 case 4:
@@ -593,7 +593,7 @@ void edit_update_main_menu(void)
                     gEditor->first = 0;
                     gEditor->last = gEditor->cur;
                     edit_update_piece_ports(gEditor->cur);
-                    gEditor->menu->flags |= 1;
+                    gEditor->menu->flags |= GUI_MENU_ACTIVE;
                     gEditor->dirtType = 0;
                     gEditor->flags &= ~EDIT_DIALOG;
                     arned_load_piece_textures(0, gEditor->objectTex, gEditor->wallTex);
@@ -614,7 +614,7 @@ void edit_update_main_menu(void)
                     gGame.flags |= 2;
                     gEditor->exitTimer = 0;
                     gEditor->flags = (gEditor->flags | 0x2010) & ~0x4000;
-                    gEditor->menu->flags |= 1;
+                    gEditor->menu->flags |= GUI_MENU_ACTIVE;
                     gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 case 5:
@@ -627,7 +627,7 @@ void edit_update_main_menu(void)
                     }
                     *(u32 *)gGame.userTrack = calc_checksum24(gGame.userTrack + 4, 0x3FC);
                 default:
-                    gEditor->menu->flags |= 1;
+                    gEditor->menu->flags |= GUI_MENU_ACTIVE;
                     gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 }
@@ -655,8 +655,8 @@ void edit_update_main_menu(void)
         }
         if (gEditor->mode == EDIT_MODE_NAME || gEditor->mode == EDIT_MODE_NAME_8) {
             edit_update_name_entry(p, flags);
-        } else if (gui_menu_input(gEditor->menu, flags)) {
-            switch (sEditMainMenu.sel) {
+        } else if (gui_menu_input(gEditor->menu)) {
+            switch (sEditMainMenu.choice) {
             case 1:
                 gEditor->mode = EDIT_MODE_IDLE;
                 if (gEditor->menu != &sEditTrackMenu) {
@@ -679,14 +679,14 @@ void edit_update_main_menu(void)
                     }
                     gEditor->flags &= ~EDIT_A_HELD;
                 }
-                sEditTrackMenu.sel = 0;
+                sEditTrackMenu.choice = 0;
                 sEditTrackMenu.cursor = 0;
                 gEditor->page = 1;
                 break;
             case 0:
                 gEditor->dialog = 4;
                 gEditor->flags |= EDIT_DIALOG;
-                gEditor->menu->flags &= ~1;
+                gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 gEditor->dialogChoice = 0;
                 break;
             case 2:
@@ -702,19 +702,19 @@ void edit_update_main_menu(void)
                         gEditor->dialogChoice = 0;
                     }
                 }
-                gEditor->menu->flags &= ~1;
+                gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 break;
             case 3:
                 if (gEditor->name[0] == '<') {
                     gEditor->flags |= EDIT_MESSAGE;
-                    gEditor->menu->flags &= ~1;
+                    gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                     gEditor->message = 4;
-                    sEditMainMenu.sel = 6;
+                    sEditMainMenu.choice = 6;
                     sEditMainMenu.cursor = 6;
                 } else {
                     gEditor->dialog = 5;
                     gEditor->flags |= EDIT_DIALOG;
-                    gEditor->menu->flags &= ~1;
+                    gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                     gEditor->dialogChoice = 0;
                 }
                 break;
@@ -728,7 +728,7 @@ void edit_update_main_menu(void)
                 gEditor->dialog = 3;
                 gEditor->dialogChoice = 0;
                 gEditor->flags = (gEditor->flags & ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE)) | 0x1000;
-                gEditor->menu->flags &= ~1;
+                gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 break;
             case 6:
                 gEditor->nameLen = 0;
@@ -737,7 +737,7 @@ void edit_update_main_menu(void)
                 gEditor->nameCursorY = 0;
                 mem_fill(gEditor->nameBuf, 0, 0xB);
                 gEditor->mode = EDIT_MODE_NAME;
-                gEditor->menu->flags &= ~1;
+                gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 break;
             case 4:
                 if (gGame.difficulty == 0) {
@@ -777,7 +777,6 @@ void edit_update_main_menu(void)
 #define PRESSED_2(m) ((gPadInput & (m)) && !(gPadInputPrev_3[0] & (m)))
 #define DEL()                                                                          if (gEditor->cur != NULL) {                                                         if (gEditor->cur->prev == NULL) {                                                   n = gEditor->cur;                                                               gEditor->cur = n->next;                                                         edit_delete_piece(n);                                                                  edit_pick_start_piece();                                                                         } else if (gEditor->cur->next == NULL || gEditor->first->prev == gEditor->last) {             n = gEditor->cur;                                                               gEditor->cur = n->prev;                                                         edit_delete_piece(n);                                                                  edit_pick_start_piece();                                                                         }                                                                              }
 
-s32 gui_menu_input_2(GuiMenu *c);
 
 static inline s32 chk(Editor *e, EditPiece *c) {
     EditPiece *n;
@@ -872,26 +871,26 @@ void edit_update_track_menu(void) {
         }
     }
     if (gEditor->cur != NULL && (gEditor->cur->flags & 4)) {
-        sEditTrackMenuItems[6].flags &= ~0x10;
-        sEditTrackMenuItems[4].flags &= ~0x10;
-        sEditTrackMenuItems[7].flags &= ~0x10;
-        sEditTrackMenuItems[5].flags &= ~0x10;
+        sEditTrackMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[7].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
         gEditor->flags &= ~EDIT_CAN_DELETE;
     } else {
-        sEditTrackMenuItems[7].flags |= 0x10;
+        sEditTrackMenuItems[7].flags |= GUI_ITEM_ENABLED;
         if (gEditor->cur == NULL ||
             (gEditor->cur->next != NULL && gEditor->cur->prev != NULL && gEditor->first->prev == NULL) ||
             (e = gEditor, c = e->cur, !chk(e, c))) {
-            sEditTrackMenuItems[6].flags &= ~0x10;
+            sEditTrackMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
             gEditor->flags &= ~EDIT_CAN_DELETE;
         } else {
             gEditor->flags |= EDIT_CAN_DELETE;
-            sEditTrackMenuItems[6].flags |= 0x10;
+            sEditTrackMenuItems[6].flags |= GUI_ITEM_ENABLED;
         }
         if (gEditor->flags & 0x1E0) {
-            sEditTrackMenuItems[4].flags |= 0x10;
+            sEditTrackMenuItems[4].flags |= GUI_ITEM_ENABLED;
         } else {
-            sEditTrackMenuItems[4].flags &= ~0x10;
+            sEditTrackMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
         }
     }
     if (gEditor->menu != NULL) {
@@ -901,14 +900,14 @@ void edit_update_track_menu(void) {
         if (PRESSED_2(0x10)) {
             gPadInputPrev_3[0] |= 0x10;
             gEditor->flags &= ~EDIT_MESSAGE;
-            gEditor->menu->flags |= 1;
+            gEditor->menu->flags |= GUI_MENU_ACTIVE;
         }
     } else {
         if (gEditor->mode == EDIT_MODE_WARN_MULTI || gEditor->mode == EDIT_MODE_WARN_LOCKED) {
             if (PRESSED_2(0x10)) {
                 gEditor->mode = EDIT_MODE_USER_PIECE;
             } else if (PRESSED_2(0x20)) {
-                gEditor->menu->flags |= 1;
+                gEditor->menu->flags |= GUI_MENU_ACTIVE;
                 gEditor->mode = EDIT_MODE_PLACE;
                 gEditor->flags &= ~EDIT_DIALOG;
             }
@@ -934,12 +933,12 @@ void edit_update_track_menu(void) {
                     n = n->next;
                 } while (n != NULL && n != gEditor->first);
                 gEditor->mode = EDIT_MODE_IDLE;
-                gEditor->menu->flags |= 1;
+                gEditor->menu->flags |= GUI_MENU_ACTIVE;
                 ok = 1;
                 snd_play_menu_sound(2);
             } else if (PRESSED_2(0x10)) {
                 gEditor->mode = EDIT_MODE_IDLE;
-                gEditor->menu->flags |= 1;
+                gEditor->menu->flags |= GUI_MENU_ACTIVE;
                 snd_play_menu_sound(1);
             } else if ((gEditor->flags & EDIT_ROOM_X_NEG) && PRESSED_2(0x2000)) {
                 n = gEditor->first;
@@ -986,8 +985,8 @@ void edit_update_track_menu(void) {
                     }
                 }
             }
-        } else if (gui_menu_input_2(gEditor->menu)) {
-            switch (sEditTrackMenu.sel) {
+        } else if (gui_menu_input(gEditor->menu)) {
+            switch (sEditTrackMenu.choice) {
             case 0:
             case 1:
             case 2:
@@ -1004,7 +1003,7 @@ void edit_update_track_menu(void) {
                         gEditor->cur->flags |= 4;
                         gEditor->mode = EDIT_MODE_IDLE;
                         gEditor->last = gEditor->cur;
-                        gEditor->menu->flags |= 1;
+                        gEditor->menu->flags |= GUI_MENU_ACTIVE;
                         gEditor->mode = EDIT_MODE_PLACE;
                         gEditor->flags |= EDIT_OPEN_END;
                     } else {
@@ -1030,7 +1029,7 @@ void edit_update_track_menu(void) {
                     gEditor->moveFromX = gEditor->first->x;
                     gEditor->moveFromY = gEditor->first->y;
                     gEditor->mode = EDIT_MODE_MOVE_TRACK;
-                    gEditor->menu->flags &= ~1;
+                    gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 }
                 break;
             case 7:
@@ -1110,7 +1109,7 @@ void edit_update_track_menu(void) {
 }
 
 #define PRESSED_3(m) ((gPadInput & (m)) && !(gPadInputPrev & (m)))
-#define IDX (sEditTrackMenu.items[sEditTrackMenu.sel].value)
+#define IDX (sEditTrackMenu.items[sEditTrackMenu.choice].value)
 
 #define INSERT(B)                                                                          \
     if (gEditor->cur == NULL) {                                                         \
@@ -1127,7 +1126,6 @@ void edit_update_track_menu(void) {
         gEditor->first = gEditor->cur;                                                \
     }
 
-s32 gui_menu_input_3(GuiMenu *c);
 
 void edit_update_place_piece(void) {
     EditPiece *cur;
@@ -1195,7 +1193,7 @@ void edit_update_place_piece(void) {
         }
     } else if (PRESSED_3(0x20000)) {
         if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_USER)) {
-            gEditor->menu->flags &= ~1;
+            gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
             edit_update_user_piece_usage();
             edit_user_piece_reset_cursor(0);
             if (gEditor->cur->type->flags & PIECE_USED_TWICE) {
@@ -1223,9 +1221,9 @@ void edit_update_place_piece(void) {
     if (gEditor->mode == EDIT_MODE_USER_PIECE) {
         edit_update_user_piece();
         gEditor->flags |= EDIT_OPEN_END;
-    } else if (gui_menu_input_3(gEditor->menu)) {
+    } else if (gui_menu_input(gEditor->menu)) {
         ok = 0;
-        switch (sEditTrackMenu.sel) {
+        switch (sEditTrackMenu.choice) {
         case 3:
             edit_remove_preview_pieces_2();
             gEditor->userPiece = IDX;
@@ -1275,16 +1273,16 @@ void edit_update_place_piece(void) {
                 gEditor->flags |= EDIT_MESSAGE;
                 if (gEditor->first->prev != NULL) {
                     gEditor->message = 2;
-                    sEditTrackMenu.sel = 7;
+                    sEditTrackMenu.choice = 7;
                     sEditTrackMenu.cursor = 7;
                 } else {
                     gEditor->message = 3;
                 }
-                gEditor->menu->flags &= ~1;
+                gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
             }
         }
     } else {
-        switch (sEditTrackMenu.sel) {
+        switch (sEditTrackMenu.choice) {
         case 3:
             edit_remove_preview_pieces_2();
             gEditor->userPiece = IDX;
@@ -1543,7 +1541,7 @@ void edit_update(void) {
             }
         }
     }
-    sEditTrackMenuItems[3].count = gEditor->userPieceCount;
+    sEditTrackMenuItems[3].numValues = gEditor->userPieceCount;
     if (gEditor->menu != NULL) {
         gui_menu_fix_cursor(gEditor->menu);
     }
@@ -1557,28 +1555,28 @@ void edit_update(void) {
         edit_set_start_piece_choices();
     }
     if (gEditor->cur == NULL) {
-        sEditMainMenuItems[0].flags &= ~0x10;
-        sEditMainMenuItems[6].flags &= ~0x10;
+        sEditMainMenuItems[0].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[0].flags |= 0x10;
-        sEditMainMenuItems[6].flags |= 0x10;
+        sEditMainMenuItems[0].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[6].flags |= GUI_ITEM_ENABLED;
     }
     if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_START) && gEditor->start != NULL) {
-        sEditTrackMenuItems[5].flags |= 0x10;
+        sEditTrackMenuItems[5].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditTrackMenuItems[5].flags &= ~0x10;
+        sEditTrackMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor->start != 0) {
-        sEditMainMenuItems[4].flags |= 0x10;
-        sEditMainMenuItems[5].flags |= 0x10;
+        sEditMainMenuItems[4].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[5].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[4].flags &= ~0x10;
-        sEditMainMenuItems[5].flags &= ~0x10;
+        sEditMainMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor->start != 0 && gEditor->first->prev == gEditor->last) {
-        sEditMainMenuItems[3].flags |= 0x10;
+        sEditMainMenuItems[3].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[3].flags &= ~0x10;
+        sEditMainMenuItems[3].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor->menu != NULL) {
         gui_menu_fix_cursor(gEditor->menu);
@@ -1588,7 +1586,7 @@ void edit_update(void) {
         gEditor->menu = gEditor->nextMenu;
         gEditor->nextMenu = NULL;
     }
-    switch (sEditTrackMenu.sel) {
+    switch (sEditTrackMenu.choice) {
     case 0:
         gEditor->selType = &gPieceTypes[sEditTrackMenu.items[0].value];
         break;
@@ -1630,13 +1628,6 @@ void edit_update(void) {
 
 #define RAW(g, a, b) { Gfx *_g = (Gfx *)(g); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-typedef struct {
-    char pad0[4];
-    u8 *img;
-} Res_8;
-
-extern Res_8 *gGui_5;
-
 Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
 {
     s32 u, j, m, i, k, y0, xo, t, yoff, yy, idx, x, c, s, f;
@@ -1650,7 +1641,7 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
     RAW(gdl++, 0xE3001001, 0);
     RAW(gdl++, 0xE200001C, 0x00404240);
     RAW(gdl++, 0xD7000002, 0x80008000);
-    p = gGui_5->img + 0x48;
+    p = (u8 *)gGui->images + 0x48;
     gdl = render_draw_image(0xBC, 0x78 - (p[1] >> 1), p, gdl, arg1, 1, 1, 6, 0);
     font_text_create(gEditor->bigText, 0x40, 2, 2, 0x20);
     font_text_add(gEditor->bigText, sStrTrackNameLabel);
@@ -1669,7 +1660,7 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
             x = k * 26 - (i * 5 + c);
             font_draw_text(gEditor->bigText, x, i * 17 + 0x48);
             if (idx == gEditor->nameKey) {
-                p = gGui_5->img + 0x50;
+                p = (u8 *)gGui->images + 0x50;
                 gdl = render_draw_image(x - p[0] * 4 + 4, i * 17 - (p[1] >> 1) + 0x49, p, gdl, arg1, 1, 1, 6, 0);
                 do { } while (0);
                 idx++;
@@ -1699,13 +1690,6 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
     gDPPipeSync(gdl++);
     return gdl;
 }
-
-typedef struct {
-    s32 f0;
-    u8 *img;
-} Res_9;
-
-extern Res_9 *gGui_6;
 
 void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
 {
@@ -1823,7 +1807,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        p = gGui_6->img + 0x58;
+        p = (u8 *)gGui->images + 0x58;
         font_text_create(gEditor->text, 0x20, 5, 2, 0x21);
         font_text_add(gEditor->text, sStrTrackNameLabel);
         font_text_add(gEditor->text, gEditor->name);
@@ -2881,16 +2865,16 @@ void edit_set_start_piece_choices(void)
             t0 = 0x12;
             break;
         }
-        sEditTrackMenu.items[i].mask = 0;
-        for (k = 0; k < sEditTrackMenu.items[i].count; k++) {
+        sEditTrackMenu.items[i].valueMask = 0;
+        for (k = 0; k < sEditTrackMenu.items[i].numValues; k++) {
             if (gPieceTypes[t0 + k].flags & (PIECE_FITS | PIECE_FITS_FLIPPED)) {
-                sEditTrackMenu.items[i].mask |= 1 << k;
+                sEditTrackMenu.items[i].valueMask |= 1 << k;
             }
         }
-        if (sEditTrackMenu.items[i].mask == 0) {
-            sEditTrackMenu.items[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].valueMask == 0) {
+            sEditTrackMenu.items[i].flags &= ~GUI_ITEM_ENABLED;
         } else {
-            sEditTrackMenu.items[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= GUI_ITEM_ENABLED;
         }
     }
     gui_menu_fix_cursor(&sEditTrackMenu);
@@ -3153,17 +3137,17 @@ s32 edit_update_fitting_pieces(EditPiece *o)
         default:
             continue;
         }
-        sEditTrackMenu.items[i].mask = 0;
-        for (n = 0; n < sEditTrackMenu.items[i].count; n++) {
+        sEditTrackMenu.items[i].valueMask = 0;
+        for (n = 0; n < sEditTrackMenu.items[i].numValues; n++) {
             if (gPieceTypes[j + n].flags & 0x30) {
-                sEditTrackMenu.items[i].mask |= 1 << n;
+                sEditTrackMenu.items[i].valueMask |= 1 << n;
             }
         }
-        if (sEditTrackMenu.items[i].mask == 0) {
-            sEditTrackMenu.items[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].valueMask == 0) {
+            sEditTrackMenu.items[i].flags &= ~GUI_ITEM_ENABLED;
         } else {
             ret = 1;
-            sEditTrackMenu.items[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= GUI_ITEM_ENABLED;
         }
     }
     gui_menu_fix_cursor(&sEditTrackMenu);
@@ -3696,7 +3680,7 @@ void edit_update_user_piece(void)
     if (gEditor->flags & EDIT_DIALOG) {
         if (PRESSED_4(0x20)) {
             gPadInputPrev_3[0] |= 0x20;
-            gEditor->menu->flags |= 1;
+            gEditor->menu->flags |= GUI_MENU_ACTIVE;
             gEditor->flags &= ~EDIT_DIALOG;
         } else if (PRESSED_4(0x10)) {
             gPadInputPrev_3[0] |= 0x10;
@@ -3721,7 +3705,7 @@ void edit_update_user_piece(void)
                     break;
                 }
             }
-            gEditor->menu->flags |= 1;
+            gEditor->menu->flags |= GUI_MENU_ACTIVE;
             gEditor->flags &= ~EDIT_DIALOG;
         } else if (PRESSED_4(0x800) || PRESSED_4(0x1000)) {
             gEditor->dialogChoice ^= 1;
@@ -3729,11 +3713,11 @@ void edit_update_user_piece(void)
         }
     } else if (PRESSED_4(0x10)) {
         gEditor->mode = EDIT_MODE_PLACE;
-        gEditor->menu->flags |= 1;
-        sEditTrackMenu.sel = 3;
+        gEditor->menu->flags |= GUI_MENU_ACTIVE;
+        sEditTrackMenu.choice = 3;
         sEditTrackMenu.cursor = 3;
-        sEditTrackMenu.items[3].flags |= 0x10;
-        sEditTrackMenu.items[3].mask |= 1 << (gEditor->userPieceCount - 1);
+        sEditTrackMenu.items[3].flags |= GUI_ITEM_ENABLED;
+        sEditTrackMenu.items[3].valueMask |= 1 << (gEditor->userPieceCount - 1);
     } else {
         if (PRESSED_4(0x10000)) {
             PieceType *b = gPieceTypes;
@@ -3744,7 +3728,7 @@ void edit_update_user_piece(void)
                 if (gEditor->heightSel == 1 || gEditor->heightSel == t->dim[1] * 2 - 1) {
                     gEditor->dialog = 1;
                     gEditor->flags |= EDIT_DIALOG;
-                    gEditor->menu->flags &= ~1;
+                    gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                     gEditor->dialogChoice = 0;
                     goto end;
                 }
@@ -3762,7 +3746,7 @@ void edit_update_user_piece(void)
                 if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
                     gEditor->dialog = 0;
                     gEditor->flags |= EDIT_DIALOG;
-                    gEditor->menu->flags &= ~1;
+                    gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                     gEditor->dialogChoice = 0;
                 }
             }
@@ -3778,7 +3762,7 @@ void edit_update_user_piece(void)
             } else if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
                 gEditor->dialog = 0;
                 gEditor->flags |= EDIT_DIALOG;
-                gEditor->menu->flags &= ~1;
+                gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 gEditor->dialogChoice = 0;
             }
         }

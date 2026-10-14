@@ -75,17 +75,6 @@ typedef struct Ent_79 Ent_79;
 typedef struct Obj_58 Obj_58;
 typedef struct Obj_59 Obj_59;
 typedef struct Obj_60 Obj_60;
-typedef struct Item_8 Item_8;
-typedef struct Obj_61 Obj_61;
-typedef struct Obj_62 Obj_62;
-typedef struct Obj_63 Obj_63;
-typedef struct Arg0 Arg0;
-typedef struct Arg1 Arg1;
-typedef struct Ctl_19 Ctl_19;
-typedef struct Scr Scr;
-typedef struct Ctl_21 Ctl_21;
-typedef struct Obj_67 Obj_67;
-typedef struct Menu_5 Menu_5;
 typedef struct Chan_6 Chan_6;
 typedef struct Ring_2 Ring_2;
 typedef struct Obj_80 Obj_80;
@@ -100,9 +89,6 @@ typedef struct Hdr_14 Hdr_14;
 typedef struct Src_4 Src_4;
 typedef struct Src_5 Src_5;
 typedef struct Out_6 Out_6;
-typedef struct Obj_83 Obj_83;
-typedef struct Font_6 Font_6;
-typedef struct Text Text;
 typedef struct Bike_25 Bike_25;
 
 typedef struct { u8 r, g, b; } Rgb;
@@ -967,81 +953,6 @@ typedef struct Obj_57 {
     s32 f744;
 } Obj_57;
 
-typedef struct Item_9 {
-    u8 pad0[4];
-    struct Item_9 *p4;
-    struct Item_9 *p8;
-    u8 padC[0x14 - 0xC];
-    s16 h14;
-    u8 pad16[2];
-    s16 h18;
-    u8 pad1A[0x20 - 0x1A];
-    s32 *p20;
-    u8 pad24[4];
-    s32 p28;
-} Item_9;
-
-typedef struct Item_11 {
-    u8 pad0[4];
-    s32 w4;
-    u8 pad8[0x10 - 0x8];
-    u16 h10;
-    s16 h12;
-    s16 h14;
-    s16 h16;
-    s16 h18;
-    u8 pad1A[2];
-    s32 **p1C;
-    s32 *p20;
-    s32 w24;
-    u8 pad28[4];
-} Item_11;
-
-typedef struct MenuItem {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    void (*func)(s32);
-} MenuItem;
-
-typedef struct Item_12 {
-    s32 f0;
-    struct Item_12 *child;   /* 0x04 */
-    struct Item_12 *next;    /* 0x08 */
-    MenuItem *items;      /* 0x0C */
-    u16 flags;            /* 0x10 */
-    u8 pad12[0x20 - 0x12];
-    s32 *sel;             /* 0x20 */
-    s32 f24;
-    struct Item_12 *parent;  /* 0x28 */
-} Item_12;
-
-typedef struct Slot {
-    s32 w0;
-    u32 flags;
-    s16 n;
-    s16 cur;
-    u32 mask;
-} Slot;
-
-typedef struct Ctl_22 {
-    s32 w0;
-    s16 n;
-    s16 cur;
-    Slot *ents;
-    u32 flags;
-    s16 last;
-} Ctl_22;
-
-typedef struct Ctl_2 {
-    s32 w0;
-    s16 count;
-    s16 x;
-    Slot *slots;
-    s32 w3;
-    s16 sel;
-} Ctl_2;
-
 typedef struct Ring {
     s32 f00;
     s32 cur;        /* 0x04 */
@@ -1133,14 +1044,6 @@ typedef struct Q_3 {
     s32 *f14;
 } Q_3;
 
-typedef struct Spr {
-    struct Spr *next;
-    s16 x;
-    s16 y;
-    u8 w, h, s, t;
-    u8 r, g, b, a;
-} Spr;
-
 /* The structures of the track, its models and the effects drawn on it. */
 #include "structs/model.h"
 #include "structs/track.h"
@@ -1160,6 +1063,13 @@ typedef struct Spr {
 /* The racing line and the track editor. */
 #include "structs/path.h"
 #include "structs/editor.h"
+
+/* The front end: fonts and text objects, the screens, the GUI kit, the race's texts, the Controller Pak screen. */
+#include "structs/font.h"
+#include "structs/shell.h"
+#include "structs/gui.h"
+#include "structs/hud.h"
+#include "structs/pak.h"
 
 /* The game's setup, the race, the season and the podium. */
 #include "structs/race.h"

@@ -1,31 +1,49 @@
-/* The menus of gui.c's kit, as the track editor (edit.c) uses them: a menu is a list of items, each either a plain
-   choice or a row of values to pick from (the piece lists). */
+/* gui.c: the track editor's dialog kit. gui_init loads the "GuiRes" set and creates the text objects into gGui;
+   gui_draw_message draws a one-line box, gui_draw_prompt a question with two choices and gui_draw_menu a menu.
+   The editor's menus (edit.c) are lists of items, each either a plain choice or a row of values to pick from (the
+   piece lists). */
 #ifndef STRUCTS_GUI_H
 #define STRUCTS_GUI_H
 
 #include "common.h"
+#include "structs/model.h"
+#include "structs/resman.h"
+#include "structs/font.h"
+
+typedef struct Gui {
+    /* 0x00 */ ResSet *res;              /* the "GuiRes" resource set */
+    /* 0x04 */ TexSet *images;           /* palette, then the boxes and frames of the dialogs and menus */
+    /* 0x08 */ TexSet *cursorImages;     /* palette, then the menu cursor */
+    /* 0x0C */ s32 unk_0C;
+    /* 0x10 */ u8 unk_10[8];
+    /* 0x18 */ s32 unk_18;
+    /* 0x1C */ u8 unk_1C[8];
+    /* 0x24 */ TextObj *menuText[9];     /* gui_draw_menu: the title, then one per item */
+    /* 0x48 */ TextObj *unkText[4];
+    /* 0x58 */ TextObj *dialogText[3];   /* gui_draw_prompt: the question and the two choices; gui_draw_message: [0] */
+} Gui; /* size 0x64 */
 
 /* GuiMenuItem.flags */
 #define GUI_ITEM_ENABLED 0x10
 
 typedef struct GuiMenuItem {
-    /* 0x00 */ char *text;
-    /* 0x04 */ u32 flags;           /* GUI_ITEM_* */
-    /* 0x08 */ s16 count;           /* values of a row (0: a plain item) */
-    /* 0x0A */ s16 value;           /* chosen value */
-    /* 0x0C */ u32 mask;            /* values that can be chosen (bit n: value n) */
+    /* 0x00 */ char *text;     /* enabled items starting with a space get the cursorImages picture there */
+    /* 0x04 */ u32 flags;      /* GUI_ITEM_* */
+    /* 0x08 */ s16 numValues;  /* 0: a plain item; else a row of values that left/right pick from */
+    /* 0x0A */ s16 value;      /* the chosen value */
+    /* 0x0C */ u32 valueMask;  /* bit n: value n can be chosen */
 } GuiMenuItem; /* size 0x10 */
 
 /* GuiMenu.flags */
-#define GUI_MENU_ACTIVE 1           /* takes input (cleared while a dialog box is up) */
+#define GUI_MENU_ACTIVE 1 /* takes input and shows the cursor (cleared while a dialog box is up) */
 
 typedef struct GuiMenu {
     /* 0x00 */ char *title;
-    /* 0x04 */ s16 count;
-    /* 0x06 */ s16 cursor;          /* set with sel when the editor moves the cursor itself */
+    /* 0x04 */ s16 numItems;
+    /* 0x06 */ s16 cursor;     /* the editor sets it with choice when it moves the cursor itself */
     /* 0x08 */ GuiMenuItem *items;
-    /* 0x0C */ u32 flags;           /* GUI_MENU_* */
-    /* 0x10 */ s16 sel;             /* the chosen item after gui_menu_input */
+    /* 0x0C */ u32 flags;      /* GUI_MENU_* */
+    /* 0x10 */ s16 choice;     /* the cursor as of the last frame: the chosen item when gui_menu_input returns 1 */
 } GuiMenu; /* size 0x14 */
 
 #endif

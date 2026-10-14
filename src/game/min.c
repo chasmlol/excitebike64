@@ -595,33 +595,31 @@ void race_intro_load(void)
     gRaceTextObjs = mem_alloc_dbg(0x148, 0, D_800D6170, 0x52C);
     i = 0;
     do {
-        *(s32 *)((u8 *)gRaceTextObjs + (i << 2)) = (s32)font_text_create((s32 *)0, 0x40, 1, 2, 0x20);
+        gRaceTextObjs->text[i] = font_text_create(NULL, 0x40, 1, 2, 0x20);
         i = i + 1;
     } while (i < 0x4a);
     r = res_load(D_800E7728, D_800D088C);
-    gRaceTextObjs[0x4a] = r;
+    gRaceTextObjs->introImages = (u8 *)r;
     r = res_load(D_800E7728, D_800D09B0);
-    gRaceTextObjs[0x50] = r;
+    gRaceTextObjs->introPic = (Pic *)r;
     if (gGame.mode == 1) {
         i = 0;
         do {
             r = res_load(D_800E7728, *(s32 *)D_800C8D68[gSeason->cup->tracks[i]]);
-            *(s32 *)((u8 *)gRaceTextObjs + (i << 2) + 0x12C) = r;
+            gRaceTextObjs->roundPics[i] = (Pic *)r;
             i = i + 1;
         } while (i < 5);
     }
     r = res_load(D_800E7728, D_800D085C);
-    gRaceTextObjs[0x51] = r;
+    gRaceTextObjs->lapArrows = (Pic *)r;
 }
 
 void race_intro_unload(void) {
     s32 i;
-    s32 off;
 
     for (i = 0; i < 0x4A; i++) {
-        off = i * 4;
-        func_800C204C(*(void **)((s32)gRaceTextObjs + off));
-        mem_free(*(void **)((s32)gRaceTextObjs + off));
+        func_800C204C(gRaceTextObjs->text[i]);
+        mem_free(gRaceTextObjs->text[i]);
     }
     res_unload(&D_800E7728->handles[D_800D088C]);
     res_unload(&D_800E7728->handles[D_800D09B0]);
@@ -1779,15 +1777,13 @@ void race_set_video_mode(void)
 void race_alloc_text_objs(void)
 {
     s32 i;
-    s32 *p;
-    s32 off;
+    TextObj *p;
 
     gRaceTextObjs = mem_alloc_dbg(0x148, 0, "min.c", 0x4E3);
     i = 0;
     do {
-        p = font_text_create(0, 0x40, 1, 2, 0x20);
-        off = i * 4;
-        *(s32 *)((u8 *)gRaceTextObjs + off) = (s32)p;
+        p = font_text_create(NULL, 0x40, 1, 2, 0x20);
+        gRaceTextObjs->text[i] = p;
         i++;
     } while (i < 0x4A);
 }
@@ -1795,14 +1791,11 @@ void race_alloc_text_objs(void)
 void race_free_text_objs(void)
 {
     s32 i;
-    void **p;
 
     i = 0;
     do {
-        p = (void **)gRaceTextObjs + i;
-        func_800C204C(*p);
-        p = (void **)gRaceTextObjs + i;
-        mem_free(*p);
+        func_800C204C(gRaceTextObjs->text[i]);
+        mem_free(gRaceTextObjs->text[i]);
         i++;
     } while (i < 0x4a);
     mem_free(gRaceTextObjs);
