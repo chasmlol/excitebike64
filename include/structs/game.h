@@ -122,7 +122,7 @@ typedef struct Game {
     /* 0x03C */ s32 numPlayers;
     /* 0x040 */ s32 numLaps;
     /* 0x044 */ s32 numCpuRiders;
-    /* 0x048 */ s16 unk_048;            /* a 10-frame animation of the front end */
+    /* 0x048 */ s16 sponsorLogo;        /* list screens: the sponsor logo crossing the screen (0-9) */
     /* 0x04A */ s16 unk_04A;
     /* 0x04C */ u32 mode;               /* MODE_* */
     /* 0x050 */ u8 padConfig[4];        /* the button layout of each controller (A-D) */
@@ -159,25 +159,25 @@ typedef struct Game {
     /* 0x2F4 */ Img *itemPics[24];      /* the pictures of the tracks or menu items */
     /* 0x354 */ u8 unk_354[0x36C - 0x354];
     /* 0x36C */ Pic *screenPics[7];
-    /* 0x388 */ Img *unk_388;
-    /* 0x38C */ Img *unk_38C;
-    /* 0x390 */ Img *unk_390;
+    /* 0x388 */ Img *sponsorLogos;
+    /* 0x38C */ Img *titleLogo;
+    /* 0x390 */ Img *frames;         /* the screen's frames and panels (title: the copyright line) */
     /* 0x394 */ Img *unk_394;
-    /* 0x398 */ Img *unk_398;
-    /* 0x39C */ Img *unk_39C;
-    /* 0x3A0 */ Img *unk_3A0;
+    /* 0x398 */ Img *padlock;        /* 30 frames */
+    /* 0x39C */ Img *icons;          /* the trophy (list screens) or the controller icon (60 frames) */
+    /* 0x3A0 */ Img *titleBar;       /* SCREEN_TYPE_SPLASH_2: the Expansion Pak picture */
     /* 0x3A4 */ Img *cursorImg;         /* 30 frames */
-    /* 0x3A8 */ Img *unk_3A8;
+    /* 0x3A8 */ Img *wonFlag;        /* 30 frames */
     /* 0x3AC */ u8 *cursorPal;
-    /* 0x3B0 */ Img *unk_3B0;
+    /* 0x3B0 */ Img *customRoundArrows;
     /* 0x3B4 */ u8 unk_3B4[4];
     /* 0x3B8 */ u32 savedMode;          /* rider select: the mode and track to return to */
     /* 0x3BC */ void *savedTrack;
     /* 0x3C0 */ s32 riderSkinSel;
     /* 0x3C4 */ s32 bikeSkinSel;
-    /* 0x3C8 */ Img *unk_3C8;
+    /* 0x3C8 */ Img *cButtonIcons;
     /* 0x3CC */ u8 unk_3CC[0x3DC - 0x3CC];
-    /* 0x3DC */ Img *unk_3DC;
+    /* 0x3DC */ Img *itemBars;       /* the notice screens: their title bar */
     /* 0x3E0 */ u8 unk_3E0[4];
     /* 0x3E4 */ s32 pakMenuSel;
     /* 0x3E8 */ u8 *userTrack;          /* a packed user track (0x400 bytes) for the editor or the Controller Pak */
@@ -185,16 +185,16 @@ typedef struct Game {
     /* 0x3F0 */ u8 unk_3F0[0x3FC - 0x3F0];
     /* 0x3FC */ Screen *returnScreen;   /* the screen to return to after a race */
     /* 0x400 */ s32 menuSel;
-    /* 0x404 */ Img *unk_404;
+    /* 0x404 */ Img *popupFrames;
     /* 0x408 */ s16 riderSelectAnim[2];
     /* 0x40C */ u8 riderSelectState[4];
     /* 0x410 */ s32 difficulty;
-    /* 0x414 */ Img *unk_414;
+    /* 0x414 */ Img *resultsTitleBars;
     /* The last race's results, kept for the results screens (shell_backup_race_results) */
     /* 0x418 */ u16 resultsNumRiders;
     /* 0x41A */ u8 resultsOrder[6];
     /* 0x420 */ s32 resultsTimes[6];
-    /* 0x438 */ Img *unk_438;
+    /* 0x438 */ Img *screenArrows;
     /* 0x43C */ u8 riderSkins[6];       /* the rider texture of each racer (render_load_rider) */
     /* 0x442 */ u8 unk_442[2];
     /* 0x444 */ u16 *playerPalettes;    /* 4 palettes of 0x100 colours */
@@ -207,25 +207,25 @@ typedef struct Game {
     /* 0x456 */ s16 keyCursorX;
     /* 0x458 */ s16 keyCursorY;
     /* 0x45A */ u8 unk_45A[2];
-    /* 0x45C */ Img *unk_45C;
+    /* 0x45C */ Img *controllerDiagram;
     /* 0x460 */ s32 entryRecord;        /* the record whose initials are entered */
     /* 0x464 */ s16 nameLen;
     /* 0x466 */ char name[16];
     /* 0x476 */ s16 padConfigSel;       /* controller settings: the controller */
-    /* 0x478 */ Img *unk_478;
+    /* 0x478 */ Img *otherBg;        /* initials: swapped with the background for each player */
     /* 0x47C */ s16 dialogSel;          /* yes/no */
     /* 0x47E */ u8 unk_47E[2];
-    /* 0x480 */ Img *unk_480;
-    /* 0x484 */ Img *unk_484;
+    /* 0x480 */ Img *dialogFrame;
+    /* 0x484 */ Img *dialogTitleBar;
     /* 0x488 */ s16 pakScreenMode;
     /* 0x48A */ u8 unk_48A[0x490 - 0x48A];
     /* 0x490 */ TrackRecord records[24]; /* the tracks that keep records, in order */
     /* 0x730 */ HudGlyphs *hudGlyphs;
     /* 0x734 */ u8 playerInitials[4][3];
     /* 0x740 */ s32 idleFrames;         /* the front end times out after 0xE10 */
-    /* 0x744 */ Img *unk_744;
-    /* 0x748 */ Img *unk_748;
-    /* 0x74C */ Img *unk_74C;
+    /* 0x744 */ Img *submenuFrame;
+    /* 0x748 */ Img *submenuItemBar;
+    /* 0x74C */ Img *smallArrows;
     /* 0x750 */ s32 screenTimer;
     /* 0x754 */ u32 newUnlocks;         /* save_update_unlocks */
     /* 0x758 */ s8 recordPlayer[4];     /* the player who set each record of the race (-1 none) */
@@ -237,7 +237,7 @@ typedef struct Game {
     /* 0x774 */ s32 optionsSfx;
     /* 0x778 */ s32 savedRiders[6];     /* the riders and skins before the podium */
     /* 0x790 */ s32 savedRiderSkins[6];
-    /* 0x7A8 */ u8 unk_7A8;
+    /* 0x7A8 */ u8 bestLapPlayer;    /* initials: the player of the best lap record (0xFF none) */
     /* 0x7A9 */ u8 cheatEntered;        /* sCheatTable */
     /* 0x7AA */ u8 bikeSkins[6];        /* the bike of each racer: bit 0 model, bits 1-2 palette */
 } Game; /* size 0x7B0 */
