@@ -1,20 +1,23 @@
 #include "boot.h"
 
-void boot_log_write(u8 *param_1, u32 param_2)
+/* Writes `size` bytes of `buf` to the log file on the host (sBootLogFileName, "output.log"), opening it the first
+   time. */
+void boot_log_write(u8 *buf, u32 size)
 {
     if (sBootLogFd == -1) {
         sBootLogFd = sn_pc_open(sBootLogFileName, 0);
     }
-    sn_pc_write(sBootLogFd, param_1, param_2);
+    sn_pc_write(sBootLogFd, buf, size);
 }
 
-void boot_log_print(u8 *p)
+/* Writes the string `str` to the log file on the host. */
+void boot_log_print(u8 *str)
 {
-    u32 n;
+    u32 len;
 
     if (sBootLogFd == -1) {
         sBootLogFd = sn_pc_open(sBootLogFileName, 0);
     }
-    n = strlen((char *)p);
-    sn_pc_write(sBootLogFd, p, n);
+    len = strlen((char *)str);
+    sn_pc_write(sBootLogFd, str, len);
 }
