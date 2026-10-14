@@ -13,11 +13,14 @@
 #endif
 
 /* A line number the code passes (__LINE__ of the original source, to the debug allocator), where lines were added or
-   removed above it between versions: SRC_LINE(LodgeNet's, USA Rev 1's). */
+   removed above it between versions: SRC_LINE(LodgeNet's, USA Rev 1's, ...), one per version in the order of the
+   VERSION_* numbers. A version past the last number given uses the last one, so a new version only adds an argument
+   where its line differs. */
+#define SRC_LINE_SECOND_(a, b, rest...) (b)
 #if VERSION == VERSION_LODGENET
-#define SRC_LINE(lodgenet, us_rev1) (lodgenet)
+#define SRC_LINE(lodgenet, rest...) (lodgenet)
 #elif VERSION == VERSION_US_REV1
-#define SRC_LINE(lodgenet, us_rev1) (us_rev1)
+#define SRC_LINE(lodgenet, rest...) SRC_LINE_SECOND_(lodgenet, ## rest, lodgenet)
 #else
 #error "SRC_LINE: no line numbers for this version"
 #endif
