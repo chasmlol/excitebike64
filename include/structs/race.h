@@ -11,6 +11,13 @@ typedef struct TrackRecord {
     /* 0x10 */ u8 initials[4][3];   /* of times[0-2] and bestLap; 0xFF 0xFF n: still to be entered by player n */
 } TrackRecord; /* size 0x1C */
 
+/* The race HUD's glyph images (gGame.hudGlyphs, event_draw_glyph_string): an image set of res_load. */
+typedef struct HudGlyphs {
+    /* 0x00 */ s32 count;
+    /* 0x04 */ u16 *palette;
+    /* 0x08 */ Img glyphs[1];       /* by character */
+} HudGlyphs;
+
 /* gEvent. state: 0-5 the start countdown, 6-12 soccer halves and overtime, 13-15 tutorial.
    flags: 0x10 timer paused, 0x40 tutorial demo (a replay), 0x800 message, 0x1000 takedown required, 0x2000 lesson
    done. */

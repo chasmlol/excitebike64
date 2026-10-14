@@ -3211,7 +3211,7 @@ void shell_load_screen(Item_11 *p) {
         gGame.unk_74C = LD(D_800D149C);
         race_set_grid_order(0, 6);
         race_init(0);
-        gGame.font = res_load(D_800E7728, D_800D09F8);
+        gGame.hudGlyphs = (HudGlyphs *)res_load(D_800E7728, D_800D09F8);
         break;
     }
 }

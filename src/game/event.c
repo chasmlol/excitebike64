@@ -1324,7 +1324,7 @@ void event_hud_init(void)
         sTempGaugeTextures = res_load(D_800E7728, D_800D11B0);
     }
     if (s2->mode == 9) {
-        s2->font = (struct Font *)res_load(D_800E7728, D_800D09F8);
+        s2->hudGlyphs = (HudGlyphs *)res_load(D_800E7728, D_800D09F8);
         D_800F0740 = res_load(D_800E7728, D_800D10E8);
         D_800EFD6C = res_load(D_800E7728, D_800D0DEC);
         D_800EFD68 = res_load(D_800E7728, D_800D09D4);
@@ -2607,33 +2607,21 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         _g->words.w1 = (b); \
     }
 
-typedef struct {
-    u8 w;
-    u8 h;
-    u8 unk2[6];
-} Glyph;
-
-typedef struct Font {
-    s32 unk0;
-    u16 *palette;
-    Glyph glyphs[1];
-} Font;
-
 Gfx *event_draw_glyph_string(Gfx *gdl, s32 arg1, u8 *str, s32 x, s32 y) {
     while (*str != 0) {
         s32 w; s32 hh;
 
         gDPWords(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPWords(gdl++, 0xE3001001, 0x8000);
-        gDPWords(gdl++, 0xFD100000, (u32)gGame.font->palette);
+        gDPWords(gdl++, 0xFD100000, (u32)gGame.hudGlyphs->palette);
         gDPWords(gdl++, 0xE8000000, 0);
         gDPWords(gdl++, 0xF5000100, 0x07000000);
         gDPWords(gdl++, 0xE6000000, 0);
         gDPWords(gdl++, 0xF0000000, 0x073FC000);
         gDPWords(gdl++, 0xE7000000, 0);
-        w = gGame.font->glyphs[*str].w << 3;
-        hh = gGame.font->glyphs[*str].h;
-        gdl = render_draw_image(x, y - (hh >> 1), &gGame.font->glyphs[*str], gdl, arg1, 1, 1, 3, 0);
+        w = gGame.hudGlyphs->glyphs[*str].w << 3;
+        hh = gGame.hudGlyphs->glyphs[*str].h;
+        gdl = render_draw_image(x, y - (hh >> 1), &gGame.hudGlyphs->glyphs[*str], gdl, arg1, 1, 1, 3, 0);
         str++;
         x += w;
     }

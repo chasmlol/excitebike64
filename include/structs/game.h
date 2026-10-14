@@ -123,7 +123,7 @@ typedef struct Game {
     /* 0x488 */ s16 pakScreenMode;
     /* 0x48A */ u8 unk_48A[0x490 - 0x48A];
     /* 0x490 */ TrackRecord records[24]; /* the tracks that keep records, in order */
-    /* 0x730 */ struct Font *font;      /* the race HUD's glyph font */
+    /* 0x730 */ HudGlyphs *hudGlyphs;
     /* 0x734 */ u8 playerInitials[4][3];
     /* 0x740 */ s32 idleFrames;         /* the front end times out after 0xE10 */
     /* 0x744 */ Img *unk_744;
