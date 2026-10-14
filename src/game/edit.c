@@ -358,6 +358,7 @@ void edit_exit(void)
     font_unload_set();
 }
 
+/* Newly pressed this frame (the different PRESSED macros compare different copies of the pad word) */
 #define PRESSED(b) ((gPadInput_3[0] & (b)) && !(gPadInputPrev & (b)))
 
 /* The name with its terminator, copied as one block */
@@ -1534,92 +1535,105 @@ void edit_try_close_loop(EditPiece *end)
     }
 }
 
-#define STKY(v) (((v) & 0xC) ? (((v) & 8) ? (((s32)(v) >> 24) & 0xF) : -(((s32)(v) >> 24) & 0xF)) : 0)
-#define STKX(v) (((v) & 3) ? (((v) & 1) ? (s32)((v) >> 28) : -(s32)((v) >> 28)) : 0)
+/* The stick's signed position in a pad word */
+#define STICK_X(v) (((v) & 0xC) ? (((v) & 8) ? (((s32)(v) >> 24) & 0xF) : -(((s32)(v) >> 24) & 0xF)) : 0)
+#define STICK_Y(v) (((v) & 3) ? (((v) & 1) ? (s32)((v) >> 28) : -(s32)((v) >> 28)) : 0)
 #define ABS(x) ((x) > 0 ? (x) : -(x))
 
-#define CALC1(F, R, A, B, C, D)                                                          \
+/* An orbit camera's height from its distance (a line through (DIST0, HEIGHT0) of slope SCALE / RANGE); leaves the
+   squared distance to the target in distSq */
+#define CAM_CALC_HEIGHT(DIST, HEIGHT, DIST0, SCALE, RANGE, HEIGHT0)                    \
     {                                                                                    \
-        f32 x = gEditor->F;                                                           \
-        s32 t = (s32)((x - A) * B / C + D);                                              \
-        gEditor->R = t;                                                               \
-        fs = (f32)t * (f32)t + x * x;                                                    \
+        f32 x = gEditor->DIST;                                                           \
+        s32 t = (s32)((x - DIST0) * SCALE / RANGE + HEIGHT0);                            \
+        gEditor->HEIGHT = t;                                                             \
+        distSq = (f32)t * (f32)t + x * x;                                                \
     }
 
-#define CALC2(R, O)                                                                          {                                                                                            s32 s = (s32)__builtin_sqrtf(fs);                                                        gEditor->O = (u16)math_asini(((gEditor->R << 14) / s) & 0x3FFF);            }
+/* ... and its pitch: asin(height / distance) */
+#define CAM_CALC_PITCH(HEIGHT, PITCH)                                                    \
+    {                                                                                    \
+        s32 s = (s32)__builtin_sqrtf(distSq);                                            \
+        gEditor->PITCH = (u16)math_asini(((gEditor->HEIGHT << 14) / s) & 0x3FFF);        \
+    }
 
+/* Game state 2's update: the stick as the D-pad, the cameras (zoom, turn round), which menu items are enabled, the
+   menu panel's slide, the menu page's input, leaving after EDIT_EXIT, and every piece's connectors. */
 void edit_update(void) {
-    Editor *g;
-    EditPiece *p;
-    f32 fs;
+    Editor *ed;
+    EditPiece *piece;
+    f32 distSq;
 
-    g = gEditor;
-    if (g->lastCur != g->cur) {
-        g->prevCur = g->lastCur;
-        g->lastCur = g->cur;
+    ed = gEditor;
+    if (ed->lastCur != ed->cur) {
+        ed->prevCur = ed->lastCur;
+        ed->lastCur = ed->cur;
     }
-    if ((gPadInput & 4) && ABS(STKY(gPadInput)) >= 3) {
-        gPadInput |= 0x2000;
+    /* the stick pushed far enough counts as the D-pad */
+    if ((gPadInput & PAD_STICK_LEFT) && ABS(STICK_X(gPadInput)) >= 3) {
+        gPadInput |= PAD_D_LEFT;
     }
-    if ((gPadInput & 8) && ABS(STKY(gPadInput)) >= 3) {
-        gPadInput |= 0x4000;
+    if ((gPadInput & PAD_STICK_RIGHT) && ABS(STICK_X(gPadInput)) >= 3) {
+        gPadInput |= PAD_D_RIGHT;
     }
-    if ((gPadInput & 1) && ABS(STKX(gPadInput)) >= 3) {
-        gPadInput |= 0x800;
+    if ((gPadInput & PAD_STICK_UP) && ABS(STICK_Y(gPadInput)) >= 3) {
+        gPadInput |= PAD_D_UP;
     }
-    if ((gPadInput & 2) && ABS(STKX(gPadInput)) >= 3) {
-        gPadInput |= 0x1000;
+    if ((gPadInput & PAD_STICK_DOWN) && ABS(STICK_Y(gPadInput)) >= 3) {
+        gPadInput |= PAD_D_DOWN;
     }
-    if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10)) {
+    if ((gPadInput & PAD_A) && !(gPadInputPrev & PAD_A)) {
         gEditor->flags |= EDIT_A_HELD;
     } else if (gEditor->flags & EDIT_A_HELD) {
-        if (((gPadInput & 0x20) && !(gPadInputPrev & 0x20)) || !(gPadInput & 0x10)) {
+        if (((gPadInput & PAD_B) && !(gPadInputPrev & PAD_B)) || !(gPadInput & PAD_A)) {
             gEditor->flags &= ~EDIT_A_HELD;
         }
     }
+    /* the camera: a zoom under way, or C up and down */
     if (gEditor->camZoomFrames != 0) {
         gEditor->cam[1].dist += gEditor->camZoomStep / 50;
         gEditor->camZoomFrames--;
-        CALC1(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
-        CALC2(cam[1].height, cam[1].pitch);
+        CAM_CALC_HEIGHT(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
+        CAM_CALC_PITCH(cam[1].height, cam[1].pitch);
     } else if (gEditor->cur != 0) {
-        if (gPadInput & 0x80) {
+        if (gPadInput & PAD_C_UP) {
             if (gEditor->mode == EDIT_MODE_USER_PIECE) {
                 gEditor->cam[1].dist -= 600;
                 if (gEditor->cam[1].dist < 20000) {
                     gEditor->cam[1].dist = 20000;
                 }
-                CALC1(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
-                CALC2(cam[1].height, cam[1].pitch);
+                CAM_CALC_HEIGHT(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
+                CAM_CALC_PITCH(cam[1].height, cam[1].pitch);
             } else {
                 gEditor->cam[0].dist -= 600;
                 if (gEditor->cam[0].dist < 20000) {
                     gEditor->cam[0].dist = 20000;
                 }
-                CALC1(cam[0].dist, cam[0].height, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
-                CALC2(cam[0].height, cam[0].pitch);
+                CAM_CALC_HEIGHT(cam[0].dist, cam[0].height, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
+                CAM_CALC_PITCH(cam[0].height, cam[0].pitch);
             }
         }
-        if (gPadInput & 0x100) {
+        if (gPadInput & PAD_C_DOWN) {
             if (gEditor->mode == EDIT_MODE_USER_PIECE) {
                 gEditor->cam[1].dist += 600;
                 if (gEditor->cam[1].dist > 120000) {
                     gEditor->cam[1].dist = 120000;
                 }
-                CALC1(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
-                CALC2(cam[1].height, cam[1].pitch);
+                CAM_CALC_HEIGHT(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
+                CAM_CALC_PITCH(cam[1].height, cam[1].pitch);
             } else {
                 gEditor->cam[0].dist += 600;
                 if (gEditor->cam[0].dist > 185000) {
                     gEditor->cam[0].dist = 185000;
                 }
-                CALC1(cam[0].dist, cam[0].height, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
-                CALC2(cam[0].height, cam[0].pitch);
+                CAM_CALC_HEIGHT(cam[0].dist, cam[0].height, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
+                CAM_CALC_PITCH(cam[0].height, cam[0].pitch);
             }
         }
     }
     if (gEditor->cur != 0) {
-        if ((gPadInput & 0x200) && !(gPadInputPrev & 0x200)) {
+        /* C left and right turn the view round */
+        if ((gPadInput & PAD_C_LEFT) && !(gPadInputPrev & PAD_C_LEFT)) {
             if (gEditor->flags & EDIT_TURN_LEFT) {
                 gEditor->flags &= ~EDIT_TURN_LEFT;
             } else if (gEditor->flags & EDIT_TURN_RIGHT) {
@@ -1628,7 +1642,7 @@ void edit_update(void) {
                 gEditor->flags |= EDIT_TURN_LEFT;
             }
         }
-        if ((gPadInput & 0x400) && !(gPadInputPrev & 0x400)) {
+        if ((gPadInput & PAD_C_RIGHT) && !(gPadInputPrev & PAD_C_RIGHT)) {
             if (gEditor->flags & EDIT_TURN_RIGHT) {
                 gEditor->flags &= ~EDIT_TURN_RIGHT;
             } else if (gEditor->flags & EDIT_TURN_LEFT) {
@@ -1638,7 +1652,7 @@ void edit_update(void) {
             }
         }
     }
-    sEditTrackMenuItems[3].numValues = gEditor->userPieceCount;
+    sEditTrackMenuItems[EDIT_ITEM_USER].numValues = gEditor->userPieceCount;
     if (gEditor->menu != NULL) {
         gui_menu_fix_cursor(gEditor->menu);
     }
@@ -1652,49 +1666,50 @@ void edit_update(void) {
         edit_set_start_piece_choices();
     }
     if (gEditor->cur == NULL) {
-        sEditMainMenuItems[0].flags &= ~GUI_ITEM_ENABLED;
-        sEditMainMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_CLEAR].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_NAME].flags &= ~GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[0].flags |= GUI_ITEM_ENABLED;
-        sEditMainMenuItems[6].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_CLEAR].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_NAME].flags |= GUI_ITEM_ENABLED;
     }
     if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_START) && gEditor->start != NULL) {
-        sEditTrackMenuItems[5].flags |= GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[EDIT_ITEM_MOVE_START].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditTrackMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[EDIT_ITEM_MOVE_START].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor->start != 0) {
-        sEditMainMenuItems[4].flags |= GUI_ITEM_ENABLED;
-        sEditMainMenuItems[5].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_TEST].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_DIRT].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
-        sEditMainMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_TEST].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_DIRT].flags &= ~GUI_ITEM_ENABLED;
     }
+    /* only a closed track can be saved */
     if (gEditor->start != 0 && gEditor->first->prev == gEditor->last) {
-        sEditMainMenuItems[3].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_SAVE].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[3].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[EDIT_MAIN_SAVE].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor->menu != NULL) {
         gui_menu_fix_cursor(gEditor->menu);
     }
-    if (gEditor->slideState == 3 && gEditor->nextMenu != NULL) {
-        gEditor->slideState = 1;
+    if (gEditor->slideState == EDIT_SLIDE_SWAP && gEditor->nextMenu != NULL) {
+        gEditor->slideState = EDIT_SLIDE_SHOWN;
         gEditor->menu = gEditor->nextMenu;
         gEditor->nextMenu = NULL;
     }
     switch (sEditTrackMenu.choice) {
-    case 0:
-        gEditor->selType = &gPieceTypes[sEditTrackMenu.items[0].value];
+    case EDIT_ITEM_STRAIGHT:
+        gEditor->selType = &gPieceTypes[sEditTrackMenu.items[EDIT_ITEM_STRAIGHT].value];
         break;
-    case 1:
-        gEditor->selType = &gPieceTypes[PIECE_TYPE_TURN + sEditTrackMenu.items[1].value];
+    case EDIT_ITEM_TURN:
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_TURN + sEditTrackMenu.items[EDIT_ITEM_TURN].value];
         break;
-    case 2:
-        gEditor->selType = &gPieceTypes[PIECE_TYPE_JUMP + sEditTrackMenu.items[2].value];
+    case EDIT_ITEM_JUMP:
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_JUMP + sEditTrackMenu.items[EDIT_ITEM_JUMP].value];
         break;
-    case 3:
-        gEditor->selType = &gPieceTypes[PIECE_TYPE_USER + sEditTrackMenu.items[3].value];
+    case EDIT_ITEM_USER:
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_USER + sEditTrackMenu.items[EDIT_ITEM_USER].value];
         break;
     }
     if (gEditor->flags & EDIT_EXIT) {
@@ -1702,84 +1717,85 @@ void edit_update(void) {
             if (gEditor->flags & EDIT_TEST_TRACK) {
                 usrtrk_layout_from_editor();
             }
-            gCurGameState->mode = 3;
+            gCurGameState->mode = 3; /* exit requested */
         }
     } else {
         switch (gEditor->page) {
-        case 0:
+        case EDIT_PAGE_MAIN:
             edit_update_main_menu();
             break;
-        case 1:
+        case EDIT_PAGE_TRACK:
             edit_update_track_menu();
             break;
         }
     }
-    p = gEditor->first;
-    if (p != NULL) {
+    piece = gEditor->first;
+    if (piece != NULL) {
         do {
-            edit_update_piece_ports(p);
-            p = p->next;
-        } while (p != NULL && p != gEditor->first);
+            edit_update_piece_ports(piece);
+            piece = piece->next;
+        } while (piece != NULL && piece != gEditor->first);
     }
 }
 
-#define RAW(g, a, b) { Gfx *_g = (Gfx *)(g); _g->words.w0 = (a); _g->words.w1 = (b); }
-
-Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
+/* Draws name entry: the keyboard with the cursor on the selected key, and the name. */
+Gfx *edit_draw_name_entry(Gfx *gdl, s32 fb)
 {
-    s32 u, j, m, i, k, y0, xo, t, yoff, yy, idx, x, c, s, f;
-    u8 *p;
-    Editor *mp;
-    u8 buf[8];
+    s32 j, row, col, key, x, rowShift, font, color;
+    u8 *img;
+    Editor *ed;
+    u8 letter[8];
 
-    RAW(gdl++, 0xE3000C00, 0);
-    RAW(gdl++, 0xFA000000, 0xFAFAFAFF);
-    RAW(gdl++, 0xFC119623, 0xFF2FFFFF);
-    RAW(gdl++, 0xE3001001, 0);
-    RAW(gdl++, 0xE200001C, 0x00404240);
-    RAW(gdl++, 0xD7000002, 0x80008000);
-    p = (u8 *)gGui->images + 0x48;
-    gdl = render_draw_image(0xBC, 0x78 - (p[1] >> 1), p, gdl, arg1, 1, 1, 6, 0);
+    gDPSetTexturePersp(gdl++, G_TP_NONE);
+    gDPSetPrimColor(gdl++, 0, 0, 0xFA, 0xFA, 0xFA, 0xFF);
+    gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
+    gDPSetTextureLUT(gdl++, G_TT_NONE);
+    gDPSetRenderMode(gdl++, 0x00404240, 0);
+    gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
+    img = (u8 *)gGui->images + 0x48;
+    gdl = render_draw_image(0xBC, 0x78 - (img[1] >> 1), img, gdl, fb, 1, 1, 6, 0);
     font_text_create(gEditor->bigText, 0x40, 2, 2, 0x20);
     font_text_add(gEditor->bigText, sStrTrackNameLabel);
     font_draw_text(gEditor->bigText, 0xCC, 0xA7);
-    c = -0xF2;
-    for (i = 0; i < 5; i++) {
-        for (k = 0, idx = i << 3; k < 8; k++) {
-            mp = gEditor;
-            s = 1;
-            if (idx >= 0x26) s = 2;
-            f = 2;
-            if (idx == mp->nameKey) f = 7;
-            if (mp->nameLen == 10 && idx < 0x26) font_text_create(mp->bigText, 0x20, s, f, 0x20000021);
-            else font_text_create(mp->bigText, 0x20, s, f, 0x21);
-            font_text_add(gEditor->bigText, gKeyboardKeys[idx]);
-            x = k * 26 - (i * 5 + c);
-            font_draw_text(gEditor->bigText, x, i * 17 + 0x48);
-            if (idx == gEditor->nameKey) {
-                p = (u8 *)gGui->images + 0x50;
-                gdl = render_draw_image(x - p[0] * 4 + 4, i * 17 - (p[1] >> 1) + 0x49, p, gdl, arg1, 1, 1, 6, 0);
+    rowShift = -0xF2;
+    /* the keyboard, 5 rows of 8 keys, each row set 5 pixels left of the one above */
+    for (row = 0; row < 5; row++) {
+        for (col = 0, key = row << 3; col < EDIT_KEYS_PER_ROW; col++) {
+            ed = gEditor;
+            font = 1;
+            if (key >= EDIT_KEY_DEL) font = 2;
+            color = 2;
+            if (key == ed->nameKey) color = 7;
+            if (ed->nameLen == EDIT_NAME_LEN && key < EDIT_KEY_DEL) font_text_create(ed->bigText, 0x20, font, color, 0x20000021);
+            else font_text_create(ed->bigText, 0x20, font, color, 0x21);
+            font_text_add(gEditor->bigText, gKeyboardKeys[key]);
+            x = col * 26 - (row * 5 + rowShift);
+            font_draw_text(gEditor->bigText, x, row * 17 + 0x48);
+            if (key == gEditor->nameKey) {
+                img = (u8 *)gGui->images + 0x50;
+                gdl = render_draw_image(x - img[0] * 4 + 4, row * 17 - (img[1] >> 1) + 0x49, img, gdl, fb, 1, 1, 6, 0);
                 do { } while (0);
-                idx++;
+                key++;
             } else {
-                idx++;
+                key++;
             }
         }
     }
-    for (j = 0; j < 10; j++) {
+    /* the name so far, then the underlines */
+    for (j = 0; j < EDIT_NAME_LEN; j++) {
         if (gEditor->nameBuf[j] == 0) break;
-        f = 2;
-        if (j == gEditor->nameLen) f = 7;
-        font_text_create(gEditor->bigText, 0x20, 2, f, 0x21);
-        buf[0] = gEditor->nameBuf[j];
-        buf[1] = 0;
-        font_text_add(gEditor->bigText, buf);
+        color = 2;
+        if (j == gEditor->nameLen) color = 7;
+        font_text_create(gEditor->bigText, 0x20, 2, color, 0x21);
+        letter[0] = gEditor->nameBuf[j];
+        letter[1] = 0;
+        font_text_add(gEditor->bigText, letter);
         font_draw_text(gEditor->bigText, j * 13 + 0x121, 0xA5);
     }
-    for (j = 0; j < 10; j++) {
-        f = 2;
-        if (j == gEditor->nameLen) f = 7;
-        font_text_create(gEditor->bigText, 0x20, 1, f, 0x21);
+    for (j = 0; j < EDIT_NAME_LEN; j++) {
+        color = 2;
+        if (j == gEditor->nameLen) color = 7;
+        font_text_create(gEditor->bigText, 0x20, 1, color, 0x21);
         font_text_add(gEditor->bigText, sStrNameUnderline);
         font_draw_text(gEditor->bigText, j * 13 + 0x120, 0xAB);
     }
@@ -1788,56 +1804,56 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
     return gdl;
 }
 
-void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
+/* Game state 2's draw: clears the screen, then the menu, the 3D view, the warnings, the track's name, the bars and
+   the current piece's name, and name entry. */
+void edit_draw(s32 ctx, s32 fb, Gfx **pgdl)
 {
     char buf[0x68];
-    char *s;
+    char *numStr;
     Gfx *gdl;
     s32 i;
-    u8 *p;
+    u8 *bar;
     u8 *img;
-    char *str;
-    Editor *m;
-    PieceType *t;
-    PieceType *e;
 
-    sEditDrawCtx = arg0;
+    sEditDrawCtx = ctx;
+    /* the menu panel slides out to the left over 30 frames, the 3D view widening with it */
     switch (gEditor->slideState) {
-    case 1:
+    case EDIT_SLIDE_SHOWN:
         gEditor->slideOffset = 0;
         break;
-    case 2:
+    case EDIT_SLIDE_OUT:
         gEditor->slideOffset = 30 - gEditor->slideTimer;
         break;
-    case 0:
+    case EDIT_SLIDE_IN:
         gEditor->slideOffset = gEditor->slideTimer;
         break;
-    case 3:
+    case EDIT_SLIDE_SWAP:
         gEditor->slideOffset = 30;
         break;
     }
     gEditor->slideOffset *= 4;
-    sEditViewRects[1].x = sEditViewRectsBase[1].x - gEditor->slideOffset;
-    sEditViewRects[1].w = sEditViewRectsBase[1].w + gEditor->slideOffset;
-    sEditViewRects[2].x = sEditViewRectsBase[2].x - gEditor->slideOffset;
+    sEditViewRects[EDIT_VIEW_TRACK].x = sEditViewRectsBase[EDIT_VIEW_TRACK].x - gEditor->slideOffset;
+    sEditViewRects[EDIT_VIEW_TRACK].w = sEditViewRectsBase[EDIT_VIEW_TRACK].w + gEditor->slideOffset;
+    sEditViewRects[EDIT_VIEW_MENU].x = sEditViewRectsBase[EDIT_VIEW_MENU].x - gEditor->slideOffset;
     sEditViewRects[3].x = sEditViewRectsBase[3].x - gEditor->slideOffset;
-    arned_set_viewport_stretch(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1, gEditor->slideOffset);
-    gEditor->views[1].vp.vscale[0] = sEditViewRectsBase[1].w * 2;
-    gEditor->views[1].vp.vscale[1] = sEditViewRectsBase[1].h * 2;
-    gEditor->views[1].vp.vtrans[0] = (sEditViewRectsBase[1].x + sEditViewRectsBase[1].w / 2) * 4;
-    gEditor->views[1].vp.vtrans[1] = (sEditViewRectsBase[1].y + sEditViewRectsBase[1].h / 2) * 4;
-    gEditor->views[2].vp.vscale[0] = sEditViewRects[2].w * 2;
-    gEditor->views[2].vp.vscale[1] = sEditViewRects[2].h * 2;
-    gEditor->views[2].vp.vtrans[0] = (sEditViewRects[2].x + sEditViewRects[2].w / 2) * 4;
-    gEditor->views[2].vp.vtrans[1] = (sEditViewRects[2].y + sEditViewRects[2].h / 2) * 4;
+    arned_set_viewport_stretch(sEditViewRects[EDIT_VIEW_TRACK].x, sEditViewRects[EDIT_VIEW_TRACK].y, sEditViewRects[EDIT_VIEW_TRACK].w - 1,
+                               sEditViewRects[EDIT_VIEW_TRACK].h - 1, gEditor->slideOffset);
+    gEditor->views[EDIT_VIEW_TRACK].vp.vscale[0] = sEditViewRectsBase[EDIT_VIEW_TRACK].w * 2;
+    gEditor->views[EDIT_VIEW_TRACK].vp.vscale[1] = sEditViewRectsBase[EDIT_VIEW_TRACK].h * 2;
+    gEditor->views[EDIT_VIEW_TRACK].vp.vtrans[0] = (sEditViewRectsBase[EDIT_VIEW_TRACK].x + sEditViewRectsBase[EDIT_VIEW_TRACK].w / 2) * 4;
+    gEditor->views[EDIT_VIEW_TRACK].vp.vtrans[1] = (sEditViewRectsBase[EDIT_VIEW_TRACK].y + sEditViewRectsBase[EDIT_VIEW_TRACK].h / 2) * 4;
+    gEditor->views[EDIT_VIEW_MENU].vp.vscale[0] = sEditViewRects[EDIT_VIEW_MENU].w * 2;
+    gEditor->views[EDIT_VIEW_MENU].vp.vscale[1] = sEditViewRects[EDIT_VIEW_MENU].h * 2;
+    gEditor->views[EDIT_VIEW_MENU].vp.vtrans[0] = (sEditViewRects[EDIT_VIEW_MENU].x + sEditViewRects[EDIT_VIEW_MENU].w / 2) * 4;
+    gEditor->views[EDIT_VIEW_MENU].vp.vtrans[1] = (sEditViewRects[EDIT_VIEW_MENU].y + sEditViewRects[EDIT_VIEW_MENU].h / 2) * 4;
     gEditor->views[3].vp.vscale[0] = sEditViewRects[3].w * 2;
     gEditor->views[3].vp.vscale[1] = sEditViewRects[3].h * 2;
     gEditor->views[3].vp.vtrans[0] = (sEditViewRects[3].x + sEditViewRects[3].w / 2) * 4;
     gEditor->views[3].vp.vtrans[1] = (sEditViewRects[3].y + sEditViewRects[3].h / 2) * 4;
 
     gdl = *pgdl;
-    gdl = render_load_ucode(gdl, arg1, arg0, gF3dex2NonText, gF3dex2NonData);
-    gdl = render_restore_state(gdl, arg1, arg0);
+    gdl = render_load_ucode(gdl, fb, ctx, gF3dex2NonText, gF3dex2NonData);
+    gdl = render_restore_state(gdl, fb, ctx);
     gDPSetTextureFilter(gdl++, G_TF_AVERAGE);
     gSPClearGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH | G_CULL_BOTH | G_FOG | G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR | G_LOD);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
@@ -1850,35 +1866,37 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     gDPSetRenderMode(gdl++, G_RM_NOOP, G_RM_NOOP2);
     gDPSetCycleType(gdl++, G_CYC_FILL);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gZBuffer);
-    gDPSetFillColor(gdl++, 0xFFFCFFFC);
+    gDPSetFillColor(gdl++, 0xFFFCFFFC); /* the z-buffer cleared to the far plane */
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     gDPPipeSync(gdl++);
-    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[arg1]);
+    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
     gDPSetFillColor(gdl++, 0);
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     gDPPipeSync(gdl++);
-    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[arg1]);
+    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
     gDPSetDepthSource(gdl++, G_ZS_PIXEL);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[0].x, sEditViewRects[0].y,
-                  sEditViewRects[0].x + sEditViewRects[0].w - 1, sEditViewRects[0].y + sEditViewRects[0].h - 1);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[EDIT_VIEW_SCREEN].x, sEditViewRects[EDIT_VIEW_SCREEN].y,
+                  sEditViewRects[EDIT_VIEW_SCREEN].x + sEditViewRects[EDIT_VIEW_SCREEN].w - 1,
+                  sEditViewRects[EDIT_VIEW_SCREEN].y + sEditViewRects[EDIT_VIEW_SCREEN].h - 1);
     gDPPipeSync(gdl++);
     gDPSetRenderMode(gdl++, G_RM_NOOP, G_RM_NOOP2);
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_FILL);
     gDPPipeSync(gdl++);
     gDPSetFillColor(gdl++, 0x00010001);
-    gDPFillRectangle(gdl++, sEditViewRects[2].x, sEditViewRects[2].y,
-                     sEditViewRects[2].x + sEditViewRects[2].w - 1, sEditViewRects[2].y + sEditViewRects[2].h - 1);
+    gDPFillRectangle(gdl++, sEditViewRects[EDIT_VIEW_MENU].x, sEditViewRects[EDIT_VIEW_MENU].y,
+                     sEditViewRects[EDIT_VIEW_MENU].x + sEditViewRects[EDIT_VIEW_MENU].w - 1,
+                     sEditViewRects[EDIT_VIEW_MENU].y + sEditViewRects[EDIT_VIEW_MENU].h - 1);
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
-    gdl = gui_draw_menu(arg1, gdl, gEditor->menu, 0x1A, 0x11);
-    gdl = edit_draw_track_view(arg0, arg1, gdl);
+    gdl = gui_draw_menu(fb, gdl, gEditor->menu, 0x1A, 0x11);
+    gdl = edit_draw_track_view(ctx, fb, gdl);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetPrimColor(gdl++, 0, 0, 0xB4, 0xB4, 0xB4, 0xFF);
 
     switch ((u32)gEditor->mode) { /* compared unsigned here */
-    case 10:
-    case 11:
+    case EDIT_MODE_WARN_MULTI:
+    case EDIT_MODE_WARN_LOCKED:
         font_text_create(gEditor->text, 0x20, 4, 2, 0x21);
         font_text_add(gEditor->text, "Warning");
         font_draw_text(gEditor->text, 0x14C, 0x48);
@@ -1892,10 +1910,10 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
         img = gEditor->warnIcon->img;
         gDPLoadTLUT_pal256(gdl++, gEditor->warnIcon->pal);
-        gdl = render_draw_image(0xD0, 0x3D, img, gdl, arg1, 1, 1, 3, 0);
+        gdl = render_draw_image(0xD0, 0x3D, img, gdl, fb, 1, 1, 3, 0);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        gdl = render_draw_image(0xB6, 0x3A, gEditor->warnFrame->img, gdl, arg1, 1, 1, 6, 0);
+        gdl = render_draw_image(0xB6, 0x3A, gEditor->warnFrame->img, gdl, fb, 1, 1, 6, 0);
         break;
     }
 
@@ -1904,55 +1922,57 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        p = (u8 *)gGui->images + 0x58;
+        bar = (u8 *)gGui->images + 0x58;
         font_text_create(gEditor->text, 0x20, 5, 2, 0x21);
         font_text_add(gEditor->text, sStrTrackNameLabel);
         font_text_add(gEditor->text, gEditor->name);
         font_draw_text(gEditor->text, 0x140, 0x19);
-        for (i = 0; i < (0x207 - sEditViewRects[1].x) / (p[0] * 8); i++) {
-            gdl = render_draw_image(sEditViewRects[1].x + p[0] * (i << 3), 0x11, p, gdl, arg1, 1, 1, 6, 0);
+        /* the bars above and below the 3D view (the lower one blinking while placing) */
+        for (i = 0; i < (0x207 - sEditViewRects[EDIT_VIEW_TRACK].x) / (bar[0] * 8); i++) {
+            gdl = render_draw_image(sEditViewRects[EDIT_VIEW_TRACK].x + bar[0] * (i << 3), 0x11, bar, gdl, fb, 1, 1, 6, 0);
         }
         if (gEditor->mode == EDIT_MODE_PLACE && (gFrameCounter & 0x20)) {
             gDPSetPrimColor(gdl++, 0, 0, 0xB4, 0xB4, 0x50, 0xFF);
         }
-        for (i = 0; i < (0x207 - sEditViewRects[1].x) / (p[0] * 8); i++) {
-            gdl = render_draw_image(sEditViewRects[1].x + p[0] * (i << 3), 0xCD, p, gdl, arg1, 1, 1, 6, 0);
+        for (i = 0; i < (0x207 - sEditViewRects[EDIT_VIEW_TRACK].x) / (bar[0] * 8); i++) {
+            gdl = render_draw_image(sEditViewRects[EDIT_VIEW_TRACK].x + bar[0] * (i << 3), 0xCD, bar, gdl, fb, 1, 1, 6, 0);
         }
         gDPPipeSync(gdl++);
         font_text_create(gEditor->bigText, 0x40, 5, 2, 0x21);
+        /* the current piece's name: "Straight 1 : ...", the user pieces by their own name */
         i = gEditor->cur->type - gPieceTypes;
         if (gEditor->mode == EDIT_MODE_PLACE && gEditor->cur != NULL &&
             (gEditor->cur->next != 0 || gEditor->cur->prev != 0)) {
             font_text_add(gEditor->bigText, "< ");
         }
-        if (i < 2) {
+        if (i < PIECE_TYPE_TURN) {
             font_text_add(gEditor->bigText, "Straight ");
             i += 1;
-        } else if (i < 6) {
+        } else if (i < PIECE_TYPE_JUMP) {
             font_text_add(gEditor->bigText, "Turn ");
             i -= 1;
-        } else if (i < 18) {
+        } else if (i < PIECE_TYPE_USER) {
             font_text_add(gEditor->bigText, "Jump ");
             i -= 5;
         } else {
             i -= 17;
         }
-        if (gEditor->cur->type - gPieceTypes < 18) {
-            s = buf + 0x48;
-            int_to_str(i, s);
-            font_text_add(gEditor->bigText, s);
+        if (gEditor->cur->type - gPieceTypes < PIECE_TYPE_USER) {
+            numStr = buf + 0x48;
+            int_to_str(i, numStr);
+            font_text_add(gEditor->bigText, numStr);
             font_text_add(gEditor->bigText, " : ");
         }
         font_text_add(gEditor->bigText, gEditor->cur->type->name);
-        if (gEditor->cur->type - gPieceTypes >= 18) {
+        if (gEditor->cur->type - gPieceTypes >= PIECE_TYPE_USER) {
             if (gEditor->mode == EDIT_MODE_PLACE) {
                 font_text_add(gEditor->bigText, " - Press Z Button To Edit");
-            } else if (gEditor->mode == EDIT_MODE_USER_PIECE && gPieceTypes[gEditor->userPiece + 18].dim[1] >= 5 &&
-                       !(gPieceTypes[gEditor->userPiece + 18].flags & PIECE_SIZE_LOCKED) &&
-                       (gEditor->heightSel == 1 || gEditor->heightSel == gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 - 1)) {
+            } else if (gEditor->mode == EDIT_MODE_USER_PIECE && gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] >= 5 &&
+                       !(gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].flags & PIECE_SIZE_LOCKED) &&
+                       (gEditor->heightSel == 1 || gEditor->heightSel == gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2 - 1)) {
                 font_text_add(gEditor->bigText, " - R Button Deletes Segment");
             }
-        } else if (gEditor->mode == EDIT_MODE_PLACE && (*(u32 *)&gEditor->cur->type->flags & 0x300000) == 0x300000) {
+        } else if (gEditor->mode == EDIT_MODE_PLACE && (*(u32 *)&gEditor->cur->type->flags & ((PIECE_FITS | PIECE_FITS_FLIPPED) << 16)) == ((PIECE_FITS | PIECE_FITS_FLIPPED) << 16)) {
             font_text_add(gEditor->bigText, " - R Button Flips");
         }
         if (gEditor->mode == EDIT_MODE_PLACE && gEditor->cur != NULL &&
@@ -1962,172 +1982,182 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         font_draw_text(gEditor->bigText, 0x142, 0xD5);
     }
     if (gEditor->mode == EDIT_MODE_NAME || gEditor->mode == EDIT_MODE_NAME_8) {
-        gdl = edit_draw_name_entry(gdl, arg1);
+        gdl = edit_draw_name_entry(gdl, fb);
     }
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[0].x, sEditViewRects[0].y,
-                  sEditViewRects[0].x + sEditViewRects[0].w - 1, sEditViewRects[0].y + sEditViewRects[0].h - 1);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[EDIT_VIEW_SCREEN].x, sEditViewRects[EDIT_VIEW_SCREEN].y,
+                  sEditViewRects[EDIT_VIEW_SCREEN].x + sEditViewRects[EDIT_VIEW_SCREEN].w - 1,
+                  sEditViewRects[EDIT_VIEW_SCREEN].y + sEditViewRects[EDIT_VIEW_SCREEN].h - 1);
     gdl = font_render(gdl);
     gDPPipeSync(gdl++);
     *pgdl = gdl;
 }
 
-void edit_update_piece_ports(EditPiece *r)
+/* Sets a piece's connectors (dir: the sides they face after rotation, off: where along them) and its size from its
+   type, rotation and flip. */
+void edit_update_piece_ports(EditPiece *piece)
 {
-    s32 a, b;
+    s32 entryEnd, exitEnd;
 
-    if (r == NULL) return;
-    if (r->flags & 2) {
-        b = 0;
-        a = 1;
+    if (piece == NULL) return;
+    /* a flipped piece is entered at its type's exit */
+    if (piece->flags & EDIT_PIECE_FLIPPED) {
+        exitEnd = 0;
+        entryEnd = 1;
     } else {
-        a = 0;
-        b = 1;
+        entryEnd = 0;
+        exitEnd = 1;
     }
-    r->dir[0] = (r->type->dir[a] + r->rot) & 3;
-    r->dir[1] = (r->type->dir[b] + r->rot) & 3;
+    piece->dir[0] = (piece->type->dir[entryEnd] + piece->rot) & 3;
+    piece->dir[1] = (piece->type->dir[exitEnd] + piece->rot) & 3;
 
-    switch (r->dir[0]) {
-    case 0:
-        switch (r->type->dir[a]) {
-        case 0: case 3: r->off[0] = r->type->off[a]; break;
-        case 2: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
-        case 1: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
+    switch (piece->dir[0]) {
+    case SIDE_POS_Y:
+        switch (piece->type->dir[entryEnd]) {
+        case SIDE_POS_Y: case SIDE_NEG_X: piece->off[0] = piece->type->off[entryEnd]; break;
+        case SIDE_NEG_Y: piece->off[0] = piece->type->dim[0] - piece->type->off[entryEnd] - 2; break;
+        case SIDE_POS_X: piece->off[0] = piece->type->dim[1] - piece->type->off[entryEnd] - 2; break;
         }
         break;
-    case 2:
-        switch (r->type->dir[a]) {
-        case 1: case 2: r->off[0] = r->type->off[a]; break;
-        case 0: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
-        case 3: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
+    case SIDE_NEG_Y:
+        switch (piece->type->dir[entryEnd]) {
+        case SIDE_POS_X: case SIDE_NEG_Y: piece->off[0] = piece->type->off[entryEnd]; break;
+        case SIDE_POS_Y: piece->off[0] = piece->type->dim[0] - piece->type->off[entryEnd] - 2; break;
+        case SIDE_NEG_X: piece->off[0] = piece->type->dim[1] - piece->type->off[entryEnd] - 2; break;
         }
         break;
-    case 3:
-        switch (r->type->dir[a]) {
-        case 0: case 3: r->off[0] = r->type->off[a]; break;
-        case 2: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
-        case 1: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
+    case SIDE_NEG_X:
+        switch (piece->type->dir[entryEnd]) {
+        case SIDE_POS_Y: case SIDE_NEG_X: piece->off[0] = piece->type->off[entryEnd]; break;
+        case SIDE_NEG_Y: piece->off[0] = piece->type->dim[0] - piece->type->off[entryEnd] - 2; break;
+        case SIDE_POS_X: piece->off[0] = piece->type->dim[1] - piece->type->off[entryEnd] - 2; break;
         }
         break;
-    case 1:
-        switch (r->type->dir[a]) {
-        case 1: case 2: r->off[0] = r->type->off[a]; break;
-        case 0: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
-        case 3: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
-        }
-        break;
-    }
-
-    switch (r->dir[1]) {
-    case 0:
-        switch (r->type->dir[b]) {
-        case 0: case 3: r->off[1] = r->type->off[b]; break;
-        case 2: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
-        case 1: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
-        }
-        break;
-    case 2:
-        switch (r->type->dir[b]) {
-        case 1: case 2: r->off[1] = r->type->off[b]; break;
-        case 0: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
-        case 3: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
-        }
-        break;
-    case 3:
-        switch (r->type->dir[b]) {
-        case 0: case 3: r->off[1] = r->type->off[b]; break;
-        case 2: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
-        case 1: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
-        }
-        break;
-    case 1:
-        switch (r->type->dir[b]) {
-        case 1: case 2: r->off[1] = r->type->off[b]; break;
-        case 0: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
-        case 3: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
+    case SIDE_POS_X:
+        switch (piece->type->dir[entryEnd]) {
+        case SIDE_POS_X: case SIDE_NEG_Y: piece->off[0] = piece->type->off[entryEnd]; break;
+        case SIDE_POS_Y: piece->off[0] = piece->type->dim[0] - piece->type->off[entryEnd] - 2; break;
+        case SIDE_NEG_X: piece->off[0] = piece->type->dim[1] - piece->type->off[entryEnd] - 2; break;
         }
         break;
     }
 
-    if (r->rot & 1) {
-        r->w = r->type->dim[1];
-        r->h = r->type->dim[0];
+    switch (piece->dir[1]) {
+    case SIDE_POS_Y:
+        switch (piece->type->dir[exitEnd]) {
+        case SIDE_POS_Y: case SIDE_NEG_X: piece->off[1] = piece->type->off[exitEnd]; break;
+        case SIDE_NEG_Y: piece->off[1] = piece->type->dim[0] - piece->type->off[exitEnd] - 2; break;
+        case SIDE_POS_X: piece->off[1] = piece->type->dim[1] - piece->type->off[exitEnd] - 2; break;
+        }
+        break;
+    case SIDE_NEG_Y:
+        switch (piece->type->dir[exitEnd]) {
+        case SIDE_POS_X: case SIDE_NEG_Y: piece->off[1] = piece->type->off[exitEnd]; break;
+        case SIDE_POS_Y: piece->off[1] = piece->type->dim[0] - piece->type->off[exitEnd] - 2; break;
+        case SIDE_NEG_X: piece->off[1] = piece->type->dim[1] - piece->type->off[exitEnd] - 2; break;
+        }
+        break;
+    case SIDE_NEG_X:
+        switch (piece->type->dir[exitEnd]) {
+        case SIDE_POS_Y: case SIDE_NEG_X: piece->off[1] = piece->type->off[exitEnd]; break;
+        case SIDE_NEG_Y: piece->off[1] = piece->type->dim[0] - piece->type->off[exitEnd] - 2; break;
+        case SIDE_POS_X: piece->off[1] = piece->type->dim[1] - piece->type->off[exitEnd] - 2; break;
+        }
+        break;
+    case SIDE_POS_X:
+        switch (piece->type->dir[exitEnd]) {
+        case SIDE_POS_X: case SIDE_NEG_Y: piece->off[1] = piece->type->off[exitEnd]; break;
+        case SIDE_POS_Y: piece->off[1] = piece->type->dim[0] - piece->type->off[exitEnd] - 2; break;
+        case SIDE_NEG_X: piece->off[1] = piece->type->dim[1] - piece->type->off[exitEnd] - 2; break;
+        }
+        break;
+    }
+
+    if (piece->rot & 1) {
+        piece->w = piece->type->dim[1];
+        piece->h = piece->type->dim[0];
     } else {
-        r->w = r->type->dim[0];
-        r->h = r->type->dim[1];
+        piece->w = piece->type->dim[0];
+        piece->h = piece->type->dim[1];
     }
 }
 
-void edit_add_overlay_line(s32 idx, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 z1, u8 r, u8 g, u8 b)
+/* Adds a line from screen point (x0, y0) to (x1, y1) at depths z0, z1, in colour r g b, to frame buffer frame's line
+   vertices (centred on the screen, y up). */
+void edit_add_overlay_line(s32 frame, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 z1, u8 r, u8 g, u8 b)
 {
-    s32 ax, ay, ox, oy;
+    s32 dx, dy, thickX, thickY;
 
     x0 = x0 - gScreenWidth / 2;
     x1 = x1 - gScreenWidth / 2;
     y0 = gScreenHeight / 2 - y0;
     y1 = -y1;
     y1 += gScreenHeight / 2;
-    if (gEditor->lineCount >= 0x3C) {
+    if (gEditor->lineCount >= EDIT_MAX_LINES) {
         return;
     }
-    ax = x1 - x0;
-    if (ax <= 0) ax = x0 - x1;
-    ay = y1 - y0;
-    if ((ay <= 0 ? y0 - y1 : ay) < ax) {
-        ox = 0;
-        oy = 2;
+    dx = x1 - x0;
+    if (dx <= 0) dx = x0 - x1;
+    dy = y1 - y0;
+    /* a quad 2 pixels high for a flat line, 3 wide for a steep one */
+    if ((dy <= 0 ? y0 - y1 : dy) < dx) {
+        thickX = 0;
+        thickY = 2;
     } else {
-        ox = 3;
-        oy = 0;
+        thickX = 3;
+        thickY = 0;
     }
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[0] = x0;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[1] = y0;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[2] = z0;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[0] = x0 + ox;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[1] = y0 + oy;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[2] = z0;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[0] = x1;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[1] = y1;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[2] = z1;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[0] = x1 + ox;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[1] = y1 + oy;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[2] = z1;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[0] = r;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[1] = g;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[2] = b;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[0] = r;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[1] = g;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[2] = b;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[0] = r;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[1] = g;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[2] = b;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[0] = r;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[1] = g;
-    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[2] = b;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 0].v.ob[0] = x0;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 0].v.ob[1] = y0;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 0].v.ob[2] = z0;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 1].v.ob[0] = x0 + thickX;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 1].v.ob[1] = y0 + thickY;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 1].v.ob[2] = z0;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 2].v.ob[0] = x1;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 2].v.ob[1] = y1;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 2].v.ob[2] = z1;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 3].v.ob[0] = x1 + thickX;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 3].v.ob[1] = y1 + thickY;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 3].v.ob[2] = z1;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 0].v.cn[0] = r;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 0].v.cn[1] = g;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 0].v.cn[2] = b;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 1].v.cn[0] = r;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 1].v.cn[1] = g;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 1].v.cn[2] = b;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 2].v.cn[0] = r;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 2].v.cn[1] = g;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 2].v.cn[2] = b;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 3].v.cn[0] = r;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 3].v.cn[1] = g;
+    gEditor->lineVtx[frame][gEditor->lineCount * 4 + 3].v.cn[2] = b;
     gEditor->lineCount++;
 }
 
-Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl)
+/* Draws the frame's lines in an orthographic projection of the screen. */
+Gfx *edit_draw_overlay_lines(u8 *ctx, s32 frame, Gfx *gdl)
 {
-    Mtx *m;
+    Mtx *proj;
     s32 i;
 
-    m = (Mtx *)(a0 + 0x300);
-    guOrtho(m, -gScreenWidth / 2, gScreenWidth / 2, -gScreenHeight / 2, gScreenHeight / 2, 50.0f,
+    proj = (Mtx *)(ctx + 0x300); /* a matrix of the frame's graphics context */
+    guOrtho(proj, -gScreenWidth / 2, gScreenWidth / 2, -gScreenHeight / 2, gScreenHeight / 2, 50.0f,
                   gFarClip, 1.0f);
     gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPMatrix(gdl++, m, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, proj, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
     gSPViewport(gdl++, &gScreenViewport);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[1].x, sEditViewRects[1].y,
-                  sEditViewRects[1].x + sEditViewRects[1].w - 1, sEditViewRects[1].y + sEditViewRects[1].h - 1);
-    gSPClearGeometryMode(gdl++, 0x3F0604);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[EDIT_VIEW_TRACK].x, sEditViewRects[EDIT_VIEW_TRACK].y,
+                  sEditViewRects[EDIT_VIEW_TRACK].x + sEditViewRects[EDIT_VIEW_TRACK].w - 1,
+                  sEditViewRects[EDIT_VIEW_TRACK].y + sEditViewRects[EDIT_VIEW_TRACK].h - 1);
+    gSPClearGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH | G_CULL_BOTH | G_FOG | G_LIGHTING | G_TEXTURE_GEN |
+                                G_TEXTURE_GEN_LINEAR | G_LOD);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gSPSetGeometryMode(gdl++, G_SHADE);
     gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
     gDPSetCombineMode(gdl++, G_CC_SHADE, G_CC_SHADE);
     gDPSetRenderMode(gdl++, 0x00442078, 0);
     for (i = 0; i < gEditor->lineCount; i++) {
-        gSPVertex(gdl++, gEditor->lineVtx[arg1] + i * 4, 4, 0);
+        gSPVertex(gdl++, gEditor->lineVtx[frame] + i * 4, 4, 0);
         gDPPipeSync(gdl++);
         gSP2Triangles(gdl++, 0, 1, 3, 0, 0, 3, 2, 0);
         gDPPipeSync(gdl++);
@@ -2135,18 +2165,21 @@ Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl)
     return gdl;
 }
 
-s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *sw, s32 arg7, s32 arg8) {
-    f32 hx;
-    f32 hy;
-    f32 tx;
-    f32 ty;
+/* Projects world point (x, y, z) (mm) with the editor's camera matrix to the screen (sx, sy, depth sz, w sw);
+   returns 1 when it is behind the camera or out of the depth range. */
+s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *sw, s32 ctx, s32 frame) {
+    f32 halfW;
+    f32 halfH;
+    f32 centreX;
+    f32 centreY;
     f32 px;
     f32 py;
     f32 pz;
     f32 pw;
 
-    hx = gArnedViewport_2.vscale[0] * 0.25f;
-    hy = gArnedViewport_2.vscale[1] * 0.25f;
+    halfW = gArnedViewport_2.vscale[0] * 0.25f;
+    halfH = gArnedViewport_2.vscale[1] * 0.25f;
+    /* mm to the camera matrix's 16 mm units */
     x *= 0.0625f;
     y *= 0.0625f;
     z *= 0.0625f;
@@ -2154,8 +2187,8 @@ s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *
     py = gEditor->camMtx[0][1] * x + gEditor->camMtx[1][1] * y + gEditor->camMtx[2][1] * z + gEditor->camMtx[3][1];
     pz = gEditor->camMtx[0][2] * x + gEditor->camMtx[1][2] * y + gEditor->camMtx[2][2] * z + gEditor->camMtx[3][2];
     pw = gEditor->camMtx[0][3] * x + gEditor->camMtx[1][3] * y + gEditor->camMtx[2][3] * z + gEditor->camMtx[3][3];
-    tx = gArnedViewport_2.vtrans[0] * 0.25f;
-    ty = gArnedViewport_2.vtrans[1] * 0.25f;
+    centreX = gArnedViewport_2.vtrans[0] * 0.25f;
+    centreY = gArnedViewport_2.vtrans[1] * 0.25f;
     if (pw == 0.0f) {
         return 1;
     }
@@ -2167,8 +2200,8 @@ s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *
     }
     {
         f32 rx, ry, rz;
-        rx = px * hx + tx;
-        ry = py * -hy + ty;
+        rx = px * halfW + centreX;
+        ry = py * -halfH + centreY;
         rz = pz * (gFarClip - 50.0f) + 50.0f;
         *sx = rx;
         *sy = ry;
