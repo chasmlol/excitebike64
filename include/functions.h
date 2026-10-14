@@ -923,6 +923,7 @@ s32 shell_is_round_screen_unlocked(Screen *screen);
 void shell_main_menu_or_back_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads);
 s32 shell_is_round_unlocked_tt(s32 n);
 s32 shell_check_sp_imem_magic(void);
+s32 shell_check_sp_dmem_magic(void);
 
 /* src/game/pak.c */
 void pak_build_note_list(s32 pak, s32 withNewNote);

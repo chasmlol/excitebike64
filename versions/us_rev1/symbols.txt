@@ -927,6 +927,7 @@ edit_can_delete_piece                 game  0x8009FAB0  func     0x88
 edit_reset_overlay_lines              game  0x8009FB38  func     0x68
 edit_update_user_piece_usage          game  0x8009FBA0  func     0xb0
 edit_free_user_piece_meshes           game  0x8009FC50  func    0x13c
+shell_check_sp_dmem_magic             game  0x8009FD90  func     0x14
 nes_init                              game  0x8009FDB0  func    0x5f0
 nes_update_input                      game  0x800A03B4  func    0x3f0
 nes_draw_setup                        game  0x800A07A4  func    0x418

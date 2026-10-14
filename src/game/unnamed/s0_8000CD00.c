@@ -44,7 +44,7 @@ void cont_finish_read(void)
         }
         gRumbleResetRequest = 0;
         gContReadPending = 0;
-        if (D_800C2920 != 0) {      /* never set */
+        if (D_800C2920 != 0) {      /* retail: set when the RDRAM check fails (shell_draw) */
             gZBuffer = 0x80010000;
         }
     }

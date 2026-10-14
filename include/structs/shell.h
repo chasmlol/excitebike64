@@ -29,7 +29,7 @@ enum ScreenState {
     SCREEN_STATE_RESULTS_MENU = 3,           /* race results: the menu after the race */
     SCREEN_STATE_SEASON_MENU = 4,            /* season results: Continue / Replay / Retire */
     SCREEN_STATE_DIFFICULTY = 5,             /* list screens: the difficulty popup */
-    SCREEN_STATE_ERASE_DIALOG = 6,           /* options: "Erase all data?" (no option leads there in this build) */
+    SCREEN_STATE_ERASE_DIALOG = 6,           /* options: "Erase all data?" (retail; no option leads there in LodgeNet) */
     SCREEN_STATE_RETIRE_DIALOG = 7,          /* season results: "Really retire?" */
     SCREEN_STATE_ASK_GHOST = 8,              /* "Continue" / "Load Saved Ghost Data" */
     SCREEN_STATE_ASK_USER_TRACK = 9,         /* "Race Saved Track" / "Go To Editor" */
@@ -61,6 +61,7 @@ typedef struct Screen Screen;
 #define SCREEN_ITEM_NEED_DIFFICULTY 0x0400 /* ... which then has no difficulty 0 */
 #define SCREEN_ITEM_ASK_GHOST       0x0800 /* asks "Continue" / "Load Saved Ghost Data" first */
 #define SCREEN_ITEM_ASK_USER_TRACK  0x1000 /* asks "Race Saved Track" / "Go To Editor" first */
+#define SCREEN_ITEM_ASK_PLAYERS     0x0040 /* retail: asks the number of players first (the players popup) */
 
 typedef struct ScreenItem {
     /* 0x00 */ char *text;

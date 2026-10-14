@@ -130,6 +130,11 @@ void shell_init(void)
                 dst = &gGame.records[n];
                 *dst = *src;
                 n++;
+#if VERSION != VERSION_LODGENET
+                if (!shell_check_sp_imem_magic()) {
+                    sNesCorruptRam = 1;     /* not booted by the cartridge's IPL3: the NES game goes wrong */
+                }
+#endif
             }
         }
         gGame.twoPlayerCpuRiders = 2;
@@ -167,6 +172,11 @@ void shell_init(void)
             bikeSkin--;
             i--;
         } while (i >= 0);
+#if VERSION != VERSION_LODGENET
+        if (!shell_check_sp_dmem_magic()) {
+            sDebugLagEnable = 1;    /* the lag generator */
+        }
+#endif
         i = 5;
         riderSkin = (u8 *)&gGame + i;
         do {
@@ -196,7 +206,7 @@ void shell_init(void)
             gZBuffer_3[gGame.numRecordTracks++] = i;
         }
     }
-    gGame.recordTracks = mem_alloc_dbg(gGame.numRecordTracks * 2, 0, "shell.c", 0x75C);
+    gGame.recordTracks = mem_alloc_dbg(gGame.numRecordTracks * 2, 0, "shell.c", SRC_LINE(0x75C, 0x752));
     memcpy(gGame.recordTracks, gZBuffer_3, gGame.numRecordTracks * 2);
     gGame.numCpuRiders = 5;
     gRaceSeries_4 = 0;
@@ -215,7 +225,7 @@ void shell_init(void)
     sShellViewport[1] = gScreenHeight * 2;
     sShellViewport[4] = gScreenWidth * 2;
     sShellViewport[5] = gScreenHeight * 2;
-    gGame.greyPalette = mem_alloc_dbg(0x200, 0, "shell.c", 0x777);
+    gGame.greyPalette = mem_alloc_dbg(0x200, 0, "shell.c", SRC_LINE(0x777, 0x76D));
     shell_blend_palette_to_gray(0xFF, 0);
     if (gRaceExitCode == RACE_EXIT_QUIT) {
         gCurTrack_8->w50 &= ~TRACK_FLAG_NEW_RECORD;
@@ -236,7 +246,19 @@ void shell_init(void)
     } else {
         exitCode = gRaceExitCode;
         if (exitCode == RACE_EXIT_BOOT) {
+#if VERSION == VERSION_LODGENET
             shell_goto_screen(&sScreens[SCREEN_BOOT_SPLASH], 0, 1);
+#else
+            if (D_800C2954 != 0) {
+                /* START was held at power-on (the boot loader's 0xDEAF): the Controller Pak screen first */
+                D_800C2954 = 0;
+                sPakSkipRumblePrompt = 1;
+                gGame.pakScreenMode = PAK_SCREEN_MANAGER;
+                shell_goto_screen(&sScreens[SCREEN_PAK], 0, 1);
+            } else {
+                shell_goto_screen(&sScreens[SCREEN_BOOT_SPLASH], 0, 1);
+            }
+#endif
         } else if ((gGame.flags & GAME_FLAG_REPLAY) || gCreditsMode != 0 || exitCode == RACE_EXIT_BACK) {
             /* back from a replay, the credits or the intro: the screen left */
             if (gActiveReplay != 0) {
@@ -413,7 +435,11 @@ void shell_splash_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *p
     } else if (type == SCREEN_TYPE_BACKUP_LOST) {
         canSkip = gGame.screenTimer < 600 - 60;
     } else {
+#if VERSION == VERSION_LODGENET
         canSkip = gGame.screenTimer < 300 - 60;
+#else
+        canSkip = gGame.screenTimer < 3600 - 60;
+#endif
     }
     if (canSkip) {
         if (PRESSED(INPUT_A) | PRESSED(INPUT_START)) {
@@ -424,7 +450,20 @@ void shell_splash_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *p
         if (skip && gGame.fadeState == FADE_DONE) {
             snd_play_menu_sound(MENU_SOUND_SELECT);
         }
+#if VERSION == VERSION_LODGENET
         shell_goto_screen(item->target, 0, 1);
+#else
+        /* after the first splash: the lost backup's notice if save_load found one, then the Controller Pak's
+           free pages */
+        if (screen->type == SCREEN_TYPE_SPLASH && (gGame.flags & GAME_FLAG_BACKUP_LOST)) {
+            shell_goto_screen(&sScreens[SCREEN_BACKUP_LOST], 0, 1);
+        } else if (screen->type == SCREEN_TYPE_SPLASH || screen->type == SCREEN_TYPE_BACKUP_LOST) {
+            pak_update_free_pages();
+            shell_goto_screen(&sScreens[SCREEN_PAK_STATUS], 0, 1);
+        } else {
+            shell_goto_screen(item->target, 0, 1);
+        }
+#endif
     }
 }
 
@@ -912,18 +951,33 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
         return;
     }
     oldSel = gGame.menuSel;
+    /* down and up skip "save the replay" when it can't be saved (LodgeNet: never in a time trial; retail: a time
+       trial's ghost when it fits a Controller Pak note) */
+#if VERSION == VERSION_LODGENET
+#define REPLAY_UNSAVABLE (gReplayWritePtr - gReplayBuf >= gReplayBufSize || gGame.mode == GAME_MODE_TIME_TRIAL)
+#else
+#define REPLAY_UNSAVABLE (gReplayWritePtr - gReplayBuf >= gReplayBufSize                           || (gGame.mode == GAME_MODE_TIME_TRIAL && gReplayWritePtr - gReplayBuf >= REPLAY_GHOST_SIZE))
+#endif
     if (pressed & (INPUT_D_UP | INPUT_STICK_UP)) {
-        if (gReplayWritePtr - gReplayBuf >= gReplayBufSize || gGame.mode == GAME_MODE_TIME_TRIAL) {
+        if (REPLAY_UNSAVABLE) {
             gGame.menuSel = oldSel ^ 2;
         } else {
+#if VERSION == VERSION_LODGENET
             gGame.menuSel = oldSel - 1;
             if (oldSel - 1 < 0) {
                 gGame.menuSel = oldSel + 2;
             }
+#else
+            sel = gGame.menuSel;
+            gGame.menuSel = sel - 1;
+            if (sel - 1 < 0) {
+                gGame.menuSel = sel + 2;
+            }
+#endif
         }
     }
     if (*buttons & (INPUT_D_DOWN | INPUT_STICK_DOWN)) {
-        if (gReplayWritePtr - gReplayBuf >= gReplayBufSize || gGame.mode == GAME_MODE_TIME_TRIAL) {
+        if (REPLAY_UNSAVABLE) {
             gGame.menuSel ^= 2;
         } else {
             sel = gGame.menuSel;
@@ -1077,8 +1131,8 @@ enum OptionItem {
     OPTION_CREDITS,
     OPTION_HI_RES,            /* needs the Expansion Pak */
     OPTION_DRONES,
-    OPTION_RESET_SAVED_DATA,  /* greyed out in this build */
-    OPTION_CONTROLLER_PAK,    /* greyed out in this build */
+    OPTION_RESET_SAVED_DATA,  /* greyed out in LodgeNet */
+    OPTION_CONTROLLER_PAK,    /* greyed out in LodgeNet */
     OPTION_COUNT
 };
 #define OPTIONS_JUST_ENTERED 0x100 /* in gGame.optionsSel: the screen was just loaded */
@@ -1137,12 +1191,40 @@ void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
                 gGame.repeatTimer = 52;
             }
             return;
+#if VERSION == VERSION_LODGENET
         case OPTION_CONTROLLER_PAK:
             snd_play_menu_sound(MENU_SOUND_ERROR);
             return;
         case OPTION_RESET_SAVED_DATA:
             snd_play_menu_sound(MENU_SOUND_ERROR);
             return;
+#else
+        case OPTION_CONTROLLER_PAK:
+            gGame.pakScreenMode = PAK_SCREEN_MANAGER;
+            shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
+            snd_play_menu_sound(MENU_SOUND_SELECT);
+            return;
+        case OPTION_RESET_SAVED_DATA:
+            /* "Erase all data?": A on Yes erases (SCREEN_STATE_ERASING, then ERASE: save_load(1)) */
+            if (gGame.screenState == SCREEN_STATE_ERASE_DIALOG) {
+                switch (gGame.dialogSel) {
+                case 0:
+                    gGame.screenState = SCREEN_STATE_NORMAL;
+                    break;
+                case 1:
+                    gGame.screenState = SCREEN_STATE_ERASING;
+                    break;
+                }
+                snd_play_menu_sound(MENU_SOUND_SELECT);
+                return;
+            }
+            if (gGame.screenState != SCREEN_STATE_ERASING && gGame.screenState != SCREEN_STATE_ERASE) {
+                gGame.screenState = SCREEN_STATE_ERASE_DIALOG;
+                gGame.dialogSel = 0;
+                snd_play_menu_sound(MENU_SOUND_SELECT);
+            }
+            return;
+#endif
         case OPTION_HI_RES:
             if (gHasExpansionPak == 0) {
                 return;
@@ -1726,6 +1808,26 @@ static inline s32 track_page_open(Screen *page)
 /* sCurScreen again: the read takes its own lui, which the stores below do not share */
 extern Screen *sCurScreen_2;
 
+#if VERSION != VERSION_LODGENET
+/* shell_is_round_unlocked_tt's test, as retail's shell_list_menu_input has it inline */
+static inline s32 round_unlocked_tt(s32 n)
+{
+    if (n == 0) return 1;
+    switch (gSaveData.topDifficulty) {
+    case 1:
+        if (n < 2 && ((gSaveData.roundsDone >> (n - 1)) & 1)) return 1;
+        break;
+    case 2:
+        if (n < 2 || (n == 2 && ((gSaveData.roundsDone >> (n - 1)) & 1))) return 1;
+        break;
+    case 3:
+        if (n < 3 || (n == 3 && ((gSaveData.roundsDone >> (n - 1)) & 1))) return 1;
+        break;
+    }
+    return 0;
+}
+#endif
+
 /* The list screens (main menu, special tracks, the track lists): up and down move the cursor, left and right go
    between the track lists, A chooses. Some items ask first: the difficulty popup, the ghost prompt, the user
    track's prompts (race or edit it, load it from the Game Pak or a Controller Pak) and the number of players
@@ -1768,7 +1870,13 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
             gGame.mode = GAME_MODE_EXHIBITION;
             gGame.screenState = SCREEN_STATE_NORMAL;
             gGame.flags |= GAME_FLAG_PLAYERS_POPUP;
+#if VERSION == VERSION_LODGENET
         } else if (!(item->flags & SCREEN_ITEM_ASK_DIFFICULTY) || gGame.screenState == SCREEN_STATE_DIFFICULTY) {
+#else
+        } else if (((gGame.flags & GAME_FLAG_PLAYERS_POPUP) || !(item->flags & SCREEN_ITEM_ASK_PLAYERS)
+                    || gGame.mode == GAME_MODE_TIME_TRIAL)
+                   && (!(item->flags & SCREEN_ITEM_ASK_DIFFICULTY) || gGame.screenState == SCREEN_STATE_DIFFICULTY)) {
+#endif
             if (!(item->flags & SCREEN_ITEM_LOCKED)) {
                 if (gGame.screenState == SCREEN_STATE_ASK_GHOST && gGame.dialogSel == 1) {
                     /* Load Saved Ghost Data */
@@ -1788,7 +1896,11 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                         gGame.dialogSel = 1;
                     }
                 } else {
+#if VERSION == VERSION_LODGENET
                     if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
+#else
+                    if ((gGame.flags & GAME_FLAG_PLAYERS_POPUP) && !(item->flags & SCREEN_ITEM_ASK_PLAYERS)) {
+#endif
                         /* the user track: load it from a Controller Pak, or from the Game Pak's save */
                         if (gGame.dialogSel != 0) {
                             gGame.flags |= GAME_FLAG_RACE_PAK_TRACK;
@@ -1811,18 +1923,70 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                     }
                 }
             }
+#if VERSION == VERSION_LODGENET
         } else {
             gGame.screenState = SCREEN_STATE_DIFFICULTY;
             if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) && gGame.difficulty == 0) {
                 gGame.difficulty = 1;
             }
         }
+#else
+        } else if ((item->flags & SCREEN_ITEM_ASK_DIFFICULTY) && gGame.screenState != SCREEN_STATE_DIFFICULTY) {
+            gGame.screenState = SCREEN_STATE_DIFFICULTY;
+            if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) && gGame.difficulty == 0) {
+                gGame.difficulty = 1;
+            }
+        } else {
+            /* the number of players first: a track list's tracks only when their round is open */
+            s32 unlocked;
+
+            if (screen->type == SCREEN_TYPE_TRACK_LIST) {
+                if (gGame.mode == GAME_MODE_TIME_TRIAL) {
+                    unlocked = round_unlocked_tt(gGame.trackSel / TRACKS_PER_PAGE);
+                } else {
+                    unlocked = shell_is_round_unlocked(gGame.trackSel / TRACKS_PER_PAGE);
+                }
+                if (unlocked) {
+                    goto popup;
+                }
+                goto locked;
+            } else if (item->flags & SCREEN_ITEM_LOCKED) {
+                goto done;
+            }
+popup:
+            gGame.numPlayers = 1;
+            gGame.flags |= GAME_FLAG_PLAYERS_POPUP;
+            {
+                ScreenItem *items = sCurScreen->items;
+                s32 *cursor = sCurScreen->cursor;
+                if ((cursor != NULL ? &items[*cursor] : items)->callback != NULL) {
+                    (cursor != NULL ? &items[*cursor] : items)->callback(1);
+                }
+            }
+            if ((gGame.numPlayers & 1) && (gGame.mode == GAME_MODE_SOCCER || gGame.mode == 3)) {
+                gGame.numPlayers = 2;
+            }
+            goto done;
+locked:
+            if (!(item->flags & SCREEN_ITEM_LOCKED)) {
+                playSelect = 0;
+                snd_play_menu_sound(MENU_SOUND_ERROR);
+            }
+        }
+done:
+#endif
         if (playSelect) {
             snd_play_menu_sound(MENU_SOUND_SELECT);
         }
     } else if (pressed & INPUT_B) {
         if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
+#if VERSION == VERSION_LODGENET
             gGame.screenState = SCREEN_STATE_USER_TRACK_DIFFICULTY;
+#else
+            if (!(item->flags & SCREEN_ITEM_ASK_PLAYERS)) {
+                gGame.screenState = SCREEN_STATE_USER_TRACK_DIFFICULTY;
+            }
+#endif
             snd_play_menu_sound(MENU_SOUND_BACK);
             gGame.flags &= ~GAME_FLAG_PLAYERS_POPUP;
             gGame.flags &= ~GAME_FLAG_EDITOR;
@@ -2392,6 +2556,13 @@ void shell_update(Pad16 *pads)
         }
         break;
     }
+#if VERSION != VERSION_LODGENET
+    if (!main_check_cart_ipl3()) {
+        /* not the cartridge's IPL3: the count goes to a random word of RDRAM */
+        u32 *word = (u32 *)(((osGetCount() << 2) & 0xFFFFF) + 0x80000000);
+        *word = osGetCount();
+    }
+#endif
     sPrevPadButtons = *pads;
 }
 
@@ -2511,6 +2682,11 @@ void shell_exit(void)
     mem_free(gGame.recordTracks);
     gRaceExitCode = RACE_EXIT_NONE;
     font_unload_set();
+#if VERSION != VERSION_LODGENET
+    if (!cic_is_6103()) {
+        D_800C8CD0 = 1;     /* not the cartridge's CIC */
+    }
+#endif
 }
 
 #define UNLOAD(id) res_unload(&gGuiRes->handles[id])
@@ -3275,6 +3451,13 @@ void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
         if (sCurScreen != NULL) {
             sPrevScreen = sCurScreen;
         }
+#if VERSION != VERSION_LODGENET
+        if (!cic_is_6103()) {
+            /* not the cartridge's CIC: the count goes to a random word of RDRAM */
+            u32 *word = (u32 *)(((osGetCount() << 2) & 0xFFFFF) + 0x80000000);
+            *word = osGetCount();
+        }
+#endif
         if (screen != NULL && linkBack != 0) {
             screen->back = sCurScreen;
         }
@@ -3339,9 +3522,17 @@ Gfx *shell_draw_results_menu(Gfx *gdl, s32 fb, s32 sel, char **strs)
     s32 textY, textX, barX;
 
     replayGreyed = 0;
+#if VERSION == VERSION_LODGENET
     if (gGame.mode == GAME_MODE_TIME_TRIAL || gReplayWritePtr - gReplayBuf >= gReplayBufSize) {
         replayGreyed = 1;
     }
+#else
+    /* retail saves a time trial's ghost when it fits a Controller Pak note */
+    if ((gGame.mode == GAME_MODE_TIME_TRIAL && gReplayWritePtr - gReplayBuf >= REPLAY_GHOST_SIZE)
+        || gReplayWritePtr - gReplayBuf >= gReplayBufSize) {
+        replayGreyed = 1;
+    }
+#endif
     font_reset_queue();
     /* darken the screen */
     gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0xBE);
@@ -3841,7 +4032,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             Img *pic = &gGame.titleBar[1];
 
             gDPLoadTLUT_pal256(gdl++, gGame.titleBar->addr);
-            gdl = render_draw_image(0x77, 0x8D, pic, gdl, fb, 1, 1, 3, 0);
+            /* (retail's picture is a different one, drawn higher) */
+            gdl = render_draw_image(0x77, VERSION == VERSION_LODGENET ? 0x8D : 0x83, pic, gdl, fb, 1, 1, 3, 0);
         }
         break;
     case SCREEN_TYPE_PAK:
@@ -4515,9 +4707,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 x = 0x52 - ((j - OPTION_SOUND) / 2 + 3) * 7 + ((j - OPTION_SOUND) & 1) * 194;
             }
             y = sOptionsRowY[j];
+#if VERSION == VERSION_LODGENET
             if (j == OPTION_RESET_SAVED_DATA || j == OPTION_CONTROLLER_PAK) {
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (j == gGame.optionsSel) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_GREYED | TEXT_LEFT);
-            } else {
+            } else
+#endif
+            {
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (j == gGame.optionsSel) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY,
                               (gHasExpansionPak_2 == 0 && j == OPTION_HI_RES) ? TEXT_GREYED | TEXT_LEFT : TEXT_LEFT);
             }
@@ -5473,6 +5668,11 @@ void shell_draw(Mtx *m, s32 fb, Gfx **pgdl)
     u16 alpha;
 
     gdl = *pgdl;
+#if VERSION != VERSION_LODGENET
+    if (!cic_check_rdram_200()) {
+        sDebugLagEnable = 1;    /* not what the cartridge's IPL3 leaves in RDRAM: the lag generator */
+    }
+#endif
     if (gGame.fadeState == FADE_OUT) {
         screen = sPrevScreen;
     } else {
@@ -5576,6 +5776,11 @@ done:
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     gDPPipeSync(gdl++);
     *pgdl = gdl;
+#if VERSION != VERSION_LODGENET
+    if (!cic_check_rdram_284()) {
+        D_800C2920 = 1;     /* not what the cartridge's IPL3 leaves in RDRAM */
+    }
+#endif
 }
 
 /* Opens the "guires" resource set (the front end's pictures). */
@@ -5597,9 +5802,13 @@ void shell_cb_desert(s32 chosen)
     if (chosen != 0) {
         gCurTrack = &gTracks[TRACK_DESERT];
         gGame.mode = GAME_MODE_DESERT;
+#if VERSION == VERSION_LODGENET
         gRaceSeries_5.b = 0;
         gRaceSeries_5.a = 1;
         gRaceSeries_5.c = 0;
+#else
+        gGame.numPlayers = 1;
+#endif
         gGame.flags &= ~GAME_FLAG_TRACK_INTRO;
     }
 }
@@ -5917,7 +6126,7 @@ zero:
     return 0;
 }
 
-/* Whether the RSP's instruction memory starts with 0x17D7 (a leftover check; not called). */
+/* Whether the RSP's instruction memory starts with 0x17D7. LodgeNet doesn't call it; retail's shell_init does. */
 s32 shell_check_sp_imem_magic(void)
 {
     return *(u32 *)0xA4001000 == 0x17D7;
