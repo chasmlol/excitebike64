@@ -677,7 +677,7 @@ void edit_update_main_menu(void)
         if (gEditor->mode == 7 || gEditor->mode == 8) {
             edit_update_name_entry(p, flags);
         } else if (gui_menu_input(gEditor->menu, flags)) {
-            switch (sEditMainMenuChoice) {
+            switch (sEditMainMenu.sel) {
             case 1:
                 gEditor->mode = 0;
                 if (gEditor->menu != &sEditTrackMenu) {
@@ -1133,18 +1133,18 @@ void edit_update_track_menu(void) {
 #define PRESSED_3(m) ((gPadInput & (m)) && !(gPadInputPrev & (m)))
 #define IDX (sEditTrackMenu.items[sEditTrackMenu.sel].value)
 
-#define INSERT(T)                                                                          \
+#define INSERT(B)                                                                          \
     if (gEditor->cur == NULL) {                                                         \
-        gEditor->cur = edit_insert_piece(NULL, NULL, &T[IDX]);                              \
+        gEditor->cur = edit_insert_piece(NULL, NULL, &gPieceTypes[(B) + IDX]);                              \
         gEditor->first = gEditor->cur;                                                \
         gEditor->last = gEditor->cur;                                                \
         gEditor->start = gEditor->cur;                                                \
     } else if (gEditor->cur->prev != NULL ||                                            \
                ((gEditor->flags & 0x200) && gEditor->cur->next == NULL)) {          \
-        gEditor->cur = edit_insert_piece(gEditor->cur, gEditor->cur->next, &T[IDX]);  \
+        gEditor->cur = edit_insert_piece(gEditor->cur, gEditor->cur->next, &gPieceTypes[(B) + IDX]);  \
         gEditor->last = gEditor->cur;                                                \
     } else {                                                                               \
-        gEditor->cur = edit_insert_piece(NULL, gEditor->cur, &T[IDX]);                   \
+        gEditor->cur = edit_insert_piece(NULL, gEditor->cur, &gPieceTypes[(B) + IDX]);                   \
         gEditor->first = gEditor->cur;                                                \
     }
 
@@ -1250,22 +1250,22 @@ void edit_update_place_piece(void) {
         case 3:
             edit_remove_preview_pieces_2();
             gEditor->userPiece = IDX;
-            INSERT(gPieceTypesUser);
+            INSERT(PIECE_TYPE_USER);
             ok = 1;
             break;
         case 0:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypes);
+            INSERT(PIECE_TYPE_STRAIGHT);
             ok = 1;
             break;
         case 1:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesTurn);
+            INSERT(PIECE_TYPE_TURN);
             ok = 1;
             break;
         case 2:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesJump);
+            INSERT(PIECE_TYPE_JUMP);
             ok = 1;
             break;
         }
@@ -1309,22 +1309,22 @@ void edit_update_place_piece(void) {
         case 3:
             edit_remove_preview_pieces_2();
             gEditor->userPiece = IDX;
-            INSERT(gPieceTypesUser);
+            INSERT(PIECE_TYPE_USER);
             gEditor->cur->flags |= 4;
             break;
         case 0:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypes);
+            INSERT(PIECE_TYPE_STRAIGHT);
             gEditor->cur->flags |= 4;
             break;
         case 1:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesTurn);
+            INSERT(PIECE_TYPE_TURN);
             gEditor->cur->flags |= 4;
             break;
         case 2:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesJump);
+            INSERT(PIECE_TYPE_JUMP);
             gEditor->cur->flags |= 4;
             break;
         }
@@ -1614,13 +1614,13 @@ void edit_update(void) {
         gEditor->selType = &gPieceTypes[sEditTrackMenu.items[0].value];
         break;
     case 1:
-        gEditor->selType = &gPieceTypesTurn[sEditTrackMenu.items[1].value];
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_TURN + sEditTrackMenu.items[1].value];
         break;
     case 2:
-        gEditor->selType = &gPieceTypesJump[sEditTrackMenu.items[2].value];
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_JUMP + sEditTrackMenu.items[2].value];
         break;
     case 3:
-        gEditor->selType = &gPieceTypesUser[sEditTrackMenu.items[3].value];
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_USER + sEditTrackMenu.items[3].value];
         break;
     }
     if (gEditor->flags & 0x10) {
@@ -3281,7 +3281,7 @@ void edit_user_piece_remove_last_segment(void)
     EditPiece *pl;
     s16 s;
 
-    tb = &gPieceTypesUser[gEditor->userPiece];
+    tb = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
     for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
         for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
             arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
@@ -3335,7 +3335,7 @@ void edit_user_piece_prepend_segment(void) {
     s32 off;
     s16 sv;
 
-    t1 = &gPieceTypesUser[gEditor->userPiece];
+    t1 = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
     for (y = 0; y < t1->dim[(gEditor->cur->rot + 1) & 1]; y++) {
         for (x = 0; x < t1->dim[gEditor->cur->rot & 1]; x++) {
             arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
@@ -3386,7 +3386,7 @@ void edit_user_piece_append_segment(void)
     EditPiece *pl;
     s16 s;
 
-    tb = &gPieceTypesUser[gEditor->userPiece];
+    tb = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
     for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
         for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
             arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
@@ -4083,7 +4083,7 @@ void edit_update_user_piece_usage(void)
     m = -0x601;
     for (; i < 8; i++) {
         u32 c;
-        blk = &gPieceTypesUser[i];
+        blk = &gPieceTypes[PIECE_TYPE_USER + i];
         c = (u16)blk->flags; /* read unsigned here */
         n = obj->first;
         blk->flags = c & m;
