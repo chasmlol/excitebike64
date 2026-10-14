@@ -94,40 +94,43 @@ Gfx *pak_draw_button_text(Gfx *gdl, u8 *str, s32 font, s32 color, s32 x, s32 y)
     s32 button;
     s32 i;
 
-    if (*str != 0) { i = 0; do {
-        if (str[i] != '@') {
-            sPakStrBuf[len] = str[i];
-            i++;
-            len++;
-        } else {
-            /* the text so far, then the icon */
-            sPakStrBuf[len] = 0;
-            if (len != 0) {
+    if (*str != 0) {
+        i = 0;
+        do {
+            if (str[i] != '@') {
+                sPakStrBuf[len] = str[i];
+                i++;
+                len++;
+            } else {
+                /* the text so far, then the icon */
+                sPakStrBuf[len] = 0;
+                if (len != 0) {
+                    if (gdl != NULL) {
+                        gdl = draw_text(gdl, sPakStrBuf, font, color, x, y);
+                    } else {
+                        font_text_create(sPakText, 0x80, font, color, 0);
+                        font_text_add(sPakText, (char *)sPakStrBuf);
+                    }
+                    x += sPakText->w;
+                }
+                i++;
+                len = 0;
+                button = str[i] - 'A';
                 if (gdl != NULL) {
-                    gdl = draw_text(gdl, sPakStrBuf, font, color, x, y);
-                } else {
-                    font_text_create(sPakText, 0x80, font, color, 0);
-                    font_text_add(sPakText, (char *)sPakStrBuf);
+                    gDPSetTextureLUT(gdl++, G_TT_RGBA16);
+                    gDPLoadTLUT_pal256(gdl++, sPakButtonIcons->pal);
+                    {
+                        Gfx *g = gdl++;
+                        g->words.w0 = 0xFCFFFFFF; /* gDPSetCombineMode(G_CC_DECALRGBA, G_CC_DECALRGBA) */
+                        g->words.w1 = 0xFFFCF279;
+                    }
+                    gdl = render_draw_image(x, y - 4, &sPakButtonIcons->imgs[button], gdl, gGfxFrameIndex, 1, 1, 3, 0);
                 }
-                x += sPakText->w;
+                i++;
+                x += sPakButtonIcons->imgs[button].w * 8;
             }
-            i++;
-            len = 0;
-            button = str[i] - 'A';
-            if (gdl != NULL) {
-                gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-                gDPLoadTLUT_pal256(gdl++, sPakButtonIcons->pal);
-                {
-                    Gfx *g = gdl++;
-                    g->words.w0 = 0xFCFFFFFF; /* gDPSetCombineMode(G_CC_DECALRGBA, G_CC_DECALRGBA) */
-                    g->words.w1 = 0xFFFCF279;
-                }
-                gdl = render_draw_image(x, y - 4, &sPakButtonIcons->imgs[button], gdl, gGfxFrameIndex, 1, 1, 3, 0);
-            }
-            i++;
-            x += sPakButtonIcons->imgs[button].w * 8;
-        }
-    } while (str[i] != 0); }
+        } while (str[i] != 0);
+    }
     sPakStrBuf[len] = 0;
     if (len != 0) {
         if (gdl != NULL) {
@@ -432,25 +435,29 @@ typedef struct {
 } PakNoteRow;
 
 /* Goes to a state, with a menu sound. */
-static inline void set_state(s32 state, s32 sound) {
+static inline void set_state(s32 state, s32 sound)
+{
     gPakScreen.state = state;
     gPakScreen.subState = PAK_STEP_START;
     sPakSound = sound;
 }
 
 /* The menu sound to play at the end of the frame. */
-static inline void set_sound(s32 sound) {
+static inline void set_sound(s32 sound)
+{
     sPakSound = sound;
 }
 
 /* Goes to a state without a sound. */
-static inline void set_state_silent(s32 state) {
+static inline void set_state_silent(s32 state)
+{
     gPakScreen.state = state;
     gPakScreen.subState = PAK_STEP_START;
 }
 
 /* Takes the "create new note" entry off the head of a pak's list. */
-static inline void drop_new_note_entry(s32 pak) {
+static inline void drop_new_note_entry(s32 pak)
+{
     if (sPakNoteList[pak][0] == &sPakNewNoteEntry && sPakNoteCount[pak] > 0) {
         *(PakNoteRow *)&sPakNoteList[pak][0] = *(PakNoteRow *)&sPakNoteList[pak][1];
         sPakNoteCount[pak]--;
@@ -458,7 +465,8 @@ static inline void drop_new_note_entry(s32 pak) {
 }
 
 /* The screen's frame: watches the paks being plugged and unplugged, then runs the state's input and work. */
-void pak_screen_update(Pad16 *pads) {
+void pak_screen_update(Pad16 *pads)
+{
     u8 plugged[8];
     u32 buttons;
     s32 i;
@@ -1310,7 +1318,8 @@ s32 pak_create_note(u32 pak, char *name, char *ext, s32 companyCode, s32 gameCod
 
 /* Deletes a pak's note. Returns 0, -1 without a valid pak, 100 minus the error of reading the note's state, or
    minus the error of deleting it. */
-s32 pak_delete_note(s32 channel, s32 file_no) {
+s32 pak_delete_note(s32 channel, s32 file_no)
+{
     volatile s32 pad[6];
     OSPfsState state;
     s32 ret;
@@ -1479,7 +1488,8 @@ void pak_pfs_to_ascii(u8 *buf, s32 len)
 }
 
 /* Allocates the note table of each pak. */
-void pak_alloc_note_tables(void) {
+void pak_alloc_note_tables(void)
+{
     s32 i;
     for (i = 0; i < MAXCONTROLLERS; i++) {
         sPakNoteTables[i] = mem_alloc_dbg(PAK_MAX_NOTES * sizeof(PakNote), 0, (s32)"pak.c", 0x75F);
@@ -1488,7 +1498,8 @@ void pak_alloc_note_tables(void) {
 }
 
 /* Frees the note tables. */
-void pak_free_note_tables(void) {
+void pak_free_note_tables(void)
+{
     s32 i;
     for (i = 0; i < MAXCONTROLLERS; i++) {
         mem_free(sPakNoteTables[i]);
@@ -1539,7 +1550,8 @@ Gfx *pak_draw_text(Gfx *gdl, char *str, s32 font, s32 color, s32 x, s32 y)
 }
 
 /* Sets sPakText's text (to measure it). */
-void pak_set_text(char *str, s32 font, s32 color) {
+void pak_set_text(char *str, s32 font, s32 color)
+{
     font_text_create(sPakText, 0x80, font, color, 0);
     font_text_add(sPakText, str);
 }

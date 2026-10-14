@@ -360,7 +360,8 @@ extern Unk1900 gSaveData_8;
 
 /* Item callback of Season: starts the season of the chosen cup; at difficulty 0 the tutorial instead, at the
    first lesson not done. */
-void shell_cb_season(s32 chosen) {
+void shell_cb_season(s32 chosen)
+{
     s32 i;
 
     if (chosen != 0) {
@@ -599,7 +600,8 @@ typedef struct {
 /* Cheat code and initials entry: the stick or the D-pad moves over the keyboard, A types the key (Del and OK
    included), B deletes. A cheat code toggles its cheat; initials go to the race's records (gEvent.record) and
    the player's initials, then to the next player who set a record. */
-void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
+void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
+{
     s32 isCheat;
     s32 pad;
     s32 player;
@@ -1093,7 +1095,8 @@ enum OptionItem {
 
 /* Options: up and down move over the items, A toggles or opens one, left and right change the volumes (playing
    the music, a sound effect or a speech clip at the new volume). */
-void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
+void shell_options_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
+{
     s32 state;
     s32 oldSel;
     s32 step;
@@ -1504,7 +1507,8 @@ extern Save_3 gSaveData_9;
 /* The season screen: left and right pick the cup (as far as the difficulty allows), A starts it. The custom
    round (up and down: Play or Edit) is put together here: a slot per race, left and right its laps, Z deletes
    it, A picks its track from the 20 tracks of the rounds; B saves the round. */
-void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
+void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
+{
     s32 pressed, j, i;
 
     if (++gGame.menuAnimTimer == 60) gGame.menuAnimTimer = 0;
@@ -1707,7 +1711,8 @@ extern S1900 gSaveData_11;
 
 /* Whether a track list screen (a round's page) can be scrolled to: by the difficulty (exhibition and time trial:
    the highest reached), 1 Bronze and Silver, 2 up to Gold, 3 all. */
-static inline s32 track_page_open(Screen *page) {
+static inline s32 track_page_open(Screen *page)
+{
     s32 difficulty;
     if (gGame.mode == GAME_MODE_TIME_TRIAL || gGame.mode == GAME_MODE_EXHIBITION) {
         difficulty = gSaveData_11.topDifficulty;
@@ -1734,7 +1739,8 @@ extern Screen *sCurScreen_2;
    between the track lists, A chooses. Some items ask first: the difficulty popup, the ghost prompt, the user
    track's prompts (race or edit it, load it from the Game Pak or a Controller Pak) and the number of players
    popup. L + C-down + C-right held with A on the main menu opens the cheat entry. */
-void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
+void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
+{
     s32 playSelect;
     s32 mode;
     s32 pressed;
@@ -1772,48 +1778,48 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
             gGame.screenState = SCREEN_STATE_NORMAL;
             gGame.flags |= GAME_FLAG_PLAYERS_POPUP;
         } else if (!(item->flags & SCREEN_ITEM_ASK_PLAYERS) || gGame.screenState == SCREEN_STATE_DIFFICULTY) {
-          if (!(item->flags & SCREEN_ITEM_LOCKED)) {
-            if (gGame.screenState == SCREEN_STATE_ASK_GHOST && gGame.dialogSel == 1) {
-                /* Load Saved Ghost Data */
-                gGame.pakScreenMode = PAK_SCREEN_LOAD_GHOST;
-                shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
-            } else if (gGame.screenState == SCREEN_STATE_ASK_TRACK_SOURCE && !(gGame.flags & GAME_FLAG_PLAYERS_POPUP)) {
-                gGame.screenState = SCREEN_STATE_USER_TRACK_DIFFICULTY;
-                if (gGame.difficulty == 0) {
-                    gGame.difficulty = 1;
-                }
-            } else if (gGame.screenState == SCREEN_STATE_ASK_USER_TRACK && gGame.dialogSel == 0) {
-                /* Race Saved Track: from where (the Game Pak only when a track is saved there) */
-                gGame.screenState = SCREEN_STATE_ASK_TRACK_SOURCE;
-                if (gSaveData_11.options & SAVE_OPTION_USER_TRACK) {
-                    gGame.dialogSel = 0;
-                } else {
-                    gGame.dialogSel = 1;
-                }
-            } else {
-                if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
-                    /* the user track: load it from a Controller Pak, or from the Game Pak's save */
-                    if (gGame.dialogSel != 0) {
-                        gGame.flags |= GAME_FLAG_RACE_PAK_TRACK;
-                        gGame.pakScreenMode = PAK_SCREEN_LOAD_USER_TRACK;
-                        gGame.flags &= ~GAME_FLAG_EDITOR;
-                        shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
+            if (!(item->flags & SCREEN_ITEM_LOCKED)) {
+                if (gGame.screenState == SCREEN_STATE_ASK_GHOST && gGame.dialogSel == 1) {
+                    /* Load Saved Ghost Data */
+                    gGame.pakScreenMode = PAK_SCREEN_LOAD_GHOST;
+                    shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
+                } else if (gGame.screenState == SCREEN_STATE_ASK_TRACK_SOURCE && !(gGame.flags & GAME_FLAG_PLAYERS_POPUP)) {
+                    gGame.screenState = SCREEN_STATE_USER_TRACK_DIFFICULTY;
+                    if (gGame.difficulty == 0) {
+                        gGame.difficulty = 1;
+                    }
+                } else if (gGame.screenState == SCREEN_STATE_ASK_USER_TRACK && gGame.dialogSel == 0) {
+                    /* Race Saved Track: from where (the Game Pak only when a track is saved there) */
+                    gGame.screenState = SCREEN_STATE_ASK_TRACK_SOURCE;
+                    if (gSaveData_11.options & SAVE_OPTION_USER_TRACK) {
+                        gGame.dialogSel = 0;
                     } else {
-                        gCurTrack = &gTracks[TRACK_USER];
-                        shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
-                        usrtrk_load_layout(gSaveData.userTrack);
-                        gGame.mode = GAME_MODE_EXHIBITION;
-                        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
-                        gGame.flags &= ~GAME_FLAG_EDITOR;
+                        gGame.dialogSel = 1;
+                    }
+                } else {
+                    if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
+                        /* the user track: load it from a Controller Pak, or from the Game Pak's save */
+                        if (gGame.dialogSel != 0) {
+                            gGame.flags |= GAME_FLAG_RACE_PAK_TRACK;
+                            gGame.pakScreenMode = PAK_SCREEN_LOAD_USER_TRACK;
+                            gGame.flags &= ~GAME_FLAG_EDITOR;
+                            shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
+                        } else {
+                            gCurTrack = &gTracks[TRACK_USER];
+                            shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
+                            usrtrk_load_layout(gSaveData.userTrack);
+                            gGame.mode = GAME_MODE_EXHIBITION;
+                            gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+                            gGame.flags &= ~GAME_FLAG_EDITOR;
+                        }
+                    }
+                    if (gGame.screenState == SCREEN_STATE_DIFFICULTY && gGame.difficulty == 0) {
+                        shell_goto_screen(0, 0, 1);
+                    } else {
+                        shell_goto_screen(item->target, 1, 1);
                     }
                 }
-                if (gGame.screenState == SCREEN_STATE_DIFFICULTY && gGame.difficulty == 0) {
-                    shell_goto_screen(0, 0, 1);
-                } else {
-                    shell_goto_screen(item->target, 1, 1);
-                }
             }
-          }
         } else {
             gGame.screenState = SCREEN_STATE_DIFFICULTY;
             if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) && gGame.difficulty == 0) {
@@ -2063,7 +2069,8 @@ void shell_filter_stick_dirs(u32 *pads)
    frame (the D-pad as the stick), runs the screen's input, and runs the fade between two screens: at black the
    old screen (and its row) is unloaded and the new one loaded, or, with no new screen, the game state ends for
    the race. */
-void shell_update(Pad16 *pads) {
+void shell_update(Pad16 *pads)
+{
     u32 pressed[4];
     s32 track;
     s32 rider;
@@ -2861,7 +2868,8 @@ void shell_update_season_progress(void)
 /* Loads what a screen draws (its pictures from the "guires" set, its text objects) and sets it up: the timers of
    the splashes, the title's and rider select's race behind, the text entry's name, the Controller Pak screen's
    mode and data. */
-void shell_load_screen(Screen *screen) {
+void shell_load_screen(Screen *screen)
+{
     s32 i;
     s32 player;
     s32 level;
@@ -5578,7 +5586,8 @@ done:
 }
 
 /* Opens the "guires" resource set (the front end's pictures). */
-void shell_load_gui_res(void) {
+void shell_load_gui_res(void)
+{
     res_open_set("guires", &gGuiRes);
 }
 
@@ -5590,7 +5599,8 @@ void shell_free_gui_res(void)
 }
 
 /* Item callback of Desert. */
-void shell_cb_desert(s32 chosen) {
+void shell_cb_desert(s32 chosen)
+{
     if (chosen != 0) {
         gCurTrack = &gTracks[TRACK_DESERT];
         gGame.mode = GAME_MODE_DESERT;
@@ -5602,7 +5612,8 @@ void shell_cb_desert(s32 chosen) {
 }
 
 /* Item callback of the track lists: the track under the cursor. */
-void shell_cb_select_track(s32 chosen) {
+void shell_cb_select_track(s32 chosen)
+{
     if (chosen != 0) {
         gCurTrack = gTracks_2 + gGame.trackSel * 0xA0;
         gGame.flags |= GAME_FLAG_TRACK_CHOSEN;
@@ -5661,7 +5672,8 @@ void shell_cb_exhibition(s32 chosen)
 }
 
 /* Item callback of Excite 3D: one player, the rider's colours chosen, difficulty 2. */
-void shell_cb_excite3d(s32 chosen) {
+void shell_cb_excite3d(s32 chosen)
+{
     s32 i;
 
     if (chosen != 0) {
@@ -5715,7 +5727,8 @@ void shell_cb_custom_tracks(s32 chosen)
 }
 
 /* A desert callback with mode 4 and one player on controller 1. Not in a menu. */
-void shell_cb_desert_unused(s32 chosen) {
+void shell_cb_desert_unused(s32 chosen)
+{
     s32 i;
     Game *game;
     Game *game2;

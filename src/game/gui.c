@@ -127,7 +127,8 @@ Gfx *gui_draw_prompt(Gfx *gdl, s32 unused, s32 fb, char *question, char *choice1
 
 /* A menu's input from gPadInput: up and down move to the next enabled item, left and right pick from the item's
    values. Returns 1 when A chose the item under the cursor (menu->choice). */
-s32 gui_menu_input(GuiMenu *menu) {
+s32 gui_menu_input(GuiMenu *menu)
+{
     GuiMenuItem *item;
     s32 i;
     s16 cursor;

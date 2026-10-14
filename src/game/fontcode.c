@@ -666,7 +666,8 @@ void font_set_scale(s32 scaleX, s32 scaleY, s32 unk, s32 fromCorner)
 }
 
 /* Frees the fonts. */
-u32 font_unload(void) {
+u32 font_unload(void)
+{
     u32 i;
     if (sFontPageMaps != NULL) {
         mem_free(sFontPageMaps);
@@ -795,7 +796,8 @@ void font_str_upper(u8 *str)
 }
 
 /* Upper-cases a name, but for "Mc" ("MCGRATH": "McGRATH") and "De" before "CL". */
-void font_name_upper(u8 *str) {
+void font_name_upper(u8 *str)
+{
     u8 *p = str;
     u8 c;
 
@@ -845,7 +847,8 @@ void func_800C21F0(u8 *str)
 }
 
 /* Empties the glyph queue. */
-s32 font_reset_queue(void) {
+s32 font_reset_queue(void)
+{
     u32 i = 0;
     FontSprite **lists = sFontSprLists;
     FontSprite **listsBack = sFontSprListsBack;
