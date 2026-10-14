@@ -1152,7 +1152,7 @@ void race_grid_from_standings(void)
             do {
                 j = 0;
                 if (t->numRiders > 0) {
-                    arr = gSeason;
+                    arr = (u8 *)gSeason;
                     hb = (u8 *)0x800F0000;
                     __asm__ __volatile__("" : "+r"(hb));
                     n = *(s16 *)(hb + 0x5CA); /* gEvent.numRiders */

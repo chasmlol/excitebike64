@@ -858,7 +858,7 @@ void path_init(u32 *param_1)
         goto end;
     }
     if (*(s32 *)(gCurTrack + 0x2c) != 2) {
-        if (gGame.mode == 9 && (gTutorialLessons[*(s16 *)(gSeason + 0x64) * 40 + 0xC] & 2)) {
+        if (gGame.mode == 9 && (gTutorialLessons[gSeason->round * 40 + 0xC] & 2)) {
             iVar1 = D_800D10F0;
             goto L134;
         }

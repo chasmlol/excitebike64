@@ -7,18 +7,11 @@
     _g->words.w1 = (b); \
 }
 
-typedef struct {
-    u8 *f0;
-    u8 p04[0x60];
-    s16 f64;
-} Prof;
-
 typedef struct { s32 a, b; s16 f8; u8 pad[0x7E0-0xA]; } BikeX;
 
-extern Prof *gSeason_5;
 extern BikeX D_800E3E20[];
 
-#define CUR (gTutorialLessons_8[*(s16 *)(gSeason + 0x64)])
+#define CUR (gTutorialLessons_8[gSeason->round])
 
 typedef struct {
     u8 p0[0xC];
@@ -84,7 +77,7 @@ void tutorial_check_lesson_skip(void)
 {
     if (gRacePhase == 5) {
         if (((gPadInput & 0x200) != 0) && ((gPadInputPrev & 0x200) == 0)) {
-            if (*(s16 *)(gSeason + 0x64) < 1) {
+            if (gSeason->round < 1) {
                 return;
             }
             gEvent.tutorialAction = 3;
@@ -109,7 +102,7 @@ void tutorial_check_lesson_skip(void)
     }
 }
 
-#define TB (gTutorialLessons_9[gSeason_5->f64])
+#define TB (gTutorialLessons_9[gSeason->round])
 #define SEG(i) ((Seg_13 *)((s32)((i) * 0x6C) + (s32)gPathNodes))
 
 typedef struct {
@@ -309,7 +302,7 @@ void tutorial_update(void)
                         if (D_800F0738 == 10) {
                             D_800F0738 = 11;
                         } else if (D_800F0738 == 11) {
-                            gSeason_5->f0[1] = TB.fD + 1;
+                            gSeason->cup->progress[0] = TB.fD + 1;
                             D_800F1BC1 = D_800CAAA1;
                             event_request_exit();
                             gRaceExitCode = 2;
@@ -339,10 +332,10 @@ void tutorial_update(void)
         }
         if ((u32)(gRiders_54[0].f628 - TB.f1A) < 10 || (gEvent.flags & 0x2000)) {
             if (gRiders_54[0].f690 & 0x10) {
-                if (gSeason_5->f64 < 16 && TB.fD != gTutorialLessons_9[gSeason_5->f64 + 1].fD &&
+                if (gSeason->round < 16 && TB.fD != gTutorialLessons_9[gSeason->round + 1].fD &&
                     tutorial_lesson_passed_2()) {
-                    if (TB.fD == gSeason_5->f0[1]) {
-                        gSeason_5->f0[1] = TB.fD + 1;
+                    if (TB.fD == gSeason->cup->progress[0]) {
+                        gSeason->cup->progress[0] = TB.fD + 1;
                         D_800F1BC1 = D_800CAAA1;
                     }
                 }
@@ -380,12 +373,6 @@ typedef struct {
 } Track_12;
 
 typedef struct {
-    Ent24 *p;
-    u8 pad4[0x62];
-    u8 b66[1];
-} Race_3;
-
-typedef struct {
     u8 pad[0x660];
     u8 pad660[8];
     s16 f668;
@@ -397,7 +384,6 @@ typedef struct {
 typedef struct { s32 n; s32 f4; s32 *p; } Alloc;
 
 extern Track_12 *gCurTrack_28;
-extern Race_3 *gSeason_9;
 extern Track_12 gTracks_10[];
 extern Alloc D_800CA924_2;
 extern Bike_30 gRiders_55[];
@@ -412,7 +398,7 @@ void event_init(s32 a0, s32 a1)
     mem_fill_2(gEvent.lapLeaderTimes, -1, 12);
     if (gGame.mode == 1) {
         for (i = 0; i < gEvent.numRiders; i++) {
-            gSeason_9->b66[i] = 0;
+            gSeason->racePoints[i] = 0;
         }
     }
     gRaceExitCode = 6;
@@ -427,7 +413,7 @@ void event_init(s32 a0, s32 a1)
     gEvent.numRiders = a0;
     gEvent.numLaps = a1;
     if (gGame.mode == 1 && !(gGame.flags & 0x81) &&
-        gSeason_9->p - D_800CA9C8 == 4) {
+        gSeason->cup - gCups == 4) {
         gEvent.flags = 0x200;
         gEvent.numRiders = 2;
         gNumRiders = 2;
@@ -509,7 +495,7 @@ s32 event_check_record_time(s32 *p)
 
     if (((u8 *)p)[0x6E8] != 0) goto done;
     if (gReplayPlayback != 0) goto done;
-    if (gGame.mode == 1 && gSeason_4 != 0 && ((*gSeason_4 - (s32)D_800CA9C8) * 0x38E38E39 >> 2) == 5) goto done;
+    if (gGame.mode == 1 && gSeason != 0 && (((s32)gSeason->cup - (s32)gCups) * 0x38E38E39 >> 2) == 5) goto done;
     ch = gCurTrack_3;
     if (ch[0x14] & 2) goto done;
     if (gEvent.time >= gEvent.record.times[2]) goto done;
@@ -579,13 +565,12 @@ u32 event_rider_finished(s32 p0)
     if ((gGame.flags & 0x8000) == 0) {
         a2 = gGame.mode;
         if (a2 == 1) {
-            { s32 ix = (p * 7 + *(s16 *)(gSeason + 0x64)) * 2; *(u16 *)(gSeason + ix + 0x10) = *(u16 *)(s0 + 8); }
+            gSeason->places[p][gSeason->round] = *(u16 *)(s0 + 8);
             ti = *(s16 *)(s0 + 8);
             ti = (s16)ti;
-            tb = (u8 *)(gRacePoints + ti * 4);
+            tb = (u8 *)&gRacePoints[ti];
             {
-                u8 *pp = gSeason + p;
-                pp[0x66] = tb[3];
+                gSeason->racePoints[p] = tb[3];
             }
             if (s2[0x6E8] != 0) {
                 goto L1fc;
@@ -594,8 +579,8 @@ u32 event_rider_finished(s32 p0)
             if (a1 != a2) {
                 goto L19c;
             }
-            q = *(u8 **)gSeason + (gGame.difficulty - 1);
-            q[4] = q[4] | (a1 << *(s16 *)(gSeason + 0x64));
+            q = (u8 *)gSeason->cup + (gGame.difficulty - 1);
+            q[4] = q[4] | (a1 << gSeason->round);
         }
     }
 L19c:
@@ -879,7 +864,7 @@ void event_update_stunt(void)
         e = &gRiders_59[i];
         if (e->finished) continue;
         if (gReplayPlayback) continue;
-        if (gGame.mode == 1 && gSeason_10 != NULL && *gSeason_10 - D_800CA9C8 == 5) continue;
+        if (gGame.mode == 1 && gSeason != NULL && gSeason->cup - gCups == 5) continue;
         if (e->key > gEvent.record.times[2]) {
             for (j = 0; j < 3; j++) {
                 if (e->key >= gEvent.record.times[j]) {
@@ -1074,19 +1059,8 @@ typedef struct {
     u8 pad6E9[0x7E0 - 0x6E9];
 } Player_13;
 
-typedef struct {
-    u8 pad0[4];
-    s16 f4[6];
-    s16 f10[42];
-    s16 f64;
-    u8 f66[5];
-    u8 f6B;
-    u8 f6C[8];
-} Race_4;
-
 extern Player_13 gRiders_61[];
 extern Player_13 *gRiderStandings_3[];
-extern Race_4 *gSeason_11;
 
 void event_update_race(void) {
     s32 i, j, k, m;
@@ -1181,7 +1155,7 @@ void event_update_race(void) {
                     }
                 }
                 if (gGame.mode == 1) {
-                    gSeason_11->f66[k] += gRacePoints_2[gRiders_61[k].sub.f8].b3;
+                    gSeason->racePoints[k] += (u8)gRacePoints[gRiders_61[k].sub.f8];
                 }
             }
             gEvent.finishOrder[gRiders_61[k].sub.f8] = k;
@@ -1189,22 +1163,22 @@ void event_update_race(void) {
         gEvent.numFinished = gEvent.numRiders;
         if (gGame.mode == 1) {
             for (i = 0; i < gEvent.numRiders; i++) {
-                gSeason_11->f4[i] += gSeason_11->f66[i];
-                gSeason_11->f6C[i] = i;
+                gSeason->points[i] += gSeason->racePoints[i];
+                gSeason->standings[i] = i;
             }
             for (i = 0; i < gEvent.numRiders; i++) {
                 j = i;
                 if (i != 0) {
-                    s = gSeason_11->f4[gSeason_11->f6C[i - 1]];
+                    s = gSeason->points[gSeason->standings[i - 1]];
                 }
-                t = gSeason_11->f4[gSeason_11->f6C[i]];
+                t = gSeason->points[gSeason->standings[i]];
                 while (j != 0 && s < t) {
-                    tmp = gSeason_11->f6C[j];
-                    gSeason_11->f6C[j] = gSeason_11->f6C[j - 1];
-                    gSeason_11->f6C[j - 1] = tmp;
+                    tmp = gSeason->standings[j];
+                    gSeason->standings[j] = gSeason->standings[j - 1];
+                    gSeason->standings[j - 1] = tmp;
                     j--;
                     if (j != 0) {
-                        s = gSeason_11->f4[gSeason_11->f6C[j - 1]];
+                        s = gSeason->points[gSeason->standings[j - 1]];
                     }
                 }
             }
@@ -1220,8 +1194,8 @@ end:
                 q->f8 = gEvent.numFinished++;
                 q->f2C = (gEvent.time * gRiderStandings_3[0]->f630) / gRiders_61[i].f630;
                 if (gGame.mode == 1 + (((u32)&gRiders_61 & 1) >> 1)) {
-                    gSeason_11->f10[(gRiderStandings_3[i] - gRiders_61) * 7 + gSeason_11->f64] = q->f8;
-                    gSeason_11->f66[gRiderStandings_3[i] - gRiders_61] = ((Pts *)((u32)gRacePoints_2 | (((u32)gRacePoints_2 & 1) >> 1)))[q->f8].b3;
+                    gSeason->places[gRiderStandings_3[i] - gRiders_61][gSeason->round] = q->f8;
+                    gSeason->racePoints[gRiderStandings_3[i] - gRiders_61] = ((Pts *)((u32)gRacePoints | (((u32)gRacePoints & 1) >> 1)))[q->f8].b3;
                 }
             }
         }
@@ -2628,7 +2602,7 @@ Gfx *event_draw_glyph_string(Gfx *gdl, s32 arg1, u8 *str, s32 x, s32 y) {
     return gdl;
 }
 
-#define CUR_FLAGS (gTutorialLessons_10[gSeason_5->f64].flags)
+#define CUR_FLAGS (gTutorialLessons_10[gSeason->round].flags)
 
 typedef struct {
     s32 val;
@@ -2680,7 +2654,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     s32 cx;
     u8 *g;
 
-    trk = &gTutorialLessons_10[gSeason_5->f64];
+    trk = &gTutorialLessons_10[gSeason->round];
     font_reset_queue();
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
@@ -2844,13 +2818,13 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        if (gSeason_5->f64 > 0) {
+        if (gSeason->round > 0) {
             gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
         } else {
             gDPLoadTLUT_pal256(gdl++, sGreyPalette);
         }
         gdl = render_draw_image(0x21, 0x1B, D_800F0740 + 0x20, gdl, arg2, 1, 1, 3, 0);
-        if (gSeason_5->f64 < 16 && gTutorialLessons_10[gSeason_5->f64 + 1].num <= gSeason_5->f0[1]) {
+        if (gSeason->round < 16 && gTutorialLessons_10[gSeason->round + 1].num <= gSeason->cup->progress[0]) {
             gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
         } else {
             gDPLoadTLUT_pal256(gdl++, sGreyPalette);
@@ -2881,15 +2855,9 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     return font_render(gdl);
 }
 
-typedef struct {
-    u8 *hdr;
-    u8 pad[0x60];
-    s16 idx;
-} Ctl_15;
-
 s32 tutorial_next_lesson_unlocked(void) {
-    Ctl_15 *c = gSeason;
-    s32 a1 = c->idx;
+    Season *c = gSeason;
+    s32 a1 = c->round;
     s32 n = a1 + 1;
     u8 v1, v0;
 
@@ -2901,17 +2869,12 @@ s32 tutorial_next_lesson_unlocked(void) {
     if (v1 == v0) {
         return 1;
     }
-    return v1 < c->hdr[1];
+    return v1 < c->cup->progress[0];
 }
 
 #define ROWS (gGame.numPlayers >= 2 ? 6 : 9)
 #define COLS (gGame.numPlayers >= 3 ? 8 : 12)
 #define RECT (gViewRects[gNumViews - 1][gEvent.finishOrder[0]])
-
-typedef struct Plr_7 {
-    u8 pad0[0x64];
-    s16 h64;
-} Plr_7;
 
 typedef struct Trk_10 {
     u8 pad0[0x1C];
@@ -2919,7 +2882,6 @@ typedef struct Trk_10 {
     u8 pad20[0x28 - 0x20];
 } Trk_10;
 
-extern Plr_7 *gSeason_12;
 extern Trk_10 gTutorialLessons_11[];
 
 Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
@@ -3054,13 +3016,13 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             s32 k;
             k = gViewRects[0][0].y + gViewRects[0][0].h / 2 - sp * 2;
             for (n = 0; n < 5; n++) {
-                if (n == 1 && gTutorialLessons_11[gSeason_12->h64].f1C == 0) {
+                if (n == 1 && gTutorialLessons_11[gSeason->round].f1C == 0) {
                     continue;
                 }
                 if (n == 3 && tutorial_next_lesson_unlocked() == 0) {
                     continue;
                 }
-                if (n == 4 && gSeason_12->h64 == 0) {
+                if (n == 4 && gSeason->round == 0) {
                     continue;
                 }
                 font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 1);
@@ -3181,7 +3143,7 @@ Gfx *event_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
 
 s32 tutorial_has_prev_lesson(void)
 {
-    return *(s16 *)(gSeason + 0x64) != 0;
+    return gSeason->round != 0;
 }
 
 typedef struct {
@@ -3239,7 +3201,7 @@ s32 track_res_load_map(s32 *p) {
 
 u32 tutorial_lesson_passed(void) {
     u8 *e = gTutorialLessons;
-    s16 idx = *(s16 *)(gSeason + 0x64);
+    s16 idx = gSeason->round;
     e = e + idx * 40;
     if (e[0xC] & 4) {
         return ((gEvent.flags >> 12) ^ 1) & 1;
@@ -3361,19 +3323,13 @@ typedef struct {
     u8 pad2[0x7E0 - 0x66A];
 } Rider_4;
 
-typedef struct {
-    u8 pad[0x66];
-    u8 a[1];
-} Thing;
-
 extern Rider_4 gRiders_71[];
-extern Thing *gSeason_13;
 
 void event_clear_season_race_points(void) {
     s32 i;
     for (i = 0; i < gEvent.numRiders; i++) {
         if (gRiders_71[i].x668 != -1) {
-            gSeason_13->a[i] = 0;
+            gSeason->racePoints[i] = 0;
         }
     }
 }
@@ -3443,7 +3399,7 @@ Gfx *func_8005B404(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5)
 
 s32 tutorial_lesson_has_demo(void)
 {
-    s32 idx = *(s16 *)(gSeason + 0x64);
+    s32 idx = gSeason->round;
     return gTutorialLessons_12[idx * 10 + 7] != 0;
 }
 

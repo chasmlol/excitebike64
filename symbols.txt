@@ -1836,44 +1836,11 @@ D_800CA924_3                          game  0x800CA924  data        -  D_800CA92
 D_800CA924_4                          game  0x800CA924  data        -  D_800CA924
 D_800CA924_5                          game  0x800CA924  data        -  D_800CA924
 gSeason                               game  0x800CA930  data      0x4
-gSeason_10                            game  0x800CA930  data        -  gSeason
-gSeason_11                            game  0x800CA930  data        -  gSeason
-gSeason_12                            game  0x800CA930  data        -  gSeason
-gSeason_13                            game  0x800CA930  data        -  gSeason
-gSeason_14                            game  0x800CA930  data        -  gSeason
-gSeason_15                            game  0x800CA930  data        -  gSeason
-gSeason_16                            game  0x800CA930  data        -  gSeason
-gSeason_17                            game  0x800CA930  data        -  gSeason
-gSeason_18                            game  0x800CA930  data        -  gSeason
-gSeason_19                            game  0x800CA930  data        -  gSeason
-gSeason_2                             game  0x800CA930  data        -  gSeason
-gSeason_20                            game  0x800CA930  data        -  gSeason
-gSeason_21                            game  0x800CA930  data        -  gSeason
-gSeason_22                            game  0x800CA930  data        -  gSeason
-gSeason_23                            game  0x800CA930  data        -  gSeason
-gSeason_24                            game  0x800CA930  data        -  gSeason
-gSeason_25                            game  0x800CA930  data        -  gSeason
-gSeason_3                             game  0x800CA930  data        -  gSeason
-gSeason_4                             game  0x800CA930  data        -  gSeason
-gSeason_5                             game  0x800CA930  data        -  gSeason
-gSeason_6                             game  0x800CA930  data        -  gSeason
-gSeason_7                             game  0x800CA930  data        -  gSeason
-gSeason_8                             game  0x800CA930  data        -  gSeason
-gSeason_9                             game  0x800CA930  data        -  gSeason
 gHudLevel                             game  0x800CA934  data      0x4
 gRacePoints                           game  0x800CA938  data     0x20
-gRacePoints_2                         game  0x800CA938  data        -  gRacePoints
-gRacePoints_3                         game  0x800CA938  data        -  gRacePoints
 sTrackPicIndex                        game  0x800CA958  data     0x6c
 gUnlockedTracks                       game  0x800CA9C4  data      0x4
-D_800CA9C8                            game  0x800CA9C8  data     0xb4
-D_800CA9C8_2                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_3                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_4                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_5                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_6                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_7                          game  0x800CA9C8  data        -  D_800CA9C8
-D_800CA9C8_8                          game  0x800CA9C8  data        -  D_800CA9C8
+gCups                                 game  0x800CA9C8  data     0xb4
 gCustomRound                          game  0x800CAA7C  data     0x24
 sTutorialRound                        game  0x800CAAA0  data      0x1
 D_800CAAA1                            game  0x800CAAA1  data     0x23

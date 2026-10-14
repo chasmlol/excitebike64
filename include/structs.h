@@ -214,8 +214,6 @@ typedef struct {
     u8 pad[0x1C];
 } Ent1C;
 
-typedef struct { u8 pad[0x64]; s16 f64; } Obj64;
-
 typedef struct {
     u8 pad0[0x2C4];
     u8 f2C4;
@@ -872,7 +870,6 @@ typedef struct Bike_26 {
     u8 pad7DD[0x7E0 - 0x7DD];
 } Bike_26;
 
-typedef struct { u8 pad[0x24]; } Ent24;
 typedef struct { u8 b0, b1, b2, b3; } Pts;
 typedef struct { u8 w; u8 h; u8 pad[2]; void *img; } Img_2;
 

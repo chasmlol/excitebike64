@@ -24,10 +24,6 @@ typedef struct Ctx {
 
 typedef struct { u16 button; s8 x, y; } Pad;
 
-typedef struct { u8 pad[8]; s16 arr[1]; } Trk_5;
-typedef struct { Trk_5 *trk; u8 pad4[0x60]; s16 f64; } Race;
-
-extern Race *gSeason_6;
 extern Pad gContPads_2[4];
 extern Pad gPadInputPrev_4[4];
 extern Ctx gGfxContexts[2];
@@ -232,8 +228,8 @@ void game_main(void)
                     } else if (D_800CA924[0] > 0 && D_800CA924[1] < D_800CA924[0]) {
                         i = 1;
                     } else {
-                        if (gGame.mode == 1 && gSeason_6 != NULL && !(gGame.flags & 0x8000)) {
-                            gCurTrack = &gTracks[gSeason_6->trk->arr[gSeason_6->f64]];
+                        if (gGame.mode == 1 && gSeason != NULL && !(gGame.flags & 0x8000)) {
+                            gCurTrack = &gTracks[gSeason->cup->tracks[gSeason->round]];
                         }
                         if (i == 1) {
                             if (gGame.flags & 0x40000) {

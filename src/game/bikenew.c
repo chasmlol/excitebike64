@@ -336,7 +336,7 @@ void bikes_init(void) {
                            || (gGame.mode == 0 && (gCurTrack_17->f50 & 2))) {
                     idx = 1;
                 } else if (gGame.mode == 9) {
-                    idx = gTutorialLessons_7[gSeason_2->f64].f18;
+                    idx = gTutorialLessons_7[gSeason->round].f18;
                 } else {
                     idx = gPathStartNode;
                 }
@@ -363,7 +363,7 @@ void bikes_init(void) {
                     p->f6B2 = idx;
                 }
                 k = idx;
-                if (gGame.mode == 9 && gSeason_2->f64 == 5) {
+                if (gGame.mode == 9 && gSeason->round == 5) {
                     k = idx + 1;
                 }
                 math_to_polar(gPathNodes_3[k].f18 * 1024.0f, gPathNodes_3[k].f14 * 1024.0f, (s16 *)&ang, &ratio);

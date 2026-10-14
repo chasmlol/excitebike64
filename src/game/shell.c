@@ -111,18 +111,11 @@ typedef struct {
     u8 pad10[0x2C - 0x10];
 } Menu;
 
-typedef struct {
-    Ent24 *p0;
-    u8 pad4[0x60];
-    s16 h64;
-} Sel_3;
-
 typedef struct { u8 pad0[0x174]; s32 w174; } Ctl_18;
 
 extern Course_2 gTracks_14[];
 extern Ctl_18 *gEditor_3;
 extern Menu sScreens[];
-extern Sel_3 *gSeason_15;
 
 void shell_init(void)
 {
@@ -266,8 +259,8 @@ void shell_init(void)
             }
             if (gRaceExitCode == 3 && gGame.mode == 1) {
                 shell_restore_race_results();
-                if (gSeason_15->h64 > 0) {
-                    gSeason_15->h64--;
+                if (gSeason->round > 0) {
+                    gSeason->round--;
                 }
             }
             if (gGame.flags & 0x8000) {
@@ -284,7 +277,7 @@ void shell_init(void)
             shell_goto_screen_3(&sScreens[10], 1, 1);
         } else {
             if (gEvent.allFinished != 0 && mode != 0 && mode != 6 && gGame.mode == 1) {
-                if (gSeason_15 != NULL && gSeason_15->p0 - D_800CA9C8 == 4) {
+                if (gSeason != NULL && gSeason->cup - gCups == 4) {
                     m = &sScreens[2];
                 } else {
                     m = &sScreens[0];
@@ -365,19 +358,11 @@ void shell_cb_soccer(s32 param_1)
 }
 
 typedef struct {
-    Ent24 *cup;
-    u8 unk4[0x64 - 0x4];
-    s16 track;
-    u8 unk66[0x74 - 0x66];
-} Season;
-
-typedef struct {
     u8 unk0[0x2C1];
     u8 trackId;
 } Unk1900;
 
 extern Season sSeasonState;
-extern Season *gSeason_16;
 extern Unk1900 gSaveData_8;
 
 void shell_cb_season(s32 arg0) {
@@ -385,10 +370,10 @@ void shell_cb_season(s32 arg0) {
 
     if (arg0 != 0) {
         gGame.mode = 1;
-        gSeason_16 = &sSeasonState;
+        gSeason = &sSeasonState;
         gGame.flags |= 0x80;
         mem_fill(&sSeasonState, 0, sizeof(Season));
-        gSeason_16->cup = &D_800CA9C8[gGame.cupSel];
+        gSeason->cup = &gCups[gGame.cupSel];
         if (gGame.difficulty == 0) {
             gCurTrack = sTrackTutorial;
             gGame.mode = 9;
@@ -396,11 +381,11 @@ void shell_cb_season(s32 arg0) {
             *(volatile s32 *)&gEvent.tutorialBuf = 0;
             gGame.riders[0] = 4;
             gGame.flags &= ~0x80;
-            gSeason_16->cup = &D_800CA9C8[6];
-            gSeason_16->track = 0;
+            gSeason->cup = &gCups[6];
+            gSeason->round = 0;
             for (i = 0; i < 17; i++) {
                 if (gTutorialLessons_2[i].id == gSaveData_8.trackId) {
-                    gSeason_16->track = i;
+                    gSeason->round = i;
                     return;
                 }
             }
@@ -887,7 +872,7 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
                         gGame.resultsTimes[i] = gRiders_3[i].f68C;
                         gGame.resultsCelebration[i] = gRiders_3[i].f669;
                         if (gSeason != 0) {
-                            gGame.resultsSeasonOrder[i] = (gSeason + i)[0x6C];
+                            gGame.resultsSeasonOrder[i] = gSeason->standings[i];
                         }
                     }
                     shell_goto_screen_2(0, 0, 1);
@@ -944,26 +929,11 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
     }
 }
 
-typedef struct {
-    u8 n;
-    u8 pad[0x23];
-} Trk_12;
-
-typedef struct {
-    Trk_12 *trk;
-    u8 pad4[0x64 - 4];
-    s16 f64;
-    u8 pad66[0x6C - 0x66];
-    u8 f6C[6];
-} Race_7;
-
-extern Race_7 *gSeason_17;
-extern Trk_12 D_800CA9C8_4[];
 
 void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
 {
     u32 b;
-    Trk_12 *t;
+    Cup *t;
     s32 i;
     s32 d;
 
@@ -993,17 +963,17 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
             switch (gGame.menuSel) {
             case 0:
                 gGame.flags |= 0x80;
-                t = gSeason_17->trk;
-                if (gSeason_17->f64 + 1 >= t->n) {
-                    if (gSeason_17->f6C[0] == 0 && (t - D_800CA9C8_4 != 4 || gEvent.finishOrder[0] == 0)) {
+                t = gSeason->cup;
+                if (gSeason->round + 1 >= t->numRounds) {
+                    if (gSeason->standings[0] == 0 && (t - gCups != 4 || gEvent.finishOrder[0] == 0)) {
                         gGame.flags = (gGame.flags & ~0x80) | 0x40000;
                         shell_goto_screen_2(0, 0, 1);
                         gActiveReplay = 0;
                         return;
                     }
-                } else if (t - D_800CA9C8_4 != 4 || gEvent.finishOrder[0] == 0) {
+                } else if (t - gCups != 4 || gEvent.finishOrder[0] == 0) {
                     shell_goto_screen_2(0, 0, 1);
-                    gSeason_17->f64++;
+                    gSeason->round++;
                     race_jitter_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
                     race_grid_from_standings();
                     gActiveReplay = 0;
@@ -1018,8 +988,8 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
                     gGame.resultsOrder[i] = gEvent.finishOrder[i];
                     gGame.resultsTimes[i] = gRiders_3[i].f68C;
                     gGame.resultsCelebration[i] = gRiders_3[i].f669;
-                    if (gSeason_17 != 0) {
-                        gGame.resultsSeasonOrder[i] = gSeason_17->f6C[i];
+                    if (gSeason != 0) {
+                        gGame.resultsSeasonOrder[i] = gSeason->standings[i];
                     }
                 }
                 shell_goto_screen_2(0, 0, 1);
@@ -1464,15 +1434,8 @@ void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
 
 #define OK (gSaveData_9.f2C0 > gGame.difficulty \
     || (gSaveData_9.f2C0 == gGame.difficulty && (*a0->f20 == 0 || ((gSaveData_9.f2BF >> (*a0->f20 - 1)) & 1))) \
-    || (gGame.mode == 1 && gSeason_18 != NULL && *gSeason_18 - D_800CA9C8_5 == 5 \
+    || (gGame.mode == 1 && gSeason != NULL && gSeason->cup - gCups == 5 \
         && gSaveData_9.f2C0 == gGame.difficulty && (gSaveData_9.f2BF & 8)))
-
-typedef struct {
-    u8 n, f1, f2, f3;
-    u8 pad4[4];
-    u16 f8[7];
-    s16 f16[7];
-} Track_16;
 
 typedef struct {
     u8 pad0[0x2A8];
@@ -1486,8 +1449,6 @@ struct Arg0 { u8 pad[0x20]; s32 *f20; u8 pad24[4]; s32 f28; };
 struct Arg1 { u8 pad[4]; s32 f4; u16 f8; };
 
 extern Save_3 gSaveData_9;
-extern Track_16 D_800CA9C8_5[];
-extern Track_16 **gSeason_18;
 
 void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
     s32 k, j, i;
@@ -1497,7 +1458,7 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
     switch (gGame.seasonMenuState) {
     case 0:
         if (++gGame.cupPreviewTimer == 60) {
-            if (++gGame.cupPreviewTrack >= D_800CA9C8_5[*a0->f20].n) gGame.cupPreviewTrack = 0;
+            if (++gGame.cupPreviewTrack >= gCups[*a0->f20].numRounds) gGame.cupPreviewTrack = 0;
             gGame.cupPreviewTimer = 0;
         }
         if (*a0->f20 == 5 && gCustomRound != 0) {
@@ -1557,15 +1518,15 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
         break;
     case 1:
         if ((*pad & 1) && gGame.roundSel != 0) gGame.roundSel--;
-        if (gGame.roundSel < D_800CA9C8_5[*a0->f20].n) {
+        if (gGame.roundSel < gCups[*a0->f20].numRounds) {
             if (*pad & 4) {
-                if (D_800CA9C8_5[*a0->f20].f16[gGame.roundSel] >= 2) D_800CA9C8_5[*a0->f20].f16[gGame.roundSel]--;
+                if (gCups[*a0->f20].laps[gGame.roundSel] >= 2) gCups[*a0->f20].laps[gGame.roundSel]--;
             }
             if (*pad & 8) {
-                if (D_800CA9C8_5[*a0->f20].f16[gGame.roundSel] < 6) D_800CA9C8_5[*a0->f20].f16[gGame.roundSel]++;
+                if (gCups[*a0->f20].laps[gGame.roundSel] < 6) gCups[*a0->f20].laps[gGame.roundSel]++;
             }
         }
-        if ((*pad & 2) && gGame.roundSel < D_800CA9C8_5[*a0->f20].n) {
+        if ((*pad & 2) && gGame.roundSel < gCups[*a0->f20].numRounds) {
             s32 v = gGame.roundSel + 1;
             if (v < 5) gGame.roundSel = v;
         }
@@ -1573,35 +1534,35 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
         if (k & 0x50) {
             u16 w;
             gGame.seasonMenuState = 2;
-            if (gGame.roundSel == D_800CA9C8_5[*a0->f20].n) {
+            if (gGame.roundSel == gCups[*a0->f20].numRounds) {
                 gGame.customTrackSel = 0;
-                D_800CA9C8_5[*a0->f20].f1++;
-                D_800CA9C8_5[*a0->f20].f2++;
-                D_800CA9C8_5[*a0->f20].f3++;
-                D_800CA9C8_5[*a0->f20].n++;
+                gCups[*a0->f20].progress[0]++;
+                gCups[*a0->f20].progress[1]++;
+                gCups[*a0->f20].progress[2]++;
+                gCups[*a0->f20].numRounds++;
                 gGame.customTrackPrev = -1;
             } else {
-                w = D_800CA9C8_5[*a0->f20].f8[gGame.roundSel];
+                w = gCups[*a0->f20].tracks[gGame.roundSel];
                 gGame.customTrackSel = w;
                 gGame.customTrackPrev = w;
             }
-            D_800CA9C8_5[*a0->f20].f8[gGame.roundSel] = gGame.customTrackSel;
+            gCups[*a0->f20].tracks[gGame.roundSel] = gGame.customTrackSel;
         } else if (k & 0x20) {
             gGame.seasonMenuState = 0;
             gGame.roundSel = 0;
             for (i = 0; i < 5; i++) {
-                if (i < D_800CA9C8_5[5].n) gSaveData_9.f2A8[i] = D_800CA9C8_5[5].f8[i] & 0x1F;
+                if (i < gCups[5].numRounds) gSaveData_9.f2A8[i] = gCups[5].tracks[i] & 0x1F;
                 else gSaveData_9.f2A8[i] = 0x3F;
-                gSaveData_9.f2A8[i] |= (D_800CA9C8_5[5].f16[i] & 7) << 5;
+                gSaveData_9.f2A8[i] |= (gCups[5].laps[i] & 7) << 5;
             }
             save_write(1, 0);
         } else {
-            if (gGame.roundSel != D_800CA9C8_5[*a0->f20].n && (k & 0x20000)) {
-                for (j = gGame.roundSel; j < D_800CA9C8_5[*a0->f20].n - 1; j++) {
-                    D_800CA9C8_5[*a0->f20].f8[j] = D_800CA9C8_5[*a0->f20].f8[j + 1];
+            if (gGame.roundSel != gCups[*a0->f20].numRounds && (k & 0x20000)) {
+                for (j = gGame.roundSel; j < gCups[*a0->f20].numRounds - 1; j++) {
+                    gCups[*a0->f20].tracks[j] = gCups[*a0->f20].tracks[j + 1];
                 }
-                { u8 m = --D_800CA9C8_5[*a0->f20].n;
-                D_800CA9C8_5[*a0->f20].f8[m] = 0; }
+                { u8 m = --gCups[*a0->f20].numRounds;
+                gCups[*a0->f20].tracks[m] = 0; }
             }
         }
         break;
@@ -1630,13 +1591,13 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
             gGame.seasonMenuState = 1;
         } else if (k & 0x20) {
             gGame.seasonMenuState = 1;
-            if (gGame.customTrackPrev == -1) D_800CA9C8_5[*a0->f20].n--;
+            if (gGame.customTrackPrev == -1) gCups[*a0->f20].numRounds--;
             else gGame.customTrackSel = gGame.customTrackPrev;
         }
-        D_800CA9C8_5[*a0->f20].f8[gGame.roundSel] = gGame.customTrackSel;
+        gCups[*a0->f20].tracks[gGame.roundSel] = gGame.customTrackSel;
         break;
     }
-    *gSeason_18 = &D_800CA9C8_5[*a0->f20];
+    gSeason->cup = &gCups[*a0->f20];
 }
 
 typedef struct {
@@ -2037,14 +1998,12 @@ typedef struct Item_10 {
 } Item_10;
 
 typedef struct { u8 pad0[8]; s16 h8[1]; } Trk_13;
-typedef struct { Trk_13 *p0; u8 pad4[0x64 - 4]; s16 h64; } TrkSel;
 typedef struct { u8 pad[0x38]; u16 h38; } S370;
 
 extern Item_10 sScreens_3[];
 extern Item_10 *sPrevScreen_2;
 extern Item_10 *sCurScreen_2;
 extern S370 gSpecialTracksItems_2;
-extern TrkSel *gSeason_19;
 
 void shell_update(Pad16 *pad) {
     u32 buf[4];
@@ -2332,7 +2291,7 @@ void shell_update(Pad16 *pad) {
                 if (gGame.mode == 9) {
                     gCurTrack = &gTracks[26];
                 } else if (gGame.mode == 1) {
-                    gCurTrack = &gTracks[gSeason_19->p0->h8[gSeason_19->h64]];
+                    gCurTrack = &gTracks[gSeason->cup->tracks[gSeason->round]];
                 }
                 if (!(gGame.flags & 0x8000)) {
                     if (!(gGame.flags & 0x20)) {
@@ -2371,27 +2330,11 @@ void shell_update(Pad16 *pad) {
 }
 
 typedef struct {
-    u8 n;
-    u8 pad[0x15];
-    s16 f16[7];
-} Trk_14;
-
-typedef struct {
-    Trk_14 *trk;
-    u8 pad4[0x64 - 4];
-    s16 f64;
-    u8 pad66[0x6C - 0x66];
-    u8 f6C[6];
-} Race_8;
-
-typedef struct {
     u8 pad[0x1E];
     s16 f1E;
 } Lvl_2;
 
 extern Lvl_2 *gCurTrack_39;
-extern Race_8 *gSeason_20;
-extern Trk_14 D_800CA9C8_6[];
 
 void shell_exit(void)
 {
@@ -2422,8 +2365,8 @@ void shell_exit(void)
         mem_free(gUserTrackLayout);
         gUserTrackLayout = 0;
     }
-    if (gGame.mode == 1 && gSeason_20 != 0 && gSeason_20->trk - D_800CA9C8_6 == 4) {
-        gGame.riders[1] = gSeason_20->f64;
+    if (gGame.mode == 1 && gSeason != 0 && gSeason->cup - gCups == 4) {
+        gGame.riders[1] = gSeason->round;
         if (gGame.riders[1] == gGame.riders[0]) {
             gGame.riders[1] = 5;
         }
@@ -2458,9 +2401,9 @@ void shell_exit(void)
     }
     if (!(gGame.flags & 0x8000)) {
         g = &gGame;
-        g->numLaps = (g->mode != 1 || gSeason_20 == 0 || gSeason_20->trk - D_800CA9C8_6 != 4) ?
-            ((g->mode == 1 && gSeason_20 != 0 && gSeason_20->trk - D_800CA9C8_6 == 5) ?
-             gSeason_20->trk->f16[gSeason_20->f64] : gCurTrack_39->f1E) : 1;
+        g->numLaps = (g->mode != 1 || gSeason == 0 || gSeason->cup - gCups != 4) ?
+            ((g->mode == 1 && gSeason != 0 && gSeason->cup - gCups == 5) ?
+             gSeason->cup->laps[gSeason->round] : gCurTrack_39->f1E) : 1;
     }
     mem_free(gGame.greyPalette);
     prim_exit();
@@ -2478,8 +2421,8 @@ void shell_exit(void)
             gGame.savedRiderSkins[k] = gGame.riderSkins[k];
         }
         for (k = 0; k < gGame.numPlayers; k++) {
-            gGame.riders[k] = gGame.savedRiders[gSeason_20->f6C[k]];
-            gGame.riderSkins[k] = gGame.savedRiderSkins[gSeason_20->f6C[k]];
+            gGame.riders[k] = gGame.savedRiders[gSeason->standings[k]];
+            gGame.riderSkins[k] = gGame.savedRiderSkins[gSeason->standings[k]];
         }
     }
     if (res_open_set(D_800D94A4, &D_800E7728) != 0) {
@@ -2738,15 +2681,6 @@ void shell_build_player_palettes(void)
     } while (i < 0x100);
 }
 
-typedef struct {
-    u8 *p;
-    u8 pad0[0x60];
-    s16 cnt;
-    u8 pad1[6];
-    u8 flag;
-} Rec_46;
-
-extern Rec_46 *gSeason_21;
 
 void shell_update_season_progress(void)
 {
@@ -2768,7 +2702,7 @@ void shell_update_season_progress(void)
     u8 *pb;
     u8 *e;
     u8 t8;
-    Rec_46 *r;
+    Season *r;
     u8 *p0;
     u8 *cb;
     u8 *pb2;
@@ -2785,14 +2719,14 @@ void shell_update_season_progress(void)
         case 3: m = 0x1f; break;
         }
         save_update_unlocks();
-        r = gSeason_21;
-        p0 = r->p;
-        cb = &D_800CA9C8_7;
+        r = gSeason;
+        p0 = (u8 *)r->cup;
+        cb = (u8 *)gCups;
         idx = ((p0 - cb) * 0x38E38E39) >> 2;
         if (idx < 5) if (idx >= 0) {
-            pb = r->p;
-            if ((s32)*pb <= (s32)r->cnt + 1) {
-                if (!(idx == 4 && gEvent.finishOrder[0] != 0) && r->flag == 0) {
+            pb = (u8 *)r->cup;
+            if ((s32)*pb <= (s32)r->round + 1) {
+                if (!(idx == 4 && gEvent.finishOrder[0] != 0) && r->standings[0] == 0) {
                     g2 = &gGame;
                     q = &gSaveData_12;
                     lv = q[0x2C0];
@@ -2818,15 +2752,15 @@ void shell_update_season_progress(void)
                     }
                 }
             }
-            idx2 = ((gSeason_21->p - &D_800CA9C8_7) * 0x38E38E39) >> 2;
+            idx2 = (((u8 *)gSeason->cup - (u8 *)gCups) * 0x38E38E39) >> 2;
             if (idx2 != 4 || gEvent.finishOrder[0] == 0) {
-                pb2 = gSeason_21->p;
+                pb2 = (u8 *)gSeason->cup;
                 e = pb2 + (gGame.difficulty - 1);
-                if (gSeason_21->cnt == e[1]) {
-                    nv = gSeason_21->cnt + 1;
+                if (gSeason->round == e[1]) {
+                    nv = gSeason->round + 1;
                     if (nv < *pb2) {
                         e[1] = nv;
-                    } else if (gSeason_21->flag == 0) {
+                    } else if (gSeason->standings[0] == 0) {
                         e[1] = nv;
                     }
                 }
@@ -2843,7 +2777,6 @@ void shell_update_season_progress(void)
 
 #define LD(x) ((void *)res_load(gGuiRes, x))
 
-typedef struct { Ent24 *p0; } RecPtr;
 typedef struct { u8 pad[8]; u16 h8; u8 padA[6]; } Rec10;
 typedef struct {
     s32 w0;
@@ -2855,7 +2788,6 @@ typedef struct {
 } Snd_4;
 
 extern Rec10 gSpecialTracksItems_3[];
-extern RecPtr *gSeason_22;
 extern Snd_4 gPakScreen;
 
 void shell_load_screen(Item_11 *p) {
@@ -3022,8 +2954,8 @@ void shell_load_screen(Item_11 *p) {
         break;
     case 13:
     case 14:
-        if (p->h16 == 14 && gGame.mode == 1 && gSeason_22 != NULL
-            && gSeason_22->p0 - D_800CA9C8 == 4) {
+        if (p->h16 == 14 && gGame.mode == 1 && gSeason != NULL
+            && gSeason->cup - gCups == 4) {
             shell_update_season_progress();
         }
         if (gGame.flags & 0x8000) {
@@ -3567,8 +3499,8 @@ void shell_draw_rider_bio(s32 p, s32 q)
 
 #define SAVE gSaveData_13
 #define VP gViewRects
-#define CUSTOM5 (gGame.mode == 1 && gSeason_23 != NULL && gSeason_23->course - D_800CA9C8_8 == 5)
-#define CHAMP4 (gGame.mode == 1 && gSeason_23 != NULL && gSeason_23->course - D_800CA9C8_8 == 4)
+#define CUSTOM5 (gGame.mode == 1 && gSeason != NULL && gSeason->cup - gCups == 5)
+#define CHAMP4 (gGame.mode == 1 && gSeason != NULL && gSeason->cup - gCups == 4)
 #define UNLOCKED(n) (gGame.difficulty < SAVE.b2C0 || (SAVE.b2C0 == gGame.difficulty && ((n) == 0 || ((SAVE.b2BF >> ((n) - 1)) & 1))))
 #define LVLDONE (gGame.difficulty < SAVE.b2C0 || (SAVE.b2C0 == gGame.difficulty && (SAVE.b2BF & 8)))
 #define AVAILD(n) ((gGame.mode == 8) ? avail8d(n) : shell_is_round_unlocked((n) / 5))
@@ -3626,14 +3558,6 @@ struct Ctl_21 {
 };
 
 typedef struct {
-    u8 n;
-    u8 pad1[3];
-    u8 won[4];
-    s16 trk[7];
-    s16 laps[7];
-} Course_3; /* 0x24 */
-
-typedef struct {
     char name[0x1E];
     s16 h1E;
     u8 pad20[0x34 - 0x20];
@@ -3658,13 +3582,6 @@ typedef struct {
     char *name;
     s32 x;
 } Cheat;
-
-typedef struct {
-    Course_3 *course;
-    s16 pts[8];
-    u8 pad14[0x6C - 0x14];
-    u8 order[8];
-} Champ;
 
 typedef struct {
     char *name;
@@ -3694,9 +3611,7 @@ extern Track_17 *gCurTrack_41;
 extern Cheat sCheatTable_2[];
 extern Save_5 gSaveData_13;
 extern Track_17 gTracks_16[];
-extern Course_3 D_800CA9C8_8[];
 extern BikeDef gRiderAnims_17[];
-extern Champ *gSeason_23;
 extern Rider_8 sRiderBios_3[];
 extern Racer_3 gRiders_91[];
 
@@ -4097,7 +4012,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         }
         TDRAWP(gGame.unk_3A0, xoff + 0x49, yoff + 0x2A, 3);
         {
-        if (D_800CA9C8_8[*s->sel / 5].n != 0) {
+        if (gCups[*s->sel / 5].numRounds != 0) {
             s32 a;
             void *p;
 
@@ -4109,10 +4024,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     t = gGame.customTrackSel;
                     break;
                 case 1:
-                    t = D_800CA9C8_8[gGame.cupSel].trk[gGame.roundSel];
+                    t = gCups[gGame.cupSel].tracks[gGame.roundSel];
                     break;
                 default:
-                    t = D_800CA9C8_8[gGame.cupSel].trk[gGame.cupPreviewTrack];
+                    t = gCups[gGame.cupSel].tracks[gGame.cupPreviewTrack];
                     break;
                 }
             }
@@ -4175,8 +4090,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         gDPSetRenderMode(gdl++, 0x00404240, 0);
         CMB_TEX();
         for (i = 0; i < 5; i++) {
-            if (s->state == 18 || ((gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3) && i < D_800CA9C8_8[*s->sel].n) ||
-                (gGame.seasonMenuState != 0 && i <= D_800CA9C8_8[*s->sel].n)) {
+            if (s->state == 18 || ((gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3) && i < gCups[*s->sel].numRounds) ||
+                (gGame.seasonMenuState != 0 && i <= gCups[*s->sel].numRounds)) {
                 if (s->state == 18) {
                     if (i == *s->sel % 5) {
                         gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 4);
@@ -4205,7 +4120,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     if (!((UNLOCKED(*s->sel) || CUSTOM5) && (!CUSTOM5 || LVLDONE))) {
                         gDPLoadTLUT_pal256(gdl++, gGame.unk_398->addr);
                         DRAW(0x48 - i * 7 + xoff, 0x49 + i * 25 + yoff, img = &gGame.unk_398[(gGame.menuAnimTimer / 2 + i * 4) % 30 + 1], 3);
-                    } else if (((D_800CA9C8_8[*s->sel].won[gGame.difficulty - 1] >> i) & 1) && !CUSTOM5) {
+                    } else if (((gCups[*s->sel].won[gGame.difficulty - 1] >> i) & 1) && !CUSTOM5) {
                         gDPLoadTLUT_pal256(gdl++, gGame.unk_3A8->addr);
                         DRAW(0x49 - i * 7 + xoff, 0x49 + i * 25 + yoff, img = &gGame.unk_3A8[(gGame.menuAnimTimer / 2 + i * 4) % 30 + 1], 3);
                     }
@@ -4227,7 +4142,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         }
                     }
                 }
-                if (s->state == 18 || i < D_800CA9C8_8[*s->sel].n) {
+                if (s->state == 18 || i < gCups[*s->sel].numRounds) {
                     if ((s->state != 18 && gGame.seasonMenuState != 2) || (s->state == 18 && (*s->sel / 5) * 5 + i < gGame.numRecordTracks)) {
                         if (s->state == 18) {
                             switch ((*s->sel / 5) * 5 + i) {
@@ -4241,11 +4156,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                                 break;
                             }
                         } else if (*s->sel == 5) {
-                            int_to_str(D_800CA9C8_8[5].laps[i], buf2);
+                            int_to_str(gCups[5].laps[i], buf2);
                         } else if (*s->sel == 4) {
                             int_to_str(1, buf2);
                         } else {
-                            int_to_str(gTracks_16[D_800CA9C8_8[*s->sel].trk[i]].h1E, buf2);
+                            int_to_str(gTracks_16[gCups[*s->sel].tracks[i]].h1E, buf2);
                         }
                         font_text_add(gGame.texts[i + 5], buf2);
                         font_draw_text(gGame.texts[i + 5], 0x11A - i * 7 + xoff, 0x52 + i * 25 + yoff);
@@ -4255,7 +4170,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                             font_text_add(gGame.texts[i], gTracks_16[gGame.recordTracks[(*s->sel / 5) * 5 + i]].name);
                         }
                     } else {
-                        font_text_add(gGame.texts[i], gTracks_16[D_800CA9C8_8[*s->sel].trk[i]].name);
+                        font_text_add(gGame.texts[i], gTracks_16[gCups[*s->sel].tracks[i]].name);
                     }
                     font_draw_text(gGame.texts[i], 0x6F - i * 7 + xoff, 0x52 + i * 25 + yoff);
                 } else {
@@ -4304,7 +4219,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     for (i = 0; i < 3; i++) {
                         font_text_create(gGame.texts[i + 12], 0x40, 1, (i == gGame.roundSel) ? 4 : 2, 0x21);
                     }
-                    if (D_800CA9C8_8[*s->sel].n == 0) {
+                    if (gCups[*s->sel].numRounds == 0) {
                         font_text_add(gGame.texts[12], D_800D9CDC);
                         font_draw_text(gGame.texts[12], xoff + 0x16E, yoff + 0x80);
                     } else {
@@ -4318,7 +4233,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             case 1:
                 strcpy(buf, "Select Slot");
                 font_text_create(gGame.texts[12], 0x40, 5, 4, 0x20);
-                if (gGame.roundSel == D_800CA9C8_8[*s->sel].n) {
+                if (gGame.roundSel == gCups[*s->sel].numRounds) {
                     font_text_add(gGame.texts[12], D_800D9CF0);
                 } else {
                     font_text_add(gGame.texts[12], D_800D9D14);
@@ -4396,7 +4311,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                         font_text_add(gGame.texts[10], D_800D9E24);
                     }
                 } else if (*s->sel == 5) {
-                    if (D_800CA9C8_8[5].n != 0) {
+                    if (gCups[5].numRounds != 0) {
                         if (gGame.roundSel == 0) {
                             font_text_add(gGame.texts[10], D_800D9E50);
                         } else {
@@ -4964,7 +4879,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
         }
         for (j = 0; j < gEvent.numRiders; j++) {
             if (s->state == 14 && !CHAMP4) {
-                r = (*gSeason_23).order[j];
+                r = gSeason->standings[j];
             } else {
                 r = gEvent.finishOrder[j];
             }
@@ -4987,16 +4902,16 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             if (r < 4) {
                 wid[r] = font_get_char_pos(gGame.texts[j * 4 + 6], 0x6A - j * 7, YR, strlen_2(buf) - 1) >> 16;
             }
-            if (s->state == 7 && gRacePoints_3[j] != 0) {
+            if (s->state == 7 && gRacePoints[j] != 0) {
                 font_text_create(gGame.texts[j * 4 + 7], 0x20, 1, (s32)img, 0x20);
-                int_to_str(gRacePoints_3[j], buf + 1);
+                int_to_str(gRacePoints[j], buf + 1);
                 buf[0] = '+';
                 font_text_add(gGame.texts[j * 4 + 7], buf);
                 font_draw_text(gGame.texts[j * 4 + 7], 0x14C - j * 7, YR);
             }
             font_text_create(gGame.texts[j * 4 + 7], 0x20, 1, (s32)img, 0x20);
             if (s->state == 14 && !CHAMP4) {
-                int_to_str((*gSeason_23).pts[r], buf);
+                int_to_str(gSeason->points[r], buf);
             } else {
                 event_format_time(gRiders_91[r].f68C, buf);
             }
@@ -5055,7 +4970,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             }
             if (s->state == 14) {
                 for (k = 0; k < gEvent.numRiders; k++) {
-                    if ((*gSeason_23).order[k] == j) {
+                    if (gSeason->standings[k] == j) {
                         break;
                     }
                 }
@@ -5624,14 +5539,7 @@ typedef struct {
     u8 track;
 } Opts_2;
 
-typedef struct {
-    void *p0;
-    u8 pad0[0x60];
-    s16 f64;
-} Obj_66;
-
 extern Opts_2 gSaveData_14;
-extern Obj_66 *gSeason_24;
 
 void shell_cb_tutorial(s32 arg)
 {
@@ -5644,11 +5552,11 @@ void shell_cb_tutorial(s32 arg)
         gEvent.tutorialBuf = 0;
         gGame.riders[0] = 4;
         gGame.flags &= ~0x80;
-        gSeason_24->p0 = sTutorialRound;
-        gSeason_24->f64 = 0;
+        gSeason->cup = sTutorialRound;
+        gSeason->round = 0;
         for (i = 0; i < 0x11; i++) {
             if (gTutorialLessons_2[i].id == gSaveData_14.track) {
-                gSeason_24->f64 = i;
+                gSeason->round = i;
                 return;
             }
         }
@@ -5789,7 +5697,7 @@ void shell_backup_race_results(void)
         gGame.resultsTimes[i] = gRiders_92[i].f68C;
         gGame.resultsCelebration[i] = gRiders_92[i].f669;
         if (gSeason != 0) {
-            gGame.resultsSeasonOrder[i] = (gSeason + i)[0x6C];
+            gGame.resultsSeasonOrder[i] = gSeason->standings[i];
         }
         i++;
     } while (i < 6);
@@ -5803,13 +5711,7 @@ typedef struct {
     u8 pad2[0x7E0 - 0x690];
 } Elem_4;
 
-typedef struct {
-    u8 pad0[0x6C];
-    u8 b6C[6];
-} Out_4;
-
 extern Elem_4 gRiders_93[];
-extern Out_4 *gSeason_25;
 
 void shell_restore_race_results(void)
 {
@@ -5820,8 +5722,8 @@ void shell_restore_race_results(void)
         gEvent.finishOrder[i] = gGame.resultsOrder[i];
         gRiders_93[i].w68C = gGame.resultsTimes[i];
         gRiders_93[i].h668 = gGame.resultsCelebration[i];
-        if (gSeason_25 != 0) {
-            gSeason_25->b6C[i] = gGame.resultsSeasonOrder[i];
+        if (gSeason != 0) {
+            gSeason->standings[i] = gGame.resultsSeasonOrder[i];
         }
     }
 }

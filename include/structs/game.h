@@ -17,7 +17,7 @@ typedef struct Game {
     /* The front end's cursors (a screen's item list points at its own: sScreens +0x20) */
     /* 0x004 */ s32 mainMenuSel;
     /* 0x008 */ s32 specialTracksSel;
-    /* 0x00C */ s32 cupSel;             /* season: the cup (D_800CA9C8) */
+    /* 0x00C */ s32 cupSel;             /* season: the cup (gCups) */
     /* 0x010 */ s32 trackSel;           /* track lists: the track */
     /* 0x014 */ s32 trackListSel;       /* track lists: the cursor on the page */
     /* 0x018 */ s32 unk_018;

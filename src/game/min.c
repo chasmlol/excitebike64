@@ -1,8 +1,5 @@
 #include "game.h"
 
-typedef struct { u8 pad[0x64]; s16 idx; } PtrA;
-
-extern PtrA *gSeason_3;
 
 typedef struct {
     s32 f[7];
@@ -37,7 +34,7 @@ void race_init_replay(void)
         replay_play_start_2((s32)gActiveReplay_2);
     } else {
         if ((gGame.flags & 0x81) == 0 && gGame.mode == 9 &&
-            gTutorialLessons_3[*(s16 *)(gSeason + 0x64)].p != 0 && (gEvent.flags & 0x4000) == 0) {
+            gTutorialLessons_3[gSeason->round].p != 0 && (gEvent.flags & 0x4000) == 0) {
             gEvent.flags = gEvent.flags & 0xffffbfff;
             gGhostRace = 0;
             gDemoPlayback = 1;
@@ -47,7 +44,7 @@ void race_init_replay(void)
                 gDemoPlayback = 0;
                 sDemoActive = 0;
             } else {
-                piVar1 = res_load(D_800E7728, *gTutorialLessons_3[*(s16 *)(gSeason + 0x64)].p);
+                piVar1 = res_load(D_800E7728, *gTutorialLessons_3[gSeason->round].p);
                 *(volatile s32 **)&gActiveReplay_2 = piVar1;
                 gActiveReplaySize = piVar1[1] - piVar1[0];
                 gActiveReplay_2 = piVar1 + 2;
@@ -95,7 +92,7 @@ void race_finish_replay(s32 param_1)
     if (gGhostRace == 0) {
         if (gDemoPlayback != 0) {
             gActiveReplay = 0;
-            res_unload((u32 *)((s32 *)D_800E7728_2[1] + gTutorialLessons_4[gSeason_3->idx].ptr[0]));
+            res_unload((u32 *)((s32 *)D_800E7728_2[1] + gTutorialLessons_4[gSeason->round].ptr[0]));
             goto T;
         }
         if (gRaceExitCode == 3 || g->mode == 9) goto T;
@@ -280,7 +277,7 @@ void race_init(s32 arg)
     if (gGame.mode == 4 || gGame.mode == 5) {
         gNumRiders = 6;
     } else if (gGame.mode == 9) {
-        if (gTutorialLessons_5[gSeason_3->idx].fl & 4) {
+        if (gTutorialLessons_5[gSeason->round].fl & 4) {
             gNumRiders = 2;
         } else {
             gNumRiders = 1;
@@ -451,7 +448,7 @@ void race_begin(void)
     if (gGame.mode == 9) {
         path_init(D_800E7728);
     }
-    if ((gGame.flags & 0x8085) == 0 && (gGame.mode != 1 || gSeason_2->f64 == 0)) {
+    if ((gGame.flags & 0x8085) == 0 && (gGame.mode != 1 || gSeason->round == 0)) {
         race_randomize_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
         race_set_grid_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     }
@@ -598,7 +595,7 @@ void race_update_intro(void)
         }
         break;
     case 1:
-        if (b20 && (gGame.mode != 1 || gSeason_2->f64 == 0)) {
+        if (b20 && (gGame.mode != 1 || gSeason->round == 0)) {
             snd_play_menu_sound(2);
             gRacePhase_2 = 2;
             gRacePhaseTimer = 20;
@@ -632,7 +629,7 @@ void race_intro_load(void)
     if (gGame.mode == 1) {
         i = 0;
         do {
-            r = res_load(D_800E7728, *(s32 *)D_800C8D68[*(s16 *)((u8 *)*(s16 **)gSeason + (i << 1) + 8)]);
+            r = res_load(D_800E7728, *(s32 *)D_800C8D68[gSeason->cup->tracks[i]]);
             *(s32 *)((u8 *)gRaceTextObjs + (i << 2) + 0x12C) = r;
             i = i + 1;
         } while (i < 5);
@@ -646,13 +643,7 @@ typedef struct {
     s32 *unk4;
 } Unk7728;
 
-typedef struct {
-    u8 pad[8];
-    s16 a[5];
-} Row_2;
-
 extern Unk7728 *D_800E7728_3;
-extern Row_2 **gSeason_7;
 
 void race_intro_unload(void) {
     s32 i;
@@ -668,7 +659,7 @@ void race_intro_unload(void) {
     res_unload(&D_800E7728_3->unk4[D_800D085C]);
     if (gGame.mode == 1) {
         for (i = 0; i < 5; i++) {
-            res_unload(&D_800E7728_3->unk4[*D_800C8D68_2[(*gSeason_7)->a[i]]]);
+            res_unload(&D_800E7728_3->unk4[*D_800C8D68_2[gSeason->cup->tracks[i]]]);
         }
     }
     mem_free(gRaceTextObjs);
@@ -978,11 +969,6 @@ typedef struct {
 } Res_2;
 
 typedef struct {
-    u8 pad0[0x64];
-    s16 h64;
-} S930;
-
-typedef struct {
     u8 pad0[0xC];
     u8 bC;
     u8 padD[0x28 - 0xD];
@@ -1006,7 +992,6 @@ extern Player_7 gRiders_15[8];
 extern Gui D_800E3730_6;
 extern Res_2 *D_800E7728_4;
 extern Opt_2 gSaveData_3;
-extern S930 *gSeason_8;
 extern Trk_6 gTutorialLessons_6[];
 
 void race_update(u32 *arg)
@@ -1517,10 +1502,10 @@ void race_update(u32 *arg)
             if (gGame.mode == 9) {
                 switch (gEvent.tutorialAction) {
                 case 3:
-                    gSeason_8->h64--;
+                    gSeason->round--;
                     break;
                 case 4:
-                    gSeason_8->h64++;
+                    gSeason->round++;
                     break;
                 case 6:
                     gEvent.flags |= 0x4000;
@@ -1537,7 +1522,7 @@ void race_update(u32 *arg)
                 }
                 gPauseMenu = 0;
                 gEvent.flags &= ~0x2000;
-                if (gTutorialLessons_6[gSeason_8->h64].bC & 4) {
+                if (gTutorialLessons_6[gSeason->round].bC & 4) {
                     gNumRiders = 2;
                 } else {
                     gNumRiders = 1;

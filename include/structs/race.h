@@ -11,6 +11,26 @@ typedef struct TrackRecord {
     /* 0x10 */ u8 initials[4][3];   /* of times[0-2] and bestLap; 0xFF 0xFF n: still to be entered by player n */
 } TrackRecord; /* size 0x1C */
 
+/* A cup of the season mode. gCups holds the five cups, then the custom round (gCustomRound) and the tutorial's
+   lessons (sTutorialRound). */
+typedef struct Cup {
+    /* 0x00 */ u8 numRounds;
+    /* 0x01 */ u8 progress[3];      /* per difficulty 1-3: the last round open (tutorial: lessons open) */
+    /* 0x04 */ u8 won[4];           /* per difficulty: bit n, round n won */
+    /* 0x08 */ s16 tracks[7];       /* gTracks index of each round */
+    /* 0x16 */ s16 laps[7];         /* custom round: laps of each round */
+} Cup; /* size 0x24 */
+
+/* The season being raced: gSeason points at sSeasonState (NULL outside a season). */
+typedef struct Season {
+    /* 0x00 */ Cup *cup;
+    /* 0x04 */ s16 points[6];       /* each rider's total */
+    /* 0x10 */ s16 places[6][7];    /* each rider's place in each round */
+    /* 0x64 */ s16 round;           /* tutorial: the lesson */
+    /* 0x66 */ u8 racePoints[6];    /* each rider's points of the last race (gRacePoints) */
+    /* 0x6C */ u8 standings[8];     /* the riders by points */
+} Season; /* size 0x74 */
+
 /* The race HUD's glyph images (gGame.hudGlyphs, event_draw_glyph_string): an image set of res_load. */
 typedef struct HudGlyphs {
     /* 0x00 */ s32 count;
