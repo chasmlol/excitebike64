@@ -2097,7 +2097,7 @@ void edit_update(void) {
             if (gEditor_15->f174 & 0x400) {
                 usrtrk_layout_from_editor();
             }
-            gCurGameState->f10 = 3;
+            gCurGameState->mode = 3;
         }
     } else {
         switch (gEditor_15->f16C) {

@@ -1570,9 +1570,6 @@ D_800C2954                            game  0x800C2954  data      0x4
 sGfxTasksPending                      game  0x800C2958  data      0x4
 gGameStates                           game  0x800C295C  data     0x70
 gCurGameState                         game  0x800C29CC  data      0xc
-gCurGameState_2                       game  0x800C29CC  data        -  gCurGameState
-gCurGameState_3                       game  0x800C29CC  data        -  gCurGameState
-gCurGameState_4                       game  0x800C29CC  data        -  gCurGameState
 gFramebuffers                         game  0x800C29D8  data      0x4
 gFramebuffers_2                       game  0x800C29D8  data        -  gFramebuffers
 gFramebuffers_3                       game  0x800C29D8  data        -  gFramebuffers

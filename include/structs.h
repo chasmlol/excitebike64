@@ -217,11 +217,6 @@ typedef struct {
 typedef struct { u8 pad[0x64]; s16 f64; } Obj64;
 
 typedef struct {
-    u8 pad[0x10];
-    s32 f10;
-} S29CC;
-
-typedef struct {
     u8 pad0[0x2C4];
     u8 f2C4;
     u8 f2C5;

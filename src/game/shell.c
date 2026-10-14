@@ -2039,13 +2039,11 @@ typedef struct Item_10 {
 typedef struct { u8 pad0[8]; s16 h8[1]; } Trk_13;
 typedef struct { Trk_13 *p0; u8 pad4[0x64 - 4]; s16 h64; } TrkSel;
 typedef struct { u8 pad[0x38]; u16 h38; } S370;
-typedef struct { u8 pad[0x10]; s32 w10; } S29CC_2;
 
 extern Item_10 sScreens_3[];
 extern Item_10 *sPrevScreen_2;
 extern Item_10 *sCurScreen_2;
 extern S370 gSpecialTracksItems_2;
-extern S29CC_2 *gCurGameState_3;
 extern TrkSel *gSeason_19;
 
 void shell_update(Pad16 *pad) {
@@ -2330,7 +2328,7 @@ void shell_update(Pad16 *pad) {
                     *sCurScreen_2->p20 = gGame.trackSel % 5;
                 }
             } else {
-                gCurGameState_3->w10 = 3;
+                gCurGameState->mode = 3;
                 if (gGame.mode == 9) {
                     gCurTrack = &gTracks[26];
                 } else if (gGame.mode == 1) {

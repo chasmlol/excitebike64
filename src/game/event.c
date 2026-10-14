@@ -1211,7 +1211,7 @@ void event_update_race(void) {
         }
     }
 end:
-    if (gCurGameState->f10 == 3) {
+    if (gCurGameState->mode == 3) {
         s = -1;
         for (i = gEvent.numFinished; i < gEvent.numRiders; i++) {
             q = &gRiderStandings_3[i]->sub;

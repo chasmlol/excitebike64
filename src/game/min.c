@@ -556,7 +556,7 @@ void race_update_intro(void)
                 race_intro_unload();
                 gRacePhase_2 = 7;
                 gRacePhaseTimer = 100;
-                gCurGameState->f10 = 3;
+                gCurGameState->mode = 3;
             } else {
                 gRacePhase_2 = 3;
                 gRacePhaseTimer = 2;
@@ -1488,7 +1488,7 @@ void race_update(u32 *arg)
             } else {
                 gRacePhase_2 = 7;
                 gRacePhaseTimer = 100;
-                gCurGameState->f10 = 3;
+                gCurGameState->mode = 3;
             }
         } else if (gRacePhaseTimer > 0) {
             if (--gRacePhaseTimer == 0) {

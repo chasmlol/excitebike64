@@ -24,21 +24,9 @@ typedef struct Ctx {
 
 typedef struct { u16 button; s8 x, y; } Pad;
 
-typedef struct St {
-    void (*fn0)(s32);           /* 0x00 */
-    void (*fn4)(Pad *);         /* 0x04 */
-    void (*fn8)(Ctx *, s32, Gfx **); /* 0x08 */
-    void (*fnC)(s32);           /* 0x0C */
-    s32 mode;                   /* 0x10 */
-    s32 dlsize;                 /* 0x14 */
-    s32 cnt;                    /* 0x18 */
-} St;
-
 typedef struct { u8 pad[8]; s16 arr[1]; } Trk_5;
 typedef struct { Trk_5 *trk; u8 pad4[0x60]; s16 f64; } Race;
 
-extern St gGameStates[];
-extern St *gCurGameState_2;
 extern Race *gSeason_6;
 extern Pad gContPads_2[4];
 extern Pad gPadInputPrev_4[4];
@@ -57,8 +45,8 @@ void game_main(void)
     s32 i;
     u32 base;
     Pad *pads;
-    St *next;
-    St *cur;
+    GameState *next;
+    GameState *cur;
 
     msg = NULL;
     cfg = *(u16 *)0x80000402;
@@ -124,7 +112,7 @@ void game_main(void)
     sGfxYieldBuffer = mem_alloc_dbg(0xC00, 0, D_800D6014, 413);
     file_init(gResourceRomAddr);
     res_set_load_buffer(0);
-    gCurGameState_2 = &gGameStates[0];
+    gCurGameState = &gGameStates[0];
     gGfxContexts[0].dl = NULL;
     gGfxContexts[1].dl = NULL;
     func_8005B5E0();
@@ -152,12 +140,12 @@ void game_main(void)
         osRecvMesg(&sMainQueue, &msg, 1);
         switch (*(s16 *)msg) {
         case 1:
-            if (gCurGameState_2->mode == 0) {
+            if (gCurGameState->mode == 0) {
                 if (gGfxContexts[0].dl == NULL) {
-                    gGfxContexts[0].dl = mem_alloc_dbg(gCurGameState_2->dlsize * 8, 0, D_800D6014, 523);
-                    gGfxContexts[1].dl = mem_alloc_dbg(gCurGameState_2->dlsize * 8, 0, D_800D6014, 524);
+                    gGfxContexts[0].dl = mem_alloc_dbg(gCurGameState->dlSize * 8, 0, D_800D6014, 523);
+                    gGfxContexts[1].dl = mem_alloc_dbg(gCurGameState->dlSize * 8, 0, D_800D6014, 524);
                 }
-                i = gCurGameState_2 - gGameStates;
+                i = gCurGameState - gGameStates;
                 if (i == 0 || i == 2) {
                     st = 1;
                 } else if (i == 3) {
@@ -170,14 +158,14 @@ void game_main(void)
                 }
                 mem_fill((u8 *)gFramebuffers_2[0], 0, gFbAllocWidth * gFbAllocHeight * 2);
                 mem_fill((u8 *)gFramebuffers_2[1], 0, gFbAllocWidth * gFbAllocHeight * 2);
-                gCurGameState_2->mode = 2;
+                gCurGameState->mode = 2;
                 D_800C29E4 = 4;
                 if (gGame.flags & 0x8000) {
                     gReplayPlayback = 1;
                 } else {
                     gReplayPlayback = 0;
                 }
-                gCurGameState_2->fn0(0);
+                gCurGameState->init(0);
                 break;
             }
             gFrameCounter++;
@@ -209,24 +197,24 @@ void game_main(void)
             snd_update();
             sAudioTickEnd = osGetCount();
             sAudioTickTime = sAudioTickEnd - sAudioTickStart;
-            if (gFrameCounter - sLastUpdateFrame > 0 || gCurGameState_2->mode == 5) {
-                if (gCurGameState_2->mode == 2) {
-                    if (gCurGameState_2->fn4 != NULL) {
-                        gCurGameState_2->fn4(pads);
+            if (gFrameCounter - sLastUpdateFrame > 0 || gCurGameState->mode == 5) {
+                if (gCurGameState->mode == 2) {
+                    if (gCurGameState->update != NULL) {
+                        gCurGameState->update((u32 *)pads);
                     }
                 }
-                if (gCurGameState_2->mode == 3) {
-                    gCurGameState_2->mode = 5;
-                    gCurGameState_2->cnt = 10;
+                if (gCurGameState->mode == 3) {
+                    gCurGameState->mode = 5;
+                    gCurGameState->wait = 10;
                 }
-                if (gCurGameState_2->mode == 5 && gCurGameState_2->cnt == 0) {
-                    gCurGameState_2->mode = 3;
+                if (gCurGameState->mode == 5 && gCurGameState->wait == 0) {
+                    gCurGameState->mode = 3;
                 }
-                if (gCurGameState_2->mode == 3) {
-                    gCurGameState_2->mode = 4;
-                    gCurGameState_2->fnC(0);
-                    i = gCurGameState_2 - gGameStates;
-                    gCurGameState_2->mode = 0;
+                if (gCurGameState->mode == 3) {
+                    gCurGameState->mode = 4;
+                    gCurGameState->exit(0);
+                    i = gCurGameState - gGameStates;
+                    gCurGameState->mode = 0;
                     if (i == 2) {
                         i = 0;
                         if (gGame.flags & 2) {
@@ -270,12 +258,12 @@ void game_main(void)
                         }
                     }
                     next = &gGameStates[i];
-                    if (gCurGameState_2->dlsize != next->dlsize) {
+                    if (gCurGameState->dlSize != next->dlSize) {
                         mem_free(gGfxContexts[0].dl);
                         mem_free(gGfxContexts[1].dl);
                         gGfxContexts[0].dl = NULL;
                     }
-                    gCurGameState_2 = next;
+                    gCurGameState = next;
                 }
                 sLastUpdateFrame = gFrameCounter;
             }
@@ -283,12 +271,12 @@ void game_main(void)
             snd_update();
             sAudioTickEnd = osGetCount();
             sAudioTickTime = sAudioTickEnd - sAudioTickStart;
-            if (sGfxTasksPending < 2 && gCurGameState_2->fn8 != NULL) {
-                if (gCurGameState_2->mode == 5) {
+            if (sGfxTasksPending < 2 && gCurGameState->draw != NULL) {
+                if (gCurGameState->mode == 5) {
                     if (sGfxTasksPending == 0) {
-                        gCurGameState_2->cnt--;
+                        gCurGameState->wait--;
                     }
-                } else if (gCurGameState_2->mode == 2) {
+                } else if (gCurGameState->mode == 2) {
                     sLastDrawFrame = gFrameCounter;
                     gCurGfxContext = &gGfxContexts[sGfxContextIndex];
                     sGfxHead = gCurGfxContext->dl;
@@ -299,17 +287,17 @@ void game_main(void)
                     }
                     gIsDrawing = 1;
                     gGfxFrameIndex = sGfxContextIndex;
-                    gCurGameState_2->fn8(gCurGfxContext, sGfxContextIndex, &sGfxHead);
+                    gCurGameState->draw(gCurGfxContext, sGfxContextIndex, &sGfxHead);
                     gIsDrawing = 0;
                     gDPPipeSync(sGfxHead++);
                     gDPFullSync(sGfxHead++);
                     gSPEndDisplayList(sGfxHead++);
                     sGfxDlLength = sGfxHead - gCurGfxContext->dl;
-                    cur = gCurGameState_2;
+                    cur = gCurGameState;
                     if (sGfxDlMaxLength < sGfxDlLength) {
                         sGfxDlMaxLength = sGfxDlLength;
                     }
-                    if (sGfxDlLength >= cur->dlsize) {
+                    if (sGfxDlLength >= cur->dlSize) {
                         for (;;) {
                         }
                     }
