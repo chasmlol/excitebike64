@@ -352,7 +352,7 @@ void race_init(s32 arg)
     func_800358C0();
     mem_fill(gPlayerInputsPrev_2, 0, 0x18);
     palmod_init((gGame_19.flags >> 18) & 1);
-    gTrackSections_5 = 0;
+    gTrackSections = 0;
     gTrackObjects = 0;
     gWaterModels = 0;
     gTerrainTexSet = 0;

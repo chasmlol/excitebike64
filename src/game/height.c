@@ -1,67 +1,30 @@
 #include "game.h"
 
 typedef struct {
-    s16 x, z;
-} Pt;
-
-typedef struct {
-    u16 f0, f2, f4;
-    u16 n;
-    Pt pts[1];
-} Poly;
-
-typedef struct { u16 n; u16 id[1]; } Cell;
-typedef struct { s32 id; s32 n; s32 v[3][3]; } CTri;
-
-typedef struct {
-    u8 pad[4];
-    s16 x, z;
-} Ent_28;
-
-typedef struct {
     s32 x, y, z, w, h, f14, f18;
 } Node_5;
 
-typedef struct { s16 x, z, y, h; } Vtx8;
-extern Poly **sSurfacePolys;
-extern Cell **sHeightGrid;
-extern CTri gGroundTris[];
-extern Ent_28 *sWallEdges[];
 extern Node_5 sDesertObjs[];
 
+/* A desert ground triangle from the height map (2000 mm cells). */
 static inline void tri(s32 id, s32 n, s32 ax, s32 az, s32 bx, s32 bz, s32 cx, s32 cz) {
-    gGroundTris[gGroundTriCount].id = id;
-    gGroundTris[gGroundTriCount].n = n;
-    gGroundTris[gGroundTriCount].v[0][0] = ax * 2000;
-    gGroundTris[gGroundTriCount].v[0][1] = gDesertHeightMap[((az & 0x1FF) << 9) | (ax & 0x1FF)] << 6;
-    gGroundTris[gGroundTriCount].v[0][2] = az * 2000;
-    gGroundTris[gGroundTriCount].v[1][0] = bx * 2000;
-    gGroundTris[gGroundTriCount].v[1][1] = gDesertHeightMap[((bz & 0x1FF) << 9) | (bx & 0x1FF)] << 6;
-    gGroundTris[gGroundTriCount].v[1][2] = bz * 2000;
-    gGroundTris[gGroundTriCount].v[2][0] = cx * 2000;
-    gGroundTris[gGroundTriCount].v[2][1] = gDesertHeightMap[((cz & 0x1FF) << 9) | (cx & 0x1FF)] << 6;
-    gGroundTris[gGroundTriCount].v[2][2] = cz * 2000;
+    gGroundTris[gGroundTriCount].area = id;
+    gGroundTris[gGroundTriCount].tri = n;
+    gGroundTris[gGroundTriCount].v[0].x = ax * 2000;
+    gGroundTris[gGroundTriCount].v[0].y = gDesertHeightMap[((az & 0x1FF) << 9) | (ax & 0x1FF)] << 6;
+    gGroundTris[gGroundTriCount].v[0].z = az * 2000;
+    gGroundTris[gGroundTriCount].v[1].x = bx * 2000;
+    gGroundTris[gGroundTriCount].v[1].y = gDesertHeightMap[((bz & 0x1FF) << 9) | (bx & 0x1FF)] << 6;
+    gGroundTris[gGroundTriCount].v[1].z = bz * 2000;
+    gGroundTris[gGroundTriCount].v[2].x = cx * 2000;
+    gGroundTris[gGroundTriCount].v[2].y = gDesertHeightMap[((cz & 0x1FF) << 9) | (cx & 0x1FF)] << 6;
+    gGroundTris[gGroundTriCount].v[2].z = cz * 2000;
     gGroundTriCount++;
 }
 
-typedef struct {
-    void *hdr;
-    s32 x0, z0, x1, z1;
-    void *grid;
-    s32 f18;
-    s32 f1C;
-} Sub_7;
-
-struct Area_2 {
-    u32 count;
-    Sub_7 subs[1];
-};
-
-typedef struct { u16 n; u16 ids[1]; } List_5;
-
-extern List_5 **sHeightGrid_2;
-
-void height_init(Area_2 *area, s32 b, s32 c, u32 *polys)
+/* Takes the sections as the height areas, bins them on a 16x16 grid of their total bounding box, and lists the
+   surface polygons over each section. */
+void height_init(TrackModelList *area, TrackModelList *objects, WallMesh *walls, u32 *polys)
 {
     u32 i;
     s32 n;
@@ -69,18 +32,18 @@ void height_init(Area_2 *area, s32 b, s32 c, u32 *polys)
     s32 x, z;
     s32 j, k, total;
     u16 *out;
-    Sub_7 *s;
-    Area_2 *r;
-    Poly *p;
-    Poly **tbl;
+    TrackModel *s;
+    TrackModelList *r; /* section n is r->e[0] */
+    SurfacePoly *p;
+    SurfacePoly **tbl;
     s16 *buf;
 
-    sHeightAreas_2 = area;
-    sWallMesh = c;
+    sHeightAreas = area;
+    sWallMesh = walls;
     gGroundArea = -1;
     if (area != NULL) {
-        for (i = 0; i < sHeightAreas_2->count; i++) {
-            s = (Sub_7 *)((u8 *)sHeightAreas_2 + (i * 32 + 4));
+        for (i = 0; i < sHeightAreas->count; i++) {
+            s = (TrackModel *)((u8 *)sHeightAreas + (i * 32 + 4));
             if (s->x0 < sHeightAreaMin[0] || i == 0) sHeightAreaMin[0] = s->x0;
             if (s->z0 < sHeightAreaMin[1] || i == 0) sHeightAreaMin[1] = s->z0;
             if (s->x1 > sHeightAreaMax[0] || i == 0) sHeightAreaMax[0] = s->x1;
@@ -92,12 +55,12 @@ void height_init(Area_2 *area, s32 b, s32 c, u32 *polys)
         out = gZBuffer_2 + 0x100;
         for (k = 0; k < 16; k++) {
             for (j = 0; j < 16; j++) {
-                for (n = 0; n < sHeightAreas_2->count; n++) {
-                    r = (Area_2 *)((u8 *)sHeightAreas_2 + n * 32);
-                    x = r->subs[0].x0 << 4;
+                for (n = 0; n < sHeightAreas->count; n++) {
+                    r = (TrackModelList *)((u8 *)sHeightAreas + n * 32);
+                    x = r->e[0].x0 << 4;
                     x >>= 4;
                     x = ((x - sHeightAreaMin[0]) << 4) / (sHeightAreaMax[0] - sHeightAreaMin[0]);
-                    z = r->subs[0].z0 << 4;
+                    z = r->e[0].z0 << 4;
                     z >>= 4;
                     if (x < 0) x = 0;
                     if (x >= 16) x = 15;
@@ -108,10 +71,10 @@ void height_init(Area_2 *area, s32 b, s32 c, u32 *polys)
                     z = cell >> 4;
                     if ((cell & 0xF) > j) continue;
                     if (z > k) continue;
-                    z = r->subs[0].x1 << 4;
+                    z = r->e[0].x1 << 4;
                     z >>= 4;
                     z = ((z - sHeightAreaMin[0]) << 4) / (sHeightAreaMax[0] - sHeightAreaMin[0]);
-                    x = r->subs[0].z1 << 4;
+                    x = r->e[0].z1 << 4;
                     x >>= 4;
                     if (z < 0) z = 0;
                     if (z >= 16) z = 15;
@@ -130,54 +93,54 @@ void height_init(Area_2 *area, s32 b, s32 c, u32 *polys)
             }
         }
         sHeightGridData = mem_alloc_dbg((total + 0x100) * 2, 0, (s32)D_800D6C20, 0xDA);
-        sHeightGrid_2 = mem_alloc_dbg(0x400, 0, (s32)D_800D6C20, 0xDB);
+        sHeightGrid = mem_alloc_dbg(0x400, 0, (s32)D_800D6C20, 0xDB);
         n = 0;
         out = gZBuffer_2 + 0x100;
         for (i = 0; (s32)i < 0x100; i++) {
-            sHeightGrid_2[i] = (List_5 *)(sHeightGridData + n);
-            sHeightGrid_2[i]->n = gZBuffer_2[i];
-            memcpy(sHeightGrid_2[i]->ids, out, sHeightGrid_2[i]->n * 2);
+            sHeightGrid[i] = (HeightCell *)(sHeightGridData + n);
+            sHeightGrid[i]->count = gZBuffer_2[i];
+            memcpy(sHeightGrid[i]->ids, out, sHeightGrid[i]->count * 2);
             n++;
-            n += sHeightGrid_2[i]->n;
-            out += sHeightGrid_2[i]->n;
+            n += sHeightGrid[i]->count;
+            out += sHeightGrid[i]->count;
         }
     } else {
         sHeightGridData = NULL;
-        sHeightGrid_2 = NULL;
+        sHeightGrid = NULL;
     }
     sSurfacePolys = NULL;
     sAreaSurfacePolys = NULL;
     if (polys != NULL) {
         sSurfacePolys = mem_alloc_dbg(*polys * 4, 0, (s32)D_800D6C20, 0xF6);
         i = 0;
-        p = (Poly *)(polys + 1);
+        p = (SurfacePoly *)(polys + 1);
         z = *polys;
         if (z != 0) {
             do {
                 sSurfacePolys[i] = p;
-                p = (Poly *)((u8 *)p + (p->n * 4 + 8));
+                p = (SurfacePoly *)((u8 *)p + (p->count * 4 + 8));
             } while (++i < *polys);
         }
-        mem_fill((u8 *)gZBuffer_2, 0, sHeightAreas_2->count * 2);
+        mem_fill((u8 *)gZBuffer_2, 0, sHeightAreas->count * 2);
         i = 0;
-        out = gZBuffer_2 + sHeightAreas_2->count;
-        for (; i < sHeightAreas_2->count; i++) {
+        out = gZBuffer_2 + sHeightAreas->count;
+        for (; i < sHeightAreas->count; i++) {
             for (cell = 0; cell < *polys; cell++) {
                 p = sSurfacePolys[cell];
-                for (n = 0; n < p->n; n++) {
+                for (n = 0; n < p->count; n++) {
                     if (height_test_area(i, p->pts[n].x << 6, 0, p->pts[n].z << 6)) break;
                 }
-                if (n != p->n) {
+                if (n != p->count) {
                     *out++ = cell;
                     gZBuffer_2[i]++;
                 }
             }
         }
         i = 0;
-        sAreaSurfacePolys = mem_alloc_dbg(sHeightAreas_2->count * 4, 0, (s32)D_800D6C20, 0x11C);
-        mem_fill((u8 *)sAreaSurfacePolys, 0, sHeightAreas_2->count * 4);
-        out = gZBuffer_2 + sHeightAreas_2->count;
-        for (; i < sHeightAreas_2->count; i++) {
+        sAreaSurfacePolys = mem_alloc_dbg(sHeightAreas->count * 4, 0, (s32)D_800D6C20, 0x11C);
+        mem_fill((u8 *)sAreaSurfacePolys, 0, sHeightAreas->count * 4);
+        out = gZBuffer_2 + sHeightAreas->count;
+        for (; i < sHeightAreas->count; i++) {
             if (gZBuffer_2[i] != 0) {
                 buf = mem_alloc_dbg((gZBuffer_2[i] + 1) * 2, 0, (s32)D_800D6C20, 0x123);
                 sAreaSurfacePolys[i] = buf;
@@ -210,63 +173,43 @@ void height_free(void)
     }
     if (sAreaSurfacePolys != 0) {
         i = 0;
-        if (*sHeightAreas_3 != 0) {
+        if (sHeightAreas->count != 0) {
             do {
                 if (sAreaSurfacePolys[i] != 0) {
                     mem_free(sAreaSurfacePolys[i]);
                 }
                 i++;
-            } while (i < (u32)*sHeightAreas_3);
+            } while (i < sHeightAreas->count);
         }
         mem_free(sAreaSurfacePolys);
         sAreaSurfacePolys = 0;
     }
 }
 
-typedef struct {
-    s32 f0;
-    Vtx16 *verts;
-} Hdr_3;
-
-typedef struct {
-    u16 bits[4];
-    u16 v[3];
-    u16 flags;
-} GTri;
-
-typedef struct {
-    u16 flags;
-    u16 count;
-    GTri tris[1];
-} Grid;
-
-typedef struct {
-    Hdr_3 *hdr;
-    s32 x0, z0, x1, z1;
-    Grid *grid;
-    s32 f18;
-} Sub_8;
-
+/* Looks for the ground under (x, y, z) (mm) in height area id: the triangles of the grid cell under the point,
+   starting from the last one found. A bridge triangle (0x400) counts only below y + 500 and the highest wins; the
+   first other one ends the search. Returns 1 when found, with the result in gGroundHeight and the other gGround
+   globals. */
 s32 height_test_area(s32 id, s32 x, s32 y, s32 z)
 {
-    Sub_8 *a;
-    Grid *g2;
+    TrackModel *a;
+    CollGrid *g2;
     s32 px, pz;
     s32 mask, word, count;
-    GTri *tri;
-    Vtx16 *verts;
+    CollTri *tri;
+    Vtx *verts;
     s32 x0, z0, x1, z1;
     s32 w, d;
     s32 i, start;
     s32 v[3][4];
-    Grid *grid;
+    CollGrid *grid;
     s32 dxp, dzp;
     s32 nx, ny, nz, h;
     s32 k;
     s32 c;
 
     D_800E8E7C++;
-    a = (Sub_8 *)((u8 *)sHeightAreas + (id * 32 + 4));
+    a = (TrackModel *)((u8 *)sHeightAreas + (id * 32 + 4));
     x0 = a->x0;
     if (x < x0 * 16) return 0;
     z0 = a->z0;
@@ -290,7 +233,7 @@ s32 height_test_area(s32 id, s32 x, s32 y, s32 z)
     d = (z1 - z0) * 16;
     if (d == 0) return 0;
     i = ((z - z0 * 16) * 8 / d) * 8 + (x - x0 * 16) * 8 / w;
-    verts = a->hdr->verts;
+    verts = a->model->vtx;
     word = i / 16;
     mask = 1 << (i % 16);
     start = gGroundTri;
@@ -300,21 +243,21 @@ s32 height_test_area(s32 id, s32 x, s32 y, s32 z)
     i = start;
     do {
         tri = &g2->tris[i];
-        if (tri->bits[word] & mask) {
-            v[0][0] = verts[tri->v[0]].x * 16;
-            v[0][1] = verts[tri->v[1]].x * 16;
-            v[0][2] = verts[tri->v[2]].x * 16;
-            v[2][0] = verts[tri->v[0]].z * 16;
+        if (tri->cells.h[word] & mask) {
+            v[0][0] = verts[tri->vtx[0]].v.ob[0] * 16;
+            v[0][1] = verts[tri->vtx[1]].v.ob[0] * 16;
+            v[0][2] = verts[tri->vtx[2]].v.ob[0] * 16;
+            v[2][0] = verts[tri->vtx[0]].v.ob[2] * 16;
             dzp = pz - v[2][0];
-            v[2][1] = verts[tri->v[1]].z * 16;
+            v[2][1] = verts[tri->vtx[1]].v.ob[2] * 16;
             dxp = px - v[0][0];
-            v[2][2] = verts[tri->v[2]].z * 16;
+            v[2][2] = verts[tri->vtx[2]].v.ob[2] * 16;
             if ((c = dzp * (v[0][1] - v[0][0]) - dxp * (v[2][1] - v[2][0])) >= 0 &&
                 (c = (pz - v[2][1]) * (v[0][2] - v[0][1]) - (px - v[0][1]) * (v[2][2] - v[2][1])) >= 0 &&
                 (c = (pz - v[2][2]) * (v[0][0] - v[0][2]) - (px - v[0][2]) * (v[2][0] - v[2][2])) >= 0) {
-                v[1][0] = verts[tri->v[0]].y * 16;
-                v[1][1] = verts[tri->v[1]].y * 16;
-                v[1][2] = verts[tri->v[2]].y * 16;
+                v[1][0] = verts[tri->vtx[0]].v.ob[1] * 16;
+                v[1][1] = verts[tri->vtx[1]].v.ob[1] * 16;
+                v[1][2] = verts[tri->vtx[2]].v.ob[1] * 16;
                 v[0][1] -= v[0][0];
                 v[0][2] -= v[0][0];
                 v[1][1] -= v[1][0];
@@ -352,8 +295,8 @@ s32 height_test_area(s32 id, s32 x, s32 y, s32 z)
                             if (sAreaSurfacePolys[id] == NULL) return 1;
                             k = 0;
                             while (sAreaSurfacePolys[id][k] != -1) {
-                                if (point_in_poly_xz(sSurfacePolys_2[sAreaSurfacePolys[id][k]], x, z)) {
-                                    gGroundSurface = *sSurfacePolys_2[sAreaSurfacePolys[id][k]];
+                                if (point_in_poly_xz(sSurfacePolys[sAreaSurfacePolys[id][k]], x, z)) {
+                                    gGroundSurface = sSurfacePolys[sAreaSurfacePolys[id][k]]->surface;
                                     break;
                                 }
                                 k++;
@@ -385,16 +328,16 @@ s32 height_get_ground(s32 x, s32 y, s32 z)
         return gGroundHeight;
     }
     ix = x >> 4;
-    ix = (ix - sHeightAreaMin_2.a) * 16 / (sHeightAreaMax_2.a - sHeightAreaMin_2.a);
+    ix = (ix - sHeightAreaMin[0]) * 16 / (sHeightAreaMax[0] - sHeightAreaMin[0]);
     iz = z >> 4;
     if (ix < 0) ix = 0;
     if (ix > 15) ix = 15;
-    iz = (iz - sHeightAreaMin_2.a) * 16 / (sHeightAreaMax_2.b - sHeightAreaMin_2.b);
+    iz = (iz - sHeightAreaMin[0]) * 16 / (sHeightAreaMax[1] - sHeightAreaMin[1]);
     if (iz < 0) iz = 0;
     if (iz > 15) iz = 15;
     k = iz * 16 + ix;
-    for (i = 0; i < sHeightGrid[k]->n; i++) {
-        if (sHeightGrid[k]->id[i] != gGroundArea && height_test_area(sHeightGrid[k]->id[i], x, y, z) != 0) {
+    for (i = 0; i < sHeightGrid[k]->count; i++) {
+        if (sHeightGrid[k]->ids[i] != gGroundArea && height_test_area(sHeightGrid[k]->ids[i], x, y, z) != 0) {
             return gGroundHeight;
         }
     }
@@ -502,28 +445,22 @@ float height_get_desert_f(float x, float z)
     }
 }
 
-typedef struct { u8 pad[8]; u16 v[3]; u16 pad2; } Tri3;
-typedef struct { u16 flags; u16 pad; Tri3 t[1]; } Shape;
-typedef struct { u32 pad; Vtx_t *vtx; } Mesh_3;
-typedef struct { Mesh_3 *mesh; s32 x0, z0, x1, z1; Shape *shape; u32 pad[2]; } Ent_26;
-typedef struct { u32 n; Ent_26 e[1]; } EntList;
-
-extern EntList *sHeightAreas_4;
-
+/* The vertex colour of the ground found last (gGroundArea, gGroundTri) at (x, z), interpolated over the
+   triangle: out = {r, g, b}. */
 void height_get_ground_color(s32 x, s32 z, s32 *out)
 {
     s32 m[3][4];
-    Ent_26 *e;
-    Shape *s;
-    Tri3 *t;
-    Vtx_t *vb;
+    TrackModel *e;
+    CollGrid *s;
+    CollTri *t;
+    Vtx *vb;
     s32 ee, k, q, tt, a, a2, b, d, num, sx, sz, px, pz;
 
-    if (gGroundArea < 0 || gGroundArea >= sHeightAreas_4->n) return;
-    e = &sHeightAreas_4->e[gGroundArea];
-    s = e->shape;
+    if (gGroundArea < 0 || gGroundArea >= sHeightAreas->count) return;
+    e = &sHeightAreas->e[gGroundArea];
+    s = e->grid;
     if (!(s->flags & 1)) return;
-    t = &s->t[gGroundTri];
+    t = &s->tris[gGroundTri];
     sx = (e->x1 + e->x0) * 8;
     sz = (e->z1 + e->z0) * 8;
     if (s->flags & 4) {
@@ -533,13 +470,13 @@ void height_get_ground_color(s32 x, s32 z, s32 *out)
         px = x;
         pz = z;
     }
-    vb = e->mesh->vtx;
-    m[0][0] = vb[t->v[0]].ob[0];
-    m[0][1] = vb[t->v[1]].ob[0];
-    m[0][2] = vb[t->v[2]].ob[0];
-    m[2][0] = vb[t->v[0]].ob[2];
-    m[2][1] = vb[t->v[1]].ob[2];
-    m[2][2] = vb[t->v[2]].ob[2];
+    vb = e->model->vtx;
+    m[0][0] = vb[t->vtx[0]].v.ob[0];
+    m[0][1] = vb[t->vtx[1]].v.ob[0];
+    m[0][2] = vb[t->vtx[2]].v.ob[0];
+    m[2][0] = vb[t->vtx[0]].v.ob[2];
+    m[2][1] = vb[t->vtx[1]].v.ob[2];
+    m[2][2] = vb[t->vtx[2]].v.ob[2];
     m[0][1] -= m[0][0];
     m[2][1] -= m[2][0];
     m[0][2] -= m[0][0];
@@ -547,9 +484,9 @@ void height_get_ground_color(s32 x, s32 z, s32 *out)
     m[0][0] <<= 4;
     m[2][0] <<= 4;
     for (k = 0; k < 3; k++) {
-        m[1][0] = vb[t->v[0]].cn[k];
-        m[1][1] = vb[t->v[1]].cn[k];
-        m[1][2] = vb[t->v[2]].cn[k];
+        m[1][0] = vb[t->vtx[0]].v.cn[k];
+        m[1][1] = vb[t->vtx[1]].v.cn[k];
+        m[1][2] = vb[t->vtx[2]].v.cn[k];
         m[1][1] -= m[1][0];
         m[1][2] -= m[1][0];
         tt = m[2][1] * m[1][2];
@@ -571,17 +508,13 @@ void height_get_ground_color(s32 x, s32 z, s32 *out)
 
 #define IDX(a, b) (((((a) & 0x1FF)) << 9) | ((b) & 0x1FF))
 
-typedef struct { u8 pad[8]; u16 vi[3]; u16 pad2; } MTri;
-typedef struct { u16 flags; u16 pad; MTri tri[1]; } Mesh_4;
-typedef struct { u8 pad[4]; Vtx16 *verts; } Model_3;
-typedef struct { Model_3 *model; s32 a, b, c, d; Mesh_4 *mesh; } Obj_23;
-
+/* The vertices (mm) of ground triangle p2 of height area p1 (on the desert: of the height map). */
 s32 height_get_tri_verts(s32 p1, s32 p2, Vec3i *v)
 {
     s32 n, q, u12, u13, lo4;
-    Obj_23 *o;
-    Mesh_4 *m;
-    Vtx16 *vt;
+    TrackModel *o;
+    CollGrid *m;
+    Vtx *vt;
     s32 k;
     u32 f; s32 j;
     u16 *pb, *pv;
@@ -616,26 +549,26 @@ s32 height_get_tri_verts(s32 p1, s32 p2, Vec3i *v)
         return 0;
     }
 
-    o = (Obj_23 *)(sHeightAreas + (p1 * 0x20 + 4));
-    m = o->mesh;
+    o = (TrackModel *)((u8 *)sHeightAreas + (p1 * 0x20 + 4));
+    m = o->grid;
     f = m->flags;
     if (!(f & 1)) {
         goto hang;
     }
     pb = (u16 *)m;
-    vt = o->model->verts;
+    vt = o->model->vtx;
     if (f & 4) {
-        u12 = (o->c + o->a) * 8;
-        n = (o->d + o->b) * 8;
+        u12 = (o->x1 + o->x0) * 8;
+        n = (o->z1 + o->z0) * 8;
     } else {
         n = 0;
         u12 = 0;
     }
-    pv = pb + (p2 * 8 + 2);
+    pv = pb + (p2 * 8 + 2); /* m->tris[p2]: its vertex indices are pv[4..6] */
     for (p1 = 0; p1 < 3; p1++) {
-        v[p1].x = vt[pv[p1 + 4]].x * 16 + u12;
-        v[p1].y = vt[pv[p1 + 4]].y * 16;
-        v[p1].z = vt[pv[p1 + 4]].z * 16 + n;
+        v[p1].x = vt[pv[p1 + 4]].v.ob[0] * 16 + u12;
+        v[p1].y = vt[pv[p1 + 4]].v.ob[1] * 16;
+        v[p1].z = vt[pv[p1 + 4]].v.ob[2] * 16 + n;
     }
     return 0;
 hang:
@@ -664,11 +597,8 @@ void height_get_ground_normal(f32 *param_1)
     param_1[2] = param_1[2] / len;
 }
 
-typedef struct { s32 pad; Vtx16 *v; } Mesh_5;
-typedef struct { u32 m0, m1; u16 v[3]; u16 flags; } Ent_27;
-typedef struct { u16 flags; u16 n; Ent_27 e[1]; } TList;
-typedef struct { Mesh_5 *m; s32 x0, z0, x1, z1; TList *tl; u8 pad[8]; } Obj_24;
-
+/* Collects into gGroundTris (at most 24) the ground triangles in the box (x0, z0)-(x1, z1) (mm), leaving out
+   bridge triangles not just below hy. */
 void height_collect_ground_tris(s32 x0, s32 z0, s32 x1, s32 z1, s32 hy) {
 
     s32 r[4];
@@ -680,13 +610,13 @@ void height_collect_ground_tris(s32 x0, s32 z0, s32 x1, s32 z1, s32 hy) {
     s32 ox, oz, dx, dz;
     s32 bx0, bz0, bx1, bz1, bit;
     u16 f;
-    Obj_24 *o;
-    TList *tl;
-    Ent_27 *en;
-    Vtx16 *vt;
+    TrackModel *o;
+    CollGrid *tl;
+    CollTri *en;
+    Vtx *vt;
     u16 *vi;
     u16 *mp;
-    CTri *t;
+    GroundTri *t;
     s32 *p;
 
     x0 >>= 4;
@@ -719,14 +649,14 @@ void height_collect_ground_tris(s32 x0, s32 z0, s32 x1, s32 z1, s32 hy) {
     if (gz < 0) gz = 0;
     if (gz >= 16) gz = 15;
     cell = gz * 16 + gx;
-    for (idx = 0; idx < sHeightGrid[cell]->n; idx++) {
-        o = (Obj_24 *)(sHeightAreas + ((sHeightGrid[cell]->id[idx] << 5) + 4));
+    for (idx = 0; idx < sHeightGrid[cell]->count; idx++) {
+        o = (TrackModel *)((u8 *)sHeightAreas + ((sHeightGrid[cell]->ids[idx] << 5) + 4));
         if (x1 < o->x0) continue;
         if (z1 < o->z0) continue;
         if (o->x1 < x0) continue;
         if (o->z1 < z0) continue;
-        if (!(o->tl->flags & 1)) fatal_halt(1);
-        tl = o->tl;
+        if (!(o->grid->flags & 1)) fatal_halt(1);
+        tl = o->grid;
         if (tl->flags & 4) {
             cx = (o->x1 + o->x0) / 2;
             cz = (o->z1 + o->z0) / 2;
@@ -760,64 +690,58 @@ void height_collect_ground_tris(s32 x0, s32 z0, s32 x1, s32 z1, s32 hy) {
                 mp[bit / 16] |= 1 << (bit % 16);
             }
         }
-        for (n = 0; n < tl->n; n++) {
-            en = &tl->e[n];
-            if (!((en->m0 & mask.w[0]) || (en->m1 & mask.w[1]))) continue;
+        for (n = 0; n < tl->count; n++) {
+            en = &tl->tris[n];
+            if (!((en->cells.w[0] & mask.w[0]) || (en->cells.w[1] & mask.w[1]))) continue;
             if (en->flags & 0x100) continue;
-            vi = en->v;
-            vt = o->m->v;
+            vi = en->vtx;
+            vt = o->model->vtx;
             for (k = 0; k < 3; k++) {
                 code[k] = 0;
-                if (vt[vi[k]].x < r[0]) code[k] = 1;
-                if (r[1] < vt[vi[k]].x) code[k] |= 2;
-                if (vt[vi[k]].z < r[2]) code[k] |= 4;
-                if (r[3] < vt[vi[k]].z) code[k] |= 8;
+                if (vt[vi[k]].v.ob[0] < r[0]) code[k] = 1;
+                if (r[1] < vt[vi[k]].v.ob[0]) code[k] |= 2;
+                if (vt[vi[k]].v.ob[2] < r[2]) code[k] |= 4;
+                if (r[3] < vt[vi[k]].v.ob[2]) code[k] |= 8;
             }
             if (code[0] & code[1] & code[2]) continue;
             if (en->flags & 0x400) {
                 for (k = 0; k < 3; k++) {
-                    if (!(hy < vt[vi[k]].y)) break;
+                    if (!(hy < vt[vi[k]].v.ob[1])) break;
                 }
                 if (k == 3) continue;
                 for (k = 0; k < 3; k++) {
-                    if (hy - 250 < vt[vi[k]].y) break;
+                    if (hy - 250 < vt[vi[k]].v.ob[1]) break;
                 }
                 if (k == 3) continue;
             }
-            { CTri *b = gGroundTris; t = &b[gGroundTriCount]; }
-            t->n = n;
-            t->id = idx;
+            { GroundTri *b = gGroundTris; t = &b[gGroundTriCount]; }
+            t->tri = n;
+            t->area = idx;
             for (k = 0; k < 3; k++) {
-                gGroundTris[gGroundTriCount].v[k][0] = (cx + vt[vi[k]].x) * 16;
-                gGroundTris[gGroundTriCount].v[k][1] = vt[vi[k]].y << 4;
-                gGroundTris[gGroundTriCount].v[k][2] = (cz + vt[vi[k]].z) * 16;
+                gGroundTris[gGroundTriCount].v[k].x = (cx + vt[vi[k]].v.ob[0]) * 16;
+                gGroundTris[gGroundTriCount].v[k].y = vt[vi[k]].v.ob[1] << 4;
+                gGroundTris[gGroundTriCount].v[k].z = (cz + vt[vi[k]].v.ob[2]) * 16;
             }
             if (++gGroundTriCount == 24) return;
         }
     }
 }
 
-typedef struct {
-    u8 pad[0x1C];
-    u8 *base;
-} Hdr_4;
-
-extern Hdr_4 *sWallMesh_2;
-
+/* Moves pos (m) one unit away from the first wall edge within a metre that is not removed. */
 void height_push_off_wall(f32 *pos)
 {
     s32 i;
-    Ent_28 *e;
+    WallEdge *e;
     f32 f;
 
     height_gather_walls((pos[0] - 1.0f) * 1000.0f, (pos[2] - 1.0f) * 1000.0f,
                   (pos[0] + 1.0f) * 1000.0f, (pos[2] + 1.0f) * 1000.0f);
     for (i = 0; i < sWallEdgeCount; i++) {
         e = sWallEdges[i];
-        if (!(gWallEdgeFlags[((u8 *)e - sWallMesh_2->base) >> 3] & 0x20)) {
-            f = __builtin_sqrtf(e->x * e->x + e->z * e->z);
-            pos[0] += e->x / f;
-            pos[2] += e->z / f;
+        if (!(gWallEdgeFlags[((u8 *)e - (u8 *)sWallMesh->edges) >> 3] & 0x20)) {
+            f = __builtin_sqrtf(e->nx * e->nx + e->nz * e->nz);
+            pos[0] += e->nx / f;
+            pos[2] += e->nz / f;
             return;
         }
     }
@@ -926,14 +850,8 @@ void height_push_out_of_desert_objs(f32 *p)
     p[2] = (f32)ny / 1000.0f;
 }
 
-typedef struct { s16 a, b, nx, nz; } Edge;
-typedef struct { s16 a, b, c, nx, ny, nz; } Tri12;
-typedef struct { u8 pad[0x14]; Vtx8 *verts; u8 pad2[4]; Edge *edges; } Track_8;
-
-extern Track_8 *sWallMesh_3;
-extern Tri12 *sWallTris[];
-extern Edge *sWallHitEdge;
-
+/* Tests the segment start-end (m) against the gathered walls (wantFlag: only those the camera collides with):
+   returns 1 for a hit closer than *tmax, with the wall's normal in out and *tmax the hit's place on the segment. */
 u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
 {
     u8 result = 0;
@@ -942,14 +860,14 @@ u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
     f32 t;
     f32 vx, vy, vz;
     f32 d1, d0, px;
-    Vtx8 *a, *b;
+    WallVtx *a, *b;
     s32 iax, iaz, ibx, ibz;
     f32 unused[3];
 
     if (gCurTrack_5->mode == 2) {
         return height_raycast_desert_objs(start, end, out, tmax);
     }
-    if (sWallMesh_3 == NULL) {
+    if (sWallMesh == NULL) {
         return 0;
     }
     sx = start[0] * 1000.0f;
@@ -961,20 +879,20 @@ u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
     gWallHitFlags = 0;
     if (sWallEdgeCount != 0) {
         for (i = 0; i < sWallEdgeCount; i++) {
-            Edge *e = sWallEdges[i];
-            u8 fl = gWallEdgeFlags[(e - sWallMesh_3->edges)];
+            WallEdge *e = sWallEdges[i];
+            u8 fl = gWallEdgeFlags[(e - sWallMesh->edges)];
             f32 ax, az, fax, faz, dz, dx, py, y0, y1, len;
 
             if (fl & 0x20) continue;
             if (wantFlag && !(fl & 0x40)) continue;
-            a = &sWallMesh_3->verts[e->a];
+            a = &sWallMesh->vtx[e->v0];
             iax = a->x;
             fax = iax;
             iaz = a->z;
             faz = iaz;
             ax = fax * 64.0f;
             az = faz * 64.0f;
-            b = &sWallMesh_3->verts[e->b];
+            b = &sWallMesh->vtx[e->v1];
             ibz = b->z;
             dz = ibz - iaz;
             ibx = b->x;
@@ -1017,18 +935,18 @@ u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
             out[2] = dx / len;
             result = 1;
             sWallHitEdge = e;
-            gWallHitFlags = gWallEdgeFlags[(e - sWallMesh_3->edges)];
+            gWallHitFlags = gWallEdgeFlags[(e - sWallMesh->edges)];
             D_800E8E78 = (gWallHitFlags >> 1) & 3;
         }
     }
     if (sWallTriCount != 0) {
         for (i = 0; i < sWallTriCount; i++) {
-            Tri12 *tr = sWallTris[i];
-            Vtx8 *v = sWallMesh_3->verts;
+            WallTri *tr = sWallTris[i];
+            WallVtx *v = sWallMesh->vtx;
             f32 fax, faz, ax, ay, az, nx, ny, nz, c, len;
-            Vtx8 *cc;
+            WallVtx *cc;
             s32 pos, neg, jz;
-            a = &v[tr->a];
+            a = &v[tr->v[0]];
 
             ibx = a->x;
             fax = ibx;
@@ -1040,12 +958,12 @@ u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
             nx = tr->nx;
             ny = tr->ny;
             nz = tr->nz;
-            b = &v[tr->b];
+            b = &v[tr->v[1]];
             vx = ex - ax;
             vy = ey - ay;
             vz = ez - az;
             d1 = vx * nx + vy * ny + vz * nz;
-            cc = &v[tr->c];
+            cc = &v[tr->v[2]];
             if (d1 >= 0.0f) continue;
             vx = sx - ax;
             vy = sy - ay;
@@ -1090,40 +1008,12 @@ typedef struct {
     Ent_30 e[8];           /* 0x324 */
 } Tile;
 
-typedef struct {
-    s16 v0, v1;
-    s16 f4;
-    s16 flags;          /* 0x06 */
-} CEdge;
-
-typedef struct {
-    s16 v[3];
-    s16 f6, f8;
-    s16 flags;          /* 0x0A */
-} CTri_2;
-
-typedef struct {
-    u16 *tris;
-    u16 *edges;
-} CCell;
-
-typedef struct {
-    s32 minx, minz, maxx, maxz;
-    s32 f10;
-    Vtx8 *verts;        /* 0x14 */
-    s32 f18;
-    CEdge *edges;       /* 0x1C */
-    s32 f20;
-    CTri_2 *tris;         /* 0x24 */
-    CCell cells[257];   /* 0x28 */
-} Grid_2;
-
 extern Tile *gDesertTiles_2;
 extern Ent_30 sDesertObjs_2[];
-extern Grid_2 *sWallMesh_4;
-extern CEdge *sWallEdges_2[];
-extern CTri_2 *sWallTris_2[];
 
+/* Gathers the wall edges and triangles of the grid cells around the box (x0, z0)-(x1, z1) (mm) into sWallEdges
+   and sWallTris (at most 256 each; bit 0 of nz marks the ones already taken); on the desert, the objects of the
+   tiles there into sDesertObjs (at most 8). */
 void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
 {
     s32 px[3];
@@ -1133,10 +1023,10 @@ void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
     s32 i, j, k, m;
     s32 ix0, iz0, ix1, iz1;
     s32 n, mask, v, lo, hi;
-    CCell *cell;
-    CEdge *e;
-    CTri_2 *t;
-    Vtx8 *a, *b;
+    WallCell *cell;
+    WallEdge *e;
+    WallTri *t;
+    WallVtx *a, *b;
 
     sDesertObjCount = 0;
     if (gCurTrack_5->mode == 2) {
@@ -1159,13 +1049,13 @@ void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
             }
             if (sDesertObjCount == 8) return;
         }
-    } else if (sWallMesh_4 != NULL) {
+    } else if (sWallMesh != NULL) {
         sWallEdgeCount = 0;
         sWallTriCount = 0;
-        ix0 = ((x0 / 16 - sWallMesh_4->minx) * 16) / (sWallMesh_4->maxx - sWallMesh_4->minx);
-        iz0 = ((z0 / 16 - sWallMesh_4->minz) * 16) / (sWallMesh_4->maxz - sWallMesh_4->minz);
-        ix1 = ((x1 / 16 - sWallMesh_4->minx) * 16) / (sWallMesh_4->maxx - sWallMesh_4->minx);
-        iz1 = ((z1 / 16 - sWallMesh_4->minz) * 16) / (sWallMesh_4->maxz - sWallMesh_4->minz);
+        ix0 = ((x0 / 16 - sWallMesh->minX) * 16) / (sWallMesh->maxX - sWallMesh->minX);
+        iz0 = ((z0 / 16 - sWallMesh->minZ) * 16) / (sWallMesh->maxZ - sWallMesh->minZ);
+        ix1 = ((x1 / 16 - sWallMesh->minX) * 16) / (sWallMesh->maxX - sWallMesh->minX);
+        iz1 = ((z1 / 16 - sWallMesh->minZ) * 16) / (sWallMesh->maxZ - sWallMesh->minZ);
         if (ix0 > 16 || iz0 > 16 || ix1 < 0 || iz1 < 0) return;
         if (ix0 < 0) ix0 = 0;
         if (ix0 > 15) ix0 = 15;
@@ -1175,15 +1065,15 @@ void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
         if (iz1 > 15) iz1 = 15;
         for (i = ix0; i <= ix1; i++) {
             for (j = iz0; j <= iz1; j++) {
-                cell = &sWallMesh_4->cells[j * 16 + i];
-                n = (u32)sWallMesh_4->cells[j * 16 + i + 1].edges - (u32)cell->edges;
+                cell = &sWallMesh->cells[j * 16 + i];
+                n = (u32)sWallMesh->cells[j * 16 + i + 1].edges - (u32)cell->edges;
                 n = (u32)n >> 1;
                 for (k = 0; k < n; k++) {
                     if (sWallEdgeCount >= 0x100) break;
-                    e = &sWallMesh_4->edges[cell->edges[k]];
-                    if (e->flags & 1) continue;
-                    a = &sWallMesh_4->verts[e->v0];
-                    b = &sWallMesh_4->verts[e->v1];
+                    e = &sWallMesh->edges[cell->edges[k]];
+                    if (e->nz & 1) continue;
+                    a = &sWallMesh->vtx[e->v0];
+                    b = &sWallMesh->vtx[e->v1];
                     if (a->x < b->x) {
                         if ((a->x << 6) >= x1 || x0 >= (b->x << 6)) continue;
                     } else {
@@ -1196,22 +1086,22 @@ void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
                     }
                     {
                         {
-                            sWallEdges_2[sWallEdgeCount] = e;
+                            sWallEdges[sWallEdgeCount] = e;
                             sWallEdgeCount++;
-                            e->flags |= 1;
+                            e->nz |= 1;
                         }
                     }
                 }
-                cell = &sWallMesh_4->cells[j * 16 + i];
-                n = (u32)sWallMesh_4->cells[j * 16 + i + 1].tris - (u32)cell->tris;
+                cell = &sWallMesh->cells[j * 16 + i];
+                n = (u32)sWallMesh->cells[j * 16 + i + 1].tris - (u32)cell->tris;
                 n = (u32)n >> 1;
                 for (k = 0; k < n + ((n & 1) >> 1); k++) {
                     if (sWallTriCount >= 0x100) break;
-                    t = &sWallMesh_4->tris[cell->tris[k]];
-                    if (t->flags & 1) continue;
+                    t = &sWallMesh->tris[cell->tris[k]];
+                    if (t->nz & 1) continue;
                     mask = 0xF;
                     for (m = 0; m < 3; m++) {
-                        a = &sWallMesh_4->verts[t->v[m]];
+                        a = &sWallMesh->vtx[t->v[m]];
                         v = a->x << 6;
                         if (v >= x0) mask &= ~1;
                         if (x1 >= v) mask &= ~2;
@@ -1220,128 +1110,102 @@ void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
                         if (z1 >= v) mask &= ~8;
                     }
                     if (mask == 0) {
-                        sWallTris_2[sWallTriCount++] = t;
-                        t->flags |= 1;
+                        sWallTris[sWallTriCount++] = t;
+                        t->nz |= 1;
                     }
                 }
             }
         }
         for (i = 0; i < sWallEdgeCount; i++) {
-            sWallEdges_2[i]->flags &= ~1;
+            sWallEdges[i]->nz &= ~1;
         }
         for (i = 0; i < sWallTriCount; i++) {
-            sWallTris_2[i]->flags &= ~1;
+            sWallTris[i]->nz &= ~1;
         }
         if (gDrawFlags & 0x200) {
             for (i = 0; i < sWallEdgeCount; i++) {
-                px[0] = sWallMesh_4->verts[sWallEdges_2[i]->v0].x << 6;
-                px[1] = sWallMesh_4->verts[sWallEdges_2[i]->v0].x << 6;
-                px[2] = sWallMesh_4->verts[sWallEdges_2[i]->v1].x << 6;
-                pz[0] = sWallMesh_4->verts[sWallEdges_2[i]->v0].z << 6;
-                pz[1] = sWallMesh_4->verts[sWallEdges_2[i]->v0].z << 6;
-                pz[2] = sWallMesh_4->verts[sWallEdges_2[i]->v1].z << 6;
+                px[0] = sWallMesh->vtx[sWallEdges[i]->v0].x << 6;
+                px[1] = sWallMesh->vtx[sWallEdges[i]->v0].x << 6;
+                px[2] = sWallMesh->vtx[sWallEdges[i]->v1].x << 6;
+                pz[0] = sWallMesh->vtx[sWallEdges[i]->v0].z << 6;
+                pz[1] = sWallMesh->vtx[sWallEdges[i]->v0].z << 6;
+                pz[2] = sWallMesh->vtx[sWallEdges[i]->v1].z << 6;
                 height_get_ground(px[0], 10000, pz[0]);
                 height_get_ground(px[2], 10000, pz[2]);
-                py[0] = sWallMesh_4->verts[sWallEdges_2[i]->v0].y * 16;
-                py[1] = (sWallMesh_4->verts[sWallEdges_2[i]->v0].y + sWallMesh_4->verts[sWallEdges_2[i]->v0].h) * 16;
-                py[2] = sWallMesh_4->verts[sWallEdges_2[i]->v1].y * 16;
-                px[0] = sWallMesh_4->verts[sWallEdges_2[i]->v0].x << 6;
-                px[1] = sWallMesh_4->verts[sWallEdges_2[i]->v1].x << 6;
-                px[2] = sWallMesh_4->verts[sWallEdges_2[i]->v1].x << 6;
-                pz[0] = sWallMesh_4->verts[sWallEdges_2[i]->v0].z << 6;
-                pz[1] = sWallMesh_4->verts[sWallEdges_2[i]->v1].z << 6;
-                pz[2] = sWallMesh_4->verts[sWallEdges_2[i]->v1].z << 6;
-                py[0] = (sWallMesh_4->verts[sWallEdges_2[i]->v0].y + sWallMesh_4->verts[sWallEdges_2[i]->v0].h) * 16;
-                py[1] = (sWallMesh_4->verts[sWallEdges_2[i]->v1].y + sWallMesh_4->verts[sWallEdges_2[i]->v1].h) * 16;
+                py[0] = sWallMesh->vtx[sWallEdges[i]->v0].y * 16;
+                py[1] = (sWallMesh->vtx[sWallEdges[i]->v0].y + sWallMesh->vtx[sWallEdges[i]->v0].h) * 16;
+                py[2] = sWallMesh->vtx[sWallEdges[i]->v1].y * 16;
+                px[0] = sWallMesh->vtx[sWallEdges[i]->v0].x << 6;
+                px[1] = sWallMesh->vtx[sWallEdges[i]->v1].x << 6;
+                px[2] = sWallMesh->vtx[sWallEdges[i]->v1].x << 6;
+                pz[0] = sWallMesh->vtx[sWallEdges[i]->v0].z << 6;
+                pz[1] = sWallMesh->vtx[sWallEdges[i]->v1].z << 6;
+                pz[2] = sWallMesh->vtx[sWallEdges[i]->v1].z << 6;
+                py[0] = (sWallMesh->vtx[sWallEdges[i]->v0].y + sWallMesh->vtx[sWallEdges[i]->v0].h) * 16;
+                py[1] = (sWallMesh->vtx[sWallEdges[i]->v1].y + sWallMesh->vtx[sWallEdges[i]->v1].h) * 16;
             }
             for (i = 0; i < sWallTriCount; i++) {
-                px[0] = sWallMesh_4->verts[sWallTris_2[i]->v[0]].x << 6;
-                px[1] = sWallMesh_4->verts[sWallTris_2[i]->v[1]].x << 6;
-                px[2] = sWallMesh_4->verts[sWallTris_2[i]->v[2]].x << 6;
-                py[0] = (sWallMesh_4->verts[sWallTris_2[i]->v[0]].y + sWallMesh_4->verts[sWallTris_2[i]->v[0]].h) * 16;
-                py[1] = (sWallMesh_4->verts[sWallTris_2[i]->v[1]].y + sWallMesh_4->verts[sWallTris_2[i]->v[1]].h) * 16;
-                py[2] = (sWallMesh_4->verts[sWallTris_2[i]->v[2]].y + sWallMesh_4->verts[sWallTris_2[i]->v[2]].h) * 16;
-                qz[0] = sWallMesh_4->verts[sWallTris_2[i]->v[0]].z << 6;
-                qz[1] = sWallMesh_4->verts[sWallTris_2[i]->v[1]].z << 6;
-                qz[2] = sWallMesh_4->verts[sWallTris_2[i]->v[2]].z << 6;
+                px[0] = sWallMesh->vtx[sWallTris[i]->v[0]].x << 6;
+                px[1] = sWallMesh->vtx[sWallTris[i]->v[1]].x << 6;
+                px[2] = sWallMesh->vtx[sWallTris[i]->v[2]].x << 6;
+                py[0] = (sWallMesh->vtx[sWallTris[i]->v[0]].y + sWallMesh->vtx[sWallTris[i]->v[0]].h) * 16;
+                py[1] = (sWallMesh->vtx[sWallTris[i]->v[1]].y + sWallMesh->vtx[sWallTris[i]->v[1]].h) * 16;
+                py[2] = (sWallMesh->vtx[sWallTris[i]->v[2]].y + sWallMesh->vtx[sWallTris[i]->v[2]].h) * 16;
+                qz[0] = sWallMesh->vtx[sWallTris[i]->v[0]].z << 6;
+                qz[1] = sWallMesh->vtx[sWallTris[i]->v[1]].z << 6;
+                qz[2] = sWallMesh->vtx[sWallTris[i]->v[2]].z << 6;
             }
         }
     }
 }
 
-typedef struct {
-    s16 x;
-    s16 y;
-    s32 pad;
-} Pt_2;
-
-typedef struct {
-    s16 a;
-    s16 b;
-    s16 nx;
-    s16 ny;
-} Edge_2;
-
-typedef struct {
-    u8 pad[10];
-    s16 flags;
-} Rec_16;
-
-struct Hdr_5 {
-    s32 pad[5];
-    Pt_2 *pts;
-    s32 nedges;
-    Edge_2 *edges;
-    s32 nrecs;
-    Rec_16 *recs;
-    Pair tab[0x101];
-};
-
-void height_init_walls(Hdr_5 **param_1, s32 param_2)
+/* Sets up a wall mesh resource (relocating it first when `reloc`): the edge flags (gWallEdgeFlags; an edge whose
+   nx is -0x8000 brings its flags in nz) and the edges' normals. */
+void height_init_walls(WallMesh **pp, s32 reloc)
 {
-    Hdr_5 *h = *param_1;
+    WallMesh *h = *pp;
     s32 i;
     s32 dx;
     s32 dy;
     s32 len;
 
-    if (param_2 != 0) {
-        h->pts = (Pt_2 *)((s32)h->pts + (s32)h);
-        h->edges = (Edge_2 *)((s32)h->edges + (s32)h);
-        h->recs = (Rec_16 *)((s32)h->recs + (s32)h);
+    if (reloc != 0) {
+        h->vtx = (WallVtx *)((s32)h->vtx + (s32)h);
+        h->edges = (WallEdge *)((s32)h->edges + (s32)h);
+        h->tris = (WallTri *)((s32)h->tris + (s32)h);
         for (i = 0; i < 0x101; i++) {
-            h->tab[i].a += (s32)h;
-            h->tab[i].b += (s32)h;
+            h->cells[i].tris = (u16 *)((s32)h->cells[i].tris + (s32)h);
+            h->cells[i].edges = (u16 *)((s32)h->cells[i].edges + (s32)h);
         }
     }
-    gWallEdgeFlags = mem_alloc_dbg(h->nedges, 0, D_800D6C20, 0x87F);
-    mem_fill(gWallEdgeFlags, 0, h->nedges);
-    for (i = 0; i < h->nedges; i++) {
+    gWallEdgeFlags = mem_alloc_dbg(h->numEdges, 0, D_800D6C20, 0x87F);
+    mem_fill(gWallEdgeFlags, 0, h->numEdges);
+    for (i = 0; i < h->numEdges; i++) {
         gWallEdgeFlags[i] |= 1;
         if (h->edges[i].nx == -0x8000) {
-            gWallEdgeFlags[i] = ((u8 *)&h->edges[i])[7] ^ 1;
+            gWallEdgeFlags[i] = ((u8 *)&h->edges[i].nz)[1] ^ 1;
         }
-        dx = h->pts[h->edges[i].b].x - h->pts[h->edges[i].a].x;
-        dy = h->pts[h->edges[i].b].y - h->pts[h->edges[i].a].y;
+        dx = h->vtx[h->edges[i].v1].x - h->vtx[h->edges[i].v0].x;
+        dy = h->vtx[h->edges[i].v1].z - h->vtx[h->edges[i].v0].z;
         len = isqrt_u32_4(dx * dx + dy * dy);
         if (len != 0) {
             dx = (dx * 0x4000) / len;
             dy = (dy * 0x4000) / len;
         }
         h->edges[i].nx = dy;
-        h->edges[i].ny = -dx;
+        h->edges[i].nz = -dx;
     }
-    for (i = 0; i < h->nedges; i++) {
-        h->edges[i].ny &= ~1;
+    for (i = 0; i < h->numEdges; i++) {
+        h->edges[i].nz &= ~1;
     }
-    for (i = 0; i < h->nrecs; i++) {
-        h->recs[i].flags &= ~1;
+    for (i = 0; i < h->numTris; i++) {
+        h->tris[i].nz &= ~1;
     }
 }
 
-void height_init_walls_reloc(int *param_1)
+void height_init_walls_reloc(WallMesh **pp)
 {
-    height_init_walls(param_1, 1);
+    height_init_walls(pp, 1);
 }
 
 void height_free_walls(void)
@@ -1385,19 +1249,13 @@ int height_get_grid_cell(int x, int y)
     return b * 16 + a;
 }
 
-struct Poly_2 {
-    u8 hdr[6];
-    u16 n;
-    Pt pts[1];
-};
-
-s32 point_in_poly_xz(Poly_2 *poly, s32 px, s32 pz)
+s32 point_in_poly_xz(SurfacePoly *poly, s32 px, s32 pz)
 {
     s32 pos = 0;
     s32 neg;
     s32 i = 0, j, n, cr;
 
-    n = poly->n;
+    n = poly->count;
     neg = 0;
     px = px >> 6;
     pz = pz >> 6;
@@ -1412,14 +1270,14 @@ s32 point_in_poly_xz(Poly_2 *poly, s32 px, s32 pz)
             if (cr <= 0) {
                 neg++;
             }
-            n = poly->n;
+            n = poly->count;
             i++;
         } while (i < n);
     }
-    if (pos == poly->n) {
+    if (pos == poly->count) {
         goto ret1;
     }
-    if (neg != poly->n) {
+    if (neg != poly->count) {
         goto ret0;
     }
 ret1:

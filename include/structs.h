@@ -27,11 +27,6 @@ typedef struct Bike_12 Bike_12;
 typedef struct Ent_12 Ent_12;
 typedef struct Obj_10 Obj_10;
 typedef struct Obj_11 Obj_11;
-typedef struct Model_2 Model_2;
-typedef struct List_4 List_4;
-typedef struct Lst Lst;
-typedef struct Ent_19 Ent_19;
-typedef struct Ent_22 Ent_22;
 typedef struct Player_10 Player_10;
 typedef struct Obj_13 Obj_13;
 typedef struct Obj_14 Obj_14;
@@ -51,9 +46,6 @@ typedef struct Obj_20 Obj_20;
 typedef struct Obj_21 Obj_21;
 typedef struct Out_2 Out_2;
 typedef struct Obj_22 Obj_22;
-typedef struct Area_2 Area_2;
-typedef struct Hdr_5 Hdr_5;
-typedef struct Poly_2 Poly_2;
 typedef struct Obj_27 Obj_27;
 typedef struct Obj_29 Obj_29;
 typedef struct Node_6 Node_6;
@@ -83,8 +75,6 @@ typedef struct Spawn Spawn;
 typedef struct Player_22 Player_22;
 typedef struct Ent_65 Ent_65;
 typedef struct Obj_47 Obj_47;
-typedef struct Tri3_2 Tri3_2;
-typedef struct Mdl_2 Mdl_2;
 typedef struct Obj_53 Obj_53;
 typedef struct Obj_55 Obj_55;
 typedef struct Ent_78 Ent_78;
@@ -93,8 +83,6 @@ typedef struct Ent_79 Ent_79;
 typedef struct Obj_58 Obj_58;
 typedef struct Obj_59 Obj_59;
 typedef struct Obj_60 Obj_60;
-typedef struct Mdl2 Mdl2;
-typedef struct Obj2 Obj2;
 typedef struct Item_8 Item_8;
 typedef struct Obj_61 Obj_61;
 typedef struct Obj_62 Obj_62;
@@ -200,11 +188,6 @@ typedef struct MtxS {
     s16 i[4][4];
     u16 f[4][4];
 } MtxS;
-
-typedef struct {
-    u32 a;
-    u32 b;
-} Entry;
 
 typedef struct {
     u8 pad[0x1C];
@@ -492,11 +475,6 @@ typedef struct {
 typedef struct {
     u32 w0, w1;
 } Blk_2;
-
-typedef struct Facet_2 {
-    u8 p00[8];
-    Vec v[3];
-} Facet_2;
 
 typedef struct Model_4 {
     s32 f0;

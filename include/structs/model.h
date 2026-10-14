@@ -11,7 +11,7 @@
    set << 6 | 8-bit << 2 | wrap bits, mask t << 4 | mask s}; 6 bone matrix {op, bone}. */
 typedef struct PrimModel {
     /* 0x00 */ u32 numVtx;
-    /* 0x04 */ Vtx_t *vtx;
+    /* 0x04 */ Vtx *vtx;
     /* 0x08 */ u32 unk_08;
     /* 0x0C */ u8 *cmds;
     /* 0x10 */ u32 unk_10;

@@ -172,13 +172,6 @@ typedef struct {
     Mtx *base;
 } Cell_6;
 
-typedef struct {
-    u8 pad[0x20];
-    Obj e[1];
-} Hdr_8;
-
-extern Hdr_8 *gTrackSections_8;
-
 Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
 {
     s32 i, k;
@@ -204,7 +197,7 @@ Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
     v = tab + (sh + p4);
     for (; i < 2; i++) {
         c = &D_800CCB90[i];
-        if ((gTrackSections_8->e[c->idx].mask >> sh) & 1) {
+        if ((gTrackSections->e[c->idx].mask >> sh) & 1) {
             k = 0;
             if (c->cnt > 0) {
                 tbl = sGravelPitModels;

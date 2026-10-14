@@ -41,6 +41,36 @@ typedef struct TrackModelList {
     /* 0x04 */ TrackModel e[1]; /* [count] */
 } TrackModelList;
 
+/* Outdoor tracks: an animated texture a model uses, drawn through segment 8 + its place in the model's list
+   (tube_remap_tex_addr, tube_set_anim_tex_segs). */
+typedef struct TexSegRef {
+    /* 0x00 */ u8 groupStart; /* first texture of the animation group in gAnimTexSet */
+    /* 0x01 */ u8 groupLen;
+    /* 0x02 */ u8 offset;     /* the texture's place in the group */
+    /* 0x03 */ u8 pad03;
+} TexSegRef; /* size 0x4 */
+
+/* Outdoor tracks: the box of a section grown to hold the objects assigned to it (sSectionBounds). */
+typedef struct TrackBounds {
+    /* 0x00 */ s32 x0;
+    /* 0x04 */ s32 x1;
+    /* 0x08 */ s32 z0;
+    /* 0x0C */ s32 z1;
+} TrackBounds; /* size 0x10 */
+
+/* height.c bins the sections on a 16x16 grid of the track: each cell lists the sections it overlaps. */
+typedef struct HeightCell {
+    /* 0x00 */ u16 count;
+    /* 0x02 */ u16 ids[1]; /* [count] section indices */
+} HeightCell;
+
+/* A ground triangle near a point, in mm (height_collect_ground_tris, for shadows and tire tracks). */
+typedef struct GroundTri {
+    /* 0x00 */ s32 area;    /* the place of its section in the grid cell's list */
+    /* 0x04 */ s32 tri;     /* its index in the section's CollGrid (desert: the height-map triangle) */
+    /* 0x08 */ Vec v[3];
+} GroundTri; /* size 0x2C */
+
 /* Surface polygons: areas of the ground with their own surface, in units of 64 mm. */
 typedef struct SurfacePoint {
     /* 0x00 */ s16 x;
@@ -48,8 +78,7 @@ typedef struct SurfacePoint {
 } SurfacePoint; /* size 0x4 */
 
 typedef struct SurfacePoly {
-    /* 0x00 */ u16 surface; /* read into gGroundSurface */
-    /* 0x02 */ u16 unk_02;
+    /* 0x00 */ s32 surface; /* read into gGroundSurface */
     /* 0x04 */ u16 unk_04;
     /* 0x06 */ u16 count;
     /* 0x08 */ SurfacePoint pts[1]; /* [count] */
@@ -64,14 +93,14 @@ typedef struct WallVtx {
 } WallVtx; /* size 0x8 */
 
 typedef struct WallEdge {
-    /* 0x00 */ u16 v0;
-    /* 0x02 */ u16 v1;
+    /* 0x00 */ s16 v0;
+    /* 0x02 */ s16 v1;
     /* 0x04 */ s16 nx;      /* normal (1.0 = 0x4000); -0x8000 in the resource: nz holds the edge's flags */
     /* 0x06 */ s16 nz;      /* bit 0: already gathered */
 } WallEdge; /* size 0x8 */
 
 typedef struct WallTri {
-    /* 0x00 */ u16 v[3];
+    /* 0x00 */ s16 v[3];
     /* 0x06 */ s16 nx;
     /* 0x08 */ s16 ny;
     /* 0x0A */ s16 nz;      /* bit 0: already gathered */

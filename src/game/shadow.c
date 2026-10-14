@@ -237,13 +237,7 @@ typedef struct {
     u8 pad[0x7E0 - 0x18];
 } Player_11;
 
-typedef struct {
-    u8 pad[8];
-    Vec3i v[3];
-} Facet;
-
 extern Player_11 gRiders_38[];
-extern Facet gGroundTris_2[];
 
 void shadow_build_mesh(s32 n)
 {
@@ -271,11 +265,11 @@ void shadow_build_mesh(s32 n)
     vb = (u32)sShadowVtx + k * 16;
     for (i = 0; i < gGroundTriCount; i++) {
         for (j = 0; j < 3; j++) {
-            gGroundTris_2[i].v[j].x -= x;
-            gGroundTris_2[i].v[j].y -= y;
-            gGroundTris_2[i].v[j].z -= z;
+            gGroundTris[i].v[j].x -= x;
+            gGroundTris[i].v[j].y -= y;
+            gGroundTris[i].v[j].z -= z;
         }
-        shadow_clip_triangle(&gGroundTris_2[i], 1000);
+        shadow_clip_triangle(&gGroundTris[i], 1000);
         cnt = sShadowTriCount - 2;
         if (cnt + sClipOutCount >= 0x48) return;
         if (sShadowVtxCount + sClipOutCount >= 0x20) return;
@@ -298,7 +292,7 @@ void shadow_build_mesh(s32 n)
     }
 }
 
-void shadow_clip_triangle(Facet_2 *a, s32 lim)
+void shadow_clip_triangle(GroundTri *a, s32 lim)
 {
     Vec *o;
     Vec *p;

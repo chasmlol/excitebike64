@@ -679,9 +679,7 @@ Gfx *render_set_viewport(Gfx *dl, Mtx *m, s32 n, s32 flag)
 
 typedef struct { u8 pad0[0x5AA]; s16 sta; u8 pad1[0x7E0 - 0x5AC]; } E37;
 typedef struct { u8 pad0[0x2C]; s32 mode; u8 pad1[0xA0 - 0x30]; } Trk_4;
-typedef struct { u32 bits; u8 pad[0x1C]; } Cell_2;
 
-extern Cell_2 *gTrackSections_4;
 extern E37 gRiders_4[];
 extern Trk_4 *gCurTrack_11;
 extern Trk_4 gTracks_5[];
@@ -699,8 +697,7 @@ s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 k, s32 c, s32 q, s32 n)
     }
     if (!(gRiders_4[n].sta == 9 && gCamTargets[k] == n)) {
         if ((u32)gCurTrack_11->mode < 2 && c != -1) {
-            Cell_2 *cp = &gTrackSections_4[c];
-            if (!((cp[1].bits >> (k * 2)) & 1)) {
+            if (!((gTrackSections->e[c].mask >> (k * 2)) & 1)) {
                 return 0;
             }
         }

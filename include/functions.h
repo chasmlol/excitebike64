@@ -253,11 +253,11 @@ void arn_init(void);
 Gfx *arn_draw(Gfx *gdl, s32 a1, s32 a2, s32 view);
 Gfx *arn_draw_water(Gfx *gdl, s32 p2, s32 p3, u32 sh);
 Gfx *arn_draw_far(Gfx *gdl, s32 a1, s32 a2, s32 mode);
-void arn_cull_models(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots);
-void arn_apply_noise_shading(Model_2 *m);
+void arn_cull_models(TrackModelList *list, s32 view, s32 strict, s16 *slots, s32 nslots);
+void arn_apply_noise_shading(TrackModelList *list);
 void arn_free(void);
 void arn_update_view(s32 param_1);
-void arn_relocate(u32 *param);
+void arn_relocate(TrackModelList **pp);
 
 /* src/game/tubegfx.c */
 void tube_init(void);
@@ -266,10 +266,10 @@ void tube_update_view(s32 n);
 Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog);
 Gfx *tube_draw_far(Gfx *gdl, s32 mtx, s32 a2, s32 view);
 Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view);
-void tube_cull_sections(List_4 *l, s32 n);
-void tube_assign_objects(Lst *a, Lst *b);
+void tube_cull_sections(TrackModelList *l, s32 n);
+void tube_assign_objects(TrackModelList *a, TrackModelList *b);
 s32 tube_get_water_level(s32 x, s32 y, s32 *out);
-s32 **tube_build_dlists(Ent_19 *h, s32 p2, u32 p3, s32 p4);
+Gfx **tube_build_dlists(TrackModelList *list, TexSet **sets, u32 flags, s32 animTex);
 void tube_remap_tex_addr(u32 *param_1);
 void tube_init_tex_groups(void);
 void tube_load_pvs(void);
@@ -280,7 +280,7 @@ short *tube_alloc_mtx(s32 p1, s32 p2, s32 p3, s32 p4);
 Gfx *tube_set_anim_tex_segs(Gfx *gdl, s32 idx);
 void tube_free_tex_segs(void);
 void tube_reset_objects(void);
-void tube_rotate_vertex_colors(Ent_22 *p);
+void tube_rotate_vertex_colors(TrackModelList *list);
 void tube_animate_textures(void);
 void tube_spawn_splash(s32 param_1, s32 param_2, s32 param_3, s32 param_4);
 void tube_update_splashes(void);
@@ -336,7 +336,7 @@ void cam_get_track_slope(s32 a0, f32 f, s16 *out);
 void cam_set_frozen(s32 i, s32 v);
 
 /* src/game/height.c */
-void height_init(Area_2 *area, s32 b, s32 c, u32 *polys);
+void height_init(TrackModelList *sections, TrackModelList *objects, WallMesh *walls, u32 *polys);
 void height_free(void);
 s32 height_test_area(s32 id, s32 x, s32 y, s32 z);
 s32 height_get_ground(s32 x, s32 y, s32 z);
@@ -351,12 +351,12 @@ s32 height_raycast_desert_objs(f32 *p1, f32 *p2, f32 *p3, f32 *p4);
 void height_push_out_of_desert_objs(f32 *p);
 u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag);
 void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1);
-void height_init_walls(Hdr_5 **param_1, s32 param_2);
-void height_init_walls_reloc(int *param_1);
+void height_init_walls(WallMesh **pp, s32 reloc);
+void height_init_walls_reloc(WallMesh **pp);
 void height_free_walls(void);
 s32 point_in_tri_xz(s32 *p1, s32 *p2, s32 x, s32 y);
 int height_get_grid_cell(int x, int y);
-s32 point_in_poly_xz(Poly_2 *poly, s32 px, s32 pz);
+s32 point_in_poly_xz(SurfacePoly *poly, s32 px, s32 pz);
 s32 func_80031FA0(s32 p1, s32 p2, s32 p3);
 s32 func_8003207C(s32 p1, s32 p2, s32 p3);
 
@@ -416,7 +416,7 @@ Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m);
 Gfx *shadow_draw(s32 id, s32 unused, Gfx *gdl, s32 arg3);
 Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl);
 void shadow_build_mesh(s32 n);
-void shadow_clip_triangle(Facet_2 *a, s32 lim);
+void shadow_clip_triangle(GroundTri *a, s32 lim);
 void shadow_init(void);
 void shadow_free(void);
 
@@ -767,11 +767,11 @@ Gfx *instances_draw(Gfx *gdl, Mtx *m, s32 unused, s32 view, s32 vis);
 void instances_free(void);
 
 /* src/game/shatter.c */
-s32 shatter_tri_longest_edge(Tri3_2 *t, s32 *outI, s32 *outN, s32 *ox, s32 *oy, s32 *oz);
-void shatter_init(Mdl_2 *p);
+s32 shatter_tri_longest_edge(ShatterPiece *t, s32 *outI, s32 *outN, s32 *ox, s32 *oy, s32 *oz);
+void shatter_init(TrackModelList *p);
 void shatter_update_pieces(void);
 void shatter_check_riders(void);
-void shatter_break_object(s32 param_1);
+void shatter_break_object(s32 index);
 void shatter_reset(void);
 void shatter_free(void);
 void shatter_update(void);
@@ -866,7 +866,7 @@ void snow_respawn_flake(s32 *param_1);
 void snow_free(void);
 
 /* src/game/remove.c */
-void remove_walls_init(Mdl2 *m, Obj2 *o);
+void remove_walls_init(TrackModelList *m, WallMesh *o);
 void remove_walls_trigger(s32 id);
 void remove_walls_free(void);
 void remove_walls_reset(void);

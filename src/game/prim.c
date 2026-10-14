@@ -5,7 +5,7 @@
 
 Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **segs, Gfx *gdl) {
     u32 addr;
-    Vtx_t *vtx;
+    Vtx *vtx;
     s32 blk, done;
     u8 c0;
     s32 vbase, mtx, h, rel;
@@ -233,12 +233,12 @@ void func_80014AD8(s32 x)
 void prim_alloc_seg_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags)
 {
     u32 r;
-    Vtx_t *vtx;
+    Vtx *vtx;
 
     r = (u32)prim_build_dl(flags | 0x21, mdl, sets, (Gfx *)gZBuffer);
     *out = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x323);
     vtx = mdl->vtx;
-    mdl->vtx = (Vtx_t *)0x01000000;
+    mdl->vtx = (Vtx *)0x01000000;
     prim_build_dl(flags | 0x21, mdl, sets, *out);
     mdl->vtx = vtx;
 }
@@ -301,7 +301,7 @@ void prim_n64_relocate(PrimModel **pp)
 {
     PrimModel *mdl = (PrimModel *)((u32)*pp & 0xFFFFFFFC);
 
-    mdl->vtx = (Vtx_t *)((u32)mdl->vtx + (u32)mdl);
+    mdl->vtx = (Vtx *)((u32)mdl->vtx + (u32)mdl);
     mdl->cmds = (u8 *)((u32)mdl->cmds + (u32)mdl);
 }
 
