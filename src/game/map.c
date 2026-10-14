@@ -24,7 +24,7 @@ extern Player gRiderGfx[];
 void map_init(void)
 {
     s32 i;
-    Spot *p;
+    PathNode *p;
     s32 n;
     s32 wA;
     s32 hA;
@@ -48,17 +48,17 @@ void map_init(void)
     default:
         if ((gGame & 0x8000) == 0) {
             for (i = 0; i < gPathNodeCount; i++) {
-                if (gPathNodes_2[i].x < sMapBoundsMin.x || i == 0) {
-                    sMapBoundsMin.x = gPathNodes_2[i].x;
+                if (gPathNodes[i].pos.x < sMapBoundsMin.x || i == 0) {
+                    sMapBoundsMin.x = gPathNodes[i].pos.x;
                 }
-                if (gPathNodes_2[i].z < sMapBoundsMin.z || i == 0) {
-                    sMapBoundsMin.z = gPathNodes_2[i].z;
+                if (gPathNodes[i].pos.z < sMapBoundsMin.z || i == 0) {
+                    sMapBoundsMin.z = gPathNodes[i].pos.z;
                 }
-                if (gPathNodes_2[i].x > sMapBoundsMax.x || i == 0) {
-                    sMapBoundsMax.x = gPathNodes_2[i].x;
+                if (gPathNodes[i].pos.x > sMapBoundsMax.x || i == 0) {
+                    sMapBoundsMax.x = gPathNodes[i].pos.x;
                 }
-                if (gPathNodes_2[i].z > sMapBoundsMax.z || i == 0) {
-                    sMapBoundsMax.z = gPathNodes_2[i].z;
+                if (gPathNodes[i].pos.z > sMapBoundsMax.z || i == 0) {
+                    sMapBoundsMax.z = gPathNodes[i].pos.z;
                 }
             }
             x = sMapPos[(gNumViews - 1) * 2];
@@ -204,14 +204,6 @@ Gfx *map_draw_rider_dot(Gfx *gdl, s32 player, s32 big)
 }
 
 typedef struct {
-    u8 pad0[0x46];
-    s16 next;
-    u8 pad48[0x66 - 0x48];
-    u16 pos;
-    u8 pad68[0x6C - 0x68];
-} Node_19;
-
-typedef struct {
     u8 pad0[0x628];
     s16 node;
     u8 pad62A[0x63C - 0x62A];
@@ -219,14 +211,12 @@ typedef struct {
     u8 pad640[0x7E0 - 0x640];
 } Rider_5;
 
-extern Node_19 *gPathNodes_27;
-
 Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 {
     Rider_5 *r;
     Rider_5 *rb;
-    Node_19 *a;
-    Node_19 *b;
+    PathNode *a;
+    PathNode *b;
     s32 v;
     s32 h;
     s32 k;
@@ -235,11 +225,11 @@ Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
     rb = gRiders;
     r = &rb[idx];
     k = r->node;
-    a = &gPathNodes_27[k];
-    v = a->pos;
+    a = &gPathNodes[k];
+    v = a->lapProgress;
     k = a->next;
-    b = &gPathNodes_27[k];
-    if (b->pos < a->pos) {
+    b = &gPathNodes[k];
+    if (b->lapProgress < a->lapProgress) {
         f = r->frac;
         if (f < 0.0f) {
             f = 0.0f;
@@ -247,9 +237,9 @@ Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
         if (1.0f < f) {
             f = 1.0f;
         }
-        v = (s32)((f32)v + f * (f32)(b->pos - v));
+        v = (s32)((f32)v + f * (f32)(b->lapProgress - v));
     } else {
-        v = b->pos;
+        v = b->lapProgress;
     }
     if (gSplitVertical != 0) {
         v -= 0x3DD3;
@@ -351,16 +341,13 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
 
 typedef struct { f32 x, y; } V2;
 typedef struct { u8 pad[0x628]; s16 obj; u8 pad2[0x63C - 0x62A]; f32 t; u8 pad3[0x7E0 - 0x640]; } Player_25;
-typedef struct { u8 pad[0x46]; s16 next; u8 pad2[0x6C - 0x48]; } Obj_50;
-
-extern Obj_50 *gPathNodes_28;
 
 void map_get_rider_pos(s32 player, s32 *px, s32 *py)
 {
     Player_25 *pl;
     Player_25 *base;
-    Obj_50 *o;
-    Obj_50 *o2;
+    PathNode *o;
+    PathNode *o2;
     V2 a, b;
     f32 cx, cy, t;
     s32 x, y, w, h;
@@ -371,10 +358,10 @@ void map_get_rider_pos(s32 player, s32 *px, s32 *py)
     pl = &base[player];
     cx = (sMapBoundsMin_2[0] + sMapBoundsMax_2[0]) * 0.5f;
     cy = (sMapBoundsMin_2[1] + sMapBoundsMax_2[1]) * 0.5f;
-    o = &gPathNodes_28[pl->obj];
-    o2 = &gPathNodes_28[o->next];
-    map_get_node_pos((f32 *)o, &a.x, &a.y);
-    map_get_node_pos((f32 *)o2, &b.x, &b.y);
+    o = &gPathNodes[pl->obj];
+    o2 = &gPathNodes[o->next];
+    map_get_node_pos(o, &a.x, &a.y);
+    map_get_node_pos(o2, &b.x, &b.y);
     t = pl->t;
     if (t < 0.0f) {
         t = 0.0f;
@@ -413,30 +400,16 @@ void map_get_rider_pos(s32 player, s32 *px, s32 *py)
     *py = y;
 }
 
-typedef struct {
-    f32 x, y, z;
-    u8 padC[0x14 - 0xC];
-    f32 f14;
-    f32 f18;
-    u8 pad1C[0x46 - 0x1C];
-    s16 f46;
-    u8 pad48[0x58 - 0x48];
-    f32 f58;
-    f32 f5C;
-    u8 pad60[0x6C - 0x60];
-} Node_20;
-
 typedef struct { s32 sx, sy; u8 data[0x1000]; } MapImg;
 typedef struct { u8 pad[0x4C]; s32 f4C; } Race_6;
 
 extern MapImg *sMapImage_3;
-extern Node_20 *gPathNodes_29;
 extern Race_6 gGame_47;
 
-static inline void getpos(Node_20 *n, f32 *x, f32 *z) {
-    f32 h = (n->f58 - n->f5C) * 0.5f;
-    *x = n->x - n->f14 * h;
-    *z = n->z - n->f18 * h;
+static inline void getpos(PathNode *n, f32 *x, f32 *z) {
+    f32 h = (n->widthNeg - n->widthPos) * 0.5f;
+    *x = n->pos.x - n->lateralX * h;
+    *z = n->pos.z - n->lateralZ * h;
 }
 
 static inline f32 dist(f32 x, f32 y) {
@@ -469,18 +442,18 @@ void map_build_image(void) {
     u16 *q;
     u16 *pp;
     f32 *pa, *pb;
-    Node_20 *n;
-    Node_20 *m;
+    PathNode *n;
+    PathNode *m;
 
     for (i = 0; i < 64; i++) {
         sMapBarTex[i] = D_800CCCF8[i / 8];
     }
     sMapImage_3 = mem_alloc_dbg(0x1003, 0, (s32)D_800D8DCC, 0x23E);
     for (i = 0; i < gPathNodeCount; i++) {
-        if (gPathNodes_29[i].x < sMapBoundsMin.x || i == 0) sMapBoundsMin.x = gPathNodes_29[i].x;
-        if (gPathNodes_29[i].z < sMapBoundsMin.z || i == 0) sMapBoundsMin.z = gPathNodes_29[i].z;
-        if (gPathNodes_29[i].x > sMapBoundsMax.x || i == 0) sMapBoundsMax.x = gPathNodes_29[i].x;
-        if (gPathNodes_29[i].z > sMapBoundsMax.z || i == 0) sMapBoundsMax.z = gPathNodes_29[i].z;
+        if (gPathNodes[i].pos.x < sMapBoundsMin.x || i == 0) sMapBoundsMin.x = gPathNodes[i].pos.x;
+        if (gPathNodes[i].pos.z < sMapBoundsMin.z || i == 0) sMapBoundsMin.z = gPathNodes[i].pos.z;
+        if (gPathNodes[i].pos.x > sMapBoundsMax.x || i == 0) sMapBoundsMax.x = gPathNodes[i].pos.x;
+        if (gPathNodes[i].pos.z > sMapBoundsMax.z || i == 0) sMapBoundsMax.z = gPathNodes[i].pos.z;
     }
     mx = (sMapBoundsMin.x + sMapBoundsMax.x) * 0.5f;
     my = (sMapBoundsMin.z + sMapBoundsMax.z) * 0.5f;
@@ -507,13 +480,13 @@ void map_build_image(void) {
     mem_fill((u8 *)map, 0xFF, 0x8000);
 
     for (i = 0; i < gPathNodeCount; i++) {
-        n = (Node_20 *)(i * sizeof(Node_20) + (u32)gPathNodes_29);
-        j = n->f46;
+        n = (PathNode *)(i * sizeof(PathNode) + (u32)gPathNodes);
+        j = n->next;
         if (j == 0 && gGame_47.f4C == 7) break;
         getpos(n, &px, &pz);
         x0 = (px - mx) * sx + 64.0f;
         y0 = 64.0f - (pz - my) * sy;
-        getpos(&gPathNodes_29[j], &px, &pz);
+        getpos(&gPathNodes[j], &px, &pz);
         cx = (px - mx) * sx + 64.0f;
         y1 = 64.0f - (pz - my) * sy;
         for (t = 0; t < steps; t++) {
@@ -521,11 +494,11 @@ void map_build_image(void) {
         }
     }
 
-    j = gPathNodes_29[gPathStartNode].f46;
-    x0 = (gPathNodes_29[gPathStartNode].x - mx) * sx + 64.0f;
-    y0 = 64.0f - (gPathNodes_29[gPathStartNode].z - my) * sy;
-    px = gPathNodes_29[j].x - gPathNodes_29[gPathStartNode].x;
-    pz = gPathNodes_29[j].z - gPathNodes_29[gPathStartNode].z;
+    j = gPathNodes[gPathStartNode].next;
+    x0 = (gPathNodes[gPathStartNode].pos.x - mx) * sx + 64.0f;
+    y0 = 64.0f - (gPathNodes[gPathStartNode].pos.z - my) * sy;
+    px = gPathNodes[j].pos.x - gPathNodes[gPathStartNode].pos.x;
+    pz = gPathNodes[j].pos.z - gPathNodes[gPathStartNode].pos.z;
     len = __builtin_sqrtf(px * px + pz * pz);
     if (len > 0.0f) {
         px /= len;
@@ -573,11 +546,11 @@ void map_build_image(void) {
     }
 }
 
-void map_get_node_pos(f32 *a, f32 *b, f32 *c)
+void map_get_node_pos(PathNode *n, f32 *x, f32 *z)
 {
-    f32 t = (a[0x16] - a[0x17]) * 0.5f;
-    b[0] = a[0] - a[5] * t;
-    c[0] = a[2] - a[6] * t;
+    f32 t = (n->widthNeg - n->widthPos) * 0.5f;
+    *x = n->pos.x - n->lateralX * t;
+    *z = n->pos.z - n->lateralZ * t;
 }
 
 Gfx *map_draw_dot(Gfx *gdl, s32 idx, s32 flag, s32 x, s32 y) {

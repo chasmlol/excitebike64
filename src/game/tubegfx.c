@@ -956,7 +956,6 @@ void tube_load_pvs(void)
 }
 
 typedef struct { u8 pad[0x628]; s16 f628; u8 rest[0x7E0 - 0x62A]; } Rec7E0;
-typedef struct { u8 pad[0x46]; s16 next; u8 pad2[0x60 - 0x48]; u32 bits; u8 rest[0x6C - 0x64]; } Node_2;
 typedef struct { u8 pad[0x58]; u16 a[4]; u16 b[4]; u8 rest[0xA0 - 0x68]; } Trk_7;
 
 extern Rec7E0 gRiders_23[];
@@ -971,7 +970,7 @@ void tube_calc_fog_range(s32 a, s32 *b, s32 *c)
     s32 i, sh, sh4;
     s32 a0, a1, b0, b1;
     u32 w, w2;
-    Node_2 *nd, *base;
+    PathNode *nd, *base;
     s32 x, y, j, g;
 
     v[0] = (f32)gCamPos[a].x / 1000.0f;
@@ -981,19 +980,19 @@ void tube_calc_fog_range(s32 a, s32 *b, s32 *c)
     base = gPathNodes;
     g = gNumScreens;
     i = g - 1;
-    nd = (Node_2 *)(n * sizeof(Node_2) + (u32)base);
+    nd = (PathNode *)(n * sizeof(PathNode) + (u32)base);
     j = nd->next;
     if (i > 2) {
         i = 2;
     }
     i *= 8;
     sh4 = i + 4;
-    w = nd->bits;
+    w = nd->fogRange;
     a0 = (w >> sh4) & 0xF;
     if (a0 >= 8) a0 -= 16;
     a1 = (w >> i) & 0xF;
     if (a1 >= 8) a1 -= 16;
-    w2 = ((Node_2 *)(j * sizeof(Node_2) + (u32)base))->bits;
+    w2 = ((PathNode *)(j * sizeof(PathNode) + (u32)base))->fogRange;
     b0 = (w2 >> sh4) & 0xF;
     if (b0 >= 8) b0 -= 16;
     b1 = (w2 >> i) & 0xF;

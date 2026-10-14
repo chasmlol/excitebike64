@@ -216,15 +216,15 @@ void podium_update(void)
     s32 vx, vz;
     u16 o0, o1, o2;
     s32 i, j, k, t, ang, c, s;
-    Spot *e;
+    PathNode *e;
     Player_6 *p;
     Bike_2 *b;
     Rec34 *r;
     u8 *cp;
     u16 *cam;
 
-    sPodiumPos[0] = (s32)((f32)(s32)gPathNodes_2[sPodiumTrackPoint].x * 1000.0f);
-    sPodiumPos[2] = (s32)((f32)(s32)gPathNodes_2[sPodiumTrackPoint].z * 1000.0f);
+    sPodiumPos[0] = (s32)((f32)(s32)gPathNodes[sPodiumTrackPoint].pos.x * 1000.0f);
+    sPodiumPos[2] = (s32)((f32)(s32)gPathNodes[sPodiumTrackPoint].pos.z * 1000.0f);
     sPodiumPos[1] = height_get_ground(sPodiumPos[sPodiumTrackPoint], 999999, sPodiumPos[2]);
     mtx3i_from_angles(sPodiumRotMtx, 0, 0, sPodiumYaw);
     if (gDesaturation != 0 && gDesaturation < 0x100) {

@@ -3,6 +3,7 @@
 #define STRUCTS_H
 
 #include "common.h"
+#include "structs/path.h"
 
 /* Declared here for the prototypes and globals; most are defined in the source file that uses them. */
 typedef struct Dyn Dyn;
@@ -186,7 +187,6 @@ typedef struct Vec {
 
 typedef struct { u8 pad[0x22]; s16 n; } Cnt;
 typedef struct { s32 m[9]; } Mtx3;
-typedef struct { f32 x, y, z; u8 pad[0x60]; } Spot;
 
 typedef struct Rec_2 {
     u8 pad[0xA0];

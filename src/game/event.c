@@ -135,7 +135,7 @@ void tutorial_check_lesson_skip(void)
 
 #define G_6 gEvent_19
 #define TB (gTutorialLessons_9[gSeason_5->f64])
-#define SEG(i) ((Seg_13 *)((s32)((i) * 0x6C) + (s32)gPathNodes))
+#define SEG(i) ((PathNode *)((s32)((i) * 0x6C) + (s32)gPathNodes))
 
 typedef struct {
     u32 state;      /* 0x00 */
@@ -184,12 +184,6 @@ typedef struct {
     u32 f690;
     u8 p694[0x14C];
 } Bike_29;
-
-typedef struct {
-    u8 p00[0x4A];
-    s16 f4A;
-    u8 p4C[0x20];
-} Seg_13;
 
 extern Race_2 gEvent_19;
 extern Track_11 gTutorialLessons_9[];
@@ -372,7 +366,7 @@ void tutorial_update(void)
             }
         }
         tutorial_check_lesson_skip();
-        if (D_800E3DE8 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
+        if (D_800E3DE8 == SEG(SEG(TB.f18)->prev)->prev && !(TB.fl & 2)) {
             if (event_request_exit() != 0) {
                 D_800F0618 = 6;
                 gActiveReplay = 0;
@@ -401,7 +395,7 @@ void tutorial_update(void)
             } else {
                 gRiders_54[0].f690 |= 0x10;
             }
-        } else if (gRiders_54[0].f628 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
+        } else if (gRiders_54[0].f628 == SEG(SEG(TB.f18)->prev)->prev && !(TB.fl & 2)) {
             G_6.f70 = 6;
             gRacePhase = 6;
             gRacePhaseTimer = -1;
@@ -3424,7 +3418,6 @@ Gfx *event_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     u16 col;
     Img_6 *img;
     Rect *r;
-
 
     fp = -54;
     n = gNumScreens;

@@ -108,17 +108,6 @@ typedef struct {
 } State_2;
 
 typedef struct {
-    Vec3f pos;
-    u8 padC[0x14 - 0xC];
-    f32 f14;
-    f32 f18;
-    u8 pad1C[0x58 - 0x1C];
-    f32 f58;
-    f32 f5C;
-    u8 pad60[0x6C - 0x60];
-} Track_6;
-
-typedef struct {
     u8 pad0[0x18];
     s16 f18;
     u8 pad1A[0x28 - 0x1A];
@@ -144,8 +133,6 @@ extern Blk780 *gRiderSkelTemplate_4;
 extern Bk gCamModes[];
 extern Opt_3 *gCurTrack_17;
 extern Course gTutorialLessons_7[];
-extern Track_6 *gPathNodes_3;
-extern Track_6 *trk_800EE498;
 
 void bikes_init(void) {
     Vec3f unused[4];
@@ -363,7 +350,7 @@ void bikes_init(void) {
                     zero = 0.0f;
                 } else {
                     sc = 1.5f;
-                    zero = (gPathNodes_3[idx].f5C - gPathNodes_3[idx].f58) * 0.5f;
+                    zero = (gPathNodes[idx].widthPos - gPathNodes[idx].widthNeg) * 0.5f;
                     cc = gGridOrder_2[i];
                     if (gCurTrack_17->f50 & 2) {
                         sc = 1.1f;
@@ -381,7 +368,7 @@ void bikes_init(void) {
                 if (gGame_25.f4C == 9 && gSeason_2->f64 == 5) {
                     k = idx + 1;
                 }
-                math_to_polar(gPathNodes_3[k].f18 * 1024.0f, gPathNodes_3[k].f14 * 1024.0f, (s16 *)&ang, &ratio);
+                math_to_polar(gPathNodes[k].lateralZ * 1024.0f, gPathNodes[k].lateralX * 1024.0f, (s16 *)&ang, &ratio);
                 quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
                 if (gCurTrack_17->f2C == 0 && !(gGame_25.f0 & 0x10)) {
                     ang = (ang + 0x1000) & ~0x3FFF;
@@ -389,13 +376,13 @@ void bikes_init(void) {
                 }
                 if (gGame_25.f4C != 6) {
                     a = (s16)ang >> 4;
-                    p->pos.x = trk_800EE498[idx].pos.x + (f32)gCosTable[a & 0xFFF] * zero * 6.1035156e-05f
+                    p->pos.x = gPathNodes[idx].pos.x + (f32)gCosTable[a & 0xFFF] * zero * 6.1035156e-05f
                              - (f32)gCosTable[(a - 0x400) & 0xFFF] * 1.5258789e-05f;
-                    p->pos.z = trk_800EE498[idx].pos.z + (f32)gCosTable[(a - 0x400) & 0xFFF] * zero * 6.1035156e-05f
+                    p->pos.z = gPathNodes[idx].pos.z + (f32)gCosTable[(a - 0x400) & 0xFFF] * zero * 6.1035156e-05f
                              + (f32)gCosTable[a & 0xFFF] * 1.5258789e-05f;
                     p->f42C = zero;
                 } else {
-                    p->pos.z = trk_800EE498[idx].pos.z;
+                    p->pos.z = gPathNodes[idx].pos.z;
                     p->pos.x = (f32)i * 2.178f;
                     p->f42C = (f32)-i * 2.178f;
                 }
@@ -2664,15 +2651,8 @@ typedef struct {
     u8 pad10[0x2C];
 } Ent_13;
 
-typedef struct {
-    u8 pad0[0x64];
-    u8 f64;
-    u8 pad65[0x7];
-} Seg_4;
-
 extern Surf_3 gSurfaceTable_4[];
 extern Ent_13 gRiderAnims[];
-extern Seg_4 *gPathNodes_4;
 
 void bike_update_jump(Bike_13 *b) {
     volatile s32 pad[12];
@@ -2839,7 +2819,7 @@ void bike_update_jump(Bike_13 *b) {
                 fs4 = (x * b->f728.x + z * b->f728.z) / b->f728.y;
                 if (gGameMode != 5) {
                     b->f734 = path_find_segment(&b->f71C, b->f734, n, b->f6EB);
-                    if (gPathNodes_4[b->f734].f64 & 0x10) {
+                    if (gPathNodes[b->f734].flags & 0x10) {
                         fs3 -= 1000.0f;
                     }
                 }
@@ -2849,7 +2829,7 @@ void bike_update_jump(Bike_13 *b) {
                 fs3 -= e * e;
                 if (gGameMode != 5) {
                     b->f714 = path_find_segment(&b->f6FC, b->f714, n, b->f6EB);
-                    if (gPathNodes_4[b->f714].f64 & 0x10) {
+                    if (gPathNodes[b->f714].flags & 0x10) {
                         fs2 -= 500.0f;
                     }
                 }

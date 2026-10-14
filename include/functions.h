@@ -785,7 +785,7 @@ Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half);
 Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2);
 void map_get_rider_pos(s32 player, s32 *px, s32 *py);
 void map_build_image(void);
-void map_get_node_pos(f32 *a, f32 *b, f32 *c);
+void map_get_node_pos(PathNode *n, f32 *x, f32 *z);
 Gfx *map_draw_dot(Gfx *gdl, s32 idx, s32 flag, s32 x, s32 y);
 void map_stamp_brush(u16 *dst, u16 *src, s32 x, s32 y);
 void map_free(void);

@@ -4503,39 +4503,6 @@ gPathNodeCount                        game  0x800EE490  data        -
 gPathStartNode                        game  0x800EE494  data        -
 D_800EE496                            game  0x800EE496  data        -
 gPathNodes                            game  0x800EE498  data        -
-trk_800EE498                          game  0x800EE498  data        -
-gPathNodes_10                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_11                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_12                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_13                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_14                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_15                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_16                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_17                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_18                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_19                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_2                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_20                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_21                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_22                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_23                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_24                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_25                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_26                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_27                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_28                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_29                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_3                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_30                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_31                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_32                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_33                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_4                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_5                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_6                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_7                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_8                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_9                          game  0x800EE498  data        -  gPathNodes
 sPathRawData                          game  0x800EE49C  data        -
 gPathSegmentT                         game  0x800EE4A0  data        -
 sLastPlaceChangeTime                  game  0x800EE4B0  data        -

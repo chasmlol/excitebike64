@@ -39,16 +39,6 @@ void excite3d_init(void)
     }
 }
 
-typedef struct {
-    u8 p0[8];
-    f32 f8;
-    u8 p1[0x65 - 0xC];
-    s8 f65;
-    u8 p2[0x6C - 0x66];
-} Seg_16;
-
-extern Seg_16 *gPathNodes_30;
-
 void excite3d_cpu_steer(u8 *p)
 {
     s32 i0;
@@ -59,7 +49,7 @@ void excite3d_cpu_steer(u8 *p)
     s32 t1;
     s32 sh1;
     s32 sh2;
-    Seg_16 *s;
+    PathNode *s;
     f32 f;
     f32 d;
     f32 h;
@@ -70,28 +60,28 @@ void excite3d_cpu_steer(u8 *p)
     side = (s32)((*(f32 *)(p + 0x48) + 1.089f) / 2.178f);
     other = side ^ 1;
     sh1 = side << 1;
-    t0 = (gPathNodes_30[i1].f65 >> sh1) & 3;
+    t0 = (gPathNodes[i1].speedTweak >> sh1) & 3;
     if (t0 == 0) {
         for (;;) {
             i1++;
             {
-                f32 dd = gPathNodes_30[i1].f8 - *(f32 *)(p + 0x50);
+                f32 dd = gPathNodes[i1].pos.z - *(f32 *)(p + 0x50);
                 if (!(-40.0f < dd)) break;
             }
-            t0 = (gPathNodes_30[i1].f65 >> sh1) & 3;
+            t0 = (gPathNodes[i1].speedTweak >> sh1) & 3;
             if (t0 != 0) break;
         }
     }
     sh2 = other << 1;
-    t1 = (gPathNodes_30[i0].f65 >> sh2) & 3;
+    t1 = (gPathNodes[i0].speedTweak >> sh2) & 3;
     if (t1 == 0) {
         for (;;) {
             i0++;
             {
-                f32 dd = gPathNodes_30[i0].f8 - *(f32 *)(p + 0x50);
+                f32 dd = gPathNodes[i0].pos.z - *(f32 *)(p + 0x50);
                 if (!(-40.0f < dd)) break;
             }
-            t1 = (gPathNodes_30[i0].f65 >> sh2) & 3;
+            t1 = (gPathNodes[i0].speedTweak >> sh2) & 3;
             if (t1 != 0) break;
         }
     }
@@ -197,16 +187,8 @@ typedef struct {
     u8 pad7DC[0x7E0 - 0x7DC];
 } Bike_40;
 
-typedef struct {
-    f32 f0;
-    f32 f4;
-    f32 f8;
-    u8 padC[0x6C - 0xC];
-} Seg_17;
-
 extern Bike_40 gRiders_87[8];
 extern Bike_40 *gRiderStandings_7[];
-extern Seg_17 *gPathNodes_31;
 
 void excite3d_update(void)
 {
@@ -214,10 +196,10 @@ void excite3d_update(void)
     Bike_40 *a;
     Bike_40 *b;
     Bike_40 *q;
-    Seg_17 *u;
+    PathNode *u;
     s16 m;
     Bike_40 *e;
-    Seg_17 *t;
+    PathNode *t;
     s32 i;
     s32 j;
     s32 k;
@@ -266,7 +248,7 @@ void excite3d_update(void)
         cam_shift_z(0, 0xF3725);
         q = gRiders_87;
         j = 0;
-        while (q->f50 < gPathNodes_31[j].f8) {
+        while (q->f50 < gPathNodes[j].pos.z) {
             j++;
         }
         q->f628 = j;
@@ -289,8 +271,8 @@ void excite3d_update(void)
                 e->f74 -= -997.15717f;
                 {
                     s32 jj = 0;
-                    t = gPathNodes_31;
-                    while (e->f50 < t[jj].f8) {
+                    t = gPathNodes;
+                    while (e->f50 < t[jj].pos.z) {
                         jj++;
                     }
                     e->f628 = jj;
@@ -310,14 +292,14 @@ void excite3d_update(void)
 
     if (cnt != 0) {
         k = gRiders_87[0].f628 + 4;
-        dist = gRiders_87[0].f50 - gPathNodes_31[k].f8;
+        dist = gRiders_87[0].f50 - gPathNodes[k].pos.z;
         h = gRiders_87[0].f4C;
         if (!(dist > 100.0f)) goto body;
         h = 4.0f;
         goto found;
         do {
         body:
-            v = gPathNodes_31[k].f4;
+            v = gPathNodes[k].pos.y;
             if (h < v) {
                 h = v;
             }
@@ -325,7 +307,7 @@ void excite3d_update(void)
                 goto found;
             }
             k = (k + 1) % gPathNodeCount;
-            dist = gRiders_87[0].f50 - gPathNodes_31[k].f8;
+            dist = gRiders_87[0].f50 - gPathNodes[k].pos.z;
         } while (!(dist > 100.0f));
         h = 4.0f;
     found:
@@ -456,34 +438,22 @@ ret0:
     return fl == 0;
 }
 
-typedef struct Ent_73 {
-    u8 p0[8];
-    f32 f8;
-    u8 rest[0x60];
-} Ent_73;
-
 void excite3d_update_progress(Obj_54 *o)
 {
-    Ent_73 *t = gPathNodes;
+    PathNode *t = gPathNodes;
     s32 count = 0;
     f32 f;
-    if (o->f50 < t->f8) {
+    if (o->f50 < t->pos.z) {
         do {
             count++;
             t++;
-        } while (o->f50 < t->f8);
+        } while (o->f50 < t->pos.z);
     }
     f = (f32)o->s660 * -997.15717f;
     o->s628 = count;
     o->f638 = -o->f48;
     o->f630 = -f - o->f50;
 }
-
-typedef struct {
-    u8 pad0[8];
-    f32 f8;
-    u8 pad1[0x6C - 12];
-} Ent_74;
 
 struct Obj_55 {
     u8 pad0[0x50];
@@ -494,12 +464,12 @@ struct Obj_55 {
 
 void excite3d_find_segment(Obj_55 *o) {
     s16 c = 0;
-    Ent_74 *p = gPathNodes;
-    if (o->f50 < p->f8) {
+    PathNode *p = gPathNodes;
+    if (o->f50 < p->pos.z) {
         do {
             p++;
             c++;
-        } while (o->f50 < p->f8);
+        } while (o->f50 < p->pos.z);
     }
     o->s628 = c;
 }
