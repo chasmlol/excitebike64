@@ -1272,15 +1272,19 @@ void event_format_time_short(s32 frames, char *out)
     len = strlen(buf);
     if ((len == 1) && (frames > 60 * FRAME_RATE - 1)) {
         str_cat(out, sStrZero);
+        str_cat(out, buf);
+    } else {
+        str_cat(out, buf);
     }
-    str_cat(out, buf);
     str_cat(out, sStrDot);
     int_to_str(((frames % FRAME_RATE) * 100) / FRAME_RATE, buf);
     len = strlen(buf);
     if (len == 1) {
         str_cat(out, sStrZero);
+        str_cat(out, buf);
+    } else {
+        str_cat(out, buf);
     }
-    str_cat(out, buf);
     return;
 }
 
@@ -1789,23 +1793,20 @@ Gfx *event_draw_countdown(Gfx *gdl, s32 view)
     switch (gEvent.state) {
     default:
         return gdl;
-    case EVENT_STATE_READY: {
-        f32 v;
+    case EVENT_STATE_READY:
         color = sCountdownTextures_2->colors[4];
         img = &sCountdownTextures_2->img[4];
         scale = gEvent.countdown + 10;
         scale /= COUNTDOWN_READY_SCALE;
         scale *= 2.0f;
         if (scale > 1.0f)
-            v = 100.0f - (scale - 1.0f) * 100.0f;
+            alpha = 100.0f - (scale - 1.0f) * 100.0f;
         else
-            v = scale * 100.0f;
-        alpha = v;
+            alpha = scale * 100.0f;
         if (alpha < 0)
             alpha = 0;
         scale = 2.0f;
         break;
-    }
     case EVENT_STATE_COUNT_3: {
         f32 v;
         scale = gEvent.countdown + 10;
