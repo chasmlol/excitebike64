@@ -630,10 +630,10 @@ This is the version LodgeNet ran on hotel-room N64s. What the code shows:
 
 ## Versions
 
-The tree builds USA LodgeNet (`lodgenet`, the reference) and USA Rev 1 (`us_rev1`, the retail cartridge's second
-revision) from one source: the code that differs is in `#if VERSION` blocks (include/version.h), each version's
-tables are in versions/<name>/ (README.md). USA Rev 1 has the same source files and nearly all the same functions at
-other addresses; what it changes, as the code shows:
+The tree builds USA LodgeNet (`lodgenet`, the reference), USA Rev 1 (`us_rev1`, the retail cartridge's second
+revision) and Europe (`eu`, USA Rev 1 converted to PAL) from one source: the code that differs is in `#if VERSION`
+blocks (include/version.h), each version's tables are in versions/<name>/ (README.md). USA Rev 1 has the same source
+files and nearly all the same functions at other addresses; what it changes, as the code shows:
 
 - **Saves on the cartridge.** `pak_probe_all` finds a 16 Kbit EEPROM (`sEepromType`). `save_load` reads the save
   image from it (`SAVE_EEPROM_BLOCKS`, 256 blocks of 8 bytes) unless asked to reset; a blank image is reset to the
@@ -674,3 +674,27 @@ other addresses; what it changes, as the code shows:
   `RES()`. The source line numbers passed to the debug allocator differ (`SRC_LINE`), and some strings and tables
   changed.
 - **ROM.** CIC-6103 instead of 6102; the boot loader is 0x30 bytes longer, so the container starts at 0x12230.
+
+Europe is USA Rev 1 converted to PAL: the same code apart from what the 50 Hz television needs, English only, with
+the same resources apart from the tutorial's demo replays. As the code shows:
+
+- **50 frames a second.** The game still updates once per retrace, so every count of frames is USA Rev 1's times 5/6:
+  `FRAME_RATE` (60, Europe 50) and `FRAMES(n)` (include/constants.h) write them, in the timers and delays of the
+  physics, crashes, camera, racing line, announcer (`ANNOUNCE_*`), events, tutorial, HUD and front end, and in the
+  data (the tracks' default records, the lessons' times). The floats per frame follow `FRAME_RATE` too: the physics
+  time step (`gPhysDeltaTime`), speeds per frame, the engine's RPM steps, particle gravity. Race times are shown at
+  50 frames a second (`event_format_time`, the ghost labels); the clock stops at one hour of frames
+  (`FRAMES(216000)`).
+- **Video.** `sched_init_vi_mode` takes libultra's PAL modes and gives both fields the vertical start and scale of
+  `sViModeVStart` and `sViModeYScale`, which stretch the 240 lines over PAL's 288; any other TV type hangs, in the
+  boot loader too (`boot_thread_main` sets the PAL mode directly). On reset the scheduler switches straight to the
+  PAL low resolution mode and waits two frames instead of three.
+- **Sound.** The audio driver is asked for 28 ms frames instead of 20 (`snd_init`); the music streams load 10 ADPCM
+  blocks per DMA instead of 8 (`STREAM_DMA_BLOCKS`) and mix through a ring of 0xA00 samples (`STREAM_MIX_RING`); the
+  NES emulator's sound frame is a fiftieth of a second.
+- **Tutorial.** The 11 demo replays were recorded again (resources), and the lessons' step times were retimed with
+  them (`sTutorial*Steps`, not all by 5/6); a lesson's intro message stops at READY countdown 47 instead of 43, and
+  lesson 6 starts a metre to the side. The countdown signs scale with the shorter counts (`COUNTDOWN_READY_SCALE`).
+- **Data and ROM.** The NES ROM differs in 36 bytes (resources). Europe numbers the RESOURCE sets as USA Rev 1 and
+  passes Rev 1's line numbers to the allocator. CIC-6103; the boot loader is 0x10 bytes longer than LodgeNet's, so
+  the container starts at 0x12210; the game code is NMXP (Controller Pak notes, `PAK_GAME_CODE`).
