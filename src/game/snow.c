@@ -72,7 +72,8 @@ Gfx *snow_draw(Gfx *gdl, s32 dyn, s32 unused)
                             G_TX_CLAMP, G_TX_CLAMP, 8, 8, G_TX_NOLOD, G_TX_NOLOD);
         gDPPipeSync(gdl++);
         gDPSetTexturePersp(gdl++, G_TP_PERSP);
-        gSPMatrix(gdl++, dyn + 0x300 /* Dyn.m3, the orthographic projection */, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+        /* Dyn.m3, the orthographic projection */
+        gSPMatrix(gdl++, dyn + 0x300, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
         gSPVertex(gdl++, sSnowSplatVtx, 4, 0);
         gSP2Triangles(gdl++, 0, 2, 1, 0, 0, 3, 2, 0);
     }

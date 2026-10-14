@@ -219,7 +219,8 @@ Gfx *sun_draw_flare(Gfx *gdl, u8 *dyn, s32 fb) {
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gSPClearGeometryMode(gdl++, G_ZBUFFER);
     gSPViewport(gdl++, &gScreenViewport);
-    gSPMatrix(gdl++, dyn + 0x300 /* Dyn.m3, the orthographic projection */, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    /* Dyn.m3, the orthographic projection */
+    gSPMatrix(gdl++, dyn + 0x300, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, gViewRects[0][0].x, gViewRects[0][0].y, gViewRects[0][0].x + gViewRects[0][0].w - 1,
                   gViewRects[0][0].y + gViewRects[0][0].h - 1);
     gDPPipeSync(gdl++);
