@@ -762,7 +762,7 @@ void *sched_get_os_vi_mode(s32 a0);
 s32 func_80065AF0(void);
 
 /* src/game/instance.c */
-s32 instances_load(u32 *a, s32 b, s32 c, Box_4 *d, s32 e);
+s32 instances_load(u32 *resSet, s32 resIndex, s32 flags, TrackModelList *sections, TexSet *texSet);
 Gfx *instances_draw(Gfx *gdl, Mtx *m, s32 unused, s32 view, s32 vis);
 void instances_free(void);
 

@@ -83,7 +83,6 @@ typedef struct Spawn Spawn;
 typedef struct Player_22 Player_22;
 typedef struct Ent_65 Ent_65;
 typedef struct Obj_47 Obj_47;
-typedef struct Box_4 Box_4;
 typedef struct Tri3_2 Tri3_2;
 typedef struct Mdl_2 Mdl_2;
 typedef struct Obj_53 Obj_53;

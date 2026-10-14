@@ -1984,9 +1984,6 @@ sSchedRetraceCount                    game  0x800CCCC4  data      0x4
 sSchedSwapDeferred                    game  0x800CCCC8  data      0x4
 gSchedFrameLimit                      game  0x800CCCCC  data      0x4
 gInstanceMtx                          game  0x800CCCD0  data     0x10
-gInstanceMtx_2                        game  0x800CCCD0  data        -  gInstanceMtx
-gInstanceMtx_3                        game  0x800CCCD0  data        -  gInstanceMtx
-gInstanceMtx_4                        game  0x800CCCD0  data        -  gInstanceMtx
 sShatterCount                         game  0x800CCCE0  data     0x10
 sMapBarStart                          game  0x800CCCF0  data      0x4
 sMapBarEnd                            game  0x800CCCF4  data      0x4
@@ -4956,14 +4953,9 @@ sInstanceDLs                          game  0x800F1424  data        -
 sInstanceSortItems                    game  0x800F1428  data        -
 sInstanceZone                         game  0x800F142C  data        -
 gInstanceHeader                       game  0x800F1430  data        -
-gInstanceHeader_2                     game  0x800F1430  data        -  gInstanceHeader
-gInstanceHeader_3                     game  0x800F1430  data        -  gInstanceHeader
 sInstanceZoneBoxes                    game  0x800F1434  data        -
-sInstanceZoneBoxes_2                  game  0x800F1434  data        -  sInstanceZoneBoxes
 sInstanceSortMtx                      game  0x800F1438  data        -
 gInstanceItems                        game  0x800F143C  data        -
-gInstanceItems_2                      game  0x800F143C  data        -  gInstanceItems
-gInstanceItems_3                      game  0x800F143C  data        -  gInstanceItems
 sShatterModelList                     game  0x800F1440  data        -
 sShatterObjects                       game  0x800F1444  data        -
 sShatterObjects_2                     game  0x800F1444  data        -  sShatterObjects
