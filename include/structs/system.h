@@ -47,6 +47,12 @@
 #define FADE_IN     2
 #define FADE_DONE   3
 
+/* Threads started by game_boot and idle_thread (unnamed/s1_80073200.c): ids and priorities. */
+#define THREAD_ID_IDLE          1
+#define THREAD_ID_MAIN          3
+#define THREAD_PRI_IDLE_START   8       /* then OS_PRIORITY_IDLE once the main thread runs */
+#define THREAD_PRI_MAIN         10
+
 /* The scheduler (unnamed/sched.c). Messages on its own event queue (sSchedSysEventQueue): */
 #define SCHED_MSG_RETRACE       1       /* VI retrace (osViSetEvent) */
 #define SCHED_MSG_RDP_DONE      2       /* OS_EVENT_DP: the RDP finished the task, show its framebuffer */
