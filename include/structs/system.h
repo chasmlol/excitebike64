@@ -27,4 +27,18 @@
 #define INPUT_STICK_X_SHIFT 24          /* magnitude of the stick's x, 0-15 */
 #define INPUT_STICK_Y_SHIFT 28          /* magnitude of the stick's y, 0-15 */
 
+/* Game modes (gGame.mode). 3, 4 and 11 are not identified. */
+#define GAME_MODE_EXHIBITION    0
+#define GAME_MODE_SEASON        1
+#define GAME_MODE_SOCCER        2
+#define GAME_MODE_DESERT        5
+#define GAME_MODE_EXCITE_3D     6
+#define GAME_MODE_HILL_CLIMB    7
+#define GAME_MODE_TIME_TRIAL    8
+#define GAME_MODE_TUTORIAL      9
+#define GAME_MODE_STUNT_COURSE  10
+#define GAME_MODE_NES           12      /* Original Excitebike */
+#define GAME_MODE_TEST_RIDE     13      /* the editor's test ride */
+#define GAME_MODE_TEST_RIDE_2   14
+
 #endif
