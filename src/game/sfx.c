@@ -848,7 +848,8 @@ void sfx_write_sample(s32 sample, u8 *data, u32 size)
 }
 
 /* sfx_find_sound, inlined in sfx_stop. */
-static inline SfxSound *stop_find_sound(s32 handle) {
+static inline SfxSound *stop_find_sound(s32 handle)
+{
     SfxSound *snd;
 
     critical_enter();
@@ -863,7 +864,8 @@ static inline SfxSound *stop_find_sound(s32 handle) {
 }
 
 /* Asks a sound to stop; sfx_update_voices ends it. */
-void sfx_stop(s32 handle) {
+void sfx_stop(s32 handle)
+{
     if (sSfxInitialized != 0) {
         SfxSound *snd = stop_find_sound(handle);
 
@@ -969,7 +971,8 @@ void sfx_set_volume(s32 handle, s32 volume)
     }
 }
 
-void sfx_set_pan(s32 handle, s32 pan) {
+void sfx_set_pan(s32 handle, s32 pan)
+{
     SfxSound *snd;
     SfxSound *match;
     if (sSfxInitialized != 0) {
@@ -1216,7 +1219,8 @@ done:
 }
 
 /* The driver's count of audio buffers mixed. */
-s32 sfx_get_frame_count(void) {
+s32 sfx_get_frame_count(void)
+{
     if (sSfxInitialized == 0) {
         return -1;
     }
@@ -1224,7 +1228,8 @@ s32 sfx_get_frame_count(void) {
 }
 
 /* Unlinks the sounds that ended and returns them to the pool, calling their end callbacks first. */
-void sfx_reap_sounds(void) {
+void sfx_reap_sounds(void)
+{
     SfxSound *snd;
     SfxSound *next;
 
@@ -1482,7 +1487,8 @@ void sfx_unmute(void)
 }
 
 /* The driver's callback before each buffer is mixed: the frame callback, the streams, then the voices. */
-void sfx_driver_callback(void) {
+void sfx_driver_callback(void)
+{
     SfxStream *stream;
 
     if (sSfxInitialized != 0) {
@@ -1526,7 +1532,8 @@ s32 sfx_str_icmp(u8 *a, u8 *b)
 }
 
 /* Writes the handle of each voice's sound (-1: none), then the number of sounds in the list. */
-void sfx_get_voice_handles(s32 *out) {
+void sfx_get_voice_handles(s32 *out)
+{
     s32 i;
     for (i = 0; i < sSfxNumVoices; i++) {
         if (sSfxVoiceSounds[i] != NULL) {
@@ -1563,7 +1570,8 @@ void sfx_free_sound(SfxSound *snd)
 
 /* Links a sound into sSfxSounds before the first sound of no higher priority. A voice change is counted when fewer
    than sSfxNumVoices playing sounds are ahead of it. */
-void sfx_insert_sound(SfxSound *snd) {
+void sfx_insert_sound(SfxSound *snd)
+{
     SfxSound *prev;
     SfxSound *next;
     s32 numPlaying;
@@ -1672,7 +1680,8 @@ u32 sfx_get_position(s32 handle)
 }
 
 /* Changes the sample a sound plays. */
-void sfx_set_sample(s32 handle, s32 sample) {
+void sfx_set_sample(s32 handle, s32 sample)
+{
     SfxSound *snd;
     SfxSound *match;
 

@@ -107,7 +107,8 @@ void n64snd_update(void)
 }
 
 /* The mixer's capabilities, limited to stereo 16-bit, 20 ms frames and SFX_MAX_RATE. */
-s32 n64snd_get_caps(s32 *voices, s32 *modes, s32 *rate, s32 *frameMs) {
+s32 n64snd_get_caps(s32 *voices, s32 *modes, s32 *rate, s32 *frameMs)
+{
     softmix_get_caps(voices, modes, rate);
     *modes = SFX_MODE_STEREO_16BIT;
     *frameMs = 20;
@@ -126,7 +127,8 @@ void n64snd_shutdown(void)
 }
 
 /* Samples, voices, clocks and echo: the mixer's functions. */
-s32 n64snd_load_sample_named(u8 *name) {
+s32 n64snd_load_sample_named(u8 *name)
+{
     return softmix_load_sample_name(name);
 }
 
@@ -135,11 +137,13 @@ s32 n64snd_load_sample_index(s32 resId)
     return softmix_load_sample_id(resId);
 }
 
-s32 n64snd_create_sample(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 rate) {
+s32 n64snd_create_sample(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 rate)
+{
     return softmix_create_sample(data, length, loopStart, loopEnd, rate);
 }
 
-void n64snd_free_sample(u32 sample) {
+void n64snd_free_sample(u32 sample)
+{
     softmix_free_sample(sample);
 }
 
@@ -204,7 +208,8 @@ s32 n64snd_get_sample_clock(void)
 }
 
 /* The frames mixed so far: output samples over the frame size (half an AI buffer, what each softmix_mix mixes). */
-u32 n64snd_get_buffer_clock(void) {
+u32 n64snd_get_buffer_clock(void)
+{
     u32 count = softmix_get_sample_count();
     return count / (sN64SndFrames >> 1);
 }

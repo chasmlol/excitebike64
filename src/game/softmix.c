@@ -459,7 +459,8 @@ void softmix_free_sample(u32 sample)
 }
 
 /* A slot's info as the driver passes it: length, loop start, loop end, rate. */
-void softmix_get_sample_info(s32 sample, s32 *info) {
+void softmix_get_sample_info(s32 sample, s32 *info)
+{
     SoftmixSample *samples = sSoftmixSamples;
     SoftmixSample *entry = samples + sample;
     info[0] = entry->length;
@@ -522,12 +523,14 @@ s32 softmix_voice_get_flags(s32 voice)
 }
 
 /* The output samples mixed so far. */
-s32 softmix_get_sample_count(void) {
+s32 softmix_get_sample_count(void)
+{
     return sSoftmixSampleCount;
 }
 
 /* Converts `count` mixed samples from `src` (s32) into the output buffer `dst`, clamped to 16 bits or 8 bits. */
-void softmix_convert_output(s32 src, s32 dst, s32 count) {
+void softmix_convert_output(s32 src, s32 dst, s32 count)
+{
     s32 flags;
 
     sMixSrc = src;
@@ -625,7 +628,8 @@ void softmix_echo_free(void)
 
 /* Writes up to the slot's length of companded bytes into a sample: copied as they are for 16-bit output, expanded to
    linear 8-bit otherwise. The check lets slot 0x100, one past the end, through. */
-void softmix_write_sample(u32 sample, u8 *src, s32 size) {
+void softmix_write_sample(u32 sample, u8 *src, s32 size)
+{
     s32 i;
 
     if (sample <= SOFTMIX_NUM_SAMPLES) {

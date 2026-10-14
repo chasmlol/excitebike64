@@ -14,7 +14,8 @@ void game_boot(void)
 }
 
 /* Starts the main thread (game_main) with arg, then drops to the lowest priority and idles. */
-void idle_thread(s32 arg) {
+void idle_thread(s32 arg)
+{
     osCreateThread(&gMainThread, THREAD_ID_MAIN, (void *)game_main, arg, sMainThreadStackEnd, THREAD_PRI_MAIN);
     osStartThread(&gMainThread);
     osSetThreadPri(NULL, OS_PRIORITY_IDLE);

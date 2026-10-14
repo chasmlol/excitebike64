@@ -426,7 +426,8 @@ void tunes_play_song(s32 songId)
 }
 
 /* Stops every channel and, if a song plays, waits for the channels' DMAs and drops the song. */
-void tunes_stop_song(void) {
+void tunes_stop_song(void)
+{
     s32 i;
     s32 n;
     StreamChannel *ch;
@@ -1080,7 +1081,8 @@ void tunes_play_cliff_fall(u32 racer)
     gAmbientVolume_2[0] = gSfxVolume;
 }
 
-s32 tunes_is_song_playing(void) {
+s32 tunes_is_song_playing(void)
+{
     return sCurrentSong != 0;
 }
 
@@ -1169,7 +1171,8 @@ u32 tunes_find_sample(u32 tag)
     return 0xFFFFFFFF;
 }
 
-static inline void crowd_queue_push(s32 clip, s32 delay) {
+static inline void crowd_queue_push(s32 clip, s32 delay)
+{
     s32 count = sCrowdQueueCount;
     if (count < CROWD_QUEUE_SIZE) {
         do {
@@ -1183,7 +1186,8 @@ static inline void crowd_queue_push(s32 clip, s32 delay) {
 }
 
 /* Queues crowd reaction `kind` (sCrowdClips) in a stadium. */
-void tunes_queue_crowd(s32 kind) {
+void tunes_queue_crowd(s32 kind)
+{
     if (gCurTrack_3[11] == 0) {     /* the track's environment type: a stadium */
         crowd_queue_push(sCrowdClips[kind], CROWD_DELAY);
     }
@@ -1269,7 +1273,8 @@ void tunes_mix_callback(s32 *out, s32 count)
 }
 
 /* Allocates a channel's buffers once. */
-void tunes_init_channel(StreamChannel *ch) {
+void tunes_init_channel(StreamChannel *ch)
+{
     if (ch->dmaBuf == 0) {
         ch->dmaBuf = mem_alloc_dbg(STREAM_DMA_BYTES, 0, (s32)&sStrTunesC, 0x128);
         ch->pcm = mem_alloc_dbg(STREAM_PCM_BYTES, 0, (s32)&sStrTunesC, 0x129);
@@ -1294,7 +1299,8 @@ void tunes_free_channel(StreamChannel *ch)
 }
 
 /* Mixes blocks until the mix ring is full or a DMA is needed. */
-void tunes_update(void) {
+void tunes_update(void)
+{
     if (sTunesActive != 0) {
         while (tunes_mix_streams() != 0) {
         }
@@ -1302,7 +1308,8 @@ void tunes_update(void) {
 }
 
 /* Runs `count` samples through the echo ring: each gets half of the sample a ring earlier added, clamped. */
-void tunes_apply_echo(s16 *pcm, s32 count) {
+void tunes_apply_echo(s16 *pcm, s32 count)
+{
     s32 sample;
     s32 next;
     s32 rounded;

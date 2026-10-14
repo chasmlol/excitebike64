@@ -69,7 +69,8 @@ void mtx_from_angles_pos_scale(MtxS *m, s32 rx, s32 ry, s32 rz, s32 tx, s32 ty, 
 
 /* Builds an N64 Mtx rotating about y (by the angle whose cosine and sine are given) and scaling by scale / 0x100,
    with no translation. Elements [1][0] and [1][2] get -cos and -sin without the << 14 of the others: nearly 0. */
-void mtx_from_rot_y_scale(MtxS_2 *m, f32 cosY, f32 sinY, s32 scale) {
+void mtx_from_rot_y_scale(MtxS_2 *m, f32 cosY, f32 sinY, s32 scale)
+{
     s32 cosFix = (s32)(cosY * FIX14_ONE_F);
     s32 sinFix = (s32)(sinY * FIX14_ONE_F);
     s32 v;
@@ -443,7 +444,8 @@ void mtx3f_from_angles(f32 *m, s16 ax, s16 ay, s16 az)
 }
 
 /* r250_next again, for r250_init to inline. */
-static inline u8 r250_next_inline(void) {
+static inline u8 r250_next_inline(void)
+{
     u32 i = sR250Index;
     u32 j;
     u8 r;
@@ -462,7 +464,8 @@ static inline u8 r250_next_inline(void) {
 
 /* Seeds the R250 generator: fills sR250Buffer from a small multiplicative generator, makes eight bytes linearly
    independent (one bit each, the standard R250 setup) and runs it 500 times. */
-void r250_init(void) {
+void r250_init(void)
+{
     u32 seed;
     s32 i;
     u8 *p;
@@ -624,7 +627,8 @@ void mtx3i_to_angles(s32 *m, u16 *outX, u16 *outY, u16 *outZ)
 }
 
 /* acos of a 2.14 value, as an angle (ANGLE_90 - asin). */
-s32 math_acosi(s32 x) {
+s32 math_acosi(s32 x)
+{
     s32 angle = math_asini(x);
     return (s16)(ANGLE_90 - angle);
 }
@@ -678,7 +682,8 @@ f32 math_atan2f(f32 x, f32 y)
 }
 
 /* asin in radians, through math_asini's table. */
-f32 math_asinf(f32 s) {
+f32 math_asinf(f32 s)
+{
     s32 x;
     s32 idx;
     s32 angle;
@@ -876,7 +881,8 @@ f32 math_exp(f32 x)
 }
 
 /* The next byte of the R250 generator (0x93 = R250_LAG, 0x67 = R250_SIZE - R250_LAG). */
-u8 r250_next(void) {
+u8 r250_next(void)
+{
     u32 i = sR250Index;
     u32 j = i + 0x67;
     u8 r;
@@ -897,7 +903,8 @@ u8 r250_next(void) {
 
 /* A pseudo-random byte from a sine: the fraction of sin(*state + 4) * 256, which also becomes the new *state,
    times 256. */
-u32 math_sin_rand(f32 *state) {
+u32 math_sin_rand(f32 *state)
+{
     f32 frac, scaled;
     s32 whole;
     u32 r;
@@ -1021,7 +1028,8 @@ void mtx_from_bones(Bone *src, MtxS_2 *dst, s32 n)
 }
 
 /* out = p * q (quaternions (w, x, y, z)), with eight multiplications. */
-void quat_mul(f32 *out, f32 *p, f32 *q) {
+void quat_mul(f32 *out, f32 *p, f32 *q)
+{
     f32 p0 = p[0];
     f32 p1 = p[1];
     f32 q0 = q[0];

@@ -135,7 +135,8 @@ int cont_init(void)
 }
 
 /* Starts reading the controllers unless a read is already pending; cont_finish_read completes it. */
-void start_controller_read(void) {
+void start_controller_read(void)
+{
     if (gContReadPending == 0) {
         osContStartReadData(&gSiMesgQueue);
         gContReadPending = 1;

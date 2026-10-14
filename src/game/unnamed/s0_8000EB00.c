@@ -122,7 +122,8 @@ void fatal_halt(s32 code)
 }
 
 /* fatal_halt after the heap report (mem_report, which ignores its arguments). */
-void fatal_halt_mem_report(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+void fatal_halt_mem_report(s32 arg0, s32 arg1, s32 arg2, s32 arg3)
+{
     mem_report(arg0, arg1, arg2, arg3);
     __asm__ volatile("break 0x407");
     while (1) {
@@ -263,7 +264,8 @@ void int_to_str(s32 value, char *out)
 }
 
 /* Writes value as eight upper-case hex digits to out. */
-void u32_to_hex_str(u32 value, char *out) {
+void u32_to_hex_str(u32 value, char *out)
+{
     s32 i;
     s32 digit;
     for (i = 0; i < 8; i++) {
@@ -321,7 +323,8 @@ void debug_log_close(void)
 }
 
 /* A pseudo-random byte from a linear congruential generator modulo the prime 65531 (sRandomSeed). */
-u32 random_byte(void) {
+u32 random_byte(void)
+{
     s32 next;
     s32 seed;
 

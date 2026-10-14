@@ -243,7 +243,8 @@ void sched_submit_task(s32 task)
 
 /* The current graphics task (sSchedCurTask.cur); it goes back to 0 on the first retrace after the RDP is done
    that finds no task queued. */
-s32 sched_get_current_task(void) {
+s32 sched_get_current_task(void)
+{
     return sSchedCurTask_3;
 }
 
@@ -260,7 +261,8 @@ void sched_notify_clients(void *msg)
 }
 
 /* Loads and starts a task's OSTask (at +0x10 of the OSScTask) on the RSP. */
-void sched_run_task(u8 *task) {
+void sched_run_task(u8 *task)
+{
     void *spTask = task + 0x10;
     sSchedRdpIdle = 0;
     osSpTaskLoad(spTask);
@@ -317,7 +319,8 @@ void func_80065A5C(void)
 }
 
 /* libultra's VI mode behind one of the game's modes for the TV type (NTSC or MPAL; anything else hangs). */
-void *sched_get_os_vi_mode(s32 mode) {
+void *sched_get_os_vi_mode(s32 mode)
+{
     void *osMode;
     if (osTvType == OS_TV_NTSC) {
         if (mode == VI_MODE_640X480) {

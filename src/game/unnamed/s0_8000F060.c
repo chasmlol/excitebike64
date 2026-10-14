@@ -35,7 +35,8 @@ void snd_init(void)
 }
 
 /* Loads the engine samples once and notes their lengths and data. */
-void snd_load_engine_samples(void) {
+void snd_load_engine_samples(void)
+{
     u32 i;
     s32 info[4];    /* length, loop start, loop end, rate */
 
@@ -336,7 +337,8 @@ loop:
 /* A rider's sounds for this frame: exhaust puffs, the landing, the overheat warning, the skid, the scrape, the
    engine (a gear sample, or the idle with the throttle off, pitched by rpm, turbo and Doppler shift) and the
    ground. Everything stops while the rider is too quiet. */
-void snd_update_rider(s32 riderIdx) {
+void snd_update_rider(s32 riderIdx)
+{
     RiderSound *rs;
     s32 vol;
     s32 engineVol;
@@ -772,7 +774,8 @@ void snd_shutdown(void)
     }
 }
 
-void snd_update(void) {
+void snd_update(void)
+{
     if (sSndEnabled != 0 && gNesActive == 0) {
         snd_service();
         sfx_reap_sounds();
@@ -780,7 +783,8 @@ void snd_update(void) {
 }
 
 /* Plays rider effect `sfx` at the effects volume, wherever the riders are. */
-void snd_play_sfx(s32 sfx) {
+void snd_play_sfx(s32 sfx)
+{
     SndSample *smp;
     SndSample *table;
     s32 info[4];    /* length, loop start, loop end, rate */
@@ -798,12 +802,14 @@ void snd_play_sfx(s32 sfx) {
     }
 }
 
-void snd_set_master_volume(u32 volume) {
+void snd_set_master_volume(u32 volume)
+{
     gSndMasterVolume = volume;
     tunes_update_volumes();
 }
 
-s32 snd_get_master_volume(void) {
+s32 snd_get_master_volume(void)
+{
     return gSndMasterVolume;
 }
 
@@ -872,7 +878,8 @@ s32 snd_get_volume(s32 kind)
 }
 
 /* snd_stop_rider for every rider. */
-void snd_stop_all_riders(void) {
+void snd_stop_all_riders(void)
+{
     s32 i;
     RiderSound *rs;
     u8 *hb;
@@ -903,17 +910,20 @@ void snd_load_menu_sounds(void)
 }
 
 /* Plays menu sound `sound` (MENU_SOUND_*) at full volume. */
-void snd_play_menu_sound(s32 sound) {
+void snd_play_menu_sound(s32 sound)
+{
     sfx_play(sMenuSounds[sound], SND_RATE_HALF, 0xFF, SND_PAN_CENTRE, 0, 0);
 }
 
-void snd_play_finish_song(void) {
+void snd_play_finish_song(void)
+{
     tunes_stop_song();
     tunes_play_song(sFinishSongResId);
 }
 
 /* Stops the sound of handle *handle, if any, and clears it. */
-void snd_stop_handle(s32 *handle) {
+void snd_stop_handle(s32 *handle)
+{
     if (*handle != -1) {
         sfx_stop(*handle);
         *handle = -1;
