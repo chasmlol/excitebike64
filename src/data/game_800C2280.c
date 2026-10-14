@@ -1513,7 +1513,7 @@ u32 sRetraceCount = 0;
 u32 sGfxDoneCount = 0;
 u32 sDisplayedFb = 0xFFFFFFFF;
 u32 sViDitherFilter = 0;
-#if VERSION == VERSION_US_REV1
+#if VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 D_rev1_800C333C = 0x1440FFFB;
 #endif
 u32 gRspInitDL[0xe] = {
@@ -5340,9 +5340,16 @@ u32 gViModeRequest = 0x1;
 u32 gViMode = 0xFFFFFFFF;
 u32 sViModeWidths[0x3] = { 0x140, 0x200, 0x280 };
 u32 sViModeHeights[0x3] = { 0xF0, 0xF0, 0x1E0 };
+#if VERSION == VERSION_EU
+u32 sViModeVStart[0x3] = { 0x320258, 0x320258, 0x320258 };
+u32 sViModeYScale[0x3] = { 0x358, 0x358, 0x6B0 };
+#endif
 u32 sSchedRetraceCount = 0;
 u32 sSchedSwapDeferred = 0;
 u32 gSchedFrameLimit = 0;
+#if VERSION == VERSION_EU
+u32 D_eu_800CD568[0x2] = { 0x800DADC4, 0x800DADBC };
+#endif
 #if VERSION == VERSION_LODGENET
 u32 gInstanceMtx[0x4] = { 0, 0x240B23F6, 0x23E123CD, 0x23B823A3 };
 #elif VERSION == VERSION_US_REV1
@@ -7292,6 +7299,6 @@ u32 gGidCamFlash[0xc] = {
     /* 0x020 */ 0x35, 0x36, 0x37, 0x800A4158,
 };
 #endif
-#if VERSION == VERSION_US_REV1
+#if VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 D_rev1_800D1EBC = 0x30002;
 #endif

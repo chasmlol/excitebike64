@@ -1621,11 +1621,11 @@ void bike_compute_forces(Rider *rider)
             }
         } else if (rider->wheelieTimer >= 16) {
             pitchError = -0x2800 - rider->wheelieBalance * 3 - rider->rot[0];
-            localTorque.x = ((f32)pitchError * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.5f) * 15000.0f;
+            localTorque.x = ((f32)pitchError * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.5f) * (250.0f * FRAME_RATE);
         } else {
             pitchError = math_atan2f(1.3f, rider->rearWheel.contact.y - rider->frontWheel.contact.y) * 32768.0f / 3.1415927f - rider->rot[0];
             if (rider->wheelieTimer != 1) {
-                localTorque.x = ((f32)pitchError * 3.0f * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.5f) * 15000.0f;
+                localTorque.x = ((f32)pitchError * 3.0f * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.5f) * (250.0f * FRAME_RATE);
             } else {
                 rider->bike.angVel.x = rider->bike.angVel.y = rider->bike.angVel.z = 0.0f;
             }
@@ -1650,7 +1650,7 @@ void bike_compute_forces(Rider *rider)
                 }
                 pitchError = pitchError * 384 - pitch;
             }
-            localTorque.x += ((f32)(pitchError / 4) * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.0625f) * 15000.0f;
+            localTorque.x += ((f32)(pitchError / 4) * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.0625f) * (250.0f * FRAME_RATE);
         }
         if (rider->anim == ANIM_KOBE) {
             /* the bike turns a full circle over the animation */
@@ -1664,7 +1664,7 @@ void bike_compute_forces(Rider *rider)
             if (velYaw > 0xC00) {
                 velYaw = 0xC00;
             }
-            rider->bike.angVel.y = -((f32)velYaw * 3.1415927f * 3.0517578e-05f) * 60.0f;
+            rider->bike.angVel.y = -((f32)velYaw * 3.1415927f * 3.0517578e-05f) * (f32)FRAME_RATE;
         } else if (rider->speed > 5.0f) {
             f32 t;
             math_to_polar(rider->bike.vel.x * 1000.0f, rider->bike.vel.z * 1000.0f, &velYaw, &magnitude);
@@ -1677,7 +1677,7 @@ void bike_compute_forces(Rider *rider)
             } else if (t < -0.1f) {
                 t = -0.1f;
             }
-            t *= 15000.0f;
+            t *= 250.0f * FRAME_RATE;
             localTorque.x += t * rider->bike.right.y;
             localTorque.y += t * rider->bike.up.y;
             localTorque.z += t * rider->bike.fwd.y;
@@ -1718,7 +1718,7 @@ void bike_compute_forces(Rider *rider)
             spinInt = ABS(spinInt);
             if ((f32)spinInt < 1.5f) {
                 f32 scale;
-                scale = gPhysDeltaTime * 240.0f;
+                scale = gPhysDeltaTime * (4.0f * FRAME_RATE);
                 rider->bike.angAcc.x -= groundUp.x * ((f32)rider->stickX / scale);
                 rider->bike.angAcc.y -= groundUp.y * ((f32)rider->stickX / scale);
                 rider->bike.angAcc.z -= groundUp.z * ((f32)rider->stickX / scale);
@@ -1941,7 +1941,7 @@ void bike_update_render_pose(Rider *rider)
         } else if ((rider->input & INPUT_Z) && gRaceFrame - rider->turboPressFrame < FRAMES(60) &&
                    (rider->rearWheel.surface->flags & SURFACE_CLODS) && rider->airFrames < 0 && rider->speed < 5.0f) {
             if (rider->speed > 2.0f) {
-                amp = (f32)(rider->turboPressFrame - (gRaceFrame - FRAMES(60))) * 6.1035155e-07f / 60.0f;
+                amp = (f32)(rider->turboPressFrame - (gRaceFrame - FRAMES(60))) * 6.1035155e-07f / (f32)FRAME_RATE;
             } else {
                 amp = 1.2207031e-06f;
             }
@@ -2344,7 +2344,7 @@ void bike_update_jump(Rider *rider)
                         stunt_start(rider, ANIM_AIR_TURN_2);
                     }
                     if (rider->anim != ANIM_NONE) {
-                        rider->animSpeed = (f32)(gRiderAnims[rider->anim].body->count << 9) / (rider->landingTime * 60.0f);
+                        rider->animSpeed = (f32)(gRiderAnims[rider->anim].body->count << 9) / (rider->landingTime * (f32)FRAME_RATE);
                     }
                 }
                 if (rider->anim == ANIM_AIR_TURN) {
@@ -2527,7 +2527,7 @@ void bike_update(Rider *rider, s32 ticks)
     gGroundTri = 0;
     gGroundArea = 0;
     gPhysTicks = ticks;
-    gPhysDeltaTime = (f32)gPhysTicks * rider->timeScale / 60.0f;
+    gPhysDeltaTime = (f32)gPhysTicks * rider->timeScale / (f32)FRAME_RATE;
     if (gCrashSlowMotion != 0 && rider->isCpu != 0) {
         gPhysDeltaTime *= 0.5f;
     }
@@ -2727,7 +2727,7 @@ void bikes_update(s32 ticks)
                     bike_update(rider, 2);
                     rider->bike.smoothPos = rider->bike.pos;
                 } else {
-                    dt = rider->timeScale / 60.0f;
+                    dt = rider->timeScale / (f32)FRAME_RATE;
                     halfDtSq = dt * dt * 0.5f;
                     stepX = rider->bike.vel.x * dt;
                     stepY = rider->bike.vel.y * dt;

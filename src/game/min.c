@@ -274,7 +274,7 @@ void race_init(s32 arg)
         race_randomize_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
         race_set_grid_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     }
-    gPhysDeltaTime = 0.016666668f;
+    gPhysDeltaTime = 1.0f / FRAME_RATE;
     engine_init_dial_vtx();
     mem_fill(gPlayerInputsPrev_2, 0, 0x18);
     palmod_init((gGame.flags >> 18) & 1); /* GAME_FLAG_PODIUM */

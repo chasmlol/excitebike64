@@ -689,7 +689,7 @@ void cam_update_chase(Rider *rider, CamOut *out, s32 dist)
     air = rider->airFrames;
     blends = sCamAirBlend;
     blend = blends[gCamView];
-    if (rider->landingTime * 60.0f + (f32)air > 60.0f) {
+    if (rider->landingTime * (f32)FRAME_RATE + (f32)air > (f32)FRAME_RATE) {
         if (blend < 0x20) {
             blend++;
         }
@@ -976,9 +976,9 @@ void cam_snap_to_moving(CamOut *out, f32 *vel)
         sx += out->x;
         sy += out->y;
         sz += out->z;
-        out->x -= (s32)(vel[0] * 16.666666f);
-        out->y -= (s32)(vel[1] * 16.666666f);
-        out->z -= (s32)(vel[2] * 16.666666f);
+        out->x -= (s32)(vel[0] * (1000.0f / FRAME_RATE));
+        out->y -= (s32)(vel[1] * (1000.0f / FRAME_RATE));
+        out->z -= (s32)(vel[2] * (1000.0f / FRAME_RATE));
     }
     sCamHistorySum[gCamView] = *out;
     sCamHistorySum[gCamView].x = sx;

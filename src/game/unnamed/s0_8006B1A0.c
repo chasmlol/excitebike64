@@ -340,7 +340,7 @@ ret0:
     if (zero < rider->bike.vel.z) {
         dir = -1.0f;
     }
-    step = rider->bike.vel.z * gLaneChangeFrames / 60.0f - dir - dir;
+    step = rider->bike.vel.z * gLaneChangeFrames / (f32)FRAME_RATE - dir - dir;
     for (i = 0; i < 5; i++) {
         probe = target;
         probe.z += (f32)i * step * 0.25f + dir;

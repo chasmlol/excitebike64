@@ -453,7 +453,7 @@ u32 D_800D911C = 0;
 u32 D_800D911C = 0x7420616E;
 #endif
 /* 0x800d9120-0x800d913c (28 bytes): literals of the C (build_code.py) */
-#if VERSION == VERSION_US_REV1
+#if VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 D_rev1_800D9A38 = 0x20626566;
 #endif
 #if VERSION == VERSION_LODGENET
@@ -461,7 +461,7 @@ u32 D_800D913C = 0;
 #elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 D_800D913C = 0x6F726520;
 #endif
-#if VERSION == VERSION_US_REV1
+#if VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 D_rev1_800D9A5C = 0x63616E20;
 #endif
 /* 0x800d9140-0x800d9178 (56 bytes): literals of the C (build_code.py) */

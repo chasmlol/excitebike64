@@ -72,8 +72,8 @@ void desert_update_race(void)
                 dist = __builtin_sqrtf(dx * dx + dz * dz);
                 angle = math_atan2f(dz, dx);
                 rider->heading = angle * 32768.0f / 3.1415927f;
-                rider->bike.pos.x += dx / dist * 0.16666667f;
-                rider->bike.pos.z += dz / dist * 0.16666667f;
+                rider->bike.pos.x += dx / dist * (10.0f / FRAME_RATE);
+                rider->bike.pos.z += dz / dist * (10.0f / FRAME_RATE);
             }
         } else if (120.0f < leaderDist) {
             rider->frozen = 1;

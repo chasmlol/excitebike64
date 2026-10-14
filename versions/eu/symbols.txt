@@ -1544,6 +1544,7 @@ sRetraceCount                         game  0x800C326C  data      0x4
 sGfxDoneCount                         game  0x800C3270  data      0x4
 sDisplayedFb                          game  0x800C3274  data      0x4
 sViDitherFilter                       game  0x800C3278  data      0x4
+D_rev1_800C333C                       game  0x800C327C  data      0x4
 gRspInitDL                            game  0x800C3280  data     0x38
 gRdpInitDL                            game  0x800C32B8  data     0x88
 sDebugLogFd                           game  0x800C3340  data      0x4
@@ -1814,6 +1815,7 @@ sViModeYScale                         game  0x800CD550  data      0xc
 sSchedRetraceCount                    game  0x800CD55C  data      0x4
 sSchedSwapDeferred                    game  0x800CD560  data      0x4
 gSchedFrameLimit                      game  0x800CD564  data      0x4
+D_eu_800CD568                         game  0x800CD568  data      0x8
 gInstanceMtx                          game  0x800CD570  data     0x10
 sShatterCount                         game  0x800CD580  data     0x10
 sMapBarStart                          game  0x800CD590  data      0x4
@@ -2464,6 +2466,7 @@ gGidArnStand                          game  0x800D1DE0  data      0x4
 gGidArnStandLow                       game  0x800D1DE4  data      0x4
 gGidPkgStand                          game  0x800D1DE8  data      0x4
 gGidCamFlash                          game  0x800D1DEC  data     0x30
+D_rev1_800D1EBC                       game  0x800D1E1C  data      0x4
 gF3dex2NonData                        game  0x800D1E20  data        -
 gF3dlx2RejData                        game  0x800D2240  data        -
 __osPiDevMgr                          game  0x800D3B70  data        -
@@ -2514,6 +2517,7 @@ sFontScaleFromCorner                  game  0x800D5F2C  data      0x4
 sFontAllocMasks                       game  0x800D5F30  data     0x80
 sFontAllocBits                        game  0x800D5FB0  data     0x80
 gFontLoadBuffer                       game  0x800D6030  data     0x10
+D_rev1_800D6418                       game  0x800D62D8  data      0x8
 D_800D5B38                            game  0x800D62F8  data      0x8
 D_800D5C90                            game  0x800D6450  data      0x8
 D_800D5C98                            game  0x800D6458  data     0x10
@@ -2639,6 +2643,7 @@ D_800D63B8                            game  0x800D6B78  data      0x8
 D_800D63C0                            game  0x800D6B80  data      0x8
 D_800D63C8                            game  0x800D6B88  data      0x8
 D_800D63D0                            game  0x800D6B90  data      0x8
+D_rev1_800D7328                       game  0x800D71E8  data      0x8
 sStrArnArn                            game  0x800D71F0  data      0x4
 sStrArnWal                            game  0x800D71F4  data      0x4
 sStrArngfxC                           game  0x800D71F8  data     0x18
@@ -2962,7 +2967,9 @@ sStrSoccerUnlocked                    game  0x800D9888  data     0x14
 sStrHillClimbUnlocked                 game  0x800D989C  data     0x18
 sStrExcite3DUnlocked                  game  0x800D98B4  data     0x14
 D_800D911C                            game  0x800D98DC  data      0x4
+D_rev1_800D9A38                       game  0x800D98F8  data      0x4
 D_800D913C                            game  0x800D98FC  data      0x4
+D_rev1_800D9A5C                       game  0x800D991C  data      0x4
 sStrPonytailC                         game  0x800D9958  data     0x14
 D_800D918C                            game  0x800D996C  data      0x4
 sStrSnowC                             game  0x800D9970  data     0x10

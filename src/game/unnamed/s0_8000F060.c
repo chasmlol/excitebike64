@@ -425,7 +425,7 @@ void snd_update_rider(s32 riderIdx)
         /* Doppler shift, with one view: v the speed towards the camera (mm per frame to m/s), the rate factor
            1 / (1 - 2v / c), clamped to 0.8-1.2 */
         if (gNumViews == 1 && rs->view == 0) {
-            doppler = (f32)rs->distanceDelta * 60.0f / 1000.0f;
+            doppler = (f32)rs->distanceDelta * (f32)FRAME_RATE / 1000.0f;
             doppler = doppler / SND_SPEED_OF_SOUND;
             doppler = doppler * 2.0f;
             doppler = doppler - 1.0f;

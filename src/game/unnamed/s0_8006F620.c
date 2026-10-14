@@ -175,7 +175,7 @@ void stunt_update(Rider *rider)
     stunt_read_input(rider);
     if (rider->trickDoneTimer != 0) {
         if (--rider->trickDoneTimer == 0) {
-            if ((rider->airFrames < 0 || 30.0f < rider->landingTime) && gEvent.allFinished == 0) {
+            if ((rider->airFrames < 0 || FRAME_RATE / 2.0f < rider->landingTime) && gEvent.allFinished == 0) {
                 isNew = 0;
                 score = rider->stuntScore;
                 rider->stuntScore = 0;
@@ -218,7 +218,7 @@ void stunt_update(Rider *rider)
     if (rider->anim == ANIM_AIR_TURN || rider->anim == ANIM_AIR_TURN_2) {
         /* to the last frame and back, back at the first frame when landing */
         if (rider->airFrames > 0) {
-            ticksLeft = (s32)(rider->landingTime * 60.0f);
+            ticksLeft = (s32)(rider->landingTime * (f32)FRAME_RATE);
             if (rider->animSpeed > 0 && ticksLeft >= 16) {
                 rider->animFrame += rider->animSpeed;
                 end = gRiderAnims[rider->anim].body->count << 8;
@@ -228,7 +228,7 @@ void stunt_update(Rider *rider)
                 }
             } else {
                 rider->animSpeed = -0x100;
-                ticksLeft = (s32)(rider->landingTime * 60.0f);
+                ticksLeft = (s32)(rider->landingTime * (f32)FRAME_RATE);
                 if (ticksLeft < 15) {
                     if (ticksLeft < 2) {
                     stop:
@@ -390,7 +390,7 @@ s32 stunt_animate(Rider *rider, s32 held)
     flags = info->flags;
 
     if (anim == ANIM_KOBE) {
-        s32 ticksLeft = rider->landingTime1 * 60.0f;
+        s32 ticksLeft = rider->landingTime1 * (f32)FRAME_RATE;
         s32 remaining;
         if (ticksLeft == 0) {
             ticksLeft = 1;
@@ -465,7 +465,7 @@ s32 stunt_animate(Rider *rider, s32 held)
             s32 delta;
             s32 frame;
             if (rider->airFrames > 0) {
-                s32 ticksLeft = rider->landingTime1 * 60.0f;
+                s32 ticksLeft = rider->landingTime1 * (f32)FRAME_RATE;
                 s32 toLand;
                 if (ticksLeft == 0) {
                     ticksLeft = 1;

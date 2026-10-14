@@ -173,11 +173,11 @@ void engine_update(s32 riderIdx, s32 ticks)
     }
 #else
     } else if (rider->input & INPUT_Z) {       /* retail divides in floating point */
-        rider->engine.rpm = rider->engine.rpm + (f32)(ticks * 10000) / 15.0f;
+        rider->engine.rpm = rider->engine.rpm + (f32)(ticks * 10000) / (FRAME_RATE / 4.0f);
     } else if (rider->input & INPUT_A) {
-        rider->engine.rpm = rider->engine.rpm + (f32)(ticks * 10000) / 30.0f;
+        rider->engine.rpm = rider->engine.rpm + (f32)(ticks * 10000) / (FRAME_RATE / 2.0f);
     } else {
-        rider->engine.rpm = rider->engine.rpm - (f32)(ticks * 10000) / 60.0f;
+        rider->engine.rpm = rider->engine.rpm - (f32)(ticks * 10000) / (f32)FRAME_RATE;
     }
 #endif
     rider->engine.throttle = (rider->input & (INPUT_Z | INPUT_A)) != 0;

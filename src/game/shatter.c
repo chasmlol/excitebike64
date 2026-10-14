@@ -282,9 +282,9 @@ void shatter_check_riders(void)
                             piece->rz = piece[-1].rz;
                         } else {
                             /* the bike's velocity per frame, a random spin */
-                            piece->vx = (s32)((rider->bike.vel.x * 1000.0f) / 60.0f);
-                            piece->vy = (s32)((rider->bike.vel.y * 1000.0f) / 60.0f);
-                            piece->vz = (s32)((rider->bike.vel.z * 1000.0f) / 60.0f);
+                            piece->vx = (s32)((rider->bike.vel.x * 1000.0f) / (f32)FRAME_RATE);
+                            piece->vy = (s32)((rider->bike.vel.y * 1000.0f) / (f32)FRAME_RATE);
+                            piece->vz = (s32)((rider->bike.vel.z * 1000.0f) / (f32)FRAME_RATE);
                             piece->rx = (random_byte() - 0x80) * 4;
                             piece->ry = (random_byte() - 0x80) * 5;
                             piece->rz = (random_byte() - 0x80) * 2;

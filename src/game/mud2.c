@@ -23,7 +23,7 @@ void particles_update(void)
                 p->pos.y = p->pos.y + p->vel.y;
                 p->pos.z = p->pos.z + p->vel.z;
                 if (type == PARTICLE_MUD) {
-                    p->vel.y = p->vel.y - 0.008166667f; /* 29.4 m/s^2 at 60 frames per second */
+                    p->vel.y = p->vel.y - GRAVITY * 2.0f / (FRAME_RATE * FRAME_RATE); /* 29.4 m/s^2, per frame */
                 } else if (type == PARTICLE_SPLASH) {
                     p->vel.x = p->vel.x * 0.99f;
                     p->vel.z = p->vel.z * 0.99f;
@@ -101,9 +101,9 @@ void particles_emit_sparks(Rider *rider)
             pos[0] = rider->bike.pos.x + pos[0];
             pos[1] = rider->bike.pos.y + pos[1];
             pos[2] = rider->bike.pos.z + pos[2];
-            vel[0] = rider->bike.vel.x * 0.016666668f;
-            vel[1] = rider->bike.vel.y * 0.016666668f;
-            vel[2] = rider->bike.vel.z * 0.016666668f;
+            vel[0] = rider->bike.vel.x * (1.0f / FRAME_RATE);
+            vel[1] = rider->bike.vel.y * (1.0f / FRAME_RATE);
+            vel[2] = rider->bike.vel.z * (1.0f / FRAME_RATE);
             rnd = random_byte();
             if (0.0f < rider->sparkDir.x) {
                 push = rnd + 0x80;
