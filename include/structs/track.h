@@ -13,7 +13,7 @@
 #define TRACK_ENV_DESERT  2 /* desgfx.c and fractal.c */
 
 /* The flags of a track (gTracks +0x50). */
-#define TRACK_FLAG_FINISH_LINE 0x002 /* has the finish line props (finishline_load_models) */
+#define TRACK_FLAG_USER_TRACK  0x002 /* built from the editor's pieces (UsrTrk.c); gets the finish line props */
 #define TRACK_FLAG_STARS       0x020 /* a night sky: sun.c draws stars */
 #define TRACK_FLAG_RECORDS     0x200 /* keeps records */
 
@@ -121,6 +121,10 @@ typedef struct TrackModel {
     /* 0x1C */ u32 mask;    /* per view v: bit 2v visible, 2v+1 far, 0x100 << v fogged; objects: section << 16 and,
                                in the resource, the object flags (gObjectFlags) */
 } TrackModel; /* size 0x20 */
+
+/* TrackModel.mask, per view */
+#define TRACK_MODEL_VISIBLE(view) (1 << ((view) * 2))
+#define TRACK_MODEL_FAR(view)     (2 << ((view) * 2)) /* beyond the level-of-detail distance */
 
 typedef struct TrackModelList {
     /* 0x00 */ u32 count;
