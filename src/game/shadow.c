@@ -1,44 +1,48 @@
 #include "game.h"
 
-Blk_2 *shadow_clear_texture(Blk_2 *gdl, s32 unused, s32 n)
-{
-    s32 k = n;
-    Blk_2 *p0 = gdl++;
-    Blk_2 *p1 = gdl++;
-    u32 c1 = 0xE3000A01;
-    Blk_2 *p2 = gdl++;
-    Blk_2 *p3 = gdl++;
-    Blk_2 *p4, *p5;
-    Blk_2 *p6;
-    Blk_2 *q0, *q1, *q2;
+/* Shadow slots: 0-7 the riders on their bikes, 8-15 the thrown riders (slot rider + 8). Each has a 32x32 IA8 texture
+   (0x400 bytes, sShadowTextures) and, per frame buffer, 72 vertices of ground mesh (sShadowVtx). */
 
-    p0->w0 = 0xE7000000;
-    p0->w1 = 0;
-    p1->w1 = 0x300000;
-    p1->w0 = c1;
-    p2->w0 = 0xF7000000;
-    p2->w1 = 0;
-    p3->w0 = 0xED000000;
-    p3->w1 = 0x80080;
-    p4 = gdl++;
-    p4->w0 = 0xE7000000;
-    p4->w1 = 0;
-    p5 = gdl++;
-    p5->w0 = 0xFF68001F;
-    p5->w1 = sShadowTextures + k * 0x400;
-    p6 = gdl++;
-    p6->w0 = 0xF607C07C;
-    p6->w1 = 0;
-    if (gRiders[k].crashState != 0) {
-        q0 = gdl++;
-        q0->w0 = 0xE7000000;
-        q0->w1 = 0;
-        q1 = gdl++;
-        q1->w0 = 0xFF68001F;
-        q1->w1 = sShadowTextures + (k + 8) * 0x400;
-        q2 = gdl++;
-        q2->w0 = 0xF607C07C;
-        q2->w1 = 0;
+/* Clears rider riderIdx's shadow texture to 0 with fill rectangles, and the thrown rider's one when crashed. */
+Blk_2 *shadow_clear_texture(Blk_2 *gdl, s32 unused, s32 riderIdx)
+{
+    s32 idx = riderIdx;
+    Blk_2 *sync = gdl++;
+    Blk_2 *fillCycle = gdl++;
+    u32 fillCycleW0 = 0xE3000A01;
+    Blk_2 *fillColor = gdl++;
+    Blk_2 *scissor = gdl++;
+    Blk_2 *sync2, *image;
+    Blk_2 *rect;
+    Blk_2 *bodySync, *bodyImage, *bodyRect;
+
+    sync->w0 = 0xE7000000;           /* gDPPipeSync */
+    sync->w1 = 0;
+    fillCycle->w1 = 0x300000;        /* gDPSetCycleType(G_CYC_FILL) */
+    fillCycle->w0 = fillCycleW0;
+    fillColor->w0 = 0xF7000000;      /* gDPSetFillColor(0) */
+    fillColor->w1 = 0;
+    scissor->w0 = 0xED000000;        /* gDPSetScissor(0, 0, 32, 32) */
+    scissor->w1 = 0x80080;
+    sync2 = gdl++;
+    sync2->w0 = 0xE7000000;
+    sync2->w1 = 0;
+    image = gdl++;
+    image->w0 = 0xFF68001F;          /* gDPSetColorImage(IA, 8b, 32, texture) */
+    image->w1 = sShadowTextures + idx * 0x400;
+    rect = gdl++;
+    rect->w0 = 0xF607C07C;           /* gDPFillRectangle(0, 0, 31, 31) */
+    rect->w1 = 0;
+    if (gRiders[idx].crashState != 0) {
+        bodySync = gdl++;
+        bodySync->w0 = 0xE7000000;
+        bodySync->w1 = 0;
+        bodyImage = gdl++;
+        bodyImage->w0 = 0xFF68001F;
+        bodyImage->w1 = sShadowTextures + (idx + RIDER_COUNT) * 0x400;
+        bodyRect = gdl++;
+        bodyRect->w0 = 0xF607C07C;
+        bodyRect->w1 = 0;
     }
     {
         Blk_2 *e = gdl++;
@@ -47,29 +51,32 @@ Blk_2 *shadow_clear_texture(Blk_2 *gdl, s32 unused, s32 n)
     }
     {
         Blk_2 *e = gdl++;
-        e->w0 = 0xE3000A01;
+        e->w0 = 0xE3000A01;          /* gDPSetCycleType(G_CYC_1CYCLE) */
         e->w1 = 0;
     }
     return gdl;
 }
 
+/* gRiderGfx entries (0xA80 bytes per rider), as the shadow code sees them */
 typedef struct {
     u8 pad0[0x220];
-    Gfx *dl220;
+    Gfx *shadowDl;              /* rider 0's: the rider's low-detail model, vertices in segment 1, bones in 6 */
     u8 pad224[0x22C - 0x224];
-    void *seg22C;
+    void *loVtx;                /* the low-detail model's vertices */
     u8 pad230[0x234 - 0x230];
-    void *seg234[2];
-    void *mtx23C[(0xA80 - 0x23C) / 4];
+    void *boneMtx[2];           /* the rider's bone matrices, per frame buffer */
+    void *bikeMtx[(0xA80 - 0x23C) / 4]; /* [0..1]: the six bike parts' matrices, per frame buffer */
 } Plr_4;
 
 extern Plr_4 gRiderGfx_9[];
 
-Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
+/* Draws rider idx from above, white on clear, into its shadow texture: the bike parts, then the rider (into the
+   thrown rider's texture when crashed; not with the Invisible Rider cheat). dynMtx[16] is the view's modelview. */
+Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *dynMtx)
 {
-    f32 mf[4][4];
-    s16 rot[64];
-    Rider *blk;
+    f32 ortho[4][4];
+    s16 lookDown[64];
+    Rider *rider;
     Gfx **tab;
     s32 i;
 
@@ -77,10 +84,10 @@ Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
     gSPViewport(gdl++, &sShadowViewport);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 1, 1, 31, 31);
     gSPClipRatio(gdl++, FRUSTRATIO_6);
-    blk = &gRiders[idx];
-    guOrtho(mf, -15.0f, 15.0f, -15.0f, 15.0f, 50.0f, 4192.0f, 1.0f);
-    mtx_from_angles_pos_scale(rot, -0x4000, 0, 0, 0, 0, 0, 4);
-    mtx_mul(rot, (s16 *)mf, (s16 *)&sShadowProjMtx);
+    rider = &gRiders[idx];
+    guOrtho(ortho, -15.0f, 15.0f, -15.0f, 15.0f, 50.0f, 4192.0f, 1.0f);
+    mtx_from_angles_pos_scale(lookDown, -0x4000, 0, 0, 0, 0, 0, 4);
+    mtx_mul(lookDown, (s16 *)ortho, (s16 *)&sShadowProjMtx);
     mtx_from_angles_pos_scale(&sShadowViewMtx, 0, 0, 0, 0, 0, 0, 0x100);
     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
     gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
@@ -92,25 +99,28 @@ Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
     gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, sShadowTextures + idx * 0x400);
 
     for (i = 0; i < 6; i++) {
-        gSPMatrix(gdl++, (u8 *)gRiderGfx_9[idx].mtx23C[gGfxFrameIndex] + i * 0x40, G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+        gSPMatrix(gdl++, (u8 *)gRiderGfx_9[idx].bikeMtx[gGfxFrameIndex] + i * 0x40, G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
         gSPDisplayList(gdl++, gBikeShadowDLs[i]);
         gSPPopMatrix(gdl++, G_MTX_MODELVIEW);
     }
-    if (blk->crashState) {
-        gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, sShadowTextures + (idx + 8) * 0x400);
+    if (rider->crashState) {
+        gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, sShadowTextures + (idx + RIDER_COUNT) * 0x400);
     }
-    gSPSegment(gdl++, 1, gRiderGfx_9[0].seg22C);
-    gSPSegment(gdl++, 6, gRiderGfx_9[idx].seg234[gGfxFrameIndex]);
-    if (!(gCheatFlags & 0x20)) {
-        gSPDisplayList(gdl++, gRiderGfx_9[0].dl220);
+    gSPSegment(gdl++, 1, gRiderGfx_9[0].loVtx);
+    gSPSegment(gdl++, 6, gRiderGfx_9[idx].boneMtx[gGfxFrameIndex]);
+    if (!(gCheatFlags & CHEAT_INVISIBLE_RIDER)) {
+        gSPDisplayList(gdl++, gRiderGfx_9[0].shadowDl);
     }
     gDPPipeSync(gdl++);
-    gSPMatrix(gdl++, m + 16, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, dynMtx + 16, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     gSPSetGeometryMode(gdl++, gCullMode);
     return gdl;
 }
 
-Gfx *shadow_draw(s32 id, s32 unused, Gfx *gdl, s32 arg3) {
+/* Draws slot's ground mesh (shadow_build_mesh) with its shadow texture, in black at the rider's alpha (38%, full
+   during a lightning flash). */
+Gfx *shadow_draw(s32 slot, s32 unused, Gfx *gdl, s32 view)
+{
     s32 i;
 
     if (gGroundTriCount == 0 || sShadowTriCount == 0 || sShadowVtxCount == 0) {
@@ -120,16 +130,16 @@ Gfx *shadow_draw(s32 id, s32 unused, Gfx *gdl, s32 arg3) {
     gDPSetRenderMode(gdl++, 0x404A50, 0);
     gDPSetCombine(gdl++, 0xFFB3FF, 0xFF65FEFF);
     if (gLightningFlash == 0) {
-        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, gRiderAlpha[id % 8] * 97 / 256);
+        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, gRiderAlpha[slot % RIDER_COUNT] * 97 / 256);
     } else {
-        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, gRiderAlpha[id % 8]);
+        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, gRiderAlpha[slot % RIDER_COUNT]);
     }
     gDPSetBlendColor(gdl++, 0, 0, 0, 1);
     gDPSetAlphaCompare(gdl++, G_AC_THRESHOLD);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
-    gDPLoadTextureBlock(gdl++, sShadowTextures + (id << 10), G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
+    gDPLoadTextureBlock(gdl++, sShadowTextures + (slot << 10), G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
                         G_TX_CLAMP, G_TX_CLAMP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
-    gSPVertex(gdl++, &sShadowVtx[gGfxFrameIndex * 1152 + id * 72], sShadowVtxCount, 0);
+    gSPVertex(gdl++, &sShadowVtx[gGfxFrameIndex * 1152 + slot * 72], sShadowVtxCount, 0);
     for (i = 0; i < sShadowTriCount - 1; i += 2) {
         gSP2Triangles(gdl++, sShadowTriIndices[i * 3], sShadowTriIndices[i * 3 + 1], sShadowTriIndices[i * 3 + 2], 0,
                       sShadowTriIndices[i * 3 + 3], sShadowTriIndices[i * 3 + 4], sShadowTriIndices[i * 3 + 5], 0);
@@ -144,7 +154,8 @@ Gfx *shadow_draw(s32 id, s32 unused, Gfx *gdl, s32 arg3) {
     return gdl;
 }
 
-Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl)
+/* Draws slot's shadow texture on screen at (50, 50), a debug view. */
+Gfx *shadow_draw_debug_texture(s32 slot, s32 unused, Gfx *gdl)
 {
     Gfx *g0;
     Gfx *g1;
@@ -166,6 +177,7 @@ Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl)
     Gfx *g17;
     u32 c;
 
+    /* pipe sync, render mode, combine mode, no TLUT, no perspective, texture on */
     g0 = gdl++;
     g1 = gdl++;
     c = 0xE200001C;
@@ -185,9 +197,10 @@ Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl)
     g5 = gdl++;
     ((u32 *)g5)[0] = 0xD7000002;
     ((u32 *)g5)[1] = 0x80008000;
+    /* gDPLoadTextureBlock(texture, G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, ...) */
     g6 = gdl++;
     ((u32 *)g6)[0] = 0xFD700000;
-    ((u32 *)g6)[1] = (u32)(sShadowTextures + param_1 * 0x400);
+    ((u32 *)g6)[1] = (u32)(sShadowTextures + slot * 0x400);
     g7 = gdl++;
     ((u32 *)g7)[0] = 0xF5700000;
     ((u32 *)g7)[1] = 0x07098260;
@@ -206,6 +219,7 @@ Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl)
     g12 = gdl++;
     ((u32 *)g12)[0] = 0xF2000000;
     ((u32 *)g12)[1] = 0x0007C07C;
+    /* a texture rectangle (50, 50)-(113, 113), then perspective back on */
     g13 = gdl++;
     ((u32 *)g13)[0] = 0xE41C41C4;
     ((u32 *)g13)[1] = 0x000C80C8;
@@ -224,49 +238,53 @@ Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl)
     return gdl;
 }
 
-void shadow_build_mesh(s32 n)
+/* Builds slot's shadow mesh: the ground triangles within a metre of the rider (slot >= 8: the thrown rider),
+   clipped to a 2 m square mapped onto the shadow texture. */
+void shadow_build_mesh(s32 slot)
 {
-    s32 x, y, z;
-    s32 i, j, k, cnt;
-    Vtx *v;
-    u32 vb;
+    s32 cx, cy, cz;
+    s32 i, j, k, tris;
+    Vtx *vtx;
+    u32 vtxBase;
     Vec3i *src;
 
-    if (n < 8) {
-        x = gRiders[n].drawPos.x;
-        y = gRiders[n].drawPos.y;
-        z = gRiders[n].drawPos.z;
+    if (slot < RIDER_COUNT) {
+        cx = gRiders[slot].drawPos.x;
+        cy = gRiders[slot].drawPos.y;
+        cz = gRiders[slot].drawPos.z;
     } else {
-        x = gRiders[n % 8].drawBodyPos.x;
-        y = gRiders[n % 8].drawBodyPos.y;
-        z = gRiders[n % 8].drawBodyPos.z;
+        cx = gRiders[slot % RIDER_COUNT].drawBodyPos.x;
+        cy = gRiders[slot % RIDER_COUNT].drawBodyPos.y;
+        cz = gRiders[slot % RIDER_COUNT].drawBodyPos.z;
     }
-    height_collect_ground_tris(x - 1000, z - 1000, x + 1000, z + 1000, gRiders[n].drawPos.y + 1000);
+    /* gRiders[slot] reads past gRiders for slot >= 8 (slot % 8 above): a bug of the original */
+    height_collect_ground_tris(cx - 1000, cz - 1000, cx + 1000, cz + 1000, gRiders[slot].drawPos.y + 1000);
     if (gGroundTriCount == 0) return;
     sShadowVtxCount = 0;
     sShadowTriCount = 0;
     k = gGfxFrameIndex * 0x480;
-    k += n * 0x48;
-    vb = (u32)sShadowVtx + k * 16;
+    k += slot * 0x48;
+    vtxBase = (u32)sShadowVtx + k * 16;
     for (i = 0; i < gGroundTriCount; i++) {
         for (j = 0; j < 3; j++) {
-            gGroundTris[i].v[j].x -= x;
-            gGroundTris[i].v[j].y -= y;
-            gGroundTris[i].v[j].z -= z;
+            gGroundTris[i].v[j].x -= cx;
+            gGroundTris[i].v[j].y -= cy;
+            gGroundTris[i].v[j].z -= cz;
         }
         shadow_clip_triangle(&gGroundTris[i], 1000);
-        cnt = sShadowTriCount - 2;
-        if (cnt + sClipOutCount >= 0x48) return;
+        /* the clipped polygon adds sClipOutCount - 2 triangles, as a fan */
+        tris = sShadowTriCount - 2;
+        if (tris + sClipOutCount >= 0x48) return;
         if (sShadowVtxCount + sClipOutCount >= 0x20) return;
         j = sShadowVtxCount;
         for (k = 0; k < sClipOutCount; k++) {
-            v = (Vtx *)(sShadowVtxCount * 16 + vb);
-            v->v.ob[0] = sClipPolyA[k].x;
-            v->v.ob[1] = sClipPolyA[k].y;
-            v->v.ob[2] = sClipPolyA[k].z;
-            v->v.tc[0] = ((sClipPolyA[k].x + 1000) << 11) / 2000;
+            vtx = (Vtx *)(sShadowVtxCount * 16 + vtxBase);
+            vtx->v.ob[0] = sClipPolyA[k].x;
+            vtx->v.ob[1] = sClipPolyA[k].y;
+            vtx->v.ob[2] = sClipPolyA[k].z;
+            vtx->v.tc[0] = ((sClipPolyA[k].x + 1000) << 11) / 2000;
             sShadowVtxCount++;
-            v->v.tc[1] = ((-sClipPolyA[k].z + 1000) << 11) / 2000;
+            vtx->v.tc[1] = ((-sClipPolyA[k].z + 1000) << 11) / 2000;
         }
         for (k = 2; k < sClipOutCount; k++) {
             sShadowTriIndices[sShadowTriCount * 3] = j;
@@ -277,103 +295,105 @@ void shadow_build_mesh(s32 n)
     }
 }
 
-void shadow_clip_triangle(GroundTri *a, s32 lim)
+/* Clips a triangle to the square |x| <= half, |z| <= half, one side at a time (Sutherland-Hodgman) between
+   sClipPolyA_2 and sClipPolyB; the result is sClipPolyA_2 (sClipPolyA), sClipOutCount vertices. */
+void shadow_clip_triangle(GroundTri *tri, s32 half)
 {
-    Vec *o;
-    Vec *p;
-    Vec *q;
+    Vec *out;
+    Vec *a;
+    Vec *b;
     s32 i;
     s32 t;
 
-
-    sClipPolyA_2[0] = a->v[0];
-    sClipPolyA_2[1] = a->v[1];
-    sClipPolyA_2[2] = a->v[2];
+    sClipPolyA_2[0] = tri->v[0];
+    sClipPolyA_2[1] = tri->v[1];
+    sClipPolyA_2[2] = tri->v[2];
     sClipInCount = 3;
-    o = sClipPolyB;
+    out = sClipPolyB;
     i = 0;
     sClipOutCount = 0;
     for (; i < sClipInCount; i++) {
-        p = &sClipPolyA_2[i];
-        q = &sClipPolyA_2[(i + 1) % sClipInCount];
-        if (p->x <= lim) {
-            *o++ = *p;
+        a = &sClipPolyA_2[i];
+        b = &sClipPolyA_2[(i + 1) % sClipInCount];
+        if (a->x <= half) {
+            *out++ = *a;
             sClipOutCount++;
         }
-        if ((p->x <= lim && q->x > lim) || (p->x > lim && q->x <= lim)) {
-            t = ((lim - p->x) << 8) / (q->x - p->x);
-            o->x = lim;
-            o->y = p->y + t * (q->y - p->y) / 256;
-            o->z = p->z + t * (q->z - p->z) / 256;
-            o++;
+        if ((a->x <= half && b->x > half) || (a->x > half && b->x <= half)) {
+            t = ((half - a->x) << 8) / (b->x - a->x);
+            out->x = half;
+            out->y = a->y + t * (b->y - a->y) / 256;
+            out->z = a->z + t * (b->z - a->z) / 256;
+            out++;
             sClipOutCount++;
         }
     }
 
     sClipInCount = sClipOutCount;
-    o = sClipPolyA_2;
+    out = sClipPolyA_2;
     i = 0;
     sClipOutCount = 0;
-        for (; i < sClipInCount; i++) {
-            p = &sClipPolyB[i];
-            q = &sClipPolyB[(i + 1) % sClipInCount];
-            if (p->x >= -lim) {
-                *o++ = *p;
-                sClipOutCount++;
-            }
-            if ((p->x >= -lim && q->x < -lim) || (p->x < -lim && q->x >= -lim)) {
-                t = ((-lim - p->x) << 8) / (q->x - p->x);
-                o->x = -lim;
-                o->y = p->y + t * (q->y - p->y) / 256;
-                o->z = p->z + t * (q->z - p->z) / 256;
-                o++;
-                sClipOutCount++;
-            }
+    for (; i < sClipInCount; i++) {
+        a = &sClipPolyB[i];
+        b = &sClipPolyB[(i + 1) % sClipInCount];
+        if (a->x >= -half) {
+            *out++ = *a;
+            sClipOutCount++;
         }
+        if ((a->x >= -half && b->x < -half) || (a->x < -half && b->x >= -half)) {
+            t = ((-half - a->x) << 8) / (b->x - a->x);
+            out->x = -half;
+            out->y = a->y + t * (b->y - a->y) / 256;
+            out->z = a->z + t * (b->z - a->z) / 256;
+            out++;
+            sClipOutCount++;
+        }
+    }
 
     sClipInCount = sClipOutCount;
-    o = sClipPolyB;
+    out = sClipPolyB;
     i = 0;
     sClipOutCount = 0;
-        for (; i < sClipInCount; i++) {
-            p = &sClipPolyA_2[i];
-            q = &sClipPolyA_2[(i + 1) % sClipInCount];
-            if (p->z <= lim) {
-                *o++ = *p;
-                sClipOutCount++;
-            }
-            if ((p->z <= lim && q->z > lim) || (p->z > lim && q->z <= lim)) {
-                t = ((lim - p->z) << 8) / (q->z - p->z);
-                o->z = lim;
-                o->y = p->y + t * (q->y - p->y) / 256;
-                o->x = p->x + t * (q->x - p->x) / 256;
-                o++;
-                sClipOutCount++;
-            }
+    for (; i < sClipInCount; i++) {
+        a = &sClipPolyA_2[i];
+        b = &sClipPolyA_2[(i + 1) % sClipInCount];
+        if (a->z <= half) {
+            *out++ = *a;
+            sClipOutCount++;
         }
+        if ((a->z <= half && b->z > half) || (a->z > half && b->z <= half)) {
+            t = ((half - a->z) << 8) / (b->z - a->z);
+            out->z = half;
+            out->y = a->y + t * (b->y - a->y) / 256;
+            out->x = a->x + t * (b->x - a->x) / 256;
+            out++;
+            sClipOutCount++;
+        }
+    }
 
     sClipInCount = sClipOutCount;
-    o = sClipPolyA_2;
+    out = sClipPolyA_2;
     i = 0;
     sClipOutCount = 0;
-        for (; i < sClipInCount; i++) {
-            p = &sClipPolyB[i];
-            q = &sClipPolyB[(i + 1) % sClipInCount];
-            if (p->z >= -lim) {
-                *o++ = *p;
-                sClipOutCount++;
-            }
-            if ((p->z >= -lim && q->z < -lim) || (p->z < -lim && q->z >= -lim)) {
-                t = ((-lim - p->z) << 8) / (q->z - p->z);
-                o->z = -lim;
-                o->y = p->y + t * (q->y - p->y) / 256;
-                o->x = p->x + t * (q->x - p->x) / 256;
-                o++;
-                sClipOutCount++;
-            }
+    for (; i < sClipInCount; i++) {
+        a = &sClipPolyB[i];
+        b = &sClipPolyB[(i + 1) % sClipInCount];
+        if (a->z >= -half) {
+            *out++ = *a;
+            sClipOutCount++;
         }
+        if ((a->z >= -half && b->z < -half) || (a->z < -half && b->z >= -half)) {
+            t = ((-half - a->z) << 8) / (b->z - a->z);
+            out->z = -half;
+            out->y = a->y + t * (b->y - a->y) / 256;
+            out->x = a->x + t * (b->x - a->x) / 256;
+            out++;
+            sClipOutCount++;
+        }
+    }
 }
 
+/* Allocates the shadow vertices (two frame buffers of 16 slots of 72) and the 16 textures, 64-byte aligned. */
 void shadow_init(void)
 {
     u32 x;
@@ -389,6 +409,7 @@ void shadow_init(void)
     }
 }
 
+/* Frees the shadow buffers. */
 void shadow_free(void)
 {
     mem_free(sShadowVtx);

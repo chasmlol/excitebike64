@@ -1,70 +1,74 @@
 #include "game.h"
 
-void ai_update_throttle(Rider *p)
+/* Sets a CPU rider's throttle, brake or turbo to hold the racing line's target speed at its position (stop or slow
+   down once finished; brake to a stop in the stunt course and hill climb). */
+void ai_update_throttle(Rider *rider)
 {
-    s32 iVar1;
-    f32 fVar2;
-    f32 fVar3;
-    u32 ev;
-    u8 b;
+    s32 nextSeg;
+    f32 targetSpeed;
+    f32 excess;
+    u32 mode;
+    u8 finishState;
 
-    iVar1 = p->segment + 1;
-    fVar2 = gPathNodes[p->segment].maxSpeed * (1.0f - p->segmentT)
-          + gPathNodes[iVar1 % gPathNodeCount].maxSpeed * p->segmentT;
-    ev = gGame.mode;
-    if (ev == 10) goto L_e4;
-    if (ev < 11) {
-        if (ev == 7) goto L_e4;
-    } else if (ev == 0xF) {
-        fVar2 = 50.0f;
+    nextSeg = rider->segment + 1;
+    targetSpeed = gPathNodes[rider->segment].maxSpeed * (1.0f - rider->segmentT)
+                + gPathNodes[nextSeg % gPathNodeCount].maxSpeed * rider->segmentT;
+    mode = gGame.mode;
+    if (mode == GAME_MODE_STUNT_COURSE) goto brake_to_stop;
+    if (mode < 11) {
+        if (mode == GAME_MODE_HILL_CLIMB) goto brake_to_stop;
+    } else if (mode == 0xF) {
+        targetSpeed = 50.0f;
     }
-    goto L_gen;
+    goto race;
 
-L_e4:
-    if (!(0.5f < p->fwdSpeed)) goto ZERO;
-STORE20:
-    p->input = 0x20;
+brake_to_stop:
+    if (!(0.5f < rider->fwdSpeed)) goto coast;
+brake:
+    rider->input = INPUT_B;
     return;
-ZERO:
-    p->input = 0;
+coast:
+    rider->input = 0;
     return;
 
-L_gen:
-    b = p->finishState;
-    if (b == 1) goto C1;
-    if (b == 2) goto C2;
-    goto CS;
-C1:
-    fVar2 = 0.0f;
-    goto CS;
-C2:
-    fVar2 = 5.0f;
-CS:
-    fVar3 = p->speed - fVar2;
-    if (0.5f < fVar3) {
-        p->frontWheel.brakeRamp = 6;
-        p->rearWheel.brakeRamp = 6;
-        goto STORE20;
+race:
+    finishState = rider->finishState;
+    if (finishState == 1) goto stop;
+    if (finishState == 2) goto slow;
+    goto match_speed;
+stop:
+    targetSpeed = 0.0f;
+    goto match_speed;
+slow:
+    targetSpeed = 5.0f;
+match_speed:
+    excess = rider->speed - targetSpeed;
+    if (0.5f < excess) {
+        rider->frontWheel.brakeRamp = 6;
+        rider->rearWheel.brakeRamp = 6;
+        goto brake;
     }
-    if (fVar3 < -0.5f && p->airFrames < 3 && p->laneBlocked == 0) {
-        if (fVar3 < -5.0f && p->engine.heat < 9500.0f) {
-            if ((p->prevInput & 0x20000) == 0) {
-                p->turboPressFrame = gRaceFrame;
+    if (excess < -0.5f && rider->airFrames < 3 && rider->laneBlocked == 0) {
+        if (excess < -5.0f && rider->engine.heat < 9500.0f) {
+            if ((rider->prevInput & INPUT_Z) == 0) {
+                rider->turboPressFrame = gRaceFrame;
             }
-            p->input = 0x20000;
+            rider->input = INPUT_Z;
             return;
         }
-        p->input = 0x10;
+        rider->input = INPUT_A;
     }
     return;
-
 }
 
-void ai_set_steering(Rider *b, f32 maxv) {
-    f32 speed = b->speed;
+/* Sets a CPU rider's steering angle (radians), clamped to half the bike's limit at its speed, and the stick x that
+   matches it. */
+void ai_set_steering(Rider *rider, f32 angle)
+{
+    f32 speed = rider->speed;
     s32 i = 0;
     f32 t;
-    f32 r;
+    f32 maxAngle;
 
     while (sSteerSpeedSteps[i + 1] < speed) {
         i++;
@@ -74,287 +78,297 @@ void ai_set_steering(Rider *b, f32 maxv) {
     } else {
         t = (sSteerSpeedSteps[i + 1] - speed) / (sSteerSpeedSteps[i + 1] - sSteerSpeedSteps[i]);
     }
-    r = (sSteerMaxBySpeed[i] * t + sSteerMaxBySpeed[i + 1] * (1.0f - t)) * 0.18849557638168335f * 0.5f;
-    if (r < maxv) {
-        maxv = r;
-    } else if (r < -maxv) {
-        maxv = -r;
+    maxAngle = (sSteerMaxBySpeed[i] * t + sSteerMaxBySpeed[i + 1] * (1.0f - t)) * 0.18849557638168335f * 0.5f;
+    if (maxAngle < angle) {
+        angle = maxAngle;
+    } else if (maxAngle < -angle) {
+        angle = -maxAngle;
     }
-    b->steer = maxv;
-    b->stickX = (s32)((maxv * 13.0f) / r);
+    rider->steer = angle;
+    rider->stickX = (s32)((angle * 13.0f) / maxAngle);
 }
 
-void ai_update_steering(Rider *b) {
-    f32 unused[8];
-    s16 ang0;
-    s32 ratio;
-    s16 ang1;
-    s32 idx;
-    s32 cnt;
+/* Steers a CPU rider: power slides through the corners flagged for them, follows crests, aims at the landing point
+   in the air, and otherwise steers along a curve from the bike to a point on its lane a few path nodes ahead. */
+void ai_update_steering(Rider *rider)
+{
+    f32 unused[8]; /* keeps the original's frame size */
+    s16 heading;
+    s32 polarLen;
+    s16 pathAngle;
+    s32 seg;
+    s32 lookahead;
     s32 k;
-    s32 j;
-    s32 nx;
-    f32 dist;
-    f32 amp;
-    f32 amp2;
-    f32 amp3;
-    f32 px, pz;
-    f32 p0x, p0z;
-    f32 ex;
-    f32 f;
+    s32 node;
+    s32 nextNode;
+    f32 offset;
+    f32 t;
+    f32 tSq;
+    f32 tCube;
+    f32 aimX, aimZ;
+    f32 startX, startZ;
+    f32 c3x;
+    f32 drift;
     f32 dx, dz;
     f32 len, l3;
-    f32 ax, az, cx, cz, ez;
-    f32 d, d3;
-    f32 tx, tz, tl;
-    f32 qx, qz, wz, wx;
-    f32 vx, vz, sp;
+    f32 c2x, c2z, c1x, c1z, c3z;
+    f32 d, handle;
+    f32 midX, midZ, along;
+    f32 lineDirX, lineDirZ, tanZ, tanX;
+    f32 dirX, dirZ, mag;
     f32 r, steer;
-    f32 ddx, ddz;
-    f32 ang, s, c, q, sn;
+    f32 ctrl1X, ctrl1Z;
+    f32 ang, s, sinA, across, cosA;
     Vec3f *pos;
     PathNode *n;
 
     switch (gGame.mode) {
-    case 6:
-        excite3d_cpu_steer(b);
+    case GAME_MODE_EXCITE_3D:
+        excite3d_cpu_steer(rider);
         break;
-    case 5:
-        desert_ai_steer(b);
+    case GAME_MODE_DESERT:
+        desert_ai_steer(rider);
         return;
-    case 10:
-        ai_set_steering(b, 0.0f);
-        b->stickX = 0;
+    case GAME_MODE_STUNT_COURSE:
+        ai_set_steering(rider, 0.0f);
+        rider->stickX = 0;
         break;
     }
 
-    switch (b->powerSlide) {
-    case 0: {
-        s32 idx = b->segment;
-        s32 a;
-        if (!(gPathNodes[idx].flags & 4) || gRaceFrame - b->aiFrame < 300) {
+    switch (rider->powerSlide) {
+    case POWER_SLIDE_NONE: {
+        s32 curSeg = rider->segment;
+        s32 absDiff;
+        /* start a slide in a flagged corner when heading within 22.5 degrees of the line */
+        if (!(gPathNodes[curSeg].flags & 4) || gRaceFrame - rider->aiFrame < 300) {
             break;
         }
-        math_to_polar(-(b->bike.fwd.x * 16384.0f), b->bike.fwd.z * 16384.0f, &ang0, &ratio);
-        math_to_polar(gPathNodes[idx].lateralZ * 16384.0f, gPathNodes[idx].lateralX * 16384.0f, &ang1, &ratio);
-        ang1 -= ang0;
-        a = ang1 < 0 ? -ang1 : ang1;
-        if (a > 0x1000) {
+        math_to_polar(-(rider->bike.fwd.x * 16384.0f), rider->bike.fwd.z * 16384.0f, &heading, &polarLen);
+        math_to_polar(gPathNodes[curSeg].lateralZ * 16384.0f, gPathNodes[curSeg].lateralX * 16384.0f, &pathAngle, &polarLen);
+        pathAngle -= heading;
+        absDiff = pathAngle < 0 ? -pathAngle : pathAngle;
+        if (absDiff > 0x1000) {
             break;
         }
-        b->powerSlide = 1;
-    }
-    case 1: {
-        s32 idx, j, a;
-        s16 d;
-        if (b->speed < 5.0f) {
-            b->powerSlide = 2;
+        rider->powerSlide = POWER_SLIDE_ON;
+    } /* fallthrough */
+    case POWER_SLIDE_ON: {
+        s32 curSeg, exitNode, absDiff;
+        s16 angDiff;
+        if (rider->speed < 5.0f) {
+            rider->powerSlide = POWER_SLIDE_END;
             break;
         }
-        idx = b->segment;
-        if (!(gPathNodes[idx].flags & 4)) {
-            b->powerSlide = 2;
+        curSeg = rider->segment;
+        if (!(gPathNodes[curSeg].flags & 4)) {
+            rider->powerSlide = POWER_SLIDE_END;
             break;
         }
-        j = idx;
+        /* slide (B, no throttle) until heading within 5.6 degrees of the line at the corner's exit */
+        exitNode = curSeg;
         do {
-            j = gPathNodes[j].next;
-        } while (gPathNodes[j].flags & 4);
-        math_to_polar(-(b->bike.fwd.x * 16384.0f), b->bike.fwd.z * 16384.0f, &ang0, &ratio);
-        math_to_polar(gPathNodes[j].lateralZ * 16384.0f, gPathNodes[j].lateralX * 16384.0f, &ang1, &ratio);
-        ang1 -= ang0;
-        d = ang1;
-        a = d < 0 ? -d : d;
-        if (a > 0x400) {
-            steer = gPathNodes[j].pos.x - b->bike.pos.x;
-            steer = (steer * gCosTable[(ang0 >> 4) & 0xFFF]
-                 + (gPathNodes[j].pos.z - b->bike.pos.z) * gCosTable[((ang0 >> 4) - 0x400) & 0xFFF]) * (1.0f / 16384.0f);
-            if (d < 0) {
-                b->stickX = -13;
+            exitNode = gPathNodes[exitNode].next;
+        } while (gPathNodes[exitNode].flags & 4);
+        math_to_polar(-(rider->bike.fwd.x * 16384.0f), rider->bike.fwd.z * 16384.0f, &heading, &polarLen);
+        math_to_polar(gPathNodes[exitNode].lateralZ * 16384.0f, gPathNodes[exitNode].lateralX * 16384.0f, &pathAngle, &polarLen);
+        pathAngle -= heading;
+        angDiff = pathAngle;
+        absDiff = angDiff < 0 ? -angDiff : angDiff;
+        if (absDiff > 0x400) {
+            steer = gPathNodes[exitNode].pos.x - rider->bike.pos.x;
+            steer = (steer * gCosTable[(heading >> 4) & 0xFFF]
+                 + (gPathNodes[exitNode].pos.z - rider->bike.pos.z) * gCosTable[((heading >> 4) - 0x400) & 0xFFF]) * (1.0f / 16384.0f);
+            if (angDiff < 0) {
+                rider->stickX = -13;
                 steer = -steer;
             } else {
-                b->stickX = 13;
+                rider->stickX = 13;
             }
             if (steer > -2.0f) {
-                b->stickX = 0;
+                rider->stickX = 0;
             }
-            b->powerSlide = 1;
-            b->input = (b->input & ~0x10) | 0x20;
+            rider->powerSlide = POWER_SLIDE_ON;
+            rider->input = (rider->input & ~INPUT_A) | INPUT_B;
         } else {
-            b->powerSlide = 2;
+            rider->powerSlide = POWER_SLIDE_END;
         }
-        steer = b->stickX > 0 ? 0.3f : -0.3f;
-        ai_set_steering(b, steer);
+        steer = rider->stickX > 0 ? 0.3f : -0.3f;
+        ai_set_steering(rider, steer);
         return;
     }
-    case 2:
-        b->powerSlide = 0;
-        b->aiFrame = gRaceFrame;
-        b->laneOffset = b->lateral;
+    case POWER_SLIDE_END:
+        rider->powerSlide = POWER_SLIDE_NONE;
+        rider->aiFrame = gRaceFrame;
+        rider->laneOffset = rider->lateral;
         break;
     }
 
-    dist = b->laneOffset;
-    if (b->airFrames < 3) {
-        pos = &b->bike.pos;
-        idx = b->segment;
-        amp = b->segmentT;
-        cnt = 2;
-        if (gRaceFrame - b->aiFrame < 300) {
-            cnt = 4;
+    offset = rider->laneOffset;
+    if (rider->airFrames < 3) {
+        pos = &rider->bike.pos;
+        seg = rider->segment;
+        t = rider->segmentT;
+        lookahead = 2;
+        if (gRaceFrame - rider->aiFrame < 300) {
+            lookahead = 4;
         } else {
-            k = gPathNodes[idx].lookahead;
-            if (cnt < k) {
-                amp = 0.0f;
-                cnt = k;
+            k = gPathNodes[seg].lookahead;
+            if (lookahead < k) {
+                t = 0.0f;
+                lookahead = k;
             }
         }
-    } else if (gGame.mode != 6) {
-        pos = b->landingPick ? &b->landingPos1 : &b->landingPos2;
-        idx = b->landingPick ? b->landingSegment1 : b->landingSegment2;
-        r = path_get_lateral_offset(pos, idx);
-        if (!(gPathNodes[idx].widthPos < r)) {
-            if (!(r < -gPathNodes[idx].widthNeg)) {
-                amp = gPathSegmentT;
-                cnt = 2;
-                if (cnt < gPathNodes[idx].lookahead) {
-                    amp = 0.0f;
-                    cnt = gPathNodes[idx].lookahead;
+    } else if (gGame.mode != GAME_MODE_EXCITE_3D) {
+        /* in the air: aim at the predicted landing point, or steer back onto the track if it is off it */
+        pos = rider->landingPick ? &rider->landingPos1 : &rider->landingPos2;
+        seg = rider->landingPick ? rider->landingSegment1 : rider->landingSegment2;
+        r = path_get_lateral_offset(pos, seg);
+        if (!(gPathNodes[seg].widthPos < r)) {
+            if (!(r < -gPathNodes[seg].widthNeg)) {
+                t = gPathSegmentT;
+                lookahead = 2;
+                if (lookahead < gPathNodes[seg].lookahead) {
+                    t = 0.0f;
+                    lookahead = gPathNodes[seg].lookahead;
                 }
             } else {
-                b->stickX = -8;
+                rider->stickX = -8;
                 return;
             }
         } else {
-            b->stickX = 8;
+            rider->stickX = 8;
             return;
         }
     } else {
-        b->stickX = 0;
+        rider->stickX = 0;
         return;
     }
 
-    if ((u32)((u8)b->crestAhead - 1) < 2 && b->speed > 2.0f) {
-        idx = b->segment;
-        for (k = b->crestAhead; k > 0; k--) {
-            idx = gPathNodes[idx].next;
+    /* a crest one or two nodes ahead: steer against the sideways part of the velocity */
+    if ((u32)((u8)rider->crestAhead - 1) < 2 && rider->speed > 2.0f) {
+        seg = rider->segment;
+        for (k = rider->crestAhead; k > 0; k--) {
+            seg = gPathNodes[seg].next;
         }
-        f = (b->bike.vel.x * gPathNodes[idx].lateralX + b->bike.vel.z * gPathNodes[idx].lateralZ) / b->speed;
-        b->stickX = f * 32.0f;
-        if (b->stickX >= 16) {
-            b->stickX = 15;
-        } else if (b->stickX < -15) {
-            b->stickX = -15;
+        drift = (rider->bike.vel.x * gPathNodes[seg].lateralX + rider->bike.vel.z * gPathNodes[seg].lateralZ) / rider->speed;
+        rider->stickX = drift * 32.0f;
+        if (rider->stickX >= 16) {
+            rider->stickX = 15;
+        } else if (rider->stickX < -15) {
+            rider->stickX = -15;
         }
-        ai_set_steering(b, f * 8.0f / (b->speed + 5.0f));
-        if (b == &gRiders[gCamTargetOverride]) {
-            gAiDebugTargetPos = gPathNodes[idx].pos;
-            gAiDebugTargetDir.z = 2.0f * gPathNodes[idx].lateralX;
+        ai_set_steering(rider, drift * 8.0f / (rider->speed + 5.0f));
+        if (rider == &gRiders[gCamTargetOverride]) {
+            gAiDebugTargetPos = gPathNodes[seg].pos;
+            gAiDebugTargetDir.z = 2.0f * gPathNodes[seg].lateralX;
             gAiDebugTargetDir.y = 0;
-            gAiDebugTargetDir.x = 2.0f * -gPathNodes[idx].lateralZ;
+            gAiDebugTargetDir.x = 2.0f * -gPathNodes[seg].lateralZ;
         }
         return;
     }
 
-    switch ((s32)b->pathSearch) {
+    switch ((s32)rider->pathSearch) {
     case 2:
-        j = idx;
-        while (cnt != 0) {
-            cnt--;
-            j = gPathNodes[j].branch >= 0 ? gPathNodes[j].branch : gPathNodes[j].next;
+        node = seg;
+        while (lookahead != 0) {
+            lookahead--;
+            node = gPathNodes[node].branch >= 0 ? gPathNodes[node].branch : gPathNodes[node].next;
         }
         break;
     case 0:
     case 1:
     default:
-        j = idx;
-        while (cnt != 0) {
-            cnt--;
-            j = gPathNodes[j].next;
+        node = seg;
+        while (lookahead != 0) {
+            lookahead--;
+            node = gPathNodes[node].next;
         }
         break;
     }
 
-    b->laneOffset = dist;
-    nx = gPathNodes[j].next;
-    p0x = gPathNodes[j].pos.x + gPathNodes[j].lateralX * dist;
-    p0z = gPathNodes[j].pos.z + gPathNodes[j].lateralZ * dist;
-    dx = (gPathNodes[nx].pos.x + gPathNodes[nx].lateralX * dist) - p0x;
-    dz = (gPathNodes[nx].pos.z + gPathNodes[nx].lateralZ * dist) - p0z;
-    amp2 = amp * amp;
-    amp3 = amp2 * amp;
+    /* the point at t on the lane between node and the next one (a cubic along the racing line) */
+    rider->laneOffset = offset;
+    nextNode = gPathNodes[node].next;
+    startX = gPathNodes[node].pos.x + gPathNodes[node].lateralX * offset;
+    startZ = gPathNodes[node].pos.z + gPathNodes[node].lateralZ * offset;
+    dx = (gPathNodes[nextNode].pos.x + gPathNodes[nextNode].lateralX * offset) - startX;
+    dz = (gPathNodes[nextNode].pos.z + gPathNodes[nextNode].lateralZ * offset) - startZ;
+    tSq = t * t;
+    tCube = tSq * t;
     len = __builtin_sqrtf(dx * dx + dz * dz);
 
     {
         f32 t1, s1, t2, s2, a1, b1, acx, acz, ds1;
-        t1 = gPathNodes[j].lateralZ * -3.0f;
-        s1 = gPathNodes[nx].lateralZ + gPathNodes[j].lateralZ;
+        t1 = gPathNodes[node].lateralZ * -3.0f;
+        s1 = gPathNodes[nextNode].lateralZ + gPathNodes[node].lateralZ;
         d = len / 3.0f;
         ds1 = d * s1;
-        cx = t1 * d;
-        t2 = gPathNodes[j].lateralX * 3.0f;
-        s2 = d * (gPathNodes[nx].lateralX + gPathNodes[j].lateralX);
-        cz = t2 * d;
+        c1x = t1 * d;
+        t2 = gPathNodes[node].lateralX * 3.0f;
+        s2 = d * (gPathNodes[nextNode].lateralX + gPathNodes[node].lateralX);
+        c1z = t2 * d;
         a1 = (dx + ds1) * 3.0f;
         b1 = (dz - s2) * 3.0f;
-        ax = a1 - cx;
-        ex = (dx - ax) - cx;
-        az = b1 - cz;
-        ez = (dz - az) - cz;
-        px = p0x + amp3 * ex + amp2 * ax + amp * cx;
-        pz = p0z + amp3 * ez + amp2 * az + amp * cz;
+        c2x = a1 - c1x;
+        c3x = (dx - c2x) - c1x;
+        c2z = b1 - c1z;
+        c3z = (dz - c2z) - c1z;
+        aimX = startX + tCube * c3x + tSq * c2x + t * c1x;
+        aimZ = startZ + tCube * c3z + tSq * c2z + t * c1z;
     }
-    d = __builtin_sqrtf((px - pos->x) * (px - pos->x) + (pz - pos->z) * (pz - pos->z));
+    d = __builtin_sqrtf((aimX - pos->x) * (aimX - pos->x) + (aimZ - pos->z) * (aimZ - pos->z));
 
-    qx = amp2 * 3.0f * ex + 2.0f * amp * ax + cx;
-    qz = amp2 * 3.0f * ez + 2.0f * amp * az + cz;
-    sp = __builtin_sqrtf(qx * qx + qz * qz);
-    qx /= sp;
-    qz /= sp;
+    /* curvature of the Bezier from the bike, along its travel direction, to that point along the line */
+    lineDirX = tSq * 3.0f * c3x + 2.0f * t * c2x + c1x;
+    lineDirZ = tSq * 3.0f * c3z + 2.0f * t * c2z + c1z;
+    mag = __builtin_sqrtf(lineDirX * lineDirX + lineDirZ * lineDirZ);
+    lineDirX /= mag;
+    lineDirZ /= mag;
 
-    vx = b->bike.vel.x;
-    vz = b->bike.vel.z;
-    sp = __builtin_sqrtf(vx * vx + vz * vz);
-    if (sp < 2.0f) {
-        vx = b->bike.fwd.x;
-        vz = b->bike.fwd.z;
-        sp = __builtin_sqrtf(vx * vx + vz * vz);
+    dirX = rider->bike.vel.x;
+    dirZ = rider->bike.vel.z;
+    mag = __builtin_sqrtf(dirX * dirX + dirZ * dirZ);
+    if (mag < 2.0f) {
+        dirX = rider->bike.fwd.x;
+        dirZ = rider->bike.fwd.z;
+        mag = __builtin_sqrtf(dirX * dirX + dirZ * dirZ);
     }
-    vx /= sp;
-    d3 = d / 3.0f;
-    ddx = pos->x + vx * d3;
-    vz /= sp;
-    ddz = pos->z + vz * d3;
+    dirX /= mag;
+    handle = d / 3.0f;
+    ctrl1X = pos->x + dirX * handle;
+    dirZ /= mag;
+    ctrl1Z = pos->z + dirZ * handle;
     {
-        f32 e1, e2;
-        e1 = px - qx * d3;
-        e2 = pz - qz * d3;
-        wx = d * vx;
-        tx = (e1 - ddx) * 3.0f;
-        wz = d * vz;
-        tz = (e2 - ddz) * 3.0f;
+        f32 ctrl2X, ctrl2Z;
+        ctrl2X = aimX - lineDirX * handle;
+        ctrl2Z = aimZ - lineDirZ * handle;
+        tanX = d * dirX;
+        midX = (ctrl2X - ctrl1X) * 3.0f;
+        tanZ = d * dirZ;
+        midZ = (ctrl2Z - ctrl1Z) * 3.0f;
     }
-    d = wx * wx + wz * wz;
-    r = ((tz - wz) * wx - (tx - wx) * wz) / (d * __builtin_sqrtf(d));
+    d = tanX * tanX + tanZ * tanZ;
+    r = ((midZ - tanZ) * tanX - (midX - tanX) * tanZ) / (d * __builtin_sqrtf(d));
 
-    if (b->airFrames < 4) {
-        dx = b->frontWheel.contact.x - b->rearWheel.contact.x;
-        dz = b->frontWheel.contact.z - b->rearWheel.contact.z;
+    if (rider->airFrames < 4) {
+        /* steer towards the travel direction turned by curvature * wheelbase */
+        dx = rider->frontWheel.contact.x - rider->rearWheel.contact.x;
+        dz = rider->frontWheel.contact.z - rider->rearWheel.contact.z;
         dx = r * __builtin_sqrtf(dx * dx + dz * dz);
-        dx += math_atan2f(wx, wz);
-        sn = cosf(dx);
-        c = sinf(dx);
-        q = b->bike.right.z * sn - b->bike.right.x * c;
-        tl = b->bike.fwd.x * c - b->bike.fwd.z * sn;
+        dx += math_atan2f(tanX, tanZ);
+        cosA = cosf(dx);
+        sinA = sinf(dx);
+        across = rider->bike.right.z * cosA - rider->bike.right.x * sinA;
+        along = rider->bike.fwd.x * sinA - rider->bike.fwd.z * cosA;
         steer = 0.0f;
-        if (!(r * tl < 0.0f)) {
-            steer = math_atan2f(-q, tl);
+        if (!(r * along < 0.0f)) {
+            steer = math_atan2f(-across, along);
         }
     } else {
         steer = r * 1.25f;
     }
-    if (b->airFrames < 4) {
-        ai_set_steering(b, steer);
+    if (rider->airFrames < 4) {
+        ai_set_steering(rider, steer);
     } else {
         k = steer * 192.0f;
         if (k >= 16) {
@@ -362,94 +376,98 @@ void ai_update_steering(Rider *b) {
         } else if (k < -15) {
             k = -15;
         }
-        b->stickX = k / 2;
+        rider->stickX = k / 2;
     }
 }
 
-
-void bike_update_steering(Rider *p, s32 m)
+/* Turns a human rider's steering angle towards the stick's, at a rate and up to a limit that depend on the speed
+   (ticks: 1 or 2 simulation steps); also tracks the lane the bike is in. */
+void bike_update_steering(Rider *rider, s32 ticks)
 {
-    s32 dir, i;
-    u8 b;
-    f32 x, lim, r, w, T, S, g;
+    s32 stick, i;
+    u8 lane;
+    f32 speed, limit, t, maxSteer, target, rate, cur;
 
-    dir = p->stickX;
-    if (p->camMode == 4) {
-        excite3d_player_steer(p);
+    stick = rider->stickX;
+    if (rider->camMode == CAM_MODE_SIDE_VIEW) {
+        excite3d_player_steer(rider);
     } else {
-        b = (s32)(p->bike.pos.x / 2.178f);
-        p->gridSlot = b;
-        if (p->crashState != 0) {
-            p->laneChange = 0;
+        lane = (s32)(rider->bike.pos.x / 2.178f);
+        rider->gridSlot = lane;
+        if (rider->crashState != CRASH_STATE_RIDING) {
+            rider->laneChange = 0;
         } else {
-            p->laneChange = (s32)((p->bike.pos.x - b * 2.178f) * (gLaneChangeFrames / 2.178f));
-            if (p->gridSlot == 0 && p->laneChange < 0) {
-                p->laneChange = 0;
+            rider->laneChange = (s32)((rider->bike.pos.x - lane * 2.178f) * (gLaneChangeFrames / 2.178f));
+            if (rider->gridSlot == 0 && rider->laneChange < 0) {
+                rider->laneChange = 0;
             }
         }
     }
-    if (p->airFrames >= 8) {
-        dir = 0;
+    if (rider->airFrames >= 8) {
+        stick = 0;
     }
-    x = p->speed;
+    speed = rider->speed;
     i = 0;
-    while (sSteerSpeedSteps[i + 1] < x) {
+    while (sSteerSpeedSteps[i + 1] < speed) {
         i++;
     }
-    if (x < 0.0f) {
-        r = 0.0f;
+    if (speed < 0.0f) {
+        t = 0.0f;
     } else {
-        r = (sSteerSpeedSteps[i + 1] - x) / (sSteerSpeedSteps[i + 1] - sSteerSpeedSteps[i]);
+        t = (sSteerSpeedSteps[i + 1] - speed) / (sSteerSpeedSteps[i + 1] - sSteerSpeedSteps[i]);
     }
-    S = 0.012566371f;
-    T = dir * S;
-    w = (sSteerMaxBySpeed[i] * r + sSteerMaxBySpeed[i + 1] * (1.0f - r)) * p->turnRadius;
-    T *= w;
-    lim = 0.18849556f;
-    lim *= w;
-    S = (sSteerRateBySpeed[i] * r + sSteerRateBySpeed[i + 1] * (1.0f - r)) * 0.327f * m * S;
-    if (p->reversing != 0) {
-        T *= 0.25f;
+    rate = 0.012566371f; /* radians per stick unit */
+    target = stick * rate;
+    maxSteer = (sSteerMaxBySpeed[i] * t + sSteerMaxBySpeed[i + 1] * (1.0f - t)) * rider->turnRadius;
+    target *= maxSteer;
+    limit = 0.18849556f;
+    limit *= maxSteer;
+    rate = (sSteerRateBySpeed[i] * t + sSteerRateBySpeed[i + 1] * (1.0f - t)) * 0.327f * ticks * rate;
+    if (rider->reversing != 0) {
+        target *= 0.25f;
     }
-    if (T == 0.0f || T * p->steer < 0.0f) {
-        S *= 5.0f;
+    if (target == 0.0f || target * rider->steer < 0.0f) {
+        rate *= 5.0f;
     }
-    if (p->hardTurn != 0) {
-        T = sHardTurnSteerAngle;
-        if (p->stickX <= 0) {
-            T = -T;
+    if (rider->hardTurn != 0) {
+        target = sHardTurnSteerAngle;
+        if (rider->stickX <= 0) {
+            target = -target;
         }
-    } else if (lim < T) {
-        S = 0.1f;
-        T = lim;
+    } else if (limit < target) {
+        rate = 0.1f;
+        target = limit;
     } else {
-        w = -lim;
-        if (T < w) {
-            S = 0.1f;
-            T = w;
+        maxSteer = -limit;
+        if (target < maxSteer) {
+            rate = 0.1f;
+            target = maxSteer;
         }
     }
-    if (gGame.mode == 7) {
-        T += (p->bike.fwd.x * p->frontWheel.normal.z - p->bike.fwd.z * p->frontWheel.normal.x) * 16.0f * S;
+    if (gGame.mode == GAME_MODE_HILL_CLIMB) {
+        /* the side slope under the front wheel turns the bike */
+        target += (rider->bike.fwd.x * rider->frontWheel.normal.z - rider->bike.fwd.z * rider->frontWheel.normal.x) * 16.0f * rate;
     }
-    g = p->steer;
-    if (T < g) {
-        p->steer = g - S;
-        if (p->steer < T) {
-            p->steer = T;
+    cur = rider->steer;
+    if (target < cur) {
+        rider->steer = cur - rate;
+        if (rider->steer < target) {
+            rider->steer = target;
         }
     } else {
-        p->steer = g + S;
-        if (T < p->steer) {
-            p->steer = T;
+        rider->steer = cur + rate;
+        if (target < rider->steer) {
+            rider->steer = target;
         }
     }
 }
 
+/* Empty. */
 void func_8005C8F4(void)
 {
 }
 
+/* Empty; bikes_free calls it. */
 void ai_free(void)
 {
 }

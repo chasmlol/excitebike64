@@ -100,7 +100,7 @@ void desert_update_race(void)
                 des_set_waypoint(rider->checkpoint);
             }
         }
-        rider->distToGo = sDesertCheckpointDist[rider->checkpoint] - rider->checkpointDist;
+        rider->raceDist = sDesertCheckpointDist[rider->checkpoint] - rider->checkpointDist;
     }
     if (gRiders[0].isCpu == 0) {
         /* bubble sort: further checkpoint first, then nearer to it */

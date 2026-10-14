@@ -1097,7 +1097,7 @@ extern Mtx sShadowViewMtx;
 extern s32 sShadowTriCount;
 extern s32 sSkelWalkIndex;
 extern RiderIkTargets sRiderIkTargets;
-/* sRiderIkTargets.limb[1..3].rot and .hips under their own names: rider_apply_ik copies each from its own
+/* sRiderIkTargets.limb[1..3].rot and .head under their own names: rider_apply_ik copies each from its own
    address rather than from the struct's */
 extern Mtx3 D_800EA6CC;
 extern Mtx3 D_800EA6FC;

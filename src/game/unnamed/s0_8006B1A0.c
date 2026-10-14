@@ -1,12 +1,17 @@
 #include "game.h"
 
+/* Excite 3D (game mode 6): a straight track along -z that repeats every 997.157 m, four lanes 2.178 m apart along x
+   (lane n at x = n * 2.178, laneOffset = -x). The path nodes keep 2 bits of ground type per lane (path.c): 1 to
+   leave, 2 to move onto, 3 to wheelie over. */
+
+/* Parks the extra riders (6 and 7) out of the way and sets the riders' time scales. */
 void excite3d_init(void)
 {
     s32 i;
 
     sExcite3DSpawnTime = 600;
     gRaceFrame = 0;
-    for (i = 6; i < 8; i++) {
+    for (i = 6; i < RIDER_COUNT; i++) {
         gRiders[i].frozen = 1;
         gRiders[i].isCpu = 1;
         gRiders[i].inactive = 0;
@@ -14,134 +19,138 @@ void excite3d_init(void)
         gRiders[i].bike.pos.y = -50.0f;
         gRiders[i].bike.pos.z = -1000.0f;
         bike_apply_rider_stats(&gRiders[i], 0);
-        quat_from_euler(&gRiders[i].bike.pos.x + 12, 0.0f, 0.0f, 0.0f);
+        quat_from_euler(&gRiders[i].bike.pos.x + 12, 0.0f, 0.0f, 0.0f); /* bike.quat */
     }
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < RIDER_COUNT; i++) {
         gRiders[i].timeScale = sExcite3DTimeScales[i];
     }
 }
 
-void excite3d_cpu_steer(Rider *p)
+/* Steers a CPU rider between the lanes by the ground codes up to 40 m ahead: changes lanes away from code 1 or onto
+   code 2, and wheelies over code 3. */
+void excite3d_cpu_steer(Rider *rider)
 {
-    s32 i0;
-    s32 i1;
-    s32 side;
-    s32 other;
-    s32 t0;
-    s32 t1;
-    s32 sh1;
-    s32 sh2;
+    s32 otherSeg;
+    s32 seg;
+    s32 lane;
+    s32 otherLane;
+    s32 code;
+    s32 otherCode;
+    s32 shift;
+    s32 otherShift;
     PathNode *s;
-    f32 f;
-    f32 d;
-    f32 h;
-    f32 n;
+    f32 targetX;
+    f32 dx;
+    f32 curX;
+    f32 newX;
 
-    i0 = p->segment;
-    i1 = i0;
-    side = (s32)((p->bike.pos.x + 1.089f) / 2.178f);
-    other = side ^ 1;
-    sh1 = side << 1;
-    t0 = (gPathNodes[i1].speedTweak >> sh1) & 3;
-    if (t0 == 0) {
+    otherSeg = rider->segment;
+    seg = otherSeg;
+    lane = (s32)((rider->bike.pos.x + 1.089f) / 2.178f);
+    otherLane = lane ^ 1;
+    shift = lane << 1;
+    code = (gPathNodes[seg].speedTweak >> shift) & 3;
+    if (code == 0) {
         for (;;) {
-            i1++;
+            seg++;
             {
-                f32 dd = gPathNodes[i1].pos.z - p->bike.pos.z;
+                f32 dd = gPathNodes[seg].pos.z - rider->bike.pos.z;
                 if (!(-40.0f < dd)) break;
             }
-            t0 = (gPathNodes[i1].speedTweak >> sh1) & 3;
-            if (t0 != 0) break;
+            code = (gPathNodes[seg].speedTweak >> shift) & 3;
+            if (code != 0) break;
         }
     }
-    sh2 = other << 1;
-    t1 = (gPathNodes[i0].speedTweak >> sh2) & 3;
-    if (t1 == 0) {
+    otherShift = otherLane << 1;
+    otherCode = (gPathNodes[otherSeg].speedTweak >> otherShift) & 3;
+    if (otherCode == 0) {
         for (;;) {
-            i0++;
+            otherSeg++;
             {
-                f32 dd = gPathNodes[i0].pos.z - p->bike.pos.z;
+                f32 dd = gPathNodes[otherSeg].pos.z - rider->bike.pos.z;
                 if (!(-40.0f < dd)) break;
             }
-            t1 = (gPathNodes[i0].speedTweak >> sh2) & 3;
-            if (t1 != 0) break;
+            otherCode = (gPathNodes[otherSeg].speedTweak >> otherShift) & 3;
+            if (otherCode != 0) break;
         }
     }
-    if ((t0 == 1 && (t1 != t0 || i1 < i0)) || t1 == 2) {
-        side = other;
-        if (10.0f < p->speed) {
-            p->input &= 0xFFFDFFEF;
+    if ((code == 1 && (otherCode != code || seg < otherSeg)) || otherCode == 2) {
+        lane = otherLane;
+        if (10.0f < rider->speed) {
+            rider->input &= ~(INPUT_Z | INPUT_A);
         }
     }
-    f = side * 2.178f;
-    h = p->bike.pos.x;
-    d = f - h;
-    p->laneOffset = -f;
-    if (0.21779999f < d) {
-        n = h + p->speed * gPhysDeltaTime / 10.0f;
-    } else if (d < -0.21779999f) {
-        n = h - p->speed * gPhysDeltaTime / 10.0f;
+    targetX = lane * 2.178f;
+    curX = rider->bike.pos.x;
+    dx = targetX - curX;
+    rider->laneOffset = -targetX;
+    if (0.21779999f < dx) { /* a tenth of a lane */
+        newX = curX + rider->speed * gPhysDeltaTime / 10.0f;
+    } else if (dx < -0.21779999f) {
+        newX = curX - rider->speed * gPhysDeltaTime / 10.0f;
     } else {
         goto done;
     }
-    p->bike.pos.x = n;
-    p->laneOffset = -n;
+    rider->bike.pos.x = newX;
+    rider->laneOffset = -newX;
 done:
-    if (p->airFrames <= 0) {
-        if (t0 == 3) {
-            p->wheelieTimer = 0x10;
-            p->wheelieBalance = 0;
+    if (rider->airFrames <= 0) {
+        if (code == 3) {
+            rider->wheelieTimer = 0x10;
+            rider->wheelieBalance = 0;
             return;
         }
-        if (p->wheelieTimer != 0) {
-            p->wheelieTimer -= 1;
+        if (rider->wheelieTimer != 0) {
+            rider->wheelieTimer -= 1;
         }
     }
 }
 
+/* Excite 3D's frame: CPU lane changes, the race order, the endless track (rider 0, then the others, moved back a lap
+   past its end), and the extra riders, brought back ahead beyond the next crest or 10 m behind once out of range. */
 void excite3d_update(void)
 {
-    Rider *p;
+    Rider *rider;
     Rider *a;
     Rider *b;
-    Rider *q;
+    Rider *player;
     PathNode *u;
     s16 m;
-    Rider *e;
+    Rider *racer;
     PathNode *t;
     s32 i;
     s32 j;
-    s32 k;
+    s32 node;
     s16 n;
-    u8 sw;
-    u8 cnt;
+    u8 swapped;
+    u8 numHumans;
     u8 r;
     s32 now;
-    f32 z;
-    f32 h;
-    f32 dist;
-    f32 d;
-    f32 v;
-    f32 lo;
+    f32 playerZ;
+    f32 crestY;
+    f32 range;
+    f32 gap;
+    f32 nodeY;
+    f32 behind;
 
-    for (p = gRiders; p < &gRiders[8]; p++) {
-        if (p->frozen == 0 && p->isCpu != 0 && p->crashState == 0 && p->airFrames < 3) {
-            excite3d_cpu_steer(p);
+    for (rider = gRiders; rider < &gRiders[RIDER_COUNT]; rider++) {
+        if (rider->frozen == 0 && rider->isCpu != 0 && rider->crashState == CRASH_STATE_RIDING && rider->airFrames < 3) {
+            excite3d_cpu_steer(rider);
         }
     }
 
     do {
-        sw = 0;
+        swapped = 0;
         for (i = 0; i < gEvent.numRiders - 1; i++) {
             a = gRiderStandings[i];
             b = gRiderStandings[i + 1];
-            if (a->distToGo < b->distToGo && (a->inactive | b->inactive) == 0) {
-                sw = 1;
+            if (a->raceDist < b->raceDist && (a->inactive | b->inactive) == 0) {
+                swapped = 1;
                 gRiderStandings[i] = b;
                 gRiderStandings[i + 1] = a;
             }
         }
-    } while (sw);
+    } while (swapped);
 
     for (i = 0; i < gEvent.numRiders; i++) {
         gRiderStandings[i]->race.place = i;
@@ -150,224 +159,236 @@ void excite3d_update(void)
     race_announce_position_changes();
 
     if (gRiders[0].bike.pos.z < -970.375f) {
+        /* rider 0 and the camera go back a lap */
         gRiders[0].bike.pos.z -= -997.15717f;
         gRiders[0].drawPos.z = gRiders[0].drawPos.z - -997157.2f;
         gRiders[0].drawBodyPos.z = gRiders[0].drawBodyPos.z - -997157.2f;
         gRiders[0].bike.smoothPos.z -= -997.15717f;
-        cam_shift_z(0, 0xF3725);
-        q = gRiders;
+        cam_shift_z(0, 0xF3725); /* 997157 mm */
+        player = gRiders;
         j = 0;
-        while (q->bike.pos.z < gPathNodes[j].pos.z) {
+        while (player->bike.pos.z < gPathNodes[j].pos.z) {
             j++;
         }
-        q->segment = j;
+        player->segment = j;
         decal_end_track(0);
         event_rider_lap_completed(0);
     }
 
-    for (e = &gRiders[1]; e < &gRiders[8]; e++) {
-        if (e->frozen == 0 && e->bike.pos.z < -970.375f) {
-            if (e->lapAdjust == 0) {
-                if (e - gRiders < 4) {
-                    event_rider_lap_completed(e - gRiders);
+    /* the others count the lap at the end, and go back once rider 0 has (they are then 70 m ahead of it) */
+    for (racer = &gRiders[1]; racer < &gRiders[RIDER_COUNT]; racer++) {
+        if (racer->frozen == 0 && racer->bike.pos.z < -970.375f) {
+            if (racer->lapAdjust == 0) {
+                if (racer - gRiders < 4) { /* a player */
+                    event_rider_lap_completed(racer - gRiders);
                 }
-                e->lapAdjust = 1;
+                racer->lapAdjust = 1;
             }
-            d = e->bike.pos.z - gRiders[0].bike.pos.z;
-            if (d < -70.0f) {
-                e->lapAdjust = 0;
-                e->bike.pos.z -= -997.15717f;
-                e->bike.smoothPos.z -= -997.15717f;
+            gap = racer->bike.pos.z - gRiders[0].bike.pos.z;
+            if (gap < -70.0f) {
+                racer->lapAdjust = 0;
+                racer->bike.pos.z -= -997.15717f;
+                racer->bike.smoothPos.z -= -997.15717f;
                 {
                     s32 jj = 0;
                     t = gPathNodes;
-                    while (e->bike.pos.z < t[jj].pos.z) {
+                    while (racer->bike.pos.z < t[jj].pos.z) {
                         jj++;
                     }
-                    e->segment = jj;
+                    racer->segment = jj;
                 }
-                decal_end_track(e - gRiders);
+                decal_end_track(racer - gRiders);
             }
         }
     }
 
-    cnt = 0;
-    for (e = gRiders; e < &gRiders[8]; e++) {
-        if (e->isCpu == 0 && e->inactive == 0) {
-            cnt++;
-            z = e->bike.pos.z;
+    numHumans = 0;
+    for (racer = gRiders; racer < &gRiders[RIDER_COUNT]; racer++) {
+        if (racer->isCpu == 0 && racer->inactive == 0) {
+            numHumans++;
+            playerZ = racer->bike.pos.z;
         }
     }
 
-    if (cnt != 0) {
-        k = gRiders[0].segment + 4;
-        dist = gRiders[0].bike.pos.z - gPathNodes[k].pos.z;
-        h = gRiders[0].bike.pos.y;
-        if (!(dist > 100.0f)) goto body;
-        h = 4.0f;
+    if (numHumans != 0) {
+        /* the range: up to the first node beyond a crest (the track rises 1.5 m above rider 0, then falls 1.5 m), or
+           100 m; crestY is the height there */
+        node = gRiders[0].segment + 4;
+        range = gRiders[0].bike.pos.z - gPathNodes[node].pos.z;
+        crestY = gRiders[0].bike.pos.y;
+        if (!(range > 100.0f)) goto body;
+        crestY = 4.0f;
         goto found;
         do {
         body:
-            v = gPathNodes[k].pos.y;
-            if (h < v) {
-                h = v;
+            nodeY = gPathNodes[node].pos.y;
+            if (crestY < nodeY) {
+                crestY = nodeY;
             }
-            if (h - gRiders[0].bike.pos.y > 1.5f && h - v > 1.5f) {
+            if (crestY - gRiders[0].bike.pos.y > 1.5f && crestY - nodeY > 1.5f) {
                 goto found;
             }
-            k = (k + 1) % gPathNodeCount;
-            dist = gRiders[0].bike.pos.z - gPathNodes[k].pos.z;
-        } while (!(dist > 100.0f));
-        h = 4.0f;
+            node = (node + 1) % gPathNodeCount;
+            range = gRiders[0].bike.pos.z - gPathNodes[node].pos.z;
+        } while (!(range > 100.0f));
+        crestY = 4.0f;
     found:
-        lo = -10.0f;
-        for (p = &gRiders[6]; p < &gRiders[8]; p++) {
-            if (!(h < p->bike.pos.y) && gRaceFrame - sExcite3DSpawnTime > 60 && p->isCpu != 0 &&
-                gRaceFrame - p->spawnFrame > 179 && p->inactive == 0) {
-                d = z - p->bike.pos.z;
-                if (d < lo || dist < d) {
+        behind = -10.0f;
+        for (rider = &gRiders[6]; rider < &gRiders[RIDER_COUNT]; rider++) {
+            if (!(crestY < rider->bike.pos.y) && gRaceFrame - sExcite3DSpawnTime > 60 && rider->isCpu != 0 &&
+                gRaceFrame - rider->spawnFrame > 179 && rider->inactive == 0) {
+                gap = playerZ - rider->bike.pos.z;
+                if (gap < behind || range < gap) {
                     now = gRaceFrame;
                     sExcite3DSpawnTime = now;
                     if (now & 1) {
-                        p->power = 0.2f;
-                        p->bike.pos.z = z - dist;
+                        rider->power = 0.2f;
+                        rider->bike.pos.z = playerZ - range;
                     } else {
-                        p->power = 0.2f;
-                        p->bike.pos.z = z - lo;
+                        rider->power = 0.2f;
+                        rider->bike.pos.z = playerZ - behind;
                     }
-                    collide_reset_body((u8 *)&p->bike.pos.x);
-                    p->bike.type = 1;
-                    p->gridSlot = r250_next() & 3;
-                    p->bike.pos.y = 40.0f;
-                    p->bike.pos.x = p->gridSlot * 2.178f;
-                    p->bike.pos.y = bike_get_ground_height(&p->bike.pos.x);
-                    bike_place_on_ground(p);
-                    p->speed = 10.0f;
-                    p->laneOffset = -p->bike.pos.x;
-                    p->bike.vel.y = p->speed * p->bike.fwd.y;
-                    p->bike.vel.z = p->speed * p->bike.fwd.z;
-                    p->spawnFrame = gRaceFrame;
-                    p->bike.vel.x = 0.0f;
-                    p->blinkCount = 0;
-                    p->noCollide = 0;
-                    p->crashPhase = 0;
-                    p->jumpState = 0;
-                    p->airFrames = 0;
-                    p->roughLanding = 0;
-                    p->wheelieTimer = 0;
-                    p->pendingCrash = 0;
-                    p->crashTimer = 0;
-                    p->crashState = 0;
-                    p->engine.heat = 0.0f;
-                    p->engine.overheated = 0;
-                    p->frozen = 0;
-                    p->anim = -1;
-                    p->prevAnim = -1;
+                    collide_reset_body((u8 *)&rider->bike.pos.x);
+                    rider->bike.type = BODY_CPU_BIKE;
+                    rider->gridSlot = r250_next() & 3; /* a random lane */
+                    rider->bike.pos.y = 40.0f;
+                    rider->bike.pos.x = rider->gridSlot * 2.178f;
+                    rider->bike.pos.y = bike_get_ground_height(&rider->bike.pos.x);
+                    bike_place_on_ground(rider);
+                    rider->speed = 10.0f;
+                    rider->laneOffset = -rider->bike.pos.x;
+                    rider->bike.vel.y = rider->speed * rider->bike.fwd.y;
+                    rider->bike.vel.z = rider->speed * rider->bike.fwd.z;
+                    rider->spawnFrame = gRaceFrame;
+                    rider->bike.vel.x = 0.0f;
+                    rider->blinkCount = 0;
+                    rider->noCollide = 0;
+                    rider->crashPhase = 0;
+                    rider->jumpState = 0;
+                    rider->airFrames = 0;
+                    rider->roughLanding = 0;
+                    rider->wheelieTimer = 0;
+                    rider->pendingCrash = 0;
+                    rider->crashTimer = 0;
+                    rider->crashState = CRASH_STATE_RIDING;
+                    rider->engine.heat = 0.0f;
+                    rider->engine.overheated = 0;
+                    rider->frozen = 0;
+                    rider->anim = ANIM_NONE;
+                    rider->prevAnim = ANIM_NONE;
                 }
             }
         }
     }
 }
 
-void excite3d_player_steer(Rider *p)
+/* A human rider's lane changes: the stick moves the bike one lane left or right on the ground when the lane is
+   clear, over gLaneChangeFrames frames. */
+void excite3d_player_steer(Rider *rider)
 {
     if (gEvent.time <= 0) {
         return;
     }
-    if (p->laneChange != 0) {
-        if (p->laneChange > 0) {
-            p->laneChange--;
+    if (rider->laneChange != 0) {
+        if (rider->laneChange > 0) {
+            rider->laneChange--;
         } else {
-            p->laneChange++;
+            rider->laneChange++;
         }
-    } else if (p->airFrames < 0) {
-        if (p->stickX < -5) {
-            if (p->gridSlot != 0 && excite3d_lane_is_clear_2(p, p->gridSlot - 1)) {
-                p->gridSlot--;
-                p->laneChange = (s8)-gLaneChangeFrames;
+    } else if (rider->airFrames < 0) {
+        if (rider->stickX < -5) {
+            if (rider->gridSlot != 0 && excite3d_lane_is_clear_2(rider, rider->gridSlot - 1)) {
+                rider->gridSlot--;
+                rider->laneChange = (s8)-gLaneChangeFrames;
             }
-        } else if (p->stickX >= 6 && p->gridSlot < 3 && excite3d_lane_is_clear_2(p, p->gridSlot + 1)) {
-            p->gridSlot++;
-            p->laneChange = (s8)gLaneChangeFrames;
+        } else if (rider->stickX >= 6 && rider->gridSlot < 3 && excite3d_lane_is_clear_2(rider, rider->gridSlot + 1)) {
+            rider->gridSlot++;
+            rider->laneChange = (s8)gLaneChangeFrames;
         }
     }
-    p->bike.vel.x = 0.0f;
-    p->bike.pos.x = p->gridSlot * 2.178f - p->laneChange * (2.178f / gLaneChangeFrames);
+    rider->bike.vel.x = 0.0f;
+    rider->bike.pos.x = rider->gridSlot * 2.178f - rider->laneChange * (2.178f / gLaneChangeFrames);
 }
 
-s32 excite3d_lane_is_clear(Rider *o, s32 n)
+/* True when the rider can change to lane: not on a boost ramp, the ground there as high as in its own lane, and no
+   boost ramp on the lane over the distance a lane change takes. */
+s32 excite3d_lane_is_clear(Rider *rider, s32 lane)
 {
-    V3 a, b;
-    f32 z, bx, r1, r2, sgn, step;
+    V3 target, probe;
+    f32 zero, curX, curY, targetY, dir, step;
     s32 i;
-    u32 fl;
+    u32 boost;
 
-    if (o->rearWheel.surface->flags & 0x400) {
+    if (rider->rearWheel.surface->flags & SURFACE_BOOST_RAMP) {
         return 0;
     }
-    a.x = (f32)n * 2.178f;
-    bx = (f32)o->gridSlot * 2.178f;
-    z = 0.0f;
-    a.y = z;
-    b.y = z;
-    b.x = bx;
-    a.z = o->bike.pos.z;
-    b.z = a.z;
-    r1 = bike_get_ground_height(&b);
-    r2 = bike_get_ground_height(&a);
-    if (r1 != r2) {
+    target.x = (f32)lane * 2.178f;
+    curX = (f32)rider->gridSlot * 2.178f;
+    zero = 0.0f;
+    target.y = zero;
+    probe.y = zero;
+    probe.x = curX;
+    target.z = rider->bike.pos.z;
+    probe.z = target.z;
+    curY = bike_get_ground_height(&probe);
+    targetY = bike_get_ground_height(&target);
+    if (curY != targetY) {
 ret0:
         return 0;
     }
-    sgn = 1.0f;
-    if (z < o->bike.vel.z) {
-        sgn = -1.0f;
+    dir = 1.0f;
+    if (zero < rider->bike.vel.z) {
+        dir = -1.0f;
     }
-    step = o->bike.vel.z * gLaneChangeFrames / 60.0f - sgn - sgn;
+    step = rider->bike.vel.z * gLaneChangeFrames / 60.0f - dir - dir;
     for (i = 0; i < 5; i++) {
-        b = a;
-        b.z += (f32)i * step * 0.25f + sgn;
-        bike_get_ground_height(&b);
-        if (gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & 0x400) {
+        probe = target;
+        probe.z += (f32)i * step * 0.25f + dir;
+        bike_get_ground_height(&probe);
+        if (gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & SURFACE_BOOST_RAMP) {
             goto ret0;
         }
     }
-    fl = gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & 0x400;
-    return fl == 0;
+    boost = gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & SURFACE_BOOST_RAMP;
+    return boost == 0;
 }
 
-void excite3d_update_progress(Rider *o)
+/* The rider's path node (the last one it has passed), lateral offset and race distance. */
+void excite3d_update_progress(Rider *rider)
 {
-    PathNode *t = gPathNodes;
-    s32 count = 0;
-    f32 f;
-    if (o->bike.pos.z < t->pos.z) {
+    PathNode *node = gPathNodes;
+    s32 seg = 0;
+    f32 lapStart;
+    if (rider->bike.pos.z < node->pos.z) {
         do {
-            count++;
-            t++;
-        } while (o->bike.pos.z < t->pos.z);
+            seg++;
+            node++;
+        } while (rider->bike.pos.z < node->pos.z);
     }
-    f = (f32)o->race.lap * -997.15717f;
-    o->segment = count;
-    o->lateral = -o->bike.pos.x;
-    o->distToGo = -f - o->bike.pos.z;
+    lapStart = (f32)rider->race.lap * -997.15717f;
+    rider->segment = seg;
+    rider->lateral = -rider->bike.pos.x;
+    rider->raceDist = -lapStart - rider->bike.pos.z;
 }
 
+/* The fields of Rider used below. */
 struct Obj_55 {
     u8 pad0[0x50];
-    f32 f50;
+    f32 posZ;                   /* bike.pos.z */
     u8 pad1[0x628 - 0x54];
-    s16 s628;
+    s16 segment;
 };
 
-void excite3d_find_segment(Obj_55 *o) {
-    s16 c = 0;
-    PathNode *p = gPathNodes;
-    if (o->f50 < p->pos.z) {
+/* Sets the rider's path node from its z. */
+void excite3d_find_segment(Obj_55 *rider)
+{
+    s16 seg = 0;
+    PathNode *node = gPathNodes;
+    if (rider->posZ < node->pos.z) {
         do {
-            p++;
-            c++;
-        } while (o->f50 < p->pos.z);
+            node++;
+            seg++;
+        } while (rider->posZ < node->pos.z);
     }
-    o->s628 = c;
+    rider->segment = seg;
 }

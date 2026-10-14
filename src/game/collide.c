@@ -1,92 +1,99 @@
 #include "game.h"
 
-CollideNode *collide_build_sphere_tree(CollideSphereDesc *p)
+#define COLLIDE_POOL_SIZE 16000 /* bytes, for the CollideNodes of every sphere tree */
+
+/* Builds the node of desc and its siblings from the pool: a leaf from its sphere (0.5 m lower), an inner node as the
+   sphere spanning its first two children. Writes each node's radius back into its description. */
+CollideNode *collide_build_sphere_tree(CollideSphereDesc *desc)
 {
-    CollideNode *n = sCollideNodeNext;
-    CollideNode *a;
-    CollideNode *b;
-    f32 pa[3];
-    f32 pb[3];
-    f32 d[3];
+    CollideNode *node = sCollideNodeNext;
+    CollideNode *first;
+    CollideNode *second;
+    f32 farA[3];
+    f32 farB[3];
+    f32 dir[3];
     f32 len;
 
-    sCollideNodeNext = n + 1;
+    sCollideNodeNext = node + 1;
     sCollideNodeCount = sCollideNodeCount + 1;
-    if (p->child == 0) {
-        n->pos.x = p->x;
-        n->pos.y = p->y - 0.5f;
-        n->pos.z = p->z;
-        n->radius = p->radius;
+    if (desc->child == 0) {
+        node->pos.x = desc->x;
+        node->pos.y = desc->y - 0.5f;
+        node->pos.z = desc->z;
+        node->radius = desc->radius;
     } else {
-        a = collide_build_sphere_tree(p + p->child);
-        n->child = a;
-        b = a->next;
-        d[0] = b->pos.x - a->pos.x;
-        d[1] = b->pos.y - a->pos.y;
-        d[2] = b->pos.z - a->pos.z;
-        len = __builtin_sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+        first = collide_build_sphere_tree(desc + desc->child);
+        node->child = first;
+        second = first->next;
+        dir[0] = second->pos.x - first->pos.x;
+        dir[1] = second->pos.y - first->pos.y;
+        dir[2] = second->pos.z - first->pos.z;
+        len = __builtin_sqrtf(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
         if (len != 0.0f) {
-            d[0] = d[0] / len;
-            d[1] = d[1] / len;
-            d[2] = d[2] / len;
+            dir[0] = dir[0] / len;
+            dir[1] = dir[1] / len;
+            dir[2] = dir[2] / len;
         }
-        pa[0] = d[0] * -a->radius;
-        pa[1] = d[1] * -a->radius;
-        pa[2] = d[2] * -a->radius;
-        pa[0] = pa[0] + a->pos.x;
-        pa[1] = pa[1] + a->pos.y;
-        pa[2] = pa[2] + a->pos.z;
-        pb[0] = d[0] * b->radius;
-        pb[1] = d[1] * b->radius;
-        pb[2] = d[2] * b->radius;
-        pb[0] = pb[0] + b->pos.x;
-        pb[1] = pb[1] + b->pos.y;
-        pb[2] = pb[2] + b->pos.z;
-        n->pos.x = (pa[0] + pb[0]) * 0.5f;
-        n->pos.y = (pa[1] + pb[1]) * 0.5f;
-        n->pos.z = (pa[2] + pb[2]) * 0.5f;
-        pa[0] = pa[0] - pb[0];
-        pa[1] = pa[1] - pb[1];
-        pa[2] = pa[2] - pb[2];
-        n->radius = __builtin_sqrtf(pa[0] * pa[0] + pa[1] * pa[1] + pa[2] * pa[2]) * 0.5f;
+        /* the far sides of the two children, along the line between their centres */
+        farA[0] = dir[0] * -first->radius;
+        farA[1] = dir[1] * -first->radius;
+        farA[2] = dir[2] * -first->radius;
+        farA[0] = farA[0] + first->pos.x;
+        farA[1] = farA[1] + first->pos.y;
+        farA[2] = farA[2] + first->pos.z;
+        farB[0] = dir[0] * second->radius;
+        farB[1] = dir[1] * second->radius;
+        farB[2] = dir[2] * second->radius;
+        farB[0] = farB[0] + second->pos.x;
+        farB[1] = farB[1] + second->pos.y;
+        farB[2] = farB[2] + second->pos.z;
+        node->pos.x = (farA[0] + farB[0]) * 0.5f;
+        node->pos.y = (farA[1] + farB[1]) * 0.5f;
+        node->pos.z = (farA[2] + farB[2]) * 0.5f;
+        farA[0] = farA[0] - farB[0];
+        farA[1] = farA[1] - farB[1];
+        farA[2] = farA[2] - farB[2];
+        node->radius = __builtin_sqrtf(farA[0] * farA[0] + farA[1] * farA[1] + farA[2] * farA[2]) * 0.5f;
     }
-    if (p->next != 0) {
-        n->next = collide_build_sphere_tree(p + p->next);
+    if (desc->next != 0) {
+        node->next = collide_build_sphere_tree(desc + desc->next);
     }
-    p->radius = n->radius;
-    return n;
+    desc->radius = node->radius;
+    return node;
 }
 
-s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *x1, Vec3f *x2, Vec3f *o1, Vec3f *o2)
+/* Whether any leaf of tree a overlaps any leaf of tree b; rotA/rotB are the bodies' matrix rows, posA/posB their
+   positions. World positions are cached in the nodes; the larger sphere is split first. */
+s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *rotA, Vec3f *rotB, Vec3f *posA, Vec3f *posB)
 {
-    f32 r;
-    f32 d;
+    f32 reach;
+    f32 distSq;
     f32 t1, t2, t3;
     volatile s32 pad[4];
 
     if (a->cached == 0) {
-        a->worldPos.x = a->pos.y * x1[1].x + a->pos.z * x1[2].x + o1->x;
-        a->worldPos.y = a->pos.y * x1[1].y + a->pos.z * x1[2].y + o1->y;
-        t1 = x1[1].z;
-        t2 = x1[2].z;
-        t3 = o1->z;
+        a->worldPos.x = a->pos.y * rotA[1].x + a->pos.z * rotA[2].x + posA->x;
+        a->worldPos.y = a->pos.y * rotA[1].y + a->pos.z * rotA[2].y + posA->y;
+        t1 = rotA[1].z;
+        t2 = rotA[2].z;
+        t3 = posA->z;
         a->cached = 1;
         a->worldPos.z = a->pos.y * t1 + a->pos.z * t2 + t3;
     }
     if (b->cached == 0) {
-        b->worldPos.x = b->pos.y * x2[1].x + b->pos.z * x2[2].x + o2->x;
-        b->worldPos.y = b->pos.y * x2[1].y + b->pos.z * x2[2].y + o2->y;
-        t1 = x2[1].z;
-        t2 = x2[2].z;
-        t3 = o2->z;
+        b->worldPos.x = b->pos.y * rotB[1].x + b->pos.z * rotB[2].x + posB->x;
+        b->worldPos.y = b->pos.y * rotB[1].y + b->pos.z * rotB[2].y + posB->y;
+        t1 = rotB[1].z;
+        t2 = rotB[2].z;
+        t3 = posB->z;
         b->cached = 1;
         b->worldPos.z = b->pos.y * t1 + b->pos.z * t2 + t3;
     }
-    r = a->radius + b->radius;
-    d = (a->worldPos.x - b->worldPos.x) * (a->worldPos.x - b->worldPos.x)
+    reach = a->radius + b->radius;
+    distSq = (a->worldPos.x - b->worldPos.x) * (a->worldPos.x - b->worldPos.x)
       + (a->worldPos.y - b->worldPos.y) * (a->worldPos.y - b->worldPos.y)
       + (a->worldPos.z - b->worldPos.z) * (a->worldPos.z - b->worldPos.z);
-    if (d < r * r) {
+    if (distSq < reach * reach) {
         if (a->child == 0) {
             if (b->child == 0) {
                 return 1;
@@ -94,7 +101,7 @@ s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *x1, Vec3f *x2
         } else if (b->child == 0 || b->radius < a->radius) {
             a = a->child;
             do {
-                if (collide_spheres_overlap(a, b, x1, x2, o1, o2) & 0xff) {
+                if (collide_spheres_overlap(a, b, rotA, rotB, posA, posB) & 0xff) {
                     return 1;
                 }
                 a = a->next;
@@ -102,7 +109,7 @@ s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *x1, Vec3f *x2
             return 0;
         }
         for (b = b->child; b != 0; b = b->next) {
-            if (collide_spheres_overlap(a, b, x1, x2, o1, o2) & 0xff) {
+            if (collide_spheres_overlap(a, b, rotA, rotB, posA, posB) & 0xff) {
                 return 1;
             }
         }
@@ -110,64 +117,66 @@ s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *x1, Vec3f *x2
     return 0;
 }
 
-s32 collide_find_deepest_overlap(CollideNode *p1, CollideNode *p2, Vec3f *m1, Vec3f *m2, Vec3f *v1, Vec3f *v2)
+/* Finds the overlapping pair of leaves of trees a and b that overlap the most: sCollideDepth, sCollideHitA,
+   sCollideHitB. The leaves return 0, so the whole overlap is searched. */
+s32 collide_find_deepest_overlap(CollideNode *a, CollideNode *b, Vec3f *rotA, Vec3f *rotB, Vec3f *posA, Vec3f *posB)
 {
-    f32 fVar3;
-    f32 fVar4;
-    f32 fVar5;
-    f32 fz;
+    f32 t1;
+    f32 reach;
+    f32 t2;
+    f32 t3;
 
-    f32 d;
-    s32 uVar1;
+    f32 distSq;
+    s32 hit;
     Vec3f tmp;
 
-    if (p1->cached == 0) {
-        p1->worldPos.x = p1->pos.y * m1[1].x + p1->pos.z * m1[2].x + v1->x;
-        p1->worldPos.y = p1->pos.y * m1[1].y + p1->pos.z * m1[2].y + v1->y;
-        fVar3 = m1[1].z;
-        fVar5 = m1[2].z;
-        fz = v1->z;
-        p1->cached = 1;
-        p1->worldPos.z = p1->pos.y * fVar3 + p1->pos.z * fVar5 + fz;
+    if (a->cached == 0) {
+        a->worldPos.x = a->pos.y * rotA[1].x + a->pos.z * rotA[2].x + posA->x;
+        a->worldPos.y = a->pos.y * rotA[1].y + a->pos.z * rotA[2].y + posA->y;
+        t1 = rotA[1].z;
+        t2 = rotA[2].z;
+        t3 = posA->z;
+        a->cached = 1;
+        a->worldPos.z = a->pos.y * t1 + a->pos.z * t2 + t3;
     }
-    if (p2->cached == 0) {
-        p2->worldPos.x = p2->pos.y * m2[1].x + p2->pos.z * m2[2].x + v2->x;
-        p2->worldPos.y = p2->pos.y * m2[1].y + p2->pos.z * m2[2].y + v2->y;
-        fVar3 = m2[1].z;
-        fVar5 = m2[2].z;
-        fz = v2->z;
-        p2->cached = 1;
-        p2->worldPos.z = p2->pos.y * fVar3 + p2->pos.z * fVar5 + fz;
+    if (b->cached == 0) {
+        b->worldPos.x = b->pos.y * rotB[1].x + b->pos.z * rotB[2].x + posB->x;
+        b->worldPos.y = b->pos.y * rotB[1].y + b->pos.z * rotB[2].y + posB->y;
+        t1 = rotB[1].z;
+        t2 = rotB[2].z;
+        t3 = posB->z;
+        b->cached = 1;
+        b->worldPos.z = b->pos.y * t1 + b->pos.z * t2 + t3;
     }
-    fVar4 = p1->radius + p2->radius;
-    d = (p1->worldPos.x - p2->worldPos.x) * (p1->worldPos.x - p2->worldPos.x) +
-        (p1->worldPos.y - p2->worldPos.y) * (p1->worldPos.y - p2->worldPos.y) +
-        (p1->worldPos.z - p2->worldPos.z) * (p1->worldPos.z - p2->worldPos.z);
-    if (d < fVar4 * fVar4) {
-        if (p1->child == 0) {
-            if (p2->child == 0) {
-                d = (p1->radius + p2->radius) - __builtin_sqrtf(d);
-                if (sCollideDepth < d) {
-                    sCollideDepth = d;
-                    sCollideHitA = p1;
-                    sCollideHitB = p2;
+    reach = a->radius + b->radius;
+    distSq = (a->worldPos.x - b->worldPos.x) * (a->worldPos.x - b->worldPos.x) +
+        (a->worldPos.y - b->worldPos.y) * (a->worldPos.y - b->worldPos.y) +
+        (a->worldPos.z - b->worldPos.z) * (a->worldPos.z - b->worldPos.z);
+    if (distSq < reach * reach) {
+        if (a->child == 0) {
+            if (b->child == 0) {
+                distSq = (a->radius + b->radius) - __builtin_sqrtf(distSq); /* the depth */
+                if (sCollideDepth < distSq) {
+                    sCollideDepth = distSq;
+                    sCollideHitA = a;
+                    sCollideHitB = b;
                 }
                 return 0;
             }
-        } else if (p2->child == 0 || p2->radius < p1->radius) {
-            p1 = p1->child;
+        } else if (b->child == 0 || b->radius < a->radius) {
+            a = a->child;
             do {
-                uVar1 = collide_find_deepest_overlap(p1, p2, m1, m2, v1, v2);
-                if ((uVar1 & 0xff) != 0) {
+                hit = collide_find_deepest_overlap(a, b, rotA, rotB, posA, posB);
+                if ((hit & 0xff) != 0) {
                     return 1;
                 }
-                p1 = p1->next;
-            } while (p1 != 0);
+                a = a->next;
+            } while (a != 0);
             return 0;
         }
-        for (p2 = p2->child; p2 != 0; p2 = p2->next) {
-            uVar1 = collide_find_deepest_overlap(p1, p2, m1, m2, v1, v2);
-            if ((uVar1 & 0xff) != 0) {
+        for (b = b->child; b != 0; b = b->next) {
+            hit = collide_find_deepest_overlap(a, b, rotA, rotB, posA, posB);
+            if ((hit & 0xff) != 0) {
                 return 1;
             }
         }
@@ -176,433 +185,495 @@ s32 collide_find_deepest_overlap(CollideNode *p1, CollideNode *p2, Vec3f *m1, Ve
     return 0;
 }
 
-s32 collide_resolve_rider_hit(Rider *p1, Rider *p2)
+/* Two riding bikes touched: decides whether one rider knocks the other down (landing on him, a side hit in Excite
+   3D, a front wheel into a rear wheel). Returns 1 when riderB falls, 2 when riderA does, 0 when nobody does. */
+s32 collide_resolve_rider_hit(Rider *riderA, Rider *riderB)
 {
-    f32 vec[3];
-    f32 o1[3];
-    f32 o2[3];
-    s32 a, b;
-    RigidBody *q;
-    f32 *pa;
-    s32 c;
+    f32 rel[3];
+    f32 localA[3];
+    f32 localB[3];
+    s32 cpuA, cpuB;
+    RigidBody *bodyB;
+    f32 *posA;
+    s32 unused;
 
-    if (gCheatFlags & 0x400) {
-        if (p1->isCpu != 0) {
-            if (p2->isCpu != 0) goto skip0;
-        } else if (p2->isCpu != 0) {
-            bike_crash_begin(p2, 0x1c);
-            return 1;
-        }
-        if (p1->isCpu == 0) goto skip0;
-        bike_crash_begin(p1, 0x1c);
-        return 1;
-    }
-skip0:
-
-    if (p1->airFrames >= 0 && p2->airFrames >= 0) return 0;
-    if (p1->airFrames < 0x3c) goto L12c;
-    if (p2->airFrames >= 0) goto L12c;
-
-    a = p1->isCpu;
-    b = p2->isCpu;
-    if ((a & b) == 0 || gEvent.time < 300) announce_takeout(p1 - gRiders, p2 - gRiders);
-    p2->pendingCrash = -0x19;
-    goto L1c8;
-
-L12c:
-    if (p2->airFrames < 0x3c) goto L1d8;
-    if (p1->airFrames >= 0) goto L1d8;
-    a = p1->isCpu;
-    b = p2->isCpu;
-    if ((a & b) == 0 || gEvent.time < 300) announce_takeout(p2 - gRiders, p1 - gRiders);
-    p1->pendingCrash = -0x1C;
-
-L1c8:
-    p1->fistPump = 1;
-    p1->engine.heat = 0.0f;
-
-L1d8:
-    if (gGame.mode == 6) {
-        if (p1->bike.pos.z < p2->bike.pos.z) {
-            if (p1->bike.pos.x < p2->bike.pos.x) {
-                p2->pendingCrash = -0x1F;
-            } else {
-                p2->pendingCrash = -0x22;
+    /* invincible: a CPU rider who touches a human always falls */
+    if (gCheatFlags & CHEAT_INVINCIBLE) {
+        if (riderA->isCpu != 0) {
+            if (riderB->isCpu != 0) {
+                goto noCheat;
             }
-            p2->crashVel = p2->bike.vel;
+        } else if (riderB->isCpu != 0) {
+            bike_crash_begin(riderB, ANIM_CRASH_FRONT);
             return 1;
         }
-        if (p2->bike.pos.x < p1->bike.pos.x) {
-            p1->pendingCrash = -0x1F;
-        } else {
-            p1->pendingCrash = -0x22;
+        if (riderA->isCpu == 0) {
+            goto noCheat;
         }
-        p1->crashVel = p1->bike.vel;
+        bike_crash_begin(riderA, ANIM_CRASH_FRONT);
+        return 1;
+    }
+noCheat:
+
+    /* landing on a rider after a second in the air knocks him down */
+    if (riderA->airFrames >= 0 && riderB->airFrames >= 0) {
+        return 0;
+    }
+    if (riderA->airFrames < 60) {
+        goto tryLandingOnA;
+    }
+    if (riderB->airFrames >= 0) {
+        goto tryLandingOnA;
+    }
+
+    cpuA = riderA->isCpu;
+    cpuB = riderB->isCpu;
+    if ((cpuA & cpuB) == 0 || gEvent.time < 300) {
+        announce_takeout(riderA - gRiders, riderB - gRiders);
+    }
+    riderB->pendingCrash = -ANIM_CRASH_BACK;
+    goto landedOn;
+
+tryLandingOnA:
+    if (riderB->airFrames < 60) {
+        goto sideOrRearHit;
+    }
+    if (riderA->airFrames >= 0) {
+        goto sideOrRearHit;
+    }
+    cpuA = riderA->isCpu;
+    cpuB = riderB->isCpu;
+    if ((cpuA & cpuB) == 0 || gEvent.time < 300) {
+        announce_takeout(riderB - gRiders, riderA - gRiders);
+    }
+    riderA->pendingCrash = -ANIM_CRASH_FRONT;
+
+landedOn: /* reached also when riderA is the one who falls */
+    riderA->fistPump = 1;
+    riderA->engine.heat = 0.0f;
+
+sideOrRearHit:
+    /* Excite 3D: the rider further along z falls sideways */
+    if (gGame.mode == GAME_MODE_EXCITE_3D) {
+        if (riderA->bike.pos.z < riderB->bike.pos.z) {
+            if (riderA->bike.pos.x < riderB->bike.pos.x) {
+                riderB->pendingCrash = -ANIM_CRASH_LEFT;
+            } else {
+                riderB->pendingCrash = -ANIM_CRASH_RIGHT;
+            }
+            riderB->crashVel = riderB->bike.vel;
+            return 1;
+        }
+        if (riderB->bike.pos.x < riderA->bike.pos.x) {
+            riderA->pendingCrash = -ANIM_CRASH_LEFT;
+        } else {
+            riderA->pendingCrash = -ANIM_CRASH_RIGHT;
+        }
+        riderA->crashVel = riderA->bike.vel;
         return 1;
     }
 
-    if (gRaceFrame - p1->contactFrame[p2 - gRiders] < 0x3c) return 0;
+    if (gRaceFrame - riderA->contactFrame[riderB - gRiders] < 60) {
+        return 0;
+    }
 
-    pa = &p1->bike.pos.x;
-    vec[0] = gCollidePoint.x - pa[0];
-    vec[1] = gCollidePoint.y - pa[1];
-    vec[2] = gCollidePoint.z - pa[2];
-    q = &p2->bike;
-    mtx3f_mul_vec3(vec, &p1->bike.right.x, o1);
-    if (-0.2f < o1[2] && o1[2] < 0.2f) return 0;
+    /* the contact point in each bike's frame ([2] forward); near the middle of either bike, nothing happens */
+    posA = &riderA->bike.pos.x;
+    rel[0] = gCollidePoint.x - posA[0];
+    rel[1] = gCollidePoint.y - posA[1];
+    rel[2] = gCollidePoint.z - posA[2];
+    bodyB = &riderB->bike;
+    mtx3f_mul_vec3(rel, &riderA->bike.right.x, localA);
+    if (-0.2f < localA[2] && localA[2] < 0.2f) {
+        return 0;
+    }
 
-    vec[0] = gCollidePoint.x - q->pos.x;
-    vec[1] = gCollidePoint.y - q->pos.y;
-    vec[2] = gCollidePoint.z - q->pos.z;
-    mtx3f_mul_vec3(vec, &q->right.x, o2);
-    if (-0.2f < o2[2] && o2[2] < 0.2f) return 0;
+    rel[0] = gCollidePoint.x - bodyB->pos.x;
+    rel[1] = gCollidePoint.y - bodyB->pos.y;
+    rel[2] = gCollidePoint.z - bodyB->pos.z;
+    mtx3f_mul_vec3(rel, &bodyB->right.x, localB);
+    if (-0.2f < localB[2] && localB[2] < 0.2f) {
+        return 0;
+    }
 
-    if (o2[2] > 0.0f && o1[2] < 0.0f) {
-        if (p2->isCpu == 0) {
-            if (p2->input & 0x20) return 0;
-            if ((p2->input & 0x20010) == 0) return 0;
+    /* riderB's front ran into riderA's rear: riderB falls, unless a human braking or off the throttle */
+    if (localB[2] > 0.0f && localA[2] < 0.0f) {
+        if (riderB->isCpu == 0) {
+            if (riderB->input & INPUT_B) {
+                return 0;
+            }
+            if ((riderB->input & (INPUT_Z | INPUT_A)) == 0) {
+                return 0;
+            }
         }
-        p1->fistPump = 1;
-        p1->engine.heat = 0.0f;
-        if (p1->isCpu == 0 || p2->isCpu == 0) announce_takeout(p1 - gRiders, p2 - gRiders);
-        if (o1[0] - o2[0] > 0.0f) {
-            p2->pendingCrash = -0x1F;
+        riderA->fistPump = 1;
+        riderA->engine.heat = 0.0f;
+        if (riderA->isCpu == 0 || riderB->isCpu == 0) {
+            announce_takeout(riderA - gRiders, riderB - gRiders);
+        }
+        if (localA[0] - localB[0] > 0.0f) {
+            riderB->pendingCrash = -ANIM_CRASH_LEFT;
         } else {
-            p2->pendingCrash = -0x22;
+            riderB->pendingCrash = -ANIM_CRASH_RIGHT;
         }
         {
-            f64 *d = (f64 *)&p2->crashVel;
-            f64 *sp = (f64 *)&p2->bike.vel;
-            __builtin_memcpy(d, sp, 12);
+            /* crashVel = bike.vel, copied the way the original does */
+            f64 *dst = (f64 *)&riderB->crashVel;
+            f64 *src = (f64 *)&riderB->bike.vel;
+            __builtin_memcpy(dst, src, 12);
         }
         return 1;
     }
-    if (o1[2] > 0.0f && o2[2] < 0.0f) {
-        if (p1->isCpu == 0) {
-            if (p1->input & 0x20) return 0;
-            if ((p1->input & 0x20010) == 0) return 0;
+    if (localA[2] > 0.0f && localB[2] < 0.0f) {
+        if (riderA->isCpu == 0) {
+            if (riderA->input & INPUT_B) {
+                return 0;
+            }
+            if ((riderA->input & (INPUT_Z | INPUT_A)) == 0) {
+                return 0;
+            }
         }
-        p2->fistPump = 1;
-        p2->engine.heat = 0.0f;
-        if (p1->isCpu == 0 || p2->isCpu == 0) announce_takeout(p2 - gRiders, p1 - gRiders);
-        if (o2[0] - o1[0] > 0.0f) {
-            p1->pendingCrash = -0x1F;
+        riderB->fistPump = 1;
+        riderB->engine.heat = 0.0f;
+        if (riderA->isCpu == 0 || riderB->isCpu == 0) {
+            announce_takeout(riderB - gRiders, riderA - gRiders);
+        }
+        if (localB[0] - localA[0] > 0.0f) {
+            riderA->pendingCrash = -ANIM_CRASH_LEFT;
         } else {
-            p1->pendingCrash = -0x22;
+            riderA->pendingCrash = -ANIM_CRASH_RIGHT;
         }
-        p1->crashVel = p1->bike.vel;
+        riderA->crashVel = riderA->bike.vel;
         return 2;
     }
     return 0;
 }
 
+/* Normalizes a Vec3f in place (a zero vector stays as it is). */
 #define NORM(v) { f32 len = __builtin_sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); if (len != 0.0f) { v.x /= len; v.y /= len; v.z /= len; } }
 
+/* Pushes two overlapping bodies apart with an impulse at the deepest pair of spheres; between two bikes, also the
+   knock-downs, sparks and sounds. Returns 0 when they already separate, else 1 (or the knock-down's result). */
+s32 collide_apply_impulse(RigidBody *bodyA, RigidBody *bodyB)
+{
+    Vec3f normal;
+    Vec3f armA;
+    Vec3f armB;
+    Vec3f velA;
+    Vec3f velB;
+    Vec3f relVel;
+    Vec3f perp;
+    Vec3f torque;
+    Vec3f delta;
+    f32 perpSq, len, halfDepth, closing, along, effMassA, effMassB, impulse, lim;
+    Rider *riderA, *riderB, *ownerA, *ownerB;
+    s32 result, volume, ia, idxB;
 
-s32 collide_apply_impulse(RigidBody *a, RigidBody *b) {
-    Vec3f n;
-    Vec3f ra;
-    Vec3f rb;
-    Vec3f va;
-    Vec3f vb;
-    Vec3f dv;
-    Vec3f t;
-    Vec3f tq;
-    Vec3f imp;
-    f32 k, len, h, d, d1, ka, kb, j, lim;
-    Rider *ba, *bb, *pa, *pb;
-    s32 r, vol, ia, ib;
-
-    n.x = sCollideHitA->worldPos.x - sCollideHitB->worldPos.x;
-    n.y = sCollideHitA->worldPos.y - sCollideHitB->worldPos.y;
-    n.z = sCollideHitA->worldPos.z - sCollideHitB->worldPos.z;
-    NORM(n);
-    if (n.y > 0.25f) {
-        n.y = 0.25f;
-        NORM(n);
-    } else if (n.y < -0.25f) {
-        n.y = -0.25f;
-        NORM(n);
+    normal.x = sCollideHitA->worldPos.x - sCollideHitB->worldPos.x;
+    normal.y = sCollideHitA->worldPos.y - sCollideHitB->worldPos.y;
+    normal.z = sCollideHitA->worldPos.z - sCollideHitB->worldPos.z;
+    NORM(normal);
+    if (normal.y > 0.25f) {
+        normal.y = 0.25f;
+        NORM(normal);
+    } else if (normal.y < -0.25f) {
+        normal.y = -0.25f;
+        NORM(normal);
     }
-    h = sCollideDepth * 0.5f;
-    gCollidePoint.x = n.x * (sCollideHitB->radius - h);
-    gCollidePoint.y = n.y * (sCollideHitB->radius - h);
-    gCollidePoint.z = n.z * (sCollideHitB->radius - h);
+    halfDepth = sCollideDepth * 0.5f;
+    gCollidePoint.x = normal.x * (sCollideHitB->radius - halfDepth);
+    gCollidePoint.y = normal.y * (sCollideHitB->radius - halfDepth);
+    gCollidePoint.z = normal.z * (sCollideHitB->radius - halfDepth);
     gCollidePoint.x = sCollideHitB->worldPos.x + gCollidePoint.x;
     gCollidePoint.y = sCollideHitB->worldPos.y + gCollidePoint.y;
     gCollidePoint.z = sCollideHitB->worldPos.z + gCollidePoint.z;
-    gCollidePoint.y = (a->pos.y + b->pos.y) * 0.5f;
-    ra.x = gCollidePoint.x - a->pos.x;
-    ra.y = gCollidePoint.y - a->pos.y;
-    ra.z = gCollidePoint.z - a->pos.z;
-    vec3_cross(&ra, &a->angVel, &va);
-    va.x = a->vel.x + va.x;
-    va.y = a->vel.y + va.y;
-    va.z = a->vel.z + va.z;
-    rb.x = gCollidePoint.x - b->pos.x;
-    rb.y = gCollidePoint.y - b->pos.y;
-    rb.z = gCollidePoint.z - b->pos.z;
-    vec3_cross(&rb, &b->angVel, &vb);
-    vb.x = b->vel.x + vb.x;
-    vb.y = b->vel.y + vb.y;
-    vb.z = b->vel.z + vb.z;
-    dv.x = va.x - vb.x;
-    dv.y = va.y - vb.y;
-    dv.z = va.z - vb.z;
-    d = vec3_dot(&dv, &n);
-    if (d > 0.0f) {
+    gCollidePoint.y = (bodyA->pos.y + bodyB->pos.y) * 0.5f;
+    armA.x = gCollidePoint.x - bodyA->pos.x;
+    armA.y = gCollidePoint.y - bodyA->pos.y;
+    armA.z = gCollidePoint.z - bodyA->pos.z;
+    vec3_cross(&armA, &bodyA->angVel, &velA);
+    velA.x = bodyA->vel.x + velA.x;
+    velA.y = bodyA->vel.y + velA.y;
+    velA.z = bodyA->vel.z + velA.z;
+    armB.x = gCollidePoint.x - bodyB->pos.x;
+    armB.y = gCollidePoint.y - bodyB->pos.y;
+    armB.z = gCollidePoint.z - bodyB->pos.z;
+    vec3_cross(&armB, &bodyB->angVel, &velB);
+    velB.x = bodyB->vel.x + velB.x;
+    velB.y = bodyB->vel.y + velB.y;
+    velB.z = bodyB->vel.z + velB.z;
+    relVel.x = velA.x - velB.x;
+    relVel.y = velA.y - velB.y;
+    relVel.z = velA.z - velB.z;
+    closing = vec3_dot(&relVel, &normal);
+    if (closing > 0.0f) {
         return 0;
     }
-    if (a->type < 2 && b->type < 2) {
-        ba = a->owner;
-        bb = b->owner;
-        a->mass *= ba->weight;
-        a->inertia *= ba->weight;
-        b->mass *= bb->weight;
-        b->inertia *= bb->weight;
-        if (ba->crashState == 0 && bb->crashState == 0) {
-            r = collide_resolve_rider_hit(ba, bb);
-            bb->contactFrame[ba - gRiders] = gRaceFrame;
-            ba->contactFrame[bb - gRiders] = gRaceFrame;
-            if (r != 0) {
-                return r;
+    if (bodyA->type < BODY_CRASHED_BIKE && bodyB->type < BODY_CRASHED_BIKE) {
+        riderA = bodyA->owner;
+        riderB = bodyB->owner;
+        bodyA->mass *= riderA->weight;
+        bodyA->inertia *= riderA->weight;
+        bodyB->mass *= riderB->weight;
+        bodyB->inertia *= riderB->weight;
+        if (riderA->crashState == CRASH_STATE_RIDING && riderB->crashState == CRASH_STATE_RIDING) {
+            result = collide_resolve_rider_hit(riderA, riderB);
+            riderB->contactFrame[riderA - gRiders] = gRaceFrame;
+            riderA->contactFrame[riderB - gRiders] = gRaceFrame;
+            if (result != 0) {
+                return result;
             }
         }
-        if (a->type == 0) {
-            particles_start_sparks(ba);
+        if (bodyA->type == BODY_BIKE) {
+            particles_start_sparks(riderA);
         }
-        if (b->type == 0) {
-            particles_start_sparks(bb);
+        if (bodyB->type == BODY_BIKE) {
+            particles_start_sparks(riderB);
         }
-        vol = (s32)(-d) * 128.0f / 7.0f + 128.0f;
-        if (vol > 255) {
-            vol = 255;
+        volume = (s32)(-closing) * 128.0f / 7.0f + 128.0f;
+        if (volume > 255) {
+            volume = 255;
         }
-        if (vol < 0) {
-            vol = 0;
+        if (volume < 0) {
+            volume = 0;
         }
-        if (vol > 32) {
-            snd_play_rider_sfx(4, ba - gRiders, vol);
+        if (volume > 32) {
+            snd_play_rider_sfx(4, riderA - gRiders, volume);
         }
     }
-    d1 = vec3_dot(&n, &ra);
-    t.x = n.x * d1;
-    t.y = n.y * d1;
-    t.z = n.z * d1;
-    t.x = ra.x - t.x;
-    t.y = ra.y - t.y;
-    t.z = ra.z - t.z;
-    k = t.x * t.x + t.y * t.y + t.z * t.z;
-    ka = a->mass / (k * a->mass / a->inertia + 1.0f);
-    d1 = vec3_dot(&n, &rb);
-    t.x = n.x * d1;
-    t.y = n.y * d1;
-    t.z = n.z * d1;
-    t.x = rb.x - t.x;
-    t.y = rb.y - t.y;
-    t.z = rb.z - t.z;
-    k = t.x * t.x + t.y * t.y + t.z * t.z;
-    kb = b->mass / (k * b->mass / b->inertia + 1.0f);
-    if (a->type == 4 || b->type == 4) {
-        j = (d - 2.0f) * -1.5f * (ka * kb) / (ka + kb);
+    /* each body's effective mass at the contact point */
+    along = vec3_dot(&normal, &armA);
+    perp.x = normal.x * along;
+    perp.y = normal.y * along;
+    perp.z = normal.z * along;
+    perp.x = armA.x - perp.x;
+    perp.y = armA.y - perp.y;
+    perp.z = armA.z - perp.z;
+    perpSq = perp.x * perp.x + perp.y * perp.y + perp.z * perp.z;
+    effMassA = bodyA->mass / (perpSq * bodyA->mass / bodyA->inertia + 1.0f);
+    along = vec3_dot(&normal, &armB);
+    perp.x = normal.x * along;
+    perp.y = normal.y * along;
+    perp.z = normal.z * along;
+    perp.x = armB.x - perp.x;
+    perp.y = armB.y - perp.y;
+    perp.z = armB.z - perp.z;
+    perpSq = perp.x * perp.x + perp.y * perp.y + perp.z * perp.z;
+    effMassB = bodyB->mass / (perpSq * bodyB->mass / bodyB->inertia + 1.0f);
+    if (bodyA->type == BODY_BALL || bodyB->type == BODY_BALL) {
+        impulse = (closing - 2.0f) * -1.5f * (effMassA * effMassB) / (effMassA + effMassB);
     } else {
-        j = (d - 2.0f) * -1.1f * (ka * kb) / (ka + kb);
+        impulse = (closing - 2.0f) * -1.1f * (effMassA * effMassB) / (effMassA + effMassB);
     }
-    imp.x = n.x * (j / a->mass);
-    imp.y = n.y * (j / a->mass);
-    imp.z = n.z * (j / a->mass);
-    a->vel.x = a->vel.x + imp.x;
-    a->vel.y = a->vel.y + imp.y;
-    a->vel.z = a->vel.z + imp.z;
-    imp.x = n.x * (j / b->mass);
-    imp.y = n.y * (j / b->mass);
-    imp.z = n.z * (j / b->mass);
-    b->vel.x = b->vel.x - imp.x;
-    b->vel.y = b->vel.y - imp.y;
-    b->vel.z = b->vel.z - imp.z;
-    vec3_cross(&ra, &n, &tq);
-    a->angVel.x = a->angVel.x + tq.x * (j / a->inertia);
-    a->angVel.y = a->angVel.y + tq.y * (j / a->inertia);
-    a->angVel.z = a->angVel.z + tq.z * (j / a->inertia);
-    vec3_cross(&rb, &n, &tq);
-    b->angVel.x = b->angVel.x - tq.x * (j / b->inertia);
-    b->angVel.y = b->angVel.y - tq.y * (j / b->inertia);
-    b->angVel.z = b->angVel.z - tq.z * (j / b->inertia);
-    if (a->type < 2 && b->type < 2) {
-        a->mass = 250.0f;
-        a->inertia = 250.0f;
-        b->mass = 250.0f;
-        b->inertia = 250.0f;
-        pa = a->owner;
-        pb = b->owner;
-        if (pa->rearWheel.airTicks <= 0) {
-            pa->rearWheel.spin = vec3_dot(&pa->rearWheel.lonAxis.x, &pa->bike.vel.x);
+    delta.x = normal.x * (impulse / bodyA->mass);
+    delta.y = normal.y * (impulse / bodyA->mass);
+    delta.z = normal.z * (impulse / bodyA->mass);
+    bodyA->vel.x = bodyA->vel.x + delta.x;
+    bodyA->vel.y = bodyA->vel.y + delta.y;
+    bodyA->vel.z = bodyA->vel.z + delta.z;
+    delta.x = normal.x * (impulse / bodyB->mass);
+    delta.y = normal.y * (impulse / bodyB->mass);
+    delta.z = normal.z * (impulse / bodyB->mass);
+    bodyB->vel.x = bodyB->vel.x - delta.x;
+    bodyB->vel.y = bodyB->vel.y - delta.y;
+    bodyB->vel.z = bodyB->vel.z - delta.z;
+    vec3_cross(&armA, &normal, &torque);
+    bodyA->angVel.x = bodyA->angVel.x + torque.x * (impulse / bodyA->inertia);
+    bodyA->angVel.y = bodyA->angVel.y + torque.y * (impulse / bodyA->inertia);
+    bodyA->angVel.z = bodyA->angVel.z + torque.z * (impulse / bodyA->inertia);
+    vec3_cross(&armB, &normal, &torque);
+    bodyB->angVel.x = bodyB->angVel.x - torque.x * (impulse / bodyB->inertia);
+    bodyB->angVel.y = bodyB->angVel.y - torque.y * (impulse / bodyB->inertia);
+    bodyB->angVel.z = bodyB->angVel.z - torque.z * (impulse / bodyB->inertia);
+    if (bodyA->type < BODY_CRASHED_BIKE && bodyB->type < BODY_CRASHED_BIKE) {
+        bodyA->mass = 250.0f;
+        bodyA->inertia = 250.0f;
+        bodyB->mass = 250.0f;
+        bodyB->inertia = 250.0f;
+        ownerA = bodyA->owner;
+        ownerB = bodyB->owner;
+        if (ownerA->rearWheel.airTicks <= 0) {
+            ownerA->rearWheel.spin = vec3_dot(&ownerA->rearWheel.lonAxis.x, &ownerA->bike.vel.x);
         }
-        if (pa->frontWheel.airTicks <= 0) {
-            pa->frontWheel.spin = vec3_dot(&pa->frontWheel.lonAxis.x, &pa->bike.vel.x);
+        if (ownerA->frontWheel.airTicks <= 0) {
+            ownerA->frontWheel.spin = vec3_dot(&ownerA->frontWheel.lonAxis.x, &ownerA->bike.vel.x);
         }
-        pa->speed = __builtin_sqrtf(pa->bike.vel.x * pa->bike.vel.x + pa->bike.vel.y * pa->bike.vel.y + pa->bike.vel.z * pa->bike.vel.z);
-        if (pb->rearWheel.airTicks <= 0) {
-            pb->rearWheel.spin = vec3_dot(&pb->rearWheel.lonAxis.x, &pb->bike.vel.x);
+        ownerA->speed = __builtin_sqrtf(ownerA->bike.vel.x * ownerA->bike.vel.x + ownerA->bike.vel.y * ownerA->bike.vel.y + ownerA->bike.vel.z * ownerA->bike.vel.z);
+        if (ownerB->rearWheel.airTicks <= 0) {
+            ownerB->rearWheel.spin = vec3_dot(&ownerB->rearWheel.lonAxis.x, &ownerB->bike.vel.x);
         }
-        if (pb->frontWheel.airTicks <= 0) {
-            pb->frontWheel.spin = vec3_dot(&pb->frontWheel.lonAxis.x, &pb->bike.vel.x);
+        if (ownerB->frontWheel.airTicks <= 0) {
+            ownerB->frontWheel.spin = vec3_dot(&ownerB->frontWheel.lonAxis.x, &ownerB->bike.vel.x);
         }
-        pb->speed = __builtin_sqrtf(pb->bike.vel.x * pb->bike.vel.x + pb->bike.vel.y * pb->bike.vel.y + pb->bike.vel.z * pb->bike.vel.z);
-        if ((pa->wheelieTimer != 0 || (u8)pa->anim < 17) && pa->airFrames <= 0) {
-            pa->pendingCrash = -25;
-            pa->crashVel = pa->bike.vel;
+        ownerB->speed = __builtin_sqrtf(ownerB->bike.vel.x * ownerB->bike.vel.x + ownerB->bike.vel.y * ownerB->bike.vel.y + ownerB->bike.vel.z * ownerB->bike.vel.z);
+        /* a rider hit in a wheelie or a trick on the ground falls (rider A's test also takes ANIM_AIR_TURN) */
+        if ((ownerA->wheelieTimer != 0 || (u8)ownerA->anim < 17) && ownerA->airFrames <= 0) {
+            ownerA->pendingCrash = -ANIM_CRASH_BACK;
+            ownerA->crashVel = ownerA->bike.vel;
             return 1;
         }
-        if ((pb->wheelieTimer != 0 || (u8)pb->anim < 16) && pb->airFrames <= 0) {
-            pb->pendingCrash = -25;
-            pb->crashVel = pb->bike.vel;
+        if ((ownerB->wheelieTimer != 0 || (u8)ownerB->anim < ANIM_TRICK_COUNT) && ownerB->airFrames <= 0) {
+            ownerB->pendingCrash = -ANIM_CRASH_BACK;
+            ownerB->crashVel = ownerB->bike.vel;
             return 1;
         }
-        if (pa->race.place + pb->race.place == 1 && gEvent.time < 360 && !(pa->isCpu & pb->isCpu)) {
-            if (gRaceFrame - gAnnounceTimes[pa - gRiders] < 600) {
-                announce_place(pb - gRiders, pb->race.place);
+        /* first and second bump in the first 6 seconds */
+        if (ownerA->race.place + ownerB->race.place == 1 && gEvent.time < 360 && !(ownerA->isCpu & ownerB->isCpu)) {
+            if (gRaceFrame - gAnnounceTimes[ownerA - gRiders] < 600) {
+                announce_place(ownerB - gRiders, ownerB->race.place);
                 return 1;
             }
-            ib = pb - gRiders;
-            if (gRaceFrame - gAnnounceTimes[ib] < 600) {
-                announce_place(pa - gRiders, pa->race.place);
+            idxB = ownerB - gRiders;
+            if (gRaceFrame - gAnnounceTimes[idxB] < 600) {
+                announce_place(ownerA - gRiders, ownerA->race.place);
                 return 1;
             }
-            announce_lead_collision(pa - gRiders, ib);
+            announce_lead_collision(ownerA - gRiders, idxB);
         }
     }
     return 1;
 }
 
-s32 collide_bodies(RigidBody *p1, RigidBody *p2)
+/* Collides two bodies (the bike and the thrown rider of one crash ignore each other until apart); 1 after an
+   impulse. In soccer, notes which human rider touched the ball. */
+s32 collide_bodies(RigidBody *bodyA, RigidBody *bodyB)
 {
-    CollideNode *s0;
-    CollideNode *v;
-    RigidBody *tb;
-    s32 a, b;
+    CollideNode *node;
+    CollideNode *tree;
+    RigidBody *rider0Bike;
+    s32 unusedA, unusedB;
 
-    if (p2 == p1) {
+    if (bodyB == bodyA) {
         return 0;
     }
-    v = p1->tree;
+    tree = bodyA->tree;
     sCollideDepth = 0.0f;
-    s0 = v;
-    if (s0 != 0 && s0->cached != 0) {
-        s0->cached = 0;
-        s0 = s0->child;
-        while (s0 != 0) {
-            collide_tree_clear_cache(s0);
-            s0 = s0->next;
+    node = tree;
+    if (node != 0 && node->cached != 0) {
+        node->cached = 0;
+        node = node->child;
+        while (node != 0) {
+            collide_tree_clear_cache(node);
+            node = node->next;
         }
     }
-    if (p1->owner == p2->owner &&
-        p1->owner->crashState != 2) {
-        if (collide_spheres_overlap(p1->tree, p2->tree, &p1->right, &p2->right, &p1->pos, &p2->pos) & 0xff) {
+    if (bodyA->owner == bodyB->owner &&
+        bodyA->owner->crashState != CRASH_STATE_CLEAR) {
+        if (collide_spheres_overlap(bodyA->tree, bodyB->tree, &bodyA->right, &bodyB->right, &bodyA->pos, &bodyB->pos) & 0xff) {
             return 0;
         }
-        p1->owner->crashState = 2;
+        bodyA->owner->crashState = CRASH_STATE_CLEAR;
     }
-    collide_find_deepest_overlap(p1->tree, p2->tree, &p1->right, &p2->right, &p1->pos, &p2->pos);
+    collide_find_deepest_overlap(bodyA->tree, bodyB->tree, &bodyA->right, &bodyB->right, &bodyA->pos, &bodyB->pos);
     if (0.0f < sCollideDepth) {
-        if (collide_apply_impulse(p1, p2) != 0) {
-            p2->flags = p2->flags | 1;
-            if ((p1->type == 4 && p2->type == 0) || (p2->type == 4 && p1->type == 0)) {
-                if (p1->type == 4) {
-                    p1 = p2;
+        if (collide_apply_impulse(bodyA, bodyB) != 0) {
+            bodyB->flags = bodyB->flags | BODY_MOVING;
+            if ((bodyA->type == BODY_BALL && bodyB->type == BODY_BIKE) || (bodyB->type == BODY_BALL && bodyA->type == BODY_BIKE)) {
+                if (bodyA->type == BODY_BALL) {
+                    bodyA = bodyB;
                 }
             } else {
                 return 1;
             }
-            tb = &gRiders[0].bike;
-            if (p1 == tb) {
+            rider0Bike = &gRiders[0].bike;
+            if (bodyA == rider0Bike) {
                 gEvent.ballToucher = 0;
-            } else if (p1 == &gRiders[1].bike) {
+            } else if (bodyA == &gRiders[1].bike) {
                 gEvent.ballToucher = 1;
-            } else if (p1 == &gRiders[2].bike) {
+            } else if (bodyA == &gRiders[2].bike) {
                 gEvent.ballToucher = 2;
-            } else if (p1 == &gRiders[3].bike) {
+            } else if (bodyA == &gRiders[3].bike) {
                 gEvent.ballToucher = 3;
             }
             return 1;
         }
-        p1->hitTimer = 0xf;
-        p2->hitTimer = 0xf;
+        bodyA->hitTimer = 15;
+        bodyB->hitTimer = 15;
     }
     return 0;
 }
 
-void collide_tree_clear_cache(CollideNode *p) {
-    if (p != NULL && p->cached != 0) {
-        p->cached = 0;
-        p = p->child;
-        while (p != NULL) {
-            collide_tree_clear_cache(p);
-            p = p->next;
+/* Marks the world positions of a sphere tree out of date (stops at nodes already marked). */
+void collide_tree_clear_cache(CollideNode *node)
+{
+    if (node != NULL && node->cached != 0) {
+        node->cached = 0;
+        node = node->child;
+        while (node != NULL) {
+            collide_tree_clear_cache(node);
+            node = node->next;
         }
     }
 }
 
-void collide_free_node_pool(void) {
+void collide_free_node_pool(void)
+{
     mem_free(sCollideNodePool);
 }
 
+/* Allocates and clears the pool the sphere trees are built in (400 nodes). */
 void collide_init_node_pool(void)
 {
     sCollideNodeCount = 0;
-    sCollideNodePool = mem_alloc_dbg(16000, 0, sStrCollideC, 0x103);
+    sCollideNodePool = mem_alloc_dbg(COLLIDE_POOL_SIZE, 0, sStrCollideC, 0x103);
     sCollideNodeNext = sCollideNodePool;
-    mem_fill(sCollideNodePool, 0, 16000);
+    mem_fill(sCollideNodePool, 0, COLLIDE_POOL_SIZE);
 }
 
-void collide_reset_body(RigidBody *p)
+/* Stops a body and turns it to the quaternion (0, 0, 1, 0): a half turn about the vertical axis. */
+void collide_reset_body(RigidBody *body)
 {
     f32 one = 1.0f;
-    p->vel.x = 0.0f;
-    p->vel.y = 0.0f;
-    p->vel.z = 0.0f;
-    p->acc.x = 0.0f;
-    p->acc.y = 0.0f;
-    p->acc.z = 0.0f;
-    p->angVel.x = 0.0f;
-    p->angVel.y = 0.0f;
-    p->angVel.z = 0.0f;
-    p->angAcc.x = 0.0f;
-    p->angAcc.y = 0.0f;
-    p->angAcc.z = 0.0f;
-    p->quat[0] = 0.0f;
-    p->quat[1] = 0.0f;
-    p->quat[3] = 0.0f;
-    p->quat[2] = one;
-    quat_to_mtx3f(&p->right.x, p->quat);
+
+    body->vel.x = 0.0f;
+    body->vel.y = 0.0f;
+    body->vel.z = 0.0f;
+    body->acc.x = 0.0f;
+    body->acc.y = 0.0f;
+    body->acc.z = 0.0f;
+    body->angVel.x = 0.0f;
+    body->angVel.y = 0.0f;
+    body->angVel.z = 0.0f;
+    body->angAcc.x = 0.0f;
+    body->angAcc.y = 0.0f;
+    body->angAcc.z = 0.0f;
+    body->quat[0] = 0.0f;
+    body->quat[1] = 0.0f;
+    body->quat[3] = 0.0f;
+    body->quat[2] = one;
+    quat_to_mtx3f(&body->right.x, body->quat);
 }
 
-void collide_update_bike_speeds(Rider *p)
+/* Sets the spin of each wheel on the ground to the bike's speed along it, and the rider's speed. */
+void collide_update_bike_speeds(Rider *rider)
 {
-    f32 s;
-    f32 r;
+    f32 speedSq;
+    f32 speed;
 
-    if (p->rearWheel.airTicks < 1) {
-        p->rearWheel.spin = vec3_dot(&p->rearWheel.lonAxis.x, &p->bike.vel.x);
+    if (rider->rearWheel.airTicks < 1) {
+        rider->rearWheel.spin = vec3_dot(&rider->rearWheel.lonAxis.x, &rider->bike.vel.x);
     }
-    if (p->frontWheel.airTicks < 1) {
-        p->frontWheel.spin = vec3_dot(&p->frontWheel.lonAxis.x, &p->bike.vel.x);
+    if (rider->frontWheel.airTicks < 1) {
+        rider->frontWheel.spin = vec3_dot(&rider->frontWheel.lonAxis.x, &rider->bike.vel.x);
     }
-    s = p->bike.vel.x * p->bike.vel.x
-      + p->bike.vel.y * p->bike.vel.y
-      + p->bike.vel.z * p->bike.vel.z;
-    r = __builtin_sqrtf(s);
-    p->speed = r;
+    speedSq = rider->bike.vel.x * rider->bike.vel.x
+      + rider->bike.vel.y * rider->bike.vel.y
+      + rider->bike.vel.z * rider->bike.vel.z;
+    speed = __builtin_sqrtf(speedSq);
+    rider->speed = speed;
 }
 
-void collide_reset_tree(CollideNode *p) {
-    CollideNode *q;
+/* Clears the deepest overlap and marks a sphere tree's world positions out of date. */
+void collide_reset_tree(CollideNode *tree)
+{
+    CollideNode *node;
+
     sCollideDepth = 0;
-    q = p;
-    if (q != NULL && q->cached != 0) {
-        q->cached = 0;
-        for (q = q->child; q != NULL; q = q->next) {
-            collide_tree_clear_cache(q);
+    node = tree;
+    if (node != NULL && node->cached != 0) {
+        node->cached = 0;
+        for (node = node->child; node != NULL; node = node->next) {
+            collide_tree_clear_cache(node);
         }
     }
 }

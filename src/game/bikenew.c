@@ -1,39 +1,36 @@
 #include "game.h"
 
+/* The fields of the current track (gTracks) that the bikes read. */
 typedef struct {
-    u8 pad0[0x2C];
-    s32 f2C;
-    u8 pad30[0x50 - 0x30];
-    u32 f50;
-} Opt_3;
+    /* 0x00 */ u8 pad0[0x2C];
+    /* 0x2C */ s32 envType;         /* 0 stadium, 1 outdoor, 2 desert */
+    /* 0x30 */ u8 pad30[0x50 - 0x30];
+    /* 0x50 */ u32 flags;           /* 2: the user track (no records, the UsrTrk.c overlay) */
+} TrackView;
 
-typedef struct {
-    u8 pad0[0xC];
-    u16 fC;
-    u8 padE[2];
-} Bk;
+extern CamMode gCamModes[];
+extern TrackView *gCurTrack_17;
 
-extern Bk gCamModes[];
-extern Opt_3 *gCurTrack_17;
-
-void bikes_init(void) {
-    Vec3f unused[4];
+/* Sets up the riders for a race: skeletons, sphere trees, camera modes, handling, places on the grid. */
+void bikes_init(void)
+{
+    Vec3f unused[4]; /* sizes the stack frame */
     s32 i;
-    s32 k;
+    s32 headingNode;
     s32 j;
-    s32 a;
-    s32 c;
-    s32 cc;
-    s32 r;
-    s32 n;
-    s32 idx;
+    s32 cosIdx;
+    s32 camMode;
+    s32 gridPos;
+    s32 rnd;
+    s32 gridCount;
+    s32 startNode;
+    f32 lateral;
     f32 zero;
-    f32 z;
-    f32 sc;
-    u16 ang;
-    s32 ratio;
-    Rider *p;
-    Vec3f *v;
+    f32 laneWidth;
+    u16 heading;
+    s32 magnitude;
+    Rider *rider;
+    Vec3f *unusedPtr;
 
     mem_fill_2(gPlayerInputs, 0, 0x10);
     if (gReplayPlayback == 0) {
@@ -48,27 +45,27 @@ void bikes_init(void) {
     gPhysTicks = 1;
     gCrashSlowMotion = 0;
     D_800E7700 ^= 1;
-    zero = 0.0f;
-    gAiDebugTargetPos.z = zero;
-    gAiDebugTargetPos.y = zero;
-    gAiDebugTargetPos.x = zero;
-    gAiDebugTargetDir.z = zero;
-    gAiDebugTargetDir.y = zero;
-    gAiDebugTargetDir.x = zero;
+    lateral = 0.0f; /* one variable: zero here, the grid lane's offset below */
+    gAiDebugTargetPos.z = lateral;
+    gAiDebugTargetPos.y = lateral;
+    gAiDebugTargetPos.x = lateral;
+    gAiDebugTargetDir.z = lateral;
+    gAiDebugTargetDir.y = lateral;
+    gAiDebugTargetDir.x = lateral;
     collide_init_node_pool();
     race_load_extra_rider_spawns(gResourceSet);
     r250_init();
     D_800E7704 = 1;
     gRaceFrame = 0;
-    for (; i < 8; i++) {
-        z = 0.0f;
+    for (; i < RIDER_COUNT; i++) {
+        zero = 0.0f;
         gRiderAlpha[i] = 0xFF;
         gRiders[i].unk_778 = -60;
-        if (gGhostRace != 0 || (gRiders[i].isCpu == 0 && (gCheatFlags & 0x100))) {
+        if (gGhostRace != 0 || (gRiders[i].isCpu == 0 && (gCheatFlags & CHEAT_TRANSPARENT_RIDER))) {
             gRiders[i].noCollide = 1;
         }
-        gRiders[i].bikeSkel = mem_alloc_dbg(0x500, 0, "bikenew.c", 233);
-        gRiders[i].riderSkel = mem_alloc_dbg(0x780, 0, "bikenew.c", 234);
+        gRiders[i].bikeSkel = mem_alloc_dbg(sizeof(BikeSkeleton), 0, "bikenew.c", 233);
+        gRiders[i].riderSkel = mem_alloc_dbg(sizeof(RiderSkeleton), 0, "bikenew.c", 234);
         *gRiders[i].bikeSkel = *gBikeSkelTemplate;
         *gRiders[i].riderSkel = *gRiderSkelTemplate;
         mem_fill_2(gRiders[i].trickList, -1, 0x10);
@@ -79,29 +76,29 @@ void bikes_init(void) {
         gRiders[i].queuedTrick = -1;
         gRiders[i].inactive = 1;
         gRiders[i].race.placeAnim = 0x100;
-        gRiders[i].trickQuat[1] = z;
-        gRiders[i].trickQuat[2] = z;
-        gRiders[i].trickQuat[3] = z;
-        gRiders[i].trickOffset.x = z;
-        gRiders[i].trickOffset.y = z;
-        gRiders[i].trickOffset.z = z;
-        gRiders[i].anim = -1;
-        gRiders[i].prevAnim = -1;
+        gRiders[i].trickQuat[1] = zero;
+        gRiders[i].trickQuat[2] = zero;
+        gRiders[i].trickQuat[3] = zero;
+        gRiders[i].trickOffset.x = zero;
+        gRiders[i].trickOffset.y = zero;
+        gRiders[i].trickOffset.z = zero;
+        gRiders[i].anim = ANIM_NONE;
+        gRiders[i].prevAnim = ANIM_NONE;
         gRiders[i].trickQuat[0] = 1.0f;
-        gRiders[i].bike.vel.x = gRiders[i].bike.fwd.x * z;
+        gRiders[i].bike.vel.x = gRiders[i].bike.fwd.x * zero;
         gRiders[i].bike.vel.y = gRiders[i].bike.fwd.y * gRiders[i].speed;
         gRiders[i].bike.vel.z = gRiders[i].bike.fwd.z * gRiders[i].speed;
-        r = random_byte();
-        gRiders[i].bike.unk_170 = z;
+        rnd = random_byte();
+        gRiders[i].bike.restThreshold = zero;
         gRiders[i].bike.flags = 1;
-        gRiders[i].body.type = 3;
+        gRiders[i].body.type = BODY_RIDER;
         gRiders[i].body.flags = 0;
         gRiders[i].bike.inertia = 250.0f;
-        gRiders[i].bike.type = gRiders[i].isCpu != 0;
+        gRiders[i].bike.type = gRiders[i].isCpu != 0; /* BODY_BIKE or BODY_CPU_BIKE */
         gRiders[i].body.mass = 90.0f;
         gRiders[i].body.inertia = 45.0f;
-        gRiders[i].headTimer = r % 150;
-        if (gGame.mode == 2) {
+        gRiders[i].headTimer = rnd % 150;
+        if (gGame.mode == GAME_MODE_SOCCER) {
             gRiders[i].bike.tree = collide_build_sphere_tree(sBikeSphereTreeDescSoccer);
         } else {
             gRiders[i].bike.tree = collide_build_sphere_tree(sBikeSphereTreeDesc);
@@ -112,63 +109,64 @@ void bikes_init(void) {
         gRiders[i].frontWheel.surface = gSurfaceTable;
         gRiders[i].rearWheel.surface = gSurfaceTable;
         switch (gGame.mode) {
-        case 7:
-            gRiders[i].camMode = 6;
+        case GAME_MODE_HILL_CLIMB:
+            gRiders[i].camMode = CAM_MODE_HILL_CLIMB;
             break;
-        case 2:
-            gRiders[i].camMode = 0;
+        case GAME_MODE_SOCCER:
+            gRiders[i].camMode = CAM_MODE_SOCCER;
             break;
-        case 6:
+        case GAME_MODE_EXCITE_3D:
             if (i < gGame.numPlayers) {
-                c = gGame.padCamMode[gGame.playerPad[i]];
+                camMode = gGame.padCamMode[gGame.playerPad[i]];
             } else {
-                c = 2;
+                camMode = CAM_MODE_CHASE_MID;
             }
-            if (c != 4 && c != 2) {
-                c = 2;
+            if (camMode != CAM_MODE_SIDE_VIEW && camMode != CAM_MODE_CHASE_MID) {
+                camMode = CAM_MODE_CHASE_MID;
             }
-            gRiders[i].camMode = c;
+            gRiders[i].camMode = camMode;
             if (i < gGame.numPlayers) {
-                gGame.padCamMode[gGame.playerPad[i]] = c;
+                gGame.padCamMode[gGame.playerPad[i]] = camMode;
             }
             break;
         default:
             if (i < gGame.numPlayers) {
-                c = gGame.padCamMode[gGame.playerPad[i]];
+                camMode = gGame.padCamMode[gGame.playerPad[i]];
             } else {
-                c = 2;
+                camMode = CAM_MODE_CHASE_MID;
             }
-            if (gCamModes[c].fC & 8) {
-                c = 2;
+            if (gCamModes[camMode].flags & CAM_MODE_NO_CYCLE) {
+                camMode = CAM_MODE_CHASE_MID;
             }
-            gRiders[i].camMode = c;
+            gRiders[i].camMode = camMode;
             if (i < gGame.numPlayers) {
-                gGame.padCamMode[gGame.playerPad[i]] = c;
+                gGame.padCamMode[gGame.playerPad[i]] = camMode;
             }
             break;
         }
         mem_fill_2(gCamLastModes, -1, 0x18);
-        gRiders[i].unk_412 = 0x3000;
+        gRiders[i].walkPhase = 0x3000;
         gRiders[i].savedCamMode = (u16)gRiders[i].camMode;
     }
     i = 0;
     if (gEvent.numRiders > 0) {
         do {
-            p = &gRiders[i];
-            if (i < 4) {
+            rider = &gRiders[i];
+            if (i < MAXCONTROLLERS) {
                 gCamTargets[i] = i;
             }
-            if (!(gGame.flags & 0x81) && gCreditsMode == 0 && i < gGame.numPlayers) {
-                p->isCpu = 0;
+            if (!(gGame.flags & (GAME_FLAG_FRONT_END_RACE | 0x80)) && gCreditsMode == 0 && i < gGame.numPlayers) {
+                rider->isCpu = 0;
             } else {
-                p->isCpu = 1;
+                rider->isCpu = 1;
             }
-            bike_apply_rider_stats(p, gGame.riders[i]);
-            p->timeScale = 1.0f;
-            p->inactive = 0;
-            p->speed = 0.0f;
+            bike_apply_rider_stats(rider, gGame.riders[i]);
+            rider->timeScale = 1.0f;
+            rider->inactive = 0;
+            rider->speed = 0.0f;
             switch (gGame.mode) {
-            case 2:
+            case GAME_MODE_SOCCER:
+                /* two or four riders facing each other across the centre spot */
                 if (gGame.numPlayers == 4) {
                     switch (i) {
                     case 0:
@@ -208,95 +206,99 @@ void bikes_init(void) {
                 }
                 break;
             case 4:
-            case 5:
-                p->bike.pos.x = sStartLineOffsets[i].x;
-                p->bike.pos.z = sStartLineOffsets[i].z;
+            case GAME_MODE_DESERT:
+                rider->bike.pos.x = sStartLineOffsets[i].x;
+                rider->bike.pos.z = sStartLineOffsets[i].z;
                 quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, 0.0f);
                 break;
             default:
-                if ((gGame.flags & 0x11) == 0x11) {
-                    idx = i * gPathNodeCount / 6;
-                } else if (gGame.mode == 13 || gGame.mode == 14
-                           || (gGame.mode == 0 && (gCurTrack_17->f50 & 2))) {
-                    idx = 1;
-                } else if (gGame.mode == 9) {
-                    idx = gTutorialLessons[gSeason->round].startNode;
+                if ((gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_RIDER_SELECT)) == (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_RIDER_SELECT)) {
+                    /* behind the rider select: spread around the track */
+                    startNode = i * gPathNodeCount / 6;
+                } else if (gGame.mode == GAME_MODE_TEST_LOOP || gGame.mode == GAME_MODE_TEST_OPEN
+                           || (gGame.mode == GAME_MODE_EXHIBITION && (gCurTrack_17->flags & 2))) {
+                    startNode = 1;
+                } else if (gGame.mode == GAME_MODE_TUTORIAL) {
+                    startNode = gTutorialLessons[gSeason->round].startNode;
                 } else {
-                    idx = gPathStartNode;
+                    startNode = gPathStartNode;
                 }
-                n = gEvent.numRiders;
-                if (gGhostRace != 0 && n == 1) {
-                    n = 2;
+                gridCount = gEvent.numRiders;
+                if (gGhostRace != 0 && gridCount == 1) {
+                    gridCount = 2;
                 }
-                if (gGame.flags & 0x90) {
-                    zero = 0.0f;
+                if (gGame.flags & (GAME_FLAG_RIDER_SELECT | 0x80)) {
+                    lateral = 0.0f;
                 } else {
-                    sc = 1.5f;
-                    zero = (gPathNodes[idx].widthPos - gPathNodes[idx].widthNeg) * 0.5f;
-                    cc = gGridOrder_2[i];
-                    if (gCurTrack_17->f50 & 2) {
-                        sc = 1.1f;
+                    /* the grid: lanes laneWidth apart, centred on the middle of the track */
+                    laneWidth = 1.5f;
+                    lateral = (gPathNodes[startNode].widthPos - gPathNodes[startNode].widthNeg) * 0.5f;
+                    gridPos = gGridOrder_2[i];
+                    if (gCurTrack_17->flags & 2) {
+                        laneWidth = 1.1f;
                     }
-                    zero += sc * ((f32)cc - (f32)(n - 1) * 0.5f);
-                    p->race.place = cc;
-                    p->race.prevPlace = cc;
-                    p->race.placeAnim = 0x100;
+                    lateral += laneWidth * ((f32)gridPos - (f32)(gridCount - 1) * 0.5f);
+                    rider->race.place = gridPos;
+                    rider->race.prevPlace = gridPos;
+                    rider->race.placeAnim = 0x100;
                 }
-                p->segment = idx;
-                if (gGame.mode == 7) {
-                    p->bestSegment = idx;
+                rider->segment = startNode;
+                if (gGame.mode == GAME_MODE_HILL_CLIMB) {
+                    rider->bestSegment = startNode;
                 }
-                k = idx;
-                if (gGame.mode == 9 && gSeason->round == 5) {
-                    k = idx + 1;
+                headingNode = startNode;
+                if (gGame.mode == GAME_MODE_TUTORIAL && gSeason->round == 5) {
+                    headingNode = startNode + 1;
                 }
-                math_to_polar(gPathNodes[k].lateralZ * 1024.0f, gPathNodes[k].lateralX * 1024.0f, (s16 *)&ang, &ratio);
-                quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
-                if (gCurTrack_17->f2C == 0 && !(gGame.flags & 0x10)) {
-                    ang = (ang + 0x1000) & ~0x3FFF;
-                    quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
+                math_to_polar(gPathNodes[headingNode].lateralZ * 1024.0f, gPathNodes[headingNode].lateralX * 1024.0f, (s16 *)&heading, &magnitude);
+                quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, (f32)(s16)heading * 3.1415927f * 3.0517578e-05f);
+                if (gCurTrack_17->envType == 0 && !(gGame.flags & GAME_FLAG_RIDER_SELECT)) {
+                    /* stadium: square to the nearest quarter turn */
+                    heading = (heading + 0x1000) & ~0x3FFF;
+                    quat_from_euler(gRiders[i].bike.quat, 0.0f, 0.0f, (f32)(s16)heading * 3.1415927f * 3.0517578e-05f);
                 }
-                if (gGame.mode != 6) {
-                    a = (s16)ang >> 4;
-                    p->bike.pos.x = gPathNodes[idx].pos.x + (f32)gCosTable[a & 0xFFF] * zero * 6.1035156e-05f
-                             - (f32)gCosTable[(a - 0x400) & 0xFFF] * 1.5258789e-05f;
-                    p->bike.pos.z = gPathNodes[idx].pos.z + (f32)gCosTable[(a - 0x400) & 0xFFF] * zero * 6.1035156e-05f
-                             + (f32)gCosTable[a & 0xFFF] * 1.5258789e-05f;
-                    p->laneOffset = zero;
+                if (gGame.mode != GAME_MODE_EXCITE_3D) {
+                    /* gCosTable[a - 0x400] is the sine */
+                    cosIdx = (s16)heading >> 4;
+                    rider->bike.pos.x = gPathNodes[startNode].pos.x + (f32)gCosTable[cosIdx & 0xFFF] * lateral * 6.1035156e-05f
+                             - (f32)gCosTable[(cosIdx - 0x400) & 0xFFF] * 1.5258789e-05f;
+                    rider->bike.pos.z = gPathNodes[startNode].pos.z + (f32)gCosTable[(cosIdx - 0x400) & 0xFFF] * lateral * 6.1035156e-05f
+                             + (f32)gCosTable[cosIdx & 0xFFF] * 1.5258789e-05f;
+                    rider->laneOffset = lateral;
                 } else {
-                    p->bike.pos.z = gPathNodes[idx].pos.z;
-                    p->bike.pos.x = (f32)i * 2.178f;
-                    p->laneOffset = (f32)-i * 2.178f;
+                    rider->bike.pos.z = gPathNodes[startNode].pos.z;
+                    rider->bike.pos.x = (f32)i * 2.178f;
+                    rider->laneOffset = (f32)-i * 2.178f;
                 }
-                p->gridSlot = i;
+                rider->gridSlot = i;
                 break;
             }
-            bike_place_on_ground(p);
-            bike_update_suspension(p);
-            bike_update_render_pose(p);
-            p->heading = (u16)p->drawRot[2];
-            for (j = 0; j < 11; j++) {
+            bike_place_on_ground(rider);
+            bike_update_suspension(rider);
+            bike_update_render_pose(rider);
+            rider->heading = (u16)rider->drawRot[2];
+            for (j = 0; j < BIKE_CONTACT_COUNT; j++) {
                 gRiders[i].bike.contacts[j] = gRiders[i].bike.pos;
             }
             i++;
         } while (i < gEvent.numRiders);
     }
-    race_init_standings(8);
+    race_init_standings(RIDER_COUNT);
     bike_set_contact_friction(0.5f);
     sBikeMaxReverseSpeed = -5.0f;
     race_init_ai_skills(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     switch (gGame.mode) {
-    case 2:
+    case GAME_MODE_SOCCER:
         sBikeMaxReverseSpeed = -20.0f;
         soccer_ball_reset(1);
         break;
-    case 5:
+    case GAME_MODE_DESERT:
         desert_init();
         break;
-    case 7:
+    case GAME_MODE_HILL_CLIMB:
         bike_set_contact_friction(0.3f);
         break;
-    case 6:
+    case GAME_MODE_EXCITE_3D:
         sBikeMaxReverseSpeed = 0.0f;
         bike_set_contact_friction(0.6f);
         excite3d_init();
@@ -305,980 +307,1019 @@ void bikes_init(void) {
     sBikeTuneMenu = 1;
 }
 
+/* A handling profile of sRiderStatsTable (8 profiles). */
 typedef struct {
-    f32 f[10];
-} Rec28;
+    /* 0x00 */ f32 landing;
+    /* 0x04 */ f32 handling;
+    /* 0x08 */ f32 airTurn;
+    /* 0x0C */ f32 airFloat;
+    /* 0x10 */ f32 turnRadius;
+    /* 0x14 */ f32 turbo;
+    /* 0x18 */ f32 weight;
+    /* 0x1C */ f32 wallFriction;
+    /* 0x20 */ f32 power;
+    /* 0x24 */ f32 unk_24;
+} RiderStats; /* size 0x28 */
 
-extern Rec28 sRiderStatsTable[];
+extern RiderStats sRiderStatsTable[];
 
-void bike_apply_rider_stats(Rider *a0, s32 a1)
+/* Copies a handling profile into a human rider's stats; CPU riders get the standard ones (and its weight). */
+void bike_apply_rider_stats(Rider *rider, s32 profile)
 {
-    if (a0->isCpu == 0) {
-        a0->bike.mass = 250.0f;
-        a0->landing = sRiderStatsTable[a1].f[0];
-        a0->handling = sRiderStatsTable[a1].f[1] * (sBikeTune[14] * sBikeTune[5]) * 32.0f * a0->turnRadius;
-        a0->airTurn = sRiderStatsTable[a1].f[2] * sBikeTune[12] * 3.1415927f * 0.00390625f;
-        a0->airFloat = sRiderStatsTable[a1].f[3] / 48.0f;
-        a0->turnRadius = sRiderStatsTable[a1].f[4] * 0.57f;
-        a0->turbo = sRiderStatsTable[a1].f[5];
-        a0->weight = sRiderStatsTable[a1].f[6];
-        a0->unk_7D4 = sRiderStatsTable[a1].f[7];
-        a0->power = sRiderStatsTable[a1].f[8];
+    if (rider->isCpu == 0) {
+        rider->bike.mass = 250.0f;
+        rider->landing = sRiderStatsTable[profile].landing;
+        /* reads turnRadius before it is set from the profile below */
+        rider->handling = sRiderStatsTable[profile].handling * (sBikeTune[14] * sBikeTune[5]) * 32.0f * rider->turnRadius;
+        rider->airTurn = sRiderStatsTable[profile].airTurn * sBikeTune[12] * 3.1415927f * 0.00390625f;
+        rider->airFloat = sRiderStatsTable[profile].airFloat / 48.0f;
+        rider->turnRadius = sRiderStatsTable[profile].turnRadius * 0.57f;
+        rider->turbo = sRiderStatsTable[profile].turbo;
+        rider->weight = sRiderStatsTable[profile].weight;
+        rider->wallFriction = sRiderStatsTable[profile].wallFriction;
+        rider->power = sRiderStatsTable[profile].power;
         return;
     }
-    a0->bike.mass = 250.0f;
-    a0->unk_7D4 = 0.3f;
-    a0->landing = 1.0f;
-    a0->turbo = 1.0f;
+    rider->bike.mass = 250.0f;
+    rider->wallFriction = 0.3f;
+    rider->landing = 1.0f;
+    rider->turbo = 1.0f;
     {
-        f32 k57 = 0.57f;
-        f32 t = sBikeTune[12] * 3.1415927f * 0.00390625f;
-        a0->turnRadius = k57;
-        a0->airFloat = 0.020833334f;
-        a0->airTurn = t;
-        a0->handling = sBikeTune[14] * sBikeTune[5] * 32.0f * k57;
+        f32 turnRadius = 0.57f;
+        f32 airTurn = sBikeTune[12] * 3.1415927f * 0.00390625f;
+        rider->turnRadius = turnRadius;
+        rider->airFloat = 0.020833334f;
+        rider->airTurn = airTurn;
+        rider->handling = sBikeTune[14] * sBikeTune[5] * 32.0f * turnRadius;
     }
-    if (gGame.mode == 0xF) {
-        a0->power = 0.7f;
+    if (gGame.mode == 15) {
+        rider->power = 0.7f;
     } else {
-        a0->power = 1.0f;
+        rider->power = 1.0f;
     }
-    a0->weight = sRiderStatsTable[a1].f[6];
+    rider->weight = sRiderStatsTable[profile].weight;
 }
 
-f32 bike_wheel_ground_bisect(Rider *o, f32 *p, f32 p3)
+/* Finds where the line through pos along the bike's up axis meets the ground (steps, then bisects); -2 off the
+   ground mesh. The dead tests and the copies of the scale only keep the original's register use. */
+f32 bike_wheel_ground_bisect(Rider *rider, f32 *pos, f32 tolerance)
 {
-    f32 t, step, d, b, tb, h, diff, sc, sc3, sc4, lim;
-    f32 v[3];
-    f32 x, y, y2, tb2, tz, zp;
-    f32 *vp;
-    u8 *tbl;
-    u8 *tbl2;
-    f32 *vq;
-    s32 n, m, k;
+    f32 dist, step, startDiff, probeY, upY, groundY, diff, mmPerM, mmPerM2, mmPerM3, limit;
+    f32 probe[3];
+    f32 probeX, posY, posY2, upY2, upZ, posZ;
+    f32 *probePtr;
+    u8 *dummy;
+    u8 *dummy2;
+    f32 *probePtr2;
+    s32 groundMm, stepInt, distInt;
 
-    t = 0.0f;
+    dist = 0.0f;
     step = -1.0f;
-    if ((s32)o < step) n = 1; else n = 2;
-    if (o) n = 1; else if (p) n = 2; else n = 3;
-    h = o->bike.pos.y;
-    v[1] = h;
-    if (p[0] < h) n = 1; else n = 3;
-    sc = 1000.0f;
-    n = height_get_ground((s32)(p[0] * sc), (s32)(p[1] * sc), (s32)(p[2] * sc));
-    d = (f32)n / sc - p[1];
-    if (0.0f < d) step = 1.0f;
-    vp = v;
-    tbl = (u8 *)&gGame;
-    lim = 10000.0f;
-    sc3 = sc;
+    if ((s32)rider < step) groundMm = 1; else groundMm = 2;
+    if (rider) groundMm = 1; else if (pos) groundMm = 2; else groundMm = 3;
+    groundY = rider->bike.pos.y;
+    probe[1] = groundY;
+    if (pos[0] < groundY) groundMm = 1; else groundMm = 3;
+    mmPerM = 1000.0f;
+    groundMm = height_get_ground((s32)(pos[0] * mmPerM), (s32)(pos[1] * mmPerM), (s32)(pos[2] * mmPerM));
+    startDiff = (f32)groundMm / mmPerM - pos[1];
+    if (0.0f < startDiff) step = 1.0f;
+    probePtr = probe;
+    dummy = (u8 *)&gGame;
+    limit = 10000.0f;
+    mmPerM2 = mmPerM;
     do {
-        t += step;
-        x = p[0] + t * o->bike.up.x;
-        v[0] = x;
-        tb = t * o->bike.up.y;
-        y = p[1];
-        v[2] = p[2] + t * o->bike.up.z;
+        dist += step;
+        probeX = pos[0] + dist * rider->bike.up.x;
+        probe[0] = probeX;
+        upY = dist * rider->bike.up.y;
+        posY = pos[1];
+        probe[2] = pos[2] + dist * rider->bike.up.z;
         do { } while (0);
-        b = y + tb;
-        if (tbl) n = 1; else n = 2;
-        if (x < b) n = 1; else n = 2;
-        n = height_get_ground((s32)(vp[0] * sc3), (s32)(vp[1] * sc3), (s32)(vp[2] * sc3));
-        h = (f32)n / sc3;
-        if (lim < h) n = 3; else n = 4;
-        if (step < h) n = 18; else n = 19;
-        if (h < step) n = 20; else n = 21;
-        if (d < h) n = 22; else n = 23;
+        probeY = posY + upY;
+        if (dummy) groundMm = 1; else groundMm = 2;
+        if (probeX < probeY) groundMm = 1; else groundMm = 2;
+        groundMm = height_get_ground((s32)(probePtr[0] * mmPerM2), (s32)(probePtr[1] * mmPerM2), (s32)(probePtr[2] * mmPerM2));
+        groundY = (f32)groundMm / mmPerM2;
+        if (limit < groundY) groundMm = 3; else groundMm = 4;
+        if (step < groundY) groundMm = 18; else groundMm = 19;
+        if (groundY < step) groundMm = 20; else groundMm = 21;
+        if (startDiff < groundY) groundMm = 22; else groundMm = 23;
         if (gGroundFound == 0) {
-            o->pendingCrash = -0x1c;
+            rider->pendingCrash = -ANIM_CRASH_FRONT;
             return -2.0f;
         }
-        diff = h - b;
-    } while (0.0f < d * diff);
-    if (0.0f < d) step = -step;
-    lim = 0.0f;
-    tbl2 = (u8 *)&gGame;
-    d = 10000.0f;
+        diff = groundY - probeY;
+    } while (0.0f < startDiff * diff);
+    if (0.0f < startDiff) step = -step;
+    limit = 0.0f;
+    dummy2 = (u8 *)&gGame;
+    startDiff = 10000.0f;
     step *= 0.5f;
-    sc4 = 1000.0f;
+    mmPerM3 = 1000.0f;
     do {
-        vq = v;
-        if (lim < diff) t -= step;
-        else t += step;
-        x = p[0] + t * o->bike.up.x;
-        v[0] = x;
+        probePtr2 = probe;
+        if (limit < diff) dist -= step;
+        else dist += step;
+        probeX = pos[0] + dist * rider->bike.up.x;
+        probe[0] = probeX;
         step *= 0.5f;
-        tb2 = t * o->bike.up.y;
-        tz = t * o->bike.up.z;
-        zp = p[2];
+        upY2 = dist * rider->bike.up.y;
+        upZ = dist * rider->bike.up.z;
+        posZ = pos[2];
         do { } while (0);
-        vq = v;
-        y2 = p[1];
-        v[2] = zp + tz;
+        probePtr2 = probe;
+        posY2 = pos[1];
+        probe[2] = posZ + upZ;
         do { } while (0);
-        b = y2 + tb2;
-        k = (s32)t;
-        m = (s32)step;
-        if (k == m) h = t;
-        if (tbl2) { h = b; n = 1; } else { h = x; n = 2; }
-        n = height_get_ground((s32)(vq[0] * sc4), (s32)(vq[1] * sc4), (s32)(vq[2] * sc4));
-        h = (f32)n / sc4;
-        if (d < h) n = 3; else n = 4;
-        diff = h - b;
-        if (lim < diff) {
-            if (!(p3 < diff)) return t;
+        probeY = posY2 + upY2;
+        distInt = (s32)dist;
+        stepInt = (s32)step;
+        if (distInt == stepInt) groundY = dist;
+        if (dummy2) { groundY = probeY; groundMm = 1; } else { groundY = probeX; groundMm = 2; }
+        groundMm = height_get_ground((s32)(probePtr2[0] * mmPerM3), (s32)(probePtr2[1] * mmPerM3), (s32)(probePtr2[2] * mmPerM3));
+        groundY = (f32)groundMm / mmPerM3;
+        if (startDiff < groundY) groundMm = 3; else groundMm = 4;
+        diff = groundY - probeY;
+        if (limit < diff) {
+            if (!(tolerance < diff)) return dist;
         } else {
-            if (!(p3 < -diff)) return t;
+            if (!(tolerance < -diff)) return dist;
         }
     } while (step < -0.000625f);
-    return t;
+    return dist;
 }
 
-void bike_wheel_find_ground(Rider *b, Wheel *w, f32 dt, u8 flag)
+/* Finds the ground under a wheel fwdOffset metres along the bike: its surface, normal, travel and contact point. */
+void bike_wheel_find_ground(Rider *rider, Wheel *wheel, f32 fwdOffset, u8 coarse)
 {
-    f32 P[3];
-    Vec3f Q;
-    f32 A[4];
-    f32 L;
-    f32 t, dif, base, thr, k, ts, ds;
-    s32 i;
+    f32 axisPos[3];
+    Vec3f point;
+    f32 normal[4];
+    f32 groundY;
+    f32 dist, diff, pointY, tolerance, slope, prevDist, prevDiff;
+    s32 iter;
 
-    gGroundHeight = w->contact.y * 1000.0f;
-    P[0] = b->bike.pos.x + b->bike.fwd.x * dt;
-    P[1] = b->bike.pos.y + b->bike.fwd.y * dt;
-    P[2] = b->bike.pos.z + b->bike.fwd.z * dt;
-    t = w->groundDist;
-    gGroundArea = w->groundArea;
-    Q.x = P[0] + t * b->bike.up.x;
-    base = P[1] + t * b->bike.up.y;
-    Q.z = P[2] + t * b->bike.up.z;
-    i = 0;
-    Q.y = b->bike.pos.y;
-    L = (f32)height_get_ground(Q.x * 1000.0f, Q.y * 1000.0f, Q.z * 1000.0f) / 1000.0f;
-    dif = L - base;
-    thr = 0.002f;
-    k = -1.0f;
-    if (flag) thr = 0.1f;
-    if (b->rearWheel.airTicks > 0 && (dif < 0.0f || 0.5f < t)) thr = 0.05f;
-    while ((0.0f < dif) ? (thr < dif) : (thr < -dif)) {
-        ts = t;
-        ds = dif;
-        t -= k * dif;
-        if (t < -32.0f || 8.0f < t) {
-            t = bike_wheel_ground_bisect(b, P, thr);
+    gGroundHeight = wheel->contact.y * 1000.0f;
+    axisPos[0] = rider->bike.pos.x + rider->bike.fwd.x * fwdOffset;
+    axisPos[1] = rider->bike.pos.y + rider->bike.fwd.y * fwdOffset;
+    axisPos[2] = rider->bike.pos.z + rider->bike.fwd.z * fwdOffset;
+    dist = wheel->groundDist;
+    gGroundArea = wheel->groundArea;
+    point.x = axisPos[0] + dist * rider->bike.up.x;
+    pointY = axisPos[1] + dist * rider->bike.up.y;
+    point.z = axisPos[2] + dist * rider->bike.up.z;
+    iter = 0;
+    point.y = rider->bike.pos.y;
+    groundY = (f32)height_get_ground(point.x * 1000.0f, point.y * 1000.0f, point.z * 1000.0f) / 1000.0f;
+    diff = groundY - pointY;
+    tolerance = 0.002f;
+    slope = -1.0f;
+    if (coarse) tolerance = 0.1f;
+    if (rider->rearWheel.airTicks > 0 && (diff < 0.0f || 0.5f < dist)) tolerance = 0.05f;
+    while ((0.0f < diff) ? (tolerance < diff) : (tolerance < -diff)) {
+        prevDist = dist;
+        prevDiff = diff;
+        dist -= slope * diff;
+        if (dist < -32.0f || 8.0f < dist) {
+            dist = bike_wheel_ground_bisect(rider, axisPos, tolerance);
             break;
         }
-        Q.x = P[0] + t * b->bike.up.x;
-        base = P[1] + t * b->bike.up.y;
-        Q.z = P[2] + t * b->bike.up.z;
-        L = (f32)height_get_ground(Q.x * 1000.0f, Q.y * 1000.0f, Q.z * 1000.0f) / 1000.0f;
-        dif = L - base;
-        if (i++ >= 9) {
-            if (i >= 17) {
-                t = w->groundDist - 0.5f;
+        point.x = axisPos[0] + dist * rider->bike.up.x;
+        pointY = axisPos[1] + dist * rider->bike.up.y;
+        point.z = axisPos[2] + dist * rider->bike.up.z;
+        groundY = (f32)height_get_ground(point.x * 1000.0f, point.y * 1000.0f, point.z * 1000.0f) / 1000.0f;
+        diff = groundY - pointY;
+        if (iter++ >= 9) {
+            if (iter >= 17) {
+                dist = wheel->groundDist - 0.5f;
                 break;
             }
-            height_get_ground_normal(A);
-            if (-0.2f < vec3_dot(A, &b->bike.up.x)) {
-                k = (t - ts) / ((dif - ds) * 2.0f);
+            height_get_ground_normal(normal);
+            if (-0.2f < vec3_dot(normal, &rider->bike.up.x)) {
+                slope = (dist - prevDist) / ((diff - prevDiff) * 2.0f);
             } else {
-                k = -1.0f;
+                slope = -1.0f;
             }
         } else {
-            k = (t - ts) / (dif - ds);
+            slope = (dist - prevDist) / (diff - prevDiff);
         }
     }
-    t += 0.5f;
-    Q.y = L;
+    dist += 0.5f;
+    point.y = groundY;
     if (gGroundFound) {
-        w->surface = (Surface *)((u8 *)gSurfaceTable + ((gGroundSurface << 2) & 0x3C0)); /* bits 4-7 */
-        w->groundFlags = gGroundSurface;
-        w->groundArea = gGroundArea;
-        height_get_ground_normal(&w->normal.x);
-        if (0.25f < w->suspDelta && 0.5f <= w->normal.y && i >= 17) {
-            w->suspDelta = 0.0f;
-            b->pendingCrash = 0x19;
-            b->crashVel = b->bike.vel;
+        wheel->surface = (Surface *)((u8 *)gSurfaceTable + ((gGroundSurface << 2) & 0x3C0)); /* bits 4-7 */
+        wheel->groundFlags = gGroundSurface;
+        wheel->groundArea = gGroundArea;
+        height_get_ground_normal(&wheel->normal.x);
+        if (0.25f < wheel->suspDelta && 0.5f <= wheel->normal.y && iter >= 17) {
+            wheel->suspDelta = 0.0f;
+            rider->pendingCrash = ANIM_CRASH_BACK;
+            rider->crashVel = rider->bike.vel;
             return;
         }
     } else {
-        w->normal.x = w->normal.z = 0.0f;
-        w->normal.y = 1.0f;
+        wheel->normal.x = wheel->normal.z = 0.0f;
+        wheel->normal.y = 1.0f;
     }
-    if (w->groundDist < w->suspLength) w->suspDelta = t - w->suspLength;
-    else w->suspDelta = t - w->groundDist;
-    w->groundDist = t;
-    w->contactOffset.x = Q.x - b->bike.pos.x;
-    w->contactOffset.y = Q.y - b->bike.pos.y;
-    w->contactOffset.z = Q.z - b->bike.pos.z;
-    w->contactDelta.x = Q.x - w->contact.x;
-    w->contactDelta.y = Q.y - w->contact.y;
-    w->contactDelta.z = Q.z - w->contact.z;
-    w->contact = Q;
+    if (wheel->groundDist < wheel->suspLength) wheel->suspDelta = dist - wheel->suspLength;
+    else wheel->suspDelta = dist - wheel->groundDist;
+    wheel->groundDist = dist;
+    wheel->contactOffset.x = point.x - rider->bike.pos.x;
+    wheel->contactOffset.y = point.y - rider->bike.pos.y;
+    wheel->contactOffset.z = point.z - rider->bike.pos.z;
+    wheel->contactDelta.x = point.x - wheel->contact.x;
+    wheel->contactDelta.y = point.y - wheel->contact.y;
+    wheel->contactDelta.z = point.z - wheel->contact.z;
+    wheel->contact = point;
 }
 
-void bike_update_wheel_contacts(Rider *b) {
-    f32 diff = 1.0f;
-    s32 idx;
-    s32 t;
-    s32 w;
+/* Finds the ground under both wheels; a wheel on a drop (SURFACE_FALL), or the bike high above one, crashes. */
+void bike_update_wheel_contacts(Rider *rider)
+{
+    f32 height = 1.0f;
+    s32 surface;
+    s32 airFrames;
+    s32 area;
 
     do {
-        w = b->rearWheel.groundArea;
-        t = b->airFrames;
+        area = rider->rearWheel.groundArea;
+        airFrames = rider->airFrames;
     } while (0);
     gGroundTri = 0;
     gGroundSurface = 0;
-    gGroundArea = w;
-    if (t > 0) {
-        s32 h;
-        t = (s32)&b->bike.pos;
+    gGroundArea = area;
+    if (airFrames > 0) {
+        s32 groundMm;
+        airFrames = (s32)&rider->bike.pos; /* the variable reused as a pointer, and the [0] index below, match */
 
-        h = height_get_ground((s32)(((f32 *)t)[(u8)b->pendingCrash >> 8] * 1000.0f), (s32)(((f32 *)t)[1] * 1000.0f), (s32)(((f32 *)t)[2] * 1000.0f));
+        groundMm = height_get_ground((s32)(((f32 *)airFrames)[(u8)rider->pendingCrash >> 8] * 1000.0f), (s32)(((f32 *)airFrames)[1] * 1000.0f), (s32)(((f32 *)airFrames)[2] * 1000.0f));
 
-        diff = b->bike.pos.y - (f32)h / 1000.0f;
-        idx = (D_800E84F4[1] >> 4) & 0xF;
-        *(volatile s32 *)&b->surfaceIdx = idx;
-        if ((gGame.mode == 7 || gCurTrack == &gTracks[TRACK_GOLDMINE_RUSH]) && diff > 2.0f && (gSurfaceTable[idx].flags & 0x800)) {
-            bike_queue_crash_2(b, -25);
+        height = rider->bike.pos.y - (f32)groundMm / 1000.0f;
+        surface = (D_800E84F4[1] >> 4) & 0xF; /* D_800E84F4[1] is gGroundSurface */
+        *(volatile s32 *)&rider->surfaceIdx = surface;
+        if ((gGame.mode == GAME_MODE_HILL_CLIMB || gCurTrack == &gTracks[TRACK_GOLDMINE_RUSH]) && height > 2.0f && (gSurfaceTable[surface].flags & SURFACE_FALL)) {
+            bike_queue_crash_2(rider, -ANIM_CRASH_BACK);
             return;
         }
     } else {
-        b->surfaceIdx = b->rearWheel.surface - gSurfaceTable;
+        rider->surfaceIdx = rider->rearWheel.surface - gSurfaceTable;
     }
-    if (diff < 1.0f) {
-        if (b->frontWheel.groundDist < -2.0f || b->rearWheel.groundDist < -2.0f) {
-            b->frontWheel.groundDist = 0.0f;
-            b->rearWheel.groundDist = 0.0f;
+    if (height < 1.0f) {
+        if (rider->frontWheel.groundDist < -2.0f || rider->rearWheel.groundDist < -2.0f) {
+            rider->frontWheel.groundDist = 0.0f;
+            rider->rearWheel.groundDist = 0.0f;
         }
     }
-    bike_wheel_find_ground(b, &b->frontWheel, 0.6f, diff > 1.5f);
-    bike_wheel_find_ground(b, &b->rearWheel, -0.65f, diff > 1.5f);
-    if (b->frontWheel.surface->flags & 0x800) {
-        b->pendingCrash = 0x1C;
-        b->crashVel = b->bike.vel;
+    bike_wheel_find_ground(rider, &rider->frontWheel, 0.6f, height > 1.5f);
+    bike_wheel_find_ground(rider, &rider->rearWheel, -0.65f, height > 1.5f);
+    if (rider->frontWheel.surface->flags & SURFACE_FALL) {
+        rider->pendingCrash = ANIM_CRASH_FRONT;
+        rider->crashVel = rider->bike.vel;
     }
-    if (b->rearWheel.surface->flags & 0x800) {
-        b->pendingCrash = 0x1C;
-        b->crashVel = b->bike.vel;
+    if (rider->rearWheel.surface->flags & SURFACE_FALL) {
+        rider->pendingCrash = ANIM_CRASH_FRONT;
+        rider->crashVel = rider->bike.vel;
     }
 }
 
-#define MAXRPM (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f : 15000.0f)
-#define RATE (gGame.mode == 6 ? gBikeTuneDamping * 2000.0f : 2200.0f)
+/* The suspension's spring (N/m) and damper (N s/m); Excite 3D takes them from the tuning table. */
+#define SUSP_SPRING (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f : 15000.0f)
+#define SUSP_DAMPER (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneDamping * 2000.0f : 2200.0f)
 
-void bike_wheel_spring_force(Wheel *p, f32 x)
+/* A wheel's suspension force (spring and damper); none in the air, part of it on the tick of touchdown. */
+void bike_wheel_spring_force(Wheel *wheel, f32 preload)
 {
-    f32 a, k, r, v;
+    f32 gap, frac, springTerm, damperTerm;
 
-    if (p->airTicks > 0) {
-        p->springForce = 0.0f;
-        a = p->groundDist - p->suspLength;
-        if (p->springForce < a) {
-            p->airTicks = 0;
-            k = a / (a - p->unk_20);
+    if (wheel->airTicks > 0) {
+        wheel->springForce = 0.0f;
+        gap = wheel->groundDist - wheel->suspLength;
+        if (wheel->springForce < gap) { /* the 0.0f just stored, read back */
+            wheel->airTicks = 0;
+            frac = gap / (gap - wheel->airGap);
         }
-        p->unk_20 = a;
+        wheel->airGap = gap;
     } else {
-        k = 1.0f;
+        frac = 1.0f;
     }
 
-    if (p->airTicks <= 0) {
-        r = (p->groundDist + 0.05f + p->suspDelta * 0.5f - x) * (MAXRPM * sSuspSpringScale);
-        v = p->suspDelta / gPhysDeltaTime * RATE * sSuspDampScale;
-        p->springForce = r + v;
-        if (p->springForce < 0.0f) {
-            p->springForce = 0.0f;
-            p->airTicks = gPhysTicks;
-            p->unk_20 = p->suspDelta;
+    if (wheel->airTicks <= 0) {
+        springTerm = (wheel->groundDist + 0.05f + wheel->suspDelta * 0.5f - preload) * (SUSP_SPRING * sSuspSpringScale);
+        damperTerm = wheel->suspDelta / gPhysDeltaTime * SUSP_DAMPER * sSuspDampScale;
+        wheel->springForce = springTerm + damperTerm;
+        if (wheel->springForce < 0.0f) {
+            wheel->springForce = 0.0f;
+            wheel->airTicks = gPhysTicks;
+            wheel->airGap = wheel->suspDelta;
         } else {
-            p->airTicks -= gPhysTicks;
-            p->suspLength = p->groundDist;
+            wheel->airTicks -= gPhysTicks;
+            wheel->suspLength = wheel->groundDist;
         }
-        p->springForce *= k;
+        wheel->springForce *= frac;
     } else {
-        p->suspLength = p->suspLength - p->suspLength * (MAXRPM / RATE) * gPhysDeltaTime;
-        p->airTicks += gPhysTicks;
+        wheel->suspLength = wheel->suspLength - wheel->suspLength * (SUSP_SPRING / SUSP_DAMPER) * gPhysDeltaTime;
+        wheel->airTicks += gPhysTicks;
     }
 }
 
-void bike_update_suspension(Rider *s)
+/* Runs both wheels' springs; a spring force beyond what the speed allows crashes the rider. */
+void bike_update_suspension(Rider *rider)
 {
-    f32 x;
-    f32 m1;
-    f32 one, fv2, B, A3, t1, t2, t3, fs1v, m2;
+    f32 mass;
+    f32 frontShare;
+    f32 one, scaleFrac, rearLoad, frontLoad, rearPreloadForce, frontPreloadForce, frontPreload, rearPreload, rearShare;
 
-    x = s->bike.mass;
-    m1 = x * 0.65f;
-    m2 = x * 0.6f;
-    A3 = ((m1 / 1.25f) - 11.5199995f) * 14.700001f;
-    B = ((m2 / 1.25f) + 11.5199995f) * 14.700001f;
+    mass = rider->bike.mass;
+    frontShare = mass * 0.65f;
+    rearShare = mass * 0.6f;
+    frontLoad = ((frontShare / 1.25f) - 11.5199995f) * 14.700001f;
+    rearLoad = ((rearShare / 1.25f) + 11.5199995f) * 14.700001f;
     one = 1.0f;
-    fv2 = one - one / sSuspSpringScale;
-    t1 = fv2 * B;
-    if (gGame.mode == 6) {
-        fs1v = t1 / (gBikeTuneSpringRate * 20000.0f);
+    scaleFrac = one - one / sSuspSpringScale;
+    rearPreloadForce = scaleFrac * rearLoad;
+    if (gGame.mode == GAME_MODE_EXCITE_3D) {
+        rearPreload = rearPreloadForce / (gBikeTuneSpringRate * 20000.0f);
     } else {
-        fs1v = t1 / 15000.0f;
+        rearPreload = rearPreloadForce / 15000.0f;
     }
-    t2 = fv2 * A3;
-    if (gGame.mode == 6) {
-        t3 = t2 / (gBikeTuneSpringRate * 20000.0f);
+    frontPreloadForce = scaleFrac * frontLoad;
+    if (gGame.mode == GAME_MODE_EXCITE_3D) {
+        frontPreload = frontPreloadForce / (gBikeTuneSpringRate * 20000.0f);
     } else {
-        t3 = t2 / 15000.0f;
+        frontPreload = frontPreloadForce / 15000.0f;
     }
-    bike_wheel_spring_force(&s->frontWheel, t3);
+    bike_wheel_spring_force(&rider->frontWheel, frontPreload);
 
-    if (((s->speed + 5.0f) * 250.0f * 30.0f) < s->frontWheel.springForce) {
-        s->frontWheel.groundDist = 0.0f;
-        s->rearWheel.groundDist = 0.0f;
-        bike_crash_begin(s, 0x1c);
+    if (((rider->speed + 5.0f) * 250.0f * 30.0f) < rider->frontWheel.springForce) {
+        rider->frontWheel.groundDist = 0.0f;
+        rider->rearWheel.groundDist = 0.0f;
+        bike_crash_begin(rider, ANIM_CRASH_FRONT);
     }
-    bike_wheel_spring_force(&s->rearWheel, fs1v);
-    if (((s->speed + 5.0f) * 250.0f * 30.0f) < s->rearWheel.springForce) {
-        s->frontWheel.groundDist = 0.0f;
-        s->rearWheel.groundDist = 0.0f;
-        bike_crash_begin(s, 0x19);
+    bike_wheel_spring_force(&rider->rearWheel, rearPreload);
+    if (((rider->speed + 5.0f) * 250.0f * 30.0f) < rider->rearWheel.springForce) {
+        rider->frontWheel.groundDist = 0.0f;
+        rider->rearWheel.groundDist = 0.0f;
+        bike_crash_begin(rider, ANIM_CRASH_BACK);
     }
-    if (3675.0002f < s->frontWheel.springForce || 3675.0002f < s->rearWheel.springForce) {
-        if (0x78 < s->hardLandFrame - gRaceFrame) {
-            bike_crash_begin(s, 0x1c);
+    if (3675.0002f < rider->frontWheel.springForce || 3675.0002f < rider->rearWheel.springForce) {
+        /* reversed: hardLandFrame - gRaceFrame is never above 120 within a race */
+        if (0x78 < rider->hardLandFrame - gRaceFrame) {
+            bike_crash_begin(rider, ANIM_CRASH_FRONT);
         }
     } else {
-        s->hardLandFrame = gRaceFrame;
+        rider->hardLandFrame = gRaceFrame;
     }
-    if (s->frontWheel.airTicks == gPhysTicks || s->rearWheel.airTicks == gPhysTicks) {
-        bike_sync_wheel_contacts(s);
+    if (rider->frontWheel.airTicks == gPhysTicks || rider->rearWheel.airTicks == gPhysTicks) {
+        bike_sync_wheel_contacts(rider);
     }
 }
 
-#define LIM(a) (((a)->input & 0x10000) ? 250.0f : 1000.0f)
+/* The least load a tire works with (N): less while R is held. */
+#define MIN_TIRE_LOAD(rider) (((rider)->input & INPUT_R) ? 250.0f : 1000.0f)
 
-void bike_rear_tire_force(Rider *a, Wheel *b)
+/* The rear tire's force: rolling within the grip limit, sliding beyond it; spins the wheel up or down. */
+void bike_rear_tire_force(Rider *rider, Wheel *wheel)
 {
-    f32 q[3];
-    f32 n[3];
-    f32 d[3];
-    f32 scale, ref, s;
-    f32 len3, dv, side, k, len, len2, sq, base, x2, y2, t, v;
+    f32 forceDir[3];
+    f32 vel[3];
+    f32 vec[3];
+    f32 baseGrip, lonSpeed, tuneGrip;
+    f32 forceLen, spinDiff, latSpeed, tractionRatio, forceMag, slipSpeed, forceSq, normalDot, latTerm, lonTerm, normalForce, load;
 
-    d[0] = b->contact.x - a->bike.pos.x;
-    d[1] = b->contact.y - a->bike.pos.y;
-    d[2] = b->contact.z - a->bike.pos.z;
-    n[0] = a->bike.angVel.y * d[2] - d[1] * a->bike.angVel.z;
-    n[1] = a->bike.angVel.z * d[0] - d[2] * a->bike.angVel.x;
-    n[2] = a->bike.angVel.x * d[1] - d[0] * a->bike.angVel.y;
-    n[0] += a->bike.vel.x;
-    n[1] += a->bike.vel.y;
-    n[2] += a->bike.vel.z;
-    side = vec3_dot(n, &b->latAxis.x);
-    ref = vec3_dot(n, &b->lonAxis.x);
-    scale = sBikeTune[10];
-    b->grip = scale * b->surface->grip;
-    s = sBikeTune[10];
-    if (a->input & 0x20000) {
-        k = sTurboTraction / s;
+    vec[0] = wheel->contact.x - rider->bike.pos.x;
+    vec[1] = wheel->contact.y - rider->bike.pos.y;
+    vec[2] = wheel->contact.z - rider->bike.pos.z;
+    vel[0] = rider->bike.angVel.y * vec[2] - vec[1] * rider->bike.angVel.z;
+    vel[1] = rider->bike.angVel.z * vec[0] - vec[2] * rider->bike.angVel.x;
+    vel[2] = rider->bike.angVel.x * vec[1] - vec[0] * rider->bike.angVel.y;
+    vel[0] += rider->bike.vel.x;
+    vel[1] += rider->bike.vel.y;
+    vel[2] += rider->bike.vel.z;
+    latSpeed = vec3_dot(vel, &wheel->latAxis.x);
+    lonSpeed = vec3_dot(vel, &wheel->lonAxis.x);
+    baseGrip = sBikeTune[10];
+    wheel->grip = baseGrip * wheel->surface->grip;
+    tuneGrip = sBikeTune[10];
+    if (rider->input & INPUT_Z) {
+        tractionRatio = sTurboTraction / tuneGrip;
     } else {
-        k = sBikeTune[11] / s;
+        tractionRatio = sBikeTune[11] / tuneGrip;
     }
-    if (a->powerSlide == 1) {
-        b->grip = b->grip / 3.0f;
-        k = 1.0f;
+    if (rider->powerSlide == 1) {
+        wheel->grip = wheel->grip / 3.0f;
+        tractionRatio = 1.0f;
     }
-    x2 = b->latForce;
-    x2 = x2 * x2;
-    y2 = b->lonForce;
-    y2 = y2 * y2;
-    sq = x2 + y2;
-    len = __builtin_sqrtf(sq);
-    if (len > 0.0f) {
-        b->grip = b->grip * (sq / (x2 + y2 / k));
+    latTerm = wheel->latForce;
+    latTerm = latTerm * latTerm;
+    lonTerm = wheel->lonForce;
+    lonTerm = lonTerm * lonTerm;
+    forceSq = latTerm + lonTerm;
+    forceMag = __builtin_sqrtf(forceSq);
+    if (forceMag > 0.0f) {
+        wheel->grip = wheel->grip * (forceSq / (latTerm + lonTerm / tractionRatio));
     }
-    base = vec3_dot(&b->normal.x, &a->bike.up.x);
-    t = b->springForce - vec3_dot(&b->force.x, &a->bike.up.x);
-    t = t / base;
-    v = t;
-    if (t > 4000.0f) {
-        v = 4000.0f;
+    normalDot = vec3_dot(&wheel->normal.x, &rider->bike.up.x);
+    normalForce = wheel->springForce - vec3_dot(&wheel->force.x, &rider->bike.up.x);
+    normalForce = normalForce / normalDot;
+    load = normalForce;
+    if (normalForce > 4000.0f) {
+        load = 4000.0f;
     }
-    if (v < LIM(a)) {
-        v = 1000.0f;
-        if (a->input & 0x10000) {
-            v = 250.0f;
+    if (load < MIN_TIRE_LOAD(rider)) {
+        load = 1000.0f;
+        if (rider->input & INPUT_R) {
+            load = 250.0f;
         }
     }
-    if (len < v * b->grip || gGame.mode == 15) {
-        d[0] = b->normal.x * t;
-        d[1] = b->normal.y * t;
-        d[2] = b->normal.z * t;
-        b->force.x += d[0];
-        b->force.y += d[1];
-        b->force.z += d[2];
-        b->slip = 0.0f;
-        b->spin = ref;
+    if (forceMag < load * wheel->grip || gGame.mode == 15) {
+        vec[0] = wheel->normal.x * normalForce;
+        vec[1] = wheel->normal.y * normalForce;
+        vec[2] = wheel->normal.z * normalForce;
+        wheel->force.x += vec[0];
+        wheel->force.y += vec[1];
+        wheel->force.z += vec[2];
+        wheel->slip = 0.0f;
+        wheel->spin = lonSpeed;
         return;
     }
-    y2 = ref - b->spin;
-    len2 = __builtin_sqrtf(y2 * y2 + side * side);
-    b->slip = len2;
-    if (len2 > 2.0f) {
-        y2 = -y2 / len2;
-        d[0] = b->lonAxis.x * y2;
-        d[1] = b->lonAxis.y * y2;
-        d[2] = b->lonAxis.z * y2;
-        side = -side / len2;
-        q[0] = b->latAxis.x * side;
-        q[1] = b->latAxis.y * side;
-        q[2] = b->latAxis.z * side;
-        q[0] += d[0];
-        q[1] += d[1];
-        q[2] += d[2];
-        x2 = side * side;
-        y2 = y2 * y2;
-        b->grip = (scale * (x2 + y2)) / (x2 + y2 / k);
+    lonTerm = lonSpeed - wheel->spin;
+    slipSpeed = __builtin_sqrtf(lonTerm * lonTerm + latSpeed * latSpeed);
+    wheel->slip = slipSpeed;
+    if (slipSpeed > 2.0f) {
+        lonTerm = -lonTerm / slipSpeed;
+        vec[0] = wheel->lonAxis.x * lonTerm;
+        vec[1] = wheel->lonAxis.y * lonTerm;
+        vec[2] = wheel->lonAxis.z * lonTerm;
+        latSpeed = -latSpeed / slipSpeed;
+        forceDir[0] = wheel->latAxis.x * latSpeed;
+        forceDir[1] = wheel->latAxis.y * latSpeed;
+        forceDir[2] = wheel->latAxis.z * latSpeed;
+        forceDir[0] += vec[0];
+        forceDir[1] += vec[1];
+        forceDir[2] += vec[2];
+        latTerm = latSpeed * latSpeed;
+        lonTerm = lonTerm * lonTerm;
+        wheel->grip = (baseGrip * (latTerm + lonTerm)) / (latTerm + lonTerm / tractionRatio);
     } else {
-        *(Vec3f *)q = b->force;
-        len3 = __builtin_sqrtf(q[0] * q[0] + q[1] * q[1] + q[2] * q[2]);
-        if (len3 != 0.0f) {
-            q[0] /= len3;
-            q[1] /= len3;
-            q[2] /= len3;
+        *(Vec3f *)forceDir = wheel->force;
+        forceLen = __builtin_sqrtf(forceDir[0] * forceDir[0] + forceDir[1] * forceDir[1] + forceDir[2] * forceDir[2]);
+        if (forceLen != 0.0f) {
+            forceDir[0] /= forceLen;
+            forceDir[1] /= forceLen;
+            forceDir[2] /= forceLen;
         }
     }
-    v = base + vec3_dot(q, &a->bike.up.x) * b->grip;
-    if (v < 0.5f) {
-        v = 0.5f;
+    load = normalDot + vec3_dot(forceDir, &rider->bike.up.x) * wheel->grip;
+    if (load < 0.5f) {
+        load = 0.5f;
     }
-    t = b->springForce / v;
-    if (t < 0.0f) {
-        t = 0.0f;
+    normalForce = wheel->springForce / load;
+    if (normalForce < 0.0f) {
+        normalForce = 0.0f;
     }
-    v = t;
-    if (t > 4000.0f) {
-        v = 4000.0f;
+    load = normalForce;
+    if (normalForce > 4000.0f) {
+        load = 4000.0f;
     }
-    if (v < LIM(a)) {
-        v = 1000.0f;
-        if (a->input & 0x10000) {
-            v = 250.0f;
+    if (load < MIN_TIRE_LOAD(rider)) {
+        load = 1000.0f;
+        if (rider->input & INPUT_R) {
+            load = 250.0f;
         }
     }
-    len = v;
-    len *= b->grip;
-    b->force.x = t * b->normal.x + len * q[0];
-    b->force.y = t * b->normal.y + len * q[1];
-    b->force.z = t * b->normal.z + len * q[2];
-    b->spin += ((a->driveForce - b->brakeTorque) - vec3_dot(&b->force.x, &b->lonAxis.x)) / 9765.625f;
-    if (b->spin < 0.0f) {
-        b->spin = 0.0f;
+    forceMag = load;
+    forceMag *= wheel->grip;
+    wheel->force.x = normalForce * wheel->normal.x + forceMag * forceDir[0];
+    wheel->force.y = normalForce * wheel->normal.y + forceMag * forceDir[1];
+    wheel->force.z = normalForce * wheel->normal.z + forceMag * forceDir[2];
+    wheel->spin += ((rider->driveForce - wheel->brakeTorque) - vec3_dot(&wheel->force.x, &wheel->lonAxis.x)) / 9765.625f;
+    if (wheel->spin < 0.0f) {
+        wheel->spin = 0.0f;
     }
-    dv = b->spin - ref;
-    if (dv > 10.0f) {
-        b->spin = ref + 10.0f;
-    } else if (dv < -10.0f) {
-        b->spin = ref - 10.0f;
+    spinDiff = wheel->spin - lonSpeed;
+    if (spinDiff > 10.0f) {
+        wheel->spin = lonSpeed + 10.0f;
+    } else if (spinDiff < -10.0f) {
+        wheel->spin = lonSpeed - 10.0f;
     }
 }
 
-static inline f32 getHeight(Vec3f *p)
+/* The ground height (m) under pos. The dead first test keeps the original's register use. */
+static inline f32 getHeight(Vec3f *pos)
 {
-    s32 k;
-    if (((s32)p + 1) * 2 != (s32)p->x) k = ((s32 *)p)[12]; else k = ((s32 *)p)[13];
-    k = height_get_ground((s32)(p->x * 1000.0f), (s32)(p->y * 1000.0f), (s32)(p->z * 1000.0f));
-    return (f32)k / 1000.0f;
+    s32 groundMm;
+    if (((s32)pos + 1) * 2 != (s32)pos->x) groundMm = ((s32 *)pos)[12]; else groundMm = ((s32 *)pos)[13];
+    groundMm = height_get_ground((s32)(pos->x * 1000.0f), (s32)(pos->y * 1000.0f), (s32)(pos->z * 1000.0f));
+    return (f32)groundMm / 1000.0f;
 }
 
-f32 bike_raycast_ground(Vec3f *a, Vec3f *b, f32 t, f32 d, f32 *e)
+/* A secant search along dir from origin for the ground: returns the distance and writes the ground normal. */
+f32 bike_raycast_ground(Vec3f *origin, Vec3f *dir, f32 dist, f32 unusedTolerance, f32 *normal)
 {
-    Vec3f pos;
-    Vec3f ofs;
-    f32 h, diff, olddiff, oldt, slope, thr;
-    s32 n;
+    Vec3f point;
+    Vec3f offset;
+    f32 groundY, diff, prevDiff, prevDist, slope, tolerance;
+    s32 iter;
 
-    ofs.x = b->x * t;
-    ofs.y = b->y * t;
-    ofs.z = b->z * t;
-    pos.x = ofs.x + a->x;
-    pos.y = ofs.y + a->y;
-    pos.z = ofs.z + a->z;
-    n = 0;
-    h = getHeight(&pos);
-    diff = h - pos.y;
-    thr = 0.002f;
+    offset.x = dir->x * dist;
+    offset.y = dir->y * dist;
+    offset.z = dir->z * dist;
+    point.x = offset.x + origin->x;
+    point.y = offset.y + origin->y;
+    point.z = offset.z + origin->z;
+    iter = 0;
+    groundY = getHeight(&point);
+    diff = groundY - point.y;
+    tolerance = 0.002f;
     slope = -1.0f;
-    while ((diff > 0.0f ? diff : -diff) > thr) {
-        oldt = t;
-        t -= slope * diff;
-        ofs.x = b->x * t;
-        ofs.y = b->y * t;
-        ofs.z = b->z * t;
-        pos.x = ofs.x + a->x;
-        pos.y = ofs.y + a->y;
-        pos.z = ofs.z + a->z;
-        olddiff = diff;
-        h = getHeight(&pos);
-        diff = h - pos.y;
-        slope = (t - oldt) / (diff - olddiff);
-        if (n++ >= 11) {
-            pos.y = h;
-            thr *= 2.0f;
+    while ((diff > 0.0f ? diff : -diff) > tolerance) {
+        prevDist = dist;
+        dist -= slope * diff;
+        offset.x = dir->x * dist;
+        offset.y = dir->y * dist;
+        offset.z = dir->z * dist;
+        point.x = offset.x + origin->x;
+        point.y = offset.y + origin->y;
+        point.z = offset.z + origin->z;
+        prevDiff = diff;
+        groundY = getHeight(&point);
+        diff = groundY - point.y;
+        slope = (dist - prevDist) / (diff - prevDiff);
+        if (iter++ >= 11) {
+            point.y = groundY;
+            tolerance *= 2.0f;
         }
     }
-    height_get_ground_normal(e);
-    return t;
+    height_get_ground_normal(normal);
+    return dist;
 }
 
-void bike_place_on_ground(Rider *b)
+/* Puts a bike on the ground at its static ride height, pitched to the slope under its wheels. */
+void bike_place_on_ground(Rider *rider)
 {
-    f32 tmp[8];
-    f32 d[7];
-    f32 r;
-    f32 df;
-    s32 i;
-    s32 a;
+    f32 normal[8];
+    f32 offset[7];
+    f32 dist;
+    f32 wheelDiff;
+    s32 tries;
+    s32 pitch;
 
-    b->drawRot[0] = 0;
-    b->drawRot[1] = 0;
-    quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
-    quat_to_angles(b->bike.quat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
-    r = bike_raycast_ground(&b->bike.pos, &b->bike.up, 0.0f, 0.002f, tmp);
-    d[0] = b->bike.up.x * -((r + 0.5f) - b->bike.mass * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    d[1] = b->bike.up.y * -((r + 0.5f) - b->bike.mass * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    d[2] = b->bike.up.z * -((r + 0.5f) - b->bike.mass * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    b->bike.pos.x -= d[0];
-    b->bike.pos.y -= d[1];
-    b->bike.pos.z -= d[2];
-    i = 16;
+    rider->drawRot[0] = 0;
+    rider->drawRot[1] = 0;
+    quat_to_mtx3f(&rider->bike.right.x, rider->bike.quat);
+    quat_to_angles(rider->bike.quat, &rider->drawRot[0], &rider->drawRot[1], &rider->drawRot[2]);
+    dist = bike_raycast_ground(&rider->bike.pos, &rider->bike.up, 0.0f, 0.002f, normal);
+    offset[0] = rider->bike.up.x * -((dist + 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    offset[1] = rider->bike.up.y * -((dist + 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    offset[2] = rider->bike.up.z * -((dist + 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    rider->bike.pos.x -= offset[0];
+    rider->bike.pos.y -= offset[1];
+    rider->bike.pos.z -= offset[2];
+    tries = 16; /* already 16: the loop runs once */
     do {
-        quat_to_angles(b->bike.quat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
-        quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
-        bike_update_wheel_contacts(b);
-        a = (b->frontWheel.groundDist - b->rearWheel.groundDist) / 2.5f * 32768.0f / 3.1415927f;
-        if (a > 0x1000) a = 0x1000;
-        if (a < -0x1000) a = -0x1000;
-        b->drawRot[0] -= a;
-        quat_from_euler(b->bike.quat, (f32)b->drawRot[0] * 3.1415927f * 3.0517578e-05f,
-                      (f32)b->drawRot[1] * 3.1415927f * 3.0517578e-05f,
-                      (f32)b->drawRot[2] * 3.1415927f * 3.0517578e-05f);
-        df = b->frontWheel.groundDist - b->rearWheel.groundDist;
-    } while ((0.0f < df ? 0.02f < df : 0.02f < -df) && i++ < 16);
-    bike_update_wheel_contacts(b);
-    r = (((b->frontWheel.groundDist + b->rearWheel.groundDist) * 0.5f) - b->bike.mass * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    d[0] = b->bike.up.x * -r;
-    d[1] = b->bike.up.y * -r;
-    d[2] = b->bike.up.z * -r;
-    b->bike.pos.x -= d[0];
-    b->bike.pos.y -= d[1];
-    b->bike.pos.z -= d[2];
+        quat_to_angles(rider->bike.quat, &rider->drawRot[0], &rider->drawRot[1], &rider->drawRot[2]);
+        quat_to_mtx3f(&rider->bike.right.x, rider->bike.quat);
+        bike_update_wheel_contacts(rider);
+        pitch = (rider->frontWheel.groundDist - rider->rearWheel.groundDist) / 2.5f * 32768.0f / 3.1415927f;
+        if (pitch > 0x1000) pitch = 0x1000;
+        if (pitch < -0x1000) pitch = -0x1000;
+        rider->drawRot[0] -= pitch;
+        quat_from_euler(rider->bike.quat, (f32)rider->drawRot[0] * 3.1415927f * 3.0517578e-05f,
+                      (f32)rider->drawRot[1] * 3.1415927f * 3.0517578e-05f,
+                      (f32)rider->drawRot[2] * 3.1415927f * 3.0517578e-05f);
+        wheelDiff = rider->frontWheel.groundDist - rider->rearWheel.groundDist;
+    } while ((0.0f < wheelDiff ? 0.02f < wheelDiff : 0.02f < -wheelDiff) && tries++ < 16);
+    bike_update_wheel_contacts(rider);
+    dist = (((rider->frontWheel.groundDist + rider->rearWheel.groundDist) * 0.5f) - rider->bike.mass * 14.700001f / (gGame.mode == GAME_MODE_EXCITE_3D ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    offset[0] = rider->bike.up.x * -dist;
+    offset[1] = rider->bike.up.y * -dist;
+    offset[2] = rider->bike.up.z * -dist;
+    rider->bike.pos.x -= offset[0];
+    rider->bike.pos.y -= offset[1];
+    rider->bike.pos.z -= offset[2];
 }
 
 #define FABS_GT(x, e) ((0.0f < (x)) ? ((e) < (x)) : ((e) < -(x)))
-#define LEN(o) __builtin_sqrtf((o)->contactDelta.x * (o)->contactDelta.x + (o)->contactDelta.y * (o)->contactDelta.y + (o)->contactDelta.z * (o)->contactDelta.z)
+/* How far a wheel's contact point moved this tick. */
+#define ROLLED_DIST(wheel) __builtin_sqrtf((wheel)->contactDelta.x * (wheel)->contactDelta.x + (wheel)->contactDelta.y * (wheel)->contactDelta.y + (wheel)->contactDelta.z * (wheel)->contactDelta.z)
 
-void bike_wheel_surface_bumps(Wheel *a0, f32 *a1)
+/* Adds the surface's bumps and noise, eased over the distance rolled, to a wheel's ground distance. */
+void bike_wheel_surface_bumps(Wheel *wheel, f32 *seed)
 {
-    f32 len, pos, acc, t, v, targ;
+    f32 dist, bump, noise, blend, diff, decay;
 
-    acc = 0.0f;
-    len = -1.0f;
-    v = a0->bump - a0->surface->bumpHeight;
-    if (FABS_GT(v, 0.001f)) {
-        len = LEN(a0);
-        t = math_exp(-len);
-        a0->bump = pos = a0->bump * t + (1.0f - t) * a0->surface->bumpHeight;
+    noise = 0.0f;
+    dist = -1.0f;
+    diff = wheel->bump - wheel->surface->bumpHeight;
+    if (FABS_GT(diff, 0.001f)) {
+        dist = ROLLED_DIST(wheel);
+        blend = math_exp(-dist);
+        wheel->bump = bump = wheel->bump * blend + (1.0f - blend) * wheel->surface->bumpHeight;
     } else {
-        pos = a0->bump = a0->surface->bumpHeight;
+        bump = wheel->bump = wheel->surface->bumpHeight;
     }
-    if (FABS_GT(a0->bumpNoise, 0.001f) || a0->surface->bumpNoise != 0.0f) {
-        if (len < 0.0f) {
-            len = LEN(a0);
+    if (FABS_GT(wheel->bumpNoise, 0.001f) || wheel->surface->bumpNoise != 0.0f) {
+        if (dist < 0.0f) {
+            dist = ROLLED_DIST(wheel);
         }
-        acc = (f32)(s32)(math_sin_rand(a1) - 0x80) * 0.00390625f;
-        targ = -len * a0->surface->bumpRate;
-        acc *= a0->surface->bumpNoise;
-        t = math_exp(targ);
-        acc = t * a0->bumpNoise + (1.0f - t) * acc;
-        a0->bumpNoise = acc;
+        noise = (f32)(s32)(math_sin_rand(seed) - 0x80) * 0.00390625f;
+        decay = -dist * wheel->surface->bumpRate;
+        noise *= wheel->surface->bumpNoise;
+        blend = math_exp(decay);
+        noise = blend * wheel->bumpNoise + (1.0f - blend) * noise;
+        wheel->bumpNoise = noise;
     }
-    a0->suspDelta += pos + acc;
-    a0->groundDist += pos + acc;
+    wheel->suspDelta += bump + noise;
+    wheel->groundDist += bump + noise;
 }
 
-void bike_update_brakes(Rider *p)
+/* Brake torques: B ramps them up over 6 ticks, split by the wheels' loads. They hold the bike during the start
+   countdown and push forwards when rolling backwards. */
+void bike_update_brakes(Rider *rider)
 {
-    f32 a514;
-    f32 f3, f5, a470;
-    s16 sv;
+    f32 frontLoad;
+    f32 frontShare, val, rearLoad;
+    s16 ramp;
+    /* val is the total load, then the ramp's top, then the forward speed */
 
-    f3 = 0.5f;
-    a514 = p->frontWheel.springForce;
-    a470 = p->rearWheel.springForce;
+    frontShare = 0.5f;
+    frontLoad = rider->frontWheel.springForce;
+    rearLoad = rider->rearWheel.springForce;
     /* zeroed as words: the float compare below reads the field again */
-    *(u32 *)&p->rearWheel.brakeTorque = 0;
-    f5 = a514 + a470;
-    *(u32 *)&p->frontWheel.brakeTorque = 0;
-    if (p->rearWheel.brakeTorque < f5) {
-        f3 = a514 / f5;
+    *(u32 *)&rider->rearWheel.brakeTorque = 0;
+    val = frontLoad + rearLoad;
+    *(u32 *)&rider->frontWheel.brakeTorque = 0;
+    if (rider->rearWheel.brakeTorque < val) {
+        frontShare = frontLoad / val;
     }
-    if ((p->input & 0x20) != 0) {
-        f5 = 6.0f;
-        sv = p->frontWheel.brakeRamp + 1;
-        p->frontWheel.brakeRamp = sv;
-        if (f5 < (f32)sv) {
-            p->frontWheel.brakeRamp = 6;
+    if ((rider->input & INPUT_B) != 0) {
+        val = 6.0f;
+        ramp = rider->frontWheel.brakeRamp + 1;
+        rider->frontWheel.brakeRamp = ramp;
+        if (val < (f32)ramp) {
+            rider->frontWheel.brakeRamp = 6;
         }
-        if (p->frontWheel.airTicks < 1) {
-            p->frontWheel.brakeTorque = ((f32)p->frontWheel.brakeRamp * 2572.5f * f3) / f5;
+        if (rider->frontWheel.airTicks < 1) {
+            rider->frontWheel.brakeTorque = ((f32)rider->frontWheel.brakeRamp * 2572.5f * frontShare) / val;
         }
-        sv = p->rearWheel.brakeRamp + 1;
-        p->rearWheel.brakeRamp = sv;
-        if (f5 < (f32)sv) {
-            p->rearWheel.brakeRamp = 6;
+        ramp = rider->rearWheel.brakeRamp + 1;
+        rider->rearWheel.brakeRamp = ramp;
+        if (val < (f32)ramp) {
+            rider->rearWheel.brakeRamp = 6;
         }
-        if (p->rearWheel.airTicks < 1) {
-            p->rearWheel.brakeTorque = ((f32)p->rearWheel.brakeRamp * 2572.5f * (1.0f - f3)) / f5;
+        if (rider->rearWheel.airTicks < 1) {
+            rider->rearWheel.brakeTorque = ((f32)rider->rearWheel.brakeRamp * 2572.5f * (1.0f - frontShare)) / val;
         }
     } else {
-        p->frontWheel.brakeRamp = 0;
-        p->rearWheel.brakeRamp = 0;
+        rider->frontWheel.brakeRamp = 0;
+        rider->rearWheel.brakeRamp = 0;
     }
-    f5 = p->fwdSpeed;
-    if (0.0f < f5) {
-        p->reversing = 0;
+    val = rider->fwdSpeed;
+    if (0.0f < val) {
+        rider->reversing = 0;
     } else {
-        p->reversing = 1;
+        rider->reversing = 1;
     }
-    if ((gEvent.flags & 0x10) == 0) {
-        if ((p->input & 0x20010) != 0 && f5 < 0.0f) {
-            f32 m, q;
-            m = f3 * -2572.5f;
-            q = -2572.5f - m;
-            p->frontWheel.brakeTorque = m;
-            p->rearWheel.brakeTorque = q;
+    if ((gEvent.flags & EVENT_TIMER_PAUSED) == 0) {
+        if ((rider->input & (INPUT_Z | INPUT_A)) != 0 && val < 0.0f) {
+            f32 torque, rearTorque;
+            torque = frontShare * -2572.5f;
+            rearTorque = -2572.5f - torque;
+            rider->frontWheel.brakeTorque = torque;
+            rider->rearWheel.brakeTorque = rearTorque;
             return;
         }
-        if (p->wheelieTimer == 0) {
-            if (f5 < sBikeMaxReverseSpeed) {
-                goto neg;
+        if (rider->wheelieTimer == 0) {
+            if (val < sBikeMaxReverseSpeed) {
+                goto oppose_motion;
             }
             return;
         }
-        if (!(f5 < 0.0f)) {
+        if (!(val < 0.0f)) {
             return;
         }
-neg:
-        p->frontWheel.brakeTorque = -p->frontWheel.brakeTorque;
-        p->rearWheel.brakeTorque = -p->rearWheel.brakeTorque;
+oppose_motion:
+        rider->frontWheel.brakeTorque = -rider->frontWheel.brakeTorque;
+        rider->rearWheel.brakeTorque = -rider->rearWheel.brakeTorque;
         return;
     }
     {
-        f32 m, dv;
-        m = f5 * 250.0f;
-        dv = gPhysDeltaTime + gPhysDeltaTime;
-        p->unk_412 = 0x3000;
-        m = m / dv;
-        p->frontWheel.brakeTorque = m;
-        p->rearWheel.brakeTorque = m;
+        f32 torque, twoDt;
+        torque = val * 250.0f;
+        twoDt = gPhysDeltaTime + gPhysDeltaTime;
+        rider->walkPhase = 0x3000;
+        torque = torque / twoDt;
+        rider->frontWheel.brakeTorque = torque;
+        rider->rearWheel.brakeTorque = torque;
         return;
     }
 }
 
-void bike_update_drive_force(Rider *p)
+/* The rear wheel's drive force from the engine torque (engine braking when it is negative or just after R). */
+void bike_update_drive_force(Rider *rider)
 {
-    f32 a, b, t, x;
+    f32 torque, speed, force, rise;
 
-    a = p->engine.torque;
-    b = p->fwdSpeed;
-    if (a < 0.0f || (p->rHeld >= 1 && p->rHeld <= 4)) {
-        if (0.0f < b) {
-            p->driveForce = p->bike.mass * -2.0f;
+    torque = rider->engine.torque;
+    speed = rider->fwdSpeed;
+    if (torque < 0.0f || (rider->rHeld >= 1 && rider->rHeld <= 4)) {
+        if (0.0f < speed) {
+            rider->driveForce = rider->bike.mass * -2.0f;
         } else {
-            p->driveForce = 0.0f;
+            rider->driveForce = 0.0f;
         }
         return;
     }
-    if (b <= 1.0f) {
-        b = 1.0f;
+    if (speed <= 1.0f) {
+        speed = 1.0f;
     }
-    t = (a * p->power) / b;
-    p->driveForce = t;
-    if (p->frontWheel.airTicks < 0 && p->rearWheel.airTicks < 0 && b < 10.0f) {
-        x = p->frontWheel.contact.y - p->rearWheel.contact.y;
-        if (0.15f < x) {
-            if (gGame.mode == 7) {
-                if (p->stickY >= 0) {
+    force = (torque * rider->power) / speed;
+    rider->driveForce = force;
+    if (rider->frontWheel.airTicks < 0 && rider->rearWheel.airTicks < 0 && speed < 10.0f) {
+        rise = rider->frontWheel.contact.y - rider->rearWheel.contact.y;
+        if (0.15f < rise) {
+            if (gGame.mode == GAME_MODE_HILL_CLIMB) {
+                if (rider->stickY >= 0) {
                     return;
                 }
-                p->driveForce = t * (1.0f - (x - 0.15f) * (p->stickY * 0.125f));
+                rider->driveForce = force * (1.0f - (rise - 0.15f) * (rider->stickY * 0.125f));
             } else {
-                p->driveForce = t * ((x - 0.15f) * 2.0f + 1.0f);
+                rider->driveForce = force * ((rise - 0.15f) * 2.0f + 1.0f);
             }
         }
     }
 }
 
-void bike_process_input(Rider *o, s32 a1)
+/* Turns the input word into stickX/stickY and the turbo, R, hard turn, power slide and dirt spray states. */
+void bike_process_input(Rider *rider, s32 ticks)
 {
-    f32 fs0;
-    f32 fs1;
-    f32 fv0;
-    s32 w;
-    s32 n;
-    s16 t;
-    s32 x;
-    s32 v;
+    f32 stickX;
+    f32 stickY;
+    f32 lean;
+    s32 input;
+    s32 airTicks;
+    s16 yaw;
+    s32 yawWord;
+    s32 tmp;
 
-    w = o->input;
-    fs1 = (s32)((u32)w >> 28);
-    if (w & 2) {
-        fs1 = -fs1;
+    input = rider->input;
+    stickY = (s32)((u32)input >> INPUT_STICK_Y_SHIFT);
+    if (input & INPUT_STICK_DOWN) {
+        stickY = -stickY;
     }
-    fs0 = (w >> 24) & 0xF;
-    if (w & 8) {
-        fs0 = -fs0;
+    stickX = (input >> INPUT_STICK_X_SHIFT) & 0xF;
+    if (input & INPUT_STICK_RIGHT) {
+        stickX = -stickX;
     }
-    if (o->camMode == 4) {
-        v = fs0;
-        fs0 = fs1;
-        fs1 = -v;
+    if (rider->camMode == CAM_MODE_SIDE_VIEW) {
+        /* the side view turns the stick a quarter turn */
+        tmp = stickX;
+        stickX = stickY;
+        stickY = -tmp;
     }
-    if ((u32)(o->airFrames + 14) < 15) {
-        n = o->rearWheel.airTicks;
-        if (n < o->frontWheel.airTicks) {
-            n = o->frontWheel.airTicks;
+    if ((u32)(rider->airFrames + 14) < 15) { /* landed in the last 14 frames */
+        airTicks = rider->rearWheel.airTicks;
+        if (airTicks < rider->frontWheel.airTicks) {
+            airTicks = rider->frontWheel.airTicks;
         }
-        if (n >= -6) {
-            fs0 *= 0.25f;
+        if (airTicks >= -6) {
+            stickX *= 0.25f;
         }
     }
-    if (gGame.mode == 6) {
-        x = (u16)gRiders[0].drawRot[2] - 0x8000;
-        t = x;
-        if (t > 0x2000 && 0.0f < fs0) {
-            fs0 = 0.0f;
-            o->bike.angVel.y = fs0;
-        } else if (t < -0x2000 && fs0 < 0.0f) {
-            fs0 = 0.0f;
-            o->bike.angVel.y = fs0;
+    if (gGame.mode == GAME_MODE_EXCITE_3D) {
+        /* rider 0's heading, whichever rider this is */
+        yawWord = (u16)gRiders[0].drawRot[2] - 0x8000;
+        yaw = yawWord;
+        if (yaw > 0x2000 && 0.0f < stickX) {
+            stickX = 0.0f;
+            rider->bike.angVel.y = stickX;
+        } else if (yaw < -0x2000 && stickX < 0.0f) {
+            stickX = 0.0f;
+            rider->bike.angVel.y = stickX;
         }
-        if (o->airFrames <= 0) {
-            if (t > 0x4000) {
-                goto call;
+        if (rider->airFrames <= 0) {
+            if (yaw > 0x4000) {
+                goto respawn;
             }
-            if (t < -0x4000) {
-call:
-                bike_respawn(o);
+            if (yaw < -0x4000) {
+respawn:
+                bike_respawn(rider);
             }
         }
     }
-    if (o->airFrames < 0) {
-        if (o->input & 0x100) {
-            fs0 = 0.0f;
+    if (rider->airFrames < 0) {
+        if (rider->input & INPUT_C_DOWN) {
+            stickX = 0.0f;
         }
-    } else if ((o->input & 0x100) || (u8)o->anim < 0x10) {
-        fs1 = 0.0f;
-        fs0 *= 0.25f;
+    } else if ((rider->input & INPUT_C_DOWN) || (u8)rider->anim < ANIM_TRICK_COUNT) {
+        stickY = 0.0f;
+        stickX *= 0.25f;
     }
-    if (o->input & 0x20000) {
-        if (!(o->prevInput & 0x20000)) {
-            o->turboPressFrame = gRaceFrame;
+    if (rider->input & INPUT_Z) {
+        if (!(rider->prevInput & INPUT_Z)) {
+            rider->turboPressFrame = gRaceFrame;
         }
-    } else if (o->prevInput & 0x20000) {
-        o->turboReleaseFrame = gRaceFrame;
+    } else if (rider->prevInput & INPUT_Z) {
+        rider->turboReleaseFrame = gRaceFrame;
     }
-    if ((o->input & 0x10000) && o->powerSlide == 0) {
-        if (o->rHeld >= 0) {
-            o->rHeld++;
+    if ((rider->input & INPUT_R) && rider->powerSlide == 0) {
+        if (rider->rHeld >= 0) {
+            rider->rHeld++;
         } else {
-            o->rHeld = 0;
+            rider->rHeld = 0;
         }
     } else {
-        if (o->rHeld < 0) {
-            o->rHeld--;
+        if (rider->rHeld < 0) {
+            rider->rHeld--;
         } else {
-            o->rHeld = -1;
+            rider->rHeld = -1;
         }
     }
-    if (o->wheelieTimer == 0) {
-        if (fs1 < -8.0f && o->airFrames < 0 && (8.0f < fs0 || fs0 < -8.0f)) {
-            o->hardTurn = 1;
-            if (0.0f < fs0) {
-                fs0 = 15.0f;
+    if (rider->wheelieTimer == 0) {
+        if (stickY < -8.0f && rider->airFrames < 0 && (8.0f < stickX || stickX < -8.0f)) {
+            rider->hardTurn = 1;
+            if (0.0f < stickX) {
+                stickX = 15.0f;
             } else {
-                fs0 = -15.0f;
+                stickX = -15.0f;
             }
         } else {
-            o->hardTurn = 0;
+            rider->hardTurn = 0;
         }
-        if (o->isCpu == 0) {
-            if ((0.0f < fs0) ? (10.0f <= fs0) : (10.0f <= -fs0)) {
-                if ((o->input & 0x10020) == 0x10020 && 4.0f < o->speed && (s8)o->anim != -1) {
-                    o->powerSlide = 1;
-                    goto L37c;
+        if (rider->isCpu == 0) {
+            if ((0.0f < stickX) ? (10.0f <= stickX) : (10.0f <= -stickX)) {
+                if ((rider->input & (INPUT_R | INPUT_B)) == (INPUT_R | INPUT_B) && 4.0f < rider->speed && (s8)rider->anim != ANIM_NONE) {
+                    rider->powerSlide = 1;
+                    goto slide_done;
                 }
             }
-            if (o->powerSlide == 1) {
-                o->powerSlide = 2;
+            if (rider->powerSlide == 1) {
+                rider->powerSlide = 2;
             } else {
-                o->powerSlide = 0;
+                rider->powerSlide = 0;
             }
         }
-L37c:
-        if (o->rHeld >= -14 && o->airFrames < 0) {
-            fv0 = (o->driveForce - o->rearWheel.brakeTorque - o->frontWheel.brakeTorque) * 15.625f / 1323.0001f + 4.0f;
-            if (13.0f < fv0) {
-                fv0 = 13.0f;
+slide_done:
+        if (rider->rHeld >= -14 && rider->airFrames < 0) {
+            lean = (rider->driveForce - rider->rearWheel.brakeTorque - rider->frontWheel.brakeTorque) * 15.625f / 1323.0001f + 4.0f;
+            if (13.0f < lean) {
+                lean = 13.0f;
             }
-            if (fv0 < 0.0f) {
-                fv0 = 0.0f;
+            if (lean < 0.0f) {
+                lean = 0.0f;
             }
-            fs1 = (s32)fv0;
+            stickY = (s32)lean;
         }
     }
-    o->stickX = (s32)fs0;
-    o->stickY = (s32)fs1;
-    if (o->rearWheel.airTicks < 0) {
-        o->dirtSpray = 0;
-        if (o->powerSlide != 0) {
-            goto two;
+    rider->stickX = (s32)stickX;
+    rider->stickY = (s32)stickY;
+    if (rider->rearWheel.airTicks < 0) {
+        rider->dirtSpray = 0;
+        if (rider->powerSlide != 0) {
+            goto spray_hard;
         }
-        if (o->input & 0x20000) {
-            if (gRaceFrame - o->turboPressFrame < 30) {
-two:
-                o->dirtSpray = 2;
+        if (rider->input & INPUT_Z) {
+            if (gRaceFrame - rider->turboPressFrame < 30) {
+spray_hard:
+                rider->dirtSpray = 2;
             } else {
-                o->dirtSpray = 1;
+                rider->dirtSpray = 1;
             }
-        } else if (o->input & 0x10000) {
-            if ((0.0f < fs0) ? (8.0f < fs0) : (8.0f < -fs0)) {
-                if (5.0f < o->speed) {
-                    o->dirtSpray = 1;
+        } else if (rider->input & INPUT_R) {
+            if ((0.0f < stickX) ? (8.0f < stickX) : (8.0f < -stickX)) {
+                if (5.0f < rider->speed) {
+                    rider->dirtSpray = 1;
                 }
             }
         }
     }
 end:
-    rider_update_input_history(o, a1);
+    rider_update_input_history(rider, ticks);
 }
 
-#define MINSPD ((b->input & 0x10000) ? 250.0f : 1000.0f)
+/* sBikeTune[10] and [11] */
+typedef struct {
+    /* 0x00 */ u8 pad[0x28];
+    /* 0x28 */ f32 grip;            /* the tires' grip scale */
+    /* 0x2C */ f32 lonGrip;         /* the rear tire's lengthways grip (sTurboTraction with turbo) */
+} BikeTuneView;
 
-typedef struct { u8 pad[0x28]; f32 f28; f32 f2C; } Glob_2;
+extern BikeTuneView sBikeTune_2;
 
-extern Glob_2 sBikeTune_2;
-
-void bike_update_tire_forces(Rider *b)
+/* The tire forces: bike_rear_tire_force for the rear, the same model for the front (where R adds 30% grip). */
+void bike_update_tire_forces(Rider *rider)
 {
-    Vec3f dir;
-    Vec3f c;
-    Vec3f d;
-    f32 d2;
-    f32 ratio;
-    f32 d1, scale, sp, sl, x2, y2, ss, f, v, len, sv, t, n, m, g, e;
+    Vec3f forceDir;
+    Vec3f vel;
+    Vec3f vec;
+    f32 lonSpeed;
+    f32 tractionRatio;
+    f32 latSpeed, baseGrip, normalShare, forceMag, latTerm, lonTerm, forceSq, normalForce, load, slipSpeed, unused1, normalDot, forceLen, grip, unused2, spinDiff;
 
-    if (b->rearWheel.airTicks <= 0) {
-        b->rearWheel.lonForce = b->driveForce - b->rearWheel.brakeTorque;
-        bike_rear_tire_force(b, &b->rearWheel);
+    if (rider->rearWheel.airTicks <= 0) {
+        rider->rearWheel.lonForce = rider->driveForce - rider->rearWheel.brakeTorque;
+        bike_rear_tire_force(rider, &rider->rearWheel);
     } else {
-        b->rearWheel.slip = b->driveForce = b->rearWheel.brakeTorque = b->rearWheel.force.x = b->rearWheel.force.y = b->rearWheel.force.z = 0.0f;
+        rider->rearWheel.slip = rider->driveForce = rider->rearWheel.brakeTorque = rider->rearWheel.force.x = rider->rearWheel.force.y = rider->rearWheel.force.z = 0.0f;
     }
-    if (b->frontWheel.airTicks <= 0) {
-    d.x = b->frontWheel.contact.x - b->bike.pos.x;
-    d.y = b->frontWheel.contact.y - b->bike.pos.y;
-    d.z = b->frontWheel.contact.z - b->bike.pos.z;
-    c.x = b->bike.angVel.y * d.z - d.y * b->bike.angVel.z;
-    c.y = b->bike.angVel.z * d.x - d.z * b->bike.angVel.x;
-    c.z = b->bike.angVel.x * d.y - d.x * b->bike.angVel.y;
-    c.x += b->bike.vel.x;
-    c.y += b->bike.vel.y;
-    c.z += b->bike.vel.z;
-    d1 = vec3_dot(&c.x, &b->frontWheel.latAxis.x);
-    d2 = vec3_dot(&c.x, &b->frontWheel.lonAxis.x);
-    scale = sBikeTune_2.f28;
-    m = scale * b->frontWheel.surface->grip;
-    ratio = sBikeTune_2.f2C / scale;
-    b->frontWheel.grip = m;
-    if (b->powerSlide == 1) {
-        b->frontWheel.grip = m / 3.0f;
-        ratio = 1.0f;
-    } else if (b->input & 0x10000) {
-        b->frontWheel.grip = m * 1.3f;
-    }
-    x2 = b->frontWheel.latForce;
-    x2 *= x2;
-    y2 = b->frontWheel.lonForce;
-    y2 *= y2;
-    ss = x2 + y2;
-    sl = __builtin_sqrtf(ss);
-    if (sl > 0.0f) {
-        b->frontWheel.grip = b->frontWheel.grip * (ss / (x2 + y2 / ratio));
-    }
-    t = vec3_dot(&b->frontWheel.normal.x, &b->bike.up.x);
-    f = b->frontWheel.springForce - vec3_dot(&b->frontWheel.force.x, &b->bike.up.x);
-    f /= t;
-    v = f;
-    if (v > 4000.0f) v = 4000.0f;
-    if (v < MINSPD) v = MINSPD;
-    if (sl < v * b->frontWheel.grip || gGame.mode == 15) {
-        d.x = b->frontWheel.normal.x * f;
-        d.y = b->frontWheel.normal.y * f;
-        d.z = b->frontWheel.normal.z * f;
-        b->frontWheel.force.x += d.x;
-        b->frontWheel.force.y += d.y;
-        b->frontWheel.force.z += d.z;
-        b->frontWheel.slip = 0.0f;
-        b->frontWheel.spin = d2;
-    } else {
-    y2 = d2 - b->frontWheel.spin;
-    len = __builtin_sqrtf(y2 * y2 + d1 * d1);
-    b->frontWheel.slip = len;
-    if (len > 2.0f) {
-        y2 = -y2 / len;
-        d.x = b->frontWheel.lonAxis.x * y2;
-        d.y = b->frontWheel.lonAxis.y * y2;
-        d.z = b->frontWheel.lonAxis.z * y2;
-        d1 = -d1 / len;
-        x2 = d1 * d1;
-        dir.x = b->frontWheel.latAxis.x * d1;
-        y2 = y2 * y2;
-        dir.y = b->frontWheel.latAxis.y * d1;
-        dir.z = b->frontWheel.latAxis.z * d1;
-        dir.y += d.y;
-        dir.x += d.x;
-        dir.z += d.z;
-        b->frontWheel.grip = scale * (x2 + y2) / (x2 + y2 / ratio);
-    } else {
-        dir = *(Vec3f *)&b->frontWheel.force.x;
-        n = __builtin_sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-        if (n != 0.0f) {
-            dir.x /= n;
-            dir.y /= n;
-            dir.z /= n;
+    if (rider->frontWheel.airTicks <= 0) {
+        vec.x = rider->frontWheel.contact.x - rider->bike.pos.x;
+        vec.y = rider->frontWheel.contact.y - rider->bike.pos.y;
+        vec.z = rider->frontWheel.contact.z - rider->bike.pos.z;
+        vel.x = rider->bike.angVel.y * vec.z - vec.y * rider->bike.angVel.z;
+        vel.y = rider->bike.angVel.z * vec.x - vec.z * rider->bike.angVel.x;
+        vel.z = rider->bike.angVel.x * vec.y - vec.x * rider->bike.angVel.y;
+        vel.x += rider->bike.vel.x;
+        vel.y += rider->bike.vel.y;
+        vel.z += rider->bike.vel.z;
+        latSpeed = vec3_dot(&vel.x, &rider->frontWheel.latAxis.x);
+        lonSpeed = vec3_dot(&vel.x, &rider->frontWheel.lonAxis.x);
+        baseGrip = sBikeTune_2.grip;
+        grip = baseGrip * rider->frontWheel.surface->grip;
+        tractionRatio = sBikeTune_2.lonGrip / baseGrip;
+        rider->frontWheel.grip = grip;
+        if (rider->powerSlide == 1) {
+            rider->frontWheel.grip = grip / 3.0f;
+            tractionRatio = 1.0f;
+        } else if (rider->input & INPUT_R) {
+            rider->frontWheel.grip = grip * 1.3f;
         }
-    }
-    sp = t + vec3_dot(&dir.x, &b->bike.up.x) * b->frontWheel.grip;
-    if (sp < 0.5f) sp = 0.5f;
-    f = b->frontWheel.springForce / sp;
-    if (f < 0.0f) f = 0.0f;
-    v = f;
-    if (v > 4000.0f) v = 4000.0f;
-    if (v < MINSPD) v = MINSPD;
-    sl = v;
-    sl *= b->frontWheel.grip;
-    b->frontWheel.force.x = f * b->frontWheel.normal.x + sl * dir.x;
-    b->frontWheel.force.y = f * b->frontWheel.normal.y + sl * dir.y;
-    b->frontWheel.force.z = f * b->frontWheel.normal.z + sl * dir.z;
-    b->frontWheel.spin += (-vec3_dot(&b->frontWheel.force.x, &b->frontWheel.lonAxis.x) - b->frontWheel.brakeTorque) / 9765.625f;
-    if (b->frontWheel.spin < 0.0f) b->frontWheel.spin = 0.0f;
-    e = b->frontWheel.spin - d2;
-    if (e > 10.0f) {
-        b->frontWheel.spin = d2 + 10.0f;
-    } else if (e < -10.0f) {
-        b->frontWheel.spin = d2 - 10.0f;
-    }
-    }
+        latTerm = rider->frontWheel.latForce;
+        latTerm *= latTerm;
+        lonTerm = rider->frontWheel.lonForce;
+        lonTerm *= lonTerm;
+        forceSq = latTerm + lonTerm;
+        forceMag = __builtin_sqrtf(forceSq);
+        if (forceMag > 0.0f) {
+            rider->frontWheel.grip = rider->frontWheel.grip * (forceSq / (latTerm + lonTerm / tractionRatio));
+        }
+        normalDot = vec3_dot(&rider->frontWheel.normal.x, &rider->bike.up.x);
+        normalForce = rider->frontWheel.springForce - vec3_dot(&rider->frontWheel.force.x, &rider->bike.up.x);
+        normalForce /= normalDot;
+        load = normalForce;
+        if (load > 4000.0f) load = 4000.0f;
+        if (load < MIN_TIRE_LOAD(rider)) load = MIN_TIRE_LOAD(rider);
+        if (forceMag < load * rider->frontWheel.grip || gGame.mode == 15) {
+            vec.x = rider->frontWheel.normal.x * normalForce;
+            vec.y = rider->frontWheel.normal.y * normalForce;
+            vec.z = rider->frontWheel.normal.z * normalForce;
+            rider->frontWheel.force.x += vec.x;
+            rider->frontWheel.force.y += vec.y;
+            rider->frontWheel.force.z += vec.z;
+            rider->frontWheel.slip = 0.0f;
+            rider->frontWheel.spin = lonSpeed;
+        } else {
+            lonTerm = lonSpeed - rider->frontWheel.spin;
+            slipSpeed = __builtin_sqrtf(lonTerm * lonTerm + latSpeed * latSpeed);
+            rider->frontWheel.slip = slipSpeed;
+            if (slipSpeed > 2.0f) {
+                lonTerm = -lonTerm / slipSpeed;
+                vec.x = rider->frontWheel.lonAxis.x * lonTerm;
+                vec.y = rider->frontWheel.lonAxis.y * lonTerm;
+                vec.z = rider->frontWheel.lonAxis.z * lonTerm;
+                latSpeed = -latSpeed / slipSpeed;
+                latTerm = latSpeed * latSpeed;
+                forceDir.x = rider->frontWheel.latAxis.x * latSpeed;
+                lonTerm = lonTerm * lonTerm;
+                forceDir.y = rider->frontWheel.latAxis.y * latSpeed;
+                forceDir.z = rider->frontWheel.latAxis.z * latSpeed;
+                forceDir.y += vec.y;
+                forceDir.x += vec.x;
+                forceDir.z += vec.z;
+                rider->frontWheel.grip = baseGrip * (latTerm + lonTerm) / (latTerm + lonTerm / tractionRatio);
+            } else {
+                forceDir = *(Vec3f *)&rider->frontWheel.force.x;
+                forceLen = __builtin_sqrtf(forceDir.x * forceDir.x + forceDir.y * forceDir.y + forceDir.z * forceDir.z);
+                if (forceLen != 0.0f) {
+                    forceDir.x /= forceLen;
+                    forceDir.y /= forceLen;
+                    forceDir.z /= forceLen;
+                }
+            }
+            normalShare = normalDot + vec3_dot(&forceDir.x, &rider->bike.up.x) * rider->frontWheel.grip;
+            if (normalShare < 0.5f) normalShare = 0.5f;
+            normalForce = rider->frontWheel.springForce / normalShare;
+            if (normalForce < 0.0f) normalForce = 0.0f;
+            load = normalForce;
+            if (load > 4000.0f) load = 4000.0f;
+            if (load < MIN_TIRE_LOAD(rider)) load = MIN_TIRE_LOAD(rider);
+            forceMag = load;
+            forceMag *= rider->frontWheel.grip;
+            rider->frontWheel.force.x = normalForce * rider->frontWheel.normal.x + forceMag * forceDir.x;
+            rider->frontWheel.force.y = normalForce * rider->frontWheel.normal.y + forceMag * forceDir.y;
+            rider->frontWheel.force.z = normalForce * rider->frontWheel.normal.z + forceMag * forceDir.z;
+            rider->frontWheel.spin += (-vec3_dot(&rider->frontWheel.force.x, &rider->frontWheel.lonAxis.x) - rider->frontWheel.brakeTorque) / 9765.625f;
+            if (rider->frontWheel.spin < 0.0f) rider->frontWheel.spin = 0.0f;
+            spinDiff = rider->frontWheel.spin - lonSpeed;
+            if (spinDiff > 10.0f) {
+                rider->frontWheel.spin = lonSpeed + 10.0f;
+            } else if (spinDiff < -10.0f) {
+                rider->frontWheel.spin = lonSpeed - 10.0f;
+            }
+        }
     } else {
-        b->frontWheel.slip = b->frontWheel.brakeTorque = b->frontWheel.force.x = b->frontWheel.force.y = b->frontWheel.force.z = 0.0f;
+        rider->frontWheel.slip = rider->frontWheel.brakeTorque = rider->frontWheel.force.x = rider->frontWheel.force.y = rider->frontWheel.force.z = 0.0f;
     }
 }
 
@@ -1291,1388 +1332,1424 @@ void bike_update_tire_forces(Rider *b)
     f32 len = __builtin_sqrtf((v).x * (v).x + (v).y * (v).y + (v).z * (v).z); \
     if (len != 0.0f) { (v).x /= len; (v).y /= len; (v).z /= len; } }
 
-void bike_solve_tire_constraints(Rider *b)
+/* Sets the wheels' axes and solves for the sideways tire forces that stop both contact points sliding sideways. */
+void bike_solve_tire_constraints(Rider *rider)
 {
-    Vec3f out, in, t, c1, c2, v, c3, c4, u, s, q, r, p, w;
-    f32 ra, rb, k, A, B, C, D, r0, x, y, det, d, e, f, g;
+    Vec3f steerDir, steerLocal, axis, c1, c2, rearArm, c3, c4, frontVel, rearVel, frontTorque, rearTorque, newVel, newAngVel;
+    f32 rearLatVel, frontLatVel, dtOverInertia, A, B, C, D, latDot, frontLat, rearLat, det, along, sideForce, lonSpeed, inv;
 
-    b->rearWheel.force.z = 0.0f;
-    b->rearWheel.force.y = 0.0f;
-    b->rearWheel.force.x = 0.0f;
-    b->frontWheel.force.z = 0.0f;
-    b->frontWheel.force.y = 0.0f;
-    b->frontWheel.force.x = 0.0f;
-    in.x = cosf(b->steer);
-    in.y = 0.0f;
-    in.z = sinf(b->steer);
-    vec3_mul_mtx3f(&in.x, &b->bike.right.x, &out.x);
-    CROSS(t, out, b->frontWheel.normal);
-    NORM(t);
-    b->frontWheel.lonAxis = t;
-    CROSS(b->frontWheel.latAxis, b->frontWheel.normal, t);
-    CROSS(t, b->bike.right, b->rearWheel.normal);
-    NORM(t);
-    b->rearWheel.lonAxis = t;
-    CROSS(b->rearWheel.latAxis, b->rearWheel.normal, t);
-    if (b->frontWheel.airTicks <= 0) {
-        if (b->rearWheel.airTicks <= 0) {
-            p.x = b->bike.vel.x + (b->frontWheel.force.x + b->rearWheel.force.x) * (gPhysDeltaTime / b->bike.mass);
-            p.y = b->bike.vel.y + (b->frontWheel.force.y + b->rearWheel.force.y) * (gPhysDeltaTime / b->bike.mass) - gPhysDeltaTime * 14.700001f;
-            p.z = b->bike.vel.z + (b->frontWheel.force.z + b->rearWheel.force.z) * (gPhysDeltaTime / b->bike.mass);
-            CROSS(q, b->frontWheel.contactOffset, b->frontWheel.force);
-            CROSS(r, b->rearWheel.contactOffset, b->rearWheel.force);
-            k = gPhysDeltaTime / 250.0f;
-            w.x = b->bike.angVel.x + (q.x + r.x) * k;
-            w.y = b->bike.angVel.y + (q.y + r.y) * k;
-            w.z = b->bike.angVel.z + (q.z + r.z) * k;
-            CROSS(s, w, b->rearWheel.contactOffset);
-            s.x += p.x;
-            s.y += p.y;
-            s.z += p.z;
-            ra = vec3_dot(&s.x, &b->rearWheel.latAxis.x);
-            CROSS(u, w, b->frontWheel.contactOffset);
-            u.x += p.x;
-            u.y += p.y;
-            u.z += p.z;
-            rb = vec3_dot(&u.x, &b->frontWheel.latAxis.x);
-            CROSS(t, b->frontWheel.contactOffset, b->frontWheel.latAxis);
-            d = vec3_dot(&t.x, &b->bike.fwd.x);
-            t.x -= d * b->bike.fwd.x;
-            t.y -= d * b->bike.fwd.y;
-            t.z -= d * b->bike.fwd.z;
-            CROSS(c1, t, b->frontWheel.contactOffset);
-            CROSS(c2, t, b->rearWheel.contactOffset);
-            CROSS(v, b->rearWheel.contactOffset, b->rearWheel.latAxis);
-            d = vec3_dot(&v.x, &b->bike.fwd.x);
-            v.x -= d * b->bike.fwd.x;
-            v.y -= d * b->bike.fwd.y;
-            v.z -= d * b->bike.fwd.z;
-            CROSS(c3, v, b->frontWheel.contactOffset);
-            CROSS(c4, v, b->rearWheel.contactOffset);
-            r0 = vec3_dot(&b->rearWheel.latAxis.x, &b->frontWheel.latAxis.x);
-            A = 1.0f / b->bike.mass + vec3_dot(&c1.x, &b->frontWheel.latAxis.x) / 250.0f;
-            B = r0 / b->bike.mass + vec3_dot(&c3.x, &b->frontWheel.latAxis.x) / 250.0f;
-            C = r0 / b->bike.mass + vec3_dot(&c2.x, &b->rearWheel.latAxis.x) / 250.0f;
-            D = 1.0f / b->bike.mass + vec3_dot(&c4.x, &b->rearWheel.latAxis.x) / 250.0f;
-            if (b->rearWheel.airTicks > 0) {
-                x = -rb / A;
-                y = 0.0f;
-            } else if (b->frontWheel.airTicks > 0) {
-                x = 0.0f;
-                y = -ra / D;
+    rider->rearWheel.force.z = 0.0f;
+    rider->rearWheel.force.y = 0.0f;
+    rider->rearWheel.force.x = 0.0f;
+    rider->frontWheel.force.z = 0.0f;
+    rider->frontWheel.force.y = 0.0f;
+    rider->frontWheel.force.x = 0.0f;
+    steerLocal.x = cosf(rider->steer);
+    steerLocal.y = 0.0f;
+    steerLocal.z = sinf(rider->steer);
+    vec3_mul_mtx3f(&steerLocal.x, &rider->bike.right.x, &steerDir.x);
+    CROSS(axis, steerDir, rider->frontWheel.normal);
+    NORM(axis);
+    rider->frontWheel.lonAxis = axis;
+    CROSS(rider->frontWheel.latAxis, rider->frontWheel.normal, axis);
+    CROSS(axis, rider->bike.right, rider->rearWheel.normal);
+    NORM(axis);
+    rider->rearWheel.lonAxis = axis;
+    CROSS(rider->rearWheel.latAxis, rider->rearWheel.normal, axis);
+    if (rider->frontWheel.airTicks <= 0) {
+        if (rider->rearWheel.airTicks <= 0) {
+            newVel.x = rider->bike.vel.x + (rider->frontWheel.force.x + rider->rearWheel.force.x) * (gPhysDeltaTime / rider->bike.mass);
+            newVel.y = rider->bike.vel.y + (rider->frontWheel.force.y + rider->rearWheel.force.y) * (gPhysDeltaTime / rider->bike.mass) - gPhysDeltaTime * 14.700001f;
+            newVel.z = rider->bike.vel.z + (rider->frontWheel.force.z + rider->rearWheel.force.z) * (gPhysDeltaTime / rider->bike.mass);
+            CROSS(frontTorque, rider->frontWheel.contactOffset, rider->frontWheel.force);
+            CROSS(rearTorque, rider->rearWheel.contactOffset, rider->rearWheel.force);
+            dtOverInertia = gPhysDeltaTime / 250.0f;
+            newAngVel.x = rider->bike.angVel.x + (frontTorque.x + rearTorque.x) * dtOverInertia;
+            newAngVel.y = rider->bike.angVel.y + (frontTorque.y + rearTorque.y) * dtOverInertia;
+            newAngVel.z = rider->bike.angVel.z + (frontTorque.z + rearTorque.z) * dtOverInertia;
+            CROSS(rearVel, newAngVel, rider->rearWheel.contactOffset);
+            rearVel.x += newVel.x;
+            rearVel.y += newVel.y;
+            rearVel.z += newVel.z;
+            rearLatVel = vec3_dot(&rearVel.x, &rider->rearWheel.latAxis.x);
+            CROSS(frontVel, newAngVel, rider->frontWheel.contactOffset);
+            frontVel.x += newVel.x;
+            frontVel.y += newVel.y;
+            frontVel.z += newVel.z;
+            frontLatVel = vec3_dot(&frontVel.x, &rider->frontWheel.latAxis.x);
+            /* axis: now the front wheel's lever for a sideways force, without its part along the bike */
+            CROSS(axis, rider->frontWheel.contactOffset, rider->frontWheel.latAxis);
+            along = vec3_dot(&axis.x, &rider->bike.fwd.x);
+            axis.x -= along * rider->bike.fwd.x;
+            axis.y -= along * rider->bike.fwd.y;
+            axis.z -= along * rider->bike.fwd.z;
+            CROSS(c1, axis, rider->frontWheel.contactOffset);
+            CROSS(c2, axis, rider->rearWheel.contactOffset);
+            CROSS(rearArm, rider->rearWheel.contactOffset, rider->rearWheel.latAxis);
+            along = vec3_dot(&rearArm.x, &rider->bike.fwd.x);
+            rearArm.x -= along * rider->bike.fwd.x;
+            rearArm.y -= along * rider->bike.fwd.y;
+            rearArm.z -= along * rider->bike.fwd.z;
+            CROSS(c3, rearArm, rider->frontWheel.contactOffset);
+            CROSS(c4, rearArm, rider->rearWheel.contactOffset);
+            latDot = vec3_dot(&rider->rearWheel.latAxis.x, &rider->frontWheel.latAxis.x);
+            A = 1.0f / rider->bike.mass + vec3_dot(&c1.x, &rider->frontWheel.latAxis.x) / 250.0f;
+            B = latDot / rider->bike.mass + vec3_dot(&c3.x, &rider->frontWheel.latAxis.x) / 250.0f;
+            C = latDot / rider->bike.mass + vec3_dot(&c2.x, &rider->rearWheel.latAxis.x) / 250.0f;
+            D = 1.0f / rider->bike.mass + vec3_dot(&c4.x, &rider->rearWheel.latAxis.x) / 250.0f;
+            if (rider->rearWheel.airTicks > 0) {
+                frontLat = -frontLatVel / A;
+                rearLat = 0.0f;
+            } else if (rider->frontWheel.airTicks > 0) {
+                frontLat = 0.0f;
+                rearLat = -rearLatVel / D;
             } else {
-                x = (B * ra - D * rb) / (A * D - B * C);
-                y = (C * rb - A * ra) / (A * D - B * C);
+                frontLat = (B * rearLatVel - D * frontLatVel) / (A * D - B * C);
+                rearLat = (C * frontLatVel - A * rearLatVel) / (A * D - B * C);
             }
-            y /= gPhysDeltaTime;
-            x /= gPhysDeltaTime;
-            b->rearWheel.latForce = y;
-            b->frontWheel.latForce = x;
-            b->rearWheel.force.x = b->rearWheel.latAxis.x * y + b->rearWheel.lonAxis.x * (b->driveForce - b->rearWheel.brakeTorque);
-            b->rearWheel.force.y = b->rearWheel.latAxis.y * y + b->rearWheel.lonAxis.y * (b->driveForce - b->rearWheel.brakeTorque);
-            b->rearWheel.force.z = b->rearWheel.latAxis.z * y + b->rearWheel.lonAxis.z * (b->driveForce - b->rearWheel.brakeTorque);
-            b->frontWheel.force.x = b->frontWheel.latAxis.x * x - b->frontWheel.lonAxis.x * b->frontWheel.brakeTorque;
-            b->frontWheel.force.y = b->frontWheel.latAxis.y * x - b->frontWheel.lonAxis.y * b->frontWheel.brakeTorque;
-            b->frontWheel.force.z = b->frontWheel.latAxis.z * x - b->frontWheel.lonAxis.z * b->frontWheel.brakeTorque;
+            rearLat /= gPhysDeltaTime;
+            frontLat /= gPhysDeltaTime;
+            rider->rearWheel.latForce = rearLat;
+            rider->frontWheel.latForce = frontLat;
+            rider->rearWheel.force.x = rider->rearWheel.latAxis.x * rearLat + rider->rearWheel.lonAxis.x * (rider->driveForce - rider->rearWheel.brakeTorque);
+            rider->rearWheel.force.y = rider->rearWheel.latAxis.y * rearLat + rider->rearWheel.lonAxis.y * (rider->driveForce - rider->rearWheel.brakeTorque);
+            rider->rearWheel.force.z = rider->rearWheel.latAxis.z * rearLat + rider->rearWheel.lonAxis.z * (rider->driveForce - rider->rearWheel.brakeTorque);
+            rider->frontWheel.force.x = rider->frontWheel.latAxis.x * frontLat - rider->frontWheel.lonAxis.x * rider->frontWheel.brakeTorque;
+            rider->frontWheel.force.y = rider->frontWheel.latAxis.y * frontLat - rider->frontWheel.lonAxis.y * rider->frontWheel.brakeTorque;
+            rider->frontWheel.force.z = rider->frontWheel.latAxis.z * frontLat - rider->frontWheel.lonAxis.z * rider->frontWheel.brakeTorque;
         }
-    } else if (b->rearWheel.airTicks <= 0 && b->wheelieTimer != 0) {
-        b->rearWheel.force.x = b->rearWheel.lonAxis.x * (b->driveForce - b->rearWheel.brakeTorque);
-        b->rearWheel.force.y = b->rearWheel.lonAxis.y * (b->driveForce - b->rearWheel.brakeTorque);
-        b->rearWheel.force.z = b->rearWheel.lonAxis.z * (b->driveForce - b->rearWheel.brakeTorque);
-        e = vec3_dot(&b->bike.vel.x, &b->rearWheel.latAxis.x) * (b->bike.mass / gPhysDeltaTime);
-        b->rearWheel.force.x -= b->rearWheel.latAxis.x * e;
-        b->rearWheel.force.y -= b->rearWheel.latAxis.y * e;
-        b->rearWheel.force.z -= b->rearWheel.latAxis.z * e;
-        f = vec3_dot(&b->bike.vel.x, &b->rearWheel.lonAxis.x);
-        if (f > 0.0f) {
-            g = 1.0f / (f + 20.0f);
+    } else if (rider->rearWheel.airTicks <= 0 && rider->wheelieTimer != 0) {
+        rider->rearWheel.force.x = rider->rearWheel.lonAxis.x * (rider->driveForce - rider->rearWheel.brakeTorque);
+        rider->rearWheel.force.y = rider->rearWheel.lonAxis.y * (rider->driveForce - rider->rearWheel.brakeTorque);
+        rider->rearWheel.force.z = rider->rearWheel.lonAxis.z * (rider->driveForce - rider->rearWheel.brakeTorque);
+        sideForce = vec3_dot(&rider->bike.vel.x, &rider->rearWheel.latAxis.x) * (rider->bike.mass / gPhysDeltaTime);
+        rider->rearWheel.force.x -= rider->rearWheel.latAxis.x * sideForce;
+        rider->rearWheel.force.y -= rider->rearWheel.latAxis.y * sideForce;
+        rider->rearWheel.force.z -= rider->rearWheel.latAxis.z * sideForce;
+        lonSpeed = vec3_dot(&rider->bike.vel.x, &rider->rearWheel.lonAxis.x);
+        if (lonSpeed > 0.0f) {
+            inv = 1.0f / (lonSpeed + 20.0f);
         } else {
-            g = 1.0f / (-f + 20.0f);
+            inv = 1.0f / (-lonSpeed + 20.0f);
         }
-        f = g * (b->turnRadius / 0.57f);
-        b->bike.angVel.y += -(b->stickX * f) - b->bike.angVel.y * 0.5f;
-        b->stickX *= 0.25f;
+        lonSpeed = inv * (rider->turnRadius / 0.57f);
+        rider->bike.angVel.y += -(rider->stickX * lonSpeed) - rider->bike.angVel.y * 0.5f;
+        rider->stickX *= 0.25f;
     }
 }
 
-f32 bike_calc_lean_torque(Rider *p)
+/* The roll torque that leans the bike towards the stick; also puts the feet down when slow or leaning hard. */
+f32 bike_calc_lean_torque(Rider *rider)
 {
-    struct { s16 h[2]; s32 w; } lo;
-    f32 fVar2, fVar3, fVar4, fX, fR;
+    struct { s16 h[2]; s32 w; } polar;
+    f32 speed, targetLean, lean, torque, result;
 
-    if (p->wheelieTimer == 0) {
-        if (p->fwdSpeed < 1.0f && p->powerSlide == 0) {
-            if ((p->input & 0x20) != 0) {
-                p->unk_412 = (s16)(s32)((f32)(s32)p->unk_412 + p->fwdSpeed * 1066.6666f);
+    if (rider->wheelieTimer == 0) {
+        if (rider->fwdSpeed < 1.0f && rider->powerSlide == 0) {
+            if ((rider->input & INPUT_B) != 0) {
+                rider->walkPhase = (s16)(s32)((f32)(s32)rider->walkPhase + rider->fwdSpeed * 1066.6666f);
             } else {
-                p->unk_412 = D_800C94C0;
+                rider->walkPhase = D_800C94C0;
             }
-            if (p->rightFootOut < 0x10) p->rightFootOut += 2;
-            if (p->leftFootOut < 0x10) p->leftFootOut += 2;
+            if (rider->rightFootOut < 0x10) rider->rightFootOut += 2;
+            if (rider->leftFootOut < 0x10) rider->leftFootOut += 2;
         } else {
-            if (p->drawRot[1] >= 0x1001 &&
-                (p->isCpu != 0 || (p->input & 0x10000) != 0 ||
-                 p->powerSlide != 0 || p->hardTurn != 0 || p->fwdSpeed < 10.0f)) {
-                if (p->rightFootOut < 0x10) p->rightFootOut += 2;
+            if (rider->drawRot[1] >= 0x1001 &&
+                (rider->isCpu != 0 || (rider->input & INPUT_R) != 0 ||
+                 rider->powerSlide != 0 || rider->hardTurn != 0 || rider->fwdSpeed < 10.0f)) {
+                if (rider->rightFootOut < 0x10) rider->rightFootOut += 2;
             } else {
-                if (p->rightFootOut != 0) p->rightFootOut -= 1;
+                if (rider->rightFootOut != 0) rider->rightFootOut -= 1;
             }
-            if (p->drawRot[1] < -0x1000 &&
-                (p->isCpu != 0 || (p->input & 0x10000) != 0 ||
-                 p->powerSlide != 0 || p->hardTurn == 1 || p->fwdSpeed < 10.0f)) {
-                if (p->leftFootOut < 0x10) p->leftFootOut += 2;
+            if (rider->drawRot[1] < -0x1000 &&
+                (rider->isCpu != 0 || (rider->input & INPUT_R) != 0 ||
+                 rider->powerSlide != 0 || rider->hardTurn == 1 || rider->fwdSpeed < 10.0f)) {
+                if (rider->leftFootOut < 0x10) rider->leftFootOut += 2;
             } else {
-                if (p->leftFootOut != 0) p->leftFootOut -= 1;
+                if (rider->leftFootOut != 0) rider->leftFootOut -= 1;
             }
         }
     }
-    math_to_polar((s32)(p->bike.right.y * 1000.0f), (s32)(p->bike.up.y * 1000.0f), lo.h, &lo.w);
-    fVar4 = (f32)(s32)lo.h[0] * 0.001953125f;
+    math_to_polar((s32)(rider->bike.right.y * 1000.0f), (s32)(rider->bike.up.y * 1000.0f), polar.h, &polar.w);
+    lean = (f32)(s32)polar.h[0] * 0.001953125f;
 
-    if (p->airFrames < 0) {
-        fVar3 = (f32)(s32)p->stickX;
-        fVar2 = p->speed;
-        if (fVar2 < 0.0f) {
-            fVar3 = 0.0f;
-        } else if (fVar2 < 4.0f) {
-            fVar3 = fVar3 * fVar2 * 0.25f;
+    if (rider->airFrames < 0) {
+        targetLean = (f32)(s32)rider->stickX;
+        speed = rider->speed;
+        if (speed < 0.0f) {
+            targetLean = 0.0f;
+        } else if (speed < 4.0f) {
+            targetLean = targetLean * speed * 0.25f;
         }
-        if (p->rHeld < 0) fVar3 = fVar3 * 0.6667f;
-        if (p->rHeld >= -9 && (fVar3 - fVar4) * fVar4 < 0.0f) {
-            fVar3 = fVar4 + (fVar3 - fVar4) * 0.25f;
+        if (rider->rHeld < 0) targetLean = targetLean * 0.6667f;
+        if (rider->rHeld >= -9 && (targetLean - lean) * lean < 0.0f) {
+            targetLean = lean + (targetLean - lean) * 0.25f;
         }
-    } else if (p->anim == -1) {
-        if (p->isCpu != 0) {
-            fVar3 = (f32)(s32)p->stickX * 0.25f;
+    } else if (rider->anim == ANIM_NONE) {
+        if (rider->isCpu != 0) {
+            targetLean = (f32)(s32)rider->stickX * 0.25f;
         } else {
-            fVar3 = (f32)(s32)p->stickX * 0.5f;
+            targetLean = (f32)(s32)rider->stickX * 0.5f;
         }
     } else {
-        fVar3 = 0.0f;
-        if ((u8)((u8)p->anim - 0x10) < 2) {
-            fVar3 = (f32)((((s32)((u32)(u16)p->unk_622 << 16)) >> 27) * 3);
+        targetLean = 0.0f;
+        if ((u8)((u8)rider->anim - ANIM_AIR_TURN) < 2) { /* ANIM_AIR_TURN or ANIM_AIR_TURN_2 */
+            targetLean = (f32)((((s32)((u32)(u16)rider->airTurnYaw << 16)) >> 27) * 3);
         }
     }
-    if (p->reversing != 0) fVar3 = 0.0f;
-    fX = fVar3 - fVar4;
-    if (12.0f < fX) fX = 12.0f;
-    else if (fX < -12.0f) fX = -12.0f;
+    if (rider->reversing != 0) targetLean = 0.0f;
+    torque = targetLean - lean;
+    if (12.0f < torque) torque = 12.0f;
+    else if (torque < -12.0f) torque = -12.0f;
 
-    if (p->isCpu == 0) {
-        fX = sLeanTorqueGain * fX - sLeanTorqueDamping * p->localAngVel.z;
+    if (rider->isCpu == 0) {
+        torque = sLeanTorqueGain * torque - sLeanTorqueDamping * rider->localAngVel.z;
     } else {
-        fX = fX * 0.015f - p->localAngVel.z * 0.1f;
+        torque = torque * 0.015f - rider->localAngVel.z * 0.1f;
     }
-    fR = 0.0f;
-    if (gGame.mode != 0xF) fR = fX;
-    return fR;
+    result = 0.0f;
+    if (gGame.mode != 15) result = torque;
+    return result;
 }
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
-void bike_compute_forces(Rider *b) {
-    Vec3f F;
-    Vec3f T;
-    Vec3f A;
-    Vec3f c2;
-    Vec3f c1;
+/* Sums the forces and torques on the bike (tires, drag, gravity, pitch and turn control) into acc and angAcc. */
+void bike_compute_forces(Rider *rider)
+{
+    Vec3f localTorque;
+    Vec3f torque;
+    Vec3f force;
+    Vec3f frontMoment;
+    Vec3f rearMoment;
     Vec3f unused;
-    Vec3f d;
-    Vec3f e;
-    s16 ang;
-    s32 ratio;
-    s16 ang2;
-    s32 tmp;
-    f32 grav;
-    f32 save;
-    Vec3f *p;
-    s32 n;
+    Vec3f groundUp;
+    Vec3f groundUp2;
+    s16 velYaw;
+    s32 magnitude;
+    s16 fwdYaw;
+    s32 animFlags;
+    f32 gravity;
+    f32 rollRate;
+    Vec3f *pos;
+    s32 pitchError;
 
-    A.x = b->rearWheel.force.x + b->frontWheel.force.x;
-    A.y = b->rearWheel.force.y + b->frontWheel.force.y;
-    A.z = b->rearWheel.force.z + b->frontWheel.force.z;
-    if (b->speed != 0.0f) {
-        f32 lo;
-        f32 k;
-        f32 q;
+    force.x = rider->rearWheel.force.x + rider->frontWheel.force.x;
+    force.y = rider->rearWheel.force.y + rider->frontWheel.force.y;
+    force.z = rider->rearWheel.force.z + rider->frontWheel.force.z;
+    if (rider->speed != 0.0f) {
+        f32 minDrag;
+        f32 drag;
+        f32 rate;
 
-        lo = 0.0f;
-        if (b->roughLanding != 0) {
-            lo = 7.0f;
+        minDrag = 0.0f;
+        if (rider->roughLanding != 0) {
+            minDrag = 7.0f;
         }
-        k = 0.21000001f;
-        if (b->airFrames <= 0) {
-            k = (b->wheelieTimer != 0 ? (b->rearWheel.surface->drag - 1.0f) * 0.25f + 1.0f : b->rearWheel.surface->drag) * 0.21000001f;
+        drag = 0.21000001f;
+        if (rider->airFrames <= 0) {
+            drag = (rider->wheelieTimer != 0 ? (rider->rearWheel.surface->drag - 1.0f) * 0.25f + 1.0f : rider->rearWheel.surface->drag) * 0.21000001f;
         }
-        if (k < lo) {
-            k = lo;
+        if (drag < minDrag) {
+            drag = minDrag;
         }
-        k = k * b->speed * b->speed;
-        if (b->airFrames <= 0) {
-            k += b->rearWheel.surface->unk_10 * sqrtf(b->rearWheel.force.x * b->rearWheel.force.x + b->rearWheel.force.y * b->rearWheel.force.y + b->rearWheel.force.z * b->rearWheel.force.z);
-            k += b->frontWheel.surface->unk_10 * sqrtf(b->frontWheel.force.x * b->frontWheel.force.x + b->frontWheel.force.y * b->frontWheel.force.y + b->frontWheel.force.z * b->frontWheel.force.z);
-            if (b->hardTurn != 0) {
-                k += sHardTurnDrag;
+        drag = drag * rider->speed * rider->speed;
+        if (rider->airFrames <= 0) {
+            drag += rider->rearWheel.surface->rollingResistance * sqrtf(rider->rearWheel.force.x * rider->rearWheel.force.x + rider->rearWheel.force.y * rider->rearWheel.force.y + rider->rearWheel.force.z * rider->rearWheel.force.z);
+            drag += rider->frontWheel.surface->rollingResistance * sqrtf(rider->frontWheel.force.x * rider->frontWheel.force.x + rider->frontWheel.force.y * rider->frontWheel.force.y + rider->frontWheel.force.z * rider->frontWheel.force.z);
+            if (rider->hardTurn != 0) {
+                drag += sHardTurnDrag;
             }
-            if (b->rHeld < -10 && b->isCpu == 0 && !(b->input & 0x20)) {
-                s32 n;
-                f32 t;
-                f32 u;
-                n = ABS(b->stickX);
-                t = n;
-                if (t > 3.0f) {
-                    u = t - 3.0f;
-                    k += (u > 0.0f ? u : -u) * b->handling;
+            if (rider->rHeld < -10 && rider->isCpu == 0 && !(rider->input & INPUT_B)) {
+                s32 steerInt;
+                f32 steer;
+                f32 excess;
+                steerInt = ABS(rider->stickX);
+                steer = steerInt;
+                if (steer > 3.0f) {
+                    excess = steer - 3.0f;
+                    drag += (excess > 0.0f ? excess : -excess) * rider->handling;
                 }
             }
         }
-        q = k / b->speed;
-        A.x -= b->bike.vel.x * q;
-        A.y -= b->bike.vel.y * q;
-        A.z -= b->bike.vel.z * q;
+        rate = drag / rider->speed;
+        force.x -= rider->bike.vel.x * rate;
+        force.y -= rider->bike.vel.y * rate;
+        force.z -= rider->bike.vel.z * rate;
     }
-    save = b->localAngVel.z;
-    mtx3f_mul_vec3(&b->bike.angVel, &b->bike.right, &b->localAngVel.x);
-    b->localAngVel.z = save;
-    c1.x = b->rearWheel.contactOffset.y * b->rearWheel.force.z - b->rearWheel.force.y * b->rearWheel.contactOffset.z;
-    c1.y = b->rearWheel.contactOffset.z * b->rearWheel.force.x - b->rearWheel.force.z * b->rearWheel.contactOffset.x;
-    c1.z = b->rearWheel.contactOffset.x * b->rearWheel.force.y - b->rearWheel.force.x * b->rearWheel.contactOffset.y;
-    c2.x = b->frontWheel.contactOffset.y * b->frontWheel.force.z - b->frontWheel.force.y * b->frontWheel.contactOffset.z;
-    c2.y = b->frontWheel.contactOffset.z * b->frontWheel.force.x - b->frontWheel.force.z * b->frontWheel.contactOffset.x;
-    c2.z = b->frontWheel.contactOffset.x * b->frontWheel.force.y - b->frontWheel.force.x * b->frontWheel.contactOffset.y;
-    T.x = c2.x + c1.x;
-    T.y = c2.y + c1.y;
-    T.z = c2.z + c1.z;
-    mtx3f_mul_vec3(&T, &b->bike.right, &F);
-    F.x += b->localAngVel.y * 250.0f * b->localAngVel.z;
-    p = &b->bike.pos;
-    if (b == 0) grav = 1.0f; else if (p == 0) grav = 2.0f; else if (b->rot[0] == b->animFrame) grav = 3.0f; else grav = 4.0f;
-    grav = 14.700001f;
-    if (b->airFrames < 7
-        || (f32)height_get_ground(p->x * 1000.0f, p->y * 1000.0f, p->z * 1000.0f) / 1000.0f - b->bike.pos.y + 0.5f > -0.2f
-        || b->pendingCrash != 0) {
-        if (b->wheelieTimer == 0) {
+    rollRate = rider->localAngVel.z;
+    mtx3f_mul_vec3(&rider->bike.angVel, &rider->bike.right, &rider->localAngVel.x);
+    rider->localAngVel.z = rollRate;
+    rearMoment.x = rider->rearWheel.contactOffset.y * rider->rearWheel.force.z - rider->rearWheel.force.y * rider->rearWheel.contactOffset.z;
+    rearMoment.y = rider->rearWheel.contactOffset.z * rider->rearWheel.force.x - rider->rearWheel.force.z * rider->rearWheel.contactOffset.x;
+    rearMoment.z = rider->rearWheel.contactOffset.x * rider->rearWheel.force.y - rider->rearWheel.force.x * rider->rearWheel.contactOffset.y;
+    frontMoment.x = rider->frontWheel.contactOffset.y * rider->frontWheel.force.z - rider->frontWheel.force.y * rider->frontWheel.contactOffset.z;
+    frontMoment.y = rider->frontWheel.contactOffset.z * rider->frontWheel.force.x - rider->frontWheel.force.z * rider->frontWheel.contactOffset.x;
+    frontMoment.z = rider->frontWheel.contactOffset.x * rider->frontWheel.force.y - rider->frontWheel.force.x * rider->frontWheel.contactOffset.y;
+    torque.x = frontMoment.x + rearMoment.x;
+    torque.y = frontMoment.y + rearMoment.y;
+    torque.z = frontMoment.z + rearMoment.z;
+    mtx3f_mul_vec3(&torque, &rider->bike.right, &localTorque);
+    localTorque.x += rider->localAngVel.y * 250.0f * rider->localAngVel.z;
+    pos = &rider->bike.pos;
+    /* dead stores: they keep the original's register use */
+    if (rider == 0) gravity = 1.0f; else if (pos == 0) gravity = 2.0f; else if (rider->rot[0] == rider->animFrame) gravity = 3.0f; else gravity = 4.0f;
+    gravity = 14.700001f;
+    if (rider->airFrames < 7
+        || (f32)height_get_ground(pos->x * 1000.0f, pos->y * 1000.0f, pos->z * 1000.0f) / 1000.0f - rider->bike.pos.y + 0.5f > -0.2f
+        || rider->pendingCrash != 0) {
+        if (rider->wheelieTimer == 0) {
             f32 t;
-            t = (f32)b->stickY - 5.0f;
-            if (b->hardTurn != 0) {
+            t = (f32)rider->stickY - 5.0f;
+            if (rider->hardTurn != 0) {
                 t = 3.0f;
             }
-            F.x += t * 32.0f / 1000.0f * 1323.0001f;
-            if (gGame.mode != 7) {
-                if (b->frontWheel.airTicks >= 8 && b->rearWheel.suspLength == b->rearWheel.groundDist && b->localAngVel.x < 0.0f) {
-                    F.x += 8000.0f;
+            localTorque.x += t * 32.0f / 1000.0f * 1323.0001f;
+            if (gGame.mode != GAME_MODE_HILL_CLIMB) {
+                if (rider->frontWheel.airTicks >= 8 && rider->rearWheel.suspLength == rider->rearWheel.groundDist && rider->localAngVel.x < 0.0f) {
+                    localTorque.x += 8000.0f;
                 }
-                if (b->frontWheel.suspLength == b->frontWheel.groundDist && b->rearWheel.airTicks >= 8 && b->localAngVel.x > 0.0f) {
-                    F.x -= 8000.0f;
+                if (rider->frontWheel.suspLength == rider->frontWheel.groundDist && rider->rearWheel.airTicks >= 8 && rider->localAngVel.x > 0.0f) {
+                    localTorque.x -= 8000.0f;
                 }
             }
-        } else if (b->wheelieTimer >= 16) {
-            n = -0x2800 - b->wheelieBalance * 3 - b->rot[0];
-            F.x = ((f32)n * 3.1415927f * 3.0517578e-05f - b->localAngVel.x * 0.5f) * 15000.0f;
+        } else if (rider->wheelieTimer >= 16) {
+            pitchError = -0x2800 - rider->wheelieBalance * 3 - rider->rot[0];
+            localTorque.x = ((f32)pitchError * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.5f) * 15000.0f;
         } else {
-            n = math_atan2f(1.3f, b->rearWheel.contact.y - b->frontWheel.contact.y) * 32768.0f / 3.1415927f - b->rot[0];
-            if (b->wheelieTimer != 1) {
-                F.x = ((f32)n * 3.0f * 3.1415927f * 3.0517578e-05f - b->localAngVel.x * 0.5f) * 15000.0f;
+            pitchError = math_atan2f(1.3f, rider->rearWheel.contact.y - rider->frontWheel.contact.y) * 32768.0f / 3.1415927f - rider->rot[0];
+            if (rider->wheelieTimer != 1) {
+                localTorque.x = ((f32)pitchError * 3.0f * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.5f) * 15000.0f;
             } else {
-                b->bike.angVel.x = b->bike.angVel.y = b->bike.angVel.z = 0.0f;
+                rider->bike.angVel.x = rider->bike.angVel.y = rider->bike.angVel.z = 0.0f;
             }
         }
     } else {
-        grav = b->airPitch * grav + grav;
-        if (b->anim == -1 || b->anim == 17 || b->anim == 16) {
+        gravity = rider->airPitch * gravity + gravity;
+        if (rider->anim == ANIM_NONE || rider->anim == ANIM_AIR_TURN_2 || rider->anim == ANIM_AIR_TURN) {
             f32 t;
-            t = (f32)b->stickX * b->airTurn;
-            A.x -= b->bike.vel.z * t * b->bike.mass;
-            A.z += b->bike.vel.x * t * b->bike.mass;
+            t = (f32)rider->stickX * rider->airTurn;
+            force.x -= rider->bike.vel.z * t * rider->bike.mass;
+            force.z += rider->bike.vel.x * t * rider->bike.mass;
         }
-        if (b->landingAssist == 0) {
-            if (b->wheelieTimer != 0) {
-                n = -0x2800 - b->wheelieBalance * 3 - b->rot[0];
+        if (rider->landingAssist == 0) {
+            if (rider->wheelieTimer != 0) {
+                pitchError = -0x2800 - rider->wheelieBalance * 3 - rider->rot[0];
             } else {
-                s32 r;
-                r = b->rot[0];
-                n = b->airPitchInput;
-                if (ABS(r) > 0x2000) {
-                    n = 0;
+                s32 pitch;
+                pitch = rider->rot[0];
+                pitchError = rider->airPitchInput;
+                if (ABS(pitch) > 0x2000) {
+                    pitchError = 0;
                 }
-                n = n * 384 - r;
+                pitchError = pitchError * 384 - pitch;
             }
-            F.x += ((f32)(n / 4) * 3.1415927f * 3.0517578e-05f - b->localAngVel.x * 0.0625f) * 15000.0f;
+            localTorque.x += ((f32)(pitchError / 4) * 3.1415927f * 3.0517578e-05f - rider->localAngVel.x * 0.0625f) * 15000.0f;
         }
-        if (b->anim == 15) {
-            s32 r;
-            math_to_polar(-b->bike.vel.x * 1000.0f, b->bike.vel.z * 1000.0f, &ang, &ratio);
-            math_to_polar(-b->bike.fwd.x * 1000.0f, b->bike.fwd.z * 1000.0f, &ang2, &ratio);
-            b->heading = ang;
-            r = rider_anim_get_length(15, &tmp);
-            ang += ((b->animFrame - (r << 8)) << 8) / r;
-            ang -= ang2;
-            if (ang > 0xC00) {
-                ang = 0xC00;
+        if (rider->anim == ANIM_KOBE) {
+            /* the bike turns a full circle over the animation */
+            s32 animLen;
+            math_to_polar(-rider->bike.vel.x * 1000.0f, rider->bike.vel.z * 1000.0f, &velYaw, &magnitude);
+            math_to_polar(-rider->bike.fwd.x * 1000.0f, rider->bike.fwd.z * 1000.0f, &fwdYaw, &magnitude);
+            rider->heading = velYaw;
+            animLen = rider_anim_get_length(ANIM_KOBE, &animFlags);
+            velYaw += ((rider->animFrame - (animLen << 8)) << 8) / animLen;
+            velYaw -= fwdYaw;
+            if (velYaw > 0xC00) {
+                velYaw = 0xC00;
             }
-            b->bike.angVel.y = -((f32)ang * 3.1415927f * 3.0517578e-05f) * 60.0f;
-        } else if (b->speed > 5.0f) {
+            rider->bike.angVel.y = -((f32)velYaw * 3.1415927f * 3.0517578e-05f) * 60.0f;
+        } else if (rider->speed > 5.0f) {
             f32 t;
-            math_to_polar(b->bike.vel.x * 1000.0f, b->bike.vel.z * 1000.0f, &ang, &ratio);
-            math_to_polar(b->bike.fwd.x * 1000.0f, b->bike.fwd.z * 1000.0f, &ang2, &ratio);
-            ang -= b->unk_622;
-            ang -= ang2;
-            t = (f32)ang * 6.1035156e-05f - b->bike.angVel.y * 0.25f;
+            math_to_polar(rider->bike.vel.x * 1000.0f, rider->bike.vel.z * 1000.0f, &velYaw, &magnitude);
+            math_to_polar(rider->bike.fwd.x * 1000.0f, rider->bike.fwd.z * 1000.0f, &fwdYaw, &magnitude);
+            velYaw -= rider->airTurnYaw;
+            velYaw -= fwdYaw;
+            t = (f32)velYaw * 6.1035156e-05f - rider->bike.angVel.y * 0.25f;
             if (t > 0.1f) {
                 t = 0.1f;
             } else if (t < -0.1f) {
                 t = -0.1f;
             }
             t *= 15000.0f;
-            F.x += t * b->bike.right.y;
-            F.y += t * b->bike.up.y;
-            F.z += t * b->bike.fwd.y;
+            localTorque.x += t * rider->bike.right.y;
+            localTorque.y += t * rider->bike.up.y;
+            localTorque.z += t * rider->bike.fwd.y;
         }
     }
-    A.y -= grav * b->bike.mass;
-    b->bike.acc.x = A.x / b->bike.mass;
-    b->bike.acc.y = A.y / b->bike.mass;
-    b->bike.acc.z = A.z / b->bike.mass;
-    F.z = bike_calc_lean_torque(b) * 64.0f * 250.0f;
-    F.x += F.z * b->localAngVel.y * gPhysDeltaTime;
-    vec3_mul_mtx3f(&F, &b->bike.right, &T);
-    b->bike.angAcc.x = T.x / 250.0f;
-    b->bike.angAcc.y = T.y / 250.0f;
-    b->bike.angAcc.z = T.z / 250.0f;
-    if (b->powerSlide != 0 && (b->stickX < -10 || b->stickX > 10)) {
+    force.y -= gravity * rider->bike.mass;
+    rider->bike.acc.x = force.x / rider->bike.mass;
+    rider->bike.acc.y = force.y / rider->bike.mass;
+    rider->bike.acc.z = force.z / rider->bike.mass;
+    localTorque.z = bike_calc_lean_torque(rider) * 64.0f * 250.0f;
+    localTorque.x += localTorque.z * rider->localAngVel.y * gPhysDeltaTime;
+    vec3_mul_mtx3f(&localTorque, &rider->bike.right, &torque);
+    rider->bike.angAcc.x = torque.x / 250.0f;
+    rider->bike.angAcc.y = torque.y / 250.0f;
+    rider->bike.angAcc.z = torque.z / 250.0f;
+    if (rider->powerSlide != 0 && (rider->stickX < -10 || rider->stickX > 10)) {
         f32 len;
         f32 t;
-        d.x = b->frontWheel.normal.x + b->rearWheel.normal.x;
-        d.y = b->frontWheel.normal.y + b->rearWheel.normal.y;
-        d.z = b->frontWheel.normal.z + b->rearWheel.normal.z;
-        len = sqrtf(d.x * d.x + d.y * d.y + d.z * d.z);
+        groundUp.x = rider->frontWheel.normal.x + rider->rearWheel.normal.x;
+        groundUp.y = rider->frontWheel.normal.y + rider->rearWheel.normal.y;
+        groundUp.z = rider->frontWheel.normal.z + rider->rearWheel.normal.z;
+        len = sqrtf(groundUp.x * groundUp.x + groundUp.y * groundUp.y + groundUp.z * groundUp.z);
         if (len != 0.0f) {
-            d.x /= len;
-            d.y /= len;
-            d.z /= len;
+            groundUp.x /= len;
+            groundUp.y /= len;
+            groundUp.z /= len;
         }
-        t = vec3_dot(&d, &b->bike.angVel);
-        if (b->powerSlide == 2) {
-            f32 q;
-            q = t / (2.0f * gPhysDeltaTime);
-            b->bike.angAcc.x -= d.x * q;
-            b->bike.angAcc.y -= d.y * q;
-            b->bike.angAcc.z -= d.z * q;
+        t = vec3_dot(&groundUp, &rider->bike.angVel);
+        if (rider->powerSlide == 2) {
+            f32 rate;
+            rate = t / (2.0f * gPhysDeltaTime);
+            rider->bike.angAcc.x -= groundUp.x * rate;
+            rider->bike.angAcc.y -= groundUp.y * rate;
+            rider->bike.angAcc.z -= groundUp.z * rate;
         } else {
-            s32 n;
-            n = t;
-            n = ABS(n);
-            if ((f32)n < 1.5f) {
-                f32 s;
-                s = gPhysDeltaTime * 240.0f;
-                b->bike.angAcc.x -= d.x * ((f32)b->stickX / s);
-                b->bike.angAcc.y -= d.y * ((f32)b->stickX / s);
-                b->bike.angAcc.z -= d.z * ((f32)b->stickX / s);
+            s32 spinInt;
+            spinInt = t;
+            spinInt = ABS(spinInt);
+            if ((f32)spinInt < 1.5f) {
+                f32 scale;
+                scale = gPhysDeltaTime * 240.0f;
+                rider->bike.angAcc.x -= groundUp.x * ((f32)rider->stickX / scale);
+                rider->bike.angAcc.y -= groundUp.y * ((f32)rider->stickX / scale);
+                rider->bike.angAcc.z -= groundUp.z * ((f32)rider->stickX / scale);
             }
         }
     }
-    if (b->rHeld >= -1 && b->anim == -1) {
+    if (rider->rHeld >= -1 && rider->anim == ANIM_NONE) {
         f32 len;
         f32 t;
-        s32 m;
-        d.x = b->frontWheel.normal.x + b->rearWheel.normal.x;
-        d.y = b->frontWheel.normal.y + b->rearWheel.normal.y;
-        d.z = b->frontWheel.normal.z + b->rearWheel.normal.z;
-        len = sqrtf(d.x * d.x + d.y * d.y + d.z * d.z);
+        s32 steerInt2;
+        groundUp.x = rider->frontWheel.normal.x + rider->rearWheel.normal.x;
+        groundUp.y = rider->frontWheel.normal.y + rider->rearWheel.normal.y;
+        groundUp.z = rider->frontWheel.normal.z + rider->rearWheel.normal.z;
+        len = sqrtf(groundUp.x * groundUp.x + groundUp.y * groundUp.y + groundUp.z * groundUp.z);
         if (len != 0.0f) {
-            d.x /= len;
-            d.y /= len;
-            d.z /= len;
+            groundUp.x /= len;
+            groundUp.y /= len;
+            groundUp.z /= len;
         }
-        t = vec3_dot(&d, &b->bike.angVel);
-        m = b->stickX;
-        if ((t > 0.5f && m >= -3) || (t < -0.5f && m < 4)) {
-            f32 q;
-            q = t / (2.0f * gPhysDeltaTime);
-            b->bike.angAcc.x = -d.x * q;
-            b->bike.angAcc.y = -d.y * q;
-            b->bike.angAcc.z = -d.z * q;
+        t = vec3_dot(&groundUp, &rider->bike.angVel);
+        steerInt2 = rider->stickX;
+        if ((t > 0.5f && steerInt2 >= -3) || (t < -0.5f && steerInt2 < 4)) {
+            f32 rate;
+            rate = t / (2.0f * gPhysDeltaTime);
+            rider->bike.angAcc.x = -groundUp.x * rate;
+            rider->bike.angAcc.y = -groundUp.y * rate;
+            rider->bike.angAcc.z = -groundUp.z * rate;
         }
     }
-    if (b->bike.hitTimer != 0) {
+    if (rider->bike.hitTimer != 0) {
         f32 len;
         f32 t;
-        e.x = b->frontWheel.normal.x + b->rearWheel.normal.x;
-        e.y = b->frontWheel.normal.y + b->rearWheel.normal.y;
-        e.z = b->frontWheel.normal.z + b->rearWheel.normal.z;
-        len = sqrtf(e.x * e.x + e.y * e.y + e.z * e.z);
+        groundUp2.x = rider->frontWheel.normal.x + rider->rearWheel.normal.x;
+        groundUp2.y = rider->frontWheel.normal.y + rider->rearWheel.normal.y;
+        groundUp2.z = rider->frontWheel.normal.z + rider->rearWheel.normal.z;
+        len = sqrtf(groundUp2.x * groundUp2.x + groundUp2.y * groundUp2.y + groundUp2.z * groundUp2.z);
         if (len != 0.0f) {
-            e.x /= len;
-            e.y /= len;
-            e.z /= len;
+            groundUp2.x /= len;
+            groundUp2.y /= len;
+            groundUp2.z /= len;
         }
-        t = vec3_dot(&e, &b->bike.angVel) / (gPhysDeltaTime * 16.0f);
-        b->bike.angAcc.x -= e.x * t;
-        b->bike.angAcc.y -= e.y * t;
-        b->bike.angAcc.z -= e.z * t;
+        t = vec3_dot(&groundUp2, &rider->bike.angVel) / (gPhysDeltaTime * 16.0f);
+        rider->bike.angAcc.x -= groundUp2.x * t;
+        rider->bike.angAcc.y -= groundUp2.y * t;
+        rider->bike.angAcc.z -= groundUp2.z * t;
     }
 }
 
-void bike_integrate_velocity(Rider *param_1)
+/* Steps the velocities by the accelerations; updates the speeds and the camera's yaw lag. */
+void bike_integrate_velocity(Rider *rider)
 {
-    f32 len;
-    f32 r;
+    f32 speedSq;
+    f32 fwdSpeed;
 
-    param_1->bike.vel.x = param_1->bike.vel.x + param_1->bike.acc.x * gPhysDeltaTime;
-    param_1->bike.vel.y = param_1->bike.vel.y + param_1->bike.acc.y * gPhysDeltaTime;
-    param_1->bike.vel.z = param_1->bike.vel.z + param_1->bike.acc.z * gPhysDeltaTime;
-    param_1->bike.angVel.x = param_1->bike.angVel.x + param_1->bike.angAcc.x * gPhysDeltaTime;
-    param_1->bike.angVel.y = param_1->bike.angVel.y + param_1->bike.angAcc.y * gPhysDeltaTime;
-    param_1->bike.angVel.z = param_1->bike.angVel.z + param_1->bike.angAcc.z * gPhysDeltaTime;
-    mtx3f_mul_vec3(&param_1->bike.angVel.x, &param_1->bike.right.x, &param_1->localAngVel.x);
-    len = param_1->bike.vel.x * param_1->bike.vel.x
-        + param_1->bike.vel.y * param_1->bike.vel.y
-        + param_1->bike.vel.z * param_1->bike.vel.z;
-    param_1->speed = __builtin_sqrtf(len);
-    r = vec3_dot(&param_1->bike.vel.x, &param_1->bike.fwd.x);
-    param_1->fwdSpeed = r;
-    if (param_1->crashState == 0 && param_1->anim != 0xF) {
-        cam_calc_bike_yaw(param_1);
+    rider->bike.vel.x = rider->bike.vel.x + rider->bike.acc.x * gPhysDeltaTime;
+    rider->bike.vel.y = rider->bike.vel.y + rider->bike.acc.y * gPhysDeltaTime;
+    rider->bike.vel.z = rider->bike.vel.z + rider->bike.acc.z * gPhysDeltaTime;
+    rider->bike.angVel.x = rider->bike.angVel.x + rider->bike.angAcc.x * gPhysDeltaTime;
+    rider->bike.angVel.y = rider->bike.angVel.y + rider->bike.angAcc.y * gPhysDeltaTime;
+    rider->bike.angVel.z = rider->bike.angVel.z + rider->bike.angAcc.z * gPhysDeltaTime;
+    mtx3f_mul_vec3(&rider->bike.angVel.x, &rider->bike.right.x, &rider->localAngVel.x);
+    speedSq = rider->bike.vel.x * rider->bike.vel.x
+        + rider->bike.vel.y * rider->bike.vel.y
+        + rider->bike.vel.z * rider->bike.vel.z;
+    rider->speed = __builtin_sqrtf(speedSq);
+    fwdSpeed = vec3_dot(&rider->bike.vel.x, &rider->bike.fwd.x);
+    rider->fwdSpeed = fwdSpeed;
+    if (rider->crashState == CRASH_STATE_RIDING && rider->anim != ANIM_KOBE) {
+        cam_calc_bike_yaw(rider);
     }
 }
 
+/* bike_integrate_position's stack, in the original's order */
 typedef struct {
-    f32 loc[3];
+    f32 rollShift[3];
     f32 pad0;
-    f32 zv[3];
+    f32 zero[3];                    /* cleared, never read */
     f32 pad1[5];
-    f32 one[2];
-} Locals;
+    f32 hitT[2];                    /* [0]: the segment's end for height_raycast_walls */
+} IntegrateLocals;
 
-void bike_integrate_position(Rider *b)
+/* Moves the bike one tick on its contact points; one rider a frame checks the walls (a hit crashes it). */
+void bike_integrate_position(Rider *rider)
 {
-    Locals L;
-    f32 c;
-    f32 k;
-    s32 n;
-    s32 id;
+    IntegrateLocals locals;
+    f32 halfDt;
+    f32 rollShiftScale;
+    s32 numContacts;
+    s32 riderIdx;
     s32 i;
 
-    c = gPhysDeltaTime * 0.5f;
-    L.zv[0] = L.zv[1] = L.zv[2] = 0.0f;
-    k = -b->localAngVel.z * c;
-    L.loc[0] = b->bike.right.x * k;
-    L.loc[1] = b->bike.right.y * k;
-    L.loc[2] = b->bike.right.z * k;
-    b->bike.vel.x = L.loc[0] + b->bike.vel.x;
-    b->bike.vel.y = L.loc[1] + b->bike.vel.y;
-    b->bike.vel.z = L.loc[2] + b->bike.vel.z;
-    n = 8;
-    if (b->frontWheel.airTicks <= 0 && b->rearWheel.airTicks <= 0) {
-        n = 6;
+    halfDt = gPhysDeltaTime * 0.5f;
+    locals.zero[0] = locals.zero[1] = locals.zero[2] = 0.0f;
+    rollShiftScale = -rider->localAngVel.z * halfDt;
+    locals.rollShift[0] = rider->bike.right.x * rollShiftScale;
+    locals.rollShift[1] = rider->bike.right.y * rollShiftScale;
+    locals.rollShift[2] = rider->bike.right.z * rollShiftScale;
+    rider->bike.vel.x = locals.rollShift[0] + rider->bike.vel.x;
+    rider->bike.vel.y = locals.rollShift[1] + rider->bike.vel.y;
+    rider->bike.vel.z = locals.rollShift[2] + rider->bike.vel.z;
+    numContacts = 8;
+    if (rider->frontWheel.airTicks <= 0 && rider->rearWheel.airTicks <= 0) {
+        numContacts = 6;
     }
-    phys_body_step(&b->bike.pos.x, sBikeContactPoints, n, 0);
-    b->bike.flags |= 1;
-    id = b - gRiders;
-    b->bike.vel.x -= L.loc[0];
-    b->bike.vel.y -= L.loc[1];
+    phys_body_step(&rider->bike.pos.x, sBikeContactPoints, numContacts, 0);
+    rider->bike.flags |= 1;
+    riderIdx = rider - gRiders;
+    rider->bike.vel.x -= locals.rollShift[0];
+    rider->bike.vel.y -= locals.rollShift[1];
     {
-        f32 t2 = b->bike.vel.z;
-        L.one[0] = 1.0f;
-        b->bike.vel.z = t2 - L.loc[2];
+        f32 velZ = rider->bike.vel.z;
+        locals.hitT[0] = 1.0f;
+        rider->bike.vel.z = velZ - locals.rollShift[2];
     }
-    if (id == (gRaceFrame & 7)) {
-        u8 *tb = sBikeWallCheckPairs;
-        u8 *t = (u8 *)(((gRaceFrame >> 2) & 6) + (s32)tb);
-        if (height_raycast_walls(&b->bike.contacts[t[0]].x, &b->bike.contacts[t[1]].x, gContactNormal, L.one, 0)) {
-            bike_crash_begin(b, 0x1C);
+    if (riderIdx == (gRaceFrame & 7)) {
+        u8 *pairs = sBikeWallCheckPairs;
+        u8 *pair = (u8 *)(((gRaceFrame >> 2) & 6) + (s32)pairs);
+        if (height_raycast_walls(&rider->bike.contacts[pair[0]].x, &rider->bike.contacts[pair[1]].x, gContactNormal, locals.hitT, 0)) {
+            bike_crash_begin(rider, ANIM_CRASH_FRONT);
         }
     }
 }
 
-void bike_update_render_pose(Rider *b)
+/* The drawing state from the physics: suspension, position, steering, trick blend; pitching too far crashes. */
+void bike_update_render_pose(Rider *rider)
 {
-    f32 tmp[3];
-    f32 q[4];
-    f32 o[3];
-    f32 r1[4];
-    f32 r2[4];
-    f32 x, y, m, d, len, ang, s, s2, c, k;
-    s32 v, r;
+    f32 localNormal[3];
+    f32 trickRot[4];
+    f32 offset[3];
+    f32 leanQuat[4];
+    f32 shakeQuat[4];
+    f32 suspFront, suspRear, drop, over, len, angle, sinA, sinB, cosA, amp;
+    s32 angleWord, lean;
 
-    x = b->frontWheel.suspLength;
-    y = b->rearWheel.suspLength;
-    if (b->crashState == 0) {
-        mtx3f_mul_vec3(&b->frontWheel.normal.x, &b->bike.right.x, tmp);
-        x += (1.0f - tmp[1] / __builtin_sqrtf(1.0f - tmp[0] * tmp[0])) * 0.25f;
-        mtx3f_mul_vec3(&b->rearWheel.normal.x, &b->bike.right.x, tmp);
-        y += (1.0f - tmp[1] / __builtin_sqrtf(1.0f - tmp[0] * tmp[0])) * 0.25f;
+    suspFront = rider->frontWheel.suspLength;
+    suspRear = rider->rearWheel.suspLength;
+    if (rider->crashState == CRASH_STATE_RIDING) {
+        mtx3f_mul_vec3(&rider->frontWheel.normal.x, &rider->bike.right.x, localNormal);
+        suspFront += (1.0f - localNormal[1] / __builtin_sqrtf(1.0f - localNormal[0] * localNormal[0])) * 0.25f;
+        mtx3f_mul_vec3(&rider->rearWheel.normal.x, &rider->bike.right.x, localNormal);
+        suspRear += (1.0f - localNormal[1] / __builtin_sqrtf(1.0f - localNormal[0] * localNormal[0])) * 0.25f;
     }
-    m = 0.0f;
-    b->drawSuspFront = x / 0.001f;
-    b->drawSuspRear = y / 0.001f;
-    if (x > 0.2f) {
-        b->drawSuspFront = 200;
-        m = 0.2f - x;
+    drop = 0.0f;
+    rider->drawSuspFront = suspFront / 0.001f;
+    rider->drawSuspRear = suspRear / 0.001f;
+    if (suspFront > 0.2f) {
+        rider->drawSuspFront = 200;
+        drop = 0.2f - suspFront;
     }
-    if (y > 0.2f) {
-        d = 0.2f - y;
-        b->drawSuspRear = 200;
-        if (d < m) {
-            m = d;
+    if (suspRear > 0.2f) {
+        over = 0.2f - suspRear;
+        rider->drawSuspRear = 200;
+        if (over < drop) {
+            drop = over;
         }
     }
-    m += 0.5f;
-    if (y < -0.1f) {
-        b->drawSuspRear = -100;
+    drop += 0.5f;
+    if (suspRear < -0.1f) {
+        rider->drawSuspRear = -100;
     }
-    b->drawSuspFront = (f32)b->drawSuspFront + 50.0f;
-    b->drawPos.x = (b->bike.pos.x - b->bike.up.x * m) * 1000.0f;
-    b->drawPos.y = (b->bike.pos.y - b->bike.up.y * m) * 1000.0f;
-    b->drawPos.z = (b->bike.pos.z - b->bike.up.z * m) * 1000.0f;
-    b->drawSteer = b->steer * 32768.0f / 3.1415927f;
-    *(Quat_2 *)b->drawQuat = *(Quat_2 *)b->bike.quat;
-    if (b->crashState == 0) {
-        quat_to_angles(b->bike.quat, &b->rot[0], &b->rot[1], &b->rot[2]);
-        if (b->anim == -1 || b->anim == 15) {
-            v = b->rot[0];
-            if (v > 0x3000) {
-                bike_crash_begin(b, 0x19);
-            } else if (v < -0x3000) {
-                bike_crash_begin(b, 0x1C);
+    rider->drawSuspFront = (f32)rider->drawSuspFront + 50.0f;
+    rider->drawPos.x = (rider->bike.pos.x - rider->bike.up.x * drop) * 1000.0f;
+    rider->drawPos.y = (rider->bike.pos.y - rider->bike.up.y * drop) * 1000.0f;
+    rider->drawPos.z = (rider->bike.pos.z - rider->bike.up.z * drop) * 1000.0f;
+    rider->drawSteer = rider->steer * 32768.0f / 3.1415927f;
+    *(Quat_2 *)rider->drawQuat = *(Quat_2 *)rider->bike.quat;
+    if (rider->crashState == CRASH_STATE_RIDING) {
+        quat_to_angles(rider->bike.quat, &rider->rot[0], &rider->rot[1], &rider->rot[2]);
+        if (rider->anim == ANIM_NONE || rider->anim == ANIM_KOBE) {
+            angleWord = rider->rot[0];
+            if (angleWord > 0x3000) {
+                bike_crash_begin(rider, ANIM_CRASH_BACK);
+            } else if (angleWord < -0x3000) {
+                bike_crash_begin(rider, ANIM_CRASH_FRONT);
             }
         }
-        bike_update_trick_offset(b);
-        if (b->trickBlend != 0.0f) {
-            q[0] = (1.0f - b->trickBlend) + b->trickQuat[0] * b->trickBlend;
-            q[1] = b->trickQuat[1] * b->trickBlend;
-            q[2] = b->trickQuat[2] * b->trickBlend;
-            q[3] = b->trickQuat[3] * b->trickBlend;
-            len = __builtin_sqrtf(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
-            q[0] /= len;
-            q[1] /= len;
-            q[2] /= len;
-            q[3] /= len;
-            quat_mul(b->drawQuat, b->bike.quat, q);
-            vec3_mul_mtx3f(&b->trickOffset.x, &b->bike.right.x, o);
-            b->drawPos.x = (f32)b->drawPos.x + o[0] * (b->trickBlend * 1000.0f);
-            b->drawPos.y = (f32)b->drawPos.y + o[1] * (b->trickBlend * 1000.0f);
-            b->drawPos.z = (f32)b->drawPos.z + o[2] * (b->trickBlend * 1000.0f);
+        bike_update_trick_offset(rider);
+        if (rider->trickBlend != 0.0f) {
+            trickRot[0] = (1.0f - rider->trickBlend) + rider->trickQuat[0] * rider->trickBlend;
+            trickRot[1] = rider->trickQuat[1] * rider->trickBlend;
+            trickRot[2] = rider->trickQuat[2] * rider->trickBlend;
+            trickRot[3] = rider->trickQuat[3] * rider->trickBlend;
+            len = __builtin_sqrtf(trickRot[0] * trickRot[0] + trickRot[1] * trickRot[1] + trickRot[2] * trickRot[2] + trickRot[3] * trickRot[3]);
+            trickRot[0] /= len;
+            trickRot[1] /= len;
+            trickRot[2] /= len;
+            trickRot[3] /= len;
+            quat_mul(rider->drawQuat, rider->bike.quat, trickRot);
+            vec3_mul_mtx3f(&rider->trickOffset.x, &rider->bike.right.x, offset);
+            rider->drawPos.x = (f32)rider->drawPos.x + offset[0] * (rider->trickBlend * 1000.0f);
+            rider->drawPos.y = (f32)rider->drawPos.y + offset[1] * (rider->trickBlend * 1000.0f);
+            rider->drawPos.z = (f32)rider->drawPos.z + offset[2] * (rider->trickBlend * 1000.0f);
         }
-        quat_to_angles(b->drawQuat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
-        if (b->isCpu != 0) {
-            v = b->drawRot[1];
-            if (v > 0x1800) {
-                r = 0;
-            } else if (v > 0xC00) {
-                r = 0x1800 - v;
-            } else if (v >= -0xBFF) {
-                r = b->rot[1];
-            } else if (v >= -0x17FF) {
-                r = -0x1800 - v;
+        quat_to_angles(rider->drawQuat, &rider->drawRot[0], &rider->drawRot[1], &rider->drawRot[2]);
+        if (rider->isCpu != 0) {
+            angleWord = rider->drawRot[1];
+            if (angleWord > 0x1800) {
+                lean = 0;
+            } else if (angleWord > 0xC00) {
+                lean = 0x1800 - angleWord;
+            } else if (angleWord >= -0xBFF) {
+                lean = rider->rot[1];
+            } else if (angleWord >= -0x17FF) {
+                lean = -0x1800 - angleWord;
             } else {
-                r = 0;
+                lean = 0;
             }
-            ang = r;
-            ang *= 3.1415927f;
-            ang *= 3.0517578e-05f;
-            ang *= 0.5f;
-            c = cosf(ang);
-            s = sinf(ang);
-            r1[0] = c;
-            r1[1] = s * b->bike.fwd.x;
-            r1[2] = s * b->bike.fwd.y;
-            r1[3] = s * b->bike.fwd.z;
-            quat_mul(b->drawQuat, r1, b->drawQuat);
-            quat_to_angles(b->drawQuat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
-        } else if ((b->input & 0x20000) && gRaceFrame - b->turboPressFrame < 0x3C &&
-                   (b->rearWheel.surface->flags & 4) && b->airFrames < 0 && b->speed < 5.0f) {
-            if (b->speed > 2.0f) {
-                k = (f32)(b->turboPressFrame - (gRaceFrame - 0x3C)) * 6.1035155e-07f / 60.0f;
+            angle = lean;
+            angle *= 3.1415927f;
+            angle *= 3.0517578e-05f;
+            angle *= 0.5f;
+            cosA = cosf(angle);
+            sinA = sinf(angle);
+            leanQuat[0] = cosA;
+            leanQuat[1] = sinA * rider->bike.fwd.x;
+            leanQuat[2] = sinA * rider->bike.fwd.y;
+            leanQuat[3] = sinA * rider->bike.fwd.z;
+            quat_mul(rider->drawQuat, leanQuat, rider->drawQuat);
+            quat_to_angles(rider->drawQuat, &rider->drawRot[0], &rider->drawRot[1], &rider->drawRot[2]);
+        } else if ((rider->input & INPUT_Z) && gRaceFrame - rider->turboPressFrame < 0x3C &&
+                   (rider->rearWheel.surface->flags & SURFACE_CLODS) && rider->airFrames < 0 && rider->speed < 5.0f) {
+            if (rider->speed > 2.0f) {
+                amp = (f32)(rider->turboPressFrame - (gRaceFrame - 0x3C)) * 6.1035155e-07f / 60.0f;
             } else {
-                k = 1.2207031e-06f;
+                amp = 1.2207031e-06f;
             }
-            ang = gCosTable[((((gRaceFrame - b->turboPressFrame) << 13) >> 4) - 0x400) & 0xFFF];
-            ang *= k;
-            r2[0] = cosf(ang);
-            s2 = sinf(ang);
-            r2[1] = s2 * b->bike.up.x;
-            r2[2] = s2 * b->bike.up.y;
-            r2[3] = s2 * b->bike.up.z;
-            quat_mul(b->drawQuat, r2, b->drawQuat);
-            quat_to_angles(b->drawQuat, &b->drawRot[0], &b->drawRot[1], &b->drawRot[2]);
+            angle = gCosTable[((((gRaceFrame - rider->turboPressFrame) << 13) >> 4) - 0x400) & 0xFFF];
+            angle *= amp;
+            shakeQuat[0] = cosf(angle);
+            sinB = sinf(angle);
+            shakeQuat[1] = sinB * rider->bike.up.x;
+            shakeQuat[2] = sinB * rider->bike.up.y;
+            shakeQuat[3] = sinB * rider->bike.up.z;
+            quat_mul(rider->drawQuat, shakeQuat, rider->drawQuat);
+            quat_to_angles(rider->drawQuat, &rider->drawRot[0], &rider->drawRot[1], &rider->drawRot[2]);
         }
     } else {
-        quat_to_mtx3f(&b->body.right.x, b->body.quat);
-        b->drawBodyPos.x = b->body.pos.x * 1000.0f;
-        b->drawBodyPos.y = b->body.pos.y * 1000.0f;
-        b->drawBodyPos.z = b->body.pos.z * 1000.0f;
+        quat_to_mtx3f(&rider->body.right.x, rider->body.quat);
+        rider->drawBodyPos.x = rider->body.pos.x * 1000.0f;
+        rider->drawBodyPos.y = rider->body.pos.y * 1000.0f;
+        rider->drawBodyPos.z = rider->body.pos.z * 1000.0f;
     }
-    b->drawSteer = b->steer * 32768.0f / 3.1415927f;
-    quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
+    rider->drawSteer = rider->steer * 32768.0f / 3.1415927f;
+    quat_to_mtx3f(&rider->bike.right.x, rider->bike.quat);
 }
 
-void bike_handle_landing(Rider *a0)
+/* Lands the bike: cleanly, roughly or in a crash, from the wheels' heights and the impact. */
+void bike_handle_landing(Rider *arg)
 {
-    Rider *s1 = a0;
-    f32 *s0 = &s1->bike.vel.x;
-    f32 fs0, d;
-    s32 iv, v1;
+    Rider *rider = arg;
+    f32 *vel = &rider->bike.vel.x;
+    f32 impactVel, wheelDiff;
+    s32 impact, frame;
 
-    fs0 = vec3_dot(s0, &s1->rearWheel.normal.x) + vec3_dot(s0, &s1->frontWheel.normal.x);
-    if ((u8)s1->anim < 0x10 && s1->airFrames >= 0xB)
-        bike_crash_begin(s1, 0x1C);
-    s1->rHeld = 0;
-    if (fs0 < -10.0f)
-        s1->wheelieTimer = 0;
-    if (gGame.mode == 0xF) {
-        s1->landing = sBikeTuneLanding;
-        s1->bike.angVel.y = 0.0f;
+    impactVel = vec3_dot(vel, &rider->rearWheel.normal.x) + vec3_dot(vel, &rider->frontWheel.normal.x);
+    if ((u8)rider->anim < ANIM_TRICK_COUNT && rider->airFrames >= 0xB)
+        bike_crash_begin(rider, ANIM_CRASH_FRONT);
+    rider->rHeld = 0;
+    if (impactVel < -10.0f)
+        rider->wheelieTimer = 0;
+    if (gGame.mode == 15) {
+        rider->landing = sBikeTuneLanding;
+        rider->bike.angVel.y = 0.0f;
     }
-    if (s1->airFrames < 0x29)
-        goto L1c0;
-    d = s1->frontWheel.groundDist - s1->rearWheel.groundDist;
-    s1->prevJumpDist = s1->jumpDist;
-    if (d < -2.0f) {
-        bike_crash_begin(s1, 0x19);
-        goto L178;
+    if (rider->airFrames < 0x29)
+        goto record_impact;
+    wheelDiff = rider->frontWheel.groundDist - rider->rearWheel.groundDist;
+    rider->prevJumpDist = rider->jumpDist;
+    if (wheelDiff < -2.0f) {
+        bike_crash_begin(rider, ANIM_CRASH_BACK);
+        goto soften;
     }
-    if (d < -0.8f) {
-        s1->pendingCrash = 0x19;
-        goto L160;
+    if (wheelDiff < -0.8f) {
+        rider->pendingCrash = ANIM_CRASH_BACK;
+        goto save_crash_vel;
     }
-    if (d < -0.3f) {
-        s1->roughLanding = 1;
-        goto L178;
+    if (wheelDiff < -0.3f) {
+        rider->roughLanding = 1;
+        goto soften;
     }
-    if (d < 0.3f) {
-        s1->landingAssist = 1;
-        goto L178;
+    if (wheelDiff < 0.3f) {
+        rider->landingAssist = 1;
+        goto soften;
     }
-    if (d < 0.6f) {
-        s1->roughLanding = 1;
-        goto L178;
+    if (wheelDiff < 0.6f) {
+        rider->roughLanding = 1;
+        goto soften;
     }
-    s1->pendingCrash = 0x1C;
-L160:
-    s1->crashVel = s1->bike.vel;
-L178:
-    if (s1->pendingCrash != 0 && -10.0f < fs0) {
-        s1->pendingCrash = 0;
-        s1->roughLanding = 1;
+    rider->pendingCrash = ANIM_CRASH_FRONT;
+save_crash_vel:
+    rider->crashVel = rider->bike.vel;
+soften:
+    if (rider->pendingCrash != 0 && -10.0f < impactVel) {
+        rider->pendingCrash = 0;
+        rider->roughLanding = 1;
     }
-    if (s1->landingAssist != 0) {
+    if (rider->landingAssist != 0) {
         f32 zf = 0.0f;
-        s1->bike.angVel.z = zf;
-        s1->bike.angVel.y = zf;
-        s1->bike.angVel.x = zf;
+        rider->bike.angVel.z = zf;
+        rider->bike.angVel.y = zf;
+        rider->bike.angVel.x = zf;
     }
-L1c0:
-    if (s1->airFrames < 0x15)
-        goto END;
-    iv = (s32)(-fs0 * 10.0f);
-    s1->landingImpact = iv;
-    if (iv < 0)
-        s1->landingImpact = 0;
-    if (s1->landingImpact >= 0x100)
-        s1->landingImpact = 0xFF;
-    v1 = gRaceFrame;
-    s1->impactFlags = 0xFF;
-    s1->steer = 0.0f;
-    s1->landingFrame = v1;
-END:
-    s1->airFrames = 0;
+record_impact:
+    if (rider->airFrames < 0x15)
+        goto done;
+    impact = (s32)(-impactVel * 10.0f);
+    rider->landingImpact = impact;
+    if (impact < 0)
+        rider->landingImpact = 0;
+    if (rider->landingImpact >= 0x100)
+        rider->landingImpact = 0xFF;
+    frame = gRaceFrame;
+    rider->impactFlags = 0xFF;
+    rider->steer = 0.0f;
+    rider->landingFrame = frame;
+done:
+    rider->airFrames = 0;
 }
 
-f32 bike_predict_landing(Rider *p, f32 g, f32 t, f32 *out)
+/* Predicts when and where the bike lands under gravity g (a secant search from time t); writes the point.
+   The dead tests keep the original's register use. */
+f32 bike_predict_landing(Rider *rider, f32 gravity, f32 time, f32 *point)
 {
-    f32 diff, prev, v, step, lim, w;
+    f32 diff, prevDiff, slope, step, tolerance, pointZ;
 
-    out[0] = p->bike.pos.x + p->bike.vel.x * t;
-    out[1] = p->bike.pos.y + (p->bike.vel.y + g * t * 0.5f) * t;
-    w = p->bike.pos.z + p->bike.vel.z * t;
-    out[2] = w;
-    if (out == 0) w = 1.0f; else if (p == 0) w = 2.0f; else w = 3.0f;
-        diff = (f32)height_get_ground(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
-    diff = (diff - out[1]) + 0.5f;
-    v = p->bike.vel.y + g * t;
-    if (0.0f < v ? v < 0.1f : -v < 0.1f) v = 0.1f;
-    v = 1.0f / v;
-    if (10.0f < v) v = 10.0f;
-    else if (v < -10.0f) v = -10.0f;
-    lim = 0.1f;
-    while (lim < diff || diff < -lim) {
-        step = diff * v;
-        if (t + step < 0.0f) step = -t;
-        t += step;
-        prev = diff;
-        out[1] = p->bike.pos.y + (p->bike.vel.y + g * t * 0.5f) * t;
-        out[0] = p->bike.pos.x + p->bike.vel.x * t;
-        w = p->bike.pos.z + p->bike.vel.z * t;
-        out[2] = w;
-        if (out == 0) w = 1.0f; else if (p == 0) w = 2.0f; else if (out == (f32 *)p) w = 4.0f; else if (out == &p->bike.pos.x) w = 5.0f; else if (out == &p->bike.pos.y) w = 6.0f; else w = 3.0f;
-                diff = (f32)height_get_ground(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
-    diff = (diff - out[1]) + 0.5f;
-        if (prev == diff) return t;
-        v = step / (prev - diff);
-        if (10.0f < v) v = 10.0f;
-        else if (v < -10.0f) v = -10.0f;
-        lim += 0.05f;
+    point[0] = rider->bike.pos.x + rider->bike.vel.x * time;
+    point[1] = rider->bike.pos.y + (rider->bike.vel.y + gravity * time * 0.5f) * time;
+    pointZ = rider->bike.pos.z + rider->bike.vel.z * time;
+    point[2] = pointZ;
+    if (point == 0) pointZ = 1.0f; else if (rider == 0) pointZ = 2.0f; else pointZ = 3.0f;
+        diff = (f32)height_get_ground(point[0] * 1000.0f, point[1] * 1000.0f, point[2] * 1000.0f) / 1000.0f;
+    diff = (diff - point[1]) + 0.5f;
+    slope = rider->bike.vel.y + gravity * time;
+    if (0.0f < slope ? slope < 0.1f : -slope < 0.1f) slope = 0.1f;
+    slope = 1.0f / slope;
+    if (10.0f < slope) slope = 10.0f;
+    else if (slope < -10.0f) slope = -10.0f;
+    tolerance = 0.1f;
+    while (tolerance < diff || diff < -tolerance) {
+        step = diff * slope;
+        if (time + step < 0.0f) step = -time;
+        time += step;
+        prevDiff = diff;
+        point[1] = rider->bike.pos.y + (rider->bike.vel.y + gravity * time * 0.5f) * time;
+        point[0] = rider->bike.pos.x + rider->bike.vel.x * time;
+        pointZ = rider->bike.pos.z + rider->bike.vel.z * time;
+        point[2] = pointZ;
+        if (point == 0) pointZ = 1.0f; else if (rider == 0) pointZ = 2.0f; else if (point == (f32 *)rider) pointZ = 4.0f; else if (point == &rider->bike.pos.x) pointZ = 5.0f; else if (point == &rider->bike.pos.y) pointZ = 6.0f; else pointZ = 3.0f;
+                diff = (f32)height_get_ground(point[0] * 1000.0f, point[1] * 1000.0f, point[2] * 1000.0f) / 1000.0f;
+    diff = (diff - point[1]) + 0.5f;
+        if (prevDiff == diff) return time;
+        slope = step / (prevDiff - diff);
+        if (10.0f < slope) slope = 10.0f;
+        else if (slope < -10.0f) slope = -10.0f;
+        tolerance += 0.05f;
     }
-    if (p->speed != 0.0f) {
-        out[0] = out[0] - p->bike.vel.x * (0.5f / p->speed);
-        out[2] = out[2] - p->bike.vel.z * (0.5f / p->speed);
+    if (rider->speed != 0.0f) {
+        point[0] = point[0] - rider->bike.vel.x * (0.5f / rider->speed);
+        point[2] = point[2] - rider->bike.vel.z * (0.5f / rider->speed);
     }
-    if (out == 0) diff = 1.0f; else if (p == 0) diff = 2.0f; else diff = 3.0f;
-        out[1] = (f32)height_get_ground(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
-    if (t < 0.0f) t = 0.0f;
-    return t;
+    if (point == 0) diff = 1.0f; else if (rider == 0) diff = 2.0f; else diff = 3.0f;
+        point[1] = (f32)height_get_ground(point[0] * 1000.0f, point[1] * 1000.0f, point[2] * 1000.0f) / 1000.0f;
+    if (time < 0.0f) time = 0.0f;
+    return time;
 }
 
-void bike_align_to_ground(Rider *b)
+/* In the air: pitches the bike towards the slope of the ground where it will land. */
+void bike_align_to_ground(Rider *rider)
 {
-    Vec3f n;
-    Vec3f c;
-    Vec3f u;
-    Vec3f v;
-    f32 len;
-    f32 q;
-    s32 t, w;
-    f32 th, qd;
+    Vec3f normal;
+    Vec3f axis;
+    Vec3f unused;
+    Vec3f landPos;
+    f32 sinAngle;
+    f32 angle;
+    s32 angleWord, uninit;
+    f32 time, rate;
 
-    v = b->bike.pos;
-    th = v.x + b->bike.vel.x * b->landingTime;
-    v.x = th;
-    qd = v.z + b->bike.vel.z * b->landingTime;
-    v.z = qd;
-    if (b == 0) q = 1.0f; else if (t == w) q = 2.0f; else q = 3.0f;
-    height_get_ground((s32)(v.x * 1000.0f), (s32)(v.y * 1000.0f), (s32)(v.z * 1000.0f));
-    height_get_ground_normal(&n.x);
-    if (n.y < 0.5f) {
+    landPos = rider->bike.pos;
+    /* time and rate first hold the landing point's x and z */
+    time = landPos.x + rider->bike.vel.x * rider->landingTime;
+    landPos.x = time;
+    rate = landPos.z + rider->bike.vel.z * rider->landingTime;
+    landPos.z = rate;
+    /* a dead test (of an uninitialised variable): it keeps the original's register use */
+    if (rider == 0) angle = 1.0f; else if (angleWord == uninit) angle = 2.0f; else angle = 3.0f;
+    height_get_ground((s32)(landPos.x * 1000.0f), (s32)(landPos.y * 1000.0f), (s32)(landPos.z * 1000.0f));
+    height_get_ground_normal(&normal.x);
+    if (normal.y < 0.5f) {
         return;
     }
-    c.x = b->bike.up.y * n.z - n.y * b->bike.up.z;
-    c.y = b->bike.up.z * n.x - n.z * b->bike.up.x;
-    c.z = b->bike.up.x * n.y - n.x * b->bike.up.y;
-    len = vec3_dot(&c.x, &b->bike.right.x);
-    c.x = b->bike.right.x * len;
-    c.y = b->bike.right.y * len;
-    c.z = b->bike.right.z * len;
-    if (len == 0.0f) {
+    axis.x = rider->bike.up.y * normal.z - normal.y * rider->bike.up.z;
+    axis.y = rider->bike.up.z * normal.x - normal.z * rider->bike.up.x;
+    axis.z = rider->bike.up.x * normal.y - normal.x * rider->bike.up.y;
+    sinAngle = vec3_dot(&axis.x, &rider->bike.right.x);
+    axis.x = rider->bike.right.x * sinAngle;
+    axis.y = rider->bike.right.y * sinAngle;
+    axis.z = rider->bike.right.z * sinAngle;
+    if (sinAngle == 0.0f) {
         return;
     }
-    t = math_asini((s32)(len * 16384.0f));
-    q = (f32)(s16)t * 3.1415927f * 3.0517578e-05f;
-    th = b->landingTime;
-    th += 0.1f;
-    qd = (q + q) / th;
-    if (qd > 2.0f) {
-        qd = 2.0f;
-    } else if (qd < -2.0f) {
-        qd = -2.0f;
+    angleWord = math_asini((s32)(sinAngle * 16384.0f));
+    angle = (f32)(s16)angleWord * 3.1415927f * 3.0517578e-05f;
+    time = rider->landingTime;
+    time += 0.1f;
+    rate = (angle + angle) / time;
+    if (rate > 2.0f) {
+        rate = 2.0f;
+    } else if (rate < -2.0f) {
+        rate = -2.0f;
     }
-    qd = qd / len;
-    b->bike.angVel.x = c.x * qd;
-    b->bike.angVel.y = c.y * qd;
-    b->bike.angVel.z = c.z * qd;
+    rate = rate / sinAngle;
+    rider->bike.angVel.x = axis.x * rate;
+    rider->bike.angVel.y = axis.y * rate;
+    rider->bike.angVel.z = axis.z * rate;
 }
 
-void bike_update_wheelie(Rider *e)
+/* Wheelies: Z with the stick pulled back starts one and the stick balances it; CPU riders never wheelie. */
+void bike_update_wheelie(Rider *rider)
 {
-    s8 c;
+    s8 stick;
 
-    if (e->airFrames > 0x3C && (*(s32 *)&e->crestAhead & 0xFFFF00) == 0) {
-        e->wheelieTimer = 0;
+    /* the mask reads leftFootOut and rightFootOut: both feet on the pegs */
+    if (rider->airFrames > 0x3C && (*(s32 *)&rider->crestAhead & 0xFFFF00) == 0) {
+        rider->wheelieTimer = 0;
     }
-    if (e->wheelieTimer == 0) {
-        if (e->airFrames < 0) {
-            if (e->frontWheel.airTicks < 0 && e->speed > 7.5f && (e->frontWheel.surface->flags & 0x20)) {
-                bike_crash_begin(e, 0x1C);
+    if (rider->wheelieTimer == 0) {
+        if (rider->airFrames < 0) {
+            if (rider->frontWheel.airTicks < 0 && rider->speed > 7.5f && (rider->frontWheel.surface->flags & 0x20)) {
+                bike_crash_begin(rider, ANIM_CRASH_FRONT);
             }
-            if ((e->input & 0x20000) && !(e->prevInput & 0x20000) && abs(e->stickX) < 3 &&
-                e->fwdSpeed > -1.0f && e->stickY < -4) {
-                e->wheelieTimer = 0x10;
-                e->wheelieBalance = 0;
+            if ((rider->input & INPUT_Z) && !(rider->prevInput & INPUT_Z) && abs(rider->stickX) < 3 &&
+                rider->fwdSpeed > -1.0f && rider->stickY < -4) {
+                rider->wheelieTimer = 0x10;
+                rider->wheelieBalance = 0;
             }
         }
     } else {
-        if (e->rearWheel.airTicks <= 0) {
-            if (e->rearWheel.surface->flags & 0x20) {
-                e->wheelieTimer = 0xF;
+        if (rider->rearWheel.airTicks <= 0) {
+            if (rider->rearWheel.surface->flags & 0x20) {
+                rider->wheelieTimer = 0xF;
             }
-            if (e->rearWheel.airTicks <= 0 && vec3_dot(&e->bike.up.x, &e->rearWheel.normal.x) < 0.5f) {
-                bike_crash_begin(e, 0x19);
+            if (rider->rearWheel.airTicks <= 0 && vec3_dot(&rider->bike.up.x, &rider->rearWheel.normal.x) < 0.5f) {
+                bike_crash_begin(rider, ANIM_CRASH_BACK);
             }
         }
-        if (e->wheelieTimer < 0x10) {
-            e->wheelieTimer--;
+        if (rider->wheelieTimer < 0x10) {
+            rider->wheelieTimer--;
         } else {
-            if (e->wheelieTimer >= 0x3D && e->airFrames <= 0) {
-                c = e->stickY;
-                if (c < -12) {
-                    e->wheelieBalance += 0x20;
-                } else if (c >= -3) {
-                    e->wheelieBalance -= 0x20;
+            if (rider->wheelieTimer >= 0x3D && rider->airFrames <= 0) {
+                stick = rider->stickY;
+                if (stick < -12) {
+                    rider->wheelieBalance += 0x20;
+                } else if (stick >= -3) {
+                    rider->wheelieBalance -= 0x20;
                 }
-                e->wheelieBalance -= e->wheelieBalance / 64;
-                if (e->wheelieBalance > 0x400) {
-                    bike_crash_begin(e, 0x19);
-                    e->bike.angVel.x -= e->bike.right.x * 5.0f;
-                    e->bike.angVel.y -= e->bike.right.y * 5.0f;
-                    e->bike.angVel.z -= e->bike.right.z * 5.0f;
-                } else if (e->wheelieBalance < -0x400) {
-                    e->wheelieTimer = 0xF;
+                rider->wheelieBalance -= rider->wheelieBalance / 64;
+                if (rider->wheelieBalance > 0x400) {
+                    bike_crash_begin(rider, ANIM_CRASH_BACK);
+                    rider->bike.angVel.x -= rider->bike.right.x * 5.0f;
+                    rider->bike.angVel.y -= rider->bike.right.y * 5.0f;
+                    rider->bike.angVel.z -= rider->bike.right.z * 5.0f;
+                } else if (rider->wheelieBalance < -0x400) {
+                    rider->wheelieTimer = 0xF;
                 }
-                if ((e->stickY < -12 || e->stickY > -4) && (f32)e->airFrames < 3.0f) {
-                    if (e->rightFootOut < 0x10) e->rightFootOut++;
-                    if (e->leftFootOut < 0x10) e->leftFootOut++;
+                if ((rider->stickY < -12 || rider->stickY > -4) && (f32)rider->airFrames < 3.0f) {
+                    if (rider->rightFootOut < 0x10) rider->rightFootOut++;
+                    if (rider->leftFootOut < 0x10) rider->leftFootOut++;
                 } else {
-                    if (e->rightFootOut != 0) e->rightFootOut--;
-                    if (e->leftFootOut != 0) e->leftFootOut--;
+                    if (rider->rightFootOut != 0) rider->rightFootOut--;
+                    if (rider->leftFootOut != 0) rider->leftFootOut--;
                 }
             } else {
-                e->leftFootOut = 0;
-                e->rightFootOut = 0;
+                rider->leftFootOut = 0;
+                rider->rightFootOut = 0;
             }
-            e->wheelieTimer++;
-            if (e->wheelieTimer == 0xF0) {
-                e->fistPump = 1;
+            rider->wheelieTimer++;
+            if (rider->wheelieTimer == 0xF0) {
+                rider->fistPump = 1;
             }
-            if (e->stickY >= 0) {
-                e->wheelieTimer = 0xF;
+            if (rider->stickY >= 0) {
+                rider->wheelieTimer = 0xF;
             }
         }
     }
-    if (e->isCpu && e->wheelieTimer != 0) {
-        e->wheelieTimer = 0;
+    if (rider->isCpu && rider->wheelieTimer != 0) {
+        rider->wheelieTimer = 0;
     }
 }
 
-void bike_update_jump(Rider *b) {
+/* Takeoff boosts and landing prediction, air turns and air pitch, the landing assist, the jump's distance. */
+void bike_update_jump(Rider *rider)
+{
     volatile s32 pad[12];
-    Vec3f t;
-    Vec3f c;
-    Vec3f p;
-    f32 x, z, len;
-    f32 fs2, fs3, fs4;
-    f32 sp, th, e, d;
-    f32 s1v, t1v, d1, g, m, c2, d2;
-    s32 n, r;
-    f32 k;
+    Vec3f vec;
+    Vec3f axis;
+    Vec3f landPos;
+    f32 dirX, dirZ, horizSpeed;
+    f32 score1, score2, slope;
+    f32 speed, boost, normalVel, unusedD;
+    f32 takeoffSpeed, minAirTime, pitchRate, rampBoost, pitchScale, limit, tilt;
+    s32 steer, pitchIn;
+    f32 rampScale;
 
-    if (b->roughLanding != 0) {
-        b->roughLanding += ((u8 *)&gPhysTicks)[3];
-        if (b->roughLanding >= 60) {
-            b->roughLanding = 0;
+    if (rider->roughLanding != 0) {
+        rider->roughLanding += ((u8 *)&gPhysTicks)[3]; /* its low byte */
+        if (rider->roughLanding >= 60) {
+            rider->roughLanding = 0;
         }
     }
-    if (b->jumpState == 1 && (b->crashState != 0 || b->anim != -1)) {
-        b->jumpState = -1;
+    if (rider->jumpState == 1 && (rider->crashState != CRASH_STATE_RIDING || rider->anim != ANIM_NONE)) {
+        rider->jumpState = -1;
     }
-    if (b->rearWheel.airTicks > 0 && b->frontWheel.airTicks > 0) {
-        if (b->airFrames <= 0) {
-            b->unk_740 = 0;
-            b->landingTime1 = (b->bike.vel.y + b->bike.vel.y) / 10.106251f;
-            b->landingTime2 = (b->bike.vel.y + b->bike.vel.y) / 19.29375f;
-            b->landingTime = (b->bike.vel.y + b->bike.vel.y) / 14.700001f;
-            stunt_on_takeoff(b);
-            s1v = b->speed;
-            t1v = 0.5f;
-            if (!(s1v > 20.0f)) {
-                t1v = 0.25f;
-                if (s1v > 10.0f) {
-                    t1v = (s1v - 10.0f) / 40.0f + 0.25f;
+    if (rider->rearWheel.airTicks > 0 && rider->frontWheel.airTicks > 0) {
+        if (rider->airFrames <= 0) {
+            rider->cpuAirPitch = 0;
+            rider->landingTime1 = (rider->bike.vel.y + rider->bike.vel.y) / 10.106251f;
+            rider->landingTime2 = (rider->bike.vel.y + rider->bike.vel.y) / 19.29375f;
+            rider->landingTime = (rider->bike.vel.y + rider->bike.vel.y) / 14.700001f;
+            stunt_on_takeoff(rider);
+            takeoffSpeed = rider->speed;
+            minAirTime = 0.5f;
+            if (!(takeoffSpeed > 20.0f)) {
+                minAirTime = 0.25f;
+                if (takeoffSpeed > 10.0f) {
+                    minAirTime = (takeoffSpeed - 10.0f) / 40.0f + 0.25f;
                 }
             }
-            if (t1v < b->landingTime) {
-                if (b->wheelieTimer != 0 && b->wheelieTimer < 45) {
-                    b->wheelieTimer = 0;
+            if (minAirTime < rider->landingTime) {
+                if (rider->wheelieTimer != 0 && rider->wheelieTimer < 45) {
+                    rider->wheelieTimer = 0;
                 }
-                d1 = vec3_dot(&b->bike.right.x, &b->bike.angVel.x);
-                b->bike.angVel.x -= d1 * b->bike.right.x;
-                b->bike.angVel.y -= d1 * b->bike.right.y;
-                b->bike.angVel.z -= d1 * b->bike.right.z;
-                if (b->isCpu == 0 && b->crashState == 0 && gRaceFrame - b->turboPressFrame < 10 && (b->input & 0x20000)) {
-                    sp = b->speed;
-                    if (sp < 20.0f && b->engine.overheated == 0) {
-                        th = 5.0f;
-                        if (sp > 10.0f) {
-                            th = 5.0f - (sp - 10.0f) * 0.5f;
+                pitchRate = vec3_dot(&rider->bike.right.x, &rider->bike.angVel.x);
+                rider->bike.angVel.x -= pitchRate * rider->bike.right.x;
+                rider->bike.angVel.y -= pitchRate * rider->bike.right.y;
+                rider->bike.angVel.z -= pitchRate * rider->bike.right.z;
+                if (rider->isCpu == 0 && rider->crashState == CRASH_STATE_RIDING && gRaceFrame - rider->turboPressFrame < 10 && (rider->input & INPUT_Z)) {
+                    /* turbo at takeoff: a boost (none when overheated) */
+                    speed = rider->speed;
+                    if (speed < 20.0f && rider->engine.overheated == 0) {
+                        boost = 5.0f;
+                        if (speed > 10.0f) {
+                            boost = 5.0f - (speed - 10.0f) * 0.5f;
                         }
-                        if (sp != 0.0f) {
-                            sp = th / sp + 1.0f;
+                        if (speed != 0.0f) {
+                            speed = boost / speed + 1.0f;
                         } else {
-                            sp = 0.0f;
+                            speed = 0.0f;
                         }
-                        b->bike.vel.x *= sp;
-                        b->bike.vel.y *= sp;
-                        b->bike.vel.z *= sp;
-                        if (b->rot[0] >= -0x17FF) {
-                            b->bike.angVel.x -= b->bike.right.x * 3.0f;
-                            b->bike.angVel.y -= b->bike.right.y * 3.0f;
-                            b->bike.angVel.z -= b->bike.right.z * 3.0f;
+                        rider->bike.vel.x *= speed;
+                        rider->bike.vel.y *= speed;
+                        rider->bike.vel.z *= speed;
+                        if (rider->rot[0] >= -0x17FF) {
+                            rider->bike.angVel.x -= rider->bike.right.x * 3.0f;
+                            rider->bike.angVel.y -= rider->bike.right.y * 3.0f;
+                            rider->bike.angVel.z -= rider->bike.right.z * 3.0f;
                         }
-                        snd_play_rider_sfx_pitch(7, b - gRiders, 0xC0, 0xC0, 1);
+                        snd_play_rider_sfx_pitch(7, rider - gRiders, 0xC0, 0xC0, 1);
                     }
                 }
-                if (gGame.mode == 6) {
-                    Vec3f *q = &b->takeoffPos;
-                    if (b->speed > 4.0f) {
-                    th = q->x; sp = q->z; if (b == 0) r = 0; height_get_ground(th * 1000.0f, q->y * 1000.0f, sp * 1000.0f);
-                    if (gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & 0x400) {
-                        f32 k;
-                        k = 10.0f;
-                        g = sBikeTuneRampBoost * k / b->speed + 1.0f;
-                        b->bike.vel.x *= g;
-                        b->bike.vel.y *= g;
-                        b->bike.vel.z *= g;
-                    }
+                if (gGame.mode == GAME_MODE_EXCITE_3D) {
+                    Vec3f *takeoff = &rider->takeoffPos;
+                    if (rider->speed > 4.0f) {
+                        /* boost and speed hold the takeoff point's x and z; the dead test keeps the original's
+                           register use */
+                        boost = takeoff->x;
+                        speed = takeoff->z;
+                        if (rider == 0) pitchIn = 0;
+                        height_get_ground(boost * 1000.0f, takeoff->y * 1000.0f, speed * 1000.0f);
+                        if (gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & SURFACE_BOOST_RAMP) {
+                            f32 rampScale;
+                            rampScale = 10.0f;
+                            rampBoost = sBikeTuneRampBoost * rampScale / rider->speed + 1.0f;
+                            rider->bike.vel.x *= rampBoost;
+                            rider->bike.vel.y *= rampBoost;
+                            rider->bike.vel.z *= rampBoost;
+                        }
                     }
                 }
             }
-            t.x = b->bike.vel.x * b->landingTime1;
-            t.y = b->bike.vel.y * b->landingTime1;
-            t.z = b->bike.vel.z * b->landingTime1;
-            b->landingPos1.x = t.x + b->bike.pos.x;
-            b->landingPos1.y = t.y + b->bike.pos.y;
-            b->landingPos1.z = t.z + b->bike.pos.z;
-            t.x = b->bike.vel.x * b->landingTime2;
-            t.y = b->bike.vel.y * b->landingTime2;
-            t.z = b->bike.vel.z * b->landingTime2;
-            b->landingPos2.x = t.x + b->bike.pos.x;
-            b->landingPos2.y = t.y + b->bike.pos.y;
-            b->landingPos2.z = t.z + b->bike.pos.z;
-            b->landingAssist = 0;
-            b->unk_622 = 0;
+            vec.x = rider->bike.vel.x * rider->landingTime1;
+            vec.y = rider->bike.vel.y * rider->landingTime1;
+            vec.z = rider->bike.vel.z * rider->landingTime1;
+            rider->landingPos1.x = vec.x + rider->bike.pos.x;
+            rider->landingPos1.y = vec.y + rider->bike.pos.y;
+            rider->landingPos1.z = vec.z + rider->bike.pos.z;
+            vec.x = rider->bike.vel.x * rider->landingTime2;
+            vec.y = rider->bike.vel.y * rider->landingTime2;
+            vec.z = rider->bike.vel.z * rider->landingTime2;
+            rider->landingPos2.x = vec.x + rider->bike.pos.x;
+            rider->landingPos2.y = vec.y + rider->bike.pos.y;
+            rider->landingPos2.z = vec.z + rider->bike.pos.z;
+            rider->landingAssist = 0;
+            rider->airTurnYaw = 0;
             {
-                u16 h = (u16)b->segment;
-                b->landingSegment2 = h;
-                b->landingSegment1 = h;
+                u16 seg = (u16)rider->segment;
+                rider->landingSegment2 = seg;
+                rider->landingSegment1 = seg;
             }
-            b->airFrames = gPhysTicks;
+            rider->airFrames = gPhysTicks;
         } else {
-            b->airFrames += gPhysTicks;
+            rider->airFrames += gPhysTicks;
         }
-        if (b->airFrames >= 4) {
-            b->landingTime2 = bike_predict_landing(b, -19.29375f, b->landingTime2, &b->landingPos2.x);
-            height_get_ground_normal(&b->landingNormal2.x);
-            b->landingTime1 = bike_predict_landing(b, -10.106251f, b->landingTime1, &b->landingPos1.x);
-            height_get_ground_normal(&b->landingNormal1.x);
-            b->landingTime = (b->landingTime1 + b->landingTime2) * 0.5f;
-            if (b->input & 0x10000) {
-                n = b->stickX;
-                if (b->anim == -1 && b->landingTime > 0.5f) {
-                    if (n > 10) {
-                        stunt_start(b, 16);
-                    } else if (n < -10) {
-                        stunt_start(b, 17);
+        if (rider->airFrames >= 4) {
+            rider->landingTime2 = bike_predict_landing(rider, -19.29375f, rider->landingTime2, &rider->landingPos2.x);
+            height_get_ground_normal(&rider->landingNormal2.x);
+            rider->landingTime1 = bike_predict_landing(rider, -10.106251f, rider->landingTime1, &rider->landingPos1.x);
+            height_get_ground_normal(&rider->landingNormal1.x);
+            rider->landingTime = (rider->landingTime1 + rider->landingTime2) * 0.5f;
+            if (rider->input & INPUT_R) {
+                steer = rider->stickX;
+                if (rider->anim == ANIM_NONE && rider->landingTime > 0.5f) {
+                    if (steer > 10) {
+                        stunt_start(rider, ANIM_AIR_TURN);
+                    } else if (steer < -10) {
+                        stunt_start(rider, ANIM_AIR_TURN_2);
                     }
-                    if (b->anim != -1) {
-                        b->animSpeed = (f32)(gRiderAnims[b->anim].body->count << 9) / (b->landingTime * 60.0f);
+                    if (rider->anim != ANIM_NONE) {
+                        rider->animSpeed = (f32)(gRiderAnims[rider->anim].body->count << 9) / (rider->landingTime * 60.0f);
                     }
                 }
-                if (b->anim == 16) {
-                    if (n <= 0) {
-                        n = 1;
+                if (rider->anim == ANIM_AIR_TURN) {
+                    if (steer <= 0) {
+                        steer = 1;
                     }
-                    b->unk_622 = n << 9;
-                } else if (b->anim == 17) {
-                    if (n >= 0) {
-                        n = -1;
+                    rider->airTurnYaw = steer << 9;
+                } else if (rider->anim == ANIM_AIR_TURN_2) {
+                    if (steer >= 0) {
+                        steer = -1;
                     }
-                    b->unk_622 = n << 9;
+                    rider->airTurnYaw = steer << 9;
                 }
             }
-            if (b->isCpu == 0) {
-                if (b->anim == -1 && !(b->input & 0x100)) {
-                    m = 0.015625f;
-                    if (b->stickY < 0) {
-                        m = b->airFloat;
+            if (rider->isCpu == 0) {
+                if (rider->anim == ANIM_NONE && !(rider->input & INPUT_C_DOWN)) {
+                    pitchScale = 0.015625f;
+                    if (rider->stickY < 0) {
+                        pitchScale = rider->airFloat;
                     }
-                    b->airPitch = b->stickY * m;
-                    if (b == 0) r = 0;
-                    b->airPitchInput = b->stickY;
+                    rider->airPitch = rider->stickY * pitchScale;
+                    if (rider == 0) pitchIn = 0; /* dead: keeps the original's register use */
+                    rider->airPitchInput = rider->stickY;
                 } else {
-                    b->airPitchInput = 0;
-                    b->airPitch = b->airFloat * -15.0f;
+                    rider->airPitchInput = 0;
+                    rider->airPitch = rider->airFloat * -15.0f;
                 }
             } else {
-                n = 5;
-                if (b->airFrames >= 6) {
-                    n = 1;
+                steer = 5;
+                if (rider->airFrames >= 6) {
+                    steer = 1;
                 }
-                x = b->bike.vel.x;
-                z = b->bike.vel.z;
-                len = __builtin_sqrtf(x * x + z * z);
-                if (len == 0.0f) {
-                    len = 1.0f;
+                dirX = rider->bike.vel.x;
+                dirZ = rider->bike.vel.z;
+                horizSpeed = __builtin_sqrtf(dirX * dirX + dirZ * dirZ);
+                if (horizSpeed == 0.0f) {
+                    horizSpeed = 1.0f;
                 }
-                x /= len;
-                z /= len;
-                fs3 = b->landingPos2.y * 14.700001f;
-                fs4 = (x * b->landingNormal2.x + z * b->landingNormal2.z) / b->landingNormal2.y;
-                if (gGame.mode != 5) {
-                    b->landingSegment2 = path_find_segment(&b->landingPos2, b->landingSegment2, n, b->pathSearch);
-                    if (gPathNodes[b->landingSegment2].flags & 0x10) {
-                        fs3 -= 1000.0f;
+                dirX /= horizSpeed;
+                dirZ /= horizSpeed;
+                score2 = rider->landingPos2.y * 14.700001f;
+                slope = (dirX * rider->landingNormal2.x + dirZ * rider->landingNormal2.z) / rider->landingNormal2.y;
+                if (gGame.mode != GAME_MODE_DESERT) {
+                    rider->landingSegment2 = path_find_segment(&rider->landingPos2, rider->landingSegment2, steer, rider->pathSearch);
+                    if (gPathNodes[rider->landingSegment2].flags & 0x10) {
+                        score2 -= 1000.0f;
                     }
                 }
-                fs2 = b->landingPos1.y * 14.700001f;
-                e = b->landingNormal2.x * b->bike.vel.x + b->landingNormal2.y * (b->bike.vel.y - b->landingTime2 * 17.640001f) + b->landingNormal2.z * b->bike.vel.z;
-                x = (x * b->landingNormal1.x + z * b->landingNormal1.z) / b->landingNormal1.y;
-                fs3 -= e * e;
-                if (gGame.mode != 5) {
-                    b->landingSegment1 = path_find_segment(&b->landingPos1, b->landingSegment1, n, b->pathSearch);
-                    if (gPathNodes[b->landingSegment1].flags & 0x10) {
-                        fs2 -= 500.0f;
+                score1 = rider->landingPos1.y * 14.700001f;
+                normalVel = rider->landingNormal2.x * rider->bike.vel.x + rider->landingNormal2.y * (rider->bike.vel.y - rider->landingTime2 * 17.640001f) + rider->landingNormal2.z * rider->bike.vel.z;
+                dirX = (dirX * rider->landingNormal1.x + dirZ * rider->landingNormal1.z) / rider->landingNormal1.y;
+                score2 -= normalVel * normalVel;
+                if (gGame.mode != GAME_MODE_DESERT) {
+                    rider->landingSegment1 = path_find_segment(&rider->landingPos1, rider->landingSegment1, steer, rider->pathSearch);
+                    if (gPathNodes[rider->landingSegment1].flags & 0x10) {
+                        score1 -= 500.0f;
                     }
                 }
-                e = b->landingNormal1.x * b->bike.vel.x + b->landingNormal1.y * (b->bike.vel.y - b->landingTime1 * 11.760001f) + b->landingNormal1.z * b->bike.vel.z;
-                b->landingTime = (b->landingTime1 + b->landingTime2) * 0.5f;
-                fs2 -= e * e;
-                if (fs3 < fs2) {
-                    b->landingPick = 1;
-                    b->airPitch = -0.3125f;
+                normalVel = rider->landingNormal1.x * rider->bike.vel.x + rider->landingNormal1.y * (rider->bike.vel.y - rider->landingTime1 * 11.760001f) + rider->landingNormal1.z * rider->bike.vel.z;
+                rider->landingTime = (rider->landingTime1 + rider->landingTime2) * 0.5f;
+                score1 -= normalVel * normalVel;
+                if (score2 < score1) {
+                    rider->landingPick = 1;
+                    rider->airPitch = -0.3125f;
                 } else {
-                    fs4 = x;
-                    b->landingPick = 0;
-                    b->airPitch = 0.3125f;
+                    slope = dirX;
+                    rider->landingPick = 0;
+                    rider->airPitch = 0.3125f;
                 }
-                if (b->landingTime < 1.5f) {
-                    r = fs4 * 15.0f + (f32)((s32)(fs4 * 8192.0f - (f32)b->drawRot[0]) / 512);
-                    if (r > 15) {
-                        r = 15;
-                    } else if (r < -15) {
-                        r = -15;
+                if (rider->landingTime < 1.5f) {
+                    pitchIn = slope * 15.0f + (f32)((s32)(slope * 8192.0f - (f32)rider->drawRot[0]) / 512);
+                    if (pitchIn > 15) {
+                        pitchIn = 15;
+                    } else if (pitchIn < -15) {
+                        pitchIn = -15;
                     }
-                    b->unk_740 = r;
-                    b->airPitchInput = b->unk_740;
+                    rider->cpuAirPitch = pitchIn;
+                    rider->airPitchInput = rider->cpuAirPitch;
                 }
             }
         }
-        if (b->landingAssist != 0) {
-            bike_align_to_ground(b);
-        } else if (b->landingTime < 0.25f && b->bike.vel.y < 0.0f && b->airFrames >= 31 && b->wheelieTimer == 0) {
-            if (b->isCpu == 0) {
-                p = b->bike.pos;
-                th = p.x + b->bike.vel.x * b->landingTime;
-                p.x = th;
-                m = p.z + b->bike.vel.z * b->landingTime;
-                p.z = m;
-                if (b == 0) e = 1.0f; else if (n == 0) e = 2.0f; else e = 3.0f;
-                p.y = (f32)height_get_ground(p.x * 1000.0f, p.y * 1000.0f, p.z * 1000.0f) / 1000.0f;
-                height_get_ground_normal(&t.x);
-                c.x = b->bike.up.y * t.z - t.y * b->bike.up.z;
-                c.y = b->bike.up.z * t.x - t.z * b->bike.up.x;
-                c.z = b->bike.up.x * t.y - t.x * b->bike.up.y;
-                d2 = vec3_dot(&c.x, &b->bike.right.x);
-                c2 = b->landing * 10.0f;
-                if (d2 > 0.0f ? d2 < c2 : -d2 < c2) {
-                    b->landingAssist = 1;
+        if (rider->landingAssist != 0) {
+            bike_align_to_ground(rider);
+        } else if (rider->landingTime < 0.25f && rider->bike.vel.y < 0.0f && rider->airFrames >= 31 && rider->wheelieTimer == 0) {
+            if (rider->isCpu == 0) {
+                landPos = rider->bike.pos;
+                /* boost and pitchScale hold the landing point's x and z */
+                boost = landPos.x + rider->bike.vel.x * rider->landingTime;
+                landPos.x = boost;
+                pitchScale = landPos.z + rider->bike.vel.z * rider->landingTime;
+                landPos.z = pitchScale;
+                /* dead tests: they keep the original's register use */
+                if (rider == 0) normalVel = 1.0f; else if (steer == 0) normalVel = 2.0f; else normalVel = 3.0f;
+                landPos.y = (f32)height_get_ground(landPos.x * 1000.0f, landPos.y * 1000.0f, landPos.z * 1000.0f) / 1000.0f;
+                height_get_ground_normal(&vec.x);
+                axis.x = rider->bike.up.y * vec.z - vec.y * rider->bike.up.z;
+                axis.y = rider->bike.up.z * vec.x - vec.z * rider->bike.up.x;
+                axis.z = rider->bike.up.x * vec.y - vec.x * rider->bike.up.y;
+                tilt = vec3_dot(&axis.x, &rider->bike.right.x);
+                limit = rider->landing * 10.0f;
+                if (tilt > 0.0f ? tilt < limit : -tilt < limit) {
+                    rider->landingAssist = 1;
                 }
             } else {
-                b->landingAssist = 1;
+                rider->landingAssist = 1;
             }
         }
-        if (b->jumpState != -1) {
-            b->jumpState = 1;
-            b->jumpDist = __builtin_sqrtf((b->bike.pos.x - b->takeoffPos.x) * (b->bike.pos.x - b->takeoffPos.x)
-                                      + (b->bike.pos.y - b->takeoffPos.y) * (b->bike.pos.y - b->takeoffPos.y)
-                                      + (b->bike.pos.z - b->takeoffPos.z) * (b->bike.pos.z - b->takeoffPos.z));
+        if (rider->jumpState != -1) {
+            rider->jumpState = 1;
+            rider->jumpDist = __builtin_sqrtf((rider->bike.pos.x - rider->takeoffPos.x) * (rider->bike.pos.x - rider->takeoffPos.x)
+                                      + (rider->bike.pos.y - rider->takeoffPos.y) * (rider->bike.pos.y - rider->takeoffPos.y)
+                                      + (rider->bike.pos.z - rider->takeoffPos.z) * (rider->bike.pos.z - rider->takeoffPos.z));
         }
     } else {
-        if (b->airFrames > 0) {
-            bike_handle_landing(b);
+        if (rider->airFrames > 0) {
+            bike_handle_landing(rider);
         } else {
-            b->airFrames -= gPhysTicks;
+            rider->airFrames -= gPhysTicks;
         }
-        if (b->jumpState == 1) {
-            b->jumpState = 0;
+        if (rider->jumpState == 1) {
+            rider->jumpState = 0;
         }
-        b->takeoffPos = b->rearWheel.contact;
+        rider->takeoffPos = rider->rearWheel.contact;
     }
-    b->takeoffVelY = b->bike.vel.y;
+    rider->takeoffVelY = rider->bike.vel.y;
 }
 
-void bike_update_alpha(Rider *a2)
+/* The rider's transparency: the ghost, a crashed CPU rider fading out, blinking after a respawn. */
+void bike_update_alpha(Rider *rider)
 {
-    s32 idx;
-    s32 v;
-    u8 b;
-    s8 c;
-    s32 *base;
-    s32 n;
-    s32 *q;
+    s32 riderIdx;
+    s32 alpha;
+    u8 timer;
+    s8 count;
+    s32 *alphas;
+    s32 interval;
+    s32 *alphaPtr;
 
-    base = gRiderAlpha;
-    idx = (a2 - gRiders);
-    q = &base[idx];
-    if (gGhostRace != 0 && gGhostSlot == idx) v = 0x80;
+    alphas = gRiderAlpha;
+    riderIdx = (rider - gRiders);
+    alphaPtr = &alphas[riderIdx];
+    if (gGhostRace != 0 && gGhostSlot == riderIdx) alpha = 0x80;
     else if (gDemoPlayback != 0) {
-        if (idx == 0) v = 0x80; else { *q = 0xFF; goto L74; }
-    } else v = 0xFF;
-    *q = v;
-L74:
-    if (a2->crashState != 0 && a2->isCpu != 0 && a2->crashTimer > 0x58) {
-        gRiderAlpha[a2 - gRiders] = (0x78 - a2->crashTimer) * 8;
+        if (riderIdx == 0) alpha = 0x80; else { *alphaPtr = 0xFF; goto crash_fade; }
+    } else alpha = 0xFF;
+    *alphaPtr = alpha;
+crash_fade:
+    if (rider->crashState != CRASH_STATE_RIDING && rider->isCpu != 0 && rider->crashTimer > 0x58) {
+        gRiderAlpha[rider - gRiders] = (0x78 - rider->crashTimer) * 8;
         return;
     }
-    if ((s8)a2->blinkCount != 0) {
-        b = a2->blinkTimer - 1;
-        a2->blinkTimer = b;
-        if ((s32)((u32)b << 24) <= 0) {
-            c = a2->blinkCount - 1;
-            a2->blinkCount = c;
-            if (c == 0 && gGhostRace == 0) {
-                if (a2->isCpu == 0) {
-                    if ((gCheatFlags & 0x100) == 0) a2->noCollide = 0;
+    if ((s8)rider->blinkCount != 0) {
+        timer = rider->blinkTimer - 1;
+        rider->blinkTimer = timer;
+        if ((s32)((u32)timer << 24) <= 0) {
+            count = rider->blinkCount - 1;
+            rider->blinkCount = count;
+            if (count == 0 && gGhostRace == 0) {
+                if (rider->isCpu == 0) {
+                    if ((gCheatFlags & CHEAT_TRANSPARENT_RIDER) == 0) rider->noCollide = 0;
                 } else {
-                    a2->noCollide = 0;
+                    rider->noCollide = 0;
                 }
             }
-            n = (((s32)((u32)a2->blinkCount << 24)) >> 25) - 10;
-            a2->blinkTimer = n;
-            if (n < 4) a2->blinkTimer = 4;
+            interval = (((s32)((u32)rider->blinkCount << 24)) >> 25) - 10;
+            rider->blinkTimer = interval;
+            if (interval < 4) rider->blinkTimer = 4;
         }
-        if (a2->blinkCount & 1) gRiderAlpha[a2 - gRiders] = 0;
+        if (rider->blinkCount & 1) gRiderAlpha[rider - gRiders] = 0;
     }
 }
 
-void bike_update(Rider *b, s32 n)
+/* One physics step of a rider over `ticks` 60 Hz ticks (bike_crash_update while crashed). */
+void bike_update(Rider *rider, s32 ticks)
 {
-    f32 t;
+    f32 unused;
 
     gGroundHeight = 0;
     gGroundSurface = 0;
     gGroundTri = 0;
     gGroundArea = 0;
-    gPhysTicks = n;
-    gPhysDeltaTime = (f32)gPhysTicks * b->timeScale / 60.0f;
-    if (gCrashSlowMotion != 0 && b->isCpu != 0) {
+    gPhysTicks = ticks;
+    gPhysDeltaTime = (f32)gPhysTicks * rider->timeScale / 60.0f;
+    if (gCrashSlowMotion != 0 && rider->isCpu != 0) {
         gPhysDeltaTime *= 0.5f;
     }
-    bike_update_alpha(b);
-    particles_emit_water_splash(b);
-    if (b->crashState == 0) {
-        if (b->pendingCrash > 0) {
-            b->input = 0;
-            if (b->frontWheel.airTicks < 10 && b->rearWheel.airTicks < 10) {
-                bike_crash_begin(b, b->pendingCrash);
+    bike_update_alpha(rider);
+    particles_emit_water_splash(rider);
+    if (rider->crashState == CRASH_STATE_RIDING) {
+        if (rider->pendingCrash > 0) {
+            rider->input = 0;
+            if (rider->frontWheel.airTicks < 10 && rider->rearWheel.airTicks < 10) {
+                bike_crash_begin(rider, rider->pendingCrash);
             }
         }
-        if (b->pendingCrash < 0) {
-            bike_crash_begin(b, -b->pendingCrash);
+        if (rider->pendingCrash < 0) {
+            bike_crash_begin(rider, -rider->pendingCrash);
         }
-        bike_process_input(b, n);
-        bike_update_wheelie(b);
-        bike_update_jump(b);
-        if (b->isCpu != 0) {
-            ai_update_throttle(b);
-            b->dirtSpray = 0;
-            if (b->speed > 5.0f) {
-                if (b->powerSlide != 0 || ((b->input & 0x20000) && gRaceFrame - b->turboPressFrame < 30)) {
-                    b->dirtSpray = 2;
-                } else if (b->rightFootOut | b->leftFootOut) {
-                    b->dirtSpray = 1;
+        bike_process_input(rider, ticks);
+        bike_update_wheelie(rider);
+        bike_update_jump(rider);
+        if (rider->isCpu != 0) {
+            ai_update_throttle(rider);
+            rider->dirtSpray = 0;
+            if (rider->speed > 5.0f) {
+                if (rider->powerSlide != 0 || ((rider->input & INPUT_Z) && gRaceFrame - rider->turboPressFrame < 30)) {
+                    rider->dirtSpray = 2;
+                } else if (rider->rightFootOut | rider->leftFootOut) {
+                    rider->dirtSpray = 1;
                 }
             }
-            ai_update_steering(b);
+            ai_update_steering(rider);
         } else {
-            bike_update_steering(b, n);
+            bike_update_steering(rider, ticks);
         }
-        if (gEvent.flags & 0x10) {
-            b->unk_412 = 0x3000;
-            b->input |= 0x20;
+        if (gEvent.flags & EVENT_TIMER_PAUSED) {
+            rider->walkPhase = 0x3000;
+            rider->input |= INPUT_B;
         }
-        if (b->flags & 0x10) {
-            if (b->fwdSpeed > 0.0f) {
-                b->input = 0x20;
+        if (rider->flags & RIDER_FINISHED) {
+            if (rider->fwdSpeed > 0.0f) {
+                rider->input = INPUT_B;
             } else {
-                b->input = 0;
-                b->stickX = 0;
-                if (b - gRiders == 0) {
-                    gEvent.flags |= 0x2000;
+                rider->input = 0;
+                rider->stickX = 0;
+                if (rider - gRiders == 0) {
+                    gEvent.flags |= EVENT_LESSON_DONE;
                 }
             }
         }
-        engine_update(b - gRiders, n);
-        bike_update_drive_force(b);
-        bike_update_brakes(b);
-        bike_solve_tire_constraints(b);
-        stunt_update(b);
-        bike_update_tire_forces(b);
-        bike_compute_forces(b);
-        if (b->crashState == 0) {
-            bike_integrate_position(b);
-            bike_integrate_velocity(b);
-            bike_wheel_surface_bumps(&b->frontWheel, &b->bumpSeed);
-            bike_wheel_surface_bumps(&b->rearWheel, &b->bumpSeed);
-            bike_update_suspension(b);
+        engine_update(rider - gRiders, ticks);
+        bike_update_drive_force(rider);
+        bike_update_brakes(rider);
+        bike_solve_tire_constraints(rider);
+        stunt_update(rider);
+        bike_update_tire_forces(rider);
+        bike_compute_forces(rider);
+        if (rider->crashState == CRASH_STATE_RIDING) {
+            bike_integrate_position(rider);
+            bike_integrate_velocity(rider);
+            bike_wheel_surface_bumps(&rider->frontWheel, &rider->bumpSeed);
+            bike_wheel_surface_bumps(&rider->rearWheel, &rider->bumpSeed);
+            bike_update_suspension(rider);
             switch (gGame.mode) {
-            case 2:
+            case GAME_MODE_SOCCER:
             case 4:
-            case 5:
-            case 10:
-            case 14:
+            case GAME_MODE_DESERT:
+            case GAME_MODE_STUNT_COURSE:
+            case GAME_MODE_TEST_OPEN:
                 break;
-            case 6:
-                excite3d_update_progress(b);
+            case GAME_MODE_EXCITE_3D:
+                excite3d_update_progress(rider);
                 break;
             default:
-                path_update_bike(b);
+                path_update_bike(rider);
                 break;
             }
-            switch (b->finishState) {
+            switch (rider->finishState) {
             case 0:
                 break;
             case 1:
-                if (b->anim == -1 && b->speed < 8.0f && b->airFrames < -30) {
-                    b->finishState = 2;
-                    stunt_start(b, b->race.finishPlace + 0x13);
-                    if (!(gGame.flags & 0x8000)) {
-                        b->camMode = 10;
+                if (rider->anim == ANIM_NONE && rider->speed < 8.0f && rider->airFrames < -30) {
+                    /* slowed down after the finish: the pose of the finishing place */
+                    rider->finishState = 2;
+                    stunt_start(rider, rider->race.finishPlace + ANIM_FINISH_1ST);
+                    if (!(gGame.flags & GAME_FLAG_REPLAY)) {
+                        rider->camMode = CAM_MODE_CELEBRATION;
                     }
                 }
                 break;
             case 2:
-                if (b->anim < 0) {
-                    b->finishState = 3;
-                    if (gGame.mode == 5) {
-                        b->finishState = 0;
-                        b->isCpu = 1;
-                        b->camMode = (u16)b->savedCamMode;
+                if (rider->anim < 0) {
+                    rider->finishState = 3;
+                    if (gGame.mode == GAME_MODE_DESERT) {
+                        rider->finishState = 0;
+                        rider->isCpu = 1;
+                        rider->camMode = (u16)rider->savedCamMode;
                     }
                 }
                 break;
             }
         } else {
-            bike_crash_update(b);
+            bike_crash_update(rider);
         }
     } else {
-        b->input = 0;
-        engine_update(b - gRiders, n);
-        bike_crash_update(b);
+        rider->input = 0;
+        engine_update(rider - gRiders, ticks);
+        bike_crash_update(rider);
     }
-    bike_update_render_pose(b);
-    particles_emit_sparks(b);
+    bike_update_render_pose(rider);
+    particles_emit_sparks(rider);
 }
 
-u32 bike_remap_buttons(u32 a0, s32 a1)
+/* Applies the player's controller layout to an input word (1: R/Z swapped, 2: B/Z, 3: B->R->Z->B); L is also Z. */
+u32 bike_remap_buttons(u32 input, s32 player)
 {
-    s32 c;
-    u32 u2;
+    s32 layout;
+    u32 out;
 
-    if (a0 & 0x8000) a0 |= 0x20000;
-    if (a1 < gGame.numPlayers)
-        c = (s8)gGame.padConfig[gGame.playerPad[a1]];
+    if (input & INPUT_L) input |= INPUT_Z;
+    if (player < gGame.numPlayers)
+        layout = (s8)gGame.padConfig[gGame.playerPad[player]];
     else
-        c = 0;
+        layout = 0;
 
-    switch (c) {
+    switch (layout) {
     case 0:
-        return a0;
+        return input;
     case 1:
-        u2 = a0 & 0xfffcffff;
-        if (a0 & 0x10000) u2 |= 0x20000;
-        if (a0 & 0x20000) u2 |= 0x10000;
-        return u2;
+        out = input & ~(INPUT_R | INPUT_Z);
+        if (input & INPUT_R) out |= INPUT_Z;
+        if (input & INPUT_Z) out |= INPUT_R;
+        return out;
     case 2:
-        u2 = a0 & 0xfffdffdf;
-        if (a0 & 0x20) u2 |= 0x20000;
-        if (a0 & 0x20000) u2 |= 0x20;
-        return u2;
+        out = input & ~(INPUT_Z | INPUT_B);
+        if (input & INPUT_B) out |= INPUT_Z;
+        if (input & INPUT_Z) out |= INPUT_B;
+        return out;
     case 3:
-        u2 = a0 & 0xfffcffdf;
-        if (a0 & 0x20) u2 |= 0x10000;
-        if (a0 & 0x20000) u2 |= 0x20;
-        if (a0 & 0x10000) u2 |= 0x20000;
-        return u2;
+        out = input & ~(INPUT_R | INPUT_Z | INPUT_B);
+        if (input & INPUT_B) out |= INPUT_R;
+        if (input & INPUT_Z) out |= INPUT_B;
+        if (input & INPUT_R) out |= INPUT_Z;
+        return out;
     }
-    return a0;
+    return input;
 }
 
-void bikes_update(s32 n) {
-    Rider *b;
+/* Runs every rider for a frame of `ticks` ticks (far CPU riders: a double step every other frame), then the
+   mode's own update. */
+void bikes_update(s32 ticks)
+{
+    Rider *rider;
     s32 i;
-    s32 v;
-    s32 u;
+    s32 padInput;
+    s32 lastInput;
     s32 pad[2];
-    f32 t, t2, tk, t2k;
-    f32 x, y, z;
+    f32 dt, halfDtSq, tk, t2k;
+    f32 stepX, stepY, stepZ;
 
-    if (gEvent.flags & 0x800) {
+    if (gEvent.flags & EVENT_MESSAGE) {
         return;
     }
-    for (i = 0; i < 8; i++) {
-        b = &gRiders[i];
-        if (b->isCpu == 0) {
-            b->prevInput = b->input;
-            v = gPlayerInputs[i];
-            b->input = v;
+    for (i = 0; i < RIDER_COUNT; i++) {
+        rider = &gRiders[i];
+        if (rider->isCpu == 0) {
+            rider->prevInput = rider->input;
+            padInput = gPlayerInputs[i];
+            rider->input = padInput;
             if (gMirrorMode != 0 && (gGhostRace == 0 || i != gGhostSlot)) {
-                b->input = v ^ 0xC;
+                rider->input = padInput ^ (INPUT_STICK_LEFT | INPUT_STICK_RIGHT);
             }
         } else {
-            u = b->input;
-            b->stickY = 0;
-            b->stickX = 0;
-            b->input = 0;
-            b->prevInput = u;
+            lastInput = rider->input;
+            rider->stickY = 0;
+            rider->stickX = 0;
+            rider->input = 0;
+            rider->prevInput = lastInput;
         }
     }
-    gRaceFrame += n;
+    gRaceFrame += ticks;
     if (gDebugFreeze != 0) {
-        for (b = gRiders; b < gRiders + 8; b++) {
-            if (b->inactive == 0) {
-                bike_update_render_pose(b);
+        for (rider = gRiders; rider < gRiders + RIDER_COUNT; rider++) {
+            if (rider->inactive == 0) {
+                bike_update_render_pose(rider);
             }
         }
     } else {
-        for (b = gRiders; b < gRiders + 8; b++) {
-            if (b->inactive != 0) {
+        for (rider = gRiders; rider < gRiders + RIDER_COUNT; rider++) {
+            if (rider->inactive != 0) {
                 continue;
             }
-            if (b->frozen != 0) {
-                bike_update_render_pose(b);
+            if (rider->frozen != 0) {
+                bike_update_render_pose(rider);
                 continue;
             }
-            if (b->isCpu != 0 && (b->airFrames < -30 || (b->airFrames >= 11 && b->landingTime > 0.5f))
-                && !(b == gRiders && (gGame.flags & 0x81))) {
-                if (((gRaceFrame ^ (b - gRiders)) & 1) != 0) {
-                    bike_update(b, 2);
-                    b->bike.smoothPos = b->bike.pos;
+            if (rider->isCpu != 0 && (rider->airFrames < -30 || (rider->airFrames >= 11 && rider->landingTime > 0.5f))
+                && !(rider == gRiders && (gGame.flags & (GAME_FLAG_FRONT_END_RACE | 0x80)))) {
+                if (((gRaceFrame ^ (rider - gRiders)) & 1) != 0) {
+                    bike_update(rider, 2);
+                    rider->bike.smoothPos = rider->bike.pos;
                 } else {
-                    t = b->timeScale / 60.0f;
-                    t2 = t * t * 0.5f;
-                    x = b->bike.vel.x * t;
-                    y = b->bike.vel.y * t;
-                    z = b->bike.vel.z * t;
-                    b->bike.smoothPos.x += x + b->bike.acc.x * t2;
-                    b->bike.smoothPos.y += y + b->bike.acc.y * t2;
-                    b->bike.smoothPos.z += z + b->bike.acc.z * t2;
-                    t *= 1000.0f;
-                    t2 *= 1000.0f;
-                    b->drawPos.x = (f32)b->drawPos.x + (b->bike.vel.x * t + b->bike.acc.x * t2);
-                    b->drawPos.y = (f32)b->drawPos.y + (b->bike.vel.y * t + b->bike.acc.y * t2);
-                    b->drawPos.z = (f32)b->drawPos.z + (b->bike.vel.z * t + b->bike.acc.z * t2);
+                    dt = rider->timeScale / 60.0f;
+                    halfDtSq = dt * dt * 0.5f;
+                    stepX = rider->bike.vel.x * dt;
+                    stepY = rider->bike.vel.y * dt;
+                    stepZ = rider->bike.vel.z * dt;
+                    rider->bike.smoothPos.x += stepX + rider->bike.acc.x * halfDtSq;
+                    rider->bike.smoothPos.y += stepY + rider->bike.acc.y * halfDtSq;
+                    rider->bike.smoothPos.z += stepZ + rider->bike.acc.z * halfDtSq;
+                    dt *= 1000.0f;
+                    halfDtSq *= 1000.0f;
+                    rider->drawPos.x = (f32)rider->drawPos.x + (rider->bike.vel.x * dt + rider->bike.acc.x * halfDtSq);
+                    rider->drawPos.y = (f32)rider->drawPos.y + (rider->bike.vel.y * dt + rider->bike.acc.y * halfDtSq);
+                    rider->drawPos.z = (f32)rider->drawPos.z + (rider->bike.vel.z * dt + rider->bike.acc.z * halfDtSq);
                 }
             } else {
-                for (i = 0; i < n; i++) {
-                    bike_update(b, 1);
+                for (i = 0; i < ticks; i++) {
+                    bike_update(rider, 1);
                 }
-                b->bike.smoothPos = b->bike.pos;
+                rider->bike.smoothPos = rider->bike.pos;
             }
         }
         switch (gGame.mode) {
-        case 2:
+        case GAME_MODE_SOCCER:
             soccer_ball_update();
             break;
-        case 5:
+        case GAME_MODE_DESERT:
             desert_update_race();
             break;
-        case 6:
+        case GAME_MODE_EXCITE_3D:
             excite3d_update();
             break;
-        case 7:
-        case 9:
-        case 10:
+        case GAME_MODE_HILL_CLIMB:
+        case GAME_MODE_TUTORIAL:
+        case GAME_MODE_STUNT_COURSE:
             break;
-        case 8:
+        case GAME_MODE_TIME_TRIAL:
             ai_update_lanes();
             race_sort_positions();
             break;
@@ -2685,30 +2762,34 @@ void bikes_update(s32 n) {
     gRaceFrameDrawn = 0;
 }
 
-float bike_get_ground_height(float *p)
+/* The ground height (m) under pos (m). */
+float bike_get_ground_height(float *pos)
 {
-    float x = p[0];
-    int r = height_get_ground((int)(x * 1000.0f), (int)(p[1] * 1000.0f), (int)(p[2] * 1000.0f));
-    return (float)r / 1000.0f;
+    float x = pos[0];
+    int groundMm = height_get_ground((int)(x * 1000.0f), (int)(pos[1] * 1000.0f), (int)(pos[2] * 1000.0f));
+    return (float)groundMm / 1000.0f;
 }
 
-void bike_sync_wheel_contacts(Rider *p)
+/* When a wheel leaves the ground: puts contact points 6 and 7 back where the bike's frame has them. */
+void bike_sync_wheel_contacts(Rider *rider)
 {
     s32 i;
-    Vec3f out;
+    Vec3f world;
 
     sWheelLiftoffFrame = gRaceFrame;
     for (i = 6; i < 8; i++) {
-        vec3_mul_mtx3f(&sBikeContactPoints_2[i].x, &p->bike.right.x, &out.x);
-        p->bike.contacts[i].x = out.x + p->bike.pos.x;
-        p->bike.contacts[i].y = out.y + p->bike.pos.y;
-        p->bike.contacts[i].z = out.z + p->bike.pos.z;
+        vec3_mul_mtx3f(&sBikeContactPoints_2[i].x, &rider->bike.right.x, &world.x);
+        rider->bike.contacts[i].x = world.x + rider->bike.pos.x;
+        rider->bike.contacts[i].y = world.y + rider->bike.pos.y;
+        rider->bike.contacts[i].z = world.z + rider->bike.pos.z;
     }
 }
 
-void bikes_free(void) {
+/* Frees what bikes_init allocated. */
+void bikes_free(void)
+{
     s32 i;
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < RIDER_COUNT; i++) {
         mem_free(gRiders[i].bikeSkel);
         mem_free(gRiders[i].riderSkel);
     }
@@ -2717,50 +2798,56 @@ void bikes_free(void) {
     race_free_extra_rider_spawns();
 }
 
-void bike_apply_surface_bumps(Rider *p) {
-    bike_wheel_surface_bumps(&p->frontWheel, &p->bumpSeed);
-    bike_wheel_surface_bumps(&p->rearWheel, &p->bumpSeed);
-}
-
-void bike_update_finish_celebration(Rider *p)
+/* Both wheels' surface bumps (bike_update does this inline; unused). */
+void bike_apply_surface_bumps(Rider *rider)
 {
-    s32 st = p->finishState;
+    bike_wheel_surface_bumps(&rider->frontWheel, &rider->bumpSeed);
+    bike_wheel_surface_bumps(&rider->rearWheel, &rider->bumpSeed);
+}
 
-    if (st == 1) goto arm1;
-    if (st < 2) return;
-    if (st == 2) goto arm2;
+/* After the finish: the finishing place's pose and the celebration camera (bike_update does this inline; unused). */
+void bike_update_finish_celebration(Rider *rider)
+{
+    s32 state = rider->finishState;
+
+    if (state == 1) goto slowing;
+    if (state < 2) return;
+    if (state == 2) goto posing;
     return;
 
-arm1:
-    if (p->anim == -1 && p->speed < 8.0f && p->airFrames < -30) {
-        p->finishState = 2;
-        stunt_start(p, p->race.finishPlace + 0x13);
-        if ((gGame.flags & 0x8000) == 0) {
-            p->camMode = 10;
+slowing:
+    if (rider->anim == ANIM_NONE && rider->speed < 8.0f && rider->airFrames < -30) {
+        rider->finishState = 2;
+        stunt_start(rider, rider->race.finishPlace + ANIM_FINISH_1ST);
+        if ((gGame.flags & GAME_FLAG_REPLAY) == 0) {
+            rider->camMode = CAM_MODE_CELEBRATION;
         }
     }
     return;
 
-arm2:
-    if (p->anim < 0) {
-        p->finishState = 3;
-        if (gGame.mode == 5) {
-            p->finishState = 0;
-            p->isCpu = 1;
-            p->camMode = (u16)p->savedCamMode;
+posing:
+    if (rider->anim < 0) {
+        rider->finishState = 3;
+        if (gGame.mode == GAME_MODE_DESERT) {
+            rider->finishState = 0;
+            rider->isCpu = 1;
+            rider->camMode = (u16)rider->savedCamMode;
         }
     }
 }
 
-void bike_update_dirt_spray(Rider *o) {
-    o->dirtSpray = 0;
-    if (5.0f < o->speed) {
-        if (o->powerSlide != 0 || ((o->input & 0x20000) != 0 && (gRaceFrame - o->turboPressFrame < 0x1E))) {
-            o->dirtSpray = 2;
+/* A CPU rider's dirt spray (bike_update does this inline; unused). */
+void bike_update_dirt_spray(Rider *rider)
+{
+    rider->dirtSpray = 0;
+    if (5.0f < rider->speed) {
+        if (rider->powerSlide != 0 || ((rider->input & INPUT_Z) != 0 && (gRaceFrame - rider->turboPressFrame < 0x1E))) {
+            rider->dirtSpray = 2;
             return;
         }
-        if ((*(volatile u8 *)&o->rightFootOut | *(volatile u8 *)&o->leftFootOut) != 0) {
-            o->dirtSpray = 1;
+        /* volatile: read in this order, as the original does */
+        if ((*(volatile u8 *)&rider->rightFootOut | *(volatile u8 *)&rider->leftFootOut) != 0) {
+            rider->dirtSpray = 1;
         }
     }
 }

@@ -203,7 +203,7 @@ drawing and in metres (float) for the physics; s32 and s16 angles are 0x10000 pe
 | 0x048 | `bike` (`RigidBody`, 0x184 bytes): `pos`, `vel`, `acc`, `smoothPos` (extrapolated for far CPU riders), `quat` (w, x, y, z), `angVel`, `angAcc`, the matrix rows `right`, `up`, `fwd`, the sphere `tree`, 20 `contacts`, `mass`, `inertia`, `type` (0 human bike, 1 CPU bike, 2 crashed bike, 3 rider, 4 ball), `hitTimer`, `owner` |
 | 0x1CC | `body`: the thrown rider, the same `RigidBody` (mass 90, type 3); the soccer ball is one too (`gSoccerBall`) |
 | 0x350 | `sparkTimer`, `sparkDir`; 0x370 `drawQuat`; 0x38C `trickQuat`, `trickOffset`, `trickBlend` |
-| 0x3AC | animation: `animFrame` (8.8), `animSpeed`, `animHold`, `trickCount`, `headYaw`; 0x3C4 `stuntScore`; 0x3C8 `raceKey` (race order) |
+| 0x3AC | animation: `animFrame` (8.8), `animSpeed`, `animHold`, `holdTime`, `headYaw`; 0x3C4 `stuntScore`; 0x3C8 `stuntTotal` (stunt points banked) |
 | 0x3D0 | `anim` (current trick or animation in `gRiderAnims`, -1 none), `prevAnim`, `trick`, `queuedTrick`, the stick history, `trickHist`, `trickList` |
 | 0x3FE | `pipTimer` (stunt replay inset); 0x3FF `finishState`; 0x400 `celebrationTimer`; 0x402 `checkpoint`, 0x404 `checkpointDist` (desert) |
 | 0x410 | `crestCrouch`, `wheelieBalance`, `wheelieTimer`, `crestAhead`, `leftFootOut`/`rightFootOut`, `powerSlide`, `hardTurn`, `noCollide` (ghost, respawn) |
@@ -213,7 +213,7 @@ drawing and in metres (float) for the physics; s32 and s16 angles are 0x10000 pe
 | 0x5B0 | `input`, `prevInput` (the input word above); `turboPressFrame`/`turboReleaseFrame`, `rHeld` (frames R held, or released if negative) |
 | 0x5CC | `landingAssist`, `roughLanding`, `dirtSpray`; 0x5D0/0x5D2 `stickX`/`stickY`; input histories up to 0x61F |
 | 0x620 | `blinkCount`, `blinkTimer`; 0x624 `crashTimer` |
-| 0x628 | `segment` (path node), `segmentDist`, `distToGo`, `progressSpeed`, `lateral` (offset from the racing line), `segmentT` |
+| 0x628 | `segment` (path node), `lapDistLeft`, `raceDist`, `progressSpeed`, `lateral` (offset from the racing line), `segmentT` |
 | 0x644 | `engine` (`RiderEngine`: rpm, turbo heat, torque, gear, throttle); 0x658/0x65C `bikeSkel`/`riderSkel` |
 | 0x660 | `race` (`RiderRace`: lap, place, finishing place, gap, lap times, finish time); 0x690 `flags` (0x8 out of the race, 0x10 finished: brake automatically); 0x69C `timeLimit`; 0x6B2 `bestSegment` |
 | 0x6E8 | `isCpu` (humans become CPU riders after the finish), `reversing`, `pathSearch`, `landingPick`, `lapAdjust`, `wrongWay` |
@@ -225,7 +225,7 @@ drawing and in metres (float) for the physics; s32 and s16 angles are 0x10000 pe
 
 What hangs off a rider: `bikeSkel` and `riderSkel` are copies of `gBikeSkelTemplate` (`BikeSkeleton`, 10 bones) and
 `gRiderSkelTemplate` (`RiderSkeleton`, 15) made of 0x80-byte `Bone`s (parent, local position and rotation, world
-position and rotation, angles); `rider_update_pose` fills `sRiderIkTargets` (`RiderIkTargets`: hands, feet, hips)
+position and rotation, angles); `rider_update_pose` fills `sRiderIkTargets` (`RiderIkTargets`: hands, feet, head)
 for `rider_apply_ik`. A body's `tree` is a bounding-sphere tree of `CollideNode`s that collide.c builds from
 `CollideSphereDesc` tables (`sBikeSphereTreeDesc`, `sRiderSphereDesc`). `gRiderAnims` (`RiderAnim`, indexed by
 `anim`) gives each trick and animation its body and root `AnimClip`s, its button glyphs, name, riders, points and

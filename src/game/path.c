@@ -911,8 +911,8 @@ void path_update_bike(Rider *b)
     }
     v = (f32)(s32)(cur * (0x100 - w) + nx * w) * gPathLapLength * 1.1920929e-07f;
     sq = b->bike.vel.x * b->bike.vel.x + b->bike.vel.z * b->bike.vel.z;
-    old = b->segmentDist;
-    b->segmentDist = v;
+    old = b->lapDistLeft;
+    b->lapDistLeft = v;
     b->progressSpeed = (v - old) / gPhysDeltaTime;
     if (sq > 1.0f && b->airFrames < -15) {
         sq = __builtin_sqrtf(sq);
@@ -923,7 +923,7 @@ void path_update_bike(Rider *b)
         b->crestAhead = -1;
     }
     if (b->race.finishPlace == -1) {
-        b->distToGo = gPathLapLength * (f32)(b->lapAdjust + 1 + b->race.lap) - b->segmentDist;
+        b->raceDist = gPathLapLength * (f32)(b->lapAdjust + 1 + b->race.lap) - b->lapDistLeft;
     }
     if (b->isCpu == 0 && b->segment >= 0x13A && b->segment < 0x140 && b->airFrames > 30
         && gCurTrack_26 == &gTracks[TRACK_CANYON_CHASM] && b->bike.vel.y < 0.0f && b->bike.pos.y < gPathNodes[0x140].pos.y) {
