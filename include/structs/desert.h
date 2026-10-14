@@ -43,6 +43,9 @@ typedef struct DesertTile {
     /* 0x324 */ DesertObj objs[8];
 } DesertTile; /* size 0x404 */
 
+/* The desert's checkpoints (sDesertCheckpoints, in metres), a lap of them; a campfire burns at each. */
+#define DESERT_NUM_CHECKPOINTS 10
+
 /* A campfire, one at each of the ten checkpoints (desert_export_checkpoints), in mm. fractal_place_objects puts it
    on the ground of its tile. */
 typedef struct DesertFire {

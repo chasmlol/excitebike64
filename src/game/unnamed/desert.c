@@ -1,5 +1,6 @@
 #include "game.h"
 
+/* Sums the distances along the checkpoints and aims the arrow at the first. */
 void desert_init(void) {
     s32 i;
     f32 sum;
@@ -7,7 +8,7 @@ void desert_init(void) {
 
     sum = 0.0f;
     sDesertCheckpointDist[0] = sum;
-    for (i = 1; i < 10; i++) {
+    for (i = 1; i < DESERT_NUM_CHECKPOINTS; i++) {
         dx = sDesertCheckpoints[i].x - sDesertCheckpoints[i - 1].x;
         dz = sDesertCheckpoints[i].z - sDesertCheckpoints[i - 1].z;
         sum += __builtin_sqrtf(dx * dx + dz * dz);
@@ -17,95 +18,102 @@ void desert_init(void) {
     event_reset_places();
 }
 
+/* Gives fractal.c the checkpoints, in mm, to place the campfires at. */
 void desert_export_checkpoints(void) {
     s32 i;
-    gDesertFireCount = 10;
-    for (i = 0; i < 10; i++) {
+    gDesertFireCount = DESERT_NUM_CHECKPOINTS;
+    for (i = 0; i < DESERT_NUM_CHECKPOINTS; i++) {
         gDesertFires[i].x = sDesertCheckpoints[i].x * 1000.0f;
         gDesertFires[i].y = sDesertCheckpoints[i].y * 1000.0f;
         gDesertFires[i].z = sDesertCheckpoints[i].z * 1000.0f;
     }
 }
 
+/* A frame of the desert race: the arrow to the player's next checkpoint, CPU riders far from the player moved
+   directly, checkpoints and laps, then the standings. */
 void desert_update_race(void)
 {
-    Rider *b;
-    Rider *a;
-    Rider *c;
-    f32 dx, dz, d, ang, e, f, gx, gz;
+    Rider *rider;
+    Rider *ahead;
+    Rider *behind;
+    f32 dx, dz, dist, angle, leaderDist, checkDist, ox, oz;
     s32 i;
     u8 swapped;
     s32 pad[4];
 
-    d = 0.0f;
-    for (b = gRiders; b < &gRiders[gEvent.numRiders]; b++) {
-        b->timeScale = 1.0f;
-        if (b->inactive != 0) {
+    dist = 0.0f;
+    for (rider = gRiders; rider < &gRiders[gEvent.numRiders]; rider++) {
+        rider->timeScale = 1.0f;
+        if (rider->inactive != 0) {
             continue;
         }
-        if (b == gRiders) {
-            dx = sDesertCheckpoints[b->checkpoint].x - b->bike.pos.x;
-            ang = math_atan2f(sDesertCheckpoints[b->checkpoint].z - b->bike.pos.z, -dx);
-            des_set_arrow_angle((s32)(ang * 32768.0f / 3.1415927f) - gCamYaw[0] & 0xFFFF);
+        if (rider == gRiders) {
+            dx = sDesertCheckpoints[rider->checkpoint].x - rider->bike.pos.x;
+            angle = math_atan2f(sDesertCheckpoints[rider->checkpoint].z - rider->bike.pos.z, -dx);
+            /* radians to 0x10000 per turn */
+            des_set_arrow_angle((s32)(angle * 32768.0f / 3.1415927f) - gCamYaw[0] & 0xFFFF);
         }
         {
-            gx = b->bike.pos.x - gRiders[0].bike.pos.x;
-            gz = b->bike.pos.z - gRiders[0].bike.pos.z;
-            e = __builtin_sqrtf(gx * gx + gz * gz);
+            ox = rider->bike.pos.x - gRiders[0].bike.pos.x;
+            oz = rider->bike.pos.z - gRiders[0].bike.pos.z;
+            leaderDist = __builtin_sqrtf(ox * ox + oz * oz);
         }
-        if (b->frozen != 0) {
-            if (e < 100.0f) {
-                b->frozen = 0;
-                bike_respawn(b);
-                b->blinkCount = 1;
-                b->blinkTimer = 1;
+        /* more than 120 m from the player, a rider is moved straight at its checkpoint at 10 m/s until it is back
+           within 100 m */
+        if (rider->frozen != 0) {
+            if (leaderDist < 100.0f) {
+                rider->frozen = 0;
+                bike_respawn(rider);
+                rider->blinkCount = 1;
+                rider->blinkTimer = 1;
             } else {
-                dx = sDesertCheckpoints[b->checkpoint].x - b->bike.pos.x;
-                dz = sDesertCheckpoints[b->checkpoint].z - b->bike.pos.z;
-                d = __builtin_sqrtf(dx * dx + dz * dz);
-                ang = math_atan2f(dz, dx);
-                b->heading = ang * 32768.0f / 3.1415927f;
-                b->bike.pos.x += dx / d * 0.16666667f;
-                b->bike.pos.z += dz / d * 0.16666667f;
+                dx = sDesertCheckpoints[rider->checkpoint].x - rider->bike.pos.x;
+                dz = sDesertCheckpoints[rider->checkpoint].z - rider->bike.pos.z;
+                dist = __builtin_sqrtf(dx * dx + dz * dz);
+                angle = math_atan2f(dz, dx);
+                rider->heading = angle * 32768.0f / 3.1415927f;
+                rider->bike.pos.x += dx / dist * 0.16666667f;
+                rider->bike.pos.z += dz / dist * 0.16666667f;
             }
-        } else if (120.0f < e) {
-            b->frozen = 1;
+        } else if (120.0f < leaderDist) {
+            rider->frozen = 1;
         }
-        dx = b->bike.pos.x - sDesertCheckpoints[b->checkpoint].x;
-        dz = b->bike.pos.z - sDesertCheckpoints[b->checkpoint].z;
-        f = __builtin_sqrtf(dx * dx + dz * dz);
-        b->checkpointDist = f;
-        if (f < 1.0f) {
-            if (++b->checkpoint == 10) {
-                b->checkpoint = 0;
-                if (b->finishState == 0) {
-                    event_rider_finished(b - gRiders);
-                    if (b == gRiders) {
+        dx = rider->bike.pos.x - sDesertCheckpoints[rider->checkpoint].x;
+        dz = rider->bike.pos.z - sDesertCheckpoints[rider->checkpoint].z;
+        checkDist = __builtin_sqrtf(dx * dx + dz * dz);
+        rider->checkpointDist = checkDist;
+        if (checkDist < 1.0f) {
+            if (++rider->checkpoint == DESERT_NUM_CHECKPOINTS) {
+                rider->checkpoint = 0;
+                if (rider->finishState == 0) {
+                    event_rider_finished(rider - gRiders);
+                    if (rider == gRiders) {
                         gEvent.allFinished = 1;
                     }
                 }
             } else {
-                gx = b->bike.pos.x - sDesertCheckpoints[b->checkpoint].x;
-                gz = b->bike.pos.z - sDesertCheckpoints[b->checkpoint].z;
-                b->checkpointDist = gx * gx + gz * gz;
+                ox = rider->bike.pos.x - sDesertCheckpoints[rider->checkpoint].x;
+                oz = rider->bike.pos.z - sDesertCheckpoints[rider->checkpoint].z;
+                rider->checkpointDist = ox * ox + oz * oz; /* squared, unlike the others */
             }
-            if (b == gRiders) {
-                des_set_waypoint(b->checkpoint);
+            if (rider == gRiders) {
+                des_set_waypoint(rider->checkpoint);
             }
         }
-        b->distToGo = sDesertCheckpointDist[b->checkpoint] - b->checkpointDist;
+        rider->distToGo = sDesertCheckpointDist[rider->checkpoint] - rider->checkpointDist;
     }
     if (gRiders[0].isCpu == 0) {
+        /* bubble sort: further checkpoint first, then nearer to it */
         do {
             swapped = 0;
             for (i = 0; i < gEvent.numRiders - 1; i++) {
-                a = gRiderStandings[i];
-                if (a->race.finishPlace < 0) {
-                    c = gRiderStandings[i + 1];
-                    if (a->checkpoint < c->checkpoint || (a->checkpoint == c->checkpoint && a->checkpointDist > c->checkpointDist)) {
+                ahead = gRiderStandings[i];
+                if (ahead->race.finishPlace < 0) {
+                    behind = gRiderStandings[i + 1];
+                    if (ahead->checkpoint < behind->checkpoint || (ahead->checkpoint == behind->checkpoint && ahead->checkpointDist > behind->checkpointDist)) {
                         swapped = 1;
-                        gRiderStandings[i] = c;
-                        gRiderStandings[i + 1] = a;
+                        gRiderStandings[i] = behind;
+                        gRiderStandings[i + 1] = ahead;
                     }
                 }
             }
@@ -117,67 +125,69 @@ void desert_update_race(void)
     }
 }
 
-void desert_ai_steer(Rider *s)
+/* A CPU rider's steering and throttle: aim at the next checkpoint, at a speed that depends on its distance and on
+   how far off the heading it lies. */
+void desert_ai_steer(Rider *rider)
 {
-    f32 v[3];
-    f32 o[3];
-    f32 f3, f4, f5, d, sum;
-    f32 *tp;
-    s8 *cp;
-    u32 uVar;
+    f32 toTarget[3];
+    f32 local[3];
+    f32 angle, targetSpeed, dist, speedDiff, sum;
+    f32 *target;
+    s8 *stick;
+    u32 input;
 
-    v[0] = sDesertCheckpoints_2[s->checkpoint * 3] - s->bike.pos.x;
-    tp = &sDesertCheckpoints_2[s->checkpoint * 3];
-    v[1] = tp[1] - s->bike.pos.y;
-    tp = &sDesertCheckpoints_2[s->checkpoint * 3];
-    v[2] = tp[2] - s->bike.pos.z;
-    mtx3f_mul_vec3(v, &s->bike.right.x, o);
-    f3 = math_atan2f(o[2], o[0]);
-    sum = o[0] * o[0] + o[1] * o[1] + o[2] * o[2];
-    f5 = __builtin_sqrtf(sum);
+    toTarget[0] = sDesertCheckpoints_2[rider->checkpoint * 3] - rider->bike.pos.x;
+    target = &sDesertCheckpoints_2[rider->checkpoint * 3];
+    toTarget[1] = target[1] - rider->bike.pos.y;
+    target = &sDesertCheckpoints_2[rider->checkpoint * 3];
+    toTarget[2] = target[2] - rider->bike.pos.z;
+    mtx3f_mul_vec3(toTarget, &rider->bike.right.x, local);
+    angle = math_atan2f(local[2], local[0]);
+    sum = local[0] * local[0] + local[1] * local[1] + local[2] * local[2];
+    dist = __builtin_sqrtf(sum);
 
-    cp = &s->stickX;
-    *cp = (s8)(s32)(-f3 * 14.0f);
-    if (*cp > 14) *cp = 14;
-    if (*cp < -14) *cp = -14;
+    stick = &rider->stickX;
+    *stick = (s8)(s32)(-angle * 14.0f);
+    if (*stick > 14) *stick = 14;
+    if (*stick < -14) *stick = -14;
 
-    if (!(0.0f < f3)) f3 = -f3;
+    if (!(0.0f < angle)) angle = -angle;
 
-    f4 = 5.0f;
-    if (!(f5 < 5.0f)) {
-        if (f5 < 20.0f) {
-            if (f3 < 0.1f) f4 = 20.0f;
+    targetSpeed = 5.0f;
+    if (!(dist < 5.0f)) {
+        if (dist < 20.0f) {
+            if (angle < 0.1f) targetSpeed = 20.0f;
         } else {
-            f4 = 10.0f;
-            if (f3 < 1.0f) f4 = 40.0f;
+            targetSpeed = 10.0f;
+            if (angle < 1.0f) targetSpeed = 40.0f;
         }
     }
-    if (s->finishState == 1) goto zero;
-    if (s->finishState == 2) goto five;
+    if (rider->finishState == 1) goto zero;
+    if (rider->finishState == 2) goto five;
     goto after;
 zero:
-    f4 = 0.0f;
+    targetSpeed = 0.0f;
     goto after;
 five:
-    f4 = 5.0f;
+    targetSpeed = 5.0f;
 after:
 
-    d = s->speed - f4;
-    if (0.5f < d) {
-        uVar = 6;
-        s->frontWheel.brakeRamp = uVar;
-        s->rearWheel.brakeRamp = uVar;
-        uVar = 0x20;
+    speedDiff = rider->speed - targetSpeed;
+    if (0.5f < speedDiff) {
+        input = 6;
+        rider->frontWheel.brakeRamp = input;
+        rider->rearWheel.brakeRamp = input;
+        input = INPUT_B;
         goto store;
     }
-    if (!(d < -0.5f) || s->airFrames >= 3 || s->laneBlocked != 0) goto done;
-    uVar = 0x10;
-    if (!(d < -5.0f)) goto store;
-    uVar = 0x20000;
-    if (s->engine.heat < 9500.0f) goto store;
-    uVar = 0x10;
+    if (!(speedDiff < -0.5f) || rider->airFrames >= 3 || rider->laneBlocked != 0) goto done;
+    input = INPUT_A;
+    if (!(speedDiff < -5.0f)) goto store;
+    input = INPUT_Z; /* turbo while the engine is not too hot */
+    if (rider->engine.heat < 9500.0f) goto store;
+    input = INPUT_A;
 store:
-    s->input = uVar;
+    rider->input = input;
 done:
-    bike_update_steering(s, 1);
+    bike_update_steering(rider, 1);
 }

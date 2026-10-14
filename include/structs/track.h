@@ -65,6 +65,29 @@
 #define CHEAT_BEAT_THIS             0x1000
 #define CHEAT_PIN_HEAD              0x2000
 
+/* The game's input word (gPadInput, gPlayerInputs, Rider.input; main_convert_pad_input), not libultra's button
+   bits. Bits 24-27 and 28-31 hold the stick's x and y magnitude; the direction bits give the signs. */
+#define INPUT_STICK_UP              0x00000001
+#define INPUT_STICK_DOWN            0x00000002
+#define INPUT_STICK_LEFT            0x00000004
+#define INPUT_STICK_RIGHT           0x00000008
+#define INPUT_A                     0x00000010 /* throttle */
+#define INPUT_B                     0x00000020 /* brake */
+#define INPUT_START                 0x00000040
+#define INPUT_C_UP                  0x00000080
+#define INPUT_C_DOWN                0x00000100
+#define INPUT_C_LEFT                0x00000200
+#define INPUT_C_RIGHT               0x00000400
+#define INPUT_D_UP                  0x00000800
+#define INPUT_D_DOWN                0x00001000
+#define INPUT_D_LEFT                0x00002000
+#define INPUT_D_RIGHT               0x00004000
+#define INPUT_L                     0x00008000
+#define INPUT_R                     0x00010000 /* air tricks; with B, a power slide */
+#define INPUT_Z                     0x00020000 /* turbo */
+#define INPUT_STICK_X_SHIFT         24
+#define INPUT_STICK_Y_SHIFT         28
+
 /* A ground triangle of a section, binned on the section's 8x8 grid of its bounding box. */
 typedef struct CollTri {
     /* 0x00 */ union {
