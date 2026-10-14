@@ -140,14 +140,22 @@ def main():
                 zero_fill[k] += 1
         diff = [i for i in range(len(img[k])) if img[k][i] != orig[k][i]]
         if diff:
+            runs = []                   # [first, last] of each run of differing bytes
+            for i in diff:
+                if runs and i == runs[-1][1] + 1:
+                    runs[-1][1] = i
+                else:
+                    runs.append([i, i])
             where = []
-            for i in diff[:12]:
-                ad = i + VRAM
+            for s, e in runs[:24]:
+                ad = s + VRAM
                 f = next((f["name"] for f in table
                           if f["image"] == k and f["address"] <= ad < f["address"] + f["size"]),
                          "data" if lo <= ad < hi else "between objects")
-                where.append(f"{ad:#010x} ({f}): {img[k][i]:02x}, original {orig[k][i]:02x}")
-            bad.append(f"{k}: {len(diff)} bytes differ from the original:\n    " + "\n    ".join(where))
+                where.append(f"{ad:#010x}+{e - s + 1} ({f}): {img[k][s:e + 1].hex()}, original "
+                             f"{orig[k][s:e + 1].hex()}")
+            bad.append(f"{k}: {len(diff)} bytes in {len(runs)} runs differ from the original:\n    "
+                       + "\n    ".join(where))
     if bad:
         print("NOT REBUILT:", *bad, sep="\n  ")
         sys.exit(1)
