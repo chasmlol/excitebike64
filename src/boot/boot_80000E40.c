@@ -53,8 +53,7 @@ void boot_draw_string(u8 *s, s32 x, s32 y, u16 *fb, s32 color)
 }
 
 /* Draws a progress bar from column `left` to `right` on the boot framebuffer: 8 rows from `top` shading from red to
-   white, and 8 rows lower a 3-row edge from white back to red. Then writes back the data cache (boot_func_80006D60
-   is osWritebackDCacheAll). */
+   white, and 8 rows lower a 3-row edge from white back to red. Then writes back the data cache. */
 void boot_draw_progress_bar(s32 left, s32 right, s32 top)
 {
     s32 x, row, t, shade;
@@ -72,7 +71,7 @@ void boot_draw_progress_bar(s32 left, s32 right, s32 top)
                 = (u16)((shade << 6) | 0xF800 | (shade << 1));
         }
     }
-    boot_func_80006D60();
+    osWritebackDCacheAll();
 }
 
 /* The container header, copied as a 48-byte block. */
