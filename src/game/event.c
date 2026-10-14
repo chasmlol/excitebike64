@@ -715,8 +715,8 @@ void event_update_countdown(void)
     }
 }
 
-/* Hill climb: each stage cleared adds 30 frames to the rider's time limit; a rider whose time runs out is out.
-   When all are, A or START leaves. */
+/* Hill climb: each stage cleared adds a minute to the rider's time limit (30 frames on each frame of its message);
+   a rider whose time runs out is out. When all are, A or START leaves. */
 void event_update_hillclimb(void)
 {
     Event *event;
@@ -1761,7 +1761,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     return gdl;
 }
 
-/* sCountdownTextures: an image set (palette, then the images 1, 2, 3, GO and READY), one colour each */
+/* sCountdownTextures: the images 1, 2, 3, GO and READY, and a colour for each */
 typedef struct { s32 unk0; u16 *colors; Img_2 img[5]; } CountdownImages;
 extern CountdownImages *sCountdownTextures_2;
 
@@ -2024,7 +2024,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 dyn, s32 fb, s32 view)
             gdl = event_draw_countdown(gdl, view);
         } else if (gPauseMenu == PAUSE_NONE && race->finishPlace == -1) {
             if (gRiders[view].race.gapMsgTimer != 0) {
-                /* the gap to the rider ahead (-, colour 7) or behind (+, colour 8) */
+                /* the time behind the lap's leader (+, colour 8), or the leader's lead (-, colour 7) */
                 gap = gRiders[view].race.gap;
                 gRiders[view].race.gapMsgTimer--;
                 if (gap < 0) {
