@@ -7,6 +7,7 @@
 
 #define VERSION_LODGENET 1  /* Excitebike 64 (USA) (LodgeNet): the hotel build, the reference */
 #define VERSION_US_REV1 2   /* Excitebike 64 (USA) (Rev 1) */
+#define VERSION_EU 3        /* Excitebike 64 (Europe): the PAL conversion of USA Rev 1 */
 
 #ifndef VERSION
 #error "VERSION is not defined: build with the tools (tools/common.py passes -DVERSION=...)"
@@ -16,7 +17,7 @@
    removed above it between versions: SRC_LINE(LodgeNet's, USA Rev 1's). */
 #if VERSION == VERSION_LODGENET
 #define SRC_LINE(lodgenet, us_rev1) (lodgenet)
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 #define SRC_LINE(lodgenet, us_rev1) (us_rev1)
 #else
 #error "SRC_LINE: no line numbers for this version"

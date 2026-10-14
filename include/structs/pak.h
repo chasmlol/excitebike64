@@ -11,6 +11,8 @@
 #define PAK_GAME_CODE    0x4E4D5847 /* 'NMXG' */
 #elif VERSION == VERSION_US_REV1
 #define PAK_GAME_CODE    0x4E4D5845 /* 'NMXE' */
+#elif VERSION == VERSION_EU
+#define PAK_GAME_CODE    0x4E4D5850 /* 'NMXP' */
 #else
 #error "PAK_GAME_CODE: the version's game code"
 #endif
