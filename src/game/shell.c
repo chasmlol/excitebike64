@@ -2753,95 +2753,103 @@ void shell_build_player_palettes(void)
 }
 
 
+/* After a season race (once per race, not after a replay or a race left in its intro): a cup won for the first
+   time at the highest difficulty reached is marked won in the save, and winning the difficulty's last cup opens
+   the next difficulty (or, at the top, the credits); the cup's progress moves to the next round. Sets the unlock
+   messages' flags. */
 void shell_update_season_progress(void)
 {
-    u8 *q;
-    s32 old;
-    s32 idx;
-    u32 fl;
-    Game *g;
-    Game *g2;
-    s32 m;
-    s32 idx2;
-    s32 mode;
-    s32 nv;
-    u32 v;
-    u32 w;
-    s32 md;
-    s32 lv;
-    u32 f;
-    u8 *pb;
-    u8 *e;
-    u8 t8;
-    Season *r;
-    u8 *p0;
-    u8 *cb;
-    u8 *pb2;
+    u8 *save;
+    s32 won;
+    s32 cupIndex;
+    u32 flags;
+    Game *game;
+    Game *game2;
+    s32 allCups;
+    s32 cupIndex2;
+    s32 difficulty;
+    s32 nextRound;
+    u32 value;
+    u32 unused;
+    s32 curDifficulty;
+    s32 topDifficulty;
+    u32 unlocks;
+    u8 *cupBytes;
+    u8 *progress;
+    u8 top;
+    Season *season;
+    u8 *cup;
+    u8 *cups;
+    u8 *cupBytes2;
 
-    fl = gGame.flags;
-    g = &gGame;
-    if ((fl & 0x28000) == 0 && gRaceExitCode != 3) {
-        v = fl | 0x20000;
-        gGame.flags = v;
-        mode = g->difficulty;
-        switch (mode) {
-        case 1: m = 3; break;
-        case 2: m = 7; break;
-        case 3: m = 0x1f; break;
+    flags = gGame.flags;
+    game = &gGame;
+    if ((flags & (GAME_FLAG_RESULTS_SEEN | GAME_FLAG_REPLAY)) == 0 && gRaceExitCode != 3) {
+        value = flags | GAME_FLAG_RESULTS_SEEN;
+        gGame.flags = value;
+        /* the cups of each difficulty: 1 Bronze and Silver, 2 up to Gold, 3 up to the challenge */
+        difficulty = game->difficulty;
+        switch (difficulty) {
+        case 1: allCups = 3; break;
+        case 2: allCups = 7; break;
+        case 3: allCups = 0x1f; break;
         }
         save_update_unlocks();
-        r = gSeason;
-        p0 = (u8 *)r->cup;
-        cb = (u8 *)gCups;
-        idx = ((p0 - cb) * 0x38E38E39) >> 2;
-        if (idx < 5) if (idx >= 0) {
-            pb = (u8 *)r->cup;
-            if ((s32)*pb <= (s32)r->round + 1) {
-                if (!(idx == 4 && gEvent.finishOrder[0] != 0) && r->standings[0] == 0) {
-                    g2 = &gGame;
-                    q = &gSaveData_12;
-                    lv = q[0x2C0];
-                    md = g2->difficulty;
-                    if (md == lv && ((old = q[0x2BF]) >> idx & 1) == 0) {
-                        v = old | (1 << idx);
-                        q[0x2BF] = v;
-                        if ((((u8)v) & m) == m) {
-                            if (md != 3) {
-                                t8 = q[0x2C0];
+        season = gSeason;
+        cup = (u8 *)season->cup;
+        cups = (u8 *)gCups;
+        cupIndex = ((cup - cups) * 0x38E38E39) >> 2; /* season->cup - gCups */
+        if (cupIndex < 5) if (cupIndex >= 0) {
+            cupBytes = (u8 *)season->cup;
+            if ((s32)*cupBytes <= (s32)season->round + 1) { /* Cup.numRounds: the last round */
+                if (!(cupIndex == CUP_CHALLENGE && gEvent.finishOrder[0] != 0) && season->standings[0] == 0) {
+                    /* the cup won (the challenge: and its race) */
+                    game2 = &gGame;
+                    save = &gSaveData_12; /* +0x2BF: the cups won, +0x2C0: the highest difficulty reached */
+                    topDifficulty = save[0x2C0];
+                    curDifficulty = game2->difficulty;
+                    if (curDifficulty == topDifficulty && ((won = save[0x2BF]) >> cupIndex & 1) == 0) {
+                        value = won | (1 << cupIndex);
+                        save[0x2BF] = value;
+                        if ((((u8)value) & allCups) == allCups) {
+                            if (curDifficulty != 3) {
+                                /* the next difficulty, its cups not won yet */
+                                top = save[0x2C0];
                                 gGame.cupSel = 0;
                                 do {
-                                q[0x2BF] = 0;
-                                q[0x2C0] = t8 + 1;
+                                save[0x2BF] = 0;
+                                save[0x2C0] = top + 1;
                                 } while (0);
-                                gGame.flags |= 0x400000;
+                                gGame.flags |= GAME_FLAG_DIFFICULTY_UNLOCKED;
                             } else {
-                                gGame.flags |= 0x800000;
+                                gGame.flags |= GAME_FLAG_ALL_ROUNDS_WON;
                             }
                         } else {
-                            gGame.flags |= 0x100000;
+                            gGame.flags |= GAME_FLAG_ROUND_WON;
                         }
                     }
                 }
             }
-            idx2 = (((u8 *)gSeason->cup - (u8 *)gCups) * 0x38E38E39) >> 2;
-            if (idx2 != 4 || gEvent.finishOrder[0] == 0) {
-                pb2 = (u8 *)gSeason->cup;
-                e = pb2 + (gGame.difficulty - 1);
-                if (gSeason->round == e[1]) {
-                    nv = gSeason->round + 1;
-                    if (nv < *pb2) {
-                        e[1] = nv;
+            /* Cup.progress[difficulty - 1]: the last round open */
+            cupIndex2 = (((u8 *)gSeason->cup - (u8 *)gCups) * 0x38E38E39) >> 2;
+            if (cupIndex2 != CUP_CHALLENGE || gEvent.finishOrder[0] == 0) {
+                cupBytes2 = (u8 *)gSeason->cup;
+                progress = cupBytes2 + (gGame.difficulty - 1);
+                if (gSeason->round == progress[1]) {
+                    nextRound = gSeason->round + 1;
+                    if (nextRound < *cupBytes2) {
+                        progress[1] = nextRound;
                     } else if (gSeason->standings[0] == 0) {
-                        e[1] = nv;
+                        progress[1] = nextRound;
                     }
                 }
             }
             save_write(1, 0);
         }
-        f = save_update_unlocks();
-        gGame.newUnlocks = f;
-        if (f != 0) {
-            gGame.flags |= 0x200000;
+        unlocks = save_update_unlocks();
+        gGame.newUnlocks = unlocks;
+        if (unlocks != 0) {
+            gGame.flags |= GAME_FLAG_NEW_UNLOCKS;
         }
     }
 }
