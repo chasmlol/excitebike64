@@ -7,6 +7,12 @@
 
 #include "common.h"
 
+/* A resource's handle (ResSet.handles): its data, or 0 when not loaded. */
+#define RES_PENDING   1 /* (depth << 2) | 1: referenced by a resource being loaded, to load next */
+#define RES_IN_BUFFER 2 /* the data was put in a load buffer (res_set_load_buffer): not freed */
+
+#define RES_MAX_TYPES 16 /* res_register_type */
+
 /* A name in a set's hash table (res_load_by_name). */
 typedef struct ResName {
     /* 0x00 */ struct ResName *next;
