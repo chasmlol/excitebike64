@@ -14,7 +14,7 @@
 #endif
 
 /* A line number the code passes (__LINE__ of the original source, to the debug allocator), where lines were added or
-   removed above it between versions: SRC_LINE(LodgeNet's, USA Rev 1's). */
+   removed above it between versions: SRC_LINE(LodgeNet's, USA Rev 1's); Europe's are Rev 1's. */
 #if VERSION == VERSION_LODGENET
 #define SRC_LINE(lodgenet, us_rev1) (lodgenet)
 #elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
@@ -25,7 +25,8 @@
 
 /* A RESOURCE set id (the set of models, textures, animations, maps...), written with LodgeNet's number: the retail
    versions dropped 17 resources LodgeNet has (its 74, 82, 86, 88, 94, 151, 191, 193, 202, 208, 212, 331, 578, 581,
-   585, 611 and 614), which renumbers every id after them. tools/version_data.py reads these definitions. */
+   585, 611 and 614), which renumbers every id after them (Europe numbers them as USA Rev 1). tools/version_data.py
+   reads these definitions. */
 #if VERSION == VERSION_LODGENET
 #define RES(id) (id)
 #elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU

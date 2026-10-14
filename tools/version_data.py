@@ -34,8 +34,8 @@ DEF_RE = r"^(u8|s8|char|u16|s16|u32|s32|f32|f64) ({name})(\[[^\]]*\])? = "
 def res_function(version):
     """The RES() of include/version.h for the version, as a Python function (None: no RES there)."""
     text = (common.ROOT / "include" / "version.h").read_text()
-    m = re.search(r"#(?:el)?if VERSION == VERSION_" + version.upper() + r"\s*\n#define RES\(id\) ((?:.*\\\n)*.*)",
-                  text)
+    m = re.search(r"#(?:el)?if [^\n]*\bVERSION == VERSION_" + version.upper() + r"\b[^\n]*\n#define RES\(id\) "
+                  r"((?:.*\\\n)*.*)", text)
     if not m:
         return None
     expr = m.group(1).replace("\\\n", " ")
