@@ -33,6 +33,9 @@ typedef struct Font {
     /* 0x10 */ FontGlyph glyphs[1]; /* numGlyphs, from firstChar on */
 } Font;
 
+/* sFontScaleX, sFontScaleY (font_set_scale): 16.16 fixed point */
+#define FONT_SCALE_ONE 0x10000
+
 /* A glyph queued for font_render */
 typedef struct FontSprite {
     /* 0x00 */ struct FontSprite *next;

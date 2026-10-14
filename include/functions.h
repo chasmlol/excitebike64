@@ -1410,20 +1410,20 @@ SamHeader *decoder_decode_ima_adpcm(SamAdpcm *p);
 
 /* src/game/fontcode.c */
 s32 font_load(ResFile *arc, u32 **ids, u32 *palette);
-u8 *font_draw_text(TextObj *t, s32 x, s32 y);
-s32 font_get_char_pos(TextObj *p, s32 x, s32 unused, s32 n);
-u8 *font_measure_text(u8 *s, Font *f, u32 *outMax, u32 *outW);
+u8 *font_draw_text(TextObj *text, s32 x, s32 y);
+s32 font_get_char_pos(TextObj *text, s32 x, s32 unused, s32 n);
+u8 *font_measure_text(u8 *str, Font *font, u32 *outW, u32 *outH);
 Gfx *font_render(Gfx *gdl);
 Gfx *font_render_pages_scaled(Gfx *gdl, FontSprite **list);
 Gfx *font_render_pages(Gfx *gdl, FontSprite **lists);
 s32 font_pack_glyphs(Font *font);
 s32 font_alloc_glyph_space(u32 *map);
-void font_set_scale(s32 a, s32 b, s32 c, s32 d);
+void font_set_scale(s32 scaleX, s32 scaleY, s32 unk, s32 fromCorner);
 u32 font_unload(void);
-TextObj *font_text_create(TextObj *t, s32 size, s32 font, s32 color, u32 flags);
-TextObj *font_text_clear(TextObj *t);
-char *font_text_add(TextObj *t, char *s);
-void font_text_destroy(TextObj *t);
+TextObj *font_text_create(TextObj *text, s32 size, s32 font, s32 color, u32 flags);
+TextObj *font_text_clear(TextObj *text);
+char *font_text_add(TextObj *text, char *str);
+void font_text_destroy(TextObj *text);
 void str_make_initials(char *dst, char *src);
 void font_str_upper(u8 *s);
 void font_name_upper(u8 *s);

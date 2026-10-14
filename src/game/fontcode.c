@@ -1,11 +1,22 @@
+/* FONTCODE.C: loads the fonts of a font set and packs their glyphs into texture pages, measures and queues text,
+   and draws the queued glyphs as texture rectangles. */
 #include "game.h"
 
+#define FONT_BUFFER_SIZE 0x30000 /* the fonts while they load, the pages growing down from the top */
+#define FONT_PAGE_SIZE   0x1000  /* 64x64 IA8 texels */
+#define FONT_MAX_PAGES   40
+#define FONT_MAX_FONTS   16
+#define FONT_MAX_SPRITES 0x3FE   /* glyphs queued between two font_render */
+
+/* Loads the fonts of the resource ids in ids (NULL-terminated) into one block: the fonts' headers and glyph
+   tables, then the pages their glyphs were packed into. palette: the text colours (NULL: sFontDefaultPalette).
+   Returns 0, or -1 when out of memory. */
 s32 font_load(ResFile *arc, u32 **ids, u32 *palette)
 {
-    s32 *base;
+    s32 *dst;
     s32 *src;
-    Font *h;
-    u32 *tbl;
+    Font *font;
+    u32 *map;
     u32 k, j;
 
     if (palette != NULL) {
@@ -13,34 +24,35 @@ s32 font_load(ResFile *arc, u32 **ids, u32 *palette)
     } else {
         sFontPalette = sFontDefaultPalette;
     }
-    k = 0x30000;
+    k = FONT_BUFFER_SIZE;
     if (gFontLoadBuffer != NULL) {
-        base = (s32 *)gFontLoadBuffer;
+        dst = (s32 *)gFontLoadBuffer;
     } else {
-        base = mem_calloc_dbg(k, 0, sStrFontcodeFile, 0x124);
+        dst = mem_calloc_dbg(k, 0, sStrFontcodeFile, 0x124);
     }
-    if (base == NULL) {
+    if (dst == NULL) {
         sprintf(sFontErrorText, sStrFontAllocFailed);
         fatal_halt_mem_report_2();
         return -1;
     }
-    sFontPageTop = (u8 *)base + k - 0x1000;
+    sFontPageTop = (u8 *)dst + k - FONT_PAGE_SIZE;
     sFontPageCount = 0;
-    tbl = mem_alloc_dbg(0x2800, 0, sStrFontcodeFile, 0x132);
-    sFontPageMaps = tbl;
-    for (k = 0; k < 40; k++) {
-        *tbl++ = -1;
+    /* per page 64 rows of 32 bits, a bit per two texels in use: row 0 and column 0 are kept free */
+    map = mem_alloc_dbg(FONT_MAX_PAGES * 64 * sizeof(u32), 0, sStrFontcodeFile, 0x132);
+    sFontPageMaps = map;
+    for (k = 0; k < FONT_MAX_PAGES; k++) {
+        *map++ = -1;
         for (j = 1; j < 64; j++) {
-            *tbl++ = 0x80000000;
+            *map++ = 0x80000000;
         }
     }
-    sFontTable[0] = (Font *)base;
-    for (k = 1; k < 16; k++) {
+    sFontTable[0] = (Font *)dst;
+    for (k = 1; k < FONT_MAX_FONTS; k++) {
         if (*ids == NULL) {
             break;
         }
-        h = (Font *)res_load(arc, **ids);
-        if (h == NULL) {
+        font = (Font *)res_load(arc, **ids);
+        if (font == NULL) {
             mem_free(sFontPageMaps);
             sFontPageMaps = NULL;
             mem_free(sFontTable[0]);
@@ -49,440 +61,450 @@ s32 font_load(ResFile *arc, u32 **ids, u32 *palette)
             fatal_halt_mem_report_2();
             return -1;
         }
-        j = *(u16 *)h->glyphs; /* until packed: glyph 0's bitmap offset, the size of the tables */
-        font_pack_glyphs(h);
-        src = (s32 *)h;
+        j = *(u16 *)font->glyphs; /* until packed: glyph 0's bitmap offset, the size of the tables */
+        font_pack_glyphs(font);
+        src = (s32 *)font;
+        /* the header and the tables, in 16-byte blocks */
         j += 0x10;
         j += 0xF;
         j >>= 2;
         j >>= 1;
         j >>= 1;
         j--;
-        sFontTable[k] = (Font *)base;
+        sFontTable[k] = (Font *)dst;
         while (j != -1) {
-            base[0] = src[0];
-            base[1] = src[1];
-            base[2] = src[2];
-            base[3] = src[3];
-            base += 4;
+            dst[0] = src[0];
+            dst[1] = src[1];
+            dst[2] = src[2];
+            dst[3] = src[3];
+            dst += 4;
             src += 4;
             j--;
         }
         res_unload(arc->tbl + **ids);
         ids++;
     }
-    for (; k < 16; k++) {
+    for (; k < FONT_MAX_FONTS; k++) {
         sFontTable[k] = NULL;
     }
     mem_free(sFontPageMaps);
-    src = (s32 *)sFontPageTop - sFontPageCount * 0x400;
+    /* the pages follow the fonts */
+    src = (s32 *)sFontPageTop - sFontPageCount * (FONT_PAGE_SIZE / 4);
     k = sFontPageCount << 8;
     k |= 0xFF;
     sFontPageMaps = NULL;
     while (k != -1) {
-        base[0] = src[0];
-        base[1] = src[1];
-        base[2] = src[2];
-        base[3] = src[3];
-        base += 4;
+        dst[0] = src[0];
+        dst[1] = src[1];
+        dst[2] = src[2];
+        dst[3] = src[3];
+        dst += 4;
         src += 4;
         k--;
     }
-    k = (u8 *)base - (u8 *)sFontTable[0];
+    /* keep only what was used */
+    k = (u8 *)dst - (u8 *)sFontTable[0];
     if (gFontLoadBuffer != NULL) {
-        base = mem_alloc_dbg(k, 0, sStrFontcodeFile, 0x1A0);
-        if (base == NULL) {
+        dst = mem_alloc_dbg(k, 0, sStrFontcodeFile, 0x1A0);
+        if (dst == NULL) {
             fatal_halt(1);
         }
-        memcpy(base, (void *)gFontLoadBuffer, k);
+        memcpy(dst, (void *)gFontLoadBuffer, k);
     } else {
-        base = mem_realloc_dbg((s32 *)sFontTable[0], k, 0, sStrFontcodeFile, 0x1A9);
+        dst = mem_realloc_dbg((s32 *)sFontTable[0], k, 0, sStrFontcodeFile, 0x1A9);
     }
-    if (base == NULL) {
+    if (dst == NULL) {
         sprintf(sFontErrorText, sStrFontShrinkFailed);
         fatal_halt_mem_report_2();
         return -1;
     }
-    sFontPageTop = (u8 *)base + k - 0x1000;
-    k = (u8 *)base - (u8 *)sFontTable[0];
-    for (j = 0; j < 16; j++) {
-        h = sFontTable[j];
-        if (h == NULL) {
+    sFontPageTop = (u8 *)dst + k - FONT_PAGE_SIZE;
+    /* move the font pointers to the new block */
+    k = (u8 *)dst - (u8 *)sFontTable[0];
+    for (j = 0; j < FONT_MAX_FONTS; j++) {
+        font = sFontTable[j];
+        if (font == NULL) {
             break;
         }
-        sFontTable[j] = (Font *)((u8 *)h + k);
-        if (h->hasKerning == 0) {
-            h->kerning = NULL;
+        sFontTable[j] = (Font *)((u8 *)font + k);
+        if (font->hasKerning == 0) {
+            font->kerning = NULL;
         } else {
-            h->kerning = (u8 *)h + (h->numGlyphs * 8 + 0x10);
+            font->kerning = (u8 *)font + (font->numGlyphs * 8 + 0x10);
         }
     }
     return 0;
 }
 
-u8 *font_draw_text(TextObj *t, s32 x, s32 y)
+/* Queues the glyphs of a text object at (x, y), each in the list of its page (or draws them with
+   gFontDirectDrawFunc: TEXT_DIRECT). Returns where the text stopped: its end, or the first character the font
+   does not have. */
+u8 *font_draw_text(TextObj *text, s32 x, s32 y)
 {
-    u8 *s = (u8 *)t->text;
-    u32 flags = t->fmt.flags;
-    s32 n;
+    u8 *str = (u8 *)text->text;
+    u32 flags = text->fmt.flags;
+    s32 triple;
     u32 color;
-    Font *f;
-    FontGlyph *g;
-    FontSprite *e;
-    u32 c, i;
-    s32 x0, scale, m8, m8b, adv;
-    u8 *kp, *kq, *kern;
+    Font *font;
+    FontGlyph *glyph;
+    FontSprite *spr;
+    u32 ch, index;
+    s32 lineX, scale, direct, direct2, advance;
+    u8 *ptr, *ptr2, *kern;
 
-    color = t->color;
-    n = color + color * 2;
-    color = n + 1;
+    color = text->color;
+    triple = color + color * 2;
+    color = triple + 1;
     if (flags & TEXT_GREYED) {
-        color = n;
+        color = triple;
     } else if (flags & TEXT_HIGHLIGHT) {
-        color = n + 2;
+        color = triple + 2;
     }
-    x += t->x;
-    y += t->y;
+    x += text->x;
+    y += text->y;
     color = sFontPalette[color];
-    f = sFontTable[t->font];
-    x0 = x;
-    if (sFontScaleY != 0x10000) {
+    font = sFontTable[text->font];
+    lineX = x;
+    if (sFontScaleY != FONT_SCALE_ONE) {
         scale = 1;
         if (sFontScaleFromCorner != 0)
             scale = sFontScaleY >> 16;
-        c = *s;
-        if (c != 0) {
-            m8 = flags & TEXT_DIRECT;
+        ch = *str;
+        if (ch != 0) {
+            direct = flags & TEXT_DIRECT;
             do {
-                s++;
-                if (c == 10) {
-                    x = x0;
-                    y += f->lineAscent + f->lineDescent + f->lineGap;
+                str++;
+                if (ch == '\n') {
+                    x = lineX;
+                    y += font->lineAscent + font->lineDescent + font->lineGap;
                 } else {
-                    i = c - f->firstChar;
-                    if (i >= f->numGlyphs)
-                        return s;
-                    g = &f->glyphs[i];
-                    if (c - 0x80 < 0x10) {
-                        sFontSpecialGlyphPos[c - 0x80][0] = x + g->x;
-                        sFontSpecialGlyphPos[c - 0x80][1] = y + g->y;
+                    index = ch - font->firstChar;
+                    if (index >= font->numGlyphs)
+                        return str;
+                    glyph = &font->glyphs[index];
+                    if (ch - 0x80 < 0x10) {
+                        /* characters 0x80-0x8F: their positions are kept */
+                        sFontSpecialGlyphPos[ch - 0x80][0] = x + glyph->x;
+                        sFontSpecialGlyphPos[ch - 0x80][1] = y + glyph->y;
                     }
-                    if (m8 != 0) {
-                        kp = sFontPageTop - (g->page << 12);
-                        gFontDirectDrawFunc((s32)kp + (g->s + (g->t << 6)),
-                                   x + g->x, y + g->y, g->w, g->h);
+                    if (direct != 0) {
+                        ptr = sFontPageTop - (glyph->page << 12);
+                        gFontDirectDrawFunc((s32)ptr + (glyph->s + (glyph->t << 6)),
+                                   x + glyph->x, y + glyph->y, glyph->w, glyph->h);
                     } else {
-                        e = sFontSprNext;
-                        sFontSprNext = e + 1;
-                        e->next = sFontSprLists[g->page];
-                        sFontSprLists[g->page] = e;
-                        e->x = (s8)((u8 *)g)[2] + x;
-                        e->y = y + g->y * scale;
-                        e->w = g->w;
-                        e->h = g->h;
-                        e->s = g->s;
-                        e->t = g->t;
-                        e->color.rgba = color;
+                        spr = sFontSprNext;
+                        sFontSprNext = spr + 1;
+                        spr->next = sFontSprLists[glyph->page];
+                        sFontSprLists[glyph->page] = spr;
+                        spr->x = (s8)((u8 *)glyph)[2] + x;
+                        spr->y = y + glyph->y * scale;
+                        spr->w = glyph->w;
+                        spr->h = glyph->h;
+                        spr->s = glyph->s;
+                        spr->t = glyph->t;
+                        spr->color.rgba = color;
                         if (flags & TEXT_SHADOW) {
-                            e = sFontSprNext;
-                            sFontSprNext = e + 1;
-                            e->next = sFontSprLists[g->page];
-                            sFontSprLists[g->page] = e;
-                            e->x = (s8)((u8 *)g)[2] + x + 2;
-                            e->y = y + (g->y + 1) * scale;
-                            e->w = g->w;
-                            e->h = g->h;
-                            e->s = g->s;
-                            e->t = g->t;
-                            e->color.rgba = color & 0xFF;
+                            spr = sFontSprNext;
+                            sFontSprNext = spr + 1;
+                            spr->next = sFontSprLists[glyph->page];
+                            sFontSprLists[glyph->page] = spr;
+                            spr->x = (s8)((u8 *)glyph)[2] + x + 2;
+                            spr->y = y + (glyph->y + 1) * scale;
+                            spr->w = glyph->w;
+                            spr->h = glyph->h;
+                            spr->s = glyph->s;
+                            spr->t = glyph->t;
+                            spr->color.rgba = color & 0xFF; /* black, with the text's alpha */
                         }
                     }
-                    adv = g->advance + f->spacing;
-                    kp = f->kerning;
-                    if (kp != 0) {
-                        do { do { kern = kp + i; } while (0); } while (0);
+                    advance = glyph->advance + font->spacing;
+                    ptr = font->kerning;
+                    if (ptr != 0) {
+                        do { do { kern = ptr + index; } while (0); } while (0);
                         if (*kern != 0) {
-                        kp += *kern * 2;
-                        i = *s;
-                        while (*kp != 0) {
-                            if (*kp == i) {
-                                adv += (s8)kp[1];
-                                break;
+                            /* the {next char, adjustment} pairs of this glyph */
+                            ptr += *kern * 2;
+                            index = *str;
+                            while (*ptr != 0) {
+                                if (*ptr == index) {
+                                    advance += (s8)ptr[1];
+                                    break;
+                                }
+                                ptr += 2;
                             }
-                            kp += 2;
-                        }
                         }
                     }
-                    do { x += (adv * sFontScaleX) >> 16; } while (0);
+                    do { x += (advance * sFontScaleX) >> 16; } while (0);
                 }
-                c = *s;
-            } while (c != 0);
+                ch = *str;
+            } while (ch != 0);
         }
     } else {
-        c = *s;
-        if (c != 0) {
-            m8b = flags & TEXT_DIRECT;
+        ch = *str;
+        if (ch != 0) {
+            direct2 = flags & TEXT_DIRECT;
             do {
-                s++;
-                if (c == 10) {
-                    x = x0;
-                    y += f->lineAscent + f->lineDescent + f->lineGap;
+                str++;
+                if (ch == '\n') {
+                    x = lineX;
+                    y += font->lineAscent + font->lineDescent + font->lineGap;
                 } else {
-                    i = c - f->firstChar;
-                    if (i >= f->numGlyphs)
-                        return s;
-                    g = &f->glyphs[i];
-                    if (c - 0x80 < 0x10) {
-                        sFontSpecialGlyphPos[c - 0x80][0] = x + g->x;
-                        sFontSpecialGlyphPos[c - 0x80][1] = y + g->y;
+                    index = ch - font->firstChar;
+                    if (index >= font->numGlyphs)
+                        return str;
+                    glyph = &font->glyphs[index];
+                    if (ch - 0x80 < 0x10) {
+                        sFontSpecialGlyphPos[ch - 0x80][0] = x + glyph->x;
+                        sFontSpecialGlyphPos[ch - 0x80][1] = y + glyph->y;
                     }
-                    if (m8b != 0) {
-                        kq = sFontPageTop - (g->page << 12);
-                        gFontDirectDrawFunc((s32)kq + (g->s + (g->t << 6)),
-                                   x + g->x, y + g->y, g->w, g->h);
+                    if (direct2 != 0) {
+                        ptr2 = sFontPageTop - (glyph->page << 12);
+                        gFontDirectDrawFunc((s32)ptr2 + (glyph->s + (glyph->t << 6)),
+                                   x + glyph->x, y + glyph->y, glyph->w, glyph->h);
                     } else {
-                        e = sFontSprNext;
-                        sFontSprNext = e + 1;
-                        e->next = sFontSprLists[g->page];
-                        sFontSprLists[g->page] = e;
-                        e->x = (s8)((u8 *)g)[2] + x;
-                        e->y = y + g->y * (sFontScaleY >> 16);
-                        e->w = g->w;
-                        e->h = g->h;
-                        e->s = g->s;
-                        e->t = g->t;
-                        e->color.rgba = color;
+                        spr = sFontSprNext;
+                        sFontSprNext = spr + 1;
+                        spr->next = sFontSprLists[glyph->page];
+                        sFontSprLists[glyph->page] = spr;
+                        spr->x = (s8)((u8 *)glyph)[2] + x;
+                        spr->y = y + glyph->y * (sFontScaleY >> 16);
+                        spr->w = glyph->w;
+                        spr->h = glyph->h;
+                        spr->s = glyph->s;
+                        spr->t = glyph->t;
+                        spr->color.rgba = color;
                         if (flags & TEXT_SHADOW) {
-                            e = sFontSprNext;
-                            sFontSprNext = e + 1;
-                            e->next = sFontSprLists[g->page];
-                            sFontSprLists[g->page] = e;
-                            e->x = (s8)((u8 *)g)[2] + x + 2;
-                            e->y = (s8)((u8 *)g)[3] + y + 1;
-                            e->w = g->w;
-                            e->h = g->h;
-                            e->s = g->s;
-                            e->t = g->t;
-                            e->color.rgba = color & 0xFF;
+                            spr = sFontSprNext;
+                            sFontSprNext = spr + 1;
+                            spr->next = sFontSprLists[glyph->page];
+                            sFontSprLists[glyph->page] = spr;
+                            spr->x = (s8)((u8 *)glyph)[2] + x + 2;
+                            spr->y = (s8)((u8 *)glyph)[3] + y + 1;
+                            spr->w = glyph->w;
+                            spr->h = glyph->h;
+                            spr->s = glyph->s;
+                            spr->t = glyph->t;
+                            spr->color.rgba = color & 0xFF;
                         }
                     }
-                    adv = g->advance + f->spacing;
-                    kq = f->kerning;
-                    if (kq != 0) {
-                        do { do { kern = kq + i; } while (0); } while (0);
+                    advance = glyph->advance + font->spacing;
+                    ptr2 = font->kerning;
+                    if (ptr2 != 0) {
+                        do { do { kern = ptr2 + index; } while (0); } while (0);
                         if (*kern != 0) {
-                        kq += *kern * 2;
-                        i = *s;
-                        while (*kq != 0) {
-                            if (*kq == i) {
-                                adv += (s8)kq[1];
-                                break;
+                            ptr2 += *kern * 2;
+                            index = *str;
+                            while (*ptr2 != 0) {
+                                if (*ptr2 == index) {
+                                    advance += (s8)ptr2[1];
+                                    break;
+                                }
+                                ptr2 += 2;
                             }
-                            kq += 2;
-                        }
                         }
                     }
-                    do { x += adv; } while (0);
+                    do { x += advance; } while (0);
                 }
-                c = *s;
-            } while (c != 0);
+                ch = *str;
+            } while (ch != 0);
         }
     }
-    return s;
+    return str;
 }
 
-s32 font_get_char_pos(TextObj *p, s32 x, s32 unused, s32 n)
+/* Where character n of a text object drawn at x lands: (the glyph's centre << 16) | its width, or -1. */
+s32 font_get_char_pos(TextObj *text, s32 x, s32 unused, s32 n)
 {
-    FontGlyph *g;
-    u8 *t;
-    Font *f;
-    u8 *kt;
-    u8 *pr;
-    s32 start;
-    u32 idx;
-    s32 c;
-    s32 k;
+    FontGlyph *glyph;
+    u8 *str;
+    Font *font;
+    u8 *kern;
+    s32 lineX;
+    u32 index;
     s32 ch;
-    u8 adv;
+    s32 next;
+    u8 width;
 
-    g = *(FontGlyph *volatile *)&p->fmt.flags; /* a load of the flags the result never uses */
-    t = (u8 *)p->text;
+    glyph = *(FontGlyph *volatile *)&text->fmt.flags; /* a load of the flags the result never uses */
+    str = (u8 *)text->text;
     goto setup;
 
 ret:
-    adv = g->w;
-    return ((x + g->x + (adv >> 1)) << 16) | adv;
+    width = glyph->w;
+    return ((x + glyph->x + (width >> 1)) << 16) | width;
 
 setup:
-    x = x + p->x;
-    start = x;
-    c = *t;
-    f = sFontTable[p->font];
-    if (c == 0) {
+    x = x + text->x;
+    lineX = x;
+    ch = *str;
+    font = sFontTable[text->font];
+    if (ch == 0) {
         goto fail;
     }
     do {
-        idx = c - f->firstChar;
-        if (idx >= f->numGlyphs) {
+        index = ch - font->firstChar;
+        if (index >= font->numGlyphs) {
             goto fail;
         }
-        t++;
+        str++;
         n--;
-        g = &f->glyphs[idx];
+        glyph = &font->glyphs[index];
         if (n == -1) {
             goto ret;
         }
-        if (c == 10) {
-            x = start;
+        if (ch == '\n') {
+            x = lineX;
         } else {
-            x = x + (g->advance + f->spacing);
-            kt = f->kerning;
-            if (kt != 0 && kt[idx] != 0) {
-                kt = kt + kt[idx] * 2;
-                idx = *t;
-                while ((k = *kt) != 0) {
-                    if (k == idx) {
-                        x = x + (s8)kt[1];
+            x = x + (glyph->advance + font->spacing);
+            kern = font->kerning;
+            if (kern != 0 && kern[index] != 0) {
+                kern = kern + kern[index] * 2;
+                index = *str;
+                while ((next = *kern) != 0) {
+                    if (next == index) {
+                        x = x + (s8)kern[1];
                         break;
                     }
-                    kt = kt + 2;
+                    kern = kern + 2;
                 }
             }
         }
-        c = *t;
-    } while (c != 0);
+        ch = *str;
+    } while (ch != 0);
 fail:
     return -1;
 }
 
-u8 *font_measure_text(u8 *s, Font *f, u32 *outMax, u32 *outW)
+/* Measures a text in a font: the width of its widest line and its height (a trailing newline adds none). */
+u8 *font_measure_text(u8 *str, Font *font, u32 *outW, u32 *outH)
 {
-    u8 *t = s;
-    s32 w;
-    s8 flag = 0;
-    u32 mx = 0;
-    u32 cur;
-    u32 c;
-    u32 lo;
-    u32 hi;
-    s32 adj;
-    u8 *kt;
-    FontGlyph *gl;
+    u8 *p = str;
+    s32 h;
+    s8 endsWithNewline = 0;
+    u32 maxW = 0;
+    u32 lineW;
+    u32 ch;
+    u32 firstChar;
+    u32 numGlyphs;
+    s32 spacing;
+    u8 *kern;
+    FontGlyph *glyphs;
 
+    *outH = 0;
     *outW = 0;
-    *outMax = 0;
-    w = f->ascent;
-    lo = f->firstChar;
-    hi = f->numGlyphs;
-    adj = f->spacing;
-    gl = f->glyphs;
-    while (*t != 0) {
-        cur = 0;
-        c = *t;
-        while (c != 0) {
-            t++;
-            if (c == 10) {
-                flag = 1;
-                w += f->lineAscent + f->lineDescent + f->lineGap;
+    h = font->ascent;
+    firstChar = font->firstChar;
+    numGlyphs = font->numGlyphs;
+    spacing = font->spacing;
+    glyphs = font->glyphs;
+    while (*p != 0) {
+        lineW = 0;
+        ch = *p;
+        while (ch != 0) {
+            p++;
+            if (ch == '\n') {
+                endsWithNewline = 1;
+                h += font->lineAscent + font->lineDescent + font->lineGap;
                 break;
             }
-            if (c != 0x20) {
-                flag = 0;
+            if (ch != ' ') {
+                endsWithNewline = 0;
             }
-            c -= lo;
-            if ((s32)c < 0 || c >= hi) {
+            ch -= firstChar;
+            if ((s32)ch < 0 || ch >= numGlyphs) {
                 break;
             }
-            cur += gl[c].advance + adj;
-            kt = f->kerning;
-            if (kt != NULL && kt[c] != 0) {
-                kt += kt[c] * 2;
-                while (*kt != 0) {
-                    if (*kt == *s) {
-                        cur += (s8)kt[1];
+            lineW += glyphs[ch].advance + spacing;
+            kern = font->kerning;
+            if (kern != NULL && kern[ch] != 0) {
+                kern += kern[ch] * 2;
+                while (*kern != 0) {
+                    if (*kern == *str) { /* the text's first character, not the next one: an original bug */
+                        lineW += (s8)kern[1];
                         break;
                     }
-                    kt += 2;
+                    kern += 2;
                 }
             }
-            c = *t;
+            ch = *p;
         }
-        if (mx < cur) {
-            mx = cur;
+        if (maxW < lineW) {
+            maxW = lineW;
         }
     }
-    if (mx != 0) {
-        mx -= adj;
+    if (maxW != 0) {
+        maxW -= spacing;
     }
-    if (flag) {
-        w -= f->lineAscent + f->lineDescent + f->lineGap;
+    if (endsWithNewline) {
+        h -= font->lineAscent + font->lineDescent + font->lineGap;
     }
-    *outMax = mx;
-    *outW = w;
-    return t;
+    *outW = maxW;
+    *outH = h;
+    return p;
 }
 
-#define PKT(a, b) { Gfx *_g = (Gfx *)(gdl++); _g->words.w0 = (a); _g->words.w1 = (b); }
-
+/* Draws the queued glyphs (the back lists first) and empties the queue. */
 Gfx *font_render(Gfx *gdl)
 {
     u32 i;
 
     gdl = font_gfx_setup(gdl);
-    PKT(0xE2001E01, 1);
-    PKT(0xE200001C, 0x504240);
-    PKT(0xFC119623, 0xFF2FFFFF);
-    if (sFontScaleX == 0x10000 && sFontScaleY == 0x10000) {
+    gDPSetAlphaCompare(gdl++, G_AC_THRESHOLD);
+    gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+    gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    if (sFontScaleX == FONT_SCALE_ONE && sFontScaleY == FONT_SCALE_ONE) {
         gdl = font_render_pages(gdl, sFontSprListsBack);
         gdl = font_render_pages(gdl, sFontSprLists);
     } else {
         gdl = font_render_pages_scaled(gdl, sFontSprListsBack);
         gdl = font_render_pages_scaled(gdl, sFontSprLists);
     }
-    PKT(0xE7000000, 0);
+    gDPPipeSync(gdl++);
     sFontSprNext = sFontSprPool;
-    PKT(0xE2001E01, 0);
-    sFontSprPoolEnd = sFontSprPool + 0x3FE;
-    for (i = 0; i < 0x28; i++) {
+    gDPSetAlphaCompare(gdl++, G_AC_NONE);
+    sFontSprPoolEnd = sFontSprPool + FONT_MAX_SPRITES;
+    for (i = 0; i < FONT_MAX_PAGES; i++) {
         sFontSprListsBack[i] = NULL;
         sFontSprLists[i] = NULL;
     }
     return gdl;
 }
 
-Gfx *font_render_pages_scaled(Gfx *gdl, FontSprite **list)
+/* Draws the glyphs of each page's list scaled by sFontScaleX and sFontScaleY, about their centres or (with
+   sFontScaleFromCorner) from their top left corners. */
+Gfx *font_render_pages_scaled(Gfx *gdl, FontSprite **lists)
 {
     u32 i;
-    FontSprite *s;
-    s32 sy;
+    FontSprite *spr;
+    s32 scaleY;
 
-    for (i = 0; i < 40; i++) {
-        if (list[i] != NULL) {
-            gDPLoadTextureBlock(gdl++, sFontPageTop - i * 0x1000, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
+    for (i = 0; i < FONT_MAX_PAGES; i++) {
+        if (lists[i] != NULL) {
+            gDPLoadTextureBlock(gdl++, sFontPageTop - i * FONT_PAGE_SIZE, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
                                 G_TX_CLAMP, G_TX_CLAMP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
-            sy = sFontScaleY;
-            s = list[i];
+            scaleY = sFontScaleY;
+            spr = lists[i];
             do {
-                if ((u16)(s->x + 63) < 703) {
-                    gDPSetPrimColor(gdl++, 0, 0, s->color.c.r, s->color.c.g, s->color.c.b, s->color.c.a);
+                if ((u16)(spr->x + 63) < 703) { /* -63 <= x < 640 */
+                    gDPSetPrimColor(gdl++, 0, 0, spr->color.c.r, spr->color.c.g, spr->color.c.b, spr->color.c.a);
                     if (sFontScaleFromCorner == 0) {
                         gSPTextureRectangle(gdl++,
-                            (s->x + (((0x10000 - sFontScaleX) * s->w) >> 17)) << 2,
-                            (s->y + (((0x10000 - sy) * s->h) >> 17)) << 2,
-                            (s->x + (((sFontScaleX + 0x10000) * s->w) >> 17)) << 2,
-                            (s->y + (((sy + 0x10000) * s->h) >> 17)) << 2,
-                            G_TX_RENDERTILE, s->s << 5, s->t << 5, sFontTexStepX, sFontTexStepY);
+                            (spr->x + (((0x10000 - sFontScaleX) * spr->w) >> 17)) << 2,
+                            (spr->y + (((0x10000 - scaleY) * spr->h) >> 17)) << 2,
+                            (spr->x + (((sFontScaleX + 0x10000) * spr->w) >> 17)) << 2,
+                            (spr->y + (((scaleY + 0x10000) * spr->h) >> 17)) << 2,
+                            G_TX_RENDERTILE, spr->s << 5, spr->t << 5, sFontTexStepX, sFontTexStepY);
                     } else {
                         gSPTextureRectangle(gdl++,
-                            s->x << 2,
-                            s->y << 2,
-                            (s->x + ((sFontScaleX * s->w) >> 16)) << 2,
-                            (s->y + ((sy * s->h) >> 16)) << 2,
-                            G_TX_RENDERTILE, s->s << 5, s->t << 5, sFontTexStepX, sFontTexStepY);
+                            spr->x << 2,
+                            spr->y << 2,
+                            (spr->x + ((sFontScaleX * spr->w) >> 16)) << 2,
+                            (spr->y + ((scaleY * spr->h) >> 16)) << 2,
+                            G_TX_RENDERTILE, spr->s << 5, spr->t << 5, sFontTexStepX, sFontTexStepY);
                     }
                 }
-                s = s->next;
-            } while (s != NULL);
+                spr = spr->next;
+            } while (spr != NULL);
         }
     }
     return gdl;
@@ -490,105 +512,112 @@ Gfx *font_render_pages_scaled(Gfx *gdl, FontSprite **list)
 
 #define gDPWord_2(pkt, a, b)     {         Gfx *_g = (Gfx *)(pkt);         _g->words.w0 = (a);         _g->words.w1 = (b);     }
 
+/* Draws the glyphs of each page's list unscaled. */
 Gfx *font_render_pages(Gfx *gdl, FontSprite **lists)
 {
-    u8 *base;
+    u8 *pageTop;
     u32 i;
-    FontSprite *n;
+    FontSprite *spr;
 
-    base = sFontPageTop;
-    for (i = 0; i < 40; i++) {
+    pageTop = sFontPageTop;
+    for (i = 0; i < FONT_MAX_PAGES; i++) {
         if (lists[i] != NULL) {
-            gDPLoadTextureBlock(gdl++, base - i * 0x1000, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
+            gDPLoadTextureBlock(gdl++, pageTop - i * FONT_PAGE_SIZE, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
                                 G_TX_CLAMP, G_TX_CLAMP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
-            n = lists[i];
+            spr = lists[i];
             do {
-                if (n->x >= -63 && n->x < 640) {
-                    gDPSetPrimColor(gdl++, 0, 0, n->color.c.r, n->color.c.g, n->color.c.b, n->color.c.a);
-                    { s32 x = n->x;
-                    gDPWord_2(gdl++, _SHIFTL(0xE4, 24, 8) | _SHIFTL((n->w + x) << 2, 12, 12) | _SHIFTL((n->h + n->y) << 2, 0, 12),
-                            _SHIFTL(G_TX_RENDERTILE, 24, 3) | _SHIFTL(n->x << 2, 12, 12) | _SHIFTL(n->y << 2, 0, 12)); }
-                    gDPWord_2(gdl++, _SHIFTL(0xE1, 24, 8), _SHIFTL(n->s << 5, 16, 16) | _SHIFTL(n->t << 5, 0, 16));
-                    gDPWord_2(gdl++, _SHIFTL(0xF1, 24, 8), _SHIFTL(1 << 10, 16, 16) | _SHIFTL(1 << 10, 0, 16));
+                if (spr->x >= -63 && spr->x < 640) {
+                    gDPSetPrimColor(gdl++, 0, 0, spr->color.c.r, spr->color.c.g, spr->color.c.b, spr->color.c.a);
+                    /* gSPTextureRectangle by hand */
+                    { s32 x = spr->x;
+                    gDPWord_2(gdl++, _SHIFTL(G_TEXRECT, 24, 8) | _SHIFTL((spr->w + x) << 2, 12, 12)
+                                         | _SHIFTL((spr->h + spr->y) << 2, 0, 12),
+                            _SHIFTL(G_TX_RENDERTILE, 24, 3) | _SHIFTL(spr->x << 2, 12, 12) | _SHIFTL(spr->y << 2, 0, 12)); }
+                    gDPWord_2(gdl++, _SHIFTL(G_RDPHALF_1, 24, 8), _SHIFTL(spr->s << 5, 16, 16) | _SHIFTL(spr->t << 5, 0, 16));
+                    gDPWord_2(gdl++, _SHIFTL(G_RDPHALF_2, 24, 8), _SHIFTL(1 << 10, 16, 16) | _SHIFTL(1 << 10, 0, 16));
                 }
-                n = n->next;
-            } while (n != NULL);
+                spr = spr->next;
+            } while (spr != NULL);
         }
     }
     return gdl;
 }
 
+/* Copies each glyph's bitmap of a font just loaded into the first page with room for it, and turns its bitmap
+   offset into its place in the page. Returns -1 when the pages are full. */
 s32 font_pack_glyphs(Font *font)
 {
-    FontGlyph *e;
+    FontGlyph *glyph;
     u32 i;
-    u32 j;
+    u32 page;
     u32 h, w;
     u8 *src;
     u8 *dst;
-    u8 *tv;
+    u8 *next;
 
-    e = font->glyphs;
+    glyph = font->glyphs;
     for (i = 0; i < font->numGlyphs; i++) {
         {
-            j = e->h >> 8;
-            sFontAllocW = e->w + 1;
-            sFontAllocH = e->h + 1;
-            while (j < 0x28) {
-                if (font_alloc_glyph_space(sFontPageMaps + (j << 6)) != 0) break;
-                j++;
+            page = glyph->h >> 8; /* 0 */
+            sFontAllocW = glyph->w + 1;
+            sFontAllocH = glyph->h + 1;
+            while (page < FONT_MAX_PAGES) {
+                if (font_alloc_glyph_space(sFontPageMaps + (page << 6)) != 0) break;
+                page++;
             }
-            if (j == 0x28) {
+            if (page == FONT_MAX_PAGES) {
                 return -1;
             }
-            if (sFontPageCount < j) {
-                sFontPageCount = j;
+            if (sFontPageCount < page) {
+                sFontPageCount = page;
             }
-            h = e->h;
-            w = e->w;
-            src = (u8 *)e + *(u16 *)e; /* the bitmap's offset, until packed */
-            dst = sFontPageTop - (j << 12);
+            h = glyph->h;
+            w = glyph->w;
+            src = (u8 *)glyph + *(u16 *)glyph; /* the bitmap's offset, until packed */
+            dst = sFontPageTop - (page << 12);
             dst = dst + sFontAllocX + sFontAllocY * 0x40;
             while (--h != (u32)-1) {
                 while (--w != (u32)-1) {
                     *dst++ = *src++;
                 }
-                w = e->w;
-                tv = dst + 0x40;
-                dst = tv - w;
+                w = glyph->w;
+                next = dst + 0x40;
+                dst = next - w;
             }
-            e->page = j;
-            e->s = sFontAllocX;
-            e->t = sFontAllocY;
-            e++;
+            glyph->page = page;
+            glyph->s = sFontAllocX;
+            glyph->t = sFontAllocY;
+            glyph++;
         }
     }
     return 0;
 }
 
+/* Looks in a page's map for a free sFontAllocW x sFontAllocH texels and marks it used: sFontAllocX and
+   sFontAllocY get its position. Returns 0 when the page has no room. */
 s32 font_alloc_glyph_space(u32 *map)
 {
-    u32 w = (sFontAllocW + 1) >> 1;
-    s32 h = sFontAllocH;
+    u32 cols = (sFontAllocW + 1) >> 1; /* in pairs of texels */
+    s32 rows = sFontAllocH;
     s32 y = 1;
-    s32 xmax = 0x20 - w;
-    s32 ymax = 0x40 - h;
-    u32 mask = sFontAllocMasks[w - 1];
-    u32 bits0 = sFontAllocBits[w - 1];
-    u32 acc;
-    u32 bits;
-    u32 *pp;
+    s32 maxX = 0x20 - cols;
+    s32 maxY = 0x40 - rows;
+    u32 mask = sFontAllocMasks[cols - 1]; /* a bit every cols columns: all of them used, no room in the row */
+    u32 firstRun = sFontAllocBits[cols - 1]; /* cols bits from the left */
+    u32 used;
+    u32 run;
+    u32 *row;
     s32 i;
     s32 x;
 
-    if (y < ymax) {
+    if (y < maxY) {
         do {
-            acc = 0;
-            pp = map + h;
-            for (i = h; i != 0; i--) {
-                pp--;
-                acc |= *pp;
-                if ((acc & mask) == mask) {
+            used = 0;
+            row = map + rows;
+            for (i = rows; i != 0; i--) {
+                row--;
+                used |= *row;
+                if ((used & mask) == mask) {
                     break;
                 }
             }
@@ -597,43 +626,46 @@ s32 font_alloc_glyph_space(u32 *map)
                 map += i;
                 continue;
             }
-            acc = ~acc;
-            bits = bits0;
+            used = ~used;
+            run = firstRun;
             x = 0;
-            if (xmax > 0) {
+            if (maxX > 0) {
                 do {
-                    if ((acc & bits) == bits) {
+                    if ((used & run) == run) {
                         goto found;
                     }
                     x++;
-                    bits >>= 1;
-                } while (x < xmax);
+                    run >>= 1;
+                } while (x < maxX);
             }
             y++;
             map++;
-        } while (y < ymax);
+        } while (y < maxY);
     }
     return 0;
 
 found:
-    while (--h != -1) {
-        *map++ |= bits;
+    while (--rows != -1) {
+        *map++ |= run;
     }
     sFontAllocX = x << 1;
     sFontAllocY = y;
     return 1;
 }
 
-void font_set_scale(s32 a, s32 b, s32 c, s32 d)
+/* Sets the scale the text is drawn at (16.16 fixed point, FONT_SCALE_ONE = 1.0) and whether glyphs scale from
+   their corners rather than their centres. */
+void font_set_scale(s32 scaleX, s32 scaleY, s32 unk, s32 fromCorner)
 {
-    sFontScaleX = a;
-    sFontScaleY = b;
-    D_800D5768 = c;
-    sFontScaleFromCorner = d;
-    sFontTexStepX = 0x4000000 / a;
-    sFontTexStepY = 0x4000000 / b;
+    sFontScaleX = scaleX;
+    sFontScaleY = scaleY;
+    D_800D5768 = unk;
+    sFontScaleFromCorner = fromCorner;
+    sFontTexStepX = 0x4000000 / scaleX;
+    sFontTexStepY = 0x4000000 / scaleY;
 }
 
+/* Frees the fonts. */
 u32 font_unload(void) {
     u32 i;
     if (sFontPageMaps != NULL) {
@@ -644,83 +676,89 @@ u32 font_unload(void) {
         mem_free(sFontTable[0]);
         sFontTable[0] = NULL;
     }
-    for (i = 1; i < 16; i++) {
+    for (i = 1; i < FONT_MAX_FONTS; i++) {
         sFontTable[i] = NULL;
     }
     return 0;
 }
 
-TextObj *font_text_create(TextObj *t, s32 size, s32 font, s32 color, u32 flags)
+/* Allocates a text object for size characters (text NULL; size 0: 0x40), or reuses one, and empties it. A font,
+   colour or flags of 0 keeps the object's own. */
+TextObj *font_text_create(TextObj *text, s32 size, s32 font, s32 color, u32 flags)
 {
-    s32 n;
+    s32 bufSize;
 
     if (size == 0) {
         size = 0x40;
     }
-    n = (size + 0xF) & -0x10;
-    if (t == NULL) {
-        t = (TextObj *)mem_calloc_dbg(n + 0x20, 4, (s32)sStrFontcodeFile, 0x22A);
-        if (t == NULL) {
+    bufSize = (size + 0xF) & -0x10;
+    if (text == NULL) {
+        text = (TextObj *)mem_calloc_dbg(bufSize + 0x20, 4, (s32)sStrFontcodeFile, 0x22A); /* + the header */
+        if (text == NULL) {
             return NULL;
         }
     }
     if (font != 0) {
-        t->font = font;
+        text->font = font;
     }
     if (color != 0) {
-        t->color = color;
+        text->color = color;
     }
     if (flags != 0) {
-        t->fmt.flags = flags;
+        text->fmt.flags = flags;
     }
-    font_text_clear(t);
-    return t;
+    font_text_clear(text);
+    return text;
 }
 
-TextObj *font_text_clear(TextObj *t)
+/* Empties a text object. */
+TextObj *font_text_clear(TextObj *text)
 {
-    if (t != NULL) {
-        t->text[0] = 0;
-        t->x = 0;
-        t->y = 0;
-        t->w = 0;
-        t->h = 0;
+    if (text != NULL) {
+        text->text[0] = 0;
+        text->x = 0;
+        text->y = 0;
+        text->w = 0;
+        text->h = 0;
     }
-    return t;
+    return text;
 }
 
-char *font_text_add(TextObj *t, char *s)
+/* Appends to a text object's text, measures it and places it by its alignment. */
+char *font_text_add(TextObj *text, char *str)
 {
     Font *font;
 
-    if (t != NULL) {
-        str_cat(t->text, s);
-        font = sFontTable[t->font];
-        font_measure_text((u8 *)t->text, font, &t->w, &t->h);
-        if (t->fmt.align.halign == TEXT_HALIGN_CENTER) {
-            t->x = -((t->w + 1) / 2);
-        } else if (t->fmt.align.halign == TEXT_HALIGN_RIGHT) {
-            t->x = -t->w;
+    if (text != NULL) {
+        str_cat(text->text, str);
+        font = sFontTable[text->font];
+        font_measure_text((u8 *)text->text, font, &text->w, &text->h);
+        if (text->fmt.align.halign == TEXT_HALIGN_CENTER) {
+            text->x = -((text->w + 1) / 2);
+        } else if (text->fmt.align.halign == TEXT_HALIGN_RIGHT) {
+            text->x = -text->w;
         } else {
-            t->x = 0;
+            text->x = 0;
         }
-        if (t->fmt.align.valign == TEXT_VALIGN_BASELINE >> 4) {
-            t->y = 0;
-        } else if (t->fmt.align.valign == TEXT_VALIGN_TOP >> 4) {
-            t->y = font->ascent - 1;
-        } else if (t->fmt.align.valign == TEXT_VALIGN_CENTER >> 4) {
-            t->y = font->ascent - 1 - (t->h + 1) / 2;
-        } else if (t->fmt.align.valign == TEXT_VALIGN_BOTTOM >> 4) {
-            t->y = font->ascent - 1 - t->h;
+        if (text->fmt.align.valign == TEXT_VALIGN_BASELINE >> 4) {
+            text->y = 0;
+        } else if (text->fmt.align.valign == TEXT_VALIGN_TOP >> 4) {
+            text->y = font->ascent - 1;
+        } else if (text->fmt.align.valign == TEXT_VALIGN_CENTER >> 4) {
+            text->y = font->ascent - 1 - (text->h + 1) / 2;
+        } else if (text->fmt.align.valign == TEXT_VALIGN_BOTTOM >> 4) {
+            text->y = font->ascent - 1 - text->h;
         }
     }
-    return s;
+    return str;
 }
 
-void font_text_destroy(TextObj *t)
+/* Does nothing: the callers free text objects with mem_free. */
+void font_text_destroy(TextObj *text)
 {
 }
 
+/* Writes the initials of the words of src ("John Smith": "J. S."). */
 void str_make_initials(char *dst, char *src)
 {
     do {
@@ -743,77 +781,82 @@ void str_make_initials(char *dst, char *src)
     dst[-1] = 0;
 }
 
-void font_str_upper(u8 *s)
+/* Upper-cases a string. */
+void font_str_upper(u8 *str)
 {
-    u8 c = *s;
+    u8 c = *str;
     while (c != 0) {
-        if ((u32)(c - 0x61) < 0x1A) {
-            *s = c - 0x20;
+        if ((u32)(c - 'a') < 26) {
+            *str = c - ('a' - 'A');
         }
-        s = s + 1;
-        c = *s;
+        str = str + 1;
+        c = *str;
     }
 }
 
-void font_name_upper(u8 *s) {
-    u8 *p = s;
+/* Upper-cases a name, but for "Mc" ("MCGRATH": "McGRATH") and "De" before "CL". */
+void font_name_upper(u8 *str) {
+    u8 *p = str;
     u8 c;
 
-    if (s[0] != 0) {
+    if (str[0] != 0) {
         do {
             c = *p;
-            if ((u32)(c - 0x61) < 0x1A) {
-                *p = c - 0x20;
+            if ((u32)(c - 'a') < 26) {
+                *p = c - ('a' - 'A');
             }
             p++;
         } while (*p != 0);
     }
-    if (s[0] == 0x4D) {
-        if (s[1] == 0x43) {
-            s[1] = 0x63;
+    if (str[0] == 'M') {
+        if (str[1] == 'C') {
+            str[1] = 'c';
         }
     }
-    if (s[0] == 0x44 && s[1] == 0x45 && s[2] == 0x43 && s[3] == 0x4C) {
-        s[1] = 0x65;
+    if (str[0] == 'D' && str[1] == 'E' && str[2] == 'C' && str[3] == 'L') {
+        str[1] = 'e';
     }
 }
 
-void font_str_lower(u8 *s)
+/* Lower-cases a string. */
+void font_str_lower(u8 *str)
 {
-    u8 c = *s;
+    u8 c = *str;
     while (c != 0) {
-        if ((u32)(c - 0x41) < 0x1A) {
-            *s = c + 0x20;
+        if ((u32)(c - 'A') < 26) {
+            *str = c + ('a' - 'A');
         }
-        s = s + 1;
-        c = *s;
+        str = str + 1;
+        c = *str;
     }
 }
 
-void func_800C21F0(u8 *s)
+/* As font_str_lower, but it tests for lower-case letters: they become 0x81-0x9A. */
+void func_800C21F0(u8 *str)
 {
-    u8 c = *s;
+    u8 c = *str;
     while (c != 0) {
-        if ((u32)(c - 0x61) < 0x1A) {
-            *s = c + 0x20;
+        if ((u32)(c - 'a') < 26) {
+            *str = c + ('a' - 'A');
         }
-        s = s + 1;
-        c = *s;
+        str = str + 1;
+        c = *str;
     }
 }
 
+/* Empties the glyph queue. */
 s32 font_reset_queue(void) {
     u32 i = 0;
-    FontSprite **a = sFontSprLists;
-    FontSprite **b = sFontSprListsBack;
+    FontSprite **lists = sFontSprLists;
+    FontSprite **listsBack = sFontSprListsBack;
     sFontSprNext = sFontSprPool;
-    sFontSprPoolEnd = sFontSprPool + 0x3FE;
+    sFontSprPoolEnd = sFontSprPool + FONT_MAX_SPRITES;
     do {
-        *b = NULL;
-        *a = NULL;
-        a++;
+        *listsBack = NULL;
+        *lists = NULL;
+        lists++;
         i++;
-        b++;
-    } while (i < 0x28);
+        listsBack++;
+    } while (i < FONT_MAX_PAGES);
     return 0;
 }
