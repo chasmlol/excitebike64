@@ -535,7 +535,7 @@ def make_maps(args):
               f"nonzero padding {junk}; unexplained {[(hex(a), s) for a, s in unknown]}")
         for p in problems:
             print("  problem:", p)
-    Path(args.map).write_text(json.dumps(out, indent=1) + "\n")
+    Path(args.map).write_text(json.dumps(out, indent=1) + "\n", newline="\n")
     print("wrote", args.map)
 
 
