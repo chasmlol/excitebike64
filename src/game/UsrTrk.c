@@ -1,27 +1,7 @@
 #include "game.h"
 
+/* The track name without its terminator, copied as one block */
 typedef struct { u8 b[10]; } Blk10;
-
-typedef struct {
-    u32 nv;
-    Vtx *v;
-    u32 ntri;
-    u32 *tri;
-    s32 x10;
-    s32 x14;
-} Mesh;
-
-typedef struct {
-    Mesh *mesh;
-    s32 a, b, c, d;
-    s16 *tex;
-    s32 e, f;
-} Entry_2;
-
-struct Set {
-    u32 n;
-    Entry_2 e[1];
-};
 
 /* Packs the editor's track for a save (at most 0x310 bytes): 0x35, the dirt type, the name, the piece count, the
    start piece, the user piece count, each user piece's segment count and heights, then 3 bytes per piece from the
@@ -437,86 +417,46 @@ void usrtrk_clone_piece_meshes(PieceMeshSet *out1, PieceMeshSet *out2, s32 count
     }
 }
 
-typedef struct Sub_13 {
-    s32 pad0[5];
-    s32 *f14;
-    s32 pad18;
-    s32 *f1c;
-    s32 pad20;
-    s32 *f24;
-    s32 *f28;
-    s32 *f2c;
-} Sub_13;
-
-typedef struct Blk_26 {
-    s32 *f00;
-    s32 pad04;
-    s32 *f08;
-    s32 pad0c;
-    s32 *f10;
-    s32 *f14;
-    s32 *f18;
-    s32 *f1c;
-    s32 *f20;
-    s32 pad24;
-    Sub_13 *f28;
-} Blk_26;
-
-extern Blk_26 gUserTrackData_3;
-
 void usrtrk_unload(void)
 {
     res_close_set(sPiecesResSet);
     sPiecesResSet = 0;
-    if (gUserTrackData_3.f00 != 0) {
-        mem_free(gUserTrackData_3.f00);
-        mem_free(gUserTrackData_3.f08);
-        mem_free(gUserTrackData_3.f10);
-        mem_free(gUserTrackData_3.f14);
-        mem_free(gUserTrackData_3.f18);
-        mem_free(gUserTrackData_3.f1c);
-        mem_free(gUserTrackData_3.f20);
-        if (gUserTrackData_3.f28->f14 != 0) {
-            mem_free(gUserTrackData_3.f28->f14);
+    if (gUserTrackData.meshA != 0) {
+        mem_free(gUserTrackData.meshA);
+        mem_free(gUserTrackData.meshB);
+        mem_free(gUserTrackData.tex);
+        mem_free(gUserTrackData.vtxA);
+        mem_free(gUserTrackData.meshesA);
+        mem_free(gUserTrackData.vtxB);
+        mem_free(gUserTrackData.meshesB);
+        if (gUserTrackData.collision->vtx != 0) {
+            mem_free(gUserTrackData.collision->vtx);
         }
-        if (gUserTrackData_3.f28->f24 != 0) {
-            mem_free(gUserTrackData_3.f28->f24);
+        if (gUserTrackData.collision->tris != 0) {
+            mem_free(gUserTrackData.collision->tris);
         }
-        if (gUserTrackData_3.f28->f1c != 0) {
-            mem_free(gUserTrackData_3.f28->f1c);
+        if (gUserTrackData.collision->edges != 0) {
+            mem_free(gUserTrackData.collision->edges);
         }
-        if (gUserTrackData_3.f28->f28 != 0) {
-            mem_free(gUserTrackData_3.f28->f28);
+        if (gUserTrackData.collision->cells[0].tris != 0) {
+            mem_free(gUserTrackData.collision->cells[0].tris);
         }
-        if (gUserTrackData_3.f28->f2c != 0) {
-            mem_free(gUserTrackData_3.f28->f2c);
+        if (gUserTrackData.collision->cells[0].edges != 0) {
+            mem_free(gUserTrackData.collision->cells[0].edges);
         }
-        mem_free(gUserTrackData_3.f28);
+        mem_free(gUserTrackData.collision);
     }
     usrtrk_free_user_piece_meshes(0);
     height_free_walls();
 }
 
-typedef struct {
-    s16 f0;
-    s16 count;
-    u8 pad4[8];
-    u16 flags;
-    u8 padE[0x22];
-    void **f30;
-    void **f34;
-    u8 pad38[8];
-} Rec_56;
-
-extern Rec_56 gPieceTypes_19[];
-
-static inline void freeOne(Rec_56 *q, s32 k)
+static inline void freeOne(PieceType *q, s32 k)
 {
-    void **a;
-    void **b;
+    PieceMesh **a;
+    PieceMesh **b;
 
-    a = &q->f30[k * 8 + 1];
-    b = &q->f34[k * 8 + 1];
+    a = &q->meshA->cells[k].mesh;
+    b = &q->meshB->cells[k].mesh;
     mem_free(*a);
     mem_free(*b);
 }
@@ -528,14 +468,14 @@ void usrtrk_free_user_piece_meshes(s32 param_1)
     s32 n;
 
     for (n = 18; n < 30; n++) {
-        if (gPieceTypes_19[n].flags & 0x40) {
-            for (i = 0; param_1 == 0 ? i < gPieceTypes_19[n].count : i < 8; i++) {
+        if (gPieceTypes[n].flags & 0x40) {
+            for (i = 0; param_1 == 0 ? i < gPieceTypes[n].dim[1] : i < 8; i++) {
                 for (j = 0; j < 2; j++) {
-                    freeOne(&gPieceTypes_19[n], i * 2 + j);
+                    freeOne(&gPieceTypes[n], i * 2 + j);
                 }
             }
-            mem_free(gPieceTypes_19[n].f30);
-            mem_free(gPieceTypes_19[n].f34);
+            mem_free(gPieceTypes[n].meshA);
+            mem_free(gPieceTypes[n].meshB);
         }
     }
 }
@@ -1290,15 +1230,10 @@ void usrtrk_build_track(void)
     gCurTrack_42->v68.z = pos.z;
 }
 
-typedef struct Node_37 { u8 pad[4]; struct Node_37 *next; } Node_37;
-typedef struct { u8 pad[0x17C]; Node_37 *head; u8 pad2[0x16F4 - 0x180]; s32 count; } Game_45;
-
-extern Game_45 *gEditor_37;
-
 s16 usrtrk_get_packed_size(void)
 {
     s32 cnt = 0;
-    Node_37 *n = gEditor_37->head;
+    EditPiece *n = gEditor->first;
     s32 total;
     s32 i;
 
@@ -1306,9 +1241,9 @@ s16 usrtrk_get_packed_size(void)
         do {
             n = n->next;
             cnt++;
-        } while (n != NULL && n != gEditor_37->head);
+        } while (n != NULL && n != gEditor->first);
     }
     total = (s16)cnt * 3 + 8;
-    for (i = 0; i < gEditor_37->count; i++) { total += gPieceTypes[i + 18].dim[1] * 4; }
+    for (i = 0; i < gEditor->userPieceCount; i++) { total += gPieceTypes[i + 18].dim[1] * 4; }
     return total + 10;
 }
