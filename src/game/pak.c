@@ -438,10 +438,12 @@ static inline void set_state(s32 state, s32 sound) {
     sPakSound = sound;
 }
 
+/* The menu sound to play at the end of the frame. */
 static inline void set_sound(s32 sound) {
     sPakSound = sound;
 }
 
+/* Goes to a state without a sound. */
 static inline void set_state_silent(s32 state) {
     gPakScreen.state = state;
     gPakScreen.subState = PAK_STEP_START;
@@ -1485,6 +1487,7 @@ void pak_alloc_note_tables(void) {
     }
 }
 
+/* Frees the note tables. */
 void pak_free_note_tables(void) {
     s32 i;
     for (i = 0; i < MAXCONTROLLERS; i++) {
@@ -1535,6 +1538,7 @@ Gfx *pak_draw_text(Gfx *gdl, char *str, s32 font, s32 color, s32 x, s32 y)
     return font_render(gdl);
 }
 
+/* Sets sPakText's text (to measure it). */
 void pak_set_text(char *str, s32 font, s32 color) {
     font_text_create(sPakText, 0x80, font, color, 0);
     font_text_add(sPakText, str);
@@ -1549,6 +1553,7 @@ Gfx *pak_draw_text_centered(Gfx *gdl, char *str, s32 font, s32 color, s32 center
     return font_render(gdl);
 }
 
+/* Draws a text ending at rightX. */
 Gfx *pak_draw_text_right(Gfx *gdl, char *str, s32 font, s32 color, s32 rightX, s32 y)
 {
     font_text_create(sPakText, 0x80, font, color, 0);
