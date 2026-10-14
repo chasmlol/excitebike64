@@ -973,7 +973,7 @@ void particles_start_sparks(Rider *rider)
         ofs[1] = gCollidePoint.y - rider->bike.pos.y;
         ofs[2] = gCollidePoint.z - rider->bike.pos.z;
         mtx3f_mul_vec3(ofs, &rider->bike.right.x, &rider->sparkDir.x);
-        rider->sparkTimer = 0xF;
+        rider->sparkTimer = FRAMES(15);
     }
 }
 

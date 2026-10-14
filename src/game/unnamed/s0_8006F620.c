@@ -128,7 +128,7 @@ void stunt_read_input(Rider *rider)
         if (-y < x) dir++;
     }
     changed = 0;
-    if (rider->stickHist[rider->stickHistIdx] == dir && rider->stickHistCount < 0xF0) {
+    if (rider->stickHist[rider->stickHistIdx] == dir && rider->stickHistCount < FRAMES(240)) {
         rider->stickHistCount++;
     } else {
         changed = 1;
@@ -207,7 +207,7 @@ void stunt_update(Rider *rider)
     if (anim < 0) {
         queued = rider->queuedTrick;
         if (queued >= 0) {
-            if (gRaceFrame - rider->trickFrame < 60) {
+            if (gRaceFrame - rider->trickFrame < FRAMES(60)) {
                 stunt_start(rider, queued);
             } else {
                 rider->queuedTrick = ANIM_NONE;
@@ -258,7 +258,7 @@ void stunt_update(Rider *rider)
         rider->trick = done;
     }
     if (rider->crashState == CRASH_STATE_RIDING && rider->anim < ANIM_TRICK_COUNT && rider->trick < ANIM_TRICK_COUNT) {
-        rider->pipTimer = 15;
+        rider->pipTimer = FRAMES(15);
     }
 }
 

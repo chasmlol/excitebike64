@@ -142,7 +142,7 @@ void engine_update(s32 riderIdx, s32 ticks)
         }
         torque = engine_torque_at_rpm(rider->engine.rpm);
         /* four gears, at most one change every 16 frames, to the gear with more torque */
-        if (gRaceFrame - rider->engine.shiftFrame >= 16) {
+        if (gRaceFrame - rider->engine.shiftFrame >= FRAMES(16)) {
             if (rider->engine.gear != 0 && rider->engine.rpm < 6500.0f) {
                 tmp = engine_torque_at_rpm(rider->speed * sGearRatios[rider->engine.gear - 1]);
                 if (torque < tmp) {

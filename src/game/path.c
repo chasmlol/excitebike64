@@ -918,7 +918,7 @@ void path_update_bike(Rider *rider)
                 if (gPathNodes[node].respawnDir == 0 && rider->finishState == 0 && rider->crashState == 0 && rider->bestSegment < node) {
                     if (node < 0x78) {
                         rider->engine.heat = 0.0f;
-                        rider->race.lapMsgTimer = 0x78;
+                        rider->race.lapMsgTimer = FRAMES(120);
                         rider->bestSegment = rider->segment;
                     } else {
                         rider->finishState = 1;
@@ -945,7 +945,7 @@ void path_update_bike(Rider *rider)
         /* stadiums: 180 frames off the track (beyond its widths) respawn the rider */
         if (gCurTrack_26->env == 0
             && (gPathNodes[seg].widthPos < rider->lateral - 3.5f || gPathNodes[seg].widthNeg < -(rider->lateral + 3.5f))) {
-            if (++rider->offTrackTimer > 180 && rider->rearWheel.airTicks <= 0 && rider->frontWheel.airTicks <= 0) {
+            if (++rider->offTrackTimer > FRAMES(180) && rider->rearWheel.airTicks <= 0 && rider->frontWheel.airTicks <= 0) {
                 bike_respawn(rider);
             }
         } else {
@@ -968,7 +968,7 @@ void path_update_bike(Rider *rider)
     oldDist = rider->lapDistLeft;
     rider->lapDistLeft = dist;
     rider->progressSpeed = (dist - oldDist) / gPhysDeltaTime;
-    if (speedSq > 1.0f && rider->airFrames < -15) {
+    if (speedSq > 1.0f && rider->airFrames < FRAMES(-15)) {
         speedSq = __builtin_sqrtf(speedSq); /* the speed from here on */
         if (rider->bike.vel.x * gPathTangentX + rider->bike.vel.z * gPathTangentZ / speedSq > 0.7f) {
             rider->crestAhead = path_find_crest_ahead(speedSq, rider->segment);
@@ -980,7 +980,7 @@ void path_update_bike(Rider *rider)
         rider->raceDist = gPathLapLength * (f32)(rider->lapAdjust + 1 + rider->race.lap) - rider->lapDistLeft;
     }
     /* Canyon Chasm: falling into the chasm (nodes 0x13A-0x13F, below node 0x140) */
-    if (rider->isCpu == 0 && rider->segment >= 0x13A && rider->segment < 0x140 && rider->airFrames > 30
+    if (rider->isCpu == 0 && rider->segment >= 0x13A && rider->segment < 0x140 && rider->airFrames > FRAMES(30)
         && gCurTrack_26 == &gTracks[TRACK_CANYON_CHASM] && rider->bike.vel.y < 0.0f && rider->bike.pos.y < gPathNodes[0x140].pos.y) {
         bike_crash_begin(rider, 0x1C);
         cam_start_fall_view(rider);

@@ -28,7 +28,7 @@ void bike_crash_begin(Rider *rider, s32 crashAnim)
     rider->fistPump = 0;
     rider->savedCamMode = (u16)rider->camMode;
     if (rider->isCpu == 0) {
-        flash_start(60);
+        flash_start(FRAMES(60));
         tunes_queue_crowd(0);
     }
     if (gGame.mode == GAME_MODE_EXCITE_3D) {
@@ -206,7 +206,7 @@ void bike_crash_update(Rider *rider)
             if (volume >= 0x100) {
                 volume = 0xFF;
             }
-            if (volume > 0x80 || gRaceFrame - sImpactSfxFrame >= 31) {
+            if (volume > 0x80 || gRaceFrame - sImpactSfxFrame > FRAMES(30)) {
                 sImpactSfxFrame = gRaceFrame;
                 if (gRaceFrame & 1) {
                     snd_play_rider_sfx(4, rider - gRiders, volume);
@@ -255,12 +255,12 @@ void bike_crash_update(Rider *rider)
             break;
         }
     }
-    respawnTime = 120;
+    respawnTime = FRAMES(120);
     if (gCrashSlowMotion != 0 && rider->isCpu == 0) {
-        respawnTime = 240;
+        respawnTime = FRAMES(240);
     }
     if (gGame.mode == GAME_MODE_HILL_CLIMB) {
-        respawnTime = 300;
+        respawnTime = FRAMES(300);
     }
     if (respawnTime < (s16)rider->crashTimer) {
         bike_respawn(rider);
@@ -460,7 +460,7 @@ s32 phys_body_step(RigidBody *body, Pt_4 *pts, s32 count, u8 freeBody)
                 /* a riding bike: landing on a face after a long jump (or on points past the wheels) crashes, so does
                    hitting a wall at more than 15 m/s */
                 rider = body->owner;
-                if (gContactNormal_2.y > 0.75f && (hitIdx > 5 || rider->airFrames > 60)) {
+                if (gContactNormal_2.y > 0.75f && (hitIdx > 5 || rider->airFrames > FRAMES(60))) {
                     rider->landingImpact = 0x200;
                     rider->landingFrame = gRaceFrame;
                     rider->impactFlags = 0xFF;
@@ -502,7 +502,7 @@ s32 phys_body_step(RigidBody *body, Pt_4 *pts, s32 count, u8 freeBody)
                     if (pts[hitIdx].friction > 0.15f) {
                         if (body->type < BODY_CRASHED_BIKE) {
                             body->owner->sparkDir = pts[hitIdx].pos;
-                            body->owner->sparkTimer = 10;
+                            body->owner->sparkTimer = FRAMES(10);
                             snd_trigger_impact(body->owner - gRiders, (s32)(hitSpeed * 16.0f));
                         } else if (body->type == BODY_CRASHED_BIKE) {
                             Rider *rider = body->owner;
@@ -518,7 +518,7 @@ s32 phys_body_step(RigidBody *body, Pt_4 *pts, s32 count, u8 freeBody)
             }
             /* try again with a shorter step */
             dt *= 0.8f;
-            body->hitTimer = 15;
+            body->hitTimer = FRAMES(15);
         } else {
             f32 horizLen;
             savedPos = body->pos;
@@ -531,7 +531,7 @@ s32 phys_body_step(RigidBody *body, Pt_4 *pts, s32 count, u8 freeBody)
                 rider = body->owner;
                 bike_update_wheel_contacts(rider);
                 if (rider->frontWheel.normal.y < 0.5f && rider->frontWheel.suspLength <= rider->frontWheel.groundDist + 0.01f) {
-                    if (rider->airFrames > 60 || vec3_dot(&rider->frontWheel.normal.x, &rider->bike.up.x) < 0.3f) {
+                    if (rider->airFrames > FRAMES(60) || vec3_dot(&rider->frontWheel.normal.x, &rider->bike.up.x) < 0.3f) {
                         rider->pendingCrash = -ANIM_CRASH_FRONT;
                         rider->crashVel = rider->bike.vel;
                     } else {
@@ -562,7 +562,7 @@ s32 phys_body_step(RigidBody *body, Pt_4 *pts, s32 count, u8 freeBody)
                     }
                 }
                 if (rider->rearWheel.normal.y < 0.5f && rider->rearWheel.suspLength <= rider->rearWheel.groundDist + 0.01f) {
-                    if (rider->airFrames > 60 || vec3_dot(&rider->rearWheel.normal.x, &rider->bike.up.x) < 0.3f) {
+                    if (rider->airFrames > FRAMES(60) || vec3_dot(&rider->rearWheel.normal.x, &rider->bike.up.x) < 0.3f) {
                         rider->pendingCrash = -ANIM_CRASH_FRONT;
                         rider->crashVel = rider->bike.vel;
                     } else {

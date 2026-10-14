@@ -219,7 +219,7 @@ noCheat:
     if (riderA->airFrames >= 0 && riderB->airFrames >= 0) {
         return 0;
     }
-    if (riderA->airFrames < 60) {
+    if (riderA->airFrames < FRAMES(60)) {
         goto tryLandingOnA;
     }
     if (riderB->airFrames >= 0) {
@@ -228,14 +228,14 @@ noCheat:
 
     cpuA = riderA->isCpu;
     cpuB = riderB->isCpu;
-    if ((cpuA & cpuB) == 0 || gEvent.time < 300) {
+    if ((cpuA & cpuB) == 0 || gEvent.time < FRAMES(300)) {
         announce_takeout(riderA - gRiders, riderB - gRiders);
     }
     riderB->pendingCrash = -ANIM_CRASH_BACK;
     goto landedOn;
 
 tryLandingOnA:
-    if (riderB->airFrames < 60) {
+    if (riderB->airFrames < FRAMES(60)) {
         goto sideOrRearHit;
     }
     if (riderA->airFrames >= 0) {
@@ -243,7 +243,7 @@ tryLandingOnA:
     }
     cpuA = riderA->isCpu;
     cpuB = riderB->isCpu;
-    if ((cpuA & cpuB) == 0 || gEvent.time < 300) {
+    if ((cpuA & cpuB) == 0 || gEvent.time < FRAMES(300)) {
         announce_takeout(riderB - gRiders, riderA - gRiders);
     }
     riderA->pendingCrash = -ANIM_CRASH_FRONT;
@@ -273,7 +273,7 @@ sideOrRearHit:
         return 1;
     }
 
-    if (gRaceFrame - riderA->contactFrame[riderB - gRiders] < 60) {
+    if (gRaceFrame - riderA->contactFrame[riderB - gRiders] < FRAMES(60)) {
         return 0;
     }
 
@@ -518,13 +518,13 @@ s32 collide_apply_impulse(RigidBody *bodyA, RigidBody *bodyB)
             return 1;
         }
         /* first and second bump in the first 6 seconds */
-        if (ownerA->race.place + ownerB->race.place == 1 && gEvent.time < 360 && !(ownerA->isCpu & ownerB->isCpu)) {
-            if (gRaceFrame - gAnnounceTimes[ownerA - gRiders] < 600) {
+        if (ownerA->race.place + ownerB->race.place == 1 && gEvent.time < FRAMES(360) && !(ownerA->isCpu & ownerB->isCpu)) {
+            if (gRaceFrame - gAnnounceTimes[ownerA - gRiders] < FRAMES(600)) {
                 announce_place(ownerB - gRiders, ownerB->race.place);
                 return 1;
             }
             idxB = ownerB - gRiders;
-            if (gRaceFrame - gAnnounceTimes[idxB] < 600) {
+            if (gRaceFrame - gAnnounceTimes[idxB] < FRAMES(600)) {
                 announce_place(ownerA - gRiders, ownerA->race.place);
                 return 1;
             }
@@ -587,8 +587,8 @@ s32 collide_bodies(RigidBody *bodyA, RigidBody *bodyB)
             }
             return 1;
         }
-        bodyA->hitTimer = 15;
-        bodyB->hitTimer = 15;
+        bodyA->hitTimer = FRAMES(15);
+        bodyB->hitTimer = FRAMES(15);
     }
     return 0;
 }

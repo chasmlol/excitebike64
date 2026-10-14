@@ -154,13 +154,13 @@ s32 race_try_despawn_extra_rider(Rider *player, Rider *extra)
         goto fail;
     }
     age = gRaceFrame - extra->spawnFrame;
-    if (age >= 0xB4) {
+    if (age >= FRAMES(180)) {
         goto ok;
     }
 fail:
     return 0;
 ok:
-    if (age >= 0x385) {
+    if (age > FRAMES(900)) {
         extra->power = 0.2f;
     }
     behind = extra->lapDistLeft - player->lapDistLeft;
@@ -226,7 +226,7 @@ void race_announce_position_changes(void)
     s32 place;
     s32 idx;
 
-    if (gEvent.time < 0x78) {
+    if (gEvent.time < FRAMES(120)) {
         return;
     }
     for (rider = gRiders; rider < gRiders + gGame.numPlayers; rider++) {
@@ -238,7 +238,7 @@ void race_announce_position_changes(void)
             rider->race.placeAnim -= 0x20;
             if (rider->race.placeAnim <= 0) {
                 if (rider->isCpu == 0 && rider->race.finishPlace < 0) {
-                    if (gRaceFrame - gAnnounceTimes[rider - gRiders] > 300 && gEvent.time > 600) {
+                    if (gRaceFrame - gAnnounceTimes[rider - gRiders] > FRAMES(300) && gEvent.time > FRAMES(600)) {
                         announce_place_change(rider - gRiders, place, rider->race.prevPlace);
                     }
                 }
@@ -290,7 +290,7 @@ void race_sort_positions(void)
     for (i = 0; i < gEvent.numRiders; i++) {
         gRiderStandings[i]->race.place = i;
     }
-    if (gEvent.time > 120) {
+    if (gEvent.time > FRAMES(120)) {
         race_announce_position_changes();
     }
 }
@@ -447,7 +447,7 @@ void race_update_riders(void)
     }
     if (numHumans != 0) {
         now = gRaceFrame;
-        if (now - gLastSpeechTime > 0x384) { /* 15 s */
+        if (now - gLastSpeechTime > FRAMES(900)) { /* 15 s */
             oldest = now;
             player = -1;
             if (numHumans >= 2) {
@@ -465,7 +465,7 @@ void race_update_riders(void)
             } else {
                 /* the player's place, every 20 s at most, else the place of the rider ahead or behind */
                 rider = gRiders;
-                if (!(now - gAnnounceTimes[0] > 0x4B0 && (rider->lapDistLeft > 150.0f || (rider->race.place != 0 && rider->race.lap != gEvent.numLaps - 1)))) {
+                if (!(now - gAnnounceTimes[0] > FRAMES(1200) && (rider->lapDistLeft > 150.0f || (rider->race.place != 0 && rider->race.lap != gEvent.numLaps - 1)))) {
                     if (rider->race.place != 0) {
                         rider = gRiderStandings[rider->race.place - 1];
                     } else {
@@ -475,7 +475,7 @@ void race_update_riders(void)
                 announce_place(rider - gRiders, rider->race.place + 1);
             }
         }
-        if (gEvent.time == 300) {
+        if (gEvent.time == FRAMES(300)) {
             announce_early_leader(gRiderStandings[0] - gRiders);
         }
     }

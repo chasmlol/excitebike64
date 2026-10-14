@@ -12,20 +12,30 @@
 #define STREAM_CH_AMBIENT       3       /* ambience, the crowd and the cliff fall */
 
 /* A clip is ADPCM blocks of 0x44 bytes (a 5-byte header, then 126 4-bit codes) that decode to 128 samples each. A
-   channel loads 8 blocks per DMA and decodes them into its pcm buffer. */
+   channel loads 8 blocks per DMA (Europe: 10, for the 50 Hz frame's longer audio) and decodes them into its pcm
+   buffer. */
 #define STREAM_BLOCK_BYTES      0x44
 #define STREAM_BLOCK_SAMPLES    0x80
+#if VERSION == VERSION_EU
+#define STREAM_DMA_BLOCKS       10
+#else
 #define STREAM_DMA_BLOCKS       8
-#define STREAM_DMA_BYTES        0x220   /* STREAM_DMA_BLOCKS blocks */
-#define STREAM_PCM_BYTES        0x800   /* StreamChannel.pcm: STREAM_DMA_BLOCKS blocks of s16 samples */
+#endif
+#define STREAM_DMA_BYTES        (STREAM_DMA_BLOCKS * STREAM_BLOCK_BYTES)    /* 0x220 (Europe: 0x2A8) */
+#define STREAM_PCM_BYTES        (STREAM_DMA_BLOCKS * STREAM_BLOCK_SAMPLES * 2) /* StreamChannel.pcm: s16 samples */
 
 /* The output rate the clips are mixed at, in Hz. */
 #define STREAM_SAMPLE_RATE      0x5622
 
-/* The mix ring (sStreamMixBuf, s32 samples), which tunes_mix_callback adds to both output channels. */
+/* The mix ring (sStreamMixBuf, s32 samples), which tunes_mix_callback adds to both output channels (Europe: 0xA00
+   samples; retail wraps the positions with a modulo, LodgeNet with STREAM_MIX_MASK). */
+#if VERSION == VERSION_EU
+#define STREAM_MIX_RING         0xA00
+#else
 #define STREAM_MIX_RING         0x800
+#endif
 #define STREAM_MIX_MASK         0x7FF
-#define STREAM_MIX_BUF_BYTES    0x2000
+#define STREAM_MIX_BUF_BYTES    (STREAM_MIX_RING * 4)
 
 /* The echo ring (sStreamEchoBuf, s16 samples): each sample adds half of the one a ring earlier. */
 #define STREAM_ECHO_RING        0x800
@@ -62,11 +72,11 @@
 #define ANNOUNCER_INTONATIONS   4
 
 /* The announcer's intervals, in frames. */
-#define ANNOUNCE_NEVER                  (-0x708)    /* the times announce_reset sets: long enough ago */
-#define ANNOUNCE_START_DELAY            0x168       /* no place calls in the first 6 seconds of the race */
-#define ANNOUNCE_COLLISION_INTERVAL     600         /* between two announce_lead_collision calls */
-#define ANNOUNCE_PLACE_CHANGE_INTERVAL  900         /* between two announce_place_change calls */
-#define ANNOUNCE_TAKEOUT_INTERVAL       0x1E0       /* a racer named this recently: only the victim's crash is called */
+#define ANNOUNCE_NEVER                  (-FRAMES(1800)) /* the times announce_reset sets: long enough ago */
+#define ANNOUNCE_START_DELAY            FRAMES(360) /* no place calls in the first 6 seconds of the race */
+#define ANNOUNCE_COLLISION_INTERVAL     FRAMES(600) /* between two announce_lead_collision calls */
+#define ANNOUNCE_PLACE_CHANGE_INTERVAL  FRAMES(900) /* between two announce_place_change calls */
+#define ANNOUNCE_TAKEOUT_INTERVAL       FRAMES(480) /* a racer named this recently: only the victim's crash is called */
 
 /* Stream clips (indices into sStreamSampleTable), after their names in sfx.GID (smp_*, cut to 8 characters there).
    Clips with the same name are other takes of it. */

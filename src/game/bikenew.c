@@ -664,7 +664,7 @@ void bike_update_suspension(Rider *rider)
     }
     if (3675.0002f < rider->frontWheel.springForce || 3675.0002f < rider->rearWheel.springForce) {
         /* reversed: hardLandFrame - gRaceFrame is never above 120 within a race */
-        if (0x78 < rider->hardLandFrame - gRaceFrame) {
+        if (FRAMES(120) < rider->hardLandFrame - gRaceFrame) {
             bike_crash_begin(rider, ANIM_CRASH_FRONT);
         }
     } else {
@@ -1078,12 +1078,12 @@ void bike_process_input(Rider *rider, s32 ticks)
         stickX = stickY;
         stickY = -tmp;
     }
-    if ((u32)(rider->airFrames + 14) < 15) { /* landed in the last 14 frames */
+    if ((u32)(rider->airFrames + FRAMES(14)) < FRAMES(14) + 1) { /* landed in the last 14 frames */
         airTicks = rider->rearWheel.airTicks;
         if (airTicks < rider->frontWheel.airTicks) {
             airTicks = rider->frontWheel.airTicks;
         }
-        if (airTicks >= -6) {
+        if (airTicks >= FRAMES(-6)) {
             stickX *= 0.25f;
         }
     }
@@ -1180,7 +1180,7 @@ slide_done:
             goto spray_hard;
         }
         if (rider->input & INPUT_Z) {
-            if (gRaceFrame - rider->turboPressFrame < 30) {
+            if (gRaceFrame - rider->turboPressFrame < FRAMES(30)) {
 spray_hard:
                 rider->dirtSpray = 2;
             } else {
@@ -1932,10 +1932,10 @@ void bike_update_render_pose(Rider *rider)
             leanQuat[3] = sinA * rider->bike.fwd.z;
             quat_mul(rider->drawQuat, leanQuat, rider->drawQuat);
             quat_to_angles(rider->drawQuat, &rider->drawRot[0], &rider->drawRot[1], &rider->drawRot[2]);
-        } else if ((rider->input & INPUT_Z) && gRaceFrame - rider->turboPressFrame < 0x3C &&
+        } else if ((rider->input & INPUT_Z) && gRaceFrame - rider->turboPressFrame < FRAMES(60) &&
                    (rider->rearWheel.surface->flags & SURFACE_CLODS) && rider->airFrames < 0 && rider->speed < 5.0f) {
             if (rider->speed > 2.0f) {
-                amp = (f32)(rider->turboPressFrame - (gRaceFrame - 0x3C)) * 6.1035155e-07f / 60.0f;
+                amp = (f32)(rider->turboPressFrame - (gRaceFrame - FRAMES(60))) * 6.1035155e-07f / 60.0f;
             } else {
                 amp = 1.2207031e-06f;
             }
@@ -2136,7 +2136,7 @@ void bike_update_wheelie(Rider *rider)
     s8 stick;
 
     /* the mask reads leftFootOut and rightFootOut: both feet on the pegs */
-    if (rider->airFrames > 0x3C && (*(s32 *)&rider->crestAhead & 0xFFFF00) == 0) {
+    if (rider->airFrames > FRAMES(60) && (*(s32 *)&rider->crestAhead & 0xFFFF00) == 0) {
         rider->wheelieTimer = 0;
     }
     if (rider->wheelieTimer == 0) {
@@ -2190,7 +2190,7 @@ void bike_update_wheelie(Rider *rider)
                 rider->rightFootOut = 0;
             }
             rider->wheelieTimer++;
-            if (rider->wheelieTimer == 0xF0) {
+            if (rider->wheelieTimer == FRAMES(240)) {
                 rider->fistPump = 1;
             }
             if (rider->stickY >= 0) {
@@ -2242,7 +2242,7 @@ void bike_update_jump(Rider *rider)
                 }
             }
             if (minAirTime < rider->landingTime) {
-                if (rider->wheelieTimer != 0 && rider->wheelieTimer < 45) {
+                if (rider->wheelieTimer != 0 && rider->wheelieTimer < FRAMES(45)) {
                     rider->wheelieTimer = 0;
                 }
                 pitchRate = vec3_dot(&rider->bike.right.x, &rider->bike.angVel.x);
@@ -2422,7 +2422,7 @@ void bike_update_jump(Rider *rider)
         }
         if (rider->landingAssist != 0) {
             bike_align_to_ground(rider);
-        } else if (rider->landingTime < 0.25f && rider->bike.vel.y < 0.0f && rider->airFrames >= 31 && rider->wheelieTimer == 0) {
+        } else if (rider->landingTime < 0.25f && rider->bike.vel.y < 0.0f && rider->airFrames > FRAMES(30) && rider->wheelieTimer == 0) {
             if (rider->isCpu == 0) {
                 landPos = rider->bike.pos;
                 /* boost and pitchScale hold the landing point's x and z */
@@ -2486,8 +2486,8 @@ void bike_update_alpha(Rider *rider)
     } else alpha = 0xFF;
     *alphaPtr = alpha;
 crash_fade:
-    if (rider->crashState != CRASH_STATE_RIDING && rider->isCpu != 0 && rider->crashTimer > 0x58) {
-        gRiderAlpha[rider - gRiders] = (0x78 - rider->crashTimer) * 8;
+    if (rider->crashState != CRASH_STATE_RIDING && rider->isCpu != 0 && rider->crashTimer > FRAMES(120) - 32) {
+        gRiderAlpha[rider - gRiders] = (FRAMES(120) - rider->crashTimer) * 8;
         return;
     }
     if ((s8)rider->blinkCount != 0) {
@@ -2544,7 +2544,7 @@ void bike_update(Rider *rider, s32 ticks)
             ai_update_throttle(rider);
             rider->dirtSpray = 0;
             if (rider->speed > 5.0f) {
-                if (rider->powerSlide != 0 || ((rider->input & INPUT_Z) && gRaceFrame - rider->turboPressFrame < 30)) {
+                if (rider->powerSlide != 0 || ((rider->input & INPUT_Z) && gRaceFrame - rider->turboPressFrame < FRAMES(30))) {
                     rider->dirtSpray = 2;
                 } else if (rider->rightFootOut | rider->leftFootOut) {
                     rider->dirtSpray = 1;
@@ -2600,7 +2600,7 @@ void bike_update(Rider *rider, s32 ticks)
             case 0:
                 break;
             case 1:
-                if (rider->anim == ANIM_NONE && rider->speed < 8.0f && rider->airFrames < -30) {
+                if (rider->anim == ANIM_NONE && rider->speed < 8.0f && rider->airFrames < FRAMES(-30)) {
                     /* slowed down after the finish: the pose of the finishing place */
                     rider->finishState = 2;
                     stunt_start(rider, rider->race.finishPlace + ANIM_FINISH_1ST);
@@ -2823,7 +2823,7 @@ void bike_update_finish_celebration(Rider *rider)
     return;
 
 slowing:
-    if (rider->anim == ANIM_NONE && rider->speed < 8.0f && rider->airFrames < -30) {
+    if (rider->anim == ANIM_NONE && rider->speed < 8.0f && rider->airFrames < FRAMES(-30)) {
         rider->finishState = 2;
         stunt_start(rider, rider->race.finishPlace + ANIM_FINISH_1ST);
         if ((gGame.flags & GAME_FLAG_REPLAY) == 0) {
@@ -2848,7 +2848,7 @@ void bike_update_dirt_spray(Rider *rider)
 {
     rider->dirtSpray = 0;
     if (5.0f < rider->speed) {
-        if (rider->powerSlide != 0 || ((rider->input & INPUT_Z) != 0 && (gRaceFrame - rider->turboPressFrame < 0x1E))) {
+        if (rider->powerSlide != 0 || ((rider->input & INPUT_Z) != 0 && (gRaceFrame - rider->turboPressFrame < FRAMES(30)))) {
             rider->dirtSpray = 2;
             return;
         }

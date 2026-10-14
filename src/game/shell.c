@@ -571,7 +571,7 @@ void shell_records_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
             if (gGame.screenState != SCREEN_STATE_RECORDS_FADE) {
                 if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                     gGame.screenState = SCREEN_STATE_RECORDS_FADE;
-                    gGame.screenTimer = 59;
+                    gGame.screenTimer = FRAMES(60) - 1;
                 }
             } else {
                 gGame.screenState = SCREEN_STATE_RECORDS_SHOWN;
@@ -613,7 +613,7 @@ void shell_records_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
     }
     if (oldSel != gGame.recordsSel) {
         gGame.screenState = SCREEN_STATE_RECORDS_PICTURE;
-        gGame.screenTimer = 6;
+        gGame.screenTimer = FRAMES(6);
         snd_play_menu_sound(MENU_SOUND_MOVE);
     }
 }
@@ -3072,23 +3072,23 @@ void shell_load_screen(Screen *screen)
     case SCREEN_TYPE_SPLASH_3:
         gGame.flags |= GAME_FLAG_SPLASH_3;
     case SCREEN_TYPE_SPLASH:
-        gGame.screenTimer = 180;
+        gGame.screenTimer = FRAMES(180);
         break;
     case SCREEN_TYPE_PAK_STATUS:
         gGame.frames = LOAD(sPakStatusFrameResId);
         gGame.itemBars = LOAD(sPakStatusTitleBarResId);
-        gGame.screenTimer = 1200;
+        gGame.screenTimer = FRAMES(1200);
         break;
     case SCREEN_TYPE_BACKUP_LOST:
         gGame.frames = LOAD(gWarnFrameResId);
         gGame.itemBars = LOAD(gWarnTitleBarResId);
-        gGame.screenTimer = 600;
+        gGame.screenTimer = FRAMES(600);
         break;
     case SCREEN_TYPE_SPLASH_2:
 #if VERSION == VERSION_LODGENET
         gGame.screenTimer = 300;    /* 5 seconds */
 #else
-        gGame.screenTimer = 3600;   /* a minute */
+        gGame.screenTimer = FRAMES(3600);   /* a minute */
 #endif
         gGame.titleBar = LOAD(sExpansionPakDetectedResId);
         break;
@@ -3321,7 +3321,7 @@ void shell_load_screen(Screen *screen)
         break;
     case SCREEN_TYPE_RECORDS:
         gGame.screenState = SCREEN_STATE_RECORDS_PICTURE;
-        gGame.screenTimer = 6;
+        gGame.screenTimer = FRAMES(6);
     case SCREEN_TYPE_ROUND_SELECT:
         /* the cup within the difficulty's cups; the tutorial at difficulty 0 */
         gGame.seasonMenuState = SEASON_MENU_CUPS;

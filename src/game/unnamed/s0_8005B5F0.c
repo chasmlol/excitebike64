@@ -140,7 +140,7 @@ void ai_update_steering(Rider *rider)
         s32 curSeg = rider->segment;
         s32 absDiff;
         /* start a slide in a flagged corner when heading within 22.5 degrees of the line */
-        if (!(gPathNodes[curSeg].flags & 4) || gRaceFrame - rider->aiFrame < 300) {
+        if (!(gPathNodes[curSeg].flags & 4) || gRaceFrame - rider->aiFrame < FRAMES(300)) {
             break;
         }
         math_to_polar(-(rider->bike.fwd.x * 16384.0f), rider->bike.fwd.z * 16384.0f, &heading, &polarLen);
@@ -209,7 +209,7 @@ void ai_update_steering(Rider *rider)
         seg = rider->segment;
         t = rider->segmentT;
         lookahead = 2;
-        if (gRaceFrame - rider->aiFrame < 300) {
+        if (gRaceFrame - rider->aiFrame < FRAMES(300)) {
             lookahead = 4;
         } else {
             k = gPathNodes[seg].lookahead;

@@ -565,14 +565,14 @@ void race_update_intro(void)
         if (pressB && (gGame.mode != GAME_MODE_SEASON || gSeason->round == 0)) {
             snd_play_menu_sound(MENU_SOUND_BACK);
             gRacePhase_2 = RACE_PHASE_INTRO_FADE_OUT;
-            gRacePhaseTimer = 20;
+            gRacePhaseTimer = FRAMES(20);
             gRaceExitCode = RACE_EXIT_BACK;
             gGame.flags &= ~GAME_FLAG_REPEAT_STATE;
         } else if (pressA || pressStart) {
             snd_play_menu_sound(MENU_SOUND_SELECT);
             gRaceExitCode = RACE_EXIT_NONE;
             gRacePhase_2 = RACE_PHASE_INTRO_FADE_OUT;
-            gRacePhaseTimer = 20;
+            gRacePhaseTimer = FRAMES(20);
         }
         break;
     }
@@ -691,7 +691,7 @@ void race_pause_update_options(void) {
         case OPTION_SPEECH:
             if (sOptionsPreviewDelay == 0) {
                 tunes_queue_speech(0x9B);
-                sOptionsPreviewDelay = 0x34;
+                sOptionsPreviewDelay = FRAMES(52);
             }
             return;
         case 4:
@@ -736,7 +736,7 @@ void race_pause_update_options(void) {
             break;
         case OPTION_SPEECH:
             tunes_queue_speech(0x9B);
-            sOptionsPreviewDelay = 0x34;
+            sOptionsPreviewDelay = FRAMES(52);
             break;
         case OPTION_EFFECTS:
             sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
@@ -765,11 +765,11 @@ void race_pause_update_options(void) {
             switch (gOptionsCursor) {
             case OPTION_EFFECTS:
                 sfx_play(sOptionsTestSfx, 0x2B11, gSaveData.volumes[VOLUME_SFX], 7, 1, 1);
-                sOptionsPreviewDelay = 0x28;
+                sOptionsPreviewDelay = FRAMES(40);
                 break;
             case OPTION_SPEECH:
                 tunes_queue_speech(0x9B);
-                sOptionsPreviewDelay = 0x34;
+                sOptionsPreviewDelay = FRAMES(52);
                 break;
             }
         }
@@ -1432,7 +1432,7 @@ void race_update(u32 *pads)
                     /* anything else: the lesson again, from its demo */
                     gEvent.state = EVENT_STATE_FREE_RIDE;
                     gEvent.countdown = 0x3F;
-                    gEvent.tutorialTimer = 0x3C;
+                    gEvent.tutorialTimer = FRAMES(60);
                     gEvent.tutorialAction = TUTORIAL_SHOW;
                     gEvent.flags = (gEvent.flags & ~EVENT_STOPPED) | EVENT_DEMO;
                     break;

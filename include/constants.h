@@ -153,6 +153,16 @@
 #define VI_MODE_HI_RES          2   /* 640x480 interlaced, libultra's Hpf1 mode unchanged (SAVE_OPT_HIGH_RES, with
                                        the Expansion Pak) */
 
+/* The frame rate: the game updates once per retrace, 60 times a second on NTSC and MPAL TVs and 50 on PAL ones
+   (Europe). Europe's frame counts are the 60 Hz ones times 5/6: FRAMES(n) is n frames at 60 Hz in the version's
+   frames, rounded towards zero (FRAMES(45) is 37 at 50 Hz). */
+#if VERSION == VERSION_EU
+#define FRAME_RATE              50
+#else
+#define FRAME_RATE              60
+#endif
+#define FRAMES(n)               ((n) * FRAME_RATE / 60)
+
 #define GRAVITY                 14.700001f  /* the bikes' gravity, m/s^2 */
 
 /* gRaceExitCode: how the last race ended, for shell_init. */

@@ -169,7 +169,7 @@ void snow_update(void) {
         cornerX = gCosTable[((i >> 4) - 0x400) & 0xFFF] >> 10;
         x = sSnowSplatX;
         y = sSnowSplatY;
-        sSnowSplatTimer = 60;
+        sSnowSplatTimer = FRAMES(60);
         sSnowSplatVtx[0].v.ob[0] = (x + cornerX - 160) * gScreenWidth / 320;
         sSnowSplatVtx[0].v.ob[1] = (y + cornerY - 120) * gScreenHeight / 240;
         sSnowSplatVtx[1].v.ob[0] = (x + cornerY - 160) * gScreenWidth / 320;

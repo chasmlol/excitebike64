@@ -220,6 +220,14 @@ typedef struct HudGlyphs {
 #define EVENT_INTRO_MESSAGE     0x08000 /* tutorial: the message is the lesson's first step, before the start */
 #define EVENT_CAM_UPDATE        0x10000 /* update the camera once while a message holds the game */
 
+/* tutorial_update: the READY countdown's frame at which a lesson's intro message stops the game (not a 5/6 of the
+   60 Hz frame in Europe) */
+#if VERSION == VERSION_EU
+#define TUTORIAL_INTRO_COUNTDOWN    47
+#else
+#define TUTORIAL_INTRO_COUNTDOWN    43
+#endif
+
 /* Tutorial sub-states (Event.tutorialAction): the title and the demo slide in, wait and slide out; the pause
    menu's choices are kept here until the fade out is over. */
 #define TUTORIAL_SHOW       0   /* sliding in (tutorialTimer) */

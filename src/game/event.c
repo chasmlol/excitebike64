@@ -33,7 +33,7 @@ void tutorial_init_lesson(s32 first)
     gEvent.flags &= ~EVENT_NO_DEMO;
     if (LESSON.flags & LESSON_COUNTDOWN) {
         gEvent.flags |= EVENT_CAM_UPDATE | EVENT_INTRO_MESSAGE | EVENT_MESSAGE;
-        gEvent.tutorialTimeout = 600;
+        gEvent.tutorialTimeout = FRAMES(600);
         if (LESSON.flags & LESSON_TRICKS) {
             gEvent.time = 0;
         } else if (gActiveReplay == 0) {
@@ -49,7 +49,7 @@ void tutorial_init_lesson(s32 first)
     } else {
         gEvent.countdown = 0x3F;
         gEvent.tutorialAction = TUTORIAL_SHOW;
-        gEvent.tutorialTimer = 0x3C;
+        gEvent.tutorialTimer = FRAMES(60);
         gEvent.flags |= EVENT_DEMO;
     }
     sTutorialStep = 0;
@@ -103,8 +103,8 @@ void tutorial_update(void)
             (gEvent.state < EVENT_STATE_GO || gEvent.state == EVENT_STATE_TIMED || gEvent.state == EVENT_STATE_FREE_RIDE)) {
             event_update_countdown();
         }
-        if (gEvent.countdown == 0x2B && gEvent.state == EVENT_STATE_READY && (gEvent.flags & EVENT_INTRO_MESSAGE)) {
-            gEvent.tutorialTimeout = 300;
+        if (gEvent.countdown == TUTORIAL_INTRO_COUNTDOWN && gEvent.state == EVENT_STATE_READY && (gEvent.flags & EVENT_INTRO_MESSAGE)) {
+            gEvent.tutorialTimeout = FRAMES(300);
             gEvent.flags |= EVENT_CAM_UPDATE | EVENT_MESSAGE;
         }
     } else {
@@ -134,7 +134,7 @@ void tutorial_update(void)
                 if (gEvent.time == LESSON.steps[i].value) {
                     snd_stop_all_riders();
                     rumble_stop_all();
-                    gEvent.tutorialTimeout = 1800;
+                    gEvent.tutorialTimeout = FRAMES(1800);
                     gEvent.flags |= EVENT_MESSAGE;
                     break;
                 }
@@ -142,7 +142,7 @@ void tutorial_update(void)
             gEvent.time++;
         }
         if (gEvent.allFinished == 0) {
-            gEvent.messageTimer = 180;
+            gEvent.messageTimer = FRAMES(180);
         } else if (gEvent.messageTimer != 0) {
             gEvent.messageTimer--;
         }
@@ -160,7 +160,7 @@ void tutorial_update(void)
         case TUTORIAL_SHOW:
             if ((gPadInput & INPUT_A) && !(gPadInputPrev & INPUT_A)) {
                 gEvent.tutorialAction = TUTORIAL_HIDE;
-                gEvent.tutorialTimer = 59 - gEvent.tutorialTimer;
+                gEvent.tutorialTimer = FRAMES(60) - 1 - gEvent.tutorialTimer;
             } else if (gEvent.tutorialTimer == 0) {
                 gEvent.tutorialAction = TUTORIAL_WAIT;
             }
@@ -168,7 +168,7 @@ void tutorial_update(void)
         case TUTORIAL_WAIT:
             if ((gPadInput & INPUT_A) && !(gPadInputPrev & INPUT_A)) {
                 gEvent.tutorialAction = TUTORIAL_HIDE;
-                gEvent.tutorialTimer = 60;
+                gEvent.tutorialTimer = FRAMES(60);
                 gEvent.flags = (gEvent.flags & ~EVENT_STOPPED) | EVENT_DEMO;
             } else {
                 tutorial_check_lesson_skip();
@@ -179,7 +179,7 @@ void tutorial_update(void)
                 gEvent.state = EVENT_STATE_FREE_RIDE;
                 gEvent.countdown = 0x3F;
                 gEvent.tutorialAction = TUTORIAL_SHOW;
-                gEvent.tutorialTimer = 60;
+                gEvent.tutorialTimer = FRAMES(60);
             }
             break;
         }
@@ -362,7 +362,7 @@ void event_init(s32 numRiders, s32 numLaps)
         gEvent.numRiders = 2;
         gNumRiders = 2;
     }
-    gEvent.countdown = 150;
+    gEvent.countdown = FRAMES(150);
     if (gCreditsMode != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) ||
         gGame.mode == GAME_MODE_TEST_LOOP || gGame.mode == GAME_MODE_TEST_OPEN) {
         gEvent.state = EVENT_STATE_GO;
@@ -373,7 +373,7 @@ void event_init(s32 numRiders, s32 numLaps)
             gEvent.countdown = 0x100;
         } else {
             gEvent.state = EVENT_STATE_READY;
-            gEvent.countdown = 150;
+            gEvent.countdown = FRAMES(150);
         }
         gEvent.flags |= EVENT_STOPPED;
     }
@@ -386,7 +386,7 @@ void event_init(s32 numRiders, s32 numLaps)
     }
     switch (gGame.mode) {
     case GAME_MODE_SOCCER:
-        gEvent.countdown = 180;
+        gEvent.countdown = FRAMES(180);
         gEvent.state = EVENT_STATE_KICKOFF;
         gEvent.ballToucher = 0;
         gEvent.goals[0] = 0;
@@ -403,14 +403,14 @@ void event_init(s32 numRiders, s32 numLaps)
         gEvent.flags |= EVENT_STOPPED;
         race_reset_grid_order();
         for (rider = gRiders; rider < &gRiders[gGame.numPlayers]; rider++) {
-            rider->timeLimit = 7200; /* two minutes for the first stage */
+            rider->timeLimit = FRAMES(7200); /* two minutes for the first stage */
         }
         break;
     case GAME_MODE_TUTORIAL:
         tutorial_init_lesson(1);
         break;
     case GAME_MODE_STUNT_COURSE:
-        gEvent.time = 7200; /* two minutes */
+        gEvent.time = FRAMES(7200); /* two minutes */
         gEvent.flags |= EVENT_STOPPED;
         race_reset_grid_order();
         break;
@@ -618,18 +618,18 @@ void event_rider_lap_completed(s32 p)
             gEvent.lapLeaderTimes[race->lap] = ((u16 *)&gEvent.time)[1];
         } else {
             race->gap = leaderTime - gEvent.time;
-            race->gapMsgTimer = 120;
+            race->gapMsgTimer = FRAMES(120);
             if (race->place == 1) {
                 for (i = 0; i < gGame.numPlayers; i++) {
                     if (race->lap < gRiders[i].race.lap + gRiders[i].lapAdjust) {
-                        gRiders[i].race.gapMsgTimer = 120;
+                        gRiders[i].race.gapMsgTimer = FRAMES(120);
                         gRiders[i].race.gap = -race->gap;
                         break;
                     }
                 }
             }
         }
-        race->lapMsgTimer = 120;
+        race->lapMsgTimer = FRAMES(120);
         ((volatile RiderRace *)race)->lap++;
         if (race->lap != gEvent.numLaps) {
             if (say != LAP_SAY_BEST_LAP) {
@@ -637,7 +637,7 @@ void event_rider_lap_completed(s32 p)
                     say = LAP_SAY_LAP;
                 } else if (race->place == 0) {
                     say = LAP_SAY_LEADER_LAP;
-                } else if (gRiders[p].isCpu == 0 && race->gap < -300) {
+                } else if (gRiders[p].isCpu == 0 && race->gap < FRAMES(-300)) {
                     say = LAP_SAY_LAP;
                 }
             }
@@ -687,26 +687,26 @@ void event_update_countdown(void)
     if (gEvent.countdown != 0 && --gEvent.countdown == 0) {
         switch (gEvent.state) {
         case EVENT_STATE_WAIT:
-            gEvent.countdown = 150;
+            gEvent.countdown = FRAMES(150);
             gEvent.state = EVENT_STATE_READY;
             break;
         case EVENT_STATE_READY:
-            gEvent.countdown = 36;
+            gEvent.countdown = FRAMES(36);
             gEvent.state = EVENT_STATE_COUNT_3;
             tunes_play_speech(0x6F, 5, 1);
             break;
         case EVENT_STATE_COUNT_3:
-            gEvent.countdown = 36;
+            gEvent.countdown = FRAMES(36);
             gEvent.state = EVENT_STATE_COUNT_2;
             tunes_play_speech(0x6D, 6, 1);
             break;
         case EVENT_STATE_COUNT_2:
-            gEvent.countdown = 36;
+            gEvent.countdown = FRAMES(36);
             gEvent.state = EVENT_STATE_COUNT_1;
             tunes_play_speech(0x6E, 7, 1);
             break;
         case EVENT_STATE_COUNT_1:
-            gEvent.countdown = 15;
+            gEvent.countdown = FRAMES(15);
             gEvent.state = EVENT_STATE_GO;
             gEvent.flags &= ~EVENT_STOPPED;
             tunes_play_speech(0x70, 8, 1);
@@ -765,7 +765,7 @@ void event_update_stunt(void)
         ((gPlayerInputs_2 & INPUT_A) && !(gPlayerInputsPrev & INPUT_A))) {
         if (gRacePhase == RACE_PHASE_RACING) {
             gRacePhase = RACE_PHASE_FADE_OUT;
-            gRacePhaseTimer = 20;
+            gRacePhaseTimer = FRAMES(20);
         }
     }
     gEvent.time = 0;
@@ -825,7 +825,7 @@ void event_update_soccer(void)
     s32 j;
 
     if (gEvent.allFinished == 0) {
-        gEvent.messageTimer = 180;
+        gEvent.messageTimer = FRAMES(180);
     } else if (gEvent.messageTimer != 0) {
         gEvent.messageTimer--;
     }
@@ -844,7 +844,7 @@ void event_update_soccer(void)
         if (!(gEvent.flags & EVENT_SCORED)) {
             if (gSoccerBall.pos.x >= -24.0f && gSoccerBall.pos.x < 23.0f && gSoccerBall.pos.z >= 79.0f && gSoccerBall.pos.z < 87.0f &&
                 gSoccerBall.pos.y >= 0.0f && gSoccerBall.pos.y < 6.2f) {
-                gEvent.goalTimer = 180;
+                gEvent.goalTimer = FRAMES(180);
                 gEvent.goals[0]++;
                 announce_goal();
                 gRiders[0].fistPump = 1;
@@ -856,7 +856,7 @@ void event_update_soccer(void)
                 }
             } else if (gSoccerBall.pos.x >= -24.0f && gSoccerBall.pos.x < 23.0f && gSoccerBall.pos.z >= -80.0f && gSoccerBall.pos.z < -73.0f &&
                        gSoccerBall.pos.y >= 0.0f && gSoccerBall.pos.y < 6.2f) {
-                gEvent.goalTimer = 180;
+                gEvent.goalTimer = FRAMES(180);
                 gEvent.goals[1]++;
                 announce_goal();
                 gRiders[1].fistPump = 1;
@@ -873,7 +873,7 @@ void event_update_soccer(void)
     case EVENT_STATE_KICKOFF:
         if (--gEvent.countdown == 0) {
             gEvent.state = EVENT_STATE_FIRST_HALF;
-            gEvent.time = 10800; /* three minutes */
+            gEvent.time = FRAMES(10800); /* three minutes */
             gEvent.flags &= ~EVENT_STOPPED;
         }
         break;
@@ -881,7 +881,7 @@ void event_update_soccer(void)
         if (--gEvent.time == 0) {
             j = 0;
             gEvent.state = EVENT_STATE_HALF_TIME;
-            gEvent.countdown = 240;
+            gEvent.countdown = FRAMES(240);
             gEvent.flags |= EVENT_STOPPED;
             for (; j < gGame.numPlayers; j++) {
                 bike_respawn(&gRiders[j]);
@@ -892,7 +892,7 @@ void event_update_soccer(void)
     case EVENT_STATE_HALF_TIME:
         if (--gEvent.countdown == 0) {
             gEvent.state = EVENT_STATE_SECOND_HALF;
-            gEvent.time = 10800;
+            gEvent.time = FRAMES(10800);
             gEvent.flags &= ~EVENT_STOPPED;
         }
         break;
@@ -901,10 +901,10 @@ void event_update_soccer(void)
             gEvent.flags |= EVENT_STOPPED;
             if (gEvent.goals[0] == gEvent.goals[1]) {
                 gEvent.state = EVENT_STATE_DRAW;
-                gEvent.countdown = 240;
+                gEvent.countdown = FRAMES(240);
             } else {
                 gEvent.state = EVENT_STATE_FINAL;
-                gEvent.countdown = 600;
+                gEvent.countdown = FRAMES(600);
                 gEvent.allFinished = 1;
             }
             for (i = 0; i < gGame.numPlayers; i++) {
@@ -916,7 +916,7 @@ void event_update_soccer(void)
     case EVENT_STATE_DRAW:
         if (--gEvent.countdown == 0) {
             gEvent.state = EVENT_STATE_OVERTIME;
-            gEvent.time = 7200; /* two minutes */
+            gEvent.time = FRAMES(7200); /* two minutes */
             gEvent.flags &= ~EVENT_STOPPED;
         }
         break;
@@ -925,7 +925,7 @@ void event_update_soccer(void)
             j = 0;
             gEvent.state = EVENT_STATE_FINAL;
             gEvent.allFinished = 1;
-            gEvent.countdown = 600;
+            gEvent.countdown = FRAMES(600);
             gEvent.flags |= EVENT_STOPPED;
             for (; j < gGame.numPlayers; j++) {
                 bike_respawn(&gRiders[j]);
@@ -940,7 +940,7 @@ void event_update_soccer(void)
              (PLAYER_PRESSED(0, INPUT_A) || PLAYER_PRESSED(1, INPUT_A) || PLAYER_PRESSED(2, INPUT_A) || PLAYER_PRESSED(3, INPUT_A)))) {
             if (gRacePhase == RACE_PHASE_RACING) {
                 gRacePhase = RACE_PHASE_FADE_OUT;
-                gRacePhaseTimer = 20;
+                gRacePhaseTimer = FRAMES(20);
             }
         }
         break;
@@ -993,7 +993,7 @@ void event_update_race(void) {
     if (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_INTRO)) return;
     if (gRaceExitCode == RACE_EXIT_BACK) return;
     if (gEvent.allFinished == 0) {
-        gEvent.messageTimer = 180;
+        gEvent.messageTimer = FRAMES(180);
     } else if (gEvent.messageTimer != 0) {
         gEvent.messageTimer--;
     }
@@ -1019,7 +1019,7 @@ void event_update_race(void) {
         }
         if (gRacePhase == RACE_PHASE_RACING) {
             gRacePhase = RACE_PHASE_FADE_OUT;
-            gRacePhaseTimer = 20;
+            gRacePhaseTimer = FRAMES(20);
         }
         /* a rider still racing: the race time over the part of the race done (at least a tenth) */
         for (k = 0; k < gEvent.numRiders; k++) {
@@ -1123,7 +1123,7 @@ void event_update(s32 unused)
         if (gEvent.allFinished == 0) {
             if ((gEvent.flags & EVENT_STOPPED) != 0) break;
             gEvent.time = gEvent.time + 1;
-            if (gEvent.time == 0x34bc0) {
+            if (gEvent.time == FRAMES(216000)) {
                 event_rider_finished(0);
                 gEvent.allFinished = 1;
             }
@@ -1422,7 +1422,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 dyn, s32 fb, s32 view)
                       gViewRects_5[gNumScreens - 1][view][1] + gViewRects_5[gNumScreens - 1][view][3] - 0xB);
         gdl = event_draw_temp_gauge(gdl, dyn, fb, view);
     }
-    if (gEvent.countdown != 0 && gEvent.state != EVENT_STATE_WAIT && (gEvent.state != EVENT_STATE_READY || gEvent.countdown < 0x5B)) {
+    if (gEvent.countdown != 0 && gEvent.state != EVENT_STATE_WAIT && (gEvent.state != EVENT_STATE_READY || gEvent.countdown <= FRAMES(90))) {
         gdl = event_draw_countdown(gdl, view);
     }
     if (gRiders[view].race.lapMsgTimer != 0 && gPauseMenu == PAUSE_NONE) {
@@ -1670,7 +1670,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     }
     gdl = font_render(gdl);
     gdl = render_draw_temp_gauge(gdl, dyn, fb, view);
-    if (gEvent.countdown != 0 && gEvent.state != EVENT_STATE_WAIT && (gEvent.state != EVENT_STATE_READY || gEvent.countdown < 0x5B)) {
+    if (gEvent.countdown != 0 && gEvent.state != EVENT_STATE_WAIT && (gEvent.state != EVENT_STATE_READY || gEvent.countdown <= FRAMES(90))) {
         gdl = event_draw_countdown(gdl, view);
     }
     return gdl;
@@ -1754,7 +1754,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     gdl = event_draw_position(gdl, 0, font_text_create(gHudTextObjs[5], 0x20, 3, 2, TEXT_VALIGN_CENTER | TEXT_HALIGN_CENTER));
     gdl = font_render(gdl);
     if (gEvent.countdown != 0 && gEvent.state != EVENT_STATE_WAIT &&
-        (gEvent.state != EVENT_STATE_READY || gEvent.countdown < 0x5B)) {
+        (gEvent.state != EVENT_STATE_READY || gEvent.countdown <= FRAMES(90))) {
         gdl = event_draw_countdown(gdl, view);
     }
     return gdl;
@@ -2019,7 +2019,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 dyn, s32 fb, s32 view)
         event_set_place_text(tMsg, race->finishPlace, view);
     }
     if (gReplayPlayback == 0) {
-        if (gEvent.countdown != 0 && gEvent.state != EVENT_STATE_WAIT && (gEvent.state != EVENT_STATE_READY || gEvent.countdown < 0x5B)) {
+        if (gEvent.countdown != 0 && gEvent.state != EVENT_STATE_WAIT && (gEvent.state != EVENT_STATE_READY || gEvent.countdown <= FRAMES(90))) {
             gdl = event_draw_countdown(gdl, view);
         } else if (gPauseMenu == PAUSE_NONE && race->finishPlace == -1) {
             if (gRiders[view].race.gapMsgTimer != 0) {
@@ -2441,7 +2441,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 dyn, s32 fb, s32 view)
         } else {
             off = 0;
             if (gEvent.tutorialAction == TUTORIAL_HIDE) {
-                off = -((60 - gEvent.tutorialTimer) * 2);
+                off = -((FRAMES(60) - gEvent.tutorialTimer) * 2);
             }
         }
         gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
@@ -2632,7 +2632,7 @@ Gfx *tutorial_draw_hud(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     font_draw_text(gHudTextObjs[6], x, y);
     if ((LESSON.flags & LESSON_COUNTDOWN) && gEvent.countdown != 0
         && (gEvent.state < EVENT_STATE_GO || gEvent.state == EVENT_STATE_TIMED || gEvent.state == EVENT_STATE_FREE_RIDE)
-        && (gEvent.state != EVENT_STATE_READY || gEvent.countdown < 0x5B)) {
+        && (gEvent.state != EVENT_STATE_READY || gEvent.countdown <= FRAMES(90))) {
         gdl = event_draw_countdown(gdl, view);
     }
     return font_render(gdl);
@@ -3008,7 +3008,7 @@ s32 event_request_exit(void)
 {
     if (gRacePhase == RACE_PHASE_RACING) {
         gRacePhase = RACE_PHASE_FADE_OUT;
-        gRacePhaseTimer = 20;
+        gRacePhaseTimer = FRAMES(20);
         return 1;
     }
     return 0;
@@ -3038,7 +3038,7 @@ void event_update_gates(void)
         if ((event->flags & EVENT_STOPPED) == 0) {
             s32 n = event->time + 1;
             event->time = n;
-            if (n == 0x34BC0) {
+            if (n == FRAMES(216000)) {
                 event_rider_finished(0);
                 event->allFinished = 1;
             }
@@ -3055,7 +3055,7 @@ void event_hillclimb_init(void) {
     gEvent.flags |= EVENT_STOPPED;
     race_reset_grid_order();
     for (rider = gRiders; rider < &gRiders[gGame.numPlayers]; rider++) {
-        rider->timeLimit = 7200;
+        rider->timeLimit = FRAMES(7200);
     }
 }
 
@@ -3063,7 +3063,7 @@ void event_stunt_init(void)
 {
     Event *event = &gEvent;
     event->flags = event->flags | EVENT_STOPPED;
-    event->time = 7200;
+    event->time = FRAMES(7200);
     race_reset_grid_order();
 }
 
@@ -3074,7 +3074,7 @@ void event_soccer_init(void)
 
     event = &gEvent;
     flags = event->flags;
-    event->countdown = 180;
+    event->countdown = FRAMES(180);
     gEvent.state = EVENT_STATE_KICKOFF;
     event->ballToucher = 0;
     event->goals[0] = 0;
@@ -3124,7 +3124,7 @@ void func_8005B2E8(void)
             s32 r = gEvent.time - 1;
             gEvent.time = r;
             if (r == 0) {
-                gRiders[0].race.lapMsgTimer = 120;
+                gRiders[0].race.lapMsgTimer = FRAMES(120);
             }
         }
     }

@@ -9,7 +9,7 @@ void excite3d_init(void)
 {
     s32 i;
 
-    sExcite3DSpawnTime = 600;
+    sExcite3DSpawnTime = FRAMES(600);
     gRaceFrame = 0;
     for (i = 6; i < RIDER_COUNT; i++) {
         gRiders[i].frozen = 1;
@@ -235,8 +235,8 @@ void excite3d_update(void)
     found:
         behind = -10.0f;
         for (rider = &gRiders[6]; rider < &gRiders[RIDER_COUNT]; rider++) {
-            if (!(crestY < rider->bike.pos.y) && gRaceFrame - sExcite3DSpawnTime > 60 && rider->isCpu != 0 &&
-                gRaceFrame - rider->spawnFrame > 179 && rider->inactive == 0) {
+            if (!(crestY < rider->bike.pos.y) && gRaceFrame - sExcite3DSpawnTime > FRAMES(60) && rider->isCpu != 0 &&
+                gRaceFrame - rider->spawnFrame >= FRAMES(180) && rider->inactive == 0) {
                 gap = playerZ - rider->bike.pos.z;
                 if (gap < behind || range < gap) {
                     now = gRaceFrame;

@@ -26,7 +26,7 @@ void cam_init(s32 unused)
         gCamPos[i].y = 2992;
         gCamPos[i].z = 0;
         gCamTargets[i] = -1;
-        for (j = 0; j < 120; j++) {
+        for (j = 0; j < FRAMES(120); j++) {
             sCamPitchSprings[i].vel += (2000.0f - sCamPitchSprings[i].pos) * sCamSpringUp;
             sCamPitchSprings[i].pos += sCamPitchSprings[i].vel;
             sCamPitchSprings[i].vel *= sCamDampUp;
@@ -1526,7 +1526,7 @@ void cam_clamp_to_track(s32 rider, s32 view)
                 widthNeg = (s32)(lerpi(node->camWidthNeg, next->camWidthNeg, t) * 16.0f);
                 widthPos = (s32)(lerpi(node->camWidthPos, next->camWidthPos, t) * 16.0f);
                 ceilingY = (s32)lerp(ya, yb, t);
-                if (ceilingY < gCamPos[view].y && gRiders[rider].airFrames < 0x1e) {
+                if (ceilingY < gCamPos[view].y && gRiders[rider].airFrames < FRAMES(30)) {
                     f32 ex, ez;
                     ex = gRiders[rider].bike.smoothPos.x * 1000.0f - (f32)gCamPos[view].x;
                     ez = gRiders[rider].bike.smoothPos.z * 1000.0f - (f32)gCamPos[view].z;
