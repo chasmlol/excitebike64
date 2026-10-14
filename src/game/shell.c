@@ -5577,68 +5577,74 @@ done:
     *pgdl = gdl;
 }
 
+/* Opens the "guires" resource set (the front end's pictures). */
 void shell_load_gui_res(void) {
     res_open_set("guires", &gGuiRes);
 }
 
+/* Closes the "guires" resource set. */
 void shell_free_gui_res(void)
 {
     res_close_set(gGuiRes);
     gGuiRes = 0;
 }
 
-void shell_cb_desert(s32 p) {
-    if (p != 0) {
+/* Item callback of Desert. */
+void shell_cb_desert(s32 chosen) {
+    if (chosen != 0) {
         gCurTrack = &gTracks[TRACK_DESERT];
         gGame.mode = GAME_MODE_DESERT;
         gRaceSeries_5.b = 0;
         gRaceSeries_5.a = 1;
         gRaceSeries_5.c = 0;
-        gGame.flags &= 0xFFFFFF7F;
+        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
     }
 }
 
-void shell_cb_select_track(s32 a) {
-    if (a != 0) {
+/* Item callback of the track lists: the track under the cursor. */
+void shell_cb_select_track(s32 chosen) {
+    if (chosen != 0) {
         gCurTrack = gTracks_2 + gGame.trackSel * 0xA0;
-        gGame.flags |= 0x80;
+        gGame.flags |= GAME_FLAG_TRACK_CHOSEN;
     }
 }
 
-void shell_cb_time_trials(s32 a0)
+/* Item callback of Time Trials. */
+void shell_cb_time_trials(s32 chosen)
 {
-    Game *base;
+    Game *game;
 
-    if (a0 != 0) {
-        base = &gGame;
-        base->mode = GAME_MODE_TIME_TRIAL;
-        base->numPlayers = 1;
-        base->flags = base->flags | 0x80;
+    if (chosen != 0) {
+        game = &gGame;
+        game->mode = GAME_MODE_TIME_TRIAL;
+        game->numPlayers = 1;
+        game->flags = game->flags | GAME_FLAG_TRACK_CHOSEN;
     }
 }
 
 typedef struct {
     u8 pad0[0x2C1];
-    u8 track;
+    u8 tutorialProgress;
 } Opts_2;
 
 extern Opts_2 gSaveData_14;
 
-void shell_cb_tutorial(s32 arg)
+/* Item callback of the season screen's tutorial (difficulty 0): the first lesson not done, as shell_cb_season. */
+void shell_cb_tutorial(s32 chosen)
 {
     s32 i;
 
-    if (arg != 0) {
+    if (chosen != 0) {
         gCurTrack = &gTracks[TRACK_TUTORIAL];
         gGame.numPlayers = 1;
         gGame.mode = GAME_MODE_TUTORIAL;
         gEvent.tutorialBuf = 0;
         gGame.riders[0] = 4;
-        gGame.flags &= ~0x80;
+        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
         gSeason->cup = &gCups[CUP_TUTORIAL];
         gSeason->round = 0;
-        for (i = 0; i < 0x11; i++) {
-            if (gTutorialLessons[i].level == gSaveData_14.track) {
+        for (i = 0; i < 17; i++) {
+            if (gTutorialLessons[i].level == gSaveData_14.tutorialProgress) {
                 gSeason->round = i;
                 return;
             }
@@ -5646,17 +5652,19 @@ void shell_cb_tutorial(s32 arg)
     }
 }
 
-void shell_cb_exhibition(s32 x)
+/* Item callback of Exhibition. */
+void shell_cb_exhibition(s32 chosen)
 {
-    if (x != 0) {
+    if (chosen != 0) {
         gGame.mode = GAME_MODE_EXHIBITION;
     }
 }
 
-void shell_cb_excite3d(s32 p) {
+/* Item callback of Excite 3D: one player, the rider's colours chosen, difficulty 2. */
+void shell_cb_excite3d(s32 chosen) {
     s32 i;
 
-    if (p != 0) {
+    if (chosen != 0) {
         i = 0;
         do {
             if (i == 0) {
@@ -5670,14 +5678,15 @@ void shell_cb_excite3d(s32 p) {
         gCurTrack = &gTracks[TRACK_EXCITE_3D];
         gGame.numPlayers = 1;
         gGame.difficulty = 2;
-        gGame.flags &= 0xFFFFFF7F;
+        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
     }
 }
 
-void shell_cb_hill_climb(s32 p)
+/* Item callback of Hill Climb: no CPU riders, the screen split vertically. */
+void shell_cb_hill_climb(s32 chosen)
 {
     s32 i;
-    if (p != 0) {
+    if (chosen != 0) {
         for (i = 0; i < 6; i++) {
             if (gGame.numPlayers < 2) {
                 if (i == 0) {
@@ -5693,40 +5702,42 @@ void shell_cb_hill_climb(s32 p)
         gSplitVertical = 1;
         gGame.mode = GAME_MODE_HILL_CLIMB;
         gCurTrack = &gTracks[TRACK_HILL_CLIMB];
-        gGame.flags &= ~0x80;
+        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
     }
 }
 
-void shell_cb_custom_tracks(s32 x)
+/* Item callback of Custom Tracks: to the track editor. */
+void shell_cb_custom_tracks(s32 chosen)
 {
-    if (x != 0) {
-        gGame.flags = (gGame.flags & ~0x80) | 0x20;
+    if (chosen != 0) {
+        gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_CHOSEN) | GAME_FLAG_EDITOR;
     }
 }
 
-void shell_cb_desert_unused(s32 a0) {
+/* A desert callback with mode 4 and one player on controller 1. Not in a menu. */
+void shell_cb_desert_unused(s32 chosen) {
     s32 i;
-    Game *b;
-    Game *w;
-    if (a0 == 0) {
+    Game *game;
+    Game *game2;
+    if (chosen == 0) {
         return;
     }
-    w = &gGame;
-    w->numPlayers = 1;
-    b = w;
+    game2 = &gGame;
+    game2->numPlayers = 1;
+    game = game2;
     gCurTrack = &gTracks[TRACK_DESERT];
-    w->mode = 4;
-    w->flags = w->flags & 0xFFFFFF7F;
+    game2->mode = 4;
+    game2->flags = game2->flags & ~GAME_FLAG_TRACK_CHOSEN;
     for (i = 0; i < 4; i++) {
         if (i == 0) {
-            b->playerPad[0] = 0;
+            game->playerPad[0] = 0;
         } else {
-            b->playerPad[i] = -1;
+            game->playerPad[i] = -1;
         }
         if (i == 0) {
-            b->padPlayer[0] = 0;
+            game->padPlayer[0] = 0;
         } else {
-            b->padPlayer[i] = -1;
+            game->padPlayer[i] = -1;
         }
     }
     gRaceSeries[1] = 0;
@@ -5734,32 +5745,39 @@ void shell_cb_desert_unused(s32 a0) {
     gRaceSeries[2] = 0;
 }
 
+/* Item callback of Original Excitebike: leaving the front end starts the NES game (it runs even without
+   chosen). */
 void shell_cb_original_excitebike(s32 chosen)
 {
     gGame.mode = GAME_MODE_ORIGINAL_EXCITEBIKE;
-    gGame.flags = (gGame.flags & ~0x80) | 0x40;
+    gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_CHOSEN) | GAME_FLAG_NES;
 }
 
-void shell_cb_stunt_course(s32 param_1)
+/* Item callback of Stunt Course. */
+void shell_cb_stunt_course(s32 chosen)
 {
-    if (param_1 != 0) {
-        Game *b = &gGame;
-        b->mode = GAME_MODE_STUNT_COURSE;
+    if (chosen != 0) {
+        Game *game = &gGame;
+        game->mode = GAME_MODE_STUNT_COURSE;
         gCurTrack = &gTracks[TRACK_STUNT_COURSE];
-        gGame.flags = gGame.flags & 0xffffff7f;
+        gGame.flags = gGame.flags & ~GAME_FLAG_TRACK_CHOSEN;
     }
 }
 
-s32 shell_pak_track_invalid(u32 *p, s32 n)
+/* The Controller Pak screen's validate callback for a user track: nonzero unless it is a note of
+   USER_TRACK_NOTE_SIZE whose first word is the checksum of the rest. */
+s32 shell_pak_track_invalid(u32 *note, s32 size)
 {
-    s32 r;
-    if (n != 0x400) {
+    s32 sum;
+    if (size != USER_TRACK_NOTE_SIZE) {
         return 1;
     }
-    r = calc_checksum24((u8 *)(p + 1), 0x3FC);
-    return r != *p;
+    sum = calc_checksum24((u8 *)(note + 1), USER_TRACK_NOTE_SIZE - 4);
+    return sum != *note;
 }
 
+/* Keeps the race's results (gEvent, the riders, the standings) in gGame while its replay plays (the results
+   screens have their own copies of this). */
 void shell_backup_race_results(void)
 {
     s32 i = 0;
@@ -5776,6 +5794,7 @@ void shell_backup_race_results(void)
     } while (i < 6);
 }
 
+/* Puts back the results shell_backup_race_results kept. */
 void shell_restore_race_results(void)
 {
     s32 i;
@@ -5791,54 +5810,56 @@ void shell_restore_race_results(void)
     }
 }
 
+/* track_page_open as a function. Not called. */
 s32 shell_is_round_screen_unlocked(Screen *screen)
 {
-    s32 mode;
-    s32 t;
+    s32 difficulty;
+    s32 open;
 
     if (gGame.mode == GAME_MODE_TIME_TRIAL || gGame.mode == GAME_MODE_EXHIBITION) {
-        mode = gSaveData.topDifficulty;
+        difficulty = gSaveData.topDifficulty;
     } else {
-        mode = gGame.difficulty;
+        difficulty = gGame.difficulty;
     }
-    if (mode == 2) {
+    if (difficulty == 2) {
         goto two;
     }
-    if (mode < 3) {
-        if (mode == 1) {
+    if (difficulty < 3) {
+        if (difficulty == 1) {
             goto one;
         }
         goto ret0;
     }
-    if (mode == 3) {
+    if (difficulty == 3) {
         goto ret1;
     }
     goto ret0;
 one:
-    t = screen->firstItem < 10;
+    open = screen->firstItem < 2 * TRACKS_PER_PAGE;
 tail:
-    if (t == 0) {
+    if (open == 0) {
         goto ret0;
     }
 ret1:
     return 1;
 two:
-    t = screen->firstItem < 0xF;
+    open = screen->firstItem < 3 * TRACKS_PER_PAGE;
     goto tail;
 ret0:
     return 0;
 }
 
+/* A screen's input: A or START to the main menu, B back. Not used by any screen type. */
 void shell_main_menu_or_back_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
-    s32 n;
+    s32 sound;
     Screen *back;
 
-    if ((*buttons & 0x50) != 0) {
+    if ((*buttons & (INPUT_A | INPUT_START)) != 0) {
         shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
-        n = 1;
+        sound = MENU_SOUND_SELECT;
     } else {
-        if ((*buttons & 0x20) == 0) {
+        if ((*buttons & INPUT_B) == 0) {
             return;
         }
         back = screen->back;
@@ -5846,48 +5867,51 @@ void shell_main_menu_or_back_input(Screen *screen, ScreenItem *item, u32 *button
             return;
         }
         shell_goto_screen(back, 0, 0);
-        n = 2;
+        sound = MENU_SOUND_BACK;
     }
-    snd_play_menu_sound(n);
+    snd_play_menu_sound(sound);
 }
 
 typedef struct {
     u8 pad[0x2BF];
-    u8 bits;
-    u8 mode;
+    u8 roundsWon;
+    u8 topDifficulty;
 } Save_6;
 
 extern Save_6 gSaveData_15;
 
-s32 shell_is_round_unlocked_tt(s32 p)
+/* Time trial: whether round n's tracks can be raced, by the highest difficulty reached (tt_track_open). Not
+   called. */
+s32 shell_is_round_unlocked_tt(s32 n)
 {
-    s32 v;
-    if (p == 0) goto one;
-    switch (gSaveData_15.mode) {
+    s32 won;
+    if (n == 0) goto one;
+    switch (gSaveData_15.topDifficulty) {
     case 1:
-        if (p >= 2) goto zero;
-        v = (gSaveData_15.bits >> (p - 1)) & 1;
+        if (n >= 2) goto zero;
+        won = (gSaveData_15.roundsWon >> (n - 1)) & 1;
         break;
     one:
         return 1;
     case 2:
-        if (p < 2) goto one;
-        if (p != 2) goto zero;
-        v = (gSaveData_15.bits >> (p - 1)) & 1;
+        if (n < 2) goto one;
+        if (n != 2) goto zero;
+        won = (gSaveData_15.roundsWon >> (n - 1)) & 1;
         break;
     case 3:
-        if (p < 3) goto one;
-        if (p != 3) goto zero;
-        v = (gSaveData_15.bits >> (p - 1)) & 1;
+        if (n < 3) goto one;
+        if (n != 3) goto zero;
+        won = (gSaveData_15.roundsWon >> (n - 1)) & 1;
         break;
     default:
         goto zero;
     }
-    if (v) goto one;
+    if (won) goto one;
 zero:
     return 0;
 }
 
+/* Whether the RSP's instruction memory starts with 0x17D7 (a leftover check; not called). */
 s32 shell_check_sp_imem_magic(void)
 {
     return *(u32 *)0xA4001000 == 0x17D7;
