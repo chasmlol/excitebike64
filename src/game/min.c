@@ -346,7 +346,7 @@ void race_exit(void)
     u32 frontendRace;
 
     rumble_stop_all();
-    if ((*(u32 *)(gCurTrack + 0x50) & TRACK_FLAG_USER) != 0 && (gGame.mode - MODE_TEST_RIDE) < 2) {
+    if ((gCurTrack_14->flags & TRACK_FLAG_USER) != 0 && (gGame.mode - MODE_TEST_RIDE) < 2) {
         mem_free(gUserTrackLayout);
         gUserTrackLayout = 0;
     }
@@ -412,7 +412,7 @@ void race_begin(void)
     gPauseMenu = PAUSE_NONE;
     if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == 0 && (gSaveData.options & SAVE_OPT_HIGH_RES) != 0 &&
         gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
-        gCurTrack_4->f2C != TRACK_ENV_DESERT && (gGame.flags & (GAME_LOW_RES | GAME_PODIUM)) == 0) {
+        gCurTrack_14->envType != TRACK_ENV_DESERT && (gGame.flags & (GAME_LOW_RES | GAME_PODIUM)) == 0) {
         gViModeRequest = VI_MODE_HI_RES;
     } else {
         gViModeRequest = VI_MODE_MED_RES;
@@ -421,7 +421,7 @@ void race_begin(void)
     }
     render_update_screen_layout();
     race_apply_volumes();
-    if (gCurTrack_4->f2C == TRACK_ENV_DESERT) {
+    if (gCurTrack_14->envType == TRACK_ENV_DESERT) {
         fractal_reset();
     }
     cam_init(gResourceSet);
@@ -439,7 +439,7 @@ void race_begin(void)
     flash_init_2();
     shadow_init();
     map_init();
-    if (gCurTrack_4->f2C == TRACK_ENV_OUTDOOR) {
+    if (gCurTrack_14->envType == TRACK_ENV_OUTDOOR) {
         tube_reset_objects();
     }
     gDrawFlags = gDrawFlags | DRAW_HUD;
@@ -1739,7 +1739,7 @@ void race_set_video_mode(void)
 {
     if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == 0 && (gSaveData.options & SAVE_OPT_HIGH_RES) != 0 &&
         gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
-        gCurTrack_3[11] != TRACK_ENV_DESERT && (gGame.flags & (GAME_LOW_RES | GAME_PODIUM)) == 0) {
+        gCurTrack_14->envType != TRACK_ENV_DESERT && (gGame.flags & (GAME_LOW_RES | GAME_PODIUM)) == 0) {
         gViModeRequest = VI_MODE_HI_RES;
     } else {
         gViModeRequest = VI_MODE_MED_RES;

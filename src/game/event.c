@@ -438,18 +438,18 @@ s32 event_check_record_time(Rider *rider)
     u8 best = 0;
     s32 i;
     s32 j;
-    s32 *track;
+    TrackInfo *track;
     u8 *src;
 
     if (rider->isCpu != 0) goto done;
     if (gReplayPlayback != 0) goto done;
     /* the custom round: the cup's index (/ sizeof(Cup)) is 5 */
     if (gGame.mode == MODE_SEASON && gSeason != 0 && (((s32)gSeason->cup - (s32)gCups) * 0x38E38E39 >> 2) == 5) goto done;
-    track = gCurTrack_3;
-    if (track[0x50 / 4] & TRACK_FLAG_USER) goto done;
+    track = gCurTrack_28;
+    if (track->flags & TRACK_FLAG_USER) goto done;
     if (gEvent.time >= gEvent.record.times[2]) goto done;
     if (gGame.mode == MODE_TIME_TRIAL && rider != &gRiders[gTimeTrialPlayer]) goto done;
-    if (gGame.numLaps != *(s16 *)((u8 *)track + 0x1E)) goto done; /* the track's laps */
+    if (gGame.numLaps != track->numLaps) goto done;
 
     best = gEvent.time < gEvent.record.times[0];
     for (i = 0; i < 3; i++) {
@@ -467,7 +467,7 @@ s32 event_check_record_time(Rider *rider)
     gEvent.record.initials[i][0] = 0xFF;
     gEvent.record.initials[i][1] = 0xFF;
     gEvent.record.initials[i][2] = (gGame.mode == MODE_TIME_TRIAL) ? 0 : (u8)(rider - gRiders);
-    gCurTrack_3[0x50 / 4] |= TRACK_FLAG_NEW_TIME;
+    gCurTrack_28->flags |= TRACK_FLAG_NEW_TIME;
     if (best) announce_record(rider - gRiders);
 done:
     return best;
