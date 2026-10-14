@@ -1663,30 +1663,32 @@ void shell_season_select_input(Screen *screen, ScreenItem *item, u32 *buttons, P
 
 typedef struct {
     u8 pad[0x2BF];
-    u8 mask;
-    u8 cup;
+    u8 roundsWon;
+    u8 topDifficulty;
 } Save_4;
 
 extern Save_4 gSaveData_10;
 
+/* Whether the tracks of round n (0 Bronze .. 3 Platinum) can be raced outside a season: at the highest difficulty
+   reached, round 0 or one whose previous round was won; below it, by that difficulty. */
 s32 shell_is_round_unlocked(s32 n)
 {
-    if (gGame.difficulty == gSaveData_10.cup) {
-        s32 r = 0;
-        if (n == 0 || ((gSaveData_10.mask >> (n - 1)) & 1)) {
-            r = 1;
+    if (gGame.difficulty == gSaveData_10.topDifficulty) {
+        s32 unlocked = 0;
+        if (n == 0 || ((gSaveData_10.roundsWon >> (n - 1)) & 1)) {
+            unlocked = 1;
         }
-        return r;
+        return unlocked;
     }
-    switch (gSaveData_10.cup) {
+    switch (gSaveData_10.topDifficulty) {
     case 1:
-        if (n < 2 && ((gSaveData_10.mask >> (n - 1)) & 1)) return 1;
+        if (n < 2 && ((gSaveData_10.roundsWon >> (n - 1)) & 1)) return 1;
         break;
     case 2:
-        if (n < 2 || (n == 2 && ((gSaveData_10.mask >> (n - 1)) & 1))) return 1;
+        if (n < 2 || (n == 2 && ((gSaveData_10.roundsWon >> (n - 1)) & 1))) return 1;
         break;
     case 3:
-        if (n < 3 || (n == 3 && ((gSaveData_10.mask >> (n - 1)) & 1))) return 1;
+        if (n < 3 || (n == 3 && ((gSaveData_10.roundsWon >> (n - 1)) & 1))) return 1;
         break;
     }
     return 0;
@@ -1694,26 +1696,28 @@ s32 shell_is_round_unlocked(s32 n)
 
 typedef struct {
     u8 pad0[0x2C0];
-    u8 b2C0;
+    u8 topDifficulty;
     u8 pad2C1[3];
-    u8 b2C4;
+    u8 options;         /* SAVE_OPTION_* */
 } S1900;
 
 extern S1900 gSaveData_11;
 
-static inline s32 canGo(Screen *n) {
-    s32 k;
+/* Whether a track list screen (a round's page) can be scrolled to: by the difficulty (exhibition and time trial:
+   the highest reached), 1 Bronze and Silver, 2 up to Gold, 3 all. */
+static inline s32 track_page_open(Screen *page) {
+    s32 difficulty;
     if (gGame.mode == GAME_MODE_TIME_TRIAL || gGame.mode == GAME_MODE_EXHIBITION) {
-        k = gSaveData_11.b2C0;
+        difficulty = gSaveData_11.topDifficulty;
     } else {
-        k = gGame.difficulty;
+        difficulty = gGame.difficulty;
     }
-    switch (k) {
+    switch (difficulty) {
     case 1:
-        if (n->firstItem < 10) return 1;
+        if (page->firstItem < 2 * TRACKS_PER_PAGE) return 1;
         break;
     case 2:
-        if (n->firstItem < 15) return 1;
+        if (page->firstItem < 3 * TRACKS_PER_PAGE) return 1;
         break;
     case 3:
         return 1;
@@ -1724,37 +1728,39 @@ static inline s32 canGo(Screen *n) {
 /* sCurScreen again: the read takes its own lui, which the stores below do not share */
 extern Screen *sCurScreen_2;
 
+/* The list screens (main menu, special tracks, the track lists): up and down move the cursor, left and right go
+   between the track lists, A chooses. Some items ask first: the difficulty popup, the ghost prompt, the user
+   track's prompts (race or edit it, load it from the Game Pak or a Controller Pak) and the number of players
+   popup. L + C-down + C-right held with A on the main menu opens the cheat entry. */
 void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
-    s32 snd;
-    s32 m;
-    s32 b;
-    s32 s;
-    s32 v;
+    s32 playSelect;
+    s32 mode;
+    s32 pressed;
+    s32 state;
+    s32 numConts;
     Screen *prev;
-    Screen *n;
-    s32 k;
-    s32 ok;
 
     gGame.unk_29C = D_800CDB5C;
     gGame.unk_2A0 = D_800CDB60;
-    D_800CDB60 -= (gPadInput & 3) ? ((gPadInput & 1) ? (s32)(gPadInput >> 28) / 6.0f : -(s32)(gPadInput >> 28) / 6.0f) : 0.0f;
+    D_800CDB60 -= (gPadInput & (INPUT_UP | INPUT_DOWN)) ? ((gPadInput & INPUT_UP) ? (s32)(gPadInput >> 28) / 6.0f : -(s32)(gPadInput >> 28) / 6.0f) : 0.0f;
     if (++gGame.menuAnimTimer == 60) gGame.menuAnimTimer = 0;
     if (++gGame.blinkTimer == 64) gGame.blinkTimer = 0;
-    b = *buttons;
-    if (b & 0x50) {
-        snd = MENU_SOUND_MOVE;
+    pressed = *buttons;
+    if (pressed & (INPUT_A | INPUT_START)) {
+        playSelect = 0;
         if (!(item->flags & SCREEN_ITEM_LOCKED)) {
-            snd = MENU_SOUND_SELECT;
+            playSelect = 1;
         } else {
             snd_play_menu_sound(MENU_SOUND_ERROR);
         }
-        if (screen - sScreens == SCREEN_MAIN_MENU && (gPadInput & 0x8500) == 0x8500) {
+        if (screen - sScreens == SCREEN_MAIN_MENU
+            && (gPadInput & (INPUT_L | INPUT_C_RIGHT | INPUT_C_DOWN)) == (INPUT_L | INPUT_C_RIGHT | INPUT_C_DOWN)) {
             shell_goto_screen(&sScreens[SCREEN_CHEAT_ENTRY], 1, 0);
         } else if ((item->flags & SCREEN_ITEM_ASK_GHOST) && gGame.screenState != SCREEN_STATE_ASK_GHOST) {
             gGame.screenState = SCREEN_STATE_ASK_GHOST;
             gGame.dialogSel = 0;
         } else if ((item->flags & SCREEN_ITEM_ASK_USER_TRACK) && gGame.screenState != SCREEN_STATE_USER_TRACK_DIFFICULTY && gGame.screenState != SCREEN_STATE_ASK_USER_TRACK
-                   && gGame.screenState != SCREEN_STATE_ASK_TRACK_SOURCE && !(gGame.flags & 0x200)) {
+                   && gGame.screenState != SCREEN_STATE_ASK_TRACK_SOURCE && !(gGame.flags & GAME_FLAG_PLAYERS_POPUP)) {
             if (!(item->flags & SCREEN_ITEM_LOCKED)) {
                 gGame.screenState = SCREEN_STATE_ASK_USER_TRACK;
                 gGame.dialogSel = 0;
@@ -1762,38 +1768,41 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
         } else if (gGame.screenState == SCREEN_STATE_USER_TRACK_DIFFICULTY) {
             gGame.mode = GAME_MODE_EXHIBITION;
             gGame.screenState = SCREEN_STATE_NORMAL;
-            gGame.flags |= 0x200;
+            gGame.flags |= GAME_FLAG_PLAYERS_POPUP;
         } else if (!(item->flags & SCREEN_ITEM_ASK_PLAYERS) || gGame.screenState == SCREEN_STATE_DIFFICULTY) {
           if (!(item->flags & SCREEN_ITEM_LOCKED)) {
             if (gGame.screenState == SCREEN_STATE_ASK_GHOST && gGame.dialogSel == 1) {
+                /* Load Saved Ghost Data */
                 gGame.pakScreenMode = PAK_SCREEN_LOAD_GHOST;
                 shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
-            } else if (gGame.screenState == SCREEN_STATE_ASK_TRACK_SOURCE && !(gGame.flags & 0x200)) {
+            } else if (gGame.screenState == SCREEN_STATE_ASK_TRACK_SOURCE && !(gGame.flags & GAME_FLAG_PLAYERS_POPUP)) {
                 gGame.screenState = SCREEN_STATE_USER_TRACK_DIFFICULTY;
                 if (gGame.difficulty == 0) {
                     gGame.difficulty = 1;
                 }
             } else if (gGame.screenState == SCREEN_STATE_ASK_USER_TRACK && gGame.dialogSel == 0) {
+                /* Race Saved Track: from where (the Game Pak only when a track is saved there) */
                 gGame.screenState = SCREEN_STATE_ASK_TRACK_SOURCE;
-                if (gSaveData_11.b2C4 & 8) {
+                if (gSaveData_11.options & SAVE_OPTION_USER_TRACK) {
                     gGame.dialogSel = 0;
                 } else {
                     gGame.dialogSel = 1;
                 }
             } else {
-                if (gGame.flags & 0x200) {
+                if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
+                    /* the user track: load it from a Controller Pak, or from the Game Pak's save */
                     if (gGame.dialogSel != 0) {
-                        gGame.flags |= 0x2000000;
+                        gGame.flags |= GAME_FLAG_RACE_PAK_TRACK;
                         gGame.pakScreenMode = PAK_SCREEN_LOAD_USER_TRACK;
-                        gGame.flags &= ~0x20;
+                        gGame.flags &= ~GAME_FLAG_EDITOR;
                         shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
                     } else {
                         gCurTrack = &gTracks[TRACK_USER];
                         shell_goto_screen(&sScreens[SCREEN_RIDER_SELECT], 1, 1);
                         usrtrk_load_layout(gSaveData.userTrack);
                         gGame.mode = GAME_MODE_EXHIBITION;
-                        gGame.flags &= ~0x80;
-                        gGame.flags &= ~0x20;
+                        gGame.flags &= ~GAME_FLAG_TRACK_CHOSEN;
+                        gGame.flags &= ~GAME_FLAG_EDITOR;
                     }
                 }
                 if (gGame.screenState == SCREEN_STATE_DIFFICULTY && gGame.difficulty == 0) {
@@ -1809,43 +1818,46 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                 gGame.difficulty = 1;
             }
         }
-        if (snd) {
+        if (playSelect) {
             snd_play_menu_sound(MENU_SOUND_SELECT);
         }
-    } else if (b & 0x20) {
-        if (gGame.flags & 0x200) {
+    } else if (pressed & INPUT_B) {
+        if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
             gGame.screenState = SCREEN_STATE_USER_TRACK_DIFFICULTY;
             snd_play_menu_sound(MENU_SOUND_BACK);
-            gGame.flags &= ~0x200;
-            gGame.flags &= ~0x20;
+            gGame.flags &= ~GAME_FLAG_PLAYERS_POPUP;
+            gGame.flags &= ~GAME_FLAG_EDITOR;
             return;
         }
-        s = gGame.screenState;
-        if (s == 16) {
+        state = gGame.screenState;
+        if (state == SCREEN_STATE_USER_TRACK_DIFFICULTY) {
             gGame.screenState = SCREEN_STATE_ASK_TRACK_SOURCE;
-        } else if (s == 8 || s == 5 || s == 9 || s == 10) {
+        } else if (state == SCREEN_STATE_ASK_GHOST || state == SCREEN_STATE_DIFFICULTY
+                   || state == SCREEN_STATE_ASK_USER_TRACK || state == SCREEN_STATE_ASK_TRACK_SOURCE) {
             snd_play_menu_sound(MENU_SOUND_BACK);
             gGame.screenState = SCREEN_STATE_NORMAL;
-            gGame.flags &= ~0x20;
+            gGame.flags &= ~GAME_FLAG_EDITOR;
         } else if (screen->back) {
             snd_play_menu_sound(MENU_SOUND_BACK);
             shell_goto_screen(screen->back, 0, 0);
         } else {
             snd_play_menu_sound(MENU_SOUND_ERROR);
         }
-    } else if (gGame.flags & 0x200) {
-        m = gGame.mode;
-        if (m == 2) {
+    } else if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
+        /* the number of players, by the mode and the controllers connected */
+        mode = gGame.mode;
+        if (mode == GAME_MODE_SOCCER) {
+            /* 2 or 4 */
             if (gContCount < 2) {
                 snd_play_menu_sound(MENU_SOUND_BACK);
-                gGame.flags &= ~0x200;
+                gGame.flags &= ~GAME_FLAG_PLAYERS_POPUP;
             } else if (gGame.numPlayers == 0) {
                 gGame.numPlayers = 2;
             } else if (gContCount < 4 && gGame.numPlayers == 4) {
                 snd_play_menu_sound(MENU_SOUND_MOVE);
                 gGame.numPlayers = 2;
             }
-            if (gContCount == 4 && (*buttons & 3)) {
+            if (gContCount == 4 && (*buttons & (INPUT_UP | INPUT_DOWN))) {
                 snd_play_menu_sound(MENU_SOUND_MOVE);
                 if (gGame.numPlayers == 2) {
                     gGame.numPlayers = 4;
@@ -1853,19 +1865,20 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                     gGame.numPlayers = 2;
                 }
             }
-        } else if (m == 7 || m == 10) {
+        } else if (mode == GAME_MODE_HILL_CLIMB || mode == GAME_MODE_STUNT_COURSE) {
+            /* 1 or 2 */
             if (gGame.numPlayers == 0 || gContMask == 0) {
                 gGame.numPlayers = 1;
             } else {
-                s32 o = gGame.numPlayers;
-                if (gContCount < o) {
+                s32 oldNum = gGame.numPlayers;
+                if (gContCount < oldNum) {
                     gGame.numPlayers = gContCount;
-                } else if (b & 3) {
-                    gGame.numPlayers = (o & 1) + 1;
+                } else if (pressed & (INPUT_UP | INPUT_DOWN)) {
+                    gGame.numPlayers = (oldNum & 1) + 1;
                     if (gContCount == 1) {
                         gGame.numPlayers = 1;
                     }
-                    if (gGame.numPlayers != o) {
+                    if (gGame.numPlayers != oldNum) {
                         snd_play_menu_sound(MENU_SOUND_MOVE);
                     }
                 }
@@ -1873,42 +1886,44 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
         } else if (gContMask == 0) {
             gGame.numPlayers = 1;
         } else {
+            /* 1 to the controllers connected */
             if (gGame.numPlayers == 0) {
                 gGame.numPlayers = 1;
             }
-            v = gContCount;
-            if (v < gGame.numPlayers) {
-                gGame.numPlayers = v;
+            numConts = gContCount;
+            if (numConts < gGame.numPlayers) {
+                gGame.numPlayers = numConts;
             }
-            if (*buttons & 1) {
-                s32 old = gGame.numPlayers;
-                if ((gGame.numPlayers = old - 1) <= 0) {
-                    gGame.numPlayers = v;
+            if (*buttons & INPUT_UP) {
+                s32 oldNum = gGame.numPlayers;
+                if ((gGame.numPlayers = oldNum - 1) <= 0) {
+                    gGame.numPlayers = numConts;
                 }
-                if (gGame.numPlayers != old) {
+                if (gGame.numPlayers != oldNum) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             }
-            if (*buttons & 2) {
-                s32 old = gGame.numPlayers;
-                gGame.numPlayers = old + 1;
-                if (gContCount < old + 1) {
+            if (*buttons & INPUT_DOWN) {
+                s32 oldNum = gGame.numPlayers;
+                gGame.numPlayers = oldNum + 1;
+                if (gContCount < oldNum + 1) {
                     gGame.numPlayers = 1;
                 }
-                if (gGame.numPlayers != old) {
+                if (gGame.numPlayers != oldNum) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             }
             if (gGame.mode == GAME_MODE_EXHIBITION && gGame.numPlayers == 2) {
-                if (*buttons & 4) {
-                    s32 old;
+                /* two players: left and right pick 0-2 CPU riders */
+                if (*buttons & INPUT_LEFT) {
+                    s32 oldNum;
                     snd_play_menu_sound(MENU_SOUND_MOVE);
-                    old = gGame.twoPlayerCpuRiders;
-                    if ((gGame.twoPlayerCpuRiders = old - 1) < 0) {
-                        gGame.twoPlayerCpuRiders = old + 2;
+                    oldNum = gGame.twoPlayerCpuRiders;
+                    if ((gGame.twoPlayerCpuRiders = oldNum - 1) < 0) {
+                        gGame.twoPlayerCpuRiders = oldNum + 2;
                     }
                 }
-                if (*buttons & 8) {
+                if (*buttons & INPUT_RIGHT) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                     if (++gGame.twoPlayerCpuRiders >= 3) {
                         gGame.twoPlayerCpuRiders -= 3;
@@ -1917,64 +1932,68 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
             }
         }
     } else {
-        s = gGame.screenState;
-        if ((u32)(s - 8) < 3) {
-            if ((s != 10 || (gSaveData_11.b2C4 & 8)) && (b & 3)) {
+        state = gGame.screenState;
+        if ((u32)(state - SCREEN_STATE_ASK_GHOST) < 3) {
+            /* a two-choice prompt (the Game Pak choice only with a track saved there) */
+            if ((state != SCREEN_STATE_ASK_TRACK_SOURCE || (gSaveData_11.options & SAVE_OPTION_USER_TRACK))
+                && (pressed & (INPUT_UP | INPUT_DOWN))) {
                 snd_play_menu_sound(MENU_SOUND_MOVE);
                 gGame.dialogSel ^= 1;
             }
             return;
         }
-        if (b & 1) {
-            if ((s == 16 || s == 5) && gSaveData_11.b2C0) {
-                s32 old = gGame.difficulty;
-                if ((gGame.difficulty = old - 1) < 0) {
-                    gGame.difficulty = gSaveData_11.b2C0;
-                } else if (gGame.difficulty == 0 && ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) || s == 16)) {
-                    gGame.difficulty = gSaveData_11.b2C0;
+        if (pressed & INPUT_UP) {
+            if ((state == SCREEN_STATE_USER_TRACK_DIFFICULTY || state == SCREEN_STATE_DIFFICULTY) && gSaveData_11.topDifficulty) {
+                /* the difficulty, up to the highest reached */
+                s32 oldDifficulty = gGame.difficulty;
+                if ((gGame.difficulty = oldDifficulty - 1) < 0) {
+                    gGame.difficulty = gSaveData_11.topDifficulty;
+                } else if (gGame.difficulty == 0 && ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) || state == SCREEN_STATE_USER_TRACK_DIFFICULTY)) {
+                    gGame.difficulty = gSaveData_11.topDifficulty;
                 }
-                if (gGame.difficulty != old) {
+                if (gGame.difficulty != oldDifficulty) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             } else {
-                s32 old = *screen->cursor;
-                if ((*screen->cursor = old - 1) < 0) {
+                s32 oldCursor = *screen->cursor;
+                if ((*screen->cursor = oldCursor - 1) < 0) {
                     *screen->cursor = screen->numItems - 1;
                 }
-                if (*screen->cursor != old) {
+                if (*screen->cursor != oldCursor) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             }
         }
-        if (*buttons & 2) {
-            s32 t = gGame.screenState;
-            if ((t == 16 || t == 5) && gSaveData_11.b2C0) {
-                s32 old = gGame.difficulty;
-                gGame.difficulty = old + 1;
-                if (gSaveData_11.b2C0 < old + 1) {
-                    if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) || t == 16) {
+        if (*buttons & INPUT_DOWN) {
+            s32 state2 = gGame.screenState;
+            if ((state2 == SCREEN_STATE_USER_TRACK_DIFFICULTY || state2 == SCREEN_STATE_DIFFICULTY) && gSaveData_11.topDifficulty) {
+                s32 oldDifficulty = gGame.difficulty;
+                gGame.difficulty = oldDifficulty + 1;
+                if (gSaveData_11.topDifficulty < oldDifficulty + 1) {
+                    if ((item->flags & SCREEN_ITEM_NEED_DIFFICULTY) || state2 == SCREEN_STATE_USER_TRACK_DIFFICULTY) {
                         gGame.difficulty = 1;
                     } else {
                         gGame.difficulty = 0;
                     }
                 }
-                if (gGame.difficulty != old) {
+                if (gGame.difficulty != oldDifficulty) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             } else {
-                s32 old = *screen->cursor;
-                *screen->cursor = old + 1;
-                if (old + 1 >= screen->numItems) {
+                s32 oldCursor = *screen->cursor;
+                *screen->cursor = oldCursor + 1;
+                if (oldCursor + 1 >= screen->numItems) {
                     *screen->cursor = 0;
                 }
-                if (*screen->cursor != old) {
+                if (*screen->cursor != oldCursor) {
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             }
         }
         if (gGame.fadeState != 1) {
+            /* left and right: the neighbouring screen of the row (the track lists) */
             prev = sCurScreen_2;
-            if (*buttons & 4) {
+            if (*buttons & INPUT_LEFT) {
                 if (screen->left == NULL) {
                     if (screen->right) {
                         sCurScreen = screen;
@@ -1984,13 +2003,13 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
                     sCurScreen = screen;
                 }
             }
-            if (*buttons & 8) {
+            if (*buttons & INPUT_RIGHT) {
                 if (screen->right == NULL) {
                     if (screen->left) {
                         sCurScreen = screen;
                     }
                 } else {
-                    if (canGo(screen->right)) {
+                    if (track_page_open(screen->right)) {
                         screen = screen->right;
                     }
                     sCurScreen = screen;
@@ -2003,33 +2022,34 @@ void shell_list_menu_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16
     }
 }
 
-void shell_filter_stick_dirs(u32 *p)
+/* With SCREEN_STICK_FILTER: keeps only the stronger axis of each controller's stick, and drops both under 7. */
+void shell_filter_stick_dirs(u32 *pads)
 {
-    u32 v;
-    s8 a2;
-    s8 a1;
-    s8 a3;
+    u32 input;
+    s8 x;
+    s8 y;
+    s8 y2;
     s32 i;
 
-    for (i = 0; i < 4; i++) {
-        v = *p;
-        a2 = (v >> 24) & 0xF;
-        a1 = v >> 28;
-        a3 = a1;
-        if (a2 < 7) {
-            *p = v & 0xFFFFFFF3;
-            a2 = 0;
+    for (i = 0; i < MAXCONTROLLERS; i++) {
+        input = *pads;
+        x = (input >> 24) & 0xF;
+        y = input >> 28;
+        y2 = y;
+        if (x < 7) {
+            *pads = input & ~(INPUT_LEFT | INPUT_RIGHT);
+            x = 0;
         }
-        if (a1 < 7) {
-            *p = *p & 0xFFFFFFFC;
-            a3 = 0;
+        if (y < 7) {
+            *pads = *pads & ~(INPUT_UP | INPUT_DOWN);
+            y2 = 0;
         }
-        if (a2 < a3) {
-            *p = *p & 0xFFFFFFF3;
-        } else if (a3 < a2) {
-            *p = *p & 0xFFFFFFFC;
+        if (x < y2) {
+            *pads = *pads & ~(INPUT_LEFT | INPUT_RIGHT);
+        } else if (y2 < x) {
+            *pads = *pads & ~(INPUT_UP | INPUT_DOWN);
         }
-        p++;
+        pads++;
     }
 }
 
