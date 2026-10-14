@@ -232,8 +232,8 @@ Gfx *nes_draw_setup(s32 gfxCtx, s32 fb, Gfx *gdl)
     }
     {
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
-        gDPSetRenderMode(gdl++, 0x0C084000, 0);          /* G_RM_OPA_SURF */
-        gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);     /* G_CC_DECALRGB, G_CC_DECALRGB */
+        gDPSetRenderMode(gdl++, G_RM_OPA_SURF, 0);
+        gDPSetCombineMode(gdl++, G_CC_DECALRGB, G_CC_DECALRGB);
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetTextureFilter(gdl++, G_TF_POINT);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -259,12 +259,8 @@ void nes_draw_frame(s32 gfxCtx, s32 fb, Gfx **pgdl)
         *pgdl = sNesGfx;
         return;
     }
-    {
-        /* gDPSetScissor(G_SC_NON_INTERLACE, 36, 0, 284, 240): the NES picture without its leftmost 8 pixels */
-        Gfx *g = sNesGfx++;
-        g->words.w0 = 0xED090000;
-        g->words.w1 = 0x4703C0;
-    }
+    /* the NES picture without its leftmost 8 pixels */
+    gDPSetScissor(sNesGfx++, G_SC_NON_INTERLACE, 36, 0, 284, 240);
     sNesBgTlutLoaded = 0;
     sNesLastTileKey = -1;
     nes_run_frame();
@@ -320,12 +316,7 @@ void nes_draw_frame(s32 gfxCtx, s32 fb, Gfx **pgdl)
         /* PPUMASK's top 3 bits index a table of 4 colours: values 4-7 read the words after it */
         t = NES->mem[NES_PPUMASK] >> NES_PPUMASK_EMPHASIS_SHIFT;
         gDPSetFillColor(sNesGfx++, sNesBorderColors[t]);
-        {
-            /* gDPFillRectangle(36, 0, 284, 240) */
-            Gfx *g = sNesGfx++;
-            g->words.w0 = 0xF64703C0;
-            g->words.w1 = 0x90000;
-        }
+        gDPFillRectangle(sNesGfx++, 36, 0, 284, 240);
         gDPPipeSync(sNesGfx++);
         gDPSetCycleType(sNesGfx++, G_CYC_1CYCLE);
     }
@@ -464,8 +455,8 @@ void nes_draw_sprites(s32 instrPerFrame)
     if (nes->mem[NES_PPUMASK] & NES_PPUMASK_SPRITES) {
         tiles = sNesChrTiles;
         gDPPipeSync(sNesGfx++);
-        gDPSetRenderMode(sNesGfx++, 0x0C087008, 0);         /* G_RM_TEX_EDGE */
-        gDPSetCombine(sNesGfx++, 0xFFFFFF, 0xFFFCF279);    /* G_CC_DECALRGBA, G_CC_DECALRGBA */
+        gDPSetRenderMode(sNesGfx++, G_RM_TEX_EDGE, 0);
+        gDPSetCombineMode(sNesGfx++, G_CC_DECALRGBA, G_CC_DECALRGBA);
         gDPSetAlphaCompare(sNesGfx++, G_AC_THRESHOLD);
         if (nes->mem[NES_PPUCTRL] & NES_PPUCTRL_SPR_TABLE) {
             tiles += NES_TILES_TABLE_SIZE;
