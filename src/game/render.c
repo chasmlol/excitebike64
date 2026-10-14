@@ -163,7 +163,7 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
             m = (u32 *)((u32)res_load(r, id) & ~3);
             skel_make_verts_bone_local(gRiderSkelTemplate, m);
             buf[0] = (s32)gRiderGfx_2[n].f0;
-            gPrimBoneMtx = 0x06000000;
+            gPrimBoneMtx = (Mtx *)0x06000000;
             buf[1] = (s32)gRiderGfx_2[n].f4;
             if (gPodiumMode != 0) {
                 prim_alloc_seg_dl(&sRiderModelCache[arg5].a[k], m, (s32)buf, 0xC);
@@ -177,7 +177,7 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
             memcpy(x, (void *)m[1], m[0] << 4);
             if (k == 0 && n == 0) {
                 m[1] = 0x01000000;
-                gPrimBoneMtx = 0x06000000;
+                gPrimBoneMtx = (Mtx *)0x06000000;
                 len = (u32)prim_build_dl(0x23, m, 0, gZBuffer) - (u32)gZBuffer;
                 x = mem_alloc_dbg(len, 0, D_800D5EBC, 0x2A0);
                 gRiderGfx_2[0].f220 = x;
@@ -492,7 +492,7 @@ void render_init(void) {
             for (j = 0; j < 2; j++) {
                 prim_alloc_seg_dl(&D_800DC110[i][j], D_800E1900[i].p[j], D_800DC158, 0);
             }
-            size = prim_build_dl_2(3, D_800E1900[i].p[1], 0, gZBuffer) - gZBuffer;
+            size = (s32)prim_build_dl(3, D_800E1900[i].p[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
             D_800E16C0[i] = mem_alloc_dbg(size, 0, D_800D5EBC, 0x434);
             memcpy(D_800E16C0[i], gZBuffer, size);
         }
@@ -1924,7 +1924,7 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                     }
                 }
                 if (gRiderGfx_6[j].fA54 != 0) {
-                    gPrimBoneMtx = gRiderGfx_6[j].fA4C + vp * 0xC0;
+                    gPrimBoneMtx = (Mtx *)(gRiderGfx_6[j].fA4C + vp * 0xC0);
                     if (!(gCheatFlags & 0x20)) {
                         if (gGame_16.w0 & 0x10) {
                             segs = D_800E1600_2[j];

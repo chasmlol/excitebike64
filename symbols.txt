@@ -161,7 +161,6 @@ quat_mul                              game  0x80013C20  func    0x11c
 func_80013D3C                         game  0x80013D3C  func      0x8
 cic_is_6103                           game  0x80013D50  func     0x14
 prim_build_dl                         game  0x80013D70  func    0xa54
-prim_build_dl_2                       game  0x80013D70  func        -  prim_build_dl
 prim_build_dl_3                       game  0x80013D70  func        -  prim_build_dl
 prim_animate_textures                 game  0x800147C4  func    0x184
 prim_flip_images                      game  0x80014948  func    0x120

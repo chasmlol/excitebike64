@@ -170,21 +170,20 @@ f32 func_80013D3C(f32 x);
 s32 cic_is_6103(void);
 
 /* src/game/prim.c */
-Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl);
-s32 prim_build_dl_2(s32, void *, s32, s32);
-void prim_animate_textures(u32 *param_1, s32 param_2);
-void prim_flip_images(ImgSet *s);
+Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **sets, Gfx *gdl);
+void prim_animate_textures(TexSet *set, s32 frame);
+void prim_flip_images(TexSet *set);
 void prim_set_tex_mode_callback(s32 a0);
 void prim_set_tex_addr_callback(s32 a0);
 void prim_init(void);
 void prim_exit(void);
 void func_80014AD8(s32 x);
-void prim_alloc_seg_dl(void **param_1, u32 *param_2, s32 param_3, u32 param_4);
-void prim_alloc_dl(u32 *p1, u32 a1, u32 a2, u32 a3);
+void prim_alloc_seg_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags);
+void prim_alloc_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags);
 void prim_flip_image_rows(u8 *p, s32 stride, s32 rows);
-void prim_pkg_unrelocate(Hdr **pp);
-void prim_pkg_relocate(Hdr **pp);
-void prim_n64_relocate(u32 *p);
+void prim_pkg_unrelocate(TexSet **pp);
+void prim_pkg_relocate(TexSet **pp);
+void prim_n64_relocate(PrimModel **pp);
 s32 prim_find_nearest_color(u16 *p, s32 r, s32 g, s32 b, s32 flag, s32 n);
 
 /* src/game/min.c */
