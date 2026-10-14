@@ -276,7 +276,7 @@ void particles_emit_bike_dirt(void)
             } else if (b->f5CF == 2) {
                 bC = 1;
             }
-            if (bB && (gCamZoneState & 1)) {
+            if (bB && (gCamZoneState[0].flags & 1)) {
                 bC = 1;
             }
             if (bC) {
@@ -837,7 +837,7 @@ Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf) {
     Vec3i vel;
     volatile s32 vv;
 
-    if (sRainEnabled == 0 || (!(gCamZoneState & 1) && (gCamSegFlags & 0x40))) {
+    if (sRainEnabled == 0 || (!(gCamZoneState[0].flags & 1) && (gCamSegFlags[0] & 0x40))) {
         return gdl;
     }
     gdl = render_set_viewport_2(gdl, mtx, 0);

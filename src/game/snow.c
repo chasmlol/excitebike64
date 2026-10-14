@@ -76,7 +76,7 @@ Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2)
 }
 
 static inline void respawn(Snowflake *p, s32 k) {
-    if (gCamSegFlags & 0x40) {
+    if (gCamSegFlags[0] & 0x40) {
         p->visible = 0;
     } else {
         p->visible = 1;
@@ -177,7 +177,7 @@ void snow_respawn_flake(Snowflake *flake)
     s32 x;
     u32 u;
 
-    if (gCamSegFlags & 0x40) {
+    if (gCamSegFlags[0] & 0x40) {
         flake->visible = 0;
     } else {
         flake->visible = 1;

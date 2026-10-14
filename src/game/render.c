@@ -707,8 +707,8 @@ s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 k, s32 c, s32 q, s32 n)
             return 0;
         }
     } else {
-        if (project_to_screen((x - gCamPos_3[k][0]) >> 4, (y - gCamPos_3[k][1]) >> 4,
-                          (z - gCamPos_3[k][2]) >> 4, &sx, &sy, &sz, &d, q, k) != 0) {
+        if (project_to_screen((x - gCamPos[k].x) >> 4, (y - gCamPos[k].y) >> 4,
+                          (z - gCamPos[k].z) >> 4, &sx, &sy, &sz, &d, q, k) != 0) {
             return 0;
         }
     }

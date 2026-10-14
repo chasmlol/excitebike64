@@ -844,7 +844,7 @@ void snd_drain(void)
                 if (gPauseMenu != 0) goto c1;
                 if (gNumScreens != 1) goto c1;
                 a = 1;
-                if (gCamSegFlags & 0x40) goto c1;
+                if (gCamSegFlags[0] & 0x40) goto c1;
             z1:
                 a = 0;
             c1:
@@ -869,7 +869,7 @@ void snd_drain(void)
                 if (gPauseMenu != 0) goto c2;
                 if (gNumScreens != 1) goto c2;
                 a = 1;
-                if (gCamSegFlags & 0x40) goto c2;
+                if (gCamSegFlags[0] & 0x40) goto c2;
             z2:
                 a = 0;
             c2:
@@ -1045,7 +1045,7 @@ void snd_service(void)
         dma_update();
         tunes_update();
         sSndServiceBusy = 0;
-        if (sSndRaceLoaded == 0 || gPauseMenu != 0 || gNumScreens != 1 || !(gCamSegFlags & 0x40)) {
+        if (sSndRaceLoaded == 0 || gPauseMenu != 0 || gNumScreens != 1 || !(gCamSegFlags[0] & 0x40)) {
             flag = 0;
         } else {
             flag = 1;

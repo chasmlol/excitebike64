@@ -315,11 +315,11 @@ void arn_cull_models(TrackModelList *list, s32 p, s32 strict, s16 *slots, s32 ns
             slots[sn] = -1;
         }
     }
-    cam0 = gCamPos_3[p][0] >> 4;
+    cam0 = gCamPos[p].x >> 4;
     sn = gCosTable[(gCamYaw[p] >> 4) & 0xFFF];
     cs = gCosTable[((gCamYaw[p] >> 4) - 0x400) & 0xFFF];
-    cam1 = gCamPos_3[p][1] >> 4;
-    cam2 = gCamPos_3[p][2] >> 4;
+    cam1 = gCamPos[p].y >> 4;
+    cam2 = gCamPos[p].z >> 4;
     for (i = 0; i < list->count; i++) {
         rec = &list->e[i];
         ex = ((rec->x1 + rec->x0) >> 1) - cam0;

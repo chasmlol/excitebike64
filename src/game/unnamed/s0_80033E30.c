@@ -273,7 +273,7 @@ s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view)
 
     if (gSkyMode == 1) {
         t = (gViewRects[0][0].w << 7) / sSkyScaleX[view];
-        x = (s16)(D_800E8002 - 0x7AEC);
+        x = (s16)((u16)gCamYaw[0] - 0x7AEC);
         m = x * t;
         t = (gViewRects[0][0].h << 2) / sSkyScaleY[view];
         x = m / 8192;

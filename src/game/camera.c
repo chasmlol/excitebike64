@@ -29,7 +29,7 @@ void cam_init(s32 arg0)
     mem_fill((u8 *)sCamHistorySum, 0, sizeof(sCamHistorySum));
     mem_fill((u8 *)sCamHistory, 0, sizeof(sCamHistory));
     mem_fill((u8 *)sCamHistoryPos, 0, sizeof(sCamHistoryPos));
-    mem_fill((u8 *)gCamZoneState_2, 0, sizeof(gCamZoneState_2));
+    mem_fill((u8 *)gCamZoneState, 0, sizeof(gCamZoneState));
     mem_fill((u8 *)sCamPitchSprings, 0, sizeof(sCamPitchSprings));
     mem_fill((u8 *)sCamAirBlend, 0, sizeof(sCamAirBlend));
     sCamFrameCount = 0;
@@ -191,20 +191,20 @@ void cam_update(void) {
             gEvent_12.f58 &= ~0x80;
         }
         if (cam_find_zone() != 0) {
-            gCamZoneState_2[gCamView].flags |= 2;
+            gCamZoneState[gCamView].flags |= 2;
         } else {
-            gCamZoneState_2[gCamView].flags &= ~2;
+            gCamZoneState[gCamView].flags &= ~2;
         }
         if (D_800EE140 != 0) {
             func_8002D888(&gRiders_25[sCamTarget], &out);
         } else {
             if ((gReplayPlayback != 0 || gCreditsMode != 0 || (gGame_28.f0 & 0x81)) &&
-                (gCamZoneState_2[gCamView].flags & 2)) {
-                if (!(gCamZoneState_2[gCamView].flags & 1)) {
-                    gCamZoneState_2[gCamView].flags |= 1;
+                (gCamZoneState[gCamView].flags & 2)) {
+                if (!(gCamZoneState[gCamView].flags & 1)) {
+                    gCamZoneState[gCamView].flags |= 1;
                     func_8002D890();
                 }
-                switch (gCamZoneState_2[gCamView].type) {
+                switch (gCamZoneState[gCamView].type) {
                 case 0:
                     cam_zone_update_dolly(&gRiders_25[sCamTarget], &out);
                     break;
@@ -213,7 +213,7 @@ void cam_update(void) {
                     break;
                 }
             } else {
-                { CamZoneState *bs = gCamZoneState_2; e = &bs[gCamView]; }
+                { CamZoneState *bs = gCamZoneState; e = &bs[gCamView]; }
                 f = e->flags;
                 if (f & 1) {
                     mode = e->type;
@@ -270,7 +270,7 @@ void cam_update(void) {
                 }
             }
             {
-            if (!(gCamZoneState_2[gCamView].flags & 1)) {
+            if (!(gCamZoneState[gCamView].flags & 1)) {
                 cm = &gCamModes[gRiders_25[sCamTarget].f5AA];
                 if (gInsetViewActive != 0 && gCamView == 1) {
                     cm = &gCamModes[7];
@@ -303,8 +303,8 @@ void cam_update(void) {
     gCamRoll[gCamView] = sCamHistorySum[gCamView].roll;
     gCamYaw[gCamView] = sCamHistorySum[gCamView].yaw;
     sCamFrameCount++;
-    if (!(gCamZoneState_2[gCamView].flags & 1) && gRiders_25[gCamView].f5AA != 9) {
-        gCamSegFlags_2[gCamView] = 0;
+    if (!(gCamZoneState[gCamView].flags & 1) && gRiders_25[gCamView].f5AA != 9) {
+        gCamSegFlags[gCamView] = 0;
         cam_clamp_to_track(sCamTarget, gCamView);
         return;
     }
@@ -312,7 +312,7 @@ void cam_update(void) {
     pos.y = (f32)gCamPos[gCamView].y / 1000.0f;
     pos.z = (f32)gCamPos[gCamView].z / 1000.0f;
     path_get_segment_and_t(&pos, &area, &hh, gRiders_25[sCamTarget].f628);
-    gCamSegFlags_2[gCamView] = gPathNodes_6[area].b64;
+    gCamSegFlags[gCamView] = gPathNodes_6[area].b64;
 }
 
 typedef struct {
@@ -1213,7 +1213,7 @@ s32 cam_find_zone(void)
         D_800C97E4 = -1;
     }
     g = &gEvent;
-    states = gCamZoneState_2;
+    states = gCamZoneState;
     P = gCurTrack_20;
     order = sCamSegOrder;
     node = gRiders_29[sCamTarget].f628;
@@ -1326,7 +1326,7 @@ f32 cam_zone_get_progress(Obj_17 *p, s32 a, s32 b)
     s32 d;
     f32 frac;
 
-    if (gCamZoneState_2[gCamView].flags & 8) {
+    if (gCamZoneState[gCamView].flags & 8) {
         len = sCamSegOrder[b] - sCamSegOrder[a];
         seg = path_find_segment(&p->pos, gPathNodes_9[p->seg].start, 15, 1);
         path_get_lateral_offset(&p->pos, seg);
@@ -1379,11 +1379,11 @@ void cam_zone_update_follow(Obj_18 *rider, CamOut *out)
     Tmp30 polar;
     s16 pitch[4];
 
-    flags = gCamZoneState_2[gCamView].flags;
+    flags = gCamZoneState[gCamView].flags;
     if (flags & 4) {
-        gCamZoneState_2[gCamView].flags = flags & 0xFFFB;
+        gCamZoneState[gCamView].flags = flags & 0xFFFB;
     }
-    zone = gCamZoneState_2[gCamView].zone.follow;
+    zone = gCamZoneState[gCamView].zone.follow;
     t = cam_zone_get_progress(rider, zone->startNode, zone->endNode);
     dist = zone->dist0 + (s32)((f32)(zone->dist1 - zone->dist0) * t);
     yaw = (f32)zone->yawSweep * t;
@@ -1437,7 +1437,7 @@ void cam_zone_update_dolly(Actor *rider, CamOut *out)
     s32 rx, rz;
     f32 t, u, v;
 
-    st = gCamZoneState_2;
+    st = gCamZoneState;
     st += gCamView;
     flags = st->flags;
     zone = st->zone.dolly;
@@ -1759,7 +1759,7 @@ void cam_clamp_to_track(s32 m, s32 n)
         tab = gPathNodes;
         pr = (Rec_14 *)(idx * sizeof(Rec_14) + (u32)tab);
         nx = pr->s46;
-        gCamSegFlags_2[n] = pr->b64;
+        gCamSegFlags[n] = pr->b64;
         if (gCurTrack_21->f2C == 0) {
             s32 id = gCurTrack_21 - gTracks_9;
             if (id == 0x18 || id == 0x15 || id == 0x16) {
