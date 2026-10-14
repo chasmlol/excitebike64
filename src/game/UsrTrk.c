@@ -231,8 +231,8 @@ void usrtrk_load_pieces(void)
     s32 c;
     s32 n;
 
-    res_register_type(sStrUsrTrkArn, (s32)D_800248EC);
-    res_register_type(sStrUsrTrkWal, (s32)D_80031D08);
+    res_register_type(sStrUsrTrkArn, (s32)arn_relocate);
+    res_register_type(sStrUsrTrkWal, (s32)height_init_walls_reloc);
     res_open_set(sStrUsrTrkPieces, &sPiecesResSet);
     gEditArena.collision = (WallMesh *)res_load(sPiecesResSet, *gEditArena.collisionId);
     height_free_walls();

@@ -14,8 +14,8 @@ void arn_init(void)
     if (iVar1 == 0x16) {
         sArnNoFarLod = 1;
     }
-    res_register_type(sStrArnArn, (s32)D_800248EC);
-    res_register_type(sStrArnWal, (s32)D_80031D08);
+    res_register_type(sStrArnArn, (s32)arn_relocate);
+    res_register_type(sStrArnWal, (s32)height_init_walls_reloc);
     if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0) {
         usrtrk_load_pieces();
         usrtrk_build_track();

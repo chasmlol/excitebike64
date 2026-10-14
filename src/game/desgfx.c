@@ -173,7 +173,7 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
         }
     }
     gDPPipeSync(gdl++);
-    prim_set_tex_mode_callback((s32)D_80042718);
+    prim_set_tex_mode_callback((s32)des_tex_mode_callback);
     gSPClearGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPClearGeometryMode(gdl++, G_FOG);
     RAW(gdl++, 0xFCFFFFFF, 0xFFFCF87C);

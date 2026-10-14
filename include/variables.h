@@ -5,10 +5,6 @@
 
 #include "structs.h"
 
-extern u8 D_80014D20[];
-extern u8 D_800248EC[];
-extern u8 D_80031D08[];
-extern char D_80042718[];
 extern u8 gFrontendOvlStart[];
 extern u8 D_80073200[];
 extern u8 D_800A4290[];

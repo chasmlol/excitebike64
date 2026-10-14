@@ -185,7 +185,7 @@ void shell_init(void)
     gRaceSeries_4 = 0;
     gGame.flags = (gGame.flags & 0x20F88000) | 1;
     res_open_set("guires", &gGuiRes);
-    res_register_type("ARN", D_800248EC);
+    res_register_type("ARN", arn_relocate);
     prim_init();
     sCurScreen = 0;
     sPrevScreen = 0;

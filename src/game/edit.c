@@ -147,8 +147,8 @@ void edit_init(void)
         gEditor->pieces[c].used = 0;
     }
     strcpy(gEditor->name, "<NONE>");
-    res_register_type(sStrEditArn, D_800248EC);
-    res_register_type(sStrEditN64, D_80014D20);
+    res_register_type(sStrEditArn, arn_relocate);
+    res_register_type(sStrEditN64, prim_n64_relocate);
     res_open_set(sStrEditPieces, &gEditor->pieceRes);
     gEditor->cursorTex = res_load(gEditor->pieceRes, sEditCursorTexResId);
     gEditor->cursorModel = res_load(gEditor->pieceRes, sEditCursorModelResId);

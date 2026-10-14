@@ -171,7 +171,6 @@ prim_alloc_dl                         game  0x80014B84  func     0x90
 prim_flip_image_rows                  game  0x80014C14  func     0x6c
 prim_pkg_unrelocate                   game  0x80014C80  func     0x4c
 prim_pkg_relocate                     game  0x80014CCC  func     0x54
-D_80014D20                            game  0x80014D20  data        -
 prim_n64_relocate                     game  0x80014D20  func     0x28
 prim_find_nearest_color               game  0x80014D48  func     0xbc
 race_init_replay                      game  0x80014E10  func    0x314
@@ -240,7 +239,6 @@ arn_cull_models                       game  0x8002400C  func    0x484
 arn_apply_noise_shading               game  0x80024490  func    0x278
 arn_free                              game  0x80024708  func    0x124
 arn_update_view                       game  0x8002482C  func     0xc0
-D_800248EC                            game  0x800248EC  data        -
 arn_relocate                          game  0x800248EC  func     0x94
 tube_init                             game  0x80024980  func    0x424
 tube_free                             game  0x80024DA4  func    0x180
@@ -328,7 +326,6 @@ height_push_out_of_desert_objs        game  0x80030478  func    0x1e0
 height_raycast_walls                  game  0x80030658  func    0x874
 height_gather_walls                   game  0x80030ECC  func    0xbac
 height_init_walls                     game  0x80031A78  func    0x290
-D_80031D08                            game  0x80031D08  data        -
 height_init_walls_reloc               game  0x80031D08  func     0x1c
 height_free_walls                     game  0x80031D24  func     0x30
 point_in_tri_xz                       game  0x80031D54  func     0xa4
@@ -421,7 +418,6 @@ des_set_arrow_angle                   game  0x80042620  func      0xc
 divmod_floor                          game  0x8004262C  func     0x68
 des_bbox_add                          game  0x80042694  func     0x58
 des_bbox_reset                        game  0x800426EC  func     0x2c
-D_80042718                            game  0x80042718  data        -
 des_tex_mode_callback                 game  0x80042718  func    0x104
 des_set_waypoint                      game  0x8004281C  func      0xc
 fractal_update_tiles                  game  0x80042830  func    0x22c
