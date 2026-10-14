@@ -1,60 +1,58 @@
 #include "game.h"
 
-void font_load_race_set(void *arc)
+/* sFontSetLoaded: which font set is loaded. */
+#define FONT_SET_NONE 0
+#define FONT_SET_MENU 1
+#define FONT_SET_RACE 2
+
+/* Loads the race's three fonts (sRaceFontIds), unloading the menu set first. The fonts are unpacked through the Z
+   buffer, so it waits until no graphics task uses it. */
+void font_load_race_set(void *resSet)
 {
-    if (sFontSetLoaded != 2) {
-        if (sFontSetLoaded != 0 && font_unload() != 0) {
+    if (sFontSetLoaded != FONT_SET_RACE) {
+        if (sFontSetLoaded != FONT_SET_NONE && font_unload() != 0) {
             fatal_halt(1);
         }
         while (sched_get_current_task() != 0) {
         }
         gFontLoadBuffer = gZBuffer;
-        if (font_load(arc, sRaceFontIds, gFontColors) != 0) {
+        if (font_load(resSet, sRaceFontIds, gFontColors) != 0) {
             fatal_halt(1);
         }
         gFontLoadBuffer = 0;
-        sFontSetLoaded = 2;
+        sFontSetLoaded = FONT_SET_RACE;
     }
 }
 
-void font_load_menu_set(u32 *param_1)
+/* Loads the front end's five fonts (sMenuFontIds), unloading the race set first. */
+void font_load_menu_set(u32 *resSet)
 {
-    if (sFontSetLoaded != 1) {
-        if (sFontSetLoaded != 0 && font_unload() != 0) {
+    if (sFontSetLoaded != FONT_SET_MENU) {
+        if (sFontSetLoaded != FONT_SET_NONE && font_unload() != 0) {
             fatal_halt(1);
         }
-        if (font_load(param_1, sMenuFontIds, gFontColors) != 0) {
+        if (font_load(resSet, sMenuFontIds, gFontColors) != 0) {
             fatal_halt(1);
         }
-        sFontSetLoaded = 1;
+        sFontSetLoaded = FONT_SET_MENU;
     }
 }
 
-void font_unload_set(void) {
+/* Unloads whichever font set is loaded. */
+void font_unload_set(void)
+{
     font_unload();
-    sFontSetLoaded = 0;
+    sFontSetLoaded = FONT_SET_NONE;
 }
 
-Gfx *font_gfx_setup(Gfx *g)
+/* Sets up the RDP for text: no TLUT, blend alpha 0x10, no perspective correction, point sampling, texturing on. */
+Gfx *font_gfx_setup(Gfx *gdl)
 {
-    Gfx *p0, *p1, *p2, *p3, *p4, *p5;
-    p0 = g++;
-    p0->words.w0 = 0xE7000000;
-    p0->words.w1 = 0;
-    p1 = g++;
-    p1->words.w0 = 0xE3001001;
-    p1->words.w1 = 0;
-    p2 = g++;
-    p2->words.w0 = 0xF9000000;
-    p2->words.w1 = 0x10;
-    p3 = g++;
-    p3->words.w0 = 0xE3000C00;
-    p3->words.w1 = 0;
-    p4 = g++;
-    p4->words.w0 = 0xE3001201;
-    p4->words.w1 = 0;
-    p5 = g++;
-    p5->words.w0 = 0xD7000002;
-    p5->words.w1 = 0x80008000;
-    return g;
+    gDPPipeSync(gdl++);
+    gDPSetTextureLUT(gdl++, G_TT_NONE);
+    gDPSetBlendColor(gdl++, 0, 0, 0, 0x10);
+    gDPSetTexturePersp(gdl++, G_TP_NONE);
+    gDPSetTextureFilter(gdl++, G_TF_POINT);
+    gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
+    return gdl;
 }

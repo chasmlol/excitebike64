@@ -41,4 +41,10 @@
 #define GAME_MODE_TEST_RIDE     13      /* the editor's test ride */
 #define GAME_MODE_TEST_RIDE_2   14
 
+/* Screen fades (gGame.fadeState; gGame.fadeLevel 0-255 is how far along). */
+#define FADE_OUT    0
+#define FADE_SWAP   1       /* faded out: the screen changes */
+#define FADE_IN     2
+#define FADE_DONE   3
+
 #endif
