@@ -56,8 +56,8 @@ typedef struct SndDriver {
     /* 0x40 */ void (*voiceSetFlags)(s32 voice, s32 flags);
     /* 0x44 */ s32 (*voiceGetFlags)(s32 voice);
     /* 0x48 */ s32 (*getSampleClock)(void);                     /* output samples mixed so far */
-    /* 0x4C */ u32 (*getBufferClock)(void);                     /* audio buffers mixed so far */
-    /* 0x50 */ void (*setCallback)(void (*fn)(void));           /* called before each buffer is mixed */
+    /* 0x4C */ u32 (*getBufferClock)(void);                     /* frames (half AI buffers) mixed so far */
+    /* 0x50 */ void (*setCallback)(void (*fn)(void));           /* called before each frame is mixed */
     /* 0x54 */ void (*echoInit)(s32 size);
     /* 0x58 */ void (*echoEnable)(s32 on);
     /* 0x5C */ void (*echoSetLevel)(s32 level);
