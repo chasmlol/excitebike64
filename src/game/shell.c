@@ -390,177 +390,186 @@ void shell_cb_season(s32 chosen) {
 
 #define PRESSED(m) ((gPadInput & (m)) != 0 && (gPadInputPrev & (m)) == 0)
 
+/* The track lists, the records and the custom round's track picker show the tracks 5 to a page. */
+#define TRACKS_PER_PAGE 5
+
+/* The splash and notice screens: A or START skips one once it has been up 60 frames; it ends by itself when
+   gGame.screenTimer runs out (shell_load_screen sets it). */
 void shell_splash_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
-    s32 flag;
-    s32 ok;
+    s32 skip;
+    s32 canSkip;
     s16 type;
 
-    flag = 0;
+    skip = 0;
     type = screen->type;
     if (type == SCREEN_TYPE_SPLASH || type == SCREEN_TYPE_SPLASH_3) {
-        ok = gGame.screenTimer < 0x78;
+        canSkip = gGame.screenTimer < 180 - 60;
     } else if (type == SCREEN_TYPE_PAK_STATUS) {
-        ok = gGame.screenTimer < 0x474;
+        canSkip = gGame.screenTimer < 1200 - 60;
     } else if (type == SCREEN_TYPE_BACKUP_LOST) {
-        ok = gGame.screenTimer < 0x21C;
+        canSkip = gGame.screenTimer < 600 - 60;
     } else {
-        ok = gGame.screenTimer < 0xF0;
+        canSkip = gGame.screenTimer < 300 - 60;
     }
-    if (ok) {
-        if (PRESSED(0x10) | PRESSED(0x40)) {
-            flag = 1;
+    if (canSkip) {
+        if (PRESSED(INPUT_A) | PRESSED(INPUT_START)) {
+            skip = 1;
         }
     }
-    if (--gGame.screenTimer == 0 || flag) {
-        if (flag && gGame.fadeState == 3) {
+    if (--gGame.screenTimer == 0 || skip) {
+        if (skip && gGame.fadeState == 3) {
             snd_play_menu_sound(MENU_SOUND_SELECT);
         }
         shell_goto_screen(item->target, 0, 1);
     }
 }
 
+/* Controller settings: left and right pick a connected controller, A cycles its button layout (A-D). */
 void shell_controller_settings_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
-    s32 iv4;
-    s32 uv5;
-    s32 uVar6;
-    s32 cv;
-    u32 flags;
-    u16 u2;
-    u16 uP;
+    s32 sound;
+    s32 next;
+    s32 prevSel;
+    s32 config;
+    u32 pressed;
+    u16 sel;
+    u16 oldSel;
 
-    uVar6 = (s16)gGame.padConfigSel;
+    prevSel = (s16)gGame.padConfigSel;
     gGame.blinkTimer = gGame.blinkTimer + 1;
-    if (gGame.blinkTimer == 0x78) {
+    if (gGame.blinkTimer == 120) {
         gGame.blinkTimer = 0;
     }
-    flags = *buttons;
-    if ((flags & 0x20) != 0) {
+    pressed = *buttons;
+    if ((pressed & INPUT_B) != 0) {
         shell_goto_screen(screen->back, 0, 0);
-        iv4 = MENU_SOUND_BACK;
-        goto CALLPT;
+        sound = MENU_SOUND_BACK;
+        goto play;
     }
-    if ((flags & 4) != 0) {
+    if ((pressed & INPUT_LEFT) != 0) {
         do {
-            uP = gGame.padConfigSel;
-            u2 = uP - 1;
-            gGame.padConfigSel = u2;
-            if ((s32)((u32)u2 << 16) < 0) {
-                gGame.padConfigSel = uP + 3;
+            oldSel = gGame.padConfigSel;
+            sel = oldSel - 1;
+            gGame.padConfigSel = sel;
+            if ((s32)((u32)sel << 16) < 0) {
+                gGame.padConfigSel = oldSel + 3;
             }
         } while (((gContMask >> (s16)gGame.padConfigSel) & 1) == 0);
-        goto LAB_800743d8;
+        goto check;
     }
-    if ((flags & 8) != 0) {
+    if ((pressed & INPUT_RIGHT) != 0) {
         do {
-            uP = gGame.padConfigSel;
-            u2 = uP + 1;
-            gGame.padConfigSel = u2;
-            if ((s16)u2 > 3) {
-                gGame.padConfigSel = uP - 3;
+            oldSel = gGame.padConfigSel;
+            sel = oldSel + 1;
+            gGame.padConfigSel = sel;
+            if ((s16)sel > 3) {
+                gGame.padConfigSel = oldSel - 3;
             }
         } while (((gContMask >> (s16)gGame.padConfigSel) & 1) == 0);
-        goto LAB_800743d8;
+        goto check;
     }
-    if ((flags & 0x10) == 0) {
-        goto LAB_800743d8;
+    if ((pressed & INPUT_A) == 0) {
+        goto check;
     }
-    cv = gGame.padConfig[uVar6];
-    gGame.padConfig[uVar6] = cv + 1;
-    if ((s8)(cv + 1) > 3) {
+    config = gGame.padConfig[prevSel];
+    gGame.padConfig[prevSel] = config + 1;
+    if ((s8)(config + 1) > 3) {
         gGame.padConfig[(s16)gGame.padConfigSel] = gGame.padConfig[(s16)gGame.padConfigSel] - 4;
     }
-    iv4 = MENU_SOUND_SELECT;
-CALLPT:
-    snd_play_menu_sound(iv4);
-LAB_800743d8:
+    sound = MENU_SOUND_SELECT;
+play:
+    snd_play_menu_sound(sound);
+check:
     {
-        u8 bits;
-        bits = gContMask;
-        if (((bits >> (s16)gGame.padConfigSel) & 1) == 0) {
+        /* the controller was unplugged: the next one connected */
+        u8 mask;
+        mask = gContMask;
+        if (((mask >> (s16)gGame.padConfigSel) & 1) == 0) {
             do {
-                uv5 = ((u16)gGame.padConfigSel + 1) & 3;
-                gGame.padConfigSel = uv5;
-            } while (uv5 != uVar6 && ((bits >> uv5) & 1) == 0);
+                next = ((u16)gGame.padConfigSel + 1) & 3;
+                gGame.padConfigSel = next;
+            } while (next != prevSel && ((mask >> next) & 1) == 0);
         }
     }
-    if (uVar6 != (s16)gGame.padConfigSel) {
+    if (prevSel != (s16)gGame.padConfigSel) {
         snd_play_menu_sound(MENU_SOUND_MOVE);
     }
     return;
 }
 
+/* Records: the cursor moves over the record tracks, a page of 5 to a column. Each move shows the track's picture
+   for 6 frames, then fades it to grey under the records over 59 frames. */
 void shell_records_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
-    s32 t;
-    s32 t1;
-    s16 w;
-    u32 flags;
-    s32 c1;
-    s32 c2;
-    s32 c3;
-    s32 c4;
-    s32 c5;
+    s32 sel;
+    s32 oldSel;
+    s16 numTracks;
+    u32 pressed;
+    s32 animTimer;
+    s32 blinkTimer;
+    s32 screenTimer;
+    s32 sel2;
+    s32 sel3;
 
-    c1 = gGame.menuAnimTimer + 1;
-    gGame.menuAnimTimer = c1;
-    if (c1 == 0x3c) {
+    animTimer = gGame.menuAnimTimer + 1;
+    gGame.menuAnimTimer = animTimer;
+    if (animTimer == 60) {
         gGame.menuAnimTimer = 0;
     }
-    c2 = gGame.blinkTimer + 1;
-    gGame.blinkTimer = c2;
-    if (c2 == 0x40) {
+    blinkTimer = gGame.blinkTimer + 1;
+    gGame.blinkTimer = blinkTimer;
+    if (blinkTimer == 64) {
         gGame.blinkTimer = 0;
     }
     if (gGame.screenTimer != 0) {
-        c3 = gGame.screenTimer - 1;
-        gGame.screenTimer = c3;
-        if (c3 == 0) {
+        screenTimer = gGame.screenTimer - 1;
+        gGame.screenTimer = screenTimer;
+        if (screenTimer == 0) {
             if (gGame.screenState != SCREEN_STATE_RECORDS_FADE) {
                 if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                     gGame.screenState = SCREEN_STATE_RECORDS_FADE;
-                    gGame.screenTimer = 0x3b;
+                    gGame.screenTimer = 59;
                 }
             } else {
                 gGame.screenState = SCREEN_STATE_RECORDS_SHOWN;
             }
         }
     }
-    flags = *buttons;
-    if ((flags & 0x20) != 0) {
+    pressed = *buttons;
+    if ((pressed & INPUT_B) != 0) {
         shell_goto_screen(screen->back, 0, 0);
         snd_play_menu_sound(MENU_SOUND_BACK);
         return;
     }
-    t1 = gGame.recordsSel;
-    if ((flags & 1) != 0) {
-        if (t1 % 5 != 0) {
+    oldSel = gGame.recordsSel;
+    if ((pressed & INPUT_UP) != 0) {
+        if (oldSel % TRACKS_PER_PAGE != 0) {
             gGame.recordsSel = gGame.recordsSel - 1;
         }
     }
-    if ((*buttons & 2) != 0) {
-        c4 = gGame.recordsSel;
-        if (c4 % 5 < 4 && c4 + 1 < gGame.numRecordTracks) {
-            gGame.recordsSel = c4 + 1;
+    if ((*buttons & INPUT_DOWN) != 0) {
+        sel2 = gGame.recordsSel;
+        if (sel2 % TRACKS_PER_PAGE < TRACKS_PER_PAGE - 1 && sel2 + 1 < gGame.numRecordTracks) {
+            gGame.recordsSel = sel2 + 1;
         }
     }
-    if ((*buttons & 4) != 0) {
-        c5 = gGame.recordsSel;
-        if (c5 / 5 + (c5 >> 31) != (c5 >> 31)) {
-            gGame.recordsSel = c5 - 5;
+    if ((*buttons & INPUT_LEFT) != 0) {
+        sel3 = gGame.recordsSel;
+        if (sel3 / 5 + (sel3 >> 31) != (sel3 >> 31)) { /* not on the first page */
+            gGame.recordsSel = sel3 - TRACKS_PER_PAGE;
         }
     }
-    if ((*buttons & 8) != 0) {
-        t = gGame.recordsSel;
-        w = gGame.numRecordTracks;
-        if (t + 5 < w) {
-            gGame.recordsSel = t + 5;
-        } else if (t / 5 < (s16)(w / 5)) {
-            gGame.recordsSel = w - 1;
+    if ((*buttons & INPUT_RIGHT) != 0) {
+        sel = gGame.recordsSel;
+        numTracks = gGame.numRecordTracks;
+        if (sel + TRACKS_PER_PAGE < numTracks) {
+            gGame.recordsSel = sel + TRACKS_PER_PAGE;
+        } else if (sel / TRACKS_PER_PAGE < (s16)(numTracks / TRACKS_PER_PAGE)) {
+            gGame.recordsSel = numTracks - 1;
         }
     }
-    if (t1 != gGame.recordsSel) {
+    if (oldSel != gGame.recordsSel) {
         gGame.screenState = SCREEN_STATE_RECORDS_PICTURE;
         gGame.screenTimer = 6;
         snd_play_menu_sound(MENU_SOUND_MOVE);
