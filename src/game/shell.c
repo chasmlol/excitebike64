@@ -3235,18 +3235,8 @@ typedef struct {
 typedef struct { Ent24 *p0; } RecPtr;
 typedef struct { u8 pad[0x14]; u8 b14; u8 b15; u8 b16; } Slot_12;
 
-typedef struct {
-    s32 w0;
-    u8 pad4[0x1C - 0x4];
-    s32 w1C;
-    u8 pad20[0x24 - 0x20];
-    s32 w24;
-    void *w28;
-} Snd_4;
-
 extern Game_31 gGame_71;
 extern RecPtr *gSeason_22;
-extern Snd_4 gPakScreen;
 
 void shell_load_screen(Screen *screen) {
     s32 i;
@@ -3444,44 +3434,44 @@ void shell_load_screen(Screen *screen) {
         gGame_71.w3DC = LD(D_800D14C8);
         break;
     case SCREEN_TYPE_PAK:
-        D_800F4A50 = 0;
+        gPakScreen.validate = NULL;
         switch (gGame_71.h488) {
         case 0:
-            gPakScreen.w0 = 0;
-            gPakScreen.w24 = 0;
-            gPakScreen.w1C = 0;
+            gPakScreen.mode = 0;
+            gPakScreen.data = NULL;
+            gPakScreen.pages = 0;
             break;
         case 1:
             if (gActiveReplay == 0) {
                 gActiveReplay = gReplayBuffer;
             }
-            gPakScreen.w1C = 100;
-            gPakScreen.w0 = 1;
-            gPakScreen.w28 = D_800600D4;
-            gPakScreen.w24 = gActiveReplay + 0x6400;
+            gPakScreen.pages = 100;
+            gPakScreen.mode = 1;
+            gPakScreen.validate = replay_validate;
+            gPakScreen.data = (u8 *)(gActiveReplay + 0x6400);
             break;
         case 2:
-            gPakScreen.w1C = 40;
-            gPakScreen.w0 = 2;
-            gPakScreen.w24 = gActiveReplay;
+            gPakScreen.pages = 40;
+            gPakScreen.mode = 2;
+            gPakScreen.data = (u8 *)gActiveReplay;
             break;
         case 3:
             if (gGame_71.p3E8 != NULL) {
                 mem_free(gGame_71.p3E8);
             }
             gGame_71.p3E8 = mem_alloc_dbg(0x400, 0, D_800D94B0, 0x18E6);
-            gPakScreen.w24 = (s32)gGame_71.p3E8;
-            gPakScreen.w1C = 4;
-            gPakScreen.w0 = 1;
-            gPakScreen.w28 = D_800881D4;
+            gPakScreen.data = gGame_71.p3E8;
+            gPakScreen.pages = 4;
+            gPakScreen.mode = 1;
+            gPakScreen.validate = (PakValidateFunc)shell_pak_track_invalid;
             break;
         case 4:
-            gPakScreen.w1C = 4;
-            gPakScreen.w0 = 2;
-            gPakScreen.w24 = (s32)gGame_71.p3E8;
+            gPakScreen.pages = 4;
+            gPakScreen.mode = 2;
+            gPakScreen.data = gGame_71.p3E8;
             break;
         }
-        D_800F4A54 = D_800732D0;
+        gPakScreen.label = shell_format_pak_file_label;
         pak_screen_init();
         break;
     case SCREEN_TYPE_LIST:

@@ -1233,6 +1233,7 @@ typedef struct Q_3 {
 
 #include "structs/font.h"
 #include "structs/gui.h"
+#include "structs/pak.h"
 #include "structs/shell.h"
 
 #endif
