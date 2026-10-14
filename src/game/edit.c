@@ -184,9 +184,7 @@ extern GuiMenu sEditTrackMenu;
 extern GuiMenuItem sEditMainMenuItems[];
 extern GuiMenuItem sEditTrackMenuItems[];
 extern Scis sEditViewRects_2;
-extern Game_3 *gEditor_2;
 extern s32 *gEditor_33;
-extern Rec_5 gPieceTypes_2[];
 extern Tab64 gPieceTypes_3[];
 extern Trk_3 gPieceTypes_4[];
 
@@ -3372,155 +3370,112 @@ s32 edit_update_fitting_pieces(EditPiece *o)
     return ret;
 }
 
-typedef struct {
-    u16 x0;
-    u16 x2;
-    u8 pad4[0x2C];
-    void *x30;
-    void *x34;
-    u8 pad38[8];
-} Rec_51;
-
-typedef struct {
-    u8 pad[0x16F8];
-    s32 x16F8;
-    s32 x16FC;
-    u16 x1700;
-    u16 x1702;
-} Ctl_25;
-
-extern Rec_51 gPieceTypes_9[];
-extern Ctl_25 *gEditor_24;
-
 void edit_init_user_pieces(void)
 {
     s32 i, j;
-    s32 *p1 = gPieceTypes_9[0x1C].x30;
-    s32 *p2 = gPieceTypes_9[0x1C].x34;
+    PieceMeshSet *tmplA = gPieceTypes[PIECE_TYPE_TEMPLATE].meshA;
+    PieceMeshSet *tmplB = gPieceTypes[PIECE_TYPE_TEMPLATE].meshB;
 
-    gEditor_24->x16F8 = 1;
-    gEditor_24->x16FC = 0;
-    gEditor_24->x1702 = 8;
+    gEditor->heightSel = 1;
+    gEditor->userPiece = 0;
+    gEditor->maxSegments = 8;
     for (i = 0; i < 8; i++) {
-        gPieceTypes_9[i + 0x12].x2 = 4;
-        gPieceTypes_9[i + 0x12].x30 = mem_alloc_dbg((*p1 << 8) | 4, 0, sStrEditFile, 0x1D73);
-        gPieceTypes_9[i + 0x12].x34 = mem_alloc_dbg((*p2 << 8) | 4, 0, sStrEditFile, 0x1D74);
-        usrtrk_clone_piece_meshes(gPieceTypes_9[i + 0x12].x30, gPieceTypes_9[i + 0x12].x34, 8);
+        gPieceTypes[i + 0x12].dim[1] = 4;
+        gPieceTypes[i + 0x12].meshA = mem_alloc_dbg((tmplA->count << 8) | 4, 0, sStrEditFile, 0x1D73);
+        gPieceTypes[i + 0x12].meshB = mem_alloc_dbg((tmplB->count << 8) | 4, 0, sStrEditFile, 0x1D74);
+        usrtrk_clone_piece_meshes(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, 8);
         for (j = 0; j < 15; j++) {
             gUserPieceHeights[i][j] = 0;
         }
-        usrtrk_apply_heights(gPieceTypes_9[i + 0x12].x30, gPieceTypes_9[i + 0x12].x34, gUserPieceHeights[i], 8);
+        usrtrk_apply_heights(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, gUserPieceHeights[i], 8);
     }
     {
-        Ctl_25 *ea;
+        Editor *ea;
         u8 *rb;
-        volatile Rec_51 *r;
+        PieceType *r;
         u8 *tb;
         i = 0;
         tb = (u8 *)gUserPieceHeights;
         if (tb) j = 3; else j = 4;
-        ea = gEditor_24;
-        rb = (u8 *)gPieceTypes_9;
-        r = (volatile Rec_51 *)(rb + ((ea->x16FC + 0x12) << 6));
-        r->x2;
+        ea = gEditor;
+        rb = (u8 *)gPieceTypes;
+        r = (PieceType *)(rb + ((ea->userPiece + 0x12) << 6));
+        *(volatile u16 *)&r->dim[1];
         if (r) j = 1; else j = 2;
         for (; i < 15; i++) {
-            *(u16 *)(tb + (ea->x16FC * 15 + i) * 2) = 0;
+            *(u16 *)(tb + (ea->userPiece * 15 + i) * 2) = 0;
         }
     }
 }
 
-typedef struct Game_40 {
-    u8 pad0[0x184];
-    Sub_2 *sub;
-    u8 pad1[0x16FC - 0x188];
-    s32 idx;
-    u8 pad2[0x1738 - 0x1700];
-    s32 f1738;
-    u8 pad3[0x1758 - 0x173C];
-    s32 t1758;
-    s32 t175c;
-} Game_40;
-
-typedef struct T2 {
-    s16 cnt[2];
-    u8 pad[0x2C];
-    u8 *p30;
-    u8 *p34;
-    u8 pad2[0x8];
-} T2;
-
-extern Game_40 *gEditor_25;
-extern T2 gPieceTypes_10[];
-
 void edit_user_piece_remove_first_segment(void)
 {
-    T2 *t;
+    PieceType *t;
     s32 x;
     s32 y;
     s32 i;
     s16 sv;
-    Sub_2 *sub;
-    Game_40 *g;
+    EditPiece *sub;
+    Editor *g;
 
-    t = &gPieceTypes_10[gEditor_25->idx + 18];
-    for (y = 0; y < t->cnt[(gEditor_25->sub->cur + 1) & 1]; y++) {
-        for (x = 0; x < t->cnt[gEditor_25->sub->cur & 1]; x++) {
-            arned_set_cell(gEditor_25->sub->c + x, gEditor_25->sub->e + y, 0, 0, 0, 0, 0, 0, 0);
+    t = &gPieceTypes[gEditor->userPiece + 18];
+    for (y = 0; y < t->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < t->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 
-    for (i = 0; i < gPieceTypes_10[gEditor_25->idx + 18].cnt[1]; i++) {
-        __builtin_memcpy(gUserPieceHeights_2 + gEditor_25->idx * 30 + i * 4, gUserPieceHeights_2 + gEditor_25->idx * 30 + i * 4 + 4, 4);
+    for (i = 0; i < gPieceTypes[gEditor->userPiece + 18].dim[1]; i++) {
+        __builtin_memcpy((u8 *)gUserPieceHeights + gEditor->userPiece * 30 + i * 4, (u8 *)gUserPieceHeights + gEditor->userPiece * 30 + i * 4 + 4, 4);
     }
-    g = gEditor_25;
-    gPieceTypes_10[g->idx + 18].cnt[1]--;
+    g = gEditor;
+    gPieceTypes[g->userPiece + 18].dim[1]--;
     {
-        s32 k = gPieceTypes_10[g->idx + 18].cnt[1] * 4 - 2;
-        k += g->idx * 30;
-        *(s16 *)(gUserPieceHeights_2 + k) = 0;
+        s32 k = gPieceTypes[g->userPiece + 18].dim[1] * 4 - 2;
+        k += g->userPiece * 30;
+        *(s16 *)((u8 *)gUserPieceHeights + k) = 0;
     }
-    usrtrk_apply_heights(gPieceTypes_10[g->idx + 18].p30, gPieceTypes_10[g->idx + 18].p34,
-                  gUserPieceHeights_2 + g->idx * 30, gPieceTypes_10[g->idx + 18].cnt[1]);
+    usrtrk_apply_heights(gPieceTypes[g->userPiece + 18].meshA, gPieceTypes[g->userPiece + 18].meshB,
+                  (u8 *)gUserPieceHeights + g->userPiece * 30, gPieceTypes[g->userPiece + 18].dim[1]);
 
-    sub = gEditor_25->sub;
-    sv = sub->arr[sub->f8 == 0];
+    sub = gEditor->cur;
+    sv = sub->dir[sub->prev == 0];
     if (sv != 0) {
         if (sv == 1) {
-            sub->c++;
+            sub->x++;
         }
     } else {
-        sub->e++;
+        sub->y++;
     }
-    if (gEditor_25->f1738 > 45000) {
-        gEditor_25->t175c = -10000;
-        gEditor_25->t1758 = 50;
+    if (gEditor->cam[1].dist > 45000) {
+        gEditor->camZoomStep = -10000;
+        gEditor->camZoomFrames = 50;
     }
 }
 
 void edit_user_piece_remove_last_segment(void)
 {
     s32 x, y, i, j;
-    Rec_5 *tb;
-    Pl *pl;
+    PieceType *tb;
+    EditPiece *pl;
     s16 s;
 
-    tb = &gPieceTypesUser[gEditor_2->idx];
-    for (y = 0; y < tb->d[(gEditor_2->pl->f12 + 1) & 1]; y++) {
-        for (x = 0; x < tb->d[gEditor_2->pl->f12 & 1]; x++) {
-            arned_set_cell(gEditor_2->pl->x + x, gEditor_2->pl->y + y, 0, 0, 0, 0, 0, 0, 0);
+    tb = &gPieceTypesUser[gEditor->userPiece];
+    for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
-    gPieceTypes_2[gEditor_2->idx + 18].d[1]--;
+    gPieceTypes[gEditor->userPiece + 18].dim[1]--;
     for (i = 0; i < 2; i++) {
         j = i - 1;
-        gUserPieceHeights[gEditor_2->idx][gPieceTypes_2[gEditor_2->idx + 18].d[1] * 2 + j] = 0;
+        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 + j] = 0;
     }
-    usrtrk_apply_heights(gPieceTypes_2[gEditor_2->idx + 18].f30, gPieceTypes_2[gEditor_2->idx + 18].f34,
-                  gUserPieceHeights[gEditor_2->idx], gPieceTypes_2[gEditor_2->idx + 18].d[1]);
-    gEditor_2->f16F8 -= 2;
-    pl = gEditor_2->pl;
-    s = pl->sel[pl->f8 == 0];
+    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + 18].meshA, gPieceTypes[gEditor->userPiece + 18].meshB,
+                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + 18].dim[1]);
+    gEditor->heightSel -= 2;
+    pl = gEditor->cur;
+    s = pl->dir[pl->prev == 0];
     if (s != 0) {
         if (s == 1) {
             pl->x++;
@@ -3528,9 +3483,9 @@ void edit_user_piece_remove_last_segment(void)
     } else {
         pl->y++;
     }
-    if (gEditor_2->f1738 > 45000) {
-        gEditor_2->f175C = -10000;
-        gEditor_2->f1758 = 50;
+    if (gEditor->cam[1].dist > 45000) {
+        gEditor->camZoomStep = -10000;
+        gEditor->camZoomFrames = 50;
     }
 }
 
@@ -3538,120 +3493,93 @@ typedef struct U4 {
     u32 w;
 } __attribute__((packed)) U4;
 
-typedef struct Game_41 {
-    u8 pad0[0x184];
-    Sub_2 *sub;
-    u8 pad1[0x16f8 - 0x188];
-    s32 n16f8;
-    s32 idx;
-    u8 pad2[0x1758 - 0x1700];
-    s32 t1758;
-    s32 t175c;
-} Game_41;
-
-typedef struct T1 {
-    s16 cnt[2];
-    u8 pad[60];
-} T1;
-
-typedef struct T2_2 {
-    s16 w0;
-    s16 cnt;
-    u8 pad[0x2c];
-    u8 *p30;
-    u8 *p34;
-    u8 pad2[0x8];
-} T2_2;
-
-extern Game_41 *gEditor_26;
-
 void edit_user_piece_prepend_segment(void) {
-    T1 *t1;
-    T2_2 *t2;
-    T2_2 *b2;
-    T2_2 *bp;
-    T2_2 *bq;
-    T2_2 *tq;
-    T2_2 *tr;
-    T2_2 *ts;
-    Game_41 *g;
+    PieceType *t1;
+    PieceType *t2;
+    PieceType *b2;
+    PieceType *bp;
+    PieceType *bq;
+    PieceType *tq;
+    PieceType *tr;
+    PieceType *ts;
+    Editor *g;
     u8 *hb;
-    Game_41 *gt;
+    Editor *gt;
     u8 *ub;
     u8 *sb;
-    Sub_2 *sub;
+    EditPiece *sub;
     s32 x;
     s32 y;
     s32 i;
     s32 off;
     s16 sv;
 
-    t1 = &gPieceTypesUser[gEditor_26->idx];
-    for (y = 0; y < t1->cnt[(gEditor_26->sub->cur + 1) & 1]; y++) {
-        for (x = 0; x < t1->cnt[gEditor_26->sub->cur & 1]; x++) {
-            arned_set_cell(gEditor_26->sub->c + x, gEditor_26->sub->e + y, 0, 0, 0, 0, 0, 0, 0);
+    t1 = &gPieceTypesUser[gEditor->userPiece];
+    for (y = 0; y < t1->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < t1->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 
     bp = gPieceTypes;
-    tq = (T2_2 *)((u8 *)bp + ((gEditor_26->idx + 0x12) << 6));
-    i = tq->cnt - 1;
+    tq = (PieceType *)((u8 *)bp + ((gEditor->userPiece + 0x12) << 6));
+    i = tq->dim[1] - 1;
     if (i >= 0) {
         do {
-            off = gEditor_26->idx * 30 + i * 4;
-            ub = D_800F55BC;
+            off = gEditor->userPiece * 30 + i * 4;
+            ub = D_800F55BC; /* gUserPieceHeights + 4 */
             sb = ub - 4;
             *(U4 *)(ub + off) = *(U4 *)(sb + off);
             i--;
         } while (i >= 0);
     }
 
-    mem_fill(gUserPieceHeights_2 + gEditor_26->idx * 30, 0, 4);
+    mem_fill((u8 *)gUserPieceHeights + gEditor->userPiece * 30, 0, 4);
 
-    g = gEditor_26;
+    g = gEditor;
     bq = gPieceTypes;
-    tr = (T2_2 *)((u8 *)bq + ((g->idx + 0x12) << 6));
-    tr->cnt = tr->cnt + 1;
+    tr = (PieceType *)((u8 *)bq + ((g->userPiece + 0x12) << 6));
+    tr->dim[1] = tr->dim[1] + 1;
     bq = gPieceTypes;
-    ts = (T2_2 *)((u8 *)bq + ((g->idx + 0x12) << 6));
-    usrtrk_apply_heights(ts->p30, ts->p34, gUserPieceHeights_2 + g->idx * 30, ts->cnt);
+    ts = (PieceType *)((u8 *)bq + ((g->userPiece + 0x12) << 6));
+    usrtrk_apply_heights(ts->meshA, ts->meshB, (u8 *)gUserPieceHeights + g->userPiece * 30, ts->dim[1]);
 
-    gEditor_26->n16f8 = gEditor_26->n16f8 + 1;
-    sub = gEditor_26->sub;
-    sv = sub->arr[sub->f8 == 0];
+    gEditor->heightSel = gEditor->heightSel + 1;
+    sub = gEditor->cur;
+    sv = sub->dir[sub->prev == 0];
     if (sv != 0) {
         if (sv == 1) {
-            sub->c = sub->c - 1;
+            sub->x = sub->x - 1;
         }
     } else {
-        sub->e = sub->e - 1;
+        sub->y = sub->y - 1;
     }
-    gEditor_26->t175c = 10000;
-    gEditor_26->t1758 = 50;
+    gEditor->camZoomStep = 10000;
+    gEditor->camZoomFrames = 50;
 }
 
 void edit_user_piece_append_segment(void)
 {
     s32 x, y, i;
-    Rec_5 *tb;
-    Pl *pl;
+    PieceType *tb;
+    EditPiece *pl;
     s16 s;
 
-    tb = &gPieceTypesUser[gEditor_2->idx];
-    for (y = 0; y < tb->d[(gEditor_2->pl->f12 + 1) & 1]; y++) {
-        for (x = 0; x < tb->d[gEditor_2->pl->f12 & 1]; x++) {
-            arned_set_cell(gEditor_2->pl->x + x, gEditor_2->pl->y + y, 0, 0, 0, 0, 0, 0, 0);
+    tb = &gPieceTypesUser[gEditor->userPiece];
+    for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
     for (i = 0; i < 2; i++) {
-        gUserPieceHeights[gEditor_2->idx][gPieceTypes_2[gEditor_2->idx + 18].d[1] * 2 + i] = 0;
+        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 + i] = 0;
     }
-    gPieceTypes_2[gEditor_2->idx + 18].d[1]++;
-    usrtrk_apply_heights(gPieceTypes_2[gEditor_2->idx + 18].f30, gPieceTypes_2[gEditor_2->idx + 18].f34,
-                  gUserPieceHeights[gEditor_2->idx], gPieceTypes_2[gEditor_2->idx + 18].d[1]);
-    gEditor_2->f16F8 += 1;
-    pl = gEditor_2->pl;
-    s = pl->sel[pl->f8 == 0];
+    gPieceTypes[gEditor->userPiece + 18].dim[1]++;
+    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + 18].meshA, gPieceTypes[gEditor->userPiece + 18].meshB,
+                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + 18].dim[1]);
+    gEditor->heightSel += 1;
+    pl = gEditor->cur;
+    s = pl->dir[pl->prev == 0];
     if (s != 0) {
         if (s == 1) {
             pl->x--;
@@ -3659,8 +3587,8 @@ void edit_user_piece_append_segment(void)
     } else {
         pl->y--;
     }
-    gEditor_2->f175C = 10000;
-    gEditor_2->f1758 = 50;
+    gEditor->camZoomStep = 10000;
+    gEditor->camZoomFrames = 50;
 }
 
 #define CEA_IDX (gEditor->userPiece)
