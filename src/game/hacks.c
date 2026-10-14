@@ -263,7 +263,7 @@ void hacks_exit(void) {
     }
 }
 
-/* render.c's hooks: the current track's draw passes, which take and return the display list pointer. */
+/* render.c's hooks: the current track's two draw hooks, which take and return the display list pointer. */
 s32 hacks_draw_pass2(s32 gdl, Dyn *dyn, s32 fb, s32 view)
 {
     if (sCurTrackHack != 0) {

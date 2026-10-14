@@ -536,8 +536,8 @@ typedef struct {
 
 extern GfxCtxTimes gGfxContexts_2[2];
 
-/* The scheduler's client thread: passes retraces (setting the VI dither filter from gDrawFlags) and finished
-   graphics tasks on to the main thread, timing the frames. */
+/* The scheduler's client thread: forwards retraces (setting the VI dither filter from gDrawFlags) and finished
+   graphics tasks to the main thread, timing the frames. */
 void main_sched_event_thread(void)
 {
     s16 *msg;
