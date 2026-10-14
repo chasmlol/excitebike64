@@ -658,7 +658,7 @@ extern TrackInfoView gTracks_12[];
 /* Applies the save data after resetting it to the defaults (save_init_defaults: nothing is read from a save in this
    build): the open tracks, the records, the controller layouts, the volumes, the cups' progress, the custom cup, the
    tutorial level and the difficulty. */
-void save_load(s32 arg0)
+void save_load(s32 unused)
 {
     s32 i, k;
     s32 j;
