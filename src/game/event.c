@@ -323,19 +323,11 @@ void tutorial_update(void)
     }
 }
 
-/* gCurTrack, a gTracks record */
-typedef struct {
-    u8 pad[0x34];
-    TrackRecord record; /* 0x34 */
-    s32 flags;          /* 0x50 TRACK_FLAG_* */
-    u8 pad54[0xA0 - 0x54];
-} TrackRecordInfo;
-
 /* gRaceSeries: races run one after the other */
 typedef struct { s32 count; s32 done; s32 *buf; } RaceSeries;
 
-extern TrackRecordInfo *gCurTrack_28;
-extern TrackRecordInfo gTracks_10[];
+extern TrackInfo *gCurTrack_28;
+extern TrackInfo gTracks_10[];
 extern RaceSeries gRaceSeries_2;
 
 /* Sets the event up for a race of numRiders riders and numLaps laps: the track's records, the start (the
@@ -576,12 +568,7 @@ finished:
     return isBest & 0xff;
 }
 
-typedef struct {
-    u8 pad[0x50];
-    u32 flags;      /* TRACK_FLAG_* */
-} TrackFlags;
-
-extern TrackFlags *gCurTrack_29;
+extern TrackInfo *gCurTrack_29;
 
 /* What event_rider_lap_completed has the announcer say */
 #define LAP_SAY_NOTHING     0
@@ -764,7 +751,7 @@ void event_update_hillclimb(void)
     }
 }
 
-extern TrackFlags *gCurTrack_30;
+extern TrackInfo *gCurTrack_30;
 
 /* Stunt course: when the clock runs out, the players' scores go into the records, the riders stop, and with two
    players the higher score wins (place 1 is a tie). */

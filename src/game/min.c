@@ -158,20 +158,6 @@ void race_update_replay(void)
     tube_update_splashes();
 }
 
-/* gCurTrack, a gTracks record */
-typedef struct {
-    u8 pad00[0x2C];
-    s32 envType;                    /* 0x2C TRACK_ENV_* */
-    u8 pad30[0x20];
-    u32 flags;                      /* 0x50 TRACK_FLAG_* */
-    u8 pad54[0x20];
-    s16 numFollowZones;             /* 0x74 the camera zones */
-    s16 numDollyZones;              /* 0x76 */
-    CamFollowZone *followZones;     /* 0x78 */
-    CamDollyZone *dollyZones;       /* 0x7C */
-    s32 *resMapId;                  /* 0x80 */
-} TrackInfo;
-
 extern TrackInfo *gCurTrack_14;
 
 /* The race game state's init: the video mode, the race's resources, the riders, the event, the camera and
@@ -889,24 +875,6 @@ void race_pause_update_controller(void)
 
 typedef struct { u32 w[6]; } Pad24;
 
-/* gCurTrack, a gTracks record */
-typedef struct {
-    u8 pad0[0x2C];
-    s32 envType;    /* 0x2C TRACK_ENV_* */
-    u8 pad30[0x28];
-    u16 unk_58[4];  /* per number of views */
-    u16 unk_60[4];
-} TrackViewInfo;
-
-/* gSaveData's options and volumes */
-typedef struct {
-    u8 pad0[0x2C4];
-    u8 options;
-    u8 musicVolume;
-    u8 effectsVolume;
-    u8 speechVolume;
-} SaveOptions;
-
 /* pointers to values the debug menu may have tuned */
 typedef struct {
     s32 *loDetailThresh;
@@ -917,12 +885,11 @@ typedef struct {
     void *sfxVolume;
 } DebugTunables;
 
-extern TrackViewInfo *gCurTrack_15;
+extern TrackInfo *gCurTrack_15;
 extern Pad24 gPlayerInputs_3;
 extern Pad24 gPlayerInputsPrev_4;
 extern Pad24 D_800E3750;
 extern Pad24 D_800E3718;
-extern SaveOptions gSaveData_3;
 
 /* The race game state's update: maps the controllers to the players (D-pad as full stick), rumble, the pause
    screens' loading, the pause menus, the bikes, cameras and the event, START to pause, and the phases (fades,
@@ -1048,7 +1015,7 @@ void race_update(u32 *pads)
             while (1) {
             }
         }
-        if (!(gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) && (gSaveData_3.options & SAVE_OPT_HIGH_RES) &&
+        if (!(gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) && (gSaveData.options & SAVE_OPT_HIGH_RES) &&
             gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
             gCurTrack_15->envType != TRACK_ENV_DESERT && !(gGame.flags & (GAME_LOW_RES | GAME_PODIUM))) {
             gViModeRequest = VI_MODE_HI_RES;
@@ -1096,9 +1063,9 @@ void race_update(u32 *pads)
         if (gRacePhase_2 == RACE_PHASE_RACING && gPauseScreen.timer == -1) {
             if (PAUSE_PRESSED(INPUT_B)) {
                 gPauseMenu = PAUSE_NONE;
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData_3.musicVolume);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData_3.speechVolume);
+                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                 snd_play_menu_sound(MENU_SFX_BACK);
             } else if (PAUSE_PRESSED(INPUT_A) || PAUSE_PRESSED(INPUT_START)) {
                 snd_play_menu_sound(MENU_SFX_SELECT);
@@ -1106,9 +1073,9 @@ void race_update(u32 *pads)
                 switch (gPauseMenuCursor) {
                 case TEST_RIDE_ITEM_CONTINUE:
                     gPauseMenu = PAUSE_NONE;
-                    snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
-                    snd_set_volume(SND_VOL_MUSIC, gSaveData_3.musicVolume);
-                    snd_set_volume(SND_VOL_SPEECH, gSaveData_3.speechVolume);
+                    snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                    snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                    snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                     break;
                 case TEST_RIDE_ITEM_RESET:
                     bikes_free();
@@ -1116,9 +1083,9 @@ void race_update(u32 *pads)
                     bikes_init();
                     gPauseMenu = PAUSE_NONE;
                     gEvent.flags |= EVENT_CAM_RESET;
-                    snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
-                    snd_set_volume(SND_VOL_MUSIC, gSaveData_3.musicVolume);
-                    snd_set_volume(SND_VOL_SPEECH, gSaveData_3.speechVolume);
+                    snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                    snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                    snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                     break;
                 case TEST_RIDE_ITEM_EDITOR:
                     gRacePhase_2 = RACE_PHASE_FADE_OUT;
@@ -1141,9 +1108,9 @@ void race_update(u32 *pads)
         if (gRacePhase_2 == RACE_PHASE_RACING && gPauseScreen.timer == -1) {
             if (PAUSE_PRESSED(INPUT_B) && gTutorialMenuForced_2 == 0 && gTutorialResult == 0) {
                 gPauseMenu = PAUSE_NONE;
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData_3.musicVolume);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData_3.speechVolume);
+                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                 snd_play_menu_sound(MENU_SFX_BACK);
             } else if (PAUSE_PRESSED(INPUT_A) || PAUSE_PRESSED(INPUT_START)) {
                 snd_play_menu_sound(MENU_SFX_SELECT);
@@ -1202,9 +1169,9 @@ void race_update(u32 *pads)
     } else if (gPauseMenu == PAUSE_MAIN) {
         if (gRacePhase_2 == RACE_PHASE_RACING && gPauseScreen.timer == -1) {
             if (PAUSE_PRESSED(INPUT_B)) {
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData_3.musicVolume);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData_3.speechVolume);
+                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
                 gPauseMenu = PAUSE_NONE;
                 snd_play_menu_sound(MENU_SFX_BACK);
             } else if (PAUSE_PRESSED(INPUT_A) || PAUSE_PRESSED(INPUT_START)) {
@@ -1249,9 +1216,9 @@ void race_update(u32 *pads)
             }
             if (gPauseMenu == PAUSE_NONE) {
                 sfx_unmute();
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData_3.musicVolume);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData_3.speechVolume);
+                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
             }
         }
         if (gPauseMenu == PAUSE_NONE) {
@@ -1262,9 +1229,9 @@ void race_update(u32 *pads)
             if (PAUSE_PRESSED(INPUT_B)) {
                 gPauseMenu = PAUSE_NONE;
                 snd_play_menu_sound(MENU_SFX_BACK);
-                snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
-                snd_set_volume(SND_VOL_MUSIC, gSaveData_3.musicVolume);
-                snd_set_volume(SND_VOL_SPEECH, gSaveData_3.speechVolume);
+                snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
+                snd_set_volume(SND_VOL_MUSIC, gSaveData.volumes[VOLUME_MUSIC]);
+                snd_set_volume(SND_VOL_SPEECH, gSaveData.volumes[VOLUME_SPEECH]);
             } else if (PAUSE_PRESSED(INPUT_A)) {
                 switch (gPauseMenuCursor) {
                 case 0: /* Really Quit */
@@ -1306,7 +1273,7 @@ void race_update(u32 *pads)
                 }
                 if (--gEvent.tutorialTimeout == 0) {
                     gEvent.flags &= ~(EVENT_CAM_UPDATE | EVENT_INTRO_MESSAGE | EVENT_MESSAGE);
-                    snd_set_volume(SND_VOL_EFFECTS, gSaveData_3.effectsVolume);
+                    snd_set_volume(SND_VOL_EFFECTS, gSaveData.volumes[VOLUME_EFFECTS]);
                 }
             }
             if (gEvent.flags & EVENT_CAM_UPDATE) {
@@ -1574,11 +1541,6 @@ void race_load_surface_table(Res_3 *resSet, s32 resId)
 typedef struct { u8 b[48]; } Blk48;
 typedef struct { u8 b[16]; } Blk16;
 
-typedef struct {
-    u8 pad[0x50];
-    s32 flags;      /* TRACK_FLAG_* */
-} TrackFlags;
-
 /* The header the boot loader left (gBootHeader): the BRSOHYES container, its four SWD-packed segments */
 typedef struct {
     s32 tag[2];
@@ -1593,7 +1555,7 @@ typedef struct {
     s32 romAddr;    /* the container's: 0x28 bytes of header, then the segments */
 } BootHeader;
 
-extern TrackFlags *gCurTrack_16;
+extern TrackInfo *gCurTrack_16;
 extern BootHeader gBootHeader_2;
 
 /* Gives the front-end code and the UsrTrk.c overlay (not on the user track) back to the heap during a race

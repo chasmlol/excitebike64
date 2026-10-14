@@ -44,12 +44,34 @@ enum TrackId {
     TRACK_COUNT
 };
 
-/* A gTracks record's environment (+0x2C): which code draws it. */
+/* A gTracks record (27 of 0xA0 bytes, in TrackId order); gCurTrack points at the current one. */
+typedef struct TrackInfo {
+    /* 0x00 */ char name[0x1C];
+    /* 0x1C */ s16 unk_1C;
+    /* 0x1E */ s16 numLaps;             /* the track's laps: a race of other laps sets no record */
+    /* 0x20 */ f32 cpuSpeed[3];         /* the CPU riders' time scale, per difficulty */
+    /* 0x2C */ s32 envType;             /* TRACK_ENV_* */
+    /* 0x30 */ s32 unk_30;
+    /* 0x34 */ TrackRecord record;      /* the track's records (the ROM's are the defaults) */
+    /* 0x50 */ u32 flags;               /* TRACK_FLAG_* */
+    /* 0x54 */ u8 unk_54[4];
+    /* 0x58 */ u16 unk_58[4];           /* per number of views */
+    /* 0x60 */ u16 unk_60[4];           /* per number of views */
+    /* 0x68 */ f32 unk_68[3];
+    /* 0x74 */ s16 numFollowZones;      /* the camera zones of replays and demos, set by race_init */
+    /* 0x76 */ s16 numDollyZones;
+    /* 0x78 */ struct CamFollowZone *followZones;
+    /* 0x7C */ struct CamDollyZone *dollyZones;
+    /* 0x80 */ s32 *resMapId;           /* the track's resource map (track_res_load_map) */
+    /* 0x84 */ u8 unk_84[0xA0 - 0x84];
+} TrackInfo; /* size 0xA0 */
+
+/* A gTracks record's environment: which code draws it. */
 #define TRACK_ENV_STADIUM   0   /* arngfx.c */
 #define TRACK_ENV_OUTDOOR   1   /* tubegfx.c */
 #define TRACK_ENV_DESERT    2   /* desgfx.c */
 
-/* A gTracks record's flags (+0x50). */
+/* A gTracks record's flags. */
 #define TRACK_FLAG_USER         0x002   /* the user track: built by UsrTrk.c, keeps no records */
 #define TRACK_FLAG_NEW_LAP      0x080   /* this race set a best lap: the initials are asked for */
 #define TRACK_FLAG_NEW_TIME     0x100   /* ... a best race time */
