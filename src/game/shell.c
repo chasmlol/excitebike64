@@ -13,7 +13,7 @@
 s32 shell_format_pak_file_label(u8 *header, char *dst, s32 compact)
 {
     s32 track, rider, time, ret;
-    s32 n, m, v;
+    s32 pos, len, part;
 
     dst[0] = 0;
     if (replay_get_info(header, (u32 *)&track, (u32 *)&rider, (u32 *)&time) == 0) {
@@ -23,26 +23,26 @@ s32 shell_format_pak_file_label(u8 *header, char *dst, s32 compact)
         str_cat(dst, gTracks_13 + track * 160);
         if (compact == 0) {
             str_cat(dst, sStrKeySpace);
-            v = time / 3600;
-            if (v < 10) {
+            part = time / 3600;
+            if (part < 10) {
                 str_cat(dst, sStrKeyZero);
             }
-            int_to_str(v, dst + strlen(dst));
+            int_to_str(part, dst + strlen(dst));
             str_cat(dst, sStrGhostTimeColon);
-            n = strlen(dst);
-            v = time / 60 % 60;
-            dst[n] = v / 10 + '0';
-            n++;
-            dst[n] = v % 10 + '0';
-            n++;
-            dst[n] = '.';
-            v = time % 60 * 100 / 60;
-            n++;
-            dst[n] = v / 10 + '0';
-            n++;
-            dst[n] = v % 10 + '0';
-            n++;
-            dst[n] = 0;
+            pos = strlen(dst);
+            part = time / 60 % 60;
+            dst[pos] = part / 10 + '0';
+            pos++;
+            dst[pos] = part % 10 + '0';
+            pos++;
+            dst[pos] = '.';
+            part = time % 60 * 100 / 60;
+            pos++;
+            dst[pos] = part / 10 + '0';
+            pos++;
+            dst[pos] = part % 10 + '0';
+            pos++;
+            dst[pos] = 0;
         }
         ret = gGame.pakScreenMode;
         ret = ret ^ PAK_SCREEN_LOAD_USER_TRACK;
@@ -53,10 +53,10 @@ s32 shell_format_pak_file_label(u8 *header, char *dst, s32 compact)
             return PAK_NOTE_FOREIGN;
         }
         __builtin_memcpy(dst, sStrTrackLabel, 8);
-        m = strlen(dst);
-        dst[m + 10] = 0;
-        m = strlen(dst);
-        __builtin_memcpy(dst + m, header + 6, 10);
+        len = strlen(dst);
+        dst[len + 10] = 0;
+        len = strlen(dst);
+        __builtin_memcpy(dst + len, header + 6, 10);
         ret = gGame.pakScreenMode;
         ret = ret ^ PAK_SCREEN_LOAD_GHOST;
     }
@@ -3514,7 +3514,7 @@ Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 fb, char *question)
     u8 *img;
     s32 sel;
     s32 y;
-    s32 t;
+    s32 step;
 
     gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0xBE);
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
@@ -3547,7 +3547,7 @@ Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 fb, char *question)
     gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
     gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 4);
     sel = gGame.dialogSel;
-    return render_draw_image(sel * 7 + 0x9D, (t = sel * 5, y = 0x82, y - t * 4), /* 0x82 - sel * 20 */
+    return render_draw_image(sel * 7 + 0x9D, (step = sel * 5, y = 0x82, y - step * 4), /* 0x82 - sel * 20 */
                          &gGame.cursorImg[gGame.menuAnimTimer / 2 % 30 + 1], gdl, fb, 1, 1, 3, 0);
 }
 
@@ -3861,13 +3861,13 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             /* a faint sponsor logo crossing the screen, the next one each time */
             s32 logoW;
             s32 logoX;
-            Img *sp;
+            Img *logos;
 
             gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0x32);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-            sp = &gGame.sponsorLogos[1];
-            logoW = sp[gGame.sponsorLogo].w << 3;
+            logos = &gGame.sponsorLogos[1];
+            logoW = logos[gGame.sponsorLogo].w << 3;
             logoX = gFrameCounter % (logoW + 512);
             if (logoX == 0) {
                 gGame.sponsorLogo = (s16)(gGame.sponsorLogo + 1) % 10;
@@ -4591,7 +4591,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             s32 line = 0;
             s32 lineColor;
             char **pp;
-            s32 k2;
+            s32 lineIdx;
 
             DRAW(0x110 - img->w * 4, 0x1F, img, 3);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
@@ -4645,9 +4645,9 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 font_text_add(gGame.texts[0], pakLine);
                 font_draw_text(gGame.texts[0], 0x106 - line * 3, line * 11 + 0x46);
                 line++;
-                for (k2 = 0; pp[k2] != NULL; k2++) {
+                for (lineIdx = 0; pp[lineIdx] != NULL; lineIdx++) {
                     font_text_create(gGame.texts[0], 0x40, FONT_MENU, lineColor, TEXT_CENTER);
-                    font_text_add(gGame.texts[0], pp[k2]);
+                    font_text_add(gGame.texts[0], pp[lineIdx]);
                     font_draw_text(gGame.texts[0], 0x106 - line * 3, line * 11 + 0x46);
                     line++;
                 }
