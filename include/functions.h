@@ -1015,12 +1015,12 @@ void edit_add_overlay_line_2(s32 idx, s32 x0, s32 y0, s32 z0, s32 x1, s32 y1, s3
 Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl);
 s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *sw, s32 arg7, s32 arg8);
 Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl);
-Node_29 *edit_insert_piece(Node_29 *a, Node_29 *b, s16 *pt);
-void edit_delete_piece(u8 *p);
-s32 edit_get_port_x(Blk_22 *b, s32 s);
-s32 edit_get_port_y(Spr_4 *p, s32 k);
-void edit_place_piece_after(Node_30 *p, Node_30 *c);
-void edit_place_piece_before(Spr_5 *a, Spr_5 *b);
+EditPiece *edit_insert_piece(EditPiece *a, EditPiece *b, PieceType *type);
+void edit_delete_piece(EditPiece *p);
+s32 edit_get_port_x(EditPiece *b, s32 s);
+s32 edit_get_port_y(EditPiece *p, s32 k);
+void edit_place_piece_after(EditPiece *p, EditPiece *c);
+void edit_place_piece_before(EditPiece *a, EditPiece *b);
 void edit_set_start_piece_choices(void);
 s32 edit_update_fitting_pieces(Obj_72 *o);
 void edit_init_user_pieces(void);

@@ -2734,95 +2734,69 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     return gdl;
 }
 
-#define AT(p, i) (*(s16 *)((u8 *)(p) + ((i) << 1)))
-
-typedef struct Img_7 {
-    s16 dim[2];
-    u8 pad4[8];
-    u16 flags;
-    u16 padE;
-    s16 idx;
-} Img_7;
-
-typedef struct Game_38 {
-    u8 pad0[0x174];
-    u32 flags;
-    u32 pad178;
-    Node_29 *head;
-    Node_29 *tail;
-    u8 pad184[0x10];
-    Node_29 nodes[150];
-    s16 *size;
-    u8 pad16B0[6];
-    s16 scrollx;
-    s16 scrolly;
-} Game_38;
-
-extern Game_38 *gEditor_22;
-
-Node_29 *edit_insert_piece(Node_29 *a, Node_29 *b, s16 *pt)
+EditPiece *edit_insert_piece(EditPiece *a, EditPiece *b, PieceType *type)
 {
-    Node_29 *n;
+    EditPiece *n;
     s32 i;
     s32 idx;
-    Game_38 *g;
+    Editor *g;
 
-    n = gEditor_22->nodes;
+    n = gEditor->pieces;
     for (i = 0; i < 150; i++, n++) {
         if (n->used == 0) break;
     }
-    g = gEditor_22;
+    g = gEditor;
     n->used = 1;
     if (g->flags & 8) {
-        if (((Img_7 *)pt)->flags & 0x20) {
-            n->st = 2;
+        if (type->flags & 0x20) {
+            n->flags = 2;
         } else {
-            n->st = 0;
+            n->flags = 0;
             g->flags &= ~8;
         }
-    } else if (((Img_7 *)pt)->flags & 0x10) {
-        n->st = 0;
+    } else if (type->flags & 0x10) {
+        n->flags = 0;
     } else {
-        n->st = 2;
+        n->flags = 2;
         g->flags |= 8;
     }
     n->next = b;
     n->prev = a;
-    n->pt = pt;
+    n->type = type;
     if (b == NULL && a == NULL) {
-        gEditor_22->head = n;
-        gEditor_22->tail = n;
-        idx = ((Img_7 *)pt)->idx;
-        if (gEditor_22->flags & 8) idx += 2;
-        n->idx = idx;
-        n->x = gEditor_22->size[0] / 2 - AT(pt, idx & 1) / 2;
-        n->y = gEditor_22->size[1] / 2 - AT(pt, (n->idx + 1) & 1) / 2;
-        n->x += gEditor_22->scrollx;
-        n->y += gEditor_22->scrolly;
+        gEditor->first = n;
+        gEditor->last = n;
+        idx = type->rot;
+        if (gEditor->flags & 8) idx += 2;
+        n->rot = idx;
+        n->x = gEditor->gridSize[0] / 2 - type->dim[idx & 1] / 2;
+        n->y = gEditor->gridSize[1] / 2 - type->dim[(n->rot + 1) & 1] / 2;
+        n->x += gEditor->scrollX;
+        n->y += gEditor->scrollY;
         if (n->x < 0) {
             n->x = 0;
-            gEditor_22->scrollx = AT(pt, n->idx & 1) / 2 - gEditor_22->size[0] / 2;
+            gEditor->scrollX = type->dim[n->rot & 1] / 2 - gEditor->gridSize[0] / 2;
         }
-        if (n->x + AT(n->pt, n->idx & 1) > gEditor_22->size[0]) {
-            n->x = gEditor_22->size[0] - AT(n->pt, n->idx & 1);
-            gEditor_22->scrollx = n->x - (gEditor_22->size[0] / 2 - AT(pt, n->idx & 1) / 2);
+        if (n->x + n->type->dim[n->rot & 1] > gEditor->gridSize[0]) {
+            n->x = gEditor->gridSize[0] - n->type->dim[n->rot & 1];
+            gEditor->scrollX = n->x - (gEditor->gridSize[0] / 2 - type->dim[n->rot & 1] / 2);
         }
         if (n->y < 0) {
             n->y = 0;
-            gEditor_22->scrolly = AT(pt, ~n->idx & 1) / 2 - gEditor_22->size[1] / 2;
+            gEditor->scrollY = type->dim[~n->rot & 1] / 2 - gEditor->gridSize[1] / 2;
         }
-        if (n->y + AT(n->pt, ~n->idx & 1) > gEditor_22->size[1]) {
-            n->y = gEditor_22->size[1] - AT(n->pt, ~n->idx & 1);
-            gEditor_22->scrolly = n->y - (gEditor_22->size[1] / 2 - AT(pt, ~n->idx & 1) / 2);
+        if (n->y + n->type->dim[~n->rot & 1] > gEditor->gridSize[1]) {
+            n->y = gEditor->gridSize[1] - n->type->dim[~n->rot & 1];
+            gEditor->scrollY = n->y - (gEditor->gridSize[1] / 2 - type->dim[~n->rot & 1] / 2);
         }
     } else {
         if (a != NULL) {
-            gEditor_22->tail = n;
+            gEditor->last = n;
             a->next = n;
             edit_place_piece_after(a, n);
         }
         if (b != NULL) {
-            gEditor_22->head = n;
+            gEditor->first = n;
             b->prev = n;
             edit_place_piece_before(b, n);
         }
@@ -2830,64 +2804,59 @@ Node_29 *edit_insert_piece(Node_29 *a, Node_29 *b, s16 *pt)
     return n;
 }
 
-#define PTRF(b, off) (*(u8 **)((u8 *)(b) + (off)))
-#define S16F(b, off) (*(s16 *)((u8 *)(b) + (off)))
-#define U16F(b, off) (*(u16 *)((u8 *)(b) + (off)))
-#define S32F(b, off) (*(s32 *)((u8 *)(b) + (off)))
-
-void edit_delete_piece(u8 *p)
+void edit_delete_piece(EditPiece *p)
 {
-    s16 *tbl2;
+    s16 *grid;
     s32 ix;
     s32 iy;
     s32 x;
     s32 y;
 
-    if (PTRF(p, 4) != 0) {
-        if (PTRF(p, 8) != 0) {
-            S32F(PTRF(p, 8), 4) = 0;
-            S32F(PTRF(p, 4), 8) = 0;
-            if ((U16F(p, 0x10) & 4) == 0) {
-                S32F(gEditor, 0x17C) = (s32)PTRF(p, 4);
-                S32F(gEditor, 0x180) = (s32)PTRF(p, 8);
+    if (p->next != NULL) {
+        if (p->prev != NULL) {
+            p->prev->next = NULL;
+            p->next->prev = NULL;
+            if ((p->flags & EDIT_PIECE_PREVIEW) == 0) {
+                gEditor->first = p->next;
+                gEditor->last = p->prev;
             }
             goto L_d4;
         }
         goto L_c;
     }
-    if (PTRF(p, 8) != 0) {
-        S32F(PTRF(p, 8), 4) = 0;
+    if (p->prev != NULL) {
+        p->prev->next = NULL;
         goto L_8c;
     }
 L_c:
-    if (PTRF(p, 4) != 0) {
-        S32F(PTRF(p, 4), 8) = (s32)PTRF(p, 8);
+    if (p->next != NULL) {
+        p->next->prev = p->prev;
     }
 L_8c:
-    if ((U16F(p, 0x10) & 4) == 0) {
-        if (S32F(gEditor, 0x17C) == (s32)p) {
-            S32F(gEditor, 0x17C) = (s32)PTRF(p, 4);
+    if ((p->flags & EDIT_PIECE_PREVIEW) == 0) {
+        if (gEditor->first == p) {
+            gEditor->first = p->next;
         }
-        if (S32F(gEditor, 0x180) == (s32)p) {
-            S32F(gEditor, 0x180) = (s32)PTRF(p, 8);
+        if (gEditor->last == p) {
+            gEditor->last = p->prev;
         }
     }
 L_d4:
     {
-        u8 *gg = gEditor;
-        *(u16 *)p = 0;
-        if (S32F(gg, 0x190) == (s32)p) {
-            S32F(gg, 0x190) = 0;
+        Editor *ed = gEditor;
+        p->used = 0;
+        if (ed->start == p) {
+            ed->start = NULL;
         }
     }
-    for (iy = 0; iy < *(s16 *)((u8 *)PTRF(p, 0x14) + (((S16F(p, 0x12) + 1) & 1) << 1)); iy++) {
-        for (ix = 0; ix < *(s16 *)((u8 *)PTRF(p, 0x14) + ((U16F(p, 0x12) & 1) << 1)); ix++) {
-            x = S16F(p, 0xC) + ix;
+    for (iy = 0; iy < p->type->dim[(p->rot + 1) & 1]; iy++) {
+        for (ix = 0; ix < p->type->dim[p->rot & 1]; ix++) {
+            x = p->x + ix;
             if (x >= 0) {
-                tbl2 = (s16 *)PTRF(gEditor, 0x16AC);
-                if (x < tbl2[0]) {
-                    y = S16F(p, 0xE) + iy;
-                    if (y >= 0 && y < tbl2[1]) {
+                grid = gEditor->gridSize;
+                if (x < grid[0]) {
+                    y = p->y + iy;
+                    if (y >= 0 && y < grid[1]) {
                         arned_set_cell(x, y, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
@@ -2896,13 +2865,15 @@ L_d4:
     }
 }
 
-s32 edit_get_port_x(Blk_22 *b, s32 s)
+/* Where a piece's connector is along an x side of the piece (0 when it is on a y side). P[s], P[s + 2] and
+   P[s + 4] are the type's dim[s], dir[s] and off[s]. */
+s32 edit_get_port_x(EditPiece *b, s32 s)
 {
-    s16 *P = b->P;
+    s16 *P = b->type->dim;
     s16 *Q = &P[s];
     s32 t = Q[2];
 
-    switch ((t + b->k12) & 3) {
+    switch ((t + b->rot) & 3) {
     case 1:
     case 3:
         return 0;
@@ -2917,7 +2888,7 @@ s32 edit_get_port_x(Blk_22 *b, s32 s)
             return P[1] - Q[4] - 2;
         }
     case 2: {
-        s16 *R = b->P;
+        s16 *R = b->type->dim;
         s16 *Q2 = &R[s];
 
         switch (Q2[2]) {
@@ -2934,9 +2905,10 @@ s32 edit_get_port_x(Blk_22 *b, s32 s)
     }
 }
 
-s32 edit_get_port_y(Spr_4 *p, s32 k)
+/* ... along a y side. */
+s32 edit_get_port_y(EditPiece *p, s32 k)
 {
-    s16 *P = p->P;
+    s16 *P = p->type->dim;
     s16 *Q = P + k;
     s32 a = Q[2];
 
@@ -2956,7 +2928,7 @@ s32 edit_get_port_y(Spr_4 *p, s32 k)
             return P[1] - Q[4] - 2;
         }
     case 1: {
-        s16 *R = p->P;
+        s16 *R = p->type->dim;
         s16 *S = R + k;
 
         switch (S[2]) {
@@ -2973,97 +2945,96 @@ s32 edit_get_port_y(Spr_4 *p, s32 k)
     }
 }
 
-#define TB(p, i) (*(u16 *)((u8 *)(p) + ((i) << 1)))
 #define SX16(v) ((s32)((u32)(v) << 16))
 #define HALF(v, s) ((s32)((SX16(v) >> 16) + (s32)((u32)SX16(v) >> 31)) >> (s))
 
-void edit_place_piece_after(Node_30 *p, Node_30 *c)
+/* Puts c after p: c's entry connector against p's exit (with no p, c goes in the middle of the grid). Some reads
+   are unsigned or volatile as the original has them. */
+void edit_place_piece_after(EditPiece *p, EditPiece *c)
 {
-    Node_30 *q = p;
+    EditPiece *q = p;
     s32 k = 1;
     s32 m = 0;
     s32 t, t2, r, v, ka, ma;
 
     if (q == 0) {
         u16 *tg = (u16 *)gEditor->gridSize;
-        c->px = HALF(tg[0], k) - HALF(c->tab[0], k);
+        c->x = HALF(tg[0], k) - HALF((u16)c->type->dim[0], k);
         tg = (u16 *)gEditor->gridSize;
-        c->py = HALF(tg[1], k) - HALF(c->tab[1], k);
+        c->y = HALF(tg[1], k) - HALF((u16)c->type->dim[1], k);
         return;
     }
-    if (q->flags & 2) k = 0;
-    if (c->flags & 2) m = 1;
-    c->px = q->px;
-    *(volatile s16 *)&c->py = q->py;
-    t = q->cnt + (*(u16 *)((u8 *)q->tab + (k << 1) + 4) - *(u16 *)((u8 *)*(u16 *volatile *)&c->tab + (m << 1) + 4)) + 2;
+    if (q->flags & EDIT_PIECE_FLIPPED) k = 0;
+    if (c->flags & EDIT_PIECE_FLIPPED) m = 1;
+    c->x = q->x;
+    *(volatile s16 *)&c->y = q->y;
+    t = (u16)q->rot + ((u16)q->type->dir[k] - (u16)(*(PieceType *volatile *)&c->type)->dir[m]) + 2;
     t2 = t & 3;
-    c->cnt = t2;
-    r = (*(s16 *)((u8 *)q->tab + (k << 1) + 4) + (s32)(s16)q->cnt) & 3;
+    c->rot = t2;
+    r = (q->type->dir[k] + q->rot) & 3;
     switch (r) {
     case 0:
-        c->py += TB(q->tab, ((s32)(s16)q->cnt + 1) & 1);
+        c->y += q->type->dim[(q->rot + 1) & 1];
         v = edit_get_port_x(q, k);
-        c->px += v;
+        c->x += v;
         v = edit_get_port_x(c, m);
-        c->px -= v;
+        c->x -= v;
         break;
     case 2:
-        c->py -= TB(c->tab, (t2 + 1) & 1);
+        c->y -= c->type->dim[(t2 + 1) & 1];
         v = edit_get_port_x(q, k);
-        c->px += v;
+        c->x += v;
         v = edit_get_port_x(c, m);
-        c->px -= v;
+        c->x -= v;
         break;
     case 3:
-        c->px -= TB(c->tab, t & 1);
+        c->x -= c->type->dim[t & 1];
         v = edit_get_port_y(q, k);
-        c->py += v;
+        c->y += v;
         v = edit_get_port_y(c, m);
-        c->py -= v;
+        c->y -= v;
         break;
     case 1:
-        c->px += TB(q->tab, q->cnt & 1);
+        c->x += q->type->dim[q->rot & 1];
         v = edit_get_port_y(q, k);
-        c->py += v;
+        c->y += v;
         v = edit_get_port_y(c, m);
-        c->py -= v;
+        c->y -= v;
         break;
     }
 }
 
-typedef struct { s16 size[2]; s16 rot[2]; } Tab_8;
-struct Spr_5 { u8 pad[0xc]; s16 x; s16 y; u16 fl; s16 n; Tab_8 *tab; };
-
-void edit_place_piece_before(Spr_5 *a, Spr_5 *b)
+/* Puts b before a: b's exit connector against a's entry. */
+void edit_place_piece_before(EditPiece *a, EditPiece *b)
 {
     s32 fa, fb;
     u16 n;
     s32 f; u32 g;
 
-    f = a->fl & 2; fa = f != 0;
+    f = a->flags & EDIT_PIECE_FLIPPED; fa = f != 0;
     b->x = a->x;
     b->y = a->y;
-    g = b->fl & 2; fb = g < 1;
-    n = a->n + (a->tab->rot[fa] - b->tab->rot[fb]) + 2;
-    b->n = n & 3;
-    switch ((a->tab->rot[fa] + a->n) & 3) {
+    g = b->flags & EDIT_PIECE_FLIPPED; fb = g < 1;
+    n = a->rot + (a->type->dir[fa] - b->type->dir[fb]) + 2;
+    b->rot = n & 3;
+    switch ((a->type->dir[fa] + a->rot) & 3) {
     case 0:
-        b->y += a->tab->size[(a->n + 1) & 1];
+        b->y += a->type->dim[(a->rot + 1) & 1];
         b->x += edit_get_port_x(a, fa);
         b->x -= edit_get_port_x(b, fb);
         break;
     case 2:
-        b->y -= b->tab->size[(b->n + 1) & 1];
+        b->y -= b->type->dim[(b->rot + 1) & 1];
         b->x += edit_get_port_x(a, fa);
         b->x -= edit_get_port_x(b, fb);
         break;
     case 3:
-        b->x -= b->tab->size[b->n & 1];
+        b->x -= b->type->dim[b->rot & 1];
         b->y += edit_get_port_y(a, fa);
         b->y -= edit_get_port_y(b, fb);
         break;
     case 1:
-        b->x += a->tab->size[a->n & 1];
+        b->x += a->type->dim[a->rot & 1];
         b->y += edit_get_port_y(a, fa);
         b->y -= edit_get_port_y(b, fb);
         break;
