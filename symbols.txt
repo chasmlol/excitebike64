@@ -120,7 +120,6 @@ snd_play_menu_sound                   game  0x8001102C  func     0x40
 func_8001106C                         game  0x8001106C  func     0x2c
 snd_stop_handle                       game  0x80011098  func     0x44
 snd_service                           game  0x800110DC  func     0xc4
-D_800111A0                            game  0x800111A0  data        -
 snd_engine_callback                   game  0x800111A0  func    0x104
 snd_free_engine_samples               game  0x800112A4  func     0x5c
 snd_stop_rider                        game  0x80011300  func     0x78
@@ -1335,11 +1334,8 @@ softmix_load_sample_name              game  0x800BAB1C  func    0x13c
 softmix_load_sample_id                game  0x800BAC58  func     0xe8
 softmix_create_sample                 game  0x800BAD40  func    0x114
 softmix_voice_set_sample              game  0x800BAE54  func     0xc0
-softmix_voice_set_sample_2            game  0x800BAE54  func        -  softmix_voice_set_sample
 softmix_voice_set_volume              game  0x800BAF14  func     0xc4
-softmix_voice_set_volume_2            game  0x800BAF14  func        -  softmix_voice_set_volume
 softmix_voice_set_pan                 game  0x800BAFD8  func     0xc4
-softmix_voice_set_pan_2               game  0x800BAFD8  func        -  softmix_voice_set_pan
 softmix_mix                           game  0x800BB09C  func    0x2b4
 softmix_sam_decompress                game  0x800BB350  func    0x12c
 softmix_get_caps                      game  0x800BB47C  func     0x20
@@ -1347,24 +1343,18 @@ softmix_shutdown                      game  0x800BB49C  func     0x50
 softmix_free_sample                   game  0x800BB4EC  func     0xa4
 softmix_get_sample_info               game  0x800BB590  func     0x3c
 softmix_set_sample_info               game  0x800BB5CC  func     0x3c
-softmix_set_sample_info_2             game  0x800BB5CC  func        -  softmix_set_sample_info
 softmix_voice_set_rate                game  0x800BB608  func     0xc4
-softmix_voice_set_rate_2              game  0x800BB608  func        -  softmix_voice_set_rate
 softmix_voice_set_position            game  0x800BB6CC  func     0x20
-softmix_voice_set_position_2          game  0x800BB6CC  func        -  softmix_voice_set_position
 softmix_voice_get_position            game  0x800BB6EC  func     0x24
 softmix_voice_set_flags               game  0x800BB710  func     0x70
-softmix_voice_set_flags_2             game  0x800BB710  func        -  softmix_voice_set_flags
 softmix_voice_get_flags               game  0x800BB780  func     0x24
 softmix_get_sample_count              game  0x800BB7A4  func     0x10
-softmix_get_sample_count_2            game  0x800BB7A4  func        -  softmix_get_sample_count
 softmix_convert_output                game  0x800BB7B4  func     0xa8
 softmix_echo_init                     game  0x800BB85C  func     0xc4
 softmix_echo_enable                   game  0x800BB920  func     0x58
 softmix_echo_set_level                game  0x800BB978  func     0x48
 softmix_echo_free                     game  0x800BB9C0  func     0x3c
 softmix_write_sample                  game  0x800BB9FC  func     0xb4
-softmix_write_sample_2                game  0x800BB9FC  func        -  softmix_write_sample
 softmix_set_decompressor              game  0x800BBAB0  func      0xc
 softmix_set_decompress_buf            game  0x800BBABC  func     0x14
 softmix_voice_update_levels           game  0x800BBAD0  func     0xb8
@@ -2822,11 +2812,9 @@ sN64SndMuted                          game  0x800D5620  data      0x8
 sN64SndBufIndex                       game  0x800D5628  data      0x4
 sN64SndActive                         game  0x800D562C  data      0x4
 sN64SndCallback                       game  0x800D5630  data      0x8
-sN64SndCallback_2                     game  0x800D5630  data        -  sN64SndCallback
 gN64SndSilenceFrames                  game  0x800D5638  data      0x4
 gN64SndDriver                         game  0x800D563C  data     0x74
 gN64SndMixCallback                    game  0x800D56B0  data      0xc
-gN64SndMixCallback_2                  game  0x800D56B0  data        -  gN64SndMixCallback
 sN64SndUnderruns                      game  0x800D56BC  data      0x4
 sHexDigitDivisors                     game  0x800D56C0  data     0x20
 sDecDigitDivisors                     game  0x800D56E0  data     0x20
@@ -5190,26 +5178,9 @@ sSfxDriverFlags                       game  0x800FA848  data        -
 sSfxFrameMs                           game  0x800FA84C  data        -
 sSfxFrameSamples                      game  0x800FA850  data        -
 sSfxVoiceSounds                       game  0x800FA854  data        -
-sSfxVoiceSounds_2                     game  0x800FA854  data        -  sSfxVoiceSounds
 sSfxSamples                           game  0x800FA860  data        -
-sSfxSamples_2                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_3                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_4                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_5                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_6                         game  0x800FA860  data        -  sSfxSamples
-sSfxSamples_7                         game  0x800FA860  data        -  sSfxSamples
 sSfxSoundPool                         game  0x800FC060  data        -
-sSfxSoundPool_2                       game  0x800FC060  data        -  sSfxSoundPool
 gSfxDriver                            game  0x800FE860  data        -
-gSfxDriver_10                         game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_2                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_3                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_4                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_5                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_6                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_7                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_8                          game  0x800FE860  data        -  gSfxDriver
-gSfxDriver_9                          game  0x800FE860  data        -  gSfxDriver
 sSoftmixEchoBuf                       game  0x800FE870  data        -
 sSoftmixEchoPos                       game  0x800FE874  data        -
 sSoftmixEchoSize                      game  0x800FE878  data        -

@@ -19,7 +19,7 @@ void snd_init(void)
     gSfxResSet = 0;
     gSndMasterVolume = 0x100;
     softmix_set_decompressor(decoder_decode_sample);
-    gSfxDriver = (u32)gN64SndDriver;
+    gSfxDriver = &gN64SndDriver;
     sfx_get_driver_caps(&l[0], &l[1], &l[2], &l[3]);
     {
         s32 p0, p1, p2, p3;
@@ -182,7 +182,7 @@ void snd_race_init(Slot_2 *param_1)
         sRaceTuneStarted = 0;
     }
     softmix_set_decompress_buf(0, 0);
-    sfx_set_frame_callback((s32)D_800111A0);
+    sfx_set_frame_callback(snd_engine_callback);
 }
 
 typedef struct {

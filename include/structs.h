@@ -118,12 +118,7 @@ typedef struct Set Set;
 typedef struct Mesh_8 Mesh_8;
 #include "structs/nes.h"
 #include "structs/softmix.h"
-typedef struct Chan_6 Chan_6;
-typedef struct Ring_2 Ring_2;
-typedef struct Obj_80 Obj_80;
-typedef struct Handle Handle;
-typedef struct Ent_99 Ent_99;
-typedef struct Ring_3 Ring_3;
+#include "structs/sfx.h"
 typedef struct Slot_17 Slot_17;
 typedef struct Stream_2 Stream_2;
 typedef struct Blk_29 Blk_29;
@@ -1225,38 +1220,6 @@ typedef struct Ctx_4 {
     Node_31 *head;
     Node_31 *end;
 } Ctx_4;
-
-typedef struct Ring {
-    s32 f00;
-    s32 cur;        /* 0x04 */
-    s32 slot[2];    /* 0x08 */
-    u8 flag[2];     /* 0x10 */
-    u8 f12[2];      /* 0x12 */
-    u32 size;       /* 0x14 */
-    u8 *buf;        /* 0x18 */
-    u32 pos;        /* 0x1c */
-    u32 f20;        /* 0x20 */
-    u32 avail;      /* 0x24 */
-    s32 arg28;      /* 0x28 */
-    u32 len;        /* 0x2c */
-    u8 b30;
-    u8 b31;
-    u8 b32;
-    u8 sel;         /* 0x33 */
-} Ring;
-
-typedef struct Node_45 {
-    struct Node_45 *prev;
-    struct Node_45 *next;
-    s32 pad[9];
-    s32 key;
-    s32 flags;
-} Node_45;
-
-typedef struct Node_46 {
-    struct Node_46 *prev;
-    struct Node_46 *next;
-} Node_46;
 
 typedef struct Block {
     struct Block *next;

@@ -106,7 +106,7 @@ s32 softmix_load_sample_file(s32 param_1)
     return i;
 }
 
-s32 softmix_load_sample_name(s32 param_1, s32 arg1, s32 arg2, s32 arg3)
+s32 softmix_load_sample_name(u8 *param_1)
 {
     s32 i;
     SamHeader *e;
@@ -440,7 +440,7 @@ void softmix_get_sample_info(s32 idx, s32 *out) {
     out[3] = r->unk_10;
 }
 
-void softmix_set_sample_info(s32 i, u32 *src)
+void softmix_set_sample_info(s32 i, s32 *src)
 {
     SoftmixSample *base = sSoftmixSamples;
     SoftmixSample *e = &base[i];
@@ -491,7 +491,7 @@ s32 softmix_voice_get_flags(s32 i)
     return sSoftmixVoices[i].flags;
 }
 
-s32 softmix_get_sample_count(s32 arg0) {
+s32 softmix_get_sample_count(void) {
     return sSoftmixSampleCount;
 }
 
@@ -579,7 +579,7 @@ void softmix_echo_set_level(s32 k)
     } while (i < 0x100);
 }
 
-void softmix_echo_free(s32 arg0)
+void softmix_echo_free(void)
 {
     if (sSoftmixEchoOn != 0) {
         mem_free(sSoftmixEchoBuf);
