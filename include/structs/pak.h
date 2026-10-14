@@ -33,7 +33,7 @@ typedef struct PakScreen {
     /* 0x20 */ s32 unk_20;
     /* 0x24 */ u8 *buf;
     /* 0x28 */ s32 (*verify)(u8 *buf, s32 size);            /* nonzero: the loaded data is not valid */
-    /* 0x2C */ s32 (*describe)(u8 *header, char *out, s32 brief); /* 0 the game's, 1 foreign, 2 hidden */
+    /* 0x2C */ s32 (*describe)(u8 *header, char *out, s32 inManager); /* 0 the game's, 1 foreign, 2 hidden */
 } PakScreen; /* size 0x30 */
 
 /* What a state shows (sPakMessages). */
