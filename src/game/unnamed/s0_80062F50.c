@@ -1,19 +1,26 @@
 #include "game.h"
 
+/* Race positions, rubber-banding, the CPU riders' lanes, the starting grid, and the extra riders (6 and 7, the
+   "drones") that appear near the leading human rider and leave once out of sight. */
+
+/* An entry of the queues of riders taken out of the race (sRiderQueueBehind, sRiderQueueAhead): the rider, the
+   rider whose distance it waits for, and the gap at which it comes back. Rec_36, Ent12 and Ent_67 are other views of
+   it. */
 typedef struct {
-    s16 idx;
-    Rider *e;
-    f32 d;
+    s16 rider;                  /* index in gRiders */
+    Rider *watch;
+    f32 gap;
 } Rec_35;
 
 typedef struct {
-    s32 w0;
-    s32 w1;
-    f32 f2;
+    s32 rider;                  /* the high halfword: index in gRiders */
+    s32 watch;                  /* Rider * */
+    f32 gap;
 } Rec_36;
 
+/* A starting grid: each rider's position across the start line (also the starting place). */
 typedef struct {
-    u8 b[6];
+    u8 slot[6];
 } Blob6;
 
 extern Rider *sRidersByLapPos[];
@@ -22,213 +29,245 @@ extern Rec_36 sRiderQueueAhead[];
 extern Blob6 sGridOrderSaved;
 extern Blob6 gGridOrder;
 
+/* An extra rider's spawn point (the track's drones resource; Ent_63 is its view as a table entry). */
 struct Spawn {
-    s16 _0;
-    s16 track;
-    s32 x;
+    s16 lap;                    /* the lap of the leading human rider it is for */
+    s16 node;                   /* the path node that triggers it; -1 once used */
+    s32 x;                      /* position, mm */
     s32 z;
-    s16 scale;
-    u16 spd;
+    s16 speed;                  /* starting speed, mm/s */
+    u16 timeScale;              /* 29491 = 1.0 */
 };
 
-void race_spawn_extra_rider(Spawn *sp)
+/* Brings in a free extra rider (6 or 7) at a spawn point: on the ground, moving along the racing line, a CPU rider
+   (isCpu 2) that keeps its own lane. */
+void race_spawn_extra_rider(Spawn *spawn)
 {
-    Rider *b;
-    s32 track;
-    s32 i, idx;
-    f32 f;
-    s32 spd;
+    Rider *rider;
+    s32 startNode;
+    s32 i, riderIdx;
+    f32 lane;
+    s32 timeScale;
     f32 y, k;
     Vec3f unused;
 
-    if (gSaveData.options & 0x10) return;
-    if (gEvent.flags & 0x200) return;
-
-    b = &gRiders[6];
-    track = sp->track;
-    sp->track = -1;
-    for (; b < &gRiders[8]; b++) {
-        if (b->inactive != 0) break;
+    if (gSaveData.options & OPTION_DRONES_OFF) {
+        return;
     }
-    if (b == &gRiders[8]) return;
+    if (gEvent.flags & 0x200) {
+        return;
+    }
 
-    b->prevAnim = -1;
-    b->inactive = 0;
-    b->crashPhase = 0;
-    b->roughLanding = 0;
-    b->pendingCrash = 0;
-    b->crashState = 0;
-    b->engine.overheated = 0;
-    b->jumpState = 0;
-    b->airFrames = 0;
-    b->wheelieTimer = 0;
-    b->crashTimer = 0;
-    b->engine.heat = 0.0f;
-    b->frontWheel.airTicks = 0;
-    b->rearWheel.airTicks = 0;
-    b->spawnFrame = gRaceFrame;
-    b->bike.pos.x = (f32)sp->x / 1000.0f;
-    b->bike.pos.z = (f32)sp->z / 1000.0f;
-    b->bike.pos.y = 0.0f;
-    b->bike.pos.y = bike_get_ground_height(&b->bike.pos);
+    rider = &gRiders[6];
+    startNode = spawn->node;
+    spawn->node = -1;
+    for (; rider < &gRiders[RIDER_COUNT]; rider++) {
+        if (rider->inactive != 0) {
+            break;
+        }
+    }
+    if (rider == &gRiders[RIDER_COUNT]) {
+        return;
+    }
+
+    rider->prevAnim = ANIM_NONE;
+    rider->inactive = 0;
+    rider->crashPhase = 0;
+    rider->roughLanding = 0;
+    rider->pendingCrash = 0;
+    rider->crashState = CRASH_STATE_RIDING;
+    rider->engine.overheated = 0;
+    rider->jumpState = 0;
+    rider->airFrames = 0;
+    rider->wheelieTimer = 0;
+    rider->crashTimer = 0;
+    rider->engine.heat = 0.0f;
+    rider->frontWheel.airTicks = 0;
+    rider->rearWheel.airTicks = 0;
+    rider->spawnFrame = gRaceFrame;
+    rider->bike.pos.x = (f32)spawn->x / 1000.0f;
+    rider->bike.pos.z = (f32)spawn->z / 1000.0f;
+    rider->bike.pos.y = 0.0f;
+    rider->bike.pos.y = bike_get_ground_height(&rider->bike.pos);
     for (i = 0; i < 20; i++) {
-        b->bike.contacts[i] = b->bike.pos;
+        rider->bike.contacts[i] = rider->bike.pos;
     }
-    b->segment = path_find_segment(&b->bike.pos, track, 15, 0);
-    b->laneOffset = path_get_lateral_offset(&b->bike.pos, b->segment);
-    b->segmentT = gPathSegmentT;
-    f = path_get_lateral_offset(&b->bike.pos, b->segment);
-    b->laneOffset = f;
-    sExtraRiderLanes[b - &gRiders[6]] = f;
-    quat_from_euler(b->bike.quat, 0.0f, 0.0f, -math_atan2f(gPathTangentZ, gPathTangentX));
-    bike_place_on_ground(b);
-    quat_to_mtx3f(&b->bike.right.x, b->bike.quat);
-    b->bike.vel.x = b->bike.fwd.x * ((f32)sp->scale / 1000.0f);
-    b->bike.vel.y = b->bike.fwd.y * ((f32)sp->scale / 1000.0f);
-    b->bike.vel.z = b->bike.fwd.z * ((f32)sp->scale / 1000.0f);
-    b->frontWheel.suspLength = 0.0f;
-    b->rearWheel.suspLength = 0.0f;
-    b->bike.angVel.z = 0.0f;
-    b->bike.angVel.y = 0.0f;
-    b->bike.angVel.x = 0.0f;
-    b->bike.angAcc.x = 0.0f;
-    b->bike.acc.z = 0.0f;
-    b->bike.acc.y = 0.0f;
-    b->bike.acc.x = 0.0f;
-    b->localAngVel.x = 0.0f;
-    b->localAngVel.y = 0.0f;
-    b->localAngVel.z = 0.0f;
-    b->bike.restThreshold = 1.0f;
-    b->anim = -1;
-    *(Blk *)b->drawQuat = *(Blk *)b->bike.quat;
-    b->bike.pos.y = bike_get_ground_height(&b->bike.pos) + 0.0f + 0.5f
-        - (gGame.mode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
-    b->airFrames = 4;
-    bike_update_wheel_contacts(b);
-    bike_update_wheel_contacts(b);
-    bike_update_suspension(b);
-    idx = b - gRiders;
-    decal_end_track(idx);
-    cam_set_frozen(idx, 0);
-    spd = sp->spd;
-    b->isCpu = 2;
-    b->bike.type = 1;
-    b->timeScale = (f32)spd / 29491.0f;
-    bike_update_render_pose(b);
-    bike_apply_rider_stats(b, 0);
+    rider->segment = path_find_segment(&rider->bike.pos, startNode, 15, 0);
+    rider->laneOffset = path_get_lateral_offset(&rider->bike.pos, rider->segment);
+    rider->segmentT = gPathSegmentT;
+    lane = path_get_lateral_offset(&rider->bike.pos, rider->segment);
+    rider->laneOffset = lane;
+    sExtraRiderLanes[rider - &gRiders[6]] = lane;
+    quat_from_euler(rider->bike.quat, 0.0f, 0.0f, -math_atan2f(gPathTangentZ, gPathTangentX));
+    bike_place_on_ground(rider);
+    quat_to_mtx3f(&rider->bike.right.x, rider->bike.quat);
+    rider->bike.vel.x = rider->bike.fwd.x * ((f32)spawn->speed / 1000.0f);
+    rider->bike.vel.y = rider->bike.fwd.y * ((f32)spawn->speed / 1000.0f);
+    rider->bike.vel.z = rider->bike.fwd.z * ((f32)spawn->speed / 1000.0f);
+    rider->frontWheel.suspLength = 0.0f;
+    rider->rearWheel.suspLength = 0.0f;
+    rider->bike.angVel.z = 0.0f;
+    rider->bike.angVel.y = 0.0f;
+    rider->bike.angVel.x = 0.0f;
+    rider->bike.angAcc.x = 0.0f;
+    rider->bike.acc.z = 0.0f;
+    rider->bike.acc.y = 0.0f;
+    rider->bike.acc.x = 0.0f;
+    rider->localAngVel.x = 0.0f;
+    rider->localAngVel.y = 0.0f;
+    rider->localAngVel.z = 0.0f;
+    rider->bike.restThreshold = 1.0f;
+    rider->anim = ANIM_NONE;
+    *(Blk *)rider->drawQuat = *(Blk *)rider->bike.quat;
+    rider->bike.pos.y = bike_get_ground_height(&rider->bike.pos) + 0.0f + 0.5f
+        - (gGame.mode == GAME_MODE_EXCITE_3D ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
+    rider->airFrames = 4;
+    bike_update_wheel_contacts(rider);
+    bike_update_wheel_contacts(rider);
+    bike_update_suspension(rider);
+    riderIdx = rider - gRiders;
+    decal_end_track(riderIdx);
+    cam_set_frozen(riderIdx, 0);
+    timeScale = spawn->timeScale;
+    rider->isCpu = 2; /* an extra rider */
+    rider->bike.type = BODY_CPU_BIKE;
+    rider->timeScale = (f32)timeScale / 29491.0f;
+    bike_update_render_pose(rider);
+    bike_apply_rider_stats(rider, 0);
 }
 
-s32 race_try_despawn_extra_rider(Rider *p, Rider *q)
+/* Takes an extra rider out (returns 1) once it is 3 s old, at least 20 m behind or 50 m ahead of the player along
+   the lap, 15 m away and more than 34 degrees off the player's heading; after 15 s its power drops to 0.2. */
+s32 race_try_despawn_extra_rider(Rider *player, Rider *extra)
 {
-    s16 ang;
-    s32 ratio;
+    s16 angle;
+    s32 polarLen;
     s32 v;
-    s32 dt;
+    s32 age;
     s32 ret;
-    f32 dy;
+    f32 behind;
     f32 dx;
     f32 dz;
 
-    if (q->inactive != 0) {
+    if (extra->inactive != 0) {
         goto fail;
     }
-    dt = gRaceFrame - q->spawnFrame;
-    if (dt >= 0xB4) {
+    age = gRaceFrame - extra->spawnFrame;
+    if (age >= 0xB4) {
         goto ok;
     }
 fail:
     return 0;
 ok:
-    if (dt >= 0x385) {
-        q->power = 0.2f;
+    if (age >= 0x385) {
+        extra->power = 0.2f;
     }
-    dy = q->lapDistLeft - p->lapDistLeft;
-    if (dy < 20.0f && -50.0f < dy) {
+    behind = extra->lapDistLeft - player->lapDistLeft;
+    if (behind < 20.0f && -50.0f < behind) {
         goto fail;
     }
-    dx = q->bike.pos.x - p->bike.pos.x;
-    dz = q->bike.pos.z - p->bike.pos.z;
+    dx = extra->bike.pos.x - player->bike.pos.x;
+    dz = extra->bike.pos.z - player->bike.pos.z;
     if (dx * dx + dz * dz < 225.0f) {
         goto fail;
     }
-    math_to_polar((s32)(-dx * 1024.0f), (s32)(dz * 1024.0f), &ang, &ratio);
-    ang -= p->heading;
-    if ((ang < 0 ? -ang : ang) < 0x1800) {
+    math_to_polar((s32)(-dx * 1024.0f), (s32)(dz * 1024.0f), &angle, &polarLen);
+    angle -= player->heading;
+    if ((angle < 0 ? -angle : angle) < 0x1800) {
         goto fail;
     }
     ret = 1;
-    q->inactive = ret;
+    extra->inactive = ret;
     return ret;
 }
 
-typedef struct { s16 key; s16 id; u8 pad[12]; } Ent_63;
-typedef struct { s32 count; Ent_63 e[1]; } Tbl_4;
+/* The spawn table: count entries sorted by lap. */
+typedef struct { s16 lap; s16 node; u8 pad[12]; } Ent_63;
+typedef struct { s32 count; Ent_63 entries[1]; } Tbl_4;
 
 extern Tbl_4 *sExtraRiderSpawns_2;
-extern Rider sExtraRiders[2];
+extern Rider sExtraRiders[2];   /* gRiders[6] and [7] */
 
-void race_update_extra_riders(Rider *p)
+/* With the human rider in first or second place: spawns the extra riders whose node it reaches on their lap, and
+   takes out those left behind. */
+void race_update_extra_riders(Rider *player)
 {
-    Rider *q;
+    Rider *extra;
 
-    if (gGame.mode == 8) return;
-    if (sExtraRiderSpawns_2 != NULL && p->race.place < 2) {
-        Ent_63 *e = sExtraRiderSpawns_2->e;
-        while (e->key < p->race.lap) e++;
-        while (e->key == p->race.lap) {
-            if (e >= &sExtraRiderSpawns_2->e[sExtraRiderSpawns_2->count]) break;
-            if (e->id == p->segment) race_spawn_extra_rider(e);
-            e++;
+    if (gGame.mode == GAME_MODE_TIME_TRIAL) {
+        return;
+    }
+    if (sExtraRiderSpawns_2 != NULL && player->race.place < 2) {
+        Ent_63 *spawn = sExtraRiderSpawns_2->entries;
+        while (spawn->lap < player->race.lap) {
+            spawn++;
+        }
+        while (spawn->lap == player->race.lap) {
+            if (spawn >= &sExtraRiderSpawns_2->entries[sExtraRiderSpawns_2->count]) {
+                break;
+            }
+            if (spawn->node == player->segment) {
+                race_spawn_extra_rider(spawn);
+            }
+            spawn++;
         }
     }
-    for (q = sExtraRiders; q < &sExtraRiders[2]; q++) race_try_despawn_extra_rider(p, q);
+    for (extra = sExtraRiders; extra < &sExtraRiders[2]; extra++) {
+        race_try_despawn_extra_rider(player, extra);
+    }
 }
 
+/* Animates the human riders' place display when their place changes (placeAnim) and has the announcer call out the
+   new place (after the first 10 s, at most every 5 s per player). */
 void race_announce_position_changes(void)
 {
-    Rider *p;
-    s32 v;
+    Rider *rider;
+    s32 place;
     s32 idx;
 
-    if (gEvent.time < 0x78) return;
-    for (p = gRiders; p < gRiders + gGame.numPlayers; p++) {
-        v = p->race.finishPlace >= 0 ? p->race.finishPlace : p->race.place;
-        if (v != p->race.prevPlace) {
-            if (p->race.placeAnim > 0x180) {
-                p->race.placeAnim = 0x300 - p->race.placeAnim;
+    if (gEvent.time < 0x78) {
+        return;
+    }
+    for (rider = gRiders; rider < gRiders + gGame.numPlayers; rider++) {
+        place = rider->race.finishPlace >= 0 ? rider->race.finishPlace : rider->race.place;
+        if (place != rider->race.prevPlace) {
+            if (rider->race.placeAnim > 0x180) {
+                rider->race.placeAnim = 0x300 - rider->race.placeAnim;
             }
-            p->race.placeAnim -= 0x20;
-            if (p->race.placeAnim <= 0) {
-                if (p->isCpu == 0 && p->race.finishPlace < 0) {
-                    if (gRaceFrame - gAnnounceTimes[p - gRiders] > 300 && gEvent.time > 600) {
-                        announce_place_change(p - gRiders, v, p->race.prevPlace);
+            rider->race.placeAnim -= 0x20;
+            if (rider->race.placeAnim <= 0) {
+                if (rider->isCpu == 0 && rider->race.finishPlace < 0) {
+                    if (gRaceFrame - gAnnounceTimes[rider - gRiders] > 300 && gEvent.time > 600) {
+                        announce_place_change(rider - gRiders, place, rider->race.prevPlace);
                     }
                 }
-                p->race.placeAnim = 1;
-                p->race.prevPlace = v;
+                rider->race.placeAnim = 1;
+                rider->race.prevPlace = place;
             }
         } else {
-            if (p->race.placeAnim < 0x200) {
-                p->race.placeAnim += 0x10;
+            if (rider->race.placeAnim < 0x200) {
+                rider->race.placeAnim += 0x10;
             }
         }
     }
 }
 
+/* Bubble-sorts sRidersByLapPos by distance to the finish line and gRiderStandings (the race order) by raceDist,
+   leaving finished and inactive riders in place, then numbers the places. */
 void race_sort_positions(void)
 {
     u8 swapped;
     s32 i;
-    Rider *t;
+    Rider *tmp;
 
     do {
         swapped = 0;
-        for (i = 0; i < 7; i++) {
+        for (i = 0; i < RIDER_COUNT - 1; i++) {
             if (sRidersByLapPos[i]->lapDistLeft > sRidersByLapPos[i + 1]->lapDistLeft) {
                 swapped = 1;
-                t = sRidersByLapPos[i];
+                tmp = sRidersByLapPos[i];
                 sRidersByLapPos[i] = sRidersByLapPos[i + 1];
-                sRidersByLapPos[i + 1] = t;
+                sRidersByLapPos[i + 1] = tmp;
             }
         }
     } while (swapped);
@@ -240,9 +279,9 @@ void race_sort_positions(void)
                 && (gRiderStandings[i]->inactive | gRiderStandings[i + 1]->inactive) == 0
                 && gRiderStandings[i]->race.finishPlace < 0) {
                 swapped = 1;
-                t = gRiderStandings[i];
+                tmp = gRiderStandings[i];
                 gRiderStandings[i] = gRiderStandings[i + 1];
-                gRiderStandings[i + 1] = t;
+                gRiderStandings[i + 1] = tmp;
             }
         }
     } while (swapped);
@@ -255,437 +294,476 @@ void race_sort_positions(void)
     }
 }
 
-void race_queue_rider_behind(Rider *p, Rider *p2, s32 p3)
+/* Takes rider out of the race until it can come back behind the CPU rider one place ahead of place (an extra rider
+   is just removed); the gap is ref's distance to that rider less 20 m. Not called. */
+void race_queue_rider_behind(Rider *rider, Rider *ref, s32 place)
 {
     s32 i;
 
-    if (p->isCpu == 2) {
-        p->inactive = 1;
+    if (rider->isCpu == 2) { /* an extra rider */
+        rider->inactive = 1;
         return;
     }
-    if (gRiderStandings[p3 - 1]->isCpu == 1 && gRiderStandings[p3 - 1]->inactive == 0) {
-        p->inactive = 1;
-        p->raceDist = -1000000.0f;
+    if (gRiderStandings[place - 1]->isCpu == 1 && gRiderStandings[place - 1]->inactive == 0) {
+        rider->inactive = 1;
+        rider->raceDist = -1000000.0f;
         for (i = sRiderQueueBehindCount; i > 0; i--) {
             sRiderQueueBehind[i] = sRiderQueueBehind[i - 1];
         }
-        sRiderQueueBehind[0].idx = p - gRiders;
-        sRiderQueueBehind[0].e = gRiderStandings[p3 - 1];
-        sRiderQueueBehind[0].d = p2->raceDist - gRiderStandings[p3 - 1]->raceDist - 20.0f;
+        sRiderQueueBehind[0].rider = rider - gRiders;
+        sRiderQueueBehind[0].watch = gRiderStandings[place - 1];
+        sRiderQueueBehind[0].gap = ref->raceDist - gRiderStandings[place - 1]->raceDist - 20.0f;
         sRiderQueueBehindCount++;
     }
 }
 
-void race_queue_rider_ahead(Rider *a, Rider *b, s32 n)
+/* The same with the CPU rider one place behind place. Not called. */
+void race_queue_rider_ahead(Rider *rider, Rider *ref, s32 place)
 {
-    Rider *p;
+    Rider *next;
     s32 i;
 
-    if (a->isCpu == 2) {
-        a->inactive = 1;
+    if (rider->isCpu == 2) { /* an extra rider */
+        rider->inactive = 1;
         return;
     }
-    p = gRiderStandings[n + 1];
-    if (p->isCpu == 1 && p->inactive == 0) {
-        a->inactive = 1;
+    next = gRiderStandings[place + 1];
+    if (next->isCpu == 1 && next->inactive == 0) {
+        rider->inactive = 1;
         i = sRiderQueueAheadCount;
-        a->raceDist = 1000000.0f;
+        rider->raceDist = 1000000.0f;
         while (i > 0) {
             sRiderQueueAhead[i] = sRiderQueueAhead[i - 1];
             i = i - 1;
         }
-        *(s16 *)&sRiderQueueAhead[0] = (s16)(((s32)a - (s32)gRiders) * -0x41041041 >> 5);
-        sRiderQueueAhead[0].w1 = (s32)gRiderStandings[n + 1];
-        sRiderQueueAhead[0].f2 = (gRiderStandings[n + 1]->raceDist - b->raceDist) - 20.0f;
+        /* rider - gRiders, written out (a multiplication by the inverse of 0x7E0) */
+        *(s16 *)&sRiderQueueAhead[0] = (s16)(((s32)rider - (s32)gRiders) * -0x41041041 >> 5);
+        sRiderQueueAhead[0].watch = (s32)gRiderStandings[place + 1];
+        sRiderQueueAhead[0].gap = (gRiderStandings[place + 1]->raceDist - ref->raceDist) - 20.0f;
         sRiderQueueAheadCount = sRiderQueueAheadCount + 1;
     }
 }
 
-void race_reinsert_queued_rider(Rider *p1, s16 *p2, f32 p3, s32 *p4)
+/* Brings back the first rider of a queue dist metres ahead of (or behind) ref along the racing line, on the lap
+   that puts it there, and removes it from the queue. */
+void race_reinsert_queued_rider(Rider *ref, s16 *queue, f32 dist, s32 *count)
 {
-    s32 v4;
-    s32 idx;
-    s32 cnt;
+    s32 lap;
+    s32 seg;
+    s32 n;
     s32 i;
     s32 lim;
-    PathNode *r;
+    PathNode *node;
 
-    v4 = p1->lapAdjust + p1->race.lap;
-    if (0.0f < p3) {
-        idx = p1->segment;
-        while (0.0f < p3) {
+    lap = ref->lapAdjust + ref->race.lap;
+    if (0.0f < dist) {
+        seg = ref->segment;
+        while (0.0f < dist) {
             {
-                s32 off = idx * 0x6c;
-                r = (PathNode *)(off + (s32)gPathNodes);
+                s32 off = seg * 0x6c; /* &gPathNodes[seg], written out */
+                node = (PathNode *)(off + (s32)gPathNodes);
             }
-            idx = r->next;
-            p3 = p3 - r->length;
-            if (idx == gPathFinishNode) {
-                v4 = v4 + 1;
+            seg = node->next;
+            dist = dist - node->length;
+            if (seg == gPathFinishNode) {
+                lap = lap + 1;
             }
         }
     } else {
-        idx = p1->segment;
-        while (p3 < 0.0f) {
+        seg = ref->segment;
+        while (dist < 0.0f) {
             {
-                s32 off = idx * 0x6c;
-                r = (PathNode *)(off + (s32)gPathNodes);
+                s32 off = seg * 0x6c;
+                node = (PathNode *)(off + (s32)gPathNodes);
             }
-            idx = r->prev;
-            p3 = p3 + r->length;
-            if (idx == gPathFinishNode) {
-                v4 = v4 - 1;
+            seg = node->prev;
+            dist = dist + node->length;
+            if (seg == gPathFinishNode) {
+                lap = lap - 1;
             }
         }
     }
-    gRiders[*p2].race.lap = v4;
-    gRiders[*p2].lapAdjust = 0;
-    gRiders[*p2].inactive = 0;
-    gRiders[*p2].prevSegment = idx;
-    bike_respawn(&gRiders[*p2]);
-    cnt = *p4 - 1;
-    *p4 = cnt;
-    for (i = 0; i < *p4; i++) {
-        ((T3 *)p2)[i] = ((T3 *)p2)[i + 1];
+    gRiders[*queue].race.lap = lap;
+    gRiders[*queue].lapAdjust = 0;
+    gRiders[*queue].inactive = 0;
+    gRiders[*queue].prevSegment = seg;
+    bike_respawn(&gRiders[*queue]);
+    n = *count - 1;
+    *count = n;
+    for (i = 0; i < *count; i++) {
+        ((T3 *)queue)[i] = ((T3 *)queue)[i + 1];
     }
 }
 
+/* The field of the current gTracks record used here. */
 typedef struct {
     u8 pad0[0x20];
-    f32 f20[4];
+    f32 cpuSpeed[4];            /* the CPU riders' time scale, by difficulty */
 } Tune;
 
 extern Tune *gCurTrack_33;
 
+/* Sorts the positions, has the announcer call out places now and then, and rubber-bands the riders through their
+   time scale; then the extra riders and the CPU riders' lanes. */
 void race_update_riders(void)
 {
-    Rider *list[4];
+    Rider *humans[4];
     Rider **lp;
-    Rider *pl;
-    s32 n1;
-    s32 n0;
-    f32 sum0;
-    f32 sum1;
+    Rider *rider;
+    s32 numCpu;
+    s32 numHumans;
+    f32 humanAvg;
+    f32 cpuAvg;
     s32 i;
-    s32 k;
-    s32 t;
-    s32 best;
-    s32 idx;
-    f32 f;
-    f32 d;
-    f32 e;
-    f32 g;
+    s32 cpuRank;
+    s32 now;
+    s32 oldest;
+    s32 player;
+    f32 scale;
+    f32 cpuLead;
+    f32 diff;
+    f32 trackScale;
 
     race_sort_positions();
-    n1 = 0;
-    n0 = 0;
-    sum0 = 0.0f;
-    sum1 = 0.0f;
+    numCpu = 0;
+    numHumans = 0;
+    humanAvg = 0.0f;
+    cpuAvg = 0.0f;
     for (i = 0; i < gEvent.numRiders; i++) {
         if (gRiders[i].inactive == 0) {
-            switch (gRiders[i].isCpu) {
+            switch (gRiders[i].isCpu) { /* the extra riders (2) are left out */
             case 0:
-                list[n0] = &gRiders[i];
-                n0++;
-                sum0 += gRiders[i].raceDist;
+                humans[numHumans] = &gRiders[i];
+                numHumans++;
+                humanAvg += gRiders[i].raceDist;
                 break;
             case 1:
-                n1++;
-                sum1 += gRiders[i].raceDist;
+                numCpu++;
+                cpuAvg += gRiders[i].raceDist;
                 break;
             }
         }
     }
-    if (n0 != 0) {
-        t = gRaceFrame;
-        if (t - gLastSpeechTime > 0x384) {
-            best = t;
-            idx = -1;
-            if (n0 >= 2) {
+    if (numHumans != 0) {
+        now = gRaceFrame;
+        if (now - gLastSpeechTime > 0x384) { /* 15 s */
+            oldest = now;
+            player = -1;
+            if (numHumans >= 2) {
                 for (i = 0; i < gGame.numPlayers; i++) {
-                    if (gAnnounceTimes[i] < best) {
-                        best = gAnnounceTimes[i];
-                        idx = i;
+                    if (gAnnounceTimes[i] < oldest) {
+                        oldest = gAnnounceTimes[i];
+                        player = i;
                     }
                 }
-                if (idx >= 0) {
-                    if (gRiders[idx].lapDistLeft > 150.0f || (gRiders[idx].race.place != 0 && gRiders[idx].race.lap != gEvent.numLaps - 1)) {
-                        announce_place(idx, gRiders[idx].race.place + 1);
+                if (player >= 0) {
+                    if (gRiders[player].lapDistLeft > 150.0f || (gRiders[player].race.place != 0 && gRiders[player].race.lap != gEvent.numLaps - 1)) {
+                        announce_place(player, gRiders[player].race.place + 1);
                     }
                 }
             } else {
-                pl = gRiders;
-                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->lapDistLeft > 150.0f || (pl->race.place != 0 && pl->race.lap != gEvent.numLaps - 1)))) {
-                    if (pl->race.place != 0) {
-                        pl = gRiderStandings[pl->race.place - 1];
+                /* the player's place, every 20 s at most, else the place of the rider ahead or behind */
+                rider = gRiders;
+                if (!(now - gAnnounceTimes[0] > 0x4B0 && (rider->lapDistLeft > 150.0f || (rider->race.place != 0 && rider->race.lap != gEvent.numLaps - 1)))) {
+                    if (rider->race.place != 0) {
+                        rider = gRiderStandings[rider->race.place - 1];
                     } else {
-                        pl = gRiderStandings[pl->race.place + 1];
+                        rider = gRiderStandings[rider->race.place + 1];
                     }
                 }
-                announce_place(pl - gRiders, pl->race.place + 1);
+                announce_place(rider - gRiders, rider->race.place + 1);
             }
         }
         if (gEvent.time == 300) {
             announce_early_leader(gRiderStandings[0] - gRiders);
         }
     }
-    if (n1 != 0) {
-        sum1 /= n1;
+    if (numCpu != 0) {
+        cpuAvg /= numCpu;
     }
-    if (n0 != 0) {
-        sum0 /= n0;
+    if (numHumans != 0) {
+        humanAvg /= numHumans;
     } else {
-        sum0 = sum1;
+        humanAvg = cpuAvg;
     }
-    if (n1 == 0) {
-        sum1 = sum0;
+    if (numCpu == 0) {
+        cpuAvg = humanAvg;
     }
-    if (gGame.flags & 0x10) {
-        k = 0;
+    if (gGame.flags & GAME_FLAG_RIDER_SELECT) {
+        /* the race behind the rider select: the CPU riders spread out evenly around the lap */
+        cpuRank = 0;
         for (i = 0; i < gEvent.numRiders; i++) {
-            pl = gRiderStandings[i];
-            if (pl->isCpu == 1) {
-                e = pl->raceDist - sum1;
-                e += (gPathLapLength / n1) * (k - (n1 - 1) * 0.5f);
-                f = 1.0f - e / 100.0f;
-                if (f < 0.9f) {
-                    f = 0.9f;
+            rider = gRiderStandings[i];
+            if (rider->isCpu == 1) {
+                diff = rider->raceDist - cpuAvg;
+                diff += (gPathLapLength / numCpu) * (cpuRank - (numCpu - 1) * 0.5f);
+                scale = 1.0f - diff / 100.0f;
+                if (scale < 0.9f) {
+                    scale = 0.9f;
                 }
-                if (f > 1.1f) {
-                    f = 1.1f;
+                if (scale > 1.1f) {
+                    scale = 1.1f;
                 }
-                if (f < pl->timeScale) {
-                    pl->timeScale = pl->timeScale - 0.001f;
+                if (scale < rider->timeScale) {
+                    rider->timeScale = rider->timeScale - 0.001f;
                 } else {
-                    pl->timeScale = pl->timeScale + 0.001f;
+                    rider->timeScale = rider->timeScale + 0.001f;
                 }
-                pl->timeScale = f;
-                k++;
+                rider->timeScale = scale; /* the step above is overwritten */
+                cpuRank++;
             }
         }
-    } else if (n0 == 0) {
-        k = 0;
+    } else if (numHumans == 0) {
+        /* no human riders: the CPU riders keep together */
+        cpuRank = 0;
         for (i = 0; i < gEvent.numRiders; i++) {
-            pl = gRiderStandings[i];
-            if (pl->isCpu == 1) {
-                e = pl->raceDist - sum1;
-                e -= (k - (n1 - 1) * 0.5f) * 0.01f;
-                f = 1.0f - e * 0.00390625f;
-                if (f < 0.9f) {
-                    f = 0.9f;
+            rider = gRiderStandings[i];
+            if (rider->isCpu == 1) {
+                diff = rider->raceDist - cpuAvg;
+                diff -= (cpuRank - (numCpu - 1) * 0.5f) * 0.01f;
+                scale = 1.0f - diff * 0.00390625f;
+                if (scale < 0.9f) {
+                    scale = 0.9f;
                 }
-                if (f > 1.1f) {
-                    f = 1.1f;
+                if (scale > 1.1f) {
+                    scale = 1.1f;
                 }
-                if (f < pl->timeScale) {
-                    pl->timeScale = pl->timeScale - 0.001f;
+                if (scale < rider->timeScale) {
+                    rider->timeScale = rider->timeScale - 0.001f;
                 } else {
-                    pl->timeScale = pl->timeScale + 0.001f;
+                    rider->timeScale = rider->timeScale + 0.001f;
                 }
-                pl->timeScale = f;
-                k++;
+                rider->timeScale = scale; /* likewise */
+                cpuRank++;
             }
         }
-    } else if (gGame.mode != 8 && gEvent.state >= 5) {
-        d = ((sum1 - sum0) - 30.0f) * 0.00390625f;
-        if (d > 0.15f) {
-            d = 0.15f;
-        } else if (d < -0.15f) {
-            d = -0.15f;
+    } else if (gGame.mode != GAME_MODE_TIME_TRIAL && gEvent.state >= 5) {
+        /* after the countdown: CPU riders slow down as their pack leads the humans by more than 30 m and speed up as
+           it falls behind, around the track's speed for the difficulty and their own skill; humans close up */
+        cpuLead = ((cpuAvg - humanAvg) - 30.0f) * 0.00390625f;
+        if (cpuLead > 0.15f) {
+            cpuLead = 0.15f;
+        } else if (cpuLead < -0.15f) {
+            cpuLead = -0.15f;
         }
         for (i = 0; i < gEvent.numRiders; i++) {
-            pl = &gRiders[i];
-            if (pl->isCpu != 0) {
-                f = 0.0f;
-                if (n1 >= 2) {
-                    f = pl->aiSkill;
+            rider = &gRiders[i];
+            if (rider->isCpu != 0) {
+                scale = 0.0f;
+                if (numCpu >= 2) {
+                    scale = rider->aiSkill;
                 }
-                e = pl->raceDist - sum1;
-                if (e > 64.0f) {
-                    f -= 0.1f;
+                diff = rider->raceDist - cpuAvg;
+                if (diff > 64.0f) {
+                    scale -= 0.1f;
                 }
-                f += 1.0f - d;
-                if (pl->finishState) {
-                    f = 1.0f;
-                } else if (gCheatFlags & 0x1000) {
-                    f *= gCurTrack_33->f20[2] + 0.05f;
+                scale += 1.0f - cpuLead;
+                if (rider->finishState) {
+                    scale = 1.0f;
+                } else if (gCheatFlags & CHEAT_BEAT_THIS) {
+                    scale *= gCurTrack_33->cpuSpeed[2] + 0.05f;
                 } else {
-                    g = gCurTrack_33->f20[gGame.difficulty - 1];
-                    f *= g;
+                    trackScale = gCurTrack_33->cpuSpeed[gGame.difficulty - 1];
+                    scale *= trackScale;
                     if (gEvent.flags & 0x200) {
-                        f = g * 1.15f;
+                        scale = trackScale * 1.15f;
                     }
                 }
-                if (f < pl->timeScale) {
-                    pl->timeScale = pl->timeScale - 0.0002f;
+                if (scale < rider->timeScale) {
+                    rider->timeScale = rider->timeScale - 0.0002f;
                 } else {
-                    pl->timeScale = pl->timeScale + 0.0002f;
+                    rider->timeScale = rider->timeScale + 0.0002f;
                 }
             } else {
-                e = sum0 - pl->raceDist;
-                if (e > 2.0f) {
-                    e += 16.0f;
-                } else if (e < -2.0f) {
-                    e -= 16.0f;
+                diff = humanAvg - rider->raceDist;
+                if (diff > 2.0f) {
+                    diff += 16.0f;
+                } else if (diff < -2.0f) {
+                    diff -= 16.0f;
                 }
-                f = e * 0.0009765625f + 1.0f;
-                if (f > 1.05f) {
-                    f = 1.05f;
-                } else if (f < 0.95f) {
-                    f = 0.95f;
+                scale = diff * 0.0009765625f + 1.0f;
+                if (scale > 1.05f) {
+                    scale = 1.05f;
+                } else if (scale < 0.95f) {
+                    scale = 0.95f;
                 }
-                if (f < pl->timeScale) {
-                    pl->timeScale = pl->timeScale - 0.001f;
+                if (scale < rider->timeScale) {
+                    rider->timeScale = rider->timeScale - 0.001f;
                 } else {
-                    pl->timeScale = pl->timeScale + 0.001f;
+                    rider->timeScale = rider->timeScale + 0.001f;
                 }
             }
         }
     }
-    if (gGame.numPlayers == 1 && n0 == 1) {
-        race_update_extra_riders(list[0]);
+    if (gGame.numPlayers == 1 && numHumans == 1) {
+        race_update_extra_riders(humans[0]);
     }
     ai_update_lanes();
 }
 
-#define NEAR(r, x, top, done)                           {                                                       Rider *q_;                                         f32 v_, k_;                                     top:                                                    q_ = *l;                                            if (q_->isCpu != 0) { v_ = q_->laneOffset; k_ = 0.999f; } else { v_ = q_->lateral; k_ = 0.999f; } v_ = v_ - (x);                                      l++;                                                if (v_ < k_ && (k_ = -k_) < v_) {                              r = 1;                                              goto done;                                      }                                                   if (*l != NULL) {                                       goto top;                                       }                                                   r = 0;                                          done:;                                              }
+/* ai_lane_is_blocked written out in place (with its own labels): result = 1 when a rider of the NULL-terminated
+   list at scan is within 0.999 m of lateral offset x. */
+#define NEAR(result, x, top, done)                                      \
+    {                                                                   \
+        Rider *q_;                                                      \
+        f32 v_, k_;                                                     \
+    top:                                                                \
+        q_ = *scan;                                                     \
+        if (q_->isCpu != 0) { v_ = q_->laneOffset; k_ = 0.999f; }       \
+        else { v_ = q_->lateral; k_ = 0.999f; }                         \
+        v_ = v_ - (x);                                                  \
+        scan++;                                                         \
+        if (v_ < k_ && (k_ = -k_) < v_) {                               \
+            result = 1;                                                 \
+            goto done;                                                  \
+        }                                                               \
+        if (*scan != NULL) {                                            \
+            goto top;                                                   \
+        }                                                               \
+        result = 0;                                                     \
+    done:;                                                              \
+    }
 
+/* Picks each CPU rider's lane (laneOffset from the racing line): within the track, clear of riders alongside,
+   otherwise drifting back to the racing line. */
 void ai_update_lanes(void)
 {
-    Rider *list[8];
-    Rider *p;
-    Rider *q;
+    Rider *nearby[8];
+    Rider *rider;
+    Rider *other;
     Rider **out;
-    PathNode *t;
+    PathNode *pathNode;
     s32 i;
     s32 j;
-    s32 n;
+    s32 numNearby;
     s32 node;
     f32 lo;
     f32 hi;
-    f32 d;
+    f32 ahead;
     f32 dx;
     f32 dz;
-    f32 dist;
-    f32 v;
-    f32 c;
-    f32 e;
+    f32 distSq;
+    f32 otherLane;
+    f32 lane;
+    f32 delta;
     f32 best;
     f32 target;
     f32 len;
     f32 diff;
-    u8 hit;
-    f32 w;
-    Rider **l;
-    f32 x;
+    u8 blocked;
+    f32 otherLat;
+    Rider **scan;
+    f32 curLane;
 
-    for (i = 0; i < 8; i++) {
-        p = sRidersByLapPos[i];
-        if (p->isCpu == 0 || p->inactive != 0) {
+    for (i = 0; i < RIDER_COUNT; i++) {
+        rider = sRidersByLapPos[i];
+        if (rider->isCpu == 0 || rider->inactive != 0) {
             continue;
         }
-        if (p >= sExtraRiders) {
-            p->laneOffset = sExtraRiderLanes[p - sExtraRiders];
+        if (rider >= sExtraRiders) {
+            rider->laneOffset = sExtraRiderLanes[rider - sExtraRiders];
         }
         lo = -20.0f;
         hi = 20.0f;
-        node = p->segment;
+        node = rider->segment;
         j = 6;
         do {
-            t = (PathNode *)(node * sizeof(PathNode) + (u32)gPathNodes);
-            if (lo < -t->widthNeg) {
-                lo = -t->widthNeg;
+            pathNode = (PathNode *)(node * sizeof(PathNode) + (u32)gPathNodes);
+            if (lo < -pathNode->widthNeg) {
+                lo = -pathNode->widthNeg;
             }
-            if (t->widthPos < hi) {
-                hi = t->widthPos;
+            if (pathNode->widthPos < hi) {
+                hi = pathNode->widthPos;
             }
             j--;
-            node = t->next;
+            node = pathNode->next;
         } while (j != 0);
-        if (hi < p->laneOffset) {
-            p->laneOffset = hi;
+        if (hi < rider->laneOffset) {
+            rider->laneOffset = hi;
         }
-        if (p->laneOffset < lo) {
-            p->laneOffset = lo;
+        if (rider->laneOffset < lo) {
+            rider->laneOffset = lo;
         }
-        n = 0;
+        numNearby = 0;
         j = 0;
-        p->laneBlocked = 0;
-        for (; j < 8; j++) {
+        rider->laneBlocked = 0;
+        for (; j < RIDER_COUNT; j++) {
             if (i == j) {
                 continue;
             }
-            q = sRidersByLapPos[j];
-            if (q->inactive != 0) {
+            other = sRidersByLapPos[j];
+            if (other->inactive != 0) {
                 continue;
             }
-            d = p->lapDistLeft - q->lapDistLeft + 1.0f;
-            if (d < 0.0f) {
-                d += gPathLapLength;
+            /* the riders from 1 m behind to 4 m ahead, within about 10 m */
+            ahead = rider->lapDistLeft - other->lapDistLeft + 1.0f;
+            if (ahead < 0.0f) {
+                ahead += gPathLapLength;
             }
-            if (d > 5.0f) {
+            if (ahead > 5.0f) {
                 continue;
             }
-            dx = q->bike.pos.x - p->bike.pos.x;
-            dz = q->bike.pos.z - p->bike.pos.z;
-            dist = dx * dx + dz * dz;
-            if (d * d + 100.0f < dist) {
+            dx = other->bike.pos.x - rider->bike.pos.x;
+            dz = other->bike.pos.z - rider->bike.pos.z;
+            distSq = dx * dx + dz * dz;
+            if (ahead * ahead + 100.0f < distSq) {
                 continue;
             }
-            list[n] = q;
-            n++;
-            if (dist > 2.25f) {
+            nearby[numNearby] = other;
+            numNearby++;
+            if (distSq > 2.25f) {
                 continue;
             }
-            w = q->lateral;
-            diff = w - p->lateral;
-            if (d < 2.0f && dist < 2.25f) {
+            /* one alongside, within 1.5 m, bounds the lanes on its side */
+            otherLat = other->lateral;
+            diff = otherLat - rider->lateral;
+            if (ahead < 2.0f && distSq < 2.25f) {
                 if (diff > 0.0f) {
-                    if (w < hi) {
-                        hi = w;
+                    if (otherLat < hi) {
+                        hi = otherLat;
                     }
                 } else {
-                    if (lo < w) {
-                        lo = w;
+                    if (lo < otherLat) {
+                        lo = otherLat;
                     }
                 }
             }
         }
-        list[n] = NULL;
-        if (n != 0) {
-            l = list;
-            x = p->laneOffset;
-            NEAR(hit, x, n1, d1);
-            if (hit) {
+        nearby[numNearby] = NULL;
+        if (numNearby != 0) {
+            scan = nearby;
+            curLane = rider->laneOffset;
+            NEAR(blocked, curLane, top1, done1);
+            if (blocked) {
                 best = 2.0f;
-                for (n--; n >= 0; n--) {
-                    q = list[n];
-                    if (q->isCpu != 0) {
-                        v = q->laneOffset;
+                for (numNearby--; numNearby >= 0; numNearby--) {
+                    other = nearby[numNearby];
+                    if (other->isCpu != 0) {
+                        otherLane = other->laneOffset;
                     } else {
-                        v = q->lateral;
+                        otherLane = other->lateral;
                     }
-                    c = v - 1.0f;
-                    e = p->laneOffset - c;
-                    if ((e > 0.0f ? e : -e) < best && c < hi && lo < c) {
-                        l = list;
-                        NEAR(hit, c, n2, d2);
-                        if (!hit) {
-                            target = c;
-                            best = p->laneOffset - target;
+                    lane = otherLane - 1.0f;
+                    delta = rider->laneOffset - lane;
+                    if ((delta > 0.0f ? delta : -delta) < best && lane < hi && lo < lane) {
+                        scan = nearby;
+                        NEAR(blocked, lane, top2, done2);
+                        if (!blocked) {
+                            target = lane;
+                            best = rider->laneOffset - target;
                             if (!(best > 0.0f)) {
                                 best = -best;
                             }
                         }
                     }
-                    c = v + 1.0f;
-                    e = p->laneOffset - c;
-                    if ((e > 0.0f ? e : -e) < best && c < hi && lo < c) {
-                        l = list;
-                        NEAR(hit, c, n3, d3);
-                        if (!hit) {
-                            target = c;
-                            best = p->laneOffset - target;
+                    lane = otherLane + 1.0f;
+                    delta = rider->laneOffset - lane;
+                    if ((delta > 0.0f ? delta : -delta) < best && lane < hi && lo < lane) {
+                        scan = nearby;
+                        NEAR(blocked, lane, top3, done3);
+                        if (!blocked) {
+                            target = lane;
+                            best = rider->laneOffset - target;
                             if (!(best > 0.0f)) {
                                 best = -best;
                             }
@@ -693,22 +771,25 @@ void ai_update_lanes(void)
                     }
                 }
                 if (best < 2.0f) {
-                    p->laneOffset = target;
+                    rider->laneOffset = target;
                 }
                 continue;
             }
         }
-        if (p < sExtraRiders) {
-            if (p->laneOffset > 0.0f) {
-                p->laneOffset -= 0.02f;
+        if (rider < sExtraRiders) {
+            if (rider->laneOffset > 0.0f) {
+                rider->laneOffset -= 0.02f;
             } else {
-                p->laneOffset += 0.02f;
+                rider->laneOffset += 0.02f;
             }
         }
     }
 }
 
-void race_init_ai_skills(s32 arg0, s32 count) {
+/* Spreads the CPU riders' skills evenly from -0.1 to 0.1 in sAiRiderOrder (then +0.01 for exactly 0.1, -0.01 for
+   the others) and sets their time scale to 1.03 - skill. */
+void race_init_ai_skills(s32 first, s32 count)
+{
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -726,64 +807,69 @@ void race_init_ai_skills(s32 arg0, s32 count) {
     }
 }
 
-void race_jitter_ai_order(s32 p1, s32 n)
+/* Shuffles the CPU riders' order a little: each gets the key 100 * position + two random bytes, then the order is
+   bubble-sorted by key. */
+void race_jitter_ai_order(s32 first, s32 n)
 {
-    s32 arr[8];
-    s32 *p;
+    s32 keys[8];
+    s32 *key;
     s32 i;
-    s32 val;
-    s32 a;
-    s32 b;
-    u8 flag;
-    s32 t;
+    s32 base;
+    s32 rand1;
+    s32 rand2;
+    u8 swapped;
+    s32 tmp;
 
     i = 0;
     if (n > 0) {
-        p = arr;
-        val = i;
+        key = keys;
+        base = i;
         do {
-            *p = val;
-            a = random_byte();
-            b = random_byte();
-            val += 100;
+            *key = base;
+            rand1 = random_byte();
+            rand2 = random_byte();
+            base += 100;
             i++;
-            *p = *p + (a + b);
-            p++;
+            *key = *key + (rand1 + rand2);
+            key++;
         } while (i < n);
     }
     do {
-        flag = 0;
-        for (i = 0; i < n; i++) {
-            if (arr[i] > arr[i + 1]) {
-                t = sAiRiderOrder[i];
+        swapped = 0;
+        for (i = 0; i < n; i++) { /* original bug: the last test reads keys[n], never set */
+            if (keys[i] > keys[i + 1]) {
+                tmp = sAiRiderOrder[i];
                 sAiRiderOrder[i] = sAiRiderOrder[i + 1];
-                sAiRiderOrder[i + 1] = t;
-                t = arr[i];
-                arr[i] = arr[i + 1];
-                arr[i + 1] = t;
-                flag = 1;
+                sAiRiderOrder[i + 1] = tmp;
+                tmp = keys[i];
+                keys[i] = keys[i + 1];
+                keys[i + 1] = tmp;
+                swapped = 1;
             }
         }
-    } while (flag);
+    } while (swapped);
 }
 
+/* The fields of the current gTracks record used here. */
 typedef struct {
     u8 pad0[0x2C];
-    s32 state;
+    s32 envType;                /* 0 stadium, 1 outdoor, 2 desert */
     u8 pad1[0x20];
-    u32 flags;
+    u32 flags;                  /* 2: the user track */
 } Obj_46;
 
 extern Obj_46 *gCurTrack_34;
 
-void race_load_extra_rider_spawns(s32 arg0)
+/* Loads the track's extra-rider spawn table (the drones resource), except in the desert and on the user track. */
+void race_load_extra_rider_spawns(s32 resSet)
 {
-    if (gCurTrack_34->state != 2 && (gCurTrack_34->flags & 2) == 0) {
+    if (gCurTrack_34->envType != 2 && (gCurTrack_34->flags & 2) == 0) {
         sExtraRiderSpawnsIdx = track_res_find(gGidDrones);
         sExtraRiderSpawns = track_res_get(gGidDrones);
     }
 }
 
+/* Drops the spawn table. */
 void race_free_extra_rider_spawns(void)
 {
     if (sExtraRiderSpawns != 0) {
@@ -791,42 +877,46 @@ void race_free_extra_rider_spawns(void)
     }
 }
 
-void race_set_grid_order(s32 a, s32 b)
+/* Sets the next race's grid: the riders alternate either side of the middle, so the human riders (the first ones)
+   start in the middle positions. */
+void race_set_grid_order(s32 numPlayers, s32 numCpu)
 {
-    s32 n = a + b;
+    s32 n = numPlayers + numCpu;
     s32 i;
     s32 half = n / 2;
-    u8 *q;
+    u8 *slot;
 
     if (n < 3) {
-        u8 *r;
+        u8 *order;
         sGridOrderNext[0] = 0;
-        r = sGridOrderNext;
-        r[1] = 1;
+        order = sGridOrderNext;
+        order[1] = 1;
         return;
     }
     for (i = 0; i < n; i++) {
-        q = sGridOrderNext + i;
+        slot = sGridOrderNext + i;
         if (i & 1) {
-            *q = half + i / 2;
+            *slot = half + i / 2;
         } else {
-            *q = half - (i / 2 + 1);
+            *slot = half - (i / 2 + 1);
         }
     }
 }
 
+/* Resets the next race's grid to riders 0 and 1 in positions 0 and 1. */
 void race_reset_grid_order(void)
 {
     mem_fill(sGridOrderNext, 0, 8);
     sGridOrderNext[1] = 1;
 }
 
-void race_randomize_ai_order(s32 arg0, s32 count)
+/* Puts the count CPU riders (from rider first on) in random order in sAiRiderOrder, then sets their skills. */
+void race_randomize_ai_order(s32 first, s32 count)
 {
     s32 i, k;
 
     for (i = 0; i < count; i++) {
-        sAiRiderOrder[i] = (((s32)random_byte() * count) >> 8) + arg0;
+        sAiRiderOrder[i] = (((s32)random_byte() * count) >> 8) + first;
         for (k = 0; k < i; k++) {
             if (sAiRiderOrder[k] == sAiRiderOrder[i]) {
                 i--;
@@ -834,93 +924,100 @@ void race_randomize_ai_order(s32 arg0, s32 count)
             }
         }
     }
-    race_init_ai_skills(arg0, count);
+    race_init_ai_skills(first, count);
 }
 
 typedef struct {
-    s16 h0;
+    s16 rider;
     s16 rest[5];
 } Ent12;
 
-void race_init_standings(s32 arg0) {
+/* Puts the riders in index order in the standings and the lap order, and empties the rider queues. */
+void race_init_standings(s32 count)
+{
     s32 i = 0;
-    s16 m1 = -1;
-    Ent12 *p0 = sRiderQueueAhead;
-    Ent12 *p1 = sRiderQueueBehind;
-    Rider **p2 = gRiderStandings;
-    Rider **p3 = sRidersByLapPos;
-    Rider *v = gRiders;
+    s16 none = -1;
+    Ent12 *queueAhead = sRiderQueueAhead;
+    Ent12 *queueBehind = sRiderQueueBehind;
+    Rider **standing = gRiderStandings;
+    Rider **byLapPos = sRidersByLapPos;
+    Rider *rider = gRiders;
     do {
-        *p3 = v;
-        *p2 = v;
-        p1->h0 = m1;
-        p0->h0 = m1;
-        p0++;
-        p1++;
-        p2++;
-        p3++;
-        v->standing = i;
+        *byLapPos = rider;
+        *standing = rider;
+        queueBehind->rider = none;
+        queueAhead->rider = none;
+        queueAhead++;
+        queueBehind++;
+        standing++;
+        byLapPos++;
+        rider->standing = i;
         i++;
-        v++;
-    } while (i < 8);
+        rider++;
+    } while (i < RIDER_COUNT);
     sRiderQueueAheadCount = 0;
     sRiderQueueBehindCount = 0;
 }
 
 typedef struct {
-    s32 unk0;
-    Rider *obj;
-    f32 thr;
+    s32 rider;
+    Rider *watch;
+    f32 gap;
 } Ent_67;
 
-extern Ent_67 sRiderQueueAhead_2;
+extern Ent_67 sRiderQueueAhead_2;   /* the first entries */
 extern Ent_67 sRiderQueueBehind_2;
 
-void race_update_rider_queues(Rider *p)
+/* Brings back the first rider of each queue once the rider it watches is within its gap of rider: 70 m ahead of
+   rider, or 30 m behind. Not called. */
+void race_update_rider_queues(Rider *rider)
 {
-    f32 a, b, d;
+    f32 a, b, gap;
     if (sRiderQueueAheadCount > 0) {
-        b = sRiderQueueAhead_2.obj->raceDist;
-        a = p->raceDist;
-        d = b - a;
-        if (d < sRiderQueueAhead_2.thr) {
-            race_reinsert_queued_rider(p, &sRiderQueueAhead_2, 70.0f, &sRiderQueueAheadCount);
+        b = sRiderQueueAhead_2.watch->raceDist;
+        a = rider->raceDist;
+        gap = b - a;
+        if (gap < sRiderQueueAhead_2.gap) {
+            race_reinsert_queued_rider(rider, &sRiderQueueAhead_2, 70.0f, &sRiderQueueAheadCount);
         }
     }
     if (sRiderQueueBehindCount > 0) {
-        b = p->raceDist;
-        a = sRiderQueueBehind_2.obj->raceDist;
-        d = b - a;
-        if (d < sRiderQueueBehind_2.thr) {
-            race_reinsert_queued_rider(p, &sRiderQueueBehind_2, -30.0f, &sRiderQueueBehindCount);
+        b = rider->raceDist;
+        a = sRiderQueueBehind_2.watch->raceDist;
+        gap = b - a;
+        if (gap < sRiderQueueBehind_2.gap) {
+            race_reinsert_queued_rider(rider, &sRiderQueueBehind_2, -30.0f, &sRiderQueueBehindCount);
         }
     }
 }
 
-s32 ai_lane_is_blocked(Rider **p, f32 x)
+/* True when a rider of the NULL-terminated list is within 0.999 m of lane (CPU riders by their lane, humans by their
+   offset from the racing line). Not called: ai_update_lanes has it written out (NEAR). */
+s32 ai_lane_is_blocked(Rider **list, f32 lane)
 {
-    f32 d, k;
-    Rider *o;
+    f32 delta, width;
+    Rider *other;
 
     do {
-        o = *p;
-        if (o->isCpu != 0) {
-            d = o->laneOffset;
-            k = 0.999f;
-            d = d - x;
+        other = *list;
+        if (other->isCpu != 0) {
+            delta = other->laneOffset;
+            width = 0.999f;
+            delta = delta - lane;
         } else {
-            d = o->lateral;
-            k = 0.999f;
-            d = d - x;
+            delta = other->lateral;
+            width = 0.999f;
+            delta = delta - lane;
         }
-        p++;
-        if (d < k && -k < d) {
+        list++;
+        if (delta < width && -width < delta) {
             return 1;
         }
-    } while (*p != 0);
+    } while (*list != 0);
     return 0;
 }
 
+/* Restores the grid saved by race_apply_grid_order (replays). */
 void race_restore_grid_order(void)
 {
     gGridOrder = sGridOrderSaved;
@@ -928,46 +1025,49 @@ void race_restore_grid_order(void)
 
 extern Blob6 sGridOrderNext_2;
 
-void race_apply_grid_order(void) {
+/* Makes the next race's grid current, and saves a copy. */
+void race_apply_grid_order(void)
+{
     gGridOrder = sGridOrderNext_2;
     sGridOrderSaved = gGridOrder;
 }
 
+/* In a season, sets the next race's grid from the season standings. */
 void race_grid_from_standings(void)
 {
     s32 i;
     s32 j;
-    s32 n;
-    u8 *arr;
-    Event *t;
+    s32 numRiders;
+    u8 *season;
+    Event *event;
     u8 *hb;
 
     mem_fill_3(sGridOrderNext, -1, 6);
-    if (gGame.mode == 1) {
+    if (gGame.mode == GAME_MODE_SEASON) {
         Event *p = &gEvent;
         i = 0;
         if (p->numRiders > 0) {
-            t = p;
+            event = p;
             do {
                 j = 0;
-                if (t->numRiders > 0) {
-                    arr = (u8 *)gSeason;
+                if (event->numRiders > 0) {
+                    season = (u8 *)gSeason;
                     hb = (u8 *)0x800F0000;
-                    __asm__ __volatile__("" : "+r"(hb));
-                    n = *(s16 *)(hb + 0x5CA); /* gEvent.numRiders */
+                    __asm__ __volatile__("" : "+r"(hb)); /* keeps the original's base register */
+                    numRiders = *(s16 *)(hb + 0x5CA); /* gEvent.numRiders */
 inner:
-                    if (*(u8 *)((u32)arr + (u32)j + 0x6c) == i) {
+                    if (*(u8 *)((u32)season + (u32)j + 0x6c) == i) { /* Season.standings[j] */
                         goto store;
                     }
                     j++;
-                    if (j < n) {
+                    if (j < numRiders) {
                         goto inner;
                     }
                 }
 store:
                 sGridOrderNext[i] = (u8)j;
                 i++;
-            } while (i < t->numRiders);
+            } while (i < event->numRiders);
         }
     }
 }
