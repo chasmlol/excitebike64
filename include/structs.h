@@ -112,7 +112,6 @@ typedef struct Ctl_21 Ctl_21;
 typedef struct Obj_67 Obj_67;
 typedef struct Menu_5 Menu_5;
 typedef struct Game_36 Game_36;
-typedef struct Rec_49 Rec_49;
 typedef struct Spr_5 Spr_5;
 typedef struct Set Set;
 typedef struct Mesh_8 Mesh_8;
@@ -1138,21 +1137,6 @@ typedef struct Ctl_2 {
     s32 w3;
     s16 sel;
 } Ctl_2;
-
-typedef struct Node_28 {
-    s32 f0;
-    struct Node_28 *a;     /* 0x04 */
-    struct Node_28 *b;     /* 0x08 */
-    s16 x;              /* 0x0C */
-    s16 y;              /* 0x0E */
-    u8 pad10[8];
-    s16 dirA;           /* 0x18 */
-    s16 dirB;           /* 0x1A */
-    s16 f1C;            /* 0x1C */
-    s16 f1E;            /* 0x1E */
-    s16 w;              /* 0x20 */
-    s16 h;              /* 0x22 */
-} Node_28;
 
 typedef struct Node_29 {
     s16 used;

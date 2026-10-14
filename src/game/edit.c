@@ -1312,165 +1312,105 @@ void edit_update_track_menu(void) {
 }
 
 #define PRESSED_3(m) ((gPadInput & (m)) && !(gPadInputPrev & (m)))
-#define IDX (sEditTrackMenu_3.p8[sEditTrackMenu_3.h10].hA)
+#define IDX (sEditTrackMenu.items[sEditTrackMenu.sel].value)
 
 #define INSERT(T)                                                                          \
-    if (gEditor_12->cur == NULL) {                                                         \
-        gEditor_12->cur = edit_insert_piece(NULL, NULL, &T[IDX]);                              \
-        gEditor_12->head = gEditor_12->cur;                                                \
-        gEditor_12->tail = gEditor_12->cur;                                                \
-        gEditor_12->f190 = gEditor_12->cur;                                                \
-    } else if (gEditor_12->cur->prev != NULL ||                                            \
-               ((gEditor_12->flags & 0x200) && gEditor_12->cur->next == NULL)) {          \
-        gEditor_12->cur = edit_insert_piece(gEditor_12->cur, gEditor_12->cur->next, &T[IDX]);  \
-        gEditor_12->tail = gEditor_12->cur;                                                \
+    if (gEditor->cur == NULL) {                                                         \
+        gEditor->cur = edit_insert_piece(NULL, NULL, &T[IDX]);                              \
+        gEditor->first = gEditor->cur;                                                \
+        gEditor->last = gEditor->cur;                                                \
+        gEditor->start = gEditor->cur;                                                \
+    } else if (gEditor->cur->prev != NULL ||                                            \
+               ((gEditor->flags & 0x200) && gEditor->cur->next == NULL)) {          \
+        gEditor->cur = edit_insert_piece(gEditor->cur, gEditor->cur->next, &T[IDX]);  \
+        gEditor->last = gEditor->cur;                                                \
     } else {                                                                               \
-        gEditor_12->cur = edit_insert_piece(NULL, gEditor_12->cur, &T[IDX]);                   \
-        gEditor_12->head = gEditor_12->cur;                                                \
+        gEditor->cur = edit_insert_piece(NULL, gEditor->cur, &T[IDX]);                   \
+        gEditor->first = gEditor->cur;                                                \
     }
 
-typedef struct Ctl_24 {
-    u8 pad0[0xC];
-    u32 fC;
-} Ctl_24;
-
-typedef struct Node_26 {
-    s16 used;
-    s16 pad2;
-    struct Node_26 *next;
-    struct Node_26 *prev;
-    s16 x;
-    s16 y;
-    u16 st;
-    s16 idx;
-    Ent_4 *pt;
-} Node_26;
-
-typedef struct Edit_2 {
-    u8 pad0[0x170];
-    s32 mode;
-    u32 flags;
-    u32 pad178;
-    Node_26 *head;
-    Node_26 *tail;
-    Node_26 *cur;
-    Node_26 *f188;
-    Node_26 *f18C;
-    Node_26 *f190;
-    u8 pad194[0x16AC - 0x194];
-    s16 *size;
-    u8 pad16B0[6];
-    s16 scrollx;
-    s16 scrolly;
-    u8 pad16BA[0x16E0 - 0x16BA];
-    Ctl_24 *f16E0;
-    u8 pad16E4[0x16FC - 0x16E4];
-    s32 f16FC;
-    u8 pad1700[0x17B0 - 0x1700];
-    Ent_4 *f17B0;
-    u8 pad17B4[0x1800 - 0x17B4];
-    s16 f1800;
-} Edit_2;
-
-typedef struct Sel_4 {
-    u8 pad0[0xA];
-    s16 hA;
-    u8 padC[4];
-} Sel_4;
-
-typedef struct Menu_7 {
-    u8 pad0[6];
-    s16 h6;
-    Sel_4 *p8;
-    u8 padC[4];
-    s16 h10;
-} Menu_7;
-
-extern Edit_2 *gEditor_12;
-extern Menu_7 sEditTrackMenu_3;
-
-s32 gui_menu_input_3(Ctl_24 *c);
+s32 gui_menu_input_3(GuiMenu *c);
 
 void edit_update_place_piece(void) {
-    Node_26 *cur;
-    Node_26 *c;
-    Node_26 *p;
-    Node_26 *n;
+    EditPiece *cur;
+    EditPiece *c;
+    EditPiece *p;
+    EditPiece *n;
     s32 i;
     s32 j;
     s32 ok;
 
-    c = gEditor_12->cur;
-    p = gEditor_12->f188;
+    c = gEditor->cur;
+    p = gEditor->markStart;
     if (c != NULL && c->prev == NULL && c->next == NULL) {
-        if ((PRESSED_3(0x2000) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x4000) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrollx >= -30) {
-                gEditor_12->scrollx--;
+        if ((PRESSED_3(0x2000) && !(gEditor->flags & 1)) || (PRESSED_3(0x4000) && (gEditor->flags & 1))) {
+            if (gEditor->scrollX >= -30) {
+                gEditor->scrollX--;
             }
         }
-        if ((PRESSED_3(0x4000) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x2000) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrollx < 31) {
-                gEditor_12->scrollx++;
+        if ((PRESSED_3(0x4000) && !(gEditor->flags & 1)) || (PRESSED_3(0x2000) && (gEditor->flags & 1))) {
+            if (gEditor->scrollX < 31) {
+                gEditor->scrollX++;
             }
         }
-        if ((PRESSED_3(0x1000) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x800) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrolly >= -30) {
-                gEditor_12->scrolly--;
+        if ((PRESSED_3(0x1000) && !(gEditor->flags & 1)) || (PRESSED_3(0x800) && (gEditor->flags & 1))) {
+            if (gEditor->scrollY >= -30) {
+                gEditor->scrollY--;
             }
         }
-        if ((PRESSED_3(0x800) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x1000) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrolly < 31) {
-                gEditor_12->scrolly++;
+        if ((PRESSED_3(0x800) && !(gEditor->flags & 1)) || (PRESSED_3(0x1000) && (gEditor->flags & 1))) {
+            if (gEditor->scrollY < 31) {
+                gEditor->scrollY++;
             }
         }
     }
     if (p != NULL) {
         do {
             p = p->next;
-        } while (p->prev != gEditor_12->f18C);
+        } while (p->prev != gEditor->markEnd);
     }
     if (PRESSED_3(0x10000)) {
-        if ((gEditor_12->cur->pt->fC.w & 0x300000) == 0x300000) {
+        if ((*(u32 *)&gEditor->cur->type->flags & 0x300000) == 0x300000 /* flags 0x30 tested as a word */) {
             gPadInput &= 0x10000;
             snd_play_menu_sound(0);
-            for (i = 0; i < gEditor_12->cur->pt->dim[(gEditor_12->cur->idx + 1) & 1]; i++) {
-                for (j = 0; j < gEditor_12->cur->pt->dim[gEditor_12->cur->idx & 1]; j++) {
-                    if (gEditor_12->cur->x + j >= 0 && gEditor_12->cur->x + j < gEditor_12->size[0] &&
-                        gEditor_12->cur->y + i >= 0 && gEditor_12->cur->y + i < gEditor_12->size[1]) {
-                        arned_set_cell(gEditor_12->cur->x + j, gEditor_12->cur->y + i, 0, 0, 0, 0, 0, 0, 0);
+            for (i = 0; i < gEditor->cur->type->dim[(gEditor->cur->rot + 1) & 1]; i++) {
+                for (j = 0; j < gEditor->cur->type->dim[gEditor->cur->rot & 1]; j++) {
+                    if (gEditor->cur->x + j >= 0 && gEditor->cur->x + j < gEditor->gridSize[0] &&
+                        gEditor->cur->y + i >= 0 && gEditor->cur->y + i < gEditor->gridSize[1]) {
+                        arned_set_cell(gEditor->cur->x + j, gEditor->cur->y + i, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
             }
-            gEditor_12->flags ^= 8;
-            if (gEditor_12->flags & 8) {
-                gEditor_12->cur->st |= 2;
+            gEditor->flags ^= 8;
+            if (gEditor->flags & 8) {
+                gEditor->cur->flags |= 2;
             } else {
-                gEditor_12->cur->st &= ~2;
+                gEditor->cur->flags &= ~2;
             }
         }
-        p = gEditor_12->head;
+        p = gEditor->first;
         if (p != NULL) {
             do {
                 edit_update_piece_ports(p);
                 p = p->next;
-            } while (p != NULL && p != gEditor_12->head);
+            } while (p != NULL && p != gEditor->first);
         }
     } else if (PRESSED_3(0x20000)) {
-        if (gEditor_12->cur != NULL && (gEditor_12->cur->pt->fC.h.hi & 0x40)) {
-            gEditor_12->f16E0->fC &= ~1;
+        if (gEditor->cur != NULL && (gEditor->cur->type->flags & 0x40)) {
+            gEditor->menu->flags &= ~1;
             edit_update_user_piece_usage();
             edit_user_piece_reset_cursor(0);
-            if (gEditor_12->cur->pt->fC.h.hi & 0x400) {
-                gEditor_12->mode = 10;
-            } else if (gEditor_12->cur->pt->fC.h.hi & 0x200) {
-                gEditor_12->mode = 11;
+            if (gEditor->cur->type->flags & 0x400) {
+                gEditor->mode = 10;
+            } else if (gEditor->cur->type->flags & 0x200) {
+                gEditor->mode = 11;
             } else {
-                gEditor_12->mode = 6;
+                gEditor->mode = 6;
             }
         }
     }
-    n = gEditor_12->cur;
-    if (n->st & 4) {
+    n = gEditor->cur;
+    if (n->flags & 4) {
         if (n->next == NULL) {
             n = n->prev;
         } else {
@@ -1482,15 +1422,15 @@ void edit_update_place_piece(void) {
     } else {
         edit_set_start_piece_choices();
     }
-    if (gEditor_12->mode == 6) {
+    if (gEditor->mode == 6) {
         edit_update_user_piece();
-        gEditor_12->flags |= 0x200;
-    } else if (gui_menu_input_3(gEditor_12->f16E0)) {
+        gEditor->flags |= 0x200;
+    } else if (gui_menu_input_3(gEditor->menu)) {
         ok = 0;
-        switch (sEditTrackMenu_3.h10) {
+        switch (sEditTrackMenu.sel) {
         case 3:
             edit_remove_preview_pieces_2();
-            gEditor_12->f16FC = IDX;
+            gEditor->userPiece = IDX;
             INSERT(gPieceTypesUser);
             ok = 1;
             break;
@@ -1510,123 +1450,106 @@ void edit_update_place_piece(void) {
             ok = 1;
             break;
         }
-        gEditor_12->flags &= ~0x200;
+        gEditor->flags &= ~0x200;
         if (ok) {
-            gEditor_12->cur->st &= ~4;
-            if (edit_update_fitting_pieces(gEditor_12->cur)) {
-                cur = gEditor_12->cur;
+            gEditor->cur->flags &= ~4;
+            if (edit_update_fitting_pieces(gEditor->cur)) {
+                cur = gEditor->cur;
                 if (cur->prev == NULL) {
                     if (cur->next == NULL) {
-                        gEditor_12->cur = edit_insert_piece(cur, NULL, gEditor_12->f17B0);
-                        gEditor_12->cur->st |= 4;
-                        gEditor_12->tail = gEditor_12->cur;
-                        gEditor_12->flags |= 0x200;
+                        gEditor->cur = edit_insert_piece(cur, NULL, gEditor->selType);
+                        gEditor->cur->flags |= 4;
+                        gEditor->last = gEditor->cur;
+                        gEditor->flags |= 0x200;
                     } else {
-                        gEditor_12->cur = edit_insert_piece(NULL, cur, gEditor_12->f17B0);
-                        gEditor_12->cur->st |= 4;
-                        gEditor_12->head = gEditor_12->cur;
+                        gEditor->cur = edit_insert_piece(NULL, cur, gEditor->selType);
+                        gEditor->cur->flags |= 4;
+                        gEditor->first = gEditor->cur;
                     }
                 } else {
-                    gEditor_12->cur = edit_insert_piece(cur, NULL, gEditor_12->f17B0);
-                    gEditor_12->cur->st |= 4;
-                    gEditor_12->tail = gEditor_12->cur;
+                    gEditor->cur = edit_insert_piece(cur, NULL, gEditor->selType);
+                    gEditor->cur->flags |= 4;
+                    gEditor->last = gEditor->cur;
                 }
             } else {
-                edit_try_close_loop(gEditor_12->cur);
-                gEditor_12->mode = 0;
-                gEditor_12->flags |= 0x800;
-                if (gEditor_12->head->prev != NULL) {
-                    gEditor_12->f1800 = 2;
-                    sEditTrackMenu_3.h10 = 7;
-                    sEditTrackMenu_3.h6 = 7;
+                edit_try_close_loop(gEditor->cur);
+                gEditor->mode = 0;
+                gEditor->flags |= 0x800;
+                if (gEditor->first->prev != NULL) {
+                    gEditor->message = 2;
+                    sEditTrackMenu.sel = 7;
+                    sEditTrackMenu.cursor = 7;
                 } else {
-                    gEditor_12->f1800 = 3;
+                    gEditor->message = 3;
                 }
-                gEditor_12->f16E0->fC &= ~1;
+                gEditor->menu->flags &= ~1;
             }
         }
     } else {
-        switch (sEditTrackMenu_3.h10) {
+        switch (sEditTrackMenu.sel) {
         case 3:
             edit_remove_preview_pieces_2();
-            gEditor_12->f16FC = IDX;
+            gEditor->userPiece = IDX;
             INSERT(gPieceTypesUser);
-            gEditor_12->cur->st |= 4;
+            gEditor->cur->flags |= 4;
             break;
         case 0:
             edit_remove_preview_pieces_2();
             INSERT(gPieceTypes);
-            gEditor_12->cur->st |= 4;
+            gEditor->cur->flags |= 4;
             break;
         case 1:
             edit_remove_preview_pieces_2();
             INSERT(gPieceTypesTurn);
-            gEditor_12->cur->st |= 4;
+            gEditor->cur->flags |= 4;
             break;
         case 2:
             edit_remove_preview_pieces_2();
             INSERT(gPieceTypesJump);
-            gEditor_12->cur->st |= 4;
+            gEditor->cur->flags |= 4;
             break;
         }
     }
-    edit_update_piece_ports(gEditor_12->cur);
+    edit_update_piece_ports(gEditor->cur);
 }
 
-typedef struct Node_27 {
-    s32 f0;
-    struct Node_27 *n4;
-    struct Node_27 *n8;
-    s32 f0c;
-    u16 flags;
-} Node_27;
-
-typedef struct Gs_2 {
-    u8 pad[0x17C];
-    Node_27 *f17c;
-    Node_27 *f180;
-    Node_27 *f184;
-} Gs_2;
-
-extern Gs_2 *gEditor_13;
-
-void edit_remove_preview_pieces(s32 arg0) {
-    Node_27 *n;
-    Node_27 *cur;
+void edit_remove_preview_pieces(EditPiece *piece) {
+    EditPiece *n;
+    EditPiece *cur;
     s32 f;
 
-    n = gEditor_13->f184;
+    n = gEditor->cur;
     while (n != 0 && (n->flags & 4) != 0) {
-        n = n->n8;
+        n = n->prev;
     }
     f = 1;
     if (n == 0) {
-        n = gEditor_13->f184;
+        n = gEditor->cur;
         while (n != 0) {
             if ((n->flags & 4) == 0) {
                 break;
             }
-            n = n->n4;
+            n = n->next;
         }
         f = 0;
     }
-    gEditor_13->f184 = n;
+    gEditor->cur = n;
     if (n == 0) {
-        n = gEditor_13->f17c;
+        n = gEditor->first;
         f = 1;
-        gEditor_13->f17c = 0;
-        gEditor_13->f180 = 0;
+        gEditor->first = 0;
+        gEditor->last = 0;
     } else if (f != 0) {
-        gEditor_13->f180 = n;
+        gEditor->last = n;
     } else {
-        gEditor_13->f17c = n;
+        gEditor->first = n;
     }
     while (n != 0) {
         cur = n;
         if (f != 0) {
-            n = cur->n4;
+            n = cur->next;
         } else {
-            n = cur->n8;
+            n = cur->prev;
         }
         if ((cur->flags & 4) != 0) {
             edit_delete_piece(cur);
@@ -1634,89 +1557,81 @@ void edit_remove_preview_pieces(s32 arg0) {
     }
 }
 
-typedef struct Game_37 {
-    u8 pad0[0x17C];
-    Node_28 *first;        /* 0x17C */
-    Node_28 *last;         /* 0x180 */
-} Game_37;
-
-extern Game_37 *gEditor_14;
-
-void edit_try_close_loop(Node_28 *n)
+void edit_try_close_loop(EditPiece *n)
 {
-    Node_28 *c;
+    EditPiece *c;
 
-    for (c = gEditor_14->first; c != NULL; c = c->a) {
-        if (c->b == gEditor_14->last) {
+    for (c = gEditor->first; c != NULL; c = c->next) {
+        if (c->prev == gEditor->last) {
             return;
         }
-        if (c->a != NULL && c->b != NULL) {
+        if (c->next != NULL && c->prev != NULL) {
             continue;
         }
         if (c == n) {
             continue;
         }
-        if (c->b == NULL) {
-            if (n->a == NULL && ((n->dirB - c->dirA) & 3) == 2) {
-                switch (n->dirB) {
+        if (c->prev == NULL) {
+            if (n->next == NULL && ((n->dir[1] - c->dir[0]) & 3) == 2) {
+                switch (n->dir[1]) {
                 case 0:
-                    if (n->y + n->h == c->y && n->x + n->f1E == c->x + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (n->y + n->h == c->y && n->x + n->off[1] == c->x + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 case 2:
-                    if (c->y + c->h == n->y && n->x + n->f1E == c->x + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (c->y + c->h == n->y && n->x + n->off[1] == c->x + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 case 1:
-                    if (n->x + n->w == c->x && n->y + n->f1E == c->y + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (n->x + n->w == c->x && n->y + n->off[1] == c->y + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 case 3:
-                    if (n->x == c->x + c->w && n->y + n->f1E == c->y + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (n->x == c->x + c->w && n->y + n->off[1] == c->y + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 }
             }
         } else {
-            if (n->b == NULL && ((n->dirA - c->dirB) & 3) == 2) {
-                switch (n->dirA) {
+            if (n->prev == NULL && ((n->dir[0] - c->dir[1]) & 3) == 2) {
+                switch (n->dir[0]) {
                 case 0:
-                    if (n->y + n->h == c->y && n->x + n->f1C == c->x + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (n->y + n->h == c->y && n->x + n->off[0] == c->x + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
                 case 2:
-                    if (c->y + c->h == n->y && n->x + n->f1C == c->x + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (c->y + c->h == n->y && n->x + n->off[0] == c->x + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
                 case 1:
-                    if (n->x + n->w == c->x && n->y + n->f1C == c->y + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (n->x + n->w == c->x && n->y + n->off[0] == c->y + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
                 case 3:
-                    if (n->x == c->x + c->w && n->y + n->f1C == c->y + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (n->x == c->x + c->w && n->y + n->off[0] == c->y + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
@@ -1918,28 +1833,17 @@ void edit_update(void) {
 #define RAW(g, a, b) { Gfx *_g = (Gfx *)(g); _g->words.w0 = (a); _g->words.w1 = (b); }
 
 typedef struct {
-    char pad0[0x16C5];
-    u8 name[11];
-    s32 sel;
-    char pad1[0x8];
-    s32 mode;
-    char pad2[0x38];
-    s32 *font;
-} Menu_9;
-
-typedef struct {
     char pad0[4];
     u8 *img;
 } Res_8;
 
 extern Res_8 *gGui_5;
-extern Menu_9 *gEditor_16;
 
 Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
 {
     s32 u, j, m, i, k, y0, xo, t, yoff, yy, idx, x, c, s, f;
     u8 *p;
-    Menu_9 *mp;
+    Editor *mp;
     u8 buf[8];
 
     RAW(gdl++, 0xE3000C00, 0);
@@ -1950,23 +1854,23 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
     RAW(gdl++, 0xD7000002, 0x80008000);
     p = gGui_5->img + 0x48;
     gdl = render_draw_image(0xBC, 0x78 - (p[1] >> 1), p, gdl, arg1, 1, 1, 6, 0);
-    font_text_create(gEditor_16->font, 0x40, 2, 2, 0x20);
-    font_text_add(gEditor_16->font, sStrTrackNameLabel);
-    font_draw_text(gEditor_16->font, 0xCC, 0xA7);
+    font_text_create(gEditor->bigText, 0x40, 2, 2, 0x20);
+    font_text_add(gEditor->bigText, sStrTrackNameLabel);
+    font_draw_text(gEditor->bigText, 0xCC, 0xA7);
     c = -0xF2;
     for (i = 0; i < 5; i++) {
         for (k = 0, idx = i << 3; k < 8; k++) {
-            mp = gEditor_16;
+            mp = gEditor;
             s = 1;
             if (idx >= 0x26) s = 2;
             f = 2;
-            if (idx == mp->sel) f = 7;
-            if (mp->mode == 10 && idx < 0x26) font_text_create(mp->font, 0x20, s, f, 0x20000021);
-            else font_text_create(mp->font, 0x20, s, f, 0x21);
-            font_text_add(gEditor_16->font, gKeyboardKeys[idx]);
+            if (idx == mp->nameKey) f = 7;
+            if (mp->nameLen == 10 && idx < 0x26) font_text_create(mp->bigText, 0x20, s, f, 0x20000021);
+            else font_text_create(mp->bigText, 0x20, s, f, 0x21);
+            font_text_add(gEditor->bigText, gKeyboardKeys[idx]);
             x = k * 26 - (i * 5 + c);
-            font_draw_text(gEditor_16->font, x, i * 17 + 0x48);
-            if (idx == gEditor_16->sel) {
+            font_draw_text(gEditor->bigText, x, i * 17 + 0x48);
+            if (idx == gEditor->nameKey) {
                 p = gGui_5->img + 0x50;
                 gdl = render_draw_image(x - p[0] * 4 + 4, i * 17 - (p[1] >> 1) + 0x49, p, gdl, arg1, 1, 1, 6, 0);
                 do { } while (0);
@@ -1977,21 +1881,21 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
         }
     }
     for (j = 0; j < 10; j++) {
-        if (gEditor_16->name[j] == 0) break;
+        if (gEditor->nameBuf[j] == 0) break;
         f = 2;
-        if (j == gEditor_16->mode) f = 7;
-        font_text_create(gEditor_16->font, 0x20, 2, f, 0x21);
-        buf[0] = gEditor_16->name[j];
+        if (j == gEditor->nameLen) f = 7;
+        font_text_create(gEditor->bigText, 0x20, 2, f, 0x21);
+        buf[0] = gEditor->nameBuf[j];
         buf[1] = 0;
-        font_text_add(gEditor_16->font, buf);
-        font_draw_text(gEditor_16->font, j * 13 + 0x121, 0xA5);
+        font_text_add(gEditor->bigText, buf);
+        font_draw_text(gEditor->bigText, j * 13 + 0x121, 0xA5);
     }
     for (j = 0; j < 10; j++) {
         f = 2;
-        if (j == gEditor_16->mode) f = 7;
-        font_text_create(gEditor_16->font, 0x20, 1, f, 0x21);
-        font_text_add(gEditor_16->font, sStrNameUnderline);
-        font_draw_text(gEditor_16->font, j * 13 + 0x120, 0xAB);
+        if (j == gEditor->nameLen) f = 7;
+        font_text_create(gEditor->bigText, 0x20, 1, f, 0x21);
+        font_text_add(gEditor->bigText, sStrNameUnderline);
+        font_draw_text(gEditor->bigText, j * 13 + 0x120, 0xAB);
     }
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gDPPipeSync(gdl++);
@@ -1999,61 +1903,11 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
 }
 
 typedef struct {
-    s16 f0;
-    s16 n;              /* 0x02 */
-    s32 f4;
-    s32 f8;
-    u16 fC;             /* 0x0C */
-    u16 fE;
-    u8 pad10[0xC];
-    char *name;         /* 0x1C */
-    u8 pad20[0x20];
-} Trk_15;
-
-typedef struct {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    Trk_15 *trk;           /* 0x14 */
-} Sel_6;
-
-typedef struct {
-    u8 pad0[0x170];
-    u32 mode;           /* 0x170 */
-    u8 pad174[0x10];
-    Sel_6 *sel;           /* 0x184 */
-    u8 pad188[0x16BA - 0x188];
-    char name[0x26];    /* 0x16BA */
-    s32 f16E0;
-    s32 f16E4;
-    u32 f16E8;
-    s32 f16EC;
-    s32 f16F0;
-    s32 f16F4;
-    s32 f16F8;
-    s32 f16FC;
-    u8 pad1700[0x18];
-    s32 *font2;         /* 0x1718 */
-    s32 *font;          /* 0x171C */
-    u8 pad1720[0x80];
-    Vp vp0;             /* 0x17A0 */
-    u8 pad17B0[0x18];
-    Vp vp[3];           /* 0x17C8 */
-    u8 pad17F8[0xC];
-    Pic *pic1804;       /* 0x1804 */
-    Pic *pic1808;       /* 0x1808 */
-} Menu_10;
-
-typedef struct {
     s32 f0;
     u8 *img;
 } Res_9;
 
-extern Menu_10 *gEditor_17;
 extern Res_9 *gGui_6;
-extern Trk_15 gPieceTypes_6[];
 
 void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
 {
@@ -2064,43 +1918,43 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     u8 *p;
     u8 *img;
     char *str;
-    Menu_10 *m;
-    Trk_15 *t;
-    Trk_15 *e;
+    Editor *m;
+    PieceType *t;
+    PieceType *e;
 
     D_800F55B0 = arg0;
-    switch (gEditor_17->f16E8) {
+    switch (gEditor->slideState) {
     case 1:
-        gEditor_17->f16F0 = 0;
+        gEditor->slideOffset = 0;
         break;
     case 2:
-        gEditor_17->f16F0 = 30 - gEditor_17->f16EC;
+        gEditor->slideOffset = 30 - gEditor->slideTimer;
         break;
     case 0:
-        gEditor_17->f16F0 = gEditor_17->f16EC;
+        gEditor->slideOffset = gEditor->slideTimer;
         break;
     case 3:
-        gEditor_17->f16F0 = 30;
+        gEditor->slideOffset = 30;
         break;
     }
-    gEditor_17->f16F0 *= 4;
-    sEditViewRects[1].x = sEditViewRectsBase[1].x - gEditor_17->f16F0;
-    sEditViewRects[1].w = sEditViewRectsBase[1].w + gEditor_17->f16F0;
-    sEditViewRects[2].x = sEditViewRectsBase[2].x - gEditor_17->f16F0;
-    sEditViewRects[3].x = sEditViewRectsBase[3].x - gEditor_17->f16F0;
-    func_8008EFFC(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1, gEditor_17->f16F0);
-    gEditor_17->vp[0].vp.vscale[0] = sEditViewRectsBase[1].w * 2;
-    gEditor_17->vp[0].vp.vscale[1] = sEditViewRectsBase[1].h * 2;
-    gEditor_17->vp[0].vp.vtrans[0] = (sEditViewRectsBase[1].x + sEditViewRectsBase[1].w / 2) * 4;
-    gEditor_17->vp[0].vp.vtrans[1] = (sEditViewRectsBase[1].y + sEditViewRectsBase[1].h / 2) * 4;
-    gEditor_17->vp[1].vp.vscale[0] = sEditViewRects[2].w * 2;
-    gEditor_17->vp[1].vp.vscale[1] = sEditViewRects[2].h * 2;
-    gEditor_17->vp[1].vp.vtrans[0] = (sEditViewRects[2].x + sEditViewRects[2].w / 2) * 4;
-    gEditor_17->vp[1].vp.vtrans[1] = (sEditViewRects[2].y + sEditViewRects[2].h / 2) * 4;
-    gEditor_17->vp[2].vp.vscale[0] = sEditViewRects[3].w * 2;
-    gEditor_17->vp[2].vp.vscale[1] = sEditViewRects[3].h * 2;
-    gEditor_17->vp[2].vp.vtrans[0] = (sEditViewRects[3].x + sEditViewRects[3].w / 2) * 4;
-    gEditor_17->vp[2].vp.vtrans[1] = (sEditViewRects[3].y + sEditViewRects[3].h / 2) * 4;
+    gEditor->slideOffset *= 4;
+    sEditViewRects[1].x = sEditViewRectsBase[1].x - gEditor->slideOffset;
+    sEditViewRects[1].w = sEditViewRectsBase[1].w + gEditor->slideOffset;
+    sEditViewRects[2].x = sEditViewRectsBase[2].x - gEditor->slideOffset;
+    sEditViewRects[3].x = sEditViewRectsBase[3].x - gEditor->slideOffset;
+    func_8008EFFC(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1, gEditor->slideOffset);
+    gEditor->views[1].vp.vscale[0] = sEditViewRectsBase[1].w * 2;
+    gEditor->views[1].vp.vscale[1] = sEditViewRectsBase[1].h * 2;
+    gEditor->views[1].vp.vtrans[0] = (sEditViewRectsBase[1].x + sEditViewRectsBase[1].w / 2) * 4;
+    gEditor->views[1].vp.vtrans[1] = (sEditViewRectsBase[1].y + sEditViewRectsBase[1].h / 2) * 4;
+    gEditor->views[2].vp.vscale[0] = sEditViewRects[2].w * 2;
+    gEditor->views[2].vp.vscale[1] = sEditViewRects[2].h * 2;
+    gEditor->views[2].vp.vtrans[0] = (sEditViewRects[2].x + sEditViewRects[2].w / 2) * 4;
+    gEditor->views[2].vp.vtrans[1] = (sEditViewRects[2].y + sEditViewRects[2].h / 2) * 4;
+    gEditor->views[3].vp.vscale[0] = sEditViewRects[3].w * 2;
+    gEditor->views[3].vp.vscale[1] = sEditViewRects[3].h * 2;
+    gEditor->views[3].vp.vtrans[0] = (sEditViewRects[3].x + sEditViewRects[3].w / 2) * 4;
+    gEditor->views[3].vp.vtrans[1] = (sEditViewRects[3].y + sEditViewRects[3].h / 2) * 4;
 
     gdl = *pgdl;
     gdl = render_load_ucode(gdl, arg1, arg0, D_800A9D00, D_800D15C0);
@@ -2110,7 +1964,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gSPTexture(gdl++, 0, 0, 0, G_TX_RENDERTILE, G_OFF);
     gSPClipRatio(gdl++, FRUSTRATIO_2);
-    gSPViewport(gdl++, &gEditor_17->vp0);
+    gSPViewport(gdl++, &gEditor->screenVp);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     gDPPipeSync(gdl++);
     gDPSetDepthImage(gdl++, gZBuffer);
@@ -2138,97 +1992,97 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
                      sEditViewRects[2].x + sEditViewRects[2].w - 1, sEditViewRects[2].y + sEditViewRects[2].h - 1);
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
-    gdl = gui_draw_menu(arg1, gdl, gEditor_17->f16E0, 0x1A, 0x11);
+    gdl = gui_draw_menu(arg1, gdl, gEditor->menu, 0x1A, 0x11);
     gdl = edit_draw_track_view(arg0, arg1, gdl);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetPrimColor(gdl++, 0, 0, 0xB4, 0xB4, 0xB4, 0xFF);
 
-    switch (gEditor_17->mode) {
+    switch ((u32)gEditor->mode) { /* compared unsigned here */
     case 10:
     case 11:
-        font_text_create(gEditor_17->font, 0x20, 4, 2, 0x21);
-        font_text_add(gEditor_17->font, "Warning");
-        font_draw_text(gEditor_17->font, 0x14C, 0x48);
+        font_text_create(gEditor->text, 0x20, 4, 2, 0x21);
+        font_text_add(gEditor->text, "Warning");
+        font_draw_text(gEditor->text, 0x14C, 0x48);
         for (i = 0;; i++) {
-            if (*(gEditor_17->mode == 10 ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]) == NULL) break;
-            font_text_create(gEditor_17->font, 0x20, 5, 2, 0x21);
-            font_text_add(gEditor_17->font, *(gEditor_17->mode == 10 ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]));
-            font_draw_text(gEditor_17->font, 0x144 - i * 4, i * 12 + 0x61);
+            if (*(gEditor->mode == 10 ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]) == NULL) break;
+            font_text_create(gEditor->text, 0x20, 5, 2, 0x21);
+            font_text_add(gEditor->text, *(gEditor->mode == 10 ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]));
+            font_draw_text(gEditor->text, 0x144 - i * 4, i * 12 + 0x61);
         }
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-        img = gEditor_17->pic1808->img;
-        gDPLoadTLUT_pal256(gdl++, gEditor_17->pic1808->pal);
+        img = gEditor->warnIcon->img;
+        gDPLoadTLUT_pal256(gdl++, gEditor->warnIcon->pal);
         gdl = render_draw_image(0xD0, 0x3D, img, gdl, arg1, 1, 1, 3, 0);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        gdl = render_draw_image(0xB6, 0x3A, gEditor_17->pic1804->img, gdl, arg1, 1, 1, 6, 0);
+        gdl = render_draw_image(0xB6, 0x3A, gEditor->warnFrame->img, gdl, arg1, 1, 1, 6, 0);
         break;
     }
 
-    if (gEditor_17->sel != NULL) {
+    if (gEditor->cur != NULL) {
         gDPPipeSync(gdl++);
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
         p = gGui_6->img + 0x58;
-        font_text_create(gEditor_17->font, 0x20, 5, 2, 0x21);
-        font_text_add(gEditor_17->font, sStrTrackNameLabel);
-        font_text_add(gEditor_17->font, gEditor_17->name);
-        font_draw_text(gEditor_17->font, 0x140, 0x19);
+        font_text_create(gEditor->text, 0x20, 5, 2, 0x21);
+        font_text_add(gEditor->text, sStrTrackNameLabel);
+        font_text_add(gEditor->text, gEditor->name);
+        font_draw_text(gEditor->text, 0x140, 0x19);
         for (i = 0; i < (0x207 - sEditViewRects[1].x) / (p[0] * 8); i++) {
             gdl = render_draw_image(sEditViewRects[1].x + p[0] * (i << 3), 0x11, p, gdl, arg1, 1, 1, 6, 0);
         }
-        if (gEditor_17->mode == 9 && (gFrameCounter & 0x20)) {
+        if (gEditor->mode == 9 && (gFrameCounter & 0x20)) {
             gDPSetPrimColor(gdl++, 0, 0, 0xB4, 0xB4, 0x50, 0xFF);
         }
         for (i = 0; i < (0x207 - sEditViewRects[1].x) / (p[0] * 8); i++) {
             gdl = render_draw_image(sEditViewRects[1].x + p[0] * (i << 3), 0xCD, p, gdl, arg1, 1, 1, 6, 0);
         }
         gDPPipeSync(gdl++);
-        font_text_create(gEditor_17->font2, 0x40, 5, 2, 0x21);
-        i = gEditor_17->sel->trk - gPieceTypes_6;
-        if (gEditor_17->mode == 9 && gEditor_17->sel != NULL &&
-            (gEditor_17->sel->f4 != 0 || gEditor_17->sel->f8 != 0)) {
-            font_text_add(gEditor_17->font2, "< ");
+        font_text_create(gEditor->bigText, 0x40, 5, 2, 0x21);
+        i = gEditor->cur->type - gPieceTypes;
+        if (gEditor->mode == 9 && gEditor->cur != NULL &&
+            (gEditor->cur->next != 0 || gEditor->cur->prev != 0)) {
+            font_text_add(gEditor->bigText, "< ");
         }
         if (i < 2) {
-            font_text_add(gEditor_17->font2, "Straight ");
+            font_text_add(gEditor->bigText, "Straight ");
             i += 1;
         } else if (i < 6) {
-            font_text_add(gEditor_17->font2, "Turn ");
+            font_text_add(gEditor->bigText, "Turn ");
             i -= 1;
         } else if (i < 18) {
-            font_text_add(gEditor_17->font2, "Jump ");
+            font_text_add(gEditor->bigText, "Jump ");
             i -= 5;
         } else {
             i -= 17;
         }
-        if (gEditor_17->sel->trk - gPieceTypes_6 < 18) {
+        if (gEditor->cur->type - gPieceTypes < 18) {
             s = buf + 0x48;
             int_to_str(i, s);
-            font_text_add(gEditor_17->font2, s);
-            font_text_add(gEditor_17->font2, " : ");
+            font_text_add(gEditor->bigText, s);
+            font_text_add(gEditor->bigText, " : ");
         }
-        font_text_add(gEditor_17->font2, gEditor_17->sel->trk->name);
-        if (gEditor_17->sel->trk - gPieceTypes_6 >= 18) {
-            if (gEditor_17->mode == 9) {
-                font_text_add(gEditor_17->font2, " - Press Z Button To Edit");
-            } else if (gEditor_17->mode == 6 && gPieceTypes_6[gEditor_17->f16FC + 18].n >= 5 &&
-                       !(gPieceTypes_6[gEditor_17->f16FC + 18].fC & 0x200) &&
-                       (gEditor_17->f16F8 == 1 || gEditor_17->f16F8 == gPieceTypes_6[gEditor_17->f16FC + 18].n * 2 - 1)) {
-                font_text_add(gEditor_17->font2, " - R Button Deletes Segment");
+        font_text_add(gEditor->bigText, gEditor->cur->type->name);
+        if (gEditor->cur->type - gPieceTypes >= 18) {
+            if (gEditor->mode == 9) {
+                font_text_add(gEditor->bigText, " - Press Z Button To Edit");
+            } else if (gEditor->mode == 6 && gPieceTypes[gEditor->userPiece + 18].dim[1] >= 5 &&
+                       !(gPieceTypes[gEditor->userPiece + 18].flags & PIECE_SIZE_LOCKED) &&
+                       (gEditor->heightSel == 1 || gEditor->heightSel == gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 - 1)) {
+                font_text_add(gEditor->bigText, " - R Button Deletes Segment");
             }
-        } else if (gEditor_17->mode == 9 && (*(u32 *)&gEditor_17->sel->trk->fC & 0x300000) == 0x300000) {
-            font_text_add(gEditor_17->font2, " - R Button Flips");
+        } else if (gEditor->mode == 9 && (*(u32 *)&gEditor->cur->type->flags & 0x300000) == 0x300000) {
+            font_text_add(gEditor->bigText, " - R Button Flips");
         }
-        if (gEditor_17->mode == 9 && gEditor_17->sel != NULL &&
-            (gEditor_17->sel->f4 != 0 || gEditor_17->sel->f8 != 0)) {
-            font_text_add(gEditor_17->font2, " >");
+        if (gEditor->mode == 9 && gEditor->cur != NULL &&
+            (gEditor->cur->next != 0 || gEditor->cur->prev != 0)) {
+            font_text_add(gEditor->bigText, " >");
         }
-        font_draw_text(gEditor_17->font2, 0x142, 0xD5);
+        font_draw_text(gEditor->bigText, 0x142, 0xD5);
     }
-    if (gEditor_17->mode == 7 || gEditor_17->mode == 8) {
+    if (gEditor->mode == 7 || gEditor->mode == 8) {
         gdl = edit_draw_name_entry(gdl, arg1);
     }
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[0].x, sEditViewRects[0].y,
@@ -2238,22 +2092,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     *pgdl = gdl;
 }
 
-typedef struct { s16 p[2]; s16 d[2]; s16 l[2]; } Seg_18;
-
-struct Rec_49 {
-    u8 pad[0x10];
-    u16 flags;
-    s16 off;
-    Seg_18 *tab;
-    s16 n0;
-    s16 n1;
-    s16 o1c;
-    s16 o1e;
-    s16 o20;
-    s16 o22;
-};
-
-void edit_update_piece_ports(Rec_49 *r)
+void edit_update_piece_ports(EditPiece *r)
 {
     s32 a, b;
 
@@ -2265,84 +2104,79 @@ void edit_update_piece_ports(Rec_49 *r)
         a = 0;
         b = 1;
     }
-    r->n0 = (r->tab->d[a] + r->off) & 3;
-    r->n1 = (r->tab->d[b] + r->off) & 3;
+    r->dir[0] = (r->type->dir[a] + r->rot) & 3;
+    r->dir[1] = (r->type->dir[b] + r->rot) & 3;
 
-    switch (r->n0) {
+    switch (r->dir[0]) {
     case 0:
-        switch (r->tab->d[a]) {
-        case 0: case 3: r->o1c = r->tab->l[a]; break;
-        case 2: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 1: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 0: case 3: r->off[0] = r->type->off[a]; break;
+        case 2: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 1: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     case 2:
-        switch (r->tab->d[a]) {
-        case 1: case 2: r->o1c = r->tab->l[a]; break;
-        case 0: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 3: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 1: case 2: r->off[0] = r->type->off[a]; break;
+        case 0: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 3: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     case 3:
-        switch (r->tab->d[a]) {
-        case 0: case 3: r->o1c = r->tab->l[a]; break;
-        case 2: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 1: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 0: case 3: r->off[0] = r->type->off[a]; break;
+        case 2: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 1: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     case 1:
-        switch (r->tab->d[a]) {
-        case 1: case 2: r->o1c = r->tab->l[a]; break;
-        case 0: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 3: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 1: case 2: r->off[0] = r->type->off[a]; break;
+        case 0: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 3: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     }
 
-    switch (r->n1) {
+    switch (r->dir[1]) {
     case 0:
-        switch (r->tab->d[b]) {
-        case 0: case 3: r->o1e = r->tab->l[b]; break;
-        case 2: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 1: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 0: case 3: r->off[1] = r->type->off[b]; break;
+        case 2: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 1: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     case 2:
-        switch (r->tab->d[b]) {
-        case 1: case 2: r->o1e = r->tab->l[b]; break;
-        case 0: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 3: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 1: case 2: r->off[1] = r->type->off[b]; break;
+        case 0: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 3: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     case 3:
-        switch (r->tab->d[b]) {
-        case 0: case 3: r->o1e = r->tab->l[b]; break;
-        case 2: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 1: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 0: case 3: r->off[1] = r->type->off[b]; break;
+        case 2: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 1: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     case 1:
-        switch (r->tab->d[b]) {
-        case 1: case 2: r->o1e = r->tab->l[b]; break;
-        case 0: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 3: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 1: case 2: r->off[1] = r->type->off[b]; break;
+        case 0: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 3: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     }
 
-    if (r->off & 1) {
-        r->o20 = r->tab->p[1];
-        r->o22 = r->tab->p[0];
+    if (r->rot & 1) {
+        r->w = r->type->dim[1];
+        r->h = r->type->dim[0];
     } else {
-        r->o20 = r->tab->p[0];
-        r->o22 = r->tab->p[1];
+        r->w = r->type->dim[0];
+        r->h = r->type->dim[1];
     }
 }
-
-typedef struct { s16 x, y, z; u16 f; s16 s, t; u8 r, g, b, a; } V_3;
-typedef struct { u8 pad[0x174C]; V_3 *v[2]; s32 count; } G_5;
-
-extern G_5 *gEditor_18;
 
 void edit_add_overlay_line(s32 idx, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 z1, u8 r, u8 g, u8 b)
 {
@@ -2353,7 +2187,7 @@ void edit_add_overlay_line(s32 idx, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 
     y0 = gScreenHeight / 2 - y0;
     y1 = -y1;
     y1 += gScreenHeight / 2;
-    if (gEditor_18->count >= 0x3C) {
+    if (gEditor->lineCount >= 0x3C) {
         return;
     }
     ax = x1 - x0;
@@ -2366,36 +2200,32 @@ void edit_add_overlay_line(s32 idx, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 
         ox = 3;
         oy = 0;
     }
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].x = x0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].y = y0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].z = z0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].x = x0 + ox;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].y = y0 + oy;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].z = z0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].x = x1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].y = y1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].z = z1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].x = x1 + ox;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].y = y1 + oy;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].z = z1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].b = b;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].b = b;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].b = b;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].b = b;
-    gEditor_18->count++;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[0] = x0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[1] = y0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[2] = z0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[0] = x0 + ox;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[1] = y0 + oy;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[2] = z0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[0] = x1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[1] = y1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[2] = z1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[0] = x1 + ox;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[1] = y1 + oy;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[2] = z1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[2] = b;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[2] = b;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[2] = b;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[2] = b;
+    gEditor->lineCount++;
 }
-
-typedef struct { u8 pad[0x174C]; s32 vtx[2]; s32 n; } Obj_70;
-
-extern Obj_70 *gEditor_19;
 
 Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl)
 {
@@ -2417,21 +2247,14 @@ Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl)
     gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
     gDPSetCombineMode(gdl++, G_CC_SHADE, G_CC_SHADE);
     gDPSetRenderMode(gdl++, 0x00442078, 0);
-    for (i = 0; i < gEditor_19->n; i++) {
-        gSPVertex(gdl++, gEditor_19->vtx[arg1] + i * 0x40, 4, 0);
+    for (i = 0; i < gEditor->lineCount; i++) {
+        gSPVertex(gdl++, gEditor->lineVtx[arg1] + i * 4, 4, 0);
         gDPPipeSync(gdl++);
         gSP2Triangles(gdl++, 0, 1, 3, 0, 0, 3, 2, 0);
         gDPPipeSync(gdl++);
     }
     return gdl;
 }
-
-typedef struct {
-    u8 unk0[0x1760];
-    f32 mtx[4][4];
-} Camera;
-
-extern Camera *gEditor_20;
 
 s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *sw, s32 arg7, s32 arg8) {
     f32 hx;
@@ -2448,10 +2271,10 @@ s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *
     x *= 0.0625f;
     y *= 0.0625f;
     z *= 0.0625f;
-    px = gEditor_20->mtx[0][0] * x + gEditor_20->mtx[1][0] * y + gEditor_20->mtx[2][0] * z + gEditor_20->mtx[3][0];
-    py = gEditor_20->mtx[0][1] * x + gEditor_20->mtx[1][1] * y + gEditor_20->mtx[2][1] * z + gEditor_20->mtx[3][1];
-    pz = gEditor_20->mtx[0][2] * x + gEditor_20->mtx[1][2] * y + gEditor_20->mtx[2][2] * z + gEditor_20->mtx[3][2];
-    pw = gEditor_20->mtx[0][3] * x + gEditor_20->mtx[1][3] * y + gEditor_20->mtx[2][3] * z + gEditor_20->mtx[3][3];
+    px = gEditor->camMtx[0][0] * x + gEditor->camMtx[1][0] * y + gEditor->camMtx[2][0] * z + gEditor->camMtx[3][0];
+    py = gEditor->camMtx[0][1] * x + gEditor->camMtx[1][1] * y + gEditor->camMtx[2][1] * z + gEditor->camMtx[3][1];
+    pz = gEditor->camMtx[0][2] * x + gEditor->camMtx[1][2] * y + gEditor->camMtx[2][2] * z + gEditor->camMtx[3][2];
+    pw = gEditor->camMtx[0][3] * x + gEditor->camMtx[1][3] * y + gEditor->camMtx[2][3] * z + gEditor->camMtx[3][3];
     tx = gArnedViewport_2.vtrans[0] * 0.25f;
     ty = gArnedViewport_2.vtrans[1] * 0.25f;
     if (pw == 0.0f) {
@@ -2480,111 +2303,24 @@ s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *
 
 #define gDPRaw(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 #define SINT(i) ((s16)gCosTable[(i) & 0xFFF] >> 4)
-#define CellAt(d, k) ((Cell_9 *)((u8 *)(d)->cells + ((k) << 5)))
-#define EntAt(d, k) ((Ent_85 *)((u8 *)(d)->ents + ((k) << 5)))
-#define W (o->def->dim[0])
-#define H (o->def->dim[1])
+/* The mesh sets advanced by k cells: ->cells[0] is cells[k] */
+#define CellAt(d, k) ((PieceMeshSet *)((u8 *)(d)->meshA + ((k) << 5)))
+#define EntAt(d, k) ((PieceMeshSet *)((u8 *)(d)->meshB + ((k) << 5)))
+#define W (o->type->dim[0])
+#define H (o->type->dim[1])
 #define K0 (j * W + i)
 #define K1 (i * W + W - 1 - j)
 #define K2 ((H - 1 - j) * W + W - 1 - i)
 #define K3 ((H - 1 - i) * W + j)
-#define E gEditor_21
-#define XB(a, b) (E->sel->x * 8000 - E->map->a * 4000)
-#define ZB(a) (E->sel->y * 8000 - E->map->a * 4000)
-
-typedef struct Cell_9 {
-    s32 f0;
-    s32 f4;
-    s32 pad8[6];
-} Cell_9;
-
-typedef struct Ent_85 {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    s32 f14;
-    s32 pad18[2];
-} Ent_85;
-
-typedef struct Def {
-    s16 dim[2];
-    u8 pad4[8];
-    u16 flags;
-    s16 fE;
-    u8 pad10[0x20];
-    Cell_9 *cells;
-    Ent_85 *ents;
-} Def;
-
-typedef struct Obj_71 {
-    s32 f0;
-    struct Obj_71 *next;
-    struct Obj_71 *prev;
-    s16 x;
-    s16 y;
-    u16 flags;
-    s16 rot;
-    Def *def;
-    u8 pad18[8];
-    s16 w;
-    s16 h;
-} Obj_71;
-
-typedef struct {
-    s32 dist;
-    s32 ry;
-    s32 y;
-} Cam_7;
-
-typedef struct {
-    u8 pad0[0x170];
-    s32 mode;
-    s32 flags;
-    s32 pad178;
-    Obj_71 *head;
-    s32 pad180;
-    Obj_71 *sel;
-    Obj_71 *mark0;
-    Obj_71 *mark1;
-    Obj_71 *cur;
-    u8 pad194[0x16AC - 0x194];
-    Dim *map;
-    u8 pad16B0[0x16F8 - 0x16B0];
-    s32 f16F8;
-    s32 f16FC;
-    s16 f1700;
-    u8 pad1702[0x172C - 0x1702];
-    Cam_7 cam[2];
-    u8 pad1744[0x174C - 0x1744];
-    void *buf[2];
-    s32 n;
-    u8 pad1758[8];
-    f32 mtx[4][4];
-    u8 pad17A0[0x17C8 - 0x17A0];
-    Vp vp;
-    u8 pad17D8[0x17FC - 0x17D8];
-    s16 f17FC;
-    s16 pad17FE;
-    s16 f1800;
-} Edit_4;
-
-typedef struct {
-    s32 x;
-    s32 z;
-    u32 ang;
-} CamPos_2;
-
-extern Edit_4 *gEditor_21;
-extern CamPos_2 sEditCamPos_4;
+#define XB(a, b) (gEditor->cur->x * 8000 - gEditor->gridSize[a] * 4000)
+#define ZB(a) (gEditor->cur->y * 8000 - gEditor->gridSize[a] * 4000)
 
 Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     s32 p0[3];
     s32 p1[3];
     s32 p2[3];
     s32 p3[3];
-    Obj_71 *o;
+    EditPiece *o;
     s32 flag;
     s32 sel;
     s32 i;
@@ -2603,7 +2339,7 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     gDPPipeSync(gdl++);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects_2.x, sEditViewRects_2.y, sEditViewRects_2.x + sEditViewRects_2.w - 1,
                   sEditViewRects_2.y + sEditViewRects_2.h - 1);
-    gSPViewport(gdl++, &E->vp);
+    gSPViewport(gdl++, &gEditor->views[1]);
     gSPClearGeometryMode(gdl, G_ZBUFFER);
     gDPRaw(gdl++, 0xE200001C, 0x0C084000);
     gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
@@ -2620,95 +2356,95 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     gDPPipeSync(gdl++);
     gDPSetTexturePersp(gdl++, G_TP_PERSP);
 
-    if (E->mode == 4) {
+    if (gEditor->mode == 4) {
         arned_set_camera_2(arg1, 0, 250000, 0, 0, 0x4000);
-    } else if (E->mode == 6) {
-        a = sEditCamPos_4.ang;
-        arned_set_camera_2(arg1, sEditCamPos_4.x + ((SINT((a >> 4) - 0x400) * E->cam[1].dist) >> 10), E->cam[1].y,
-                      sEditCamPos_4.z - ((SINT(a >> 4) * E->cam[1].dist) >> 10), a, E->cam[1].ry);
+    } else if (gEditor->mode == 6) {
+        a = sEditCamPos.yaw;
+        arned_set_camera_2(arg1, sEditCamPos.x + ((SINT((a >> 4) - 0x400) * gEditor->cam[1].dist) >> 10), gEditor->cam[1].height,
+                      sEditCamPos.z - ((SINT(a >> 4) * gEditor->cam[1].dist) >> 10), a, gEditor->cam[1].pitch);
     } else {
-        a = sEditCamPos_4.ang;
-        arned_set_camera_2(arg1, sEditCamPos_4.x + ((SINT((a >> 4) - 0x400) * E->cam[0].dist) >> 10), E->cam[0].y,
-                      sEditCamPos_4.z - ((SINT(a >> 4) * E->cam[0].dist) >> 10), a, E->cam[0].ry);
+        a = sEditCamPos.yaw;
+        arned_set_camera_2(arg1, sEditCamPos.x + ((SINT((a >> 4) - 0x400) * gEditor->cam[0].dist) >> 10), gEditor->cam[0].height,
+                      sEditCamPos.z - ((SINT(a >> 4) * gEditor->cam[0].dist) >> 10), a, gEditor->cam[0].pitch);
     }
 
-    o = E->head;
+    o = gEditor->first;
     if (o != NULL) {
         do {
-            if (E->sel != NULL && E->mode == 6 && (E->sel->def->flags & 0x40)) {
+            if (gEditor->cur != NULL && gEditor->mode == 6 && (gEditor->cur->type->flags & 0x40)) {
                 fl = o->flags & ~8;
             } else {
                 fl = o->flags | 8;
             }
             o->flags = fl;
             o = o->next;
-        } while (o != NULL && o != E->head);
+        } while (o != NULL && o != gEditor->first);
     }
-    if (E->sel != NULL && E->mode == 6 && (E->sel->def->flags & 0x40)) {
-        for (o = E->sel->next; o != NULL; o = o->next) {
+    if (gEditor->cur != NULL && gEditor->mode == 6 && (gEditor->cur->type->flags & 0x40)) {
+        for (o = gEditor->cur->next; o != NULL; o = o->next) {
             o->flags |= 8;
-            if (o->def->flags & 0x800) {
+            if (o->type->flags & 0x800) {
                 break;
             }
         }
-        for (o = E->sel; o != NULL; o = o->prev) {
+        for (o = gEditor->cur; o != NULL; o = o->prev) {
             o->flags |= 8;
-            if (o->def->flags & 0x800) {
+            if (o->type->flags & 0x800) {
                 break;
             }
         }
     }
 
-    o = E->head;
+    o = gEditor->first;
     flag = 0;
     if (o != NULL) {
         do {
-            if (E->mark0 != NULL && E->mark1 != NULL) {
-                if (flag != 0 && o->prev == E->mark1) {
+            if (gEditor->markStart != NULL && gEditor->markEnd != NULL) {
+                if (flag != 0 && o->prev == gEditor->markEnd) {
                     flag = 0;
                 }
-                if (o == E->mark0) {
+                if (o == gEditor->markStart) {
                     flag = 1;
                 }
             }
             sel = 0;
-            if ((o->flags & 4) || o == E->sel) {
+            if ((o->flags & 4) || o == gEditor->cur) {
                 sel = 1;
             }
             sel |= 2;
-            for (j = 0; j < o->def->dim[(o->rot + 1) & 1]; j++) {
-                for (i = 0; i < o->def->dim[(rot = o->rot) & 1]; i++) {
-                    if (o->x + i < 0 || o->x + i >= E->map->w) {
+            for (j = 0; j < o->type->dim[(o->rot + 1) & 1]; j++) {
+                for (i = 0; i < o->type->dim[(rot = o->rot) & 1]; i++) {
+                    if (o->x + i < 0 || o->x + i >= gEditor->gridSize[0]) {
                         continue;
                     }
-                    if (o->y + j < 0 || o->y + j >= E->map->h) {
+                    if (o->y + j < 0 || o->y + j >= gEditor->gridSize[1]) {
                         continue;
                     }
                     if (o->flags & 8) {
                         switch (rot) {
                         case 0:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K0)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K0)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (EntAt(o->def, K0)->f8 + EntAt(o->def, K0)->f10) / 2 - 250 - i * 500 : 0,
-                                          o->def->ents ? (EntAt(o->def, K0)->fC + EntAt(o->def, K0)->f14) / 2 - 250 - j * 500 : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K0)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K0)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (EntAt(o->type, K0)->cells[0].x0 + EntAt(o->type, K0)->cells[0].x1) / 2 - 250 - i * 500 : 0,
+                                          o->type->meshB ? (EntAt(o->type, K0)->cells[0].y0 + EntAt(o->type, K0)->cells[0].y1) / 2 - 250 - j * 500 : 0);
                             break;
                         case 1:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K1)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K1)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (EntAt(o->def, K1)->fC + EntAt(o->def, K1)->f14) / 2 - 250 - i * 500 : 0,
-                                          o->def->ents ? (o->h - j - 1) * 500 + (250 - (EntAt(o->def, K1)->f8 + EntAt(o->def, K1)->f10) / 2) : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K1)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K1)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (EntAt(o->type, K1)->cells[0].y0 + EntAt(o->type, K1)->cells[0].y1) / 2 - 250 - i * 500 : 0,
+                                          o->type->meshB ? (o->h - j - 1) * 500 + (250 - (EntAt(o->type, K1)->cells[0].x0 + EntAt(o->type, K1)->cells[0].x1) / 2) : 0);
                             break;
                         case 2:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K2)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K2)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (o->w - i - 1) * 500 + (250 - (EntAt(o->def, K2)->f8 + EntAt(o->def, K2)->f10) / 2) : 0,
-                                          o->def->ents ? (o->h - j - 1) * 500 + (250 - (EntAt(o->def, K2)->fC + EntAt(o->def, K2)->f14) / 2) : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K2)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K2)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (o->w - i - 1) * 500 + (250 - (EntAt(o->type, K2)->cells[0].x0 + EntAt(o->type, K2)->cells[0].x1) / 2) : 0,
+                                          o->type->meshB ? (o->h - j - 1) * 500 + (250 - (EntAt(o->type, K2)->cells[0].y0 + EntAt(o->type, K2)->cells[0].y1) / 2) : 0);
                             break;
                         case 3:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K3)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K3)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (o->w - i - 1) * 500 + (250 - (EntAt(o->def, K3)->fC + EntAt(o->def, K3)->f14) / 2) : 0,
-                                          o->def->ents ? (EntAt(o->def, K3)->f8 + EntAt(o->def, K3)->f10) / 2 - 250 - j * 500 : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K3)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K3)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (o->w - i - 1) * 500 + (250 - (EntAt(o->type, K3)->cells[0].y0 + EntAt(o->type, K3)->cells[0].y1) / 2) : 0,
+                                          o->type->meshB ? (EntAt(o->type, K3)->cells[0].x0 + EntAt(o->type, K3)->cells[0].x1) / 2 - 250 - j * 500 : 0);
                             break;
                         }
                     } else {
@@ -2717,29 +2453,29 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                 }
             }
             o = o->next;
-        } while (o != NULL && o != E->head);
+        } while (o != NULL && o != gEditor->first);
     }
 
     arned_set_scissor(0, 0, gScreenWidth, gScreenHeight);
-    if (E->cur != NULL) {
-        r = ((-E->cur->rot * 2 - E->cur->def->fE) & 7) << 13;
-        gdl = arned_draw(arg1, gdl, E->sel->x, E->sel->y, E->sel->w, E->sel->h,
-                            (E->cur->x * 2 + E->cur->w) * 4000 - 60000, (E->cur->y * 2 + E->cur->h) * 4000 - 60000,
-                            (E->cur->def->flags & 2) ? r : -1, 1);
-        if (E->mode == 6) {
-            E->n = 0;
-            guMtxL2F(E->mtx, &gArnedCamMtx[arg1]);
-            mem_fill(E->buf[arg1], 0, 0xF00);
-            if (E->sel != NULL && (E->sel->def->flags & 0x40)) {
-                switch (E->sel->rot) {
+    if (gEditor->start != NULL) {
+        r = ((-gEditor->start->rot * 2 - gEditor->start->type->cursorAngle) & 7) << 13;
+        gdl = arned_draw(arg1, gdl, gEditor->cur->x, gEditor->cur->y, gEditor->cur->w, gEditor->cur->h,
+                            (gEditor->start->x * 2 + gEditor->start->w) * 4000 - 60000, (gEditor->start->y * 2 + gEditor->start->h) * 4000 - 60000,
+                            (gEditor->start->type->flags & 2) ? r : -1, 1);
+        if (gEditor->mode == 6) {
+            gEditor->lineCount = 0;
+            guMtxL2F(gEditor->camMtx, &gArnedCamMtx[arg1]);
+            mem_fill(gEditor->lineVtx[arg1], 0, 0xF00);
+            if (gEditor->cur != NULL && (gEditor->cur->type->flags & 0x40)) {
+                switch (gEditor->cur->rot) {
                 case 0:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        edit_project_to_screen(XB(w, 0) + 2000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(w, 0) + 14000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == k) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        edit_project_to_screen(XB(0, 0) + 2000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(0, 0) + 14000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == k) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -2754,16 +2490,16 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
                         if (k > 0) {
-                            edit_project_to_screen(XB(w, 0) + 2000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(h) + (k - 1) * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 2000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(h) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(h) + (k - 1) * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(h) + k * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == k || E->f16F8 == k - 1) {
-                                switch (E->f1700) {
+                            edit_project_to_screen(XB(0, 0) + 2000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(1) + (k - 1) * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 2000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(1) + (k - 1) * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(1) + k * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == k || gEditor->heightSel == k - 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -2785,13 +2521,13 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                     }
                     break;
                 case 1:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        edit_project_to_screen(XB(h, 0) + k * 4000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(h, 0) + k * 4000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(w) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == k) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        edit_project_to_screen(XB(1, 0) + k * 4000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(1, 0) + k * 4000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == k) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -2806,16 +2542,16 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
                         if (k > 0) {
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + k * 4000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(w) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(w) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + k * 4000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(w) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == k || E->f16F8 == k - 1) {
-                                switch (E->f1700) {
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + k * 4000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + k * 4000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == k || gEditor->heightSel == k - 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -2837,14 +2573,14 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                     }
                     break;
                 case 2:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        n = E->sel->def->dim[1] * 2 - k;
-                        edit_project_to_screen(XB(w, 0) + 2000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(w, 0) + 14000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == n) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        n = gEditor->cur->type->dim[1] * 2 - k;
+                        edit_project_to_screen(XB(0, 0) + 2000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(0, 0) + 14000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == n) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -2858,17 +2594,17 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                         } else {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (n < E->sel->def->dim[1] * 2) {
-                            edit_project_to_screen(XB(w, 0) + 2000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(h) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 2000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(h) + (k - 1) * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(h) + k * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(h) + (k - 1) * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == n || E->f16F8 == n + 1) {
-                                switch (E->f1700) {
+                        if (n < gEditor->cur->type->dim[1] * 2) {
+                            edit_project_to_screen(XB(0, 0) + 2000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 2000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(1) + (k - 1) * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(1) + k * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(1) + (k - 1) * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == n || gEditor->heightSel == n + 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -2890,14 +2626,14 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                     }
                     break;
                 case 3:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        n = E->sel->def->dim[1] * 2 - k;
-                        edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(w) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == n) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        n = gEditor->cur->type->dim[1] * 2 - k;
+                        edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == n) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -2911,17 +2647,17 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                         } else {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (n < E->sel->def->dim[1] * 2) {
-                            edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(w) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(w) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(w) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == n || E->f16F8 == n + 1) {
-                                switch (E->f1700) {
+                        if (n < gEditor->cur->type->dim[1] * 2) {
+                            edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == n || gEditor->heightSel == n + 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -2950,8 +2686,8 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
         gdl = arned_draw(arg1, gdl, 0, 0, 0, 0, 0, 0, -1, 1);
     }
 
-    if (E->flags & 0x800) {
-        switch (E->f1800) {
+    if (gEditor->flags & 0x800) {
+        switch (gEditor->message) {
         case 0:
             gdl = gui_draw_message(gdl, arg0, arg1, "No Track Found On Game Pak");
             break;
@@ -2968,8 +2704,8 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
             gdl = gui_draw_message(gdl, arg0, arg1, "Name Your Track Before Saving!");
             break;
         }
-    } else if (E->flags & 0x1000) {
-        switch (E->f17FC) {
+    } else if (gEditor->flags & 0x1000) {
+        switch (gEditor->dialog) {
         case 0:
             gdl = gui_draw_prompt(gdl, arg0, arg1, "Add Segment?", "OK", "Cancel", 1, 1);
             break;
