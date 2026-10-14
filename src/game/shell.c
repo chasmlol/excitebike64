@@ -3556,7 +3556,7 @@ Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 fb, char *question)
     gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 4);
     sel = gGame.dialogSel;
     return render_draw_image(sel * 7 + 0x9D, (step = sel * 5, y = 0x82, y - step * 4), /* 0x82 - sel * 20 */
-                         &gGame.cursorImg[gGame.menuAnimTimer / 2 % 30 + 1], gdl, fb, 1, 1, 3, 0);
+                                 &gGame.cursorImg[gGame.menuAnimTimer / 2 % 30 + 1], gdl, fb, 1, 1, 3, 0);
 }
 
 /* The rider select's bio of a player's rider (one player only): age, hometown and speciality, the labels and the
@@ -4053,90 +4053,90 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         font_reset_queue();
         gDPLoadTLUT_pal256(gdl++, gGame.screenArrows->addr);
         {
-        /* the blinking arrows to the next and previous page or cup */
-        if (gGame.blinkTimer < 0x20 && (screen->type == SCREEN_TYPE_RECORDS || gGame.seasonMenuState == SEASON_MENU_CUPS)) {
-            if ((screen->type == SCREEN_TYPE_RECORDS && *screen->cursor / TRACKS_PER_PAGE < (gGame.numRecordTracks + 4) / TRACKS_PER_PAGE - 1) ||
-                (screen->type == SCREEN_TYPE_ROUND_SELECT &&
-                 ((gGame.difficulty == 1 && *screen->cursor < CUP_SILVER) || (gGame.difficulty == 2 && *screen->cursor < CUP_GOLD) || (gGame.difficulty == 3 && *screen->cursor < CUP_CUSTOM)))) {
-                DRAW(xoff + 0x128, yoff + 0x22, &gGame.screenArrows[2], 3);
-            }
-            if (((screen->type != SCREEN_TYPE_RECORDS) ? *screen->cursor : *screen->cursor / TRACKS_PER_PAGE) > 0) {
-                DRAW(xoff + 0x1C, yoff + 0x22, &gGame.screenArrows[1], 3);
-            }
+            /* the blinking arrows to the next and previous page or cup */
+            if (gGame.blinkTimer < 0x20 && (screen->type == SCREEN_TYPE_RECORDS || gGame.seasonMenuState == SEASON_MENU_CUPS)) {
+                if ((screen->type == SCREEN_TYPE_RECORDS && *screen->cursor / TRACKS_PER_PAGE < (gGame.numRecordTracks + 4) / TRACKS_PER_PAGE - 1) ||
+                    (screen->type == SCREEN_TYPE_ROUND_SELECT &&
+                     ((gGame.difficulty == 1 && *screen->cursor < CUP_SILVER) || (gGame.difficulty == 2 && *screen->cursor < CUP_GOLD) || (gGame.difficulty == 3 && *screen->cursor < CUP_CUSTOM)))) {
+                    DRAW(xoff + 0x128, yoff + 0x22, &gGame.screenArrows[2], 3);
+                }
+                if (((screen->type != SCREEN_TYPE_RECORDS) ? *screen->cursor : *screen->cursor / TRACKS_PER_PAGE) > 0) {
+                    DRAW(xoff + 0x1C, yoff + 0x22, &gGame.screenArrows[1], 3);
+                }
         }
         }
         DRAW_PAL_SYNC(gGame.titleBar, xoff + 0x49, yoff + 0x2A, 3);
         {
-        /* the picture of the track: the record track, or the round's track shown, picked or previewed */
-        if (gCups[*screen->cursor / 5].numRounds != 0) {
-            s32 unusedA;
-            void *unusedP2;
+            /* the picture of the track: the record track, or the round's track shown, picked or previewed */
+            if (gCups[*screen->cursor / 5].numRounds != 0) {
+                s32 unusedA;
+                void *unusedP2;
 
-            if (screen->type == SCREEN_TYPE_RECORDS) {
-                trackIdx = *screen->cursor;
-            } else {
-                switch (gGame.seasonMenuState) {
-                case SEASON_MENU_CUSTOM_TRACKS:
-                    trackIdx = gGame.customTrackSel;
-                    break;
-                case SEASON_MENU_CUSTOM_SLOTS:
-                    trackIdx = gCups[gGame.cupSel].tracks[gGame.roundSel];
-                    break;
-                default:
-                    trackIdx = gCups[gGame.cupSel].tracks[gGame.cupPreviewTrack];
-                    break;
-                }
-            }
-            if (screen->type == SCREEN_TYPE_RECORDS) {
-                /* the picture fades to grey over 59 frames */
-                if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
-                    shell_blend_palette_to_gray(0, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
-                } else {
-                    shell_blend_palette_to_gray((59 - gGame.screenTimer) * 0xFF / 59, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
-                }
-            } else {
-                shell_blend_palette_to_gray(0xFF, NULL);
-            }
-            img = &gGame.itemPics[sTrackPicIndex[trackIdx]][1];
-            if (screen->type != SCREEN_TYPE_RECORDS &&
-                !((IN_CUSTOM_ROUND || ((gGame.seasonMenuState != SEASON_MENU_CUPS || CUP_OPEN(*screen->cursor)) && gGame.seasonMenuState != 3 &&
-                              (gGame.seasonMenuState != SEASON_MENU_CUSTOM_TRACKS || (gUnlockedTracks & (1 << gGame.customTrackSel))))) &&
-                 (!IN_CUSTOM_ROUND || PLATINUM_WON))) {
-                /* locked: greyed, "Locked", or for a track not unlocked yet how to unlock it */
-                if (gGame.seasonMenuState == SEASON_MENU_CUPS || gGame.seasonMenuState == 3 || screen->type == SCREEN_TYPE_RECORDS) {
-                    font_text_create(gGame.texts[20], 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
-                    font_text_add(gGame.texts[20], sStrLocked);
-                    font_draw_text(gGame.texts[20], xoff + 0x16F, yoff + 0x82);
-                } else {
-                    font_text_create(gGame.texts[20], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
-                    font_text_add(gGame.texts[20], sStrUnavailable);
-                    font_draw_text(gGame.texts[20], xoff + 0x172, yoff + 0x74);
-                    font_text_create(gGame.texts[21], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
-                    font_text_add(gGame.texts[21], sStrPlayOtherRounds);
-                    font_draw_text(gGame.texts[21], xoff + 0x16F, yoff + 0x82);
-                    font_text_create(gGame.texts[22], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
-                    font_text_add(gGame.texts[22], sStrToUnlockThisTrack);
-                    font_draw_text(gGame.texts[22], xoff + 0x16E, yoff + 0x90);
-                }
-                gDPSetPrimColor(gdl++, 0, 0, 0x64, 0x64, 0x64, 0xFF);
-                gDPLoadTLUT_pal256(gdl++, gGame.greyPalette);
-                gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-            } else {
                 if (screen->type == SCREEN_TYPE_RECORDS) {
-                    if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
-                        gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-                    } else {
-                        gDPSetPrimColor(gdl++, 0, 0, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59,
-                                        0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF);
+                    trackIdx = *screen->cursor;
+                } else {
+                    switch (gGame.seasonMenuState) {
+                    case SEASON_MENU_CUSTOM_TRACKS:
+                        trackIdx = gGame.customTrackSel;
+                        break;
+                    case SEASON_MENU_CUSTOM_SLOTS:
+                        trackIdx = gCups[gGame.cupSel].tracks[gGame.roundSel];
+                        break;
+                    default:
+                        trackIdx = gCups[gGame.cupSel].tracks[gGame.cupPreviewTrack];
+                        break;
                     }
+                }
+                if (screen->type == SCREEN_TYPE_RECORDS) {
+                    /* the picture fades to grey over 59 frames */
+                    if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
+                        shell_blend_palette_to_gray(0, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
+                    } else {
+                        shell_blend_palette_to_gray((59 - gGame.screenTimer) * 0xFF / 59, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
+                    }
+                } else {
+                    shell_blend_palette_to_gray(0xFF, NULL);
+                }
+                img = &gGame.itemPics[sTrackPicIndex[trackIdx]][1];
+                if (screen->type != SCREEN_TYPE_RECORDS &&
+                    !((IN_CUSTOM_ROUND || ((gGame.seasonMenuState != SEASON_MENU_CUPS || CUP_OPEN(*screen->cursor)) && gGame.seasonMenuState != 3 &&
+                                  (gGame.seasonMenuState != SEASON_MENU_CUSTOM_TRACKS || (gUnlockedTracks & (1 << gGame.customTrackSel))))) &&
+                     (!IN_CUSTOM_ROUND || PLATINUM_WON))) {
+                    /* locked: greyed, "Locked", or for a track not unlocked yet how to unlock it */
+                    if (gGame.seasonMenuState == SEASON_MENU_CUPS || gGame.seasonMenuState == 3 || screen->type == SCREEN_TYPE_RECORDS) {
+                        font_text_create(gGame.texts[20], 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+                        font_text_add(gGame.texts[20], sStrLocked);
+                        font_draw_text(gGame.texts[20], xoff + 0x16F, yoff + 0x82);
+                    } else {
+                        font_text_create(gGame.texts[20], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+                        font_text_add(gGame.texts[20], sStrUnavailable);
+                        font_draw_text(gGame.texts[20], xoff + 0x172, yoff + 0x74);
+                        font_text_create(gGame.texts[21], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+                        font_text_add(gGame.texts[21], sStrPlayOtherRounds);
+                        font_draw_text(gGame.texts[21], xoff + 0x16F, yoff + 0x82);
+                        font_text_create(gGame.texts[22], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+                        font_text_add(gGame.texts[22], sStrToUnlockThisTrack);
+                        font_draw_text(gGame.texts[22], xoff + 0x16E, yoff + 0x90);
+                    }
+                    gDPSetPrimColor(gdl++, 0, 0, 0x64, 0x64, 0x64, 0xFF);
                     gDPLoadTLUT_pal256(gdl++, gGame.greyPalette);
                     gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
                 } else {
-                    gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
-                    gDPLoadTLUT_pal256(gdl++, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
+                    if (screen->type == SCREEN_TYPE_RECORDS) {
+                        if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
+                            gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+                        } else {
+                            gDPSetPrimColor(gdl++, 0, 0, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59,
+                                            0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF);
+                        }
+                        gDPLoadTLUT_pal256(gdl++, gGame.greyPalette);
+                        gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+                    } else {
+                        gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+                        gDPLoadTLUT_pal256(gdl++, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
+                    }
                 }
-            }
-            DRAW(xoff + 0x10C, yoff + 0x47, img, 3);
+                DRAW(xoff + 0x10C, yoff + 0x47, img, 3);
         }
         }
         gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
