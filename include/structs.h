@@ -122,6 +122,7 @@ typedef struct Mesh_8 Mesh_8;
 #include "structs/tunes.h"
 #include "structs/file.h"
 #include "structs/pak.h"
+#include "structs/snd.h"
 typedef struct Blk_29 Blk_29;
 typedef struct Obj_82 Obj_82;
 typedef struct ListHdr ListHdr;
@@ -184,15 +185,6 @@ typedef struct { f32 x, y, z; u8 pad[0x60]; } Spot;
 typedef struct Rec_2 {
     u8 pad[0xA0];
 } Rec_2;
-
-typedef struct {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    s32 f14;
-} Gear;
 
 typedef struct MtxS {
     s16 i[4][4];

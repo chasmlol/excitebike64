@@ -1,16 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    s32 *p;
-    s32 v;
-} Pair_3;
-
-typedef struct {
-    s32 a;
-    s32 id;
-} Snd;
-
-extern Pair_3 sRiderSfx[];
 
 void snd_init(void)
 {
@@ -43,16 +32,6 @@ void snd_init(void)
     }
 }
 
-typedef struct {
-    s32 *p;
-    s32 b;
-    s32 c;
-    s32 d;
-    s32 pad[2];
-} Ent_6;
-
-extern Ent_6 sEngineSamples_2[];
-
 void snd_load_engine_samples(void) {
     u32 i;
     s32 local[4];
@@ -60,36 +39,25 @@ void snd_load_engine_samples(void) {
     if (sEngineSamplesLoaded == 0) {
         softmix_set_decompress_buf(gZBuffer, 0x25800);
         for (i = 0; i < 7; i++) {
-            if (sEngineSamples_2[i].p != NULL) {
-                sEngineSamples_2[i].b = sfx_load_sample_id(*sEngineSamples_2[i].p);
+            if (sEngineSamples[i].resId != NULL) {
+                sEngineSamples[i].sample = sfx_load_sample_id(*sEngineSamples[i].resId);
             } else {
-                sEngineSamples_2[i].b = sEngineSamples_2[i - 1].b;
+                sEngineSamples[i].sample = sEngineSamples[i - 1].sample;
             }
-            sfx_get_sample_info(sEngineSamples_2[i].b, local);
-            sEngineSamples_2[i].c = local[0];
-            sEngineSamples_2[i].d = softmix_get_sample_data(sEngineSamples_2[i].b);
+            sfx_get_sample_info(sEngineSamples[i].sample, local);
+            sEngineSamples[i].length = local[0];
+            sEngineSamples[i].data = (u8 *)softmix_get_sample_data(sEngineSamples[i].sample);
         }
         softmix_set_decompress_buf(0, 0);
         sEngineSamplesLoaded = 1;
     }
 }
 
-typedef struct {
-    s32 f0, f4, f8, fC, f10;
-    s32 pad14[9];
-    s32 f38, f3C;
-    s32 pad40;
-    s32 f44, f48, f4C, f50;
-    s32 pad54[4];
-} Ent_7;
-
 struct Slot_2 {
     u8 pad[0x38];
     s32 a;
     s32 r;
 };
-
-extern Ent_7 sRiderSounds_2[];
 
 void snd_race_init(Slot_2 *param_1)
 {
@@ -120,25 +88,25 @@ void snd_race_init(Slot_2 *param_1)
     softmix_set_decompress_buf(gZBuffer, 0x25800);
     i = 0;
     sSndRaceLoaded = 1;
-    mem_fill((u8 *)sRiderSounds_2, i, 800);
+    mem_fill((u8 *)sRiderSounds, i, sizeof(sRiderSounds));
     for (i = 0; i < 8; i++) {
-        sRiderSounds_2[i].f38 = -0x28;
-        sRiderSounds_2[i].f3C = -0x14;
-        sRiderSounds_2[i].f0 = 0x3C;
-        sRiderSounds_2[i].fC = -1;
-        sRiderSounds_2[i].f4 = -1;
-        sRiderSounds_2[i].f8 = -1;
-        sRiderSounds_2[i].f10 = -1;
-        sRiderSounds_2[i].f44 = -1;
-        sRiderSounds_2[i].f48 = -1;
-        sRiderSounds_2[i].f4C = -1;
-        sRiderSounds_2[i].f50 = -1;
+        sRiderSounds[i].impactFrame = -0x28;
+        sRiderSounds[i].sfxFrame = -0x14;
+        sRiderSounds[i].gearHold = 0x3C;
+        sRiderSounds[i].engineHandle = -1;
+        sRiderSounds[i].idleHandle = -1;
+        sRiderSounds[i].gear = -1;
+        sRiderSounds[i].idleFade = -1;
+        sRiderSounds[i].sfx1Handle = -1;
+        sRiderSounds[i].surfaceHandle = -1;
+        sRiderSounds[i].revHandle = -1;
+        sRiderSounds[i].impactHandle = -1;
     }
-    for (i = 0; sRiderSfx[i].p != 0; i++) {
+    for (i = 0; sRiderSfx[i].resId != 0; i++) {
         if (sSndReducedSet != 0 && i >= 8) {
-            sRiderSfx[i].v = -1;
+            sRiderSfx[i].sample = -1;
         } else {
-            sRiderSfx[i].v = sfx_load_sample_id(*sRiderSfx[i].p);
+            sRiderSfx[i].sample = sfx_load_sample_id(*sRiderSfx[i].resId);
         }
     }
     sSndSurfaces = param_1;
@@ -186,31 +154,17 @@ void snd_race_init(Slot_2 *param_1)
 }
 
 typedef struct {
-    s32 a;
-    s32 arg;
-    s32 pad[4];
-} Ent18;
-
-typedef struct {
-    s32 key;
-    s32 arg;
-} Ent8;
-
-typedef struct {
     u8 pad[0x3C];
     s32 arg;
 } Ent40;
 
-extern Ent8 sRiderSfx_2[];
-extern Ent18 sEngineSamples_3[];
 extern Ent40 *sSndSurfaces_2;
 
 void snd_race_exit(void)
 {
     s32 i;
     u32 j;
-    u8 *p;
-    Ent8 *q;
+    RiderSound *p;
     s32 a;
 
     if (sSndRaceLoaded != 0) {
@@ -220,14 +174,14 @@ void snd_race_exit(void)
         }
         sfx_set_frame_callback(0);
         for (i = 0; i < 8; i++) {
-            p = sRiderSounds + i * 0x64;
+            p = &sRiderSounds[i];
             if (sSndRaceLoaded != 0) {
-                snd_stop_handle((s32 *)(p + 0xC));
-                snd_stop_handle((s32 *)(p + 0x4));
-                snd_stop_handle((s32 *)(p + 0x44));
-                snd_stop_handle((s32 *)(p + 0x50));
-                snd_stop_handle((s32 *)(p + 0x4C));
-                snd_stop_handle((s32 *)(p + 0x48));
+                snd_stop_handle(&p->engineHandle);
+                snd_stop_handle(&p->idleHandle);
+                snd_stop_handle(&p->sfx1Handle);
+                snd_stop_handle(&p->impactHandle);
+                snd_stop_handle(&p->revHandle);
+                snd_stop_handle(&p->surfaceHandle);
             }
         }
         tunes_stop_speech();
@@ -236,18 +190,18 @@ void snd_race_exit(void)
         sfx_reap_sounds();
         if (sEngineSamplesLoaded != 0) {
             for (j = 0; j < 7; j++) {
-                sfx_free_sample(sEngineSamples_3[j].arg);
+                sfx_free_sample(sEngineSamples[j].sample);
             }
             sEngineSamplesLoaded = 0;
         }
-        if (sRiderSfx_2[0].key != 0) {
+        if (sRiderSfx[0].resId != 0) {
             i = 0;
             do {
-                if (sRiderSfx_2[i].arg != -1) {
-                    sfx_free_sample(sRiderSfx_2[i].arg);
+                if (sRiderSfx[i].sample != -1) {
+                    sfx_free_sample(sRiderSfx[i].sample);
                 }
                 i++;
-            } while (sRiderSfx_2[i].key != 0);
+            } while (sRiderSfx[i].resId != 0);
         }
         for (i = 0; i < 16; i++) {
             a = sSndSurfaces_2[i].arg;
@@ -273,25 +227,13 @@ typedef struct Ent_8 {
     u8 pad7A6[0x7E0 - 0x7A6];
 } Ent_8;
 
-typedef struct Slot_3 {
-    u8 pad00[0x28];
-    s32 vol;
-    s32 best;
-    s32 dist;
-    s32 delta;
-    u8 pad38[0x54 - 0x38];
-    s32 taken;
-    u8 pad58[0x64 - 0x58];
-} Slot_3;
-
 extern Ent_8 gRiders_11[];
-extern Slot_3 sRiderSounds_3[];
 
 void snd_update_riders(void)
 {
     Vec *pts;
     Vec *pt;
-    Slot_3 *sl;
+    RiderSound *sl;
     Ent_8 *e;
     Ent_8 *base;
     s32 i, bi, dist, n, k, j, best, bv;
@@ -309,14 +251,14 @@ void snd_update_riders(void)
     }
     base = gRiders_11;
     pts = gCamPos;
-    sl = sRiderSounds_3;
+    sl = sRiderSounds;
     e = base;
 loop:
     if (e->f7A5 != 0) {
-        sl->delta = 0;
-        sl->best = 0;
-        sl->dist = 0;
-        sl->vol = 0;
+        sl->distanceDelta = 0;
+        sl->view = 0;
+        sl->distance = 0;
+        sl->volume = 0;
     } else {
         bd = 0.0f;
         n = 0;
@@ -359,15 +301,15 @@ loop:
 
 
 
-        sl->vol = (s32)v;
-        if (sl->best == bi) {
-            sl->delta = sl->dist - dist;
+        sl->volume = (s32)v;
+        if (sl->view == bi) {
+            sl->distanceDelta = sl->distance - dist;
         } else {
-            sl->delta = 0;
+            sl->distanceDelta = 0;
         }
-        sl->best = bi;
-        sl->dist = dist;
-        sl->taken = 0;
+        sl->view = bi;
+        sl->distance = dist;
+        sl->hasVoice = 0;
     }
     e++;
     sl++;
@@ -380,10 +322,10 @@ loop:
         bv = -1;
         best = 0;
         for (i = 0; i < 8; i++) {
-            if (gRiders_11[i].f7A5 == 0 && sRiderSounds_3[i].taken == 0) {
-                if (bv < sRiderSounds_3[i].vol ||
+            if (gRiders_11[i].f7A5 == 0 && sRiderSounds[i].hasVoice == 0) {
+                if (bv < sRiderSounds[i].volume ||
                     (gRiders_11[i].f6E8 == 0 && gRiders_11[best].f6E8 != 0)) {
-                    bv = sRiderSounds_3[i].vol;
+                    bv = sRiderSounds[i].volume;
                     best = i;
                 }
             }
@@ -391,43 +333,15 @@ loop:
         if (bv == -1) {
             break;
         }
-        sRiderSounds_3[best].taken = 1;
+        sRiderSounds[best].hasVoice = 1;
     }
     for (i = 0; i < 8; i++) {
-        if (sRiderSounds_3[i].taken == 0) {
-            sRiderSounds_3[i].vol = 0;
+        if (sRiderSounds[i].hasVoice == 0) {
+            sRiderSounds[i].volume = 0;
         }
         snd_update_rider(i);
     }
 }
-
-typedef struct {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    s32 f14;
-    s32 f18;
-    s32 f1C;
-    s32 f20;
-    s32 f24;
-    s32 f28;
-    s32 f2C;
-    s32 f30;
-    s32 f34;
-    s32 f38;
-    s32 f3C;
-    s32 f40;
-    s32 f44;
-    s32 f48;
-    s32 f4C;
-    s32 f50;
-    s32 f54;
-    s32 f58;
-    s32 f5C;
-    s32 f60;
-} Snd_2;
 
 typedef struct {
     u8 pad0[0x38];
@@ -467,10 +381,9 @@ typedef struct {
 } Bike_3;
 
 extern Bike_3 gRiders_12[];
-extern Snd_2 sRiderSounds_4[];
 
 void snd_update_rider(s32 arg0) {
-    Snd_2 *s;
+    RiderSound *s;
     s32 vol;
     s32 vol2;
     s32 v;
@@ -482,23 +395,23 @@ void snd_update_rider(s32 arg0) {
     s32 buf[4];
 
     if (sSndEnabled != 0 && sSndRaceLoaded != 0 && sEngineSamplesLoaded != 0) {
-        s = &sRiderSounds_4[arg0];
+        s = &sRiderSounds[arg0];
         if (gRiders_12[arg0].f656 != 0) {
-            s->f58 = 10;
+            s->throttleFrames = 10;
         }
-        if (s->f58 != 0) {
-            s->f58--;
+        if (s->throttleFrames != 0) {
+            s->throttleFrames--;
         }
         if (gRiders_12[arg0].f5B0 & 0x20000) {
-            s->f5C = 20;
-            s->f60++;
+            s->turboFrames = 20;
+            s->turboCount++;
         }
-        if (s->f5C != 0) {
-            if (--s->f5C == 0) {
-                s->f60 = 0;
+        if (s->turboFrames != 0) {
+            if (--s->turboFrames == 0) {
+                s->turboCount = 0;
             }
         }
-        if (s->f58 != 0 && gPauseMenu == 0) {
+        if (s->throttleFrames != 0 && gPauseMenu == 0) {
             if (gRiders_12[arg0].f654 != 0 && (random_byte_2() & 7) == 0) {
                 particles_start_exhaust_puff(arg0);
             }
@@ -506,31 +419,31 @@ void snd_update_rider(s32 arg0) {
                 particles_start_exhaust_puff(arg0);
             }
         }
-        vol = (gSfxVolume * s->f28) / 256;
+        vol = (gSfxVolume * s->volume) / 256;
         if (vol <= 32) {
-            if (s->fC != -1) {
-                sfx_stop(s->fC);
-                s->fC = -1;
+            if (s->engineHandle != -1) {
+                sfx_stop(s->engineHandle);
+                s->engineHandle = -1;
             }
-            if (s->f4 != -1) {
-                sfx_stop(s->f4);
-                s->f4 = -1;
+            if (s->idleHandle != -1) {
+                sfx_stop(s->idleHandle);
+                s->idleHandle = -1;
             }
-            if (s->f44 != -1) {
-                sfx_stop(s->f44);
-                s->f44 = -1;
+            if (s->sfx1Handle != -1) {
+                sfx_stop(s->sfx1Handle);
+                s->sfx1Handle = -1;
             }
-            if (s->f50 != -1) {
-                sfx_stop(s->f50);
-                s->f50 = -1;
+            if (s->impactHandle != -1) {
+                sfx_stop(s->impactHandle);
+                s->impactHandle = -1;
             }
-            if (s->f4C != -1) {
-                sfx_stop(s->f4C);
-                s->f4C = -1;
+            if (s->revHandle != -1) {
+                sfx_stop(s->revHandle);
+                s->revHandle = -1;
             }
-            if (s->f48 != -1) {
-                sfx_stop(s->f48);
-                s->f48 = -1;
+            if (s->surfaceHandle != -1) {
+                sfx_stop(s->surfaceHandle);
+                s->surfaceHandle = -1;
             }
             if ((random_byte_2() & 0x3F) == 0 && gRiders_12[arg0].f7A5 == 0) {
                 particles_start_exhaust_puff(arg0);
@@ -546,11 +459,11 @@ void snd_update_rider(s32 arg0) {
             if (v > 255) {
                 v = 255;
             }
-            sfx_play(sRiderSfx[0].v, 0x5622, v, 7, 0, 1);
+            sfx_play(sRiderSfx[0].sample, 0x5622, v, 7, 0, 1);
         }
 
-        if (gNumViews == 1 && s->f2C == 0) {
-            f = (f32)s->f34 * 60.0f / 1000.0f;
+        if (gNumViews == 1 && s->view == 0) {
+            f = (f32)s->distanceDelta * 60.0f / 1000.0f;
             f = f / 331.45f;
             f = f * 2.0f;
             f = f - 1.0f;
@@ -580,15 +493,15 @@ void snd_update_rider(s32 arg0) {
             }
         }
         if (v != 0) {
-            if (s->f4C == -1) {
-                s->f4C = sfx_play(sRiderSfx[2].v, 8000, v, 7, 1, 1);
+            if (s->revHandle == -1) {
+                s->revHandle = sfx_play(sRiderSfx[2].sample, 8000, v, 7, 1, 1);
             }
-            if (s->f4C != -1) {
-                sfx_set_volume(s->f4C, v);
+            if (s->revHandle != -1) {
+                sfx_set_volume(s->revHandle, v);
             }
-        } else if (s->f4C != -1) {
-            sfx_stop(s->f4C);
-            s->f4C = -1;
+        } else if (s->revHandle != -1) {
+            sfx_stop(s->revHandle);
+            s->revHandle = -1;
         }
 
         v = 0;
@@ -603,20 +516,20 @@ void snd_update_rider(s32 arg0) {
             }
         }
         if (v != 0) {
-            if (s->f44 == -1) {
-                s->f44 = sfx_play(sRiderSfx[1].v, 0x2B11, v, 7, 0, 1);
+            if (s->sfx1Handle == -1) {
+                s->sfx1Handle = sfx_play(sRiderSfx[1].sample, 0x2B11, v, 7, 0, 1);
             } else {
-                sfx_set_volume(s->f44, v);
+                sfx_set_volume(s->sfx1Handle, v);
             }
-        } else if (s->f44 != -1) {
-            sfx_stop(s->f44);
-            s->f44 = -1;
+        } else if (s->sfx1Handle != -1) {
+            sfx_stop(s->sfx1Handle);
+            s->sfx1Handle = -1;
         }
 
-        if (gRaceFrame < s->f38) {
-            s->f38 = -30;
+        if (gRaceFrame < s->impactFrame) {
+            s->impactFrame = -30;
         }
-        k = s->f40 * vol / 255;
+        k = s->impactLevel * vol / 255;
         k = k * 350 / 255;
         if (k < 32) {
             k = 0;
@@ -624,19 +537,19 @@ void snd_update_rider(s32 arg0) {
         if (k > 255) {
             k = 255;
         }
-        if (k != 0 && gRaceFrame - s->f38 < 30) {
-            if (s->f50 == -1) {
-                s->f50 = sfx_play(sRiderSfx[5].v, 0x2B11, k, 7, 0, 1);
+        if (k != 0 && gRaceFrame - s->impactFrame < 30) {
+            if (s->impactHandle == -1) {
+                s->impactHandle = sfx_play(sRiderSfx[5].sample, 0x2B11, k, 7, 0, 1);
                 if (gRiders_12[arg0].f44 != 0) {
-                    sfx_get_sample_info(sRiderSfx[5].v, buf);
-                    sfx_set_position(s->f50, buf[1]);
+                    sfx_get_sample_info(sRiderSfx[5].sample, buf);
+                    sfx_set_position(s->impactHandle, buf[1]);
                 }
             } else {
-                sfx_set_volume(s->f50, k);
+                sfx_set_volume(s->impactHandle, k);
             }
-        } else if (s->f50 != -1) {
-            sfx_stop(s->f50);
-            s->f50 = -1;
+        } else if (s->impactHandle != -1) {
+            sfx_stop(s->impactHandle);
+            s->impactHandle = -1;
         }
 
         v = gRiders_12[arg0].f655;
@@ -646,60 +559,60 @@ void snd_update_rider(s32 arg0) {
         if (v > 4) {
             v = 4;
         }
-        if (sRiderSounds_4[arg0].f58 != 0 && v == s->f8) {
-            s->f1C++;
+        if (sRiderSounds[arg0].throttleFrames != 0 && v == s->gear) {
+            s->gearFrames++;
         } else {
-            s->f1C = 0;
+            s->gearFrames = 0;
         }
-        if (s->f1C == s->f0) {
-            s->f8 = -999;
+        if (s->gearFrames == s->gearHold) {
+            s->gear = -999;
         }
         vol2 = vol * 200 / 256;
 
-        if (sRiderSounds_4[arg0].f58 != 0) {
-            if (s->f4 != -1) {
-                sfx_stop(s->f4);
-                s->f4 = -1;
+        if (sRiderSounds[arg0].throttleFrames != 0) {
+            if (s->idleHandle != -1) {
+                sfx_stop(s->idleHandle);
+                s->idleHandle = -1;
             }
-            s->f10 = 0;
-            if (v != s->f8) {
+            s->idleFade = 0;
+            if (v != s->gear) {
                 if (gPauseMenu == 0) {
                     particles_start_exhaust_puff(arg0);
                 }
-                if (s->fC != -1) {
-                    sfx_stop(s->fC);
-                    s->fC = -1;
+                if (s->engineHandle != -1) {
+                    sfx_stop(s->engineHandle);
+                    s->engineHandle = -1;
                 }
             }
             g = v;
-            if (s->fC == -1) {
+            if (s->engineHandle == -1) {
                 if (v == 3 || v == 4) {
                     g = (random_byte_2() & 1) + 3;
                 }
-                if (s->f1C >= s->f0) {
-                    s->f1C = 0;
+                if (s->gearFrames >= s->gearHold) {
+                    s->gearFrames = 0;
                     if (g >= 4) {
-                        s->f0 = random_byte_2() % 20 + 20;
+                        s->gearHold = random_byte_2() % 20 + 20;
                     } else {
-                        s->f0 = random_byte_2() % 30 + 30;
+                        s->gearHold = random_byte_2() % 30 + 30;
                     }
                 }
-                s->fC = sfx_play(sEngineSamples[g].f4, 0, 0xC0, 7, 0, 1);
-                if (v == s->f8 - 1 && s->fC != -1) {
-                    sfx_get_sample_info(sEngineSamples[g].f4, buf);
-                    sfx_set_position(s->fC, buf[1]);
+                s->engineHandle = sfx_play(sEngineSamples[g].sample, 0, 0xC0, 7, 0, 1);
+                if (v == s->gear - 1 && s->engineHandle != -1) {
+                    sfx_get_sample_info(sEngineSamples[g].sample, buf);
+                    sfx_set_position(s->engineHandle, buf[1]);
                 }
-                s->f20 = g;
-                s->f24 = 0;
-                if (s->fC == -1) {
+                s->engineSample = g;
+                s->looped = 0;
+                if (s->engineHandle == -1) {
                     goto end;
                 }
             }
             k = (s32)(gRiders_12[arg0].f644 - 5000.0f);
-            k = sEngineSamples[s->f20].f10 + (sEngineSamples[s->f20].f14 - sEngineSamples[s->f20].f10) * k / 7000;
+            k = sEngineSamples[s->engineSample].rateLow + (sEngineSamples[s->engineSample].rateHigh - sEngineSamples[s->engineSample].rateLow) * k / 7000;
             k += random_byte_2() * 500 / 256 - 250;
             n = vol2;
-            if (s->f5C != 0) {
+            if (s->turboFrames != 0) {
                 if (gRiders_12[arg0].f6E8 == 0) {
                     k = 32000;
                 }
@@ -718,49 +631,49 @@ void snd_update_rider(s32 arg0) {
             if (n < 0) {
                 n = 0;
             }
-            sfx_set_rate(s->fC, (s32)(k * f) * 16 / 22);
-            sfx_set_volume(s->fC, n);
+            sfx_set_rate(s->engineHandle, (s32)(k * f) * 16 / 22);
+            sfx_set_volume(s->engineHandle, n);
         } else {
-            if (++s->f10 >= 7) {
-                s->f10 = 6;
-                if (s->fC != -1) {
-                    sfx_stop(s->fC);
-                    s->fC = -1;
+            if (++s->idleFade >= 7) {
+                s->idleFade = 6;
+                if (s->engineHandle != -1) {
+                    sfx_stop(s->engineHandle);
+                    s->engineHandle = -1;
                 }
             }
-            k = s->f10 * 255 / 6;
-            if (s->fC != -1) {
-                sfx_set_volume(s->fC, (255 - k) * 192 / 256 * vol2 / 256);
+            k = s->idleFade * 255 / 6;
+            if (s->engineHandle != -1) {
+                sfx_set_volume(s->engineHandle, (255 - k) * 192 / 256 * vol2 / 256);
             }
-            if (s->f4 == -1) {
-                s->f4 = sfx_play(sEngineSamples[5].f4, 0, 0xC0, 7, 0, 1);
+            if (s->idleHandle == -1) {
+                s->idleHandle = sfx_play(sEngineSamples[5].sample, 0, 0xC0, 7, 0, 1);
             }
-            if (s->f14 != 0) {
-                s->f14 += s->f18;
-                if (s->f14 < 0) {
-                    s->f14 = 0;
+            if (s->revBlip != 0) {
+                s->revBlip += s->revBlipStep;
+                if (s->revBlip < 0) {
+                    s->revBlip = 0;
                 }
             }
-            if (s->f14 > 64) {
-                s->f18 = -2;
+            if (s->revBlip > 64) {
+                s->revBlipStep = -2;
             }
-            if (s->f8 == v + 1) {
-                s->f14 = 1;
-                s->f18 = 4;
+            if (s->gear == v + 1) {
+                s->revBlip = 1;
+                s->revBlipStep = 4;
             }
-            if (s->f4 != -1) {
-                s32 t = k / 2 + s->f14;
+            if (s->idleHandle != -1) {
+                s32 t = k / 2 + s->revBlip;
                 if (t > 255) {
                     t = 255;
                 }
-                sfx_set_volume(s->f4, t * vol2 / 256);
+                sfx_set_volume(s->idleHandle, t * vol2 / 256);
                 k = (s32)(gRiders_12[arg0].f644 - 1000.0f);
-                k = sEngineSamples[5].f10 + (sEngineSamples[5].f14 - sEngineSamples[5].f10) * k / 7000;
-                sfx_set_rate(s->f4, (s32)(k * f) * 16 / 22);
+                k = sEngineSamples[5].rateLow + (sEngineSamples[5].rateHigh - sEngineSamples[5].rateLow) * k / 7000;
+                sfx_set_rate(s->idleHandle, (s32)(k * f) * 16 / 22);
             }
         }
 end:
-        s->f8 = v;
+        s->gear = v;
         v = (s32)(gRiders_12[arg0].f420 * 255.0f / 15.0f);
         if (v > 255) {
             v = 255;
@@ -769,55 +682,45 @@ end:
             v = 0;
         }
         if (gRiders_12[arg0].f4E4->f38 != 0 && v != 0 && gRiders_12[arg0].f744 < 6) {
-            if (s->f48 == -1) {
-                s->f48 = sfx_play(gRiders_12[arg0].f4E4->f3C, 0x2B11, (vol * v) >> 8, 7, 0, 1);
+            if (s->surfaceHandle == -1) {
+                s->surfaceHandle = sfx_play(gRiders_12[arg0].f4E4->f3C, 0x2B11, (vol * v) >> 8, 7, 0, 1);
             } else {
-                sfx_set_volume(s->f48, (vol * v) >> 8);
+                sfx_set_volume(s->surfaceHandle, (vol * v) >> 8);
             }
-        } else if (s->f48 != -1) {
-            sfx_stop(s->f48);
-            s->f48 = -1;
+        } else if (s->surfaceHandle != -1) {
+            sfx_stop(s->surfaceHandle);
+            s->surfaceHandle = -1;
         }
     }
 }
 
-typedef struct {
-    s32 w0[10];
-    s32 f28;
-    s32 w1[4];
-    s32 f3c;
-    s32 w2[9];
-} Rec25;
-
-extern Rec25 sRiderSounds_5[];
-
 void snd_play_rider_sfx(s32 k, s32 n, s32 vol)
 {
     s32 buf[4];
-    Snd *s, *tb;
+    SndSample *s, *tb;
     s32 t, x;
 
     if (sSndRaceLoaded != 0) {
-        if (k == 8 && D_800C2C54 == -1) {
+        if (k == 8 && sRiderSfx[8].sample == -1) {
             k = 4;
         }
         if (k == 4 || k == 8) {
-            if (gRaceFrame - sRiderSounds_5[n].f3c < 20) {
+            if (gRaceFrame - sRiderSounds[n].sfxFrame < 20) {
                 return;
             }
-            sRiderSounds_5[n].f3c = gRaceFrame;
+            sRiderSounds[n].sfxFrame = gRaceFrame;
         }
         tb = sRiderSfx;
         s = &tb[k];
-        sfx_get_sample_info(s->id, buf);
-        t = gSfxVolume * sRiderSounds_5[n].f28 / 256;
+        sfx_get_sample_info(s->sample, buf);
+        t = gSfxVolume * sRiderSounds[n].volume / 256;
         x = t * vol;
         t = x / 255;
         if (t >= 32) {
             if (t > 255) {
                 t = 255;
             }
-            sfx_play(s->id, buf[3], t, 7, 1, 0);
+            sfx_play(s->sample, buf[3], t, 7, 1, 0);
         }
     }
 }
@@ -899,20 +802,20 @@ void snd_update(void) {
 }
 
 void snd_play_sfx(s32 a0) {
-    Pal *e;
-    Pal *b;
+    SndSample *e;
+    SndSample *b;
     s32 buf[4];
     s32 n;
 
     if (sSndRaceLoaded != 0) {
         b = sRiderSfx;
         e = b + a0;
-        sfx_get_sample_info(e->f4, buf);
+        sfx_get_sample_info(e->sample, buf);
         n = gSfxVolume;
         if (n > 0xFF) {
             n = 0xFF;
         }
-        sfx_play(e->f4, buf[3], n, 7, 1, 0);
+        sfx_play(e->sample, buf[3], n, 7, 1, 0);
     }
 }
 
@@ -928,16 +831,16 @@ s32 snd_get_master_volume(void) {
 void snd_trigger_impact(s32 a0, s32 a1, s32 a2, s32 a3)
 {
     u8 *base;
-    u8 *rec;
+    RiderSound *rec;
     s32 off;
     s32 v;
 
-    base = sRiderSounds;
-    off = a0 * 100;
+    base = (u8 *)sRiderSounds;
+    off = a0 * sizeof(RiderSound);
     v = gRaceFrame;
-    rec = base + off;
-    *(s32 *)(rec + 0x40) = a1;
-    *(s32 *)(rec + 0x38) = v;
+    rec = (RiderSound *)(base + off);
+    rec->impactLevel = a1;
+    rec->impactFrame = v;
 }
 
 void snd_set_volume(s32 mode, s32 v)
@@ -988,23 +891,23 @@ s32 snd_get_volume(s32 param_1)
 
 void snd_stop_all_riders(void) {
     s32 i;
-    u8 *p;
+    RiderSound *p;
     u8 *hb;
 
     i = 0;
     hb = (u8 *)0x800C0000;
     p = sRiderSounds;
     do {
-        if (*(s32 *)(hb + 0x2B64) != 0) {
-            snd_stop_handle((s32 *)(p + 0xC));
-            snd_stop_handle((s32 *)(p + 0x4));
-            snd_stop_handle((s32 *)(p + 0x44));
-            snd_stop_handle((s32 *)(p + 0x50));
-            snd_stop_handle((s32 *)(p + 0x4C));
-            snd_stop_handle((s32 *)(p + 0x48));
+        if (*(s32 *)(hb + 0x2B64) != 0) {   /* sSndRaceLoaded */
+            snd_stop_handle(&p->engineHandle);
+            snd_stop_handle(&p->idleHandle);
+            snd_stop_handle(&p->sfx1Handle);
+            snd_stop_handle(&p->impactHandle);
+            snd_stop_handle(&p->revHandle);
+            snd_stop_handle(&p->surfaceHandle);
         }
         i++;
-        p += 0x64;
+        p++;
     } while (i < 8);
 }
 
@@ -1054,32 +957,6 @@ void snd_service(void)
     }
 }
 
-typedef struct {
-    s32 f00;
-    s32 f04;
-    s32 f08;
-    s32 f0c;
-    s32 f10;
-    s32 f14;
-} T18;
-
-typedef struct {
-    s32 f00;
-    s32 f04;
-    s32 f08;
-    s32 f0c;
-    s32 f10;
-    s32 f14;
-    s32 f18;
-    s32 f1c;
-    s32 f20;
-    s32 f24;
-    u8 pad[0x64 - 0x28];
-} Ent_9;
-
-extern T18 sEngineSamples_4[];
-extern Ent_9 sRiderSounds_6[];
-
 void snd_engine_callback(void)
 {
     s32 i;
@@ -1088,13 +965,13 @@ void snd_engine_callback(void)
 
     if (sSndRaceLoaded != 0) {
         for (i = 0; i < 8; i++) {
-            if (sRiderSounds_6[i].f0c != -1 && (u32)(sRiderSounds_6[i].f20 - 1) < 4 && sRiderSounds_6[i].f24 == 0) {
-                r = sfx_get_position(sRiderSounds_6[i].f0c);
-                sfx_get_sample_info(sEngineSamples_4[sRiderSounds_6[i].f20].f04, loc);
+            if (sRiderSounds[i].engineHandle != -1 && (u32)(sRiderSounds[i].engineSample - 1) < 4 && sRiderSounds[i].looped == 0) {
+                r = sfx_get_position(sRiderSounds[i].engineHandle);
+                sfx_get_sample_info(sEngineSamples[sRiderSounds[i].engineSample].sample, loc);
                 if ((s32)r >= loc[1]) {
-                    sfx_set_sample(sRiderSounds_6[i].f0c, sEngineSamples_4[6].f04);
-                    sfx_set_position(sRiderSounds_6[i].f0c, r - loc[1]);
-                    sRiderSounds_6[i].f24 = 1;
+                    sfx_set_sample(sRiderSounds[i].engineHandle, sEngineSamples[6].sample);
+                    sfx_set_position(sRiderSounds[i].engineHandle, r - loc[1]);
+                    sRiderSounds[i].looped = 1;
                 }
             }
         }
@@ -1103,14 +980,14 @@ void snd_engine_callback(void)
 
 void snd_free_engine_samples(void)
 {
-    Gear *p;
+    EngineSample *p;
     u32 i;
 
     if (sEngineSamplesLoaded != 0) {
         i = 0;
         p = sEngineSamples;
         do {
-            s32 a = p->f4;
+            s32 a = p->sample;
             p++;
             i++;
             sfx_free_sample(a);
@@ -1121,22 +998,18 @@ void snd_free_engine_samples(void)
 
 void snd_stop_rider(s32 a0)
 {
-    u8 *s;
+    RiderSound *s;
 
     if (sSndRaceLoaded != 0) {
-        s = sRiderSounds + a0 * 100;
-        snd_stop_handle((s32 *)(s + 0xC));
-        snd_stop_handle((s32 *)(s + 0x4));
-        snd_stop_handle((s32 *)(s + 0x44));
-        snd_stop_handle((s32 *)(s + 0x50));
-        snd_stop_handle((s32 *)(s + 0x4C));
-        snd_stop_handle((s32 *)(s + 0x48));
+        s = &sRiderSounds[a0];
+        snd_stop_handle(&s->engineHandle);
+        snd_stop_handle(&s->idleHandle);
+        snd_stop_handle(&s->sfx1Handle);
+        snd_stop_handle(&s->impactHandle);
+        snd_stop_handle(&s->revHandle);
+        snd_stop_handle(&s->surfaceHandle);
     }
 }
-
-typedef struct { u8 pad[0x28]; s32 vol; u8 pad2[0x38]; } Ent100;
-
-extern Ent100 sRiderSounds_7[];
 
 void snd_play_rider_sfx_pitch(s32 i, s32 j, s32 vol, s32 pan, s32 arg4)
 {
@@ -1144,14 +1017,14 @@ void snd_play_rider_sfx_pitch(s32 i, s32 j, s32 vol, s32 pan, s32 arg4)
     s32 v;
 
     if (sSndRaceLoaded != 0) {
-        Snd *tab = sRiderSfx;
-        Snd *s = &tab[i];
-        sfx_get_sample_info(s->id, buf);
-        v = gSfxVolume * sRiderSounds_7[j].vol / 256;
+        SndSample *tab = sRiderSfx;
+        SndSample *s = &tab[i];
+        sfx_get_sample_info(s->sample, buf);
+        v = gSfxVolume * sRiderSounds[j].volume / 256;
         v = v * vol / 255;
         if (v >= 0x20) {
             if (v > 0xff) v = 0xff;
-            sfx_play(s->id, buf[3] * pan / 256, v, 7, 1, 1);
+            sfx_play(s->sample, buf[3] * pan / 256, v, 7, 1, 1);
         }
     }
 }

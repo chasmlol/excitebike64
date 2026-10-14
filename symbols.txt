@@ -1588,11 +1588,7 @@ sSndEnabled                           game  0x800C2B5C  data      0x4
 sSndServiceBusy                       game  0x800C2B60  data      0x4
 sSndRaceLoaded                        game  0x800C2B64  data      0x4
 sEngineSamples                        game  0x800C2B68  data     0xa8
-sEngineSamples_2                      game  0x800C2B68  data        -  sEngineSamples
-sEngineSamples_3                      game  0x800C2B68  data        -  sEngineSamples
-sEngineSamples_4                      game  0x800C2B68  data        -  sEngineSamples
 sRiderSfx                             game  0x800C2C10  data     0x3c
-sRiderSfx_2                           game  0x800C2C10  data        -  sRiderSfx
 D_800C2C4C                            game  0x800C2C4C  data      0x8
 D_800C2C54                            game  0x800C2C54  data      0xc
 gCosTable                             game  0x800C2C60  data   0x2000
@@ -3994,12 +3990,6 @@ gSndMasterVolume                      game  0x800E32A0  data        -
 gSndMasterVolume_2                    game  0x800E32A0  data        -  gSndMasterVolume
 sSndFrameSamples                      game  0x800E32A4  data        -
 sRiderSounds                          game  0x800E32A8  data        -
-sRiderSounds_2                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_3                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_4                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_5                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_6                        game  0x800E32A8  data        -  sRiderSounds
-sRiderSounds_7                        game  0x800E32A8  data        -  sRiderSounds
 sSndOutputRate                        game  0x800E35C8  data        -
 sSndSurfaces                          game  0x800E35CC  data        -
 sSndSurfaces_2                        game  0x800E35CC  data        -  sSndSurfaces
