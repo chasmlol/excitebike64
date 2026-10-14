@@ -315,6 +315,7 @@ void debug_log()
     }
 }
 
+/* Marks the debug log as closed. */
 void debug_log_close(void)
 {
     if (sDebugLogFd >= 0) {

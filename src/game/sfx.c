@@ -875,6 +875,7 @@ void sfx_stop(s32 handle)
     }
 }
 
+/* Asks every sound to stop (sfx_update_voices ends them). */
 void sfx_stop_all(void)
 {
     SfxSound *snd;
@@ -971,6 +972,7 @@ void sfx_set_volume(s32 handle, s32 volume)
     }
 }
 
+/* Sets a sound's pan (0-15), and its voice's if it has one. */
 void sfx_set_pan(s32 handle, s32 pan)
 {
     SfxSound *snd;
@@ -1012,6 +1014,7 @@ static inline SfxSound *set_rate_find_sound(s32 handle)
     return NULL;
 }
 
+/* Sets a sound's rate in Hz and the position step that follows from it. */
 void sfx_set_rate(s32 handle, s32 rate)
 {
     SfxSound *snd;
@@ -1110,6 +1113,7 @@ common:
     }
 }
 
+/* The getters: a sound's volume, pan, rate or priority, -1 when there is no such sound. */
 s32 sfx_get_volume(s32 handle)
 {
     SfxSound *snd;
@@ -1349,6 +1353,7 @@ void sfx_stream_write(SfxStream *stream, u32 size, u8 *src)
     critical_leave();
 }
 
+/* Sets a stream's rate and the bytes it plays per output frame. */
 void sfx_stream_set_rate(SfxStream *stream, s32 rate)
 {
     u32 chunkSize = (u32)(rate * sSfxFrameSamples) / sSfxOutputRate;
@@ -1504,6 +1509,7 @@ void sfx_driver_callback(void)
     }
 }
 
+/* Copies n bytes. */
 void sfx_copy_bytes(u8 *dst, u8 *src, s32 n)
 {
     while (n != 0) {
@@ -1611,6 +1617,7 @@ void sfx_insert_sound(SfxSound *snd)
     critical_leave();
 }
 
+/* Takes a sound out of sSfxSounds. */
 void sfx_unlink_sound(SfxSound *snd)
 {
     critical_enter();

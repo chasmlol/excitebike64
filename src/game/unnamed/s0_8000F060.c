@@ -774,6 +774,7 @@ void snd_shutdown(void)
     }
 }
 
+/* The per-frame service of the sound system, while the NES emulator is not running. */
 void snd_update(void)
 {
     if (sSndEnabled != 0 && gNesActive == 0) {
@@ -863,6 +864,7 @@ end:
     tunes_update_volumes();
 }
 
+/* The volume of a kind (SND_VOLUME_*). */
 s32 snd_get_volume(s32 kind)
 {
     switch (kind) {
@@ -901,6 +903,7 @@ void snd_stop_all_riders(void)
     } while (i < SND_RIDERS);
 }
 
+/* Loads the four menu sounds (MENU_SOUND_*). */
 void snd_load_menu_sounds(void)
 {
     sMenuSounds[MENU_SOUND_MOVE] = sfx_load_sample_id(sMenuMoveSfxResId);
@@ -979,6 +982,7 @@ void snd_engine_callback(void)
     }
 }
 
+/* Frees the engine samples, if they are loaded. */
 void snd_free_engine_samples(void)
 {
     EngineSample *es;

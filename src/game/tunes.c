@@ -1211,6 +1211,7 @@ void announce_reset(void)
     sAmbientLocked = 0;
 }
 
+/* Queues an announcer clip (not during replays, the credits or the podium; dropped when the queue is full). */
 void tunes_queue_speech(s32 clip)
 {
     if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0) {

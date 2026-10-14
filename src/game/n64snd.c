@@ -118,6 +118,7 @@ s32 n64snd_get_caps(s32 *voices, s32 *modes, s32 *rate, s32 *frameMs)
     return 0;
 }
 
+/* Stops the driver: the mixer and the mix and AI buffers. */
 void n64snd_shutdown(void)
 {
     sN64SndActive = 0;

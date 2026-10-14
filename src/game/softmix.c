@@ -285,6 +285,7 @@ void softmix_voice_set_volume(s32 voice, s32 value)
     }
 }
 
+/* Sets a voice's pan (0-15) and, in stereo, its left and right levels from it and the volume. */
 void softmix_voice_set_pan(s32 voice, s32 value)
 {
     s32 volume, pan, left, right;
@@ -421,6 +422,7 @@ void softmix_sam_decompress(SamHeader **resp)
     }
 }
 
+/* What the mixer can do: voices, output modes and the highest rate. */
 s32 softmix_get_caps(s32 *voices, s32 *modes, s32 *rate)
 {
     *voices = SOFTMIX_MAX_VOICES;
@@ -429,6 +431,7 @@ s32 softmix_get_caps(s32 *voices, s32 *modes, s32 *rate)
     return 0;
 }
 
+/* Frees the volume table and the voices and closes the SFX resource set. */
 void softmix_shutdown(void)
 {
     mem_free(sSoftmixVolumeTable);
@@ -469,6 +472,7 @@ void softmix_get_sample_info(s32 sample, s32 *info)
     info[3] = entry->rate;
 }
 
+/* Sets a sample's length, loop start, loop end and rate. */
 void softmix_set_sample_info(s32 sample, s32 *info)
 {
     SoftmixSample *samples = sSoftmixSamples;
@@ -618,6 +622,7 @@ void softmix_echo_set_level(s32 level)
     } while (i < 0x100);
 }
 
+/* Frees the echo buffer, if the echo is on, and turns it off. */
 void softmix_echo_free(void)
 {
     if (sSoftmixEchoOn != 0) {
