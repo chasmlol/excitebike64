@@ -626,12 +626,9 @@ void save_init_defaults(void)
 
 typedef struct { u8 pad[0x410]; s32 cur; } S70_2;
 typedef struct { u8 pad[0x2BF]; u8 bits; u8 cnt; } S19;
-typedef struct { u8 pad[8]; u16 flags; u8 pad2[6]; } Ent_76;
 
 extern S70_2 gGame_49;
 extern S19 gSaveData_6;
-extern Ent_76 gSpecialTracksItems[];
-extern Ent_76 sTrackListItems[];
 
 s32 save_update_unlocks(void)
 {
@@ -641,7 +638,7 @@ s32 save_update_unlocks(void)
     u32 g;
     s32 hv;
     u32 bit;
-    Ent_76 *e;
+    ScreenItem *e;
 
     for (i = 0; i < 4; i++) {
         k = i * 5;
@@ -669,16 +666,16 @@ s32 save_update_unlocks(void)
             if (act) {
                 bit = 1 << idx;
                 g = gUnlockedTracks | bit;
-                e = (Ent_76 *)(idx << 4);
-                e = (Ent_76 *)((u32)e + (u32)sTrackListItems);
+                e = (ScreenItem *)(idx << 4);
+                e = (ScreenItem *)((u32)e + (u32)sTrackListItems);
                 hv = e->flags & ~1;
                 gUnlockedTracks = g;
                 e->flags = hv;
             } else {
                 bit = 1 << idx;
                 bit = ~bit;
-                e = (Ent_76 *)(idx << 4);
-                e = (Ent_76 *)((u32)e + (u32)sTrackListItems);
+                e = (ScreenItem *)(idx << 4);
+                e = (ScreenItem *)((u32)e + (u32)sTrackListItems);
                 g = gUnlockedTracks & bit;
                 hv = e->flags | 1;
                 gUnlockedTracks = g;

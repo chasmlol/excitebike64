@@ -808,8 +808,6 @@ shell_build_player_palettes           game  0x80079AA4  func     0xc0
 shell_update_season_progress          game  0x80079B64  func    0x29c
 shell_load_screen                     game  0x80079E00  func   0x1138
 shell_goto_screen                     game  0x8007AF38  func    0x1fc
-shell_goto_screen_2                   game  0x8007AF38  func        -  shell_goto_screen
-shell_goto_screen_3                   game  0x8007AF38  func        -  shell_goto_screen
 shell_draw_rider_stats                game  0x8007B134  func    0x268
 shell_draw_results_menu               game  0x8007B39C  func    0x618
 shell_draw_players_difficulty_popup   game  0x8007B9B4  func    0xc8c
@@ -2028,8 +2026,6 @@ sSeasonRoundItems                     game  0x800CD2D0  data     0x70
 D_800CD340                            game  0x800CD340  data     0x10
 D_800CD350                            game  0x800CD350  data     0x20
 gSpecialTracksItems                   game  0x800CD370  data     0x60
-gSpecialTracksItems_2                 game  0x800CD370  data        -  gSpecialTracksItems
-gSpecialTracksItems_3                 game  0x800CD370  data        -  gSpecialTracksItems
 D_800CD3D0                            game  0x800CD3D0  data     0x60
 sTrackListItems                       game  0x800CD430  data    0x140
 sMainMenuItems                        game  0x800CD570  data     0x60
@@ -2038,9 +2034,6 @@ D_800CD5E0                            game  0x800CD5E0  data     0x10
 D_800CD5F0                            game  0x800CD5F0  data     0x30
 D_800CD620                            game  0x800CD620  data     0x1c
 sScreens                              game  0x800CD63C  data     0x58
-sScreens_2                            game  0x800CD63C  data        -  sScreens
-sScreens_3                            game  0x800CD63C  data        -  sScreens
-sScreens_4                            game  0x800CD63C  data        -  sScreens
 sScreenSeasonStandings                game  0x800CD694  data     0x2c
 D_800CD6C0                            game  0x800CD6C0  data     0x58
 sScreenOptions                        game  0x800CD718  data     0x2c
@@ -5064,15 +5057,12 @@ D_800F4780                            game  0x800F4780  data        -
 sTitleSceneViewport                   game  0x800F4790  data        -
 sPrevScreenCursor                     game  0x800F47A0  data        -
 sPrevScreen                           game  0x800F47A4  data        -
-sPrevScreen_2                         game  0x800F47A4  data        -  sPrevScreen
 sPrevPadButtons                       game  0x800F47B0  data        -
 gGuiRes                               game  0x800F47C0  data        -
 gGuiRes_2                             game  0x800F47C0  data        -  gGuiRes
 gGuiRes_3                             game  0x800F47C0  data        -  gGuiRes
 sCurScreen                            game  0x800F47C4  data        -
 sCurScreen_2                          game  0x800F47C4  data        -  sCurScreen
-sCurScreen_3                          game  0x800F47C4  data        -  sCurScreen
-sCurScreen_4                          game  0x800F47C4  data        -  sCurScreen
 sPakStrBuf                            game  0x800F47D0  data        -
 sPakScreenSaved                       game  0x800F4838  data        -
 D_800F483C                            game  0x800F483C  data        -

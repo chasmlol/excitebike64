@@ -100,16 +100,6 @@ typedef struct Obj_59 Obj_59;
 typedef struct Obj_60 Obj_60;
 typedef struct Mdl2 Mdl2;
 typedef struct Obj2 Obj2;
-typedef struct Item_8 Item_8;
-typedef struct Obj_61 Obj_61;
-typedef struct Obj_62 Obj_62;
-typedef struct Obj_63 Obj_63;
-typedef struct Arg0 Arg0;
-typedef struct Arg1 Arg1;
-typedef struct Ctl_19 Ctl_19;
-typedef struct Scr Scr;
-typedef struct Ctl_21 Ctl_21;
-typedef struct Obj_67 Obj_67;
 typedef struct Menu_5 Menu_5;
 typedef struct Game_36 Game_36;
 typedef struct Rec_49 Rec_49;
@@ -1065,55 +1055,6 @@ typedef struct Obj_57 {
     s32 f744;
 } Obj_57;
 
-typedef struct Item_9 {
-    u8 pad0[4];
-    struct Item_9 *p4;
-    struct Item_9 *p8;
-    u8 padC[0x14 - 0xC];
-    s16 h14;
-    u8 pad16[2];
-    s16 h18;
-    u8 pad1A[0x20 - 0x1A];
-    s32 *p20;
-    u8 pad24[4];
-    s32 p28;
-} Item_9;
-
-typedef struct Item_11 {
-    u8 pad0[4];
-    s32 w4;
-    u8 pad8[0x10 - 0x8];
-    u16 h10;
-    s16 h12;
-    s16 h14;
-    s16 h16;
-    s16 h18;
-    u8 pad1A[2];
-    s32 **p1C;
-    s32 *p20;
-    s32 w24;
-    u8 pad28[4];
-} Item_11;
-
-typedef struct MenuItem {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    void (*func)(s32);
-} MenuItem;
-
-typedef struct Item_12 {
-    s32 f0;
-    struct Item_12 *child;   /* 0x04 */
-    struct Item_12 *next;    /* 0x08 */
-    MenuItem *items;      /* 0x0C */
-    u16 flags;            /* 0x10 */
-    u8 pad12[0x20 - 0x12];
-    s32 *sel;             /* 0x20 */
-    s32 f24;
-    struct Item_12 *parent;  /* 0x28 */
-} Item_12;
-
 typedef struct Slot {
     s32 w0;
     u32 flags;
@@ -1327,5 +1268,7 @@ typedef struct Spr {
     u8 w, h, s, t;
     u8 r, g, b, a;
 } Spr;
+
+#include "structs/shell.h"
 
 #endif
