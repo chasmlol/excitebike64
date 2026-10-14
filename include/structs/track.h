@@ -100,11 +100,19 @@ typedef struct CollTri {
                    u32 w[2];
                } cells;      /* bit z * 8 + x: the triangle touches that grid cell */
     /* 0x08 */ u16 vtx[3];  /* indices into the section model's vertices */
-    /* 0x0E */ u16 flags;   /* bits 4-7 surface (gSurfaceTable), 0x100 skipped by the ground search, 0x400 bridge */
+    /* 0x0E */ u16 flags;   /* COLL_TRI_* */
 } CollTri; /* size 0x10 */
 
+/* CollTri.flags (gGroundSurface) */
+#define COLL_TRI_SURFACE(flags) (((flags) >> 4) & 0xF) /* the gSurfaceTable entry */
+#define COLL_TRI_SKIP   0x100 /* left out of the triangles near a point (shadows, tire tracks) */
+#define COLL_TRI_BRIDGE 0x400 /* may lie over other ground: only counts below the point, the highest wins */
+
+#define COLL_GRID_VALID    1
+#define COLL_GRID_CENTERED 4 /* the model's vertices are relative to the centre of its box */
+
 typedef struct CollGrid {
-    /* 0x00 */ u16 flags;   /* 1 valid; 4 vertices relative to the centre of the box */
+    /* 0x00 */ u16 flags;   /* COLL_GRID_* */
     /* 0x02 */ u16 count;
     /* 0x04 */ CollTri tris[1]; /* [count] */
 } CollGrid;
@@ -158,12 +166,15 @@ typedef struct TrackBounds {
 } TrackBounds; /* size 0x10 */
 
 /* height.c bins the sections on a 16x16 grid of the track: each cell lists the sections it overlaps. */
+#define HEIGHT_GRID_SIZE 16
+#define HEIGHT_NONE      -99999 /* no bridge triangle found yet (sGroundBestHeight) */
 typedef struct HeightCell {
     /* 0x00 */ u16 count;
     /* 0x02 */ u16 ids[1]; /* [count] section indices */
 } HeightCell;
 
 /* A ground triangle near a point, in mm (height_collect_ground_tris, for shadows and tire tracks). */
+#define GROUND_MAX_TRIS 24 /* gGroundTris */
 typedef struct GroundTri {
     /* 0x00 */ s32 area;    /* the place of its section in the grid cell's list */
     /* 0x04 */ s32 tri;     /* its index in the section's CollGrid (desert: the height-map triangle) */
@@ -212,6 +223,8 @@ typedef struct WallTri {
     /* 0x08 */ s16 ny;
     /* 0x0A */ s16 nz;      /* bit 0: already gathered */
 } WallTri; /* size 0xC */
+
+#define WALL_MAX_GATHERED 256 /* edges and triangles height_gather_walls collects (sWallEdges, sWallTris) */
 
 /* Each cell's lists end where the next cell's begin (257 entries). */
 typedef struct WallCell {
