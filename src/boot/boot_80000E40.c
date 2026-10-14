@@ -115,6 +115,9 @@ void boot_thread_main(void)
     u32 r;
     u32 containerRom;
     u32 fp;
+#if VERSION != VERSION_LODGENET
+    s32 splash;
+#endif
 
     sBootFramebuffer = BOOT_FRAMEBUFFER;
     sBootUnpackBuf = BOOT_UNPACK_BUF;
@@ -132,7 +135,18 @@ void boot_thread_main(void)
         for (;;) ;
     }
     osViSetSpecialFeatures(OS_VI_GAMMA_OFF | OS_VI_GAMMA_DITHER_OFF | OS_VI_DIVOT_OFF | OS_VI_DITHER_FILTER_OFF);
+#if VERSION == VERSION_LODGENET
     n = 0;
+#else
+    /* Whether to draw the splash: not with START held on controller 1 (boot_init_controllers); 0xDEAF at
+       0x80000406 tells the game to open the Controller Pak screen. */
+    if (boot_init_controllers()) {
+        splash = 0;
+        *(u32 *)0x80000404 = (*(u32 *)0x80000404 & 0xFFFF0000) | 0xDEAF;
+    } else {
+        splash = 1;
+    }
+#endif
     boot_check_reset();
     /* The splash screen, drawn bottom up (0xEF is the last row). */
     gSwdLoadCur = (u32)sBootSplashSwd;
@@ -143,6 +157,7 @@ void boot_thread_main(void)
     boot_check_reset();
     pixels = (u8 *)(sBootUnpackBuf + BOOT_SPLASH_HEADER_SIZE);
     palette = (u16 *)((u32)pixels + BOOT_SCREEN_PIXELS);
+#if VERSION == VERSION_LODGENET
     fb = (u16 *)sBootFramebuffer;
     for (; n < BOOT_SCREEN_HEIGHT; n++) {
         x = 0;
@@ -151,6 +166,17 @@ void boot_thread_main(void)
             fb[row + x] = palette[pixels[n * BOOT_SCREEN_WIDTH + x]];
         }
     }
+#else
+    if (splash) {
+        for (n = 0; n < BOOT_SCREEN_HEIGHT; n++) {
+            x = 0;
+            row = (0xEF - n) * BOOT_SCREEN_WIDTH;
+            for (; x < BOOT_SCREEN_WIDTH; x++) {
+                ((u16 *)sBootFramebuffer)[row + x] = palette[pixels[n * BOOT_SCREEN_WIDTH + x]];
+            }
+        }
+    }
+#endif
     osWritebackDCache(0, 0x800000);
     boot_check_reset();
     osViBlack(0);
@@ -273,7 +299,7 @@ void boot_relocate_stub(u32 *from, u32 size, u32 *dst)
 
 /* Probes the controllers and their accessories: a Controller Pak, else a Rumble Pak (stopped), else a Game Boy Pak.
    Returns 1 when controller 1 holds START or an accessory is none of these, else 0. Hangs if the controllers cannot
-   be set up. Never called. */
+   be set up. LodgeNet never calls it; retail's boot_thread_main does. */
 s32 boot_init_controllers(void)
 {
     s32 chan;

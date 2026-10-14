@@ -1516,7 +1516,6 @@ gContMask                             game  0x800C326C  data      0x1
 gContMask_2                           game  0x800C326C  data        -  gContMask
 gContCount                            game  0x800C326D  data      0x1
 gContFirst                            game  0x800C326E  data      0x2
-gDebugPadFreeze                       game  0x800C3270  data      0x4
 sDebugLagEnable                       game  0x800C3270  data      0x4
 sDebugLagLoops                        game  0x800C3274  data      0x4
 sScreenshotCounter                    game  0x800C3278  data      0x4
@@ -3363,7 +3362,7 @@ D_800DAEC5                            game  0x800DB7E5  data      0x3
 D_800DAECC                            game  0x800DB7EC  data      0x4
 D_800DAEE4                            game  0x800DB804  data      0x4
 D_800DAF2C                            game  0x800DB84C  data      0x4
-sStrNesres                            game  0x800DB850  data      0x8
+sStrNesres                            game  0x800DB85C  data      0x8
 sStrNesn64C                           game  0x800DB850  data      0xc
 D_800DAF48                            game  0x800DB860  data      0x8
 D_800DAF50                            game  0x800DB870  data      0x4
@@ -3634,9 +3633,8 @@ sAudioTickEnd                         game  0x800E2A04  data        -
 gFbAllocWidth                         game  0x800E2A08  data        -
 gFbAllocHeight                        game  0x800E2A0C  data        -
 sSchedEventMsgs                       game  0x800E2A10  data        -
+sRspBoot                              game  0x800E2A50  data    0x100
 sAudioTickTime                        game  0x800E2B54  data        -
-sDevPiHandle                          game  0x800E2B58  data        -
-sDevPiHandle_2                        game  0x800E2B58  data        -  sDevPiHandle
 gPadInputPrev                         game  0x800E2F58  data        -
 gPadInputPrev_2                       game  0x800E2F58  data        -  gPadInputPrev
 gPadInputPrev_3                       game  0x800E2F58  data        -  gPadInputPrev
@@ -4281,6 +4279,7 @@ sNesAudioFrameSamples                 game  0x800F6418  data        -
 sNesAudioBufs                         game  0x800F6420  data        -
 sNesViewport                          game  0x800F6428  data        -
 sNesClearFrames                       game  0x800F6438  data        -
+sNesBlock                             game  0x800F6440  data      0x4
 sNesFrameCount                        game  0x800F6444  data        -
 sNesEffAddr                           game  0x800F6550  data        -
 sNesCurOpcode                         game  0x800F6554  data        -

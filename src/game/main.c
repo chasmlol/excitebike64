@@ -59,6 +59,14 @@ void game_main(void)
     GameState *cur;
 
     msg = NULL;
+#if VERSION != VERSION_LODGENET
+    /* the RSP boot code, from the cartridge's IPL3 (ROM 0xB70; only the CIC-6103 IPL3 has it there) */
+    for (i = 0; i < (s32)sizeof(sRspBoot); i += 4) {
+        while ((viMode = osPiReadIo(0xB0000B70 + i, (u32 *)&bootMagic)) != 0) {
+        }
+        sRspBoot[i / 4] = bootMagic;
+    }
+#endif
     bootMagic = *(u16 *)0x80000402;
     if (bootMagic == BOOT_MAGIC_DIRECT) {
         gLoadedByBootLoader = 0;
@@ -121,7 +129,8 @@ void game_main(void)
     gReplayBuffer = mem_alloc_dbg(0xC800, 0, sStrMainFile, 405);
     sGfxDramStack = mem_alloc_dbg(0x401, 0, sStrMainFile, 412);
     sGfxYieldBuffer = mem_alloc_dbg(OS_YIELD_DATA_SIZE, 0, sStrMainFile, 413);
-    file_init(gResourceRomAddr);
+    bootMagic = gResourceRomAddr;   /* (a dead store in LodgeNet; kept in retail, where bootMagic is in memory) */
+    file_init(bootMagic);
     res_set_load_buffer(0);
     gCurGameState = &gGameStates[GAME_STATE_SHELL];
     gGfxContexts[0].dl = NULL;
@@ -134,8 +143,10 @@ void game_main(void)
     sched_add_client((s32)sSchedClient, (s32)&sSchedEventQueue);
     snd_init();
     gIsDrawing = 0;
+#if VERSION == VERSION_LODGENET
     main_init_dev_pi_handle();
     main_set_debug_freeze(0);
+#endif
 
     for (;;) {
         /* a debug lag generator: a busy loop that grows by 100 each frame */
@@ -187,6 +198,7 @@ void game_main(void)
                 cont_finish_read();
                 cont_read_pads();
             }
+#if VERSION == VERSION_LODGENET
             /* debug: D-pad up and down on controller 1 freeze the game until left and right are pressed */
             if ((gContPads_2[0].button & (U_JPAD | D_JPAD)) == (U_JPAD | D_JPAD)) {
                 main_set_debug_freeze(1);
@@ -202,6 +214,7 @@ void game_main(void)
                     cont_read_pads();
                 } while ((gContPads_2[0].button & (L_JPAD | R_JPAD)) == (L_JPAD | R_JPAD));
             }
+#endif
             start_controller_read();
             *(Blk *)gPadInputPrev_4 = *(Blk *)gPadInput_4;
             for (i = 0; i < MAXCONTROLLERS; i++) {
@@ -331,8 +344,13 @@ void game_main(void)
                     task->list.t.data_size = (sGfxHead - gCurGfxContext->dl) * sizeof(Gfx);
                     task->list.t.type = M_GFXTASK;
                     task->list.t.flags = OS_TASK_DP_WAIT | OS_TASK_LOADABLE;
+#if VERSION == VERSION_LODGENET
                     task->list.t.ucode_boot = (u64 *)gRspBootText;
                     task->list.t.ucode_boot_size = gF3dex2NonText - gRspBootText;
+#else
+                    task->list.t.ucode_boot = (u64 *)sRspBoot;
+                    task->list.t.ucode_boot_size = sizeof(sRspBoot);
+#endif
                     task->list.t.ucode = (u64 *)gF3dlx2RejText;
                     task->list.t.ucode_data = (u64 *)gF3dlx2RejData;
                     task->list.t.ucode_data_size = SP_UCODE_DATA_SIZE;
@@ -578,7 +596,9 @@ void main_sched_event_thread(void)
     }
 }
 
-/* Writes the freeze flag to a development board port (PI 0x0FF70000). */
+#if VERSION == VERSION_LODGENET
+/* Writes the freeze flag to a development board port (PI 0x0FF70000). Only in LodgeNet (retail has no D-pad freeze
+   and no development board handle). */
 void main_set_debug_freeze(s32 freeze)
 {
     u8 *handle = sDevPiHandle;
@@ -610,6 +630,7 @@ void main_init_dev_pi_handle(void)
     __osPiTable = &sDevPiHandle_2;
     __osRestoreInt(mask);
 }
+#endif
 
 /* The main thread's message queue, and the scheduler. */
 void main_init_sched(void)

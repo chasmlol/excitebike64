@@ -137,8 +137,14 @@ void edit_init(void)
     s32 idx, view, x, y, roundUp, quot;
 
     gCurTrack = &gTracks[TRACK_USER];
+#if VERSION != VERSION_LODGENET
+    gScreenViewport_2[0] = gScreenWidth * 2;
+    gScreenViewport_2[1] = gScreenHeight * 2;
+    gScreenViewport_2[4] = gScreenWidth * 2;
+    gScreenViewport_2[5] = gScreenHeight * 2;
+#endif
     if (gEditor == NULL || !(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
-        gEditor = mem_alloc_dbg(sizeof(Editor), 0, sStrEditFile, 0x50A);
+        gEditor = mem_alloc_dbg(sizeof(Editor), 0, sStrEditFile, SRC_LINE(0x50A, 0x511));
         mem_fill((u8 *)gEditor, 0, sizeof(Editor));
     } else {
         /* back from the Controller Pak screen */
@@ -265,8 +271,8 @@ void edit_init(void)
     edit_calc_track_cam_elevation();
     edit_calc_piece_cam_elevation();
     gEditor->userPieceCount = USER_PIECE_COUNT;
-    gEditor->lineVtx[0] = mem_alloc_dbg(EDIT_MAX_LINES * 4 * sizeof(Vtx), 0, sStrEditFile, 0x5E1);
-    gEditor->lineVtx[1] = mem_alloc_dbg(EDIT_MAX_LINES * 4 * sizeof(Vtx), 0, sStrEditFile, 0x5E2);
+    gEditor->lineVtx[0] = mem_alloc_dbg(EDIT_MAX_LINES * 4 * sizeof(Vtx), 0, sStrEditFile, SRC_LINE(0x5E1, 0x5E8));
+    gEditor->lineVtx[1] = mem_alloc_dbg(EDIT_MAX_LINES * 4 * sizeof(Vtx), 0, sStrEditFile, SRC_LINE(0x5E2, 0x5E9));
     gEditor->userPiece = 0;
     edit_init_user_pieces();
     edit_user_piece_reset_cursor(0);
@@ -573,7 +579,7 @@ void edit_update_main_menu(void)
                     }
                     break;
                 case EDIT_ASK_OVERWRITE:
-                    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, 0x6FE);
+                    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, SRC_LINE(0x6FE, 0x705));
                     usrtrk_pack_track_2(gGame.userTrack);
                     __builtin_memcpy(gSaveData.userTrack, gGame.userTrack, USER_TRACK_MAX_SIZE);
                     save_write(4, 0); /* the user track's section */
@@ -588,7 +594,7 @@ void edit_update_main_menu(void)
                         gEditor->dialog = EDIT_ASK_OVERWRITE;
                         gEditor->dialogChoice = 0;
                     } else {
-                        gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, 0x6FE);
+                        gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, SRC_LINE(0x6FE, 0x705));
                         usrtrk_pack_track_2(gGame.userTrack);
                         __builtin_memcpy(gSaveData_16.userTrack, gGame.userTrack, USER_TRACK_MAX_SIZE);
                         save_write(4, 0);
@@ -657,7 +663,7 @@ void edit_update_main_menu(void)
                     gGame.flags |= 2;
                     gEditor->exitTimer = 0;
                     gEditor->flags = (gEditor->flags | (EDIT_PAK_SAVE | EDIT_EXIT)) & ~EDIT_PAK_LOAD;
-                    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, 0x7B3);
+                    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, SRC_LINE(0x7B3, 0x7BA));
                     for (n = usrtrk_pack_track_2(gGame.userTrack + 4) + 4; n < USER_TRACK_BUF_SIZE; n++) {
                         gGame.userTrack[n] = 0;
                     }
@@ -671,7 +677,13 @@ void edit_update_main_menu(void)
         } else if (((gPadInput_2[0] & INPUT_D_UP) && !(gPadInputPrev_2[0] & INPUT_D_UP)) ||
                    ((gPadInput_2[0] & INPUT_D_DOWN) && !(gPadInputPrev_2[0] & INPUT_D_DOWN))) {
             /* the Game Pak answers are locked: loading needs a saved track, saving goes to the Controller Pak */
+#if VERSION == VERSION_LODGENET
             if ((gEditor->dialog != EDIT_ASK_LOAD || (gSaveData_16.options & SAVE_OPT_USER_TRACK)) && gEditor->dialog != EDIT_ASK_SAVE) {
+#else
+            /* (retail: saving to the Game Pak needs its 16 Kbit EEPROM) */
+            if ((gEditor->dialog != EDIT_ASK_LOAD || (gSaveData_16.options & SAVE_OPT_USER_TRACK))
+                && (gEditor->dialog != EDIT_ASK_SAVE || sEepromType == EEPROM_TYPE_16K)) {
+#endif
                 gEditor->dialogChoice ^= 1;
                 snd_play_menu_sound(MENU_SOUND_MOVE);
             }
@@ -753,7 +765,15 @@ void edit_update_main_menu(void)
                     gEditor->dialog = EDIT_ASK_SAVE;
                     gEditor->flags |= EDIT_DIALOG;
                     gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
+#if VERSION == VERSION_LODGENET
                     gEditor->dialogChoice = 0;
+#else
+                    if (sEepromType == EEPROM_TYPE_16K) {
+                        gEditor->dialogChoice = 1;
+                    } else {
+                        gEditor->dialogChoice = 0;
+                    }
+#endif
                 }
                 break;
             case EDIT_MAIN_DIRT:
@@ -796,7 +816,7 @@ void edit_update_main_menu(void)
                 gEditor->flags &= ~EDIT_DIALOG;
                 if (gGame.userTrack == NULL) {
                     /* the packed track goes with it, after a checksum word */
-                    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, 0x88C);
+                    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, (s32)sStrEditFile, SRC_LINE(0x88C, 0x893));
                     for (n = usrtrk_pack_track_2(gGame.userTrack + 4) + 4; n < USER_TRACK_BUF_SIZE; n++) {
                         gGame.userTrack[n] = 0;
                     }
@@ -2618,8 +2638,14 @@ Gfx *edit_draw_track_view(s32 ctx, s32 fb, Gfx *gdl) {
             gdl = gui_draw_prompt(gdl, ctx, fb, "Really Clear Track?", "OK", "Cancel", 1, 1);
             break;
         case EDIT_ASK_SAVE:
+#if VERSION == VERSION_LODGENET
             /* Game Pak greyed out */
             gdl = gui_draw_prompt(gdl, ctx, fb, "Save The Track To...", "Game Pak", "Controller Pak", 0, 1);
+#else
+            /* Game Pak enabled with its 16 Kbit EEPROM */
+            gdl = gui_draw_prompt(gdl, ctx, fb, "Save The Track To...", "Game Pak", "Controller Pak",
+                                sEepromType == EEPROM_TYPE_16K, 1);
+#endif
             break;
         case EDIT_ASK_LOAD:
             /* Game Pak enabled when a track is saved there (SAVE_OPT_USER_TRACK) */
