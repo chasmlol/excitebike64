@@ -1,170 +1,186 @@
 #include "game.h"
 
+/* An entry of a skeleton resource: the bones in preorder, each with its child count. */
 typedef struct {
-    s32 f0;
-    s32 f4[9];
-    s32 f28;
-    s32 f2C;
-    s32 f30;
-    s32 f34;
-} Ent_33;
+    s32 parent;                 /* filled in by skel_load */
+    s32 rot[9];                 /* 1.0 = 0x4000 */
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 childCount;
+} Ent_33; /* size 0x38 */
 
 extern Bone sSkelLoadBuf[];
 
-static inline void walk(Ent_33 *base, s32 val, s32 n)
+/* skel_assign_parents, inlined for the root: sets the parent of the next count entries and recurses into their
+   children. */
+static inline void walk(Ent_33 *entries, s32 parent, s32 count)
 {
-    s32 i;
+    s32 cur;
 
-    while (n != 0) {
-        i = sSkelWalkIndex;
-        base[i].f0 = val;
-        if (base[i].f34 != 0) {
+    while (count != 0) {
+        cur = sSkelWalkIndex;
+        entries[cur].parent = parent;
+        if (entries[cur].childCount != 0) {
             sSkelWalkIndex++;
-            skel_assign_parents(base, i, base[sSkelWalkIndex - 1].f34);
+            skel_assign_parents(entries, cur, entries[sSkelWalkIndex - 1].childCount);
         } else {
             sSkelWalkIndex++;
         }
-        n--;
+        count--;
     }
 }
 
-void *skel_load(u32 *param_1, s32 param_2)
+/* Loads skeleton resource id of set and returns its bones in a new allocation: parents from the child counts,
+   local positions and rotations. */
+void *skel_load(u32 *set, s32 id)
 {
-    Ent_33 *ents;
+    Ent_33 *entries;
     Ent_33 *p;
-    s32 sum;
-    s32 cnt;
+    s32 pending;
+    s32 count;
     s32 i;
     s32 j;
-    void *r;
+    void *bones;
 
-    ents = res_load(param_1, param_2);
-    sum = 0;
-    cnt = 0;
+    entries = res_load(set, id);
+    /* count the entries of the tree: pending is the number still to come, minus one */
+    pending = 0;
+    count = 0;
     do {
-        ents[cnt].f0 = -1;
-        sum += ents[cnt].f34;
-        sum--;
-        cnt++;
-    } while (sum >= 0);
+        entries[count].parent = -1;
+        pending += entries[count].childCount;
+        pending--;
+        count++;
+    } while (pending >= 0);
     sSkelWalkIndex = 0;
-    walk(ents, -1, 1);
-    for (i = 0; i < cnt; i++) {
-        sSkelLoadBuf[i].pos.x = ents[i].f28;
-        sSkelLoadBuf[i].pos.y = ents[i].f2C;
-        sSkelLoadBuf[i].pos.z = ents[i].f30;
-        sSkelLoadBuf[i].parent = ents[i].f0;
-        for (sum = 0; sum < 9; sum++) {
-            sSkelLoadBuf[i].rot.m[sum] = ents[i].f4[sum];
+    walk(entries, -1, 1);
+    for (i = 0; i < count; i++) {
+        sSkelLoadBuf[i].pos.x = entries[i].x;
+        sSkelLoadBuf[i].pos.y = entries[i].y;
+        sSkelLoadBuf[i].pos.z = entries[i].z;
+        sSkelLoadBuf[i].parent = entries[i].parent;
+        for (pending = 0; pending < 9; pending++) {
+            sSkelLoadBuf[i].rot.m[pending] = entries[i].rot[pending];
         }
     }
-    res_unload((u32 *)(param_1[1] + param_2 * 4));
-    r = mem_alloc_dbg(cnt * 0x80, 0, sStrSkelC, 0x74);
-    memcpy(r, sSkelLoadBuf, cnt * 0x80);
-    return r;
+    res_unload((u32 *)(set[1] + id * 4)); /* the set's handle of the resource */
+    bones = mem_alloc_dbg(count * 0x80, 0, sStrSkelC, 0x74);
+    memcpy(bones, sSkelLoadBuf, count * 0x80);
+    return bones;
 }
 
-void skel_update_world_transforms(Bone *n, s32 count)
+/* Computes the world position and rotation of each bone from its parent's (the parents come first). */
+void skel_update_world_transforms(Bone *bones, s32 count)
 {
     s32 i;
-    Bone *par;
+    Bone *parent;
     s32 v[3];
 
-    n[0].worldPos.x = n[0].pos.x;
-    n[0].worldPos.y = n[0].pos.y;
-    n[0].worldPos.z = n[0].pos.z;
+    bones[0].worldPos.x = bones[0].pos.x;
+    bones[0].worldPos.y = bones[0].pos.y;
+    bones[0].worldPos.z = bones[0].pos.z;
     for (i = 1; i < count; i++) {
-        par = &n[n[i].parent];
-        mtx3i_mul(n[i].rot.m, par->worldRot.m, n[i].worldRot.m);
-        vec3i_mul_mtx3i(&n[i].pos.x, par->worldRot.m, &n[i].worldPos.x);
-        n[i].worldPos.x += par->worldPos.x;
-        n[i].worldPos.y += par->worldPos.y;
-        n[i].worldPos.z += par->worldPos.z;
+        parent = &bones[bones[i].parent];
+        mtx3i_mul(bones[i].rot.m, parent->worldRot.m, bones[i].worldRot.m);
+        vec3i_mul_mtx3i(&bones[i].pos.x, parent->worldRot.m, &bones[i].worldPos.x);
+        bones[i].worldPos.x += parent->worldPos.x;
+        bones[i].worldPos.y += parent->worldPos.y;
+        bones[i].worldPos.z += parent->worldPos.z;
     }
 }
 
-s32 skel_camera_to_bone_space(Bone *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx)
+/* Writes the position of view's camera in the frame of each bone of a skeleton placed at pos with rotation rot
+   (3 per bone in out). Returns 1, doing nothing, when the camera is more than 0x8000 away (x + y + z). */
+s32 skel_camera_to_bone_space(Bone *bones, s32 count, s32 *out, s32 *rot, s32 *pos, s32 view)
 {
     s32 rel[3];
-    s32 wp[3];
-    s32 d, sum;
+    s32 world[3];
+    s32 d, dist;
     s32 i;
 
-    d = pos[0] - gCamPos[idx].x;
+    d = pos[0] - gCamPos[view].x;
     if (d < 0) d = -d;
-    sum = d;
-    d = pos[1] - gCamPos[idx].y;
+    dist = d;
+    d = pos[1] - gCamPos[view].y;
     if (d < 0) d = -d;
-    sum += d;
-    d = pos[2] - gCamPos[idx].z;
+    dist += d;
+    d = pos[2] - gCamPos[view].z;
     if (d < 0) d = -d;
-    sum += d;
-    if (sum > 0x8000) return 1;
-    for (i = 0; i < n; i++) {
-        vec3i_mul_mtx3i(&recs[i].worldPos.x, mat, wp);
-        wp[0] += pos[0];
-        wp[1] += pos[1];
-        wp[2] += pos[2];
-        rel[0] = (gCamPos[idx].x >> 6) - wp[0];
-        rel[1] = (gCamPos[idx].y >> 6) - wp[1];
-        rel[2] = (gCamPos[idx].z >> 6) - wp[2];
-        mtx3i_transpose(recs[i].worldRot.m);
-        vec3i_mul_mtx3i(rel, recs[i].worldRot.m, &out[i * 3]);
-        mtx3i_transpose(recs[i].worldRot.m);
+    dist += d;
+    if (dist > 0x8000) return 1;
+    for (i = 0; i < count; i++) {
+        vec3i_mul_mtx3i(&bones[i].worldPos.x, rot, world);
+        world[0] += pos[0];
+        world[1] += pos[1];
+        world[2] += pos[2];
+        rel[0] = (gCamPos[view].x >> 6) - world[0];
+        rel[1] = (gCamPos[view].y >> 6) - world[1];
+        rel[2] = (gCamPos[view].z >> 6) - world[2];
+        mtx3i_transpose(bones[i].worldRot.m);
+        vec3i_mul_mtx3i(rel, bones[i].worldRot.m, &out[i * 3]);
+        mtx3i_transpose(bones[i].worldRot.m);
     }
     return 0;
 }
 
-typedef struct { s16 a, b, c; u16 idx; u8 pad[8]; } Ent_34;
-struct List_6 { u32 n; Ent_34 *e; };
+/* A model vertex: position and the index of the bone it follows. */
+typedef struct { s16 x, y, z; u16 bone; u8 pad[8]; } Ent_34;
+struct List_6 { u32 count; Ent_34 *verts; };
 
-void skel_make_verts_bone_local(Bone *tbl, List_6 *list) {
+/* Makes the vertices of a model relative to the world position of their bone. */
+void skel_make_verts_bone_local(Bone *bones, List_6 *list)
+{
     u32 i;
-    for (i = 0; i < list->n; i++) {
-        u16 k = list->e[i].idx;
-        list->e[i].a -= tbl[k].worldPos.x;
-        list->e[i].b -= tbl[k].worldPos.y;
-        list->e[i].c -= tbl[k].worldPos.z;
+
+    for (i = 0; i < list->count; i++) {
+        u16 bone = list->verts[i].bone;
+        list->verts[i].x -= bones[bone].worldPos.x;
+        list->verts[i].y -= bones[bone].worldPos.y;
+        list->verts[i].z -= bones[bone].worldPos.z;
     }
 }
 
-void skel_reset_pose(Bone *param_1, s32 param_2)
+/* Clears the rotations of a skeleton and recomputes its world transforms. */
+void skel_reset_pose(Bone *bones, s32 count)
 {
     s32 i;
-    Bone *p;
+    Bone *bone;
 
     i = 0;
-    if (param_2 > 0) {
-        p = param_1;
+    if (count > 0) {
+        bone = bones;
         do {
-            mtx3i_from_angles(p->rot.m, 0, 0, 0);
-            mtx3i_from_angles(p->worldRot.m, 0, 0, 0);
+            mtx3i_from_angles(bone->rot.m, 0, 0, 0);
+            mtx3i_from_angles(bone->worldRot.m, 0, 0, 0);
             i++;
-            p++;
-        } while (i < param_2);
+            bone++;
+        } while (i < count);
     }
-    skel_update_world_transforms(param_1, param_2);
+    skel_update_world_transforms(bones, count);
 }
 
+/* Ent_33 as skel_assign_parents sees it. */
 struct Ent_35 {
-    s32 f0;
+    s32 parent;
     s32 pad[12];
-    s32 f34;
+    s32 childCount;
 };
 
-void skel_assign_parents(Ent_35 *base, s32 val, s32 n)
+/* Sets the parent of the next count entries, from sSkelWalkIndex on, and recurses into the children of each. */
+void skel_assign_parents(Ent_35 *entries, s32 parent, s32 count)
 {
-    s32 i;
+    s32 cur;
 
-    while (n != 0) {
-        i = sSkelWalkIndex;
-        base[i].f0 = val;
-        if (base[i].f34 != 0) {
+    while (count != 0) {
+        cur = sSkelWalkIndex;
+        entries[cur].parent = parent;
+        if (entries[cur].childCount != 0) {
             sSkelWalkIndex++;
-            skel_assign_parents(base, i, base[sSkelWalkIndex - 1].f34);
+            skel_assign_parents(entries, cur, entries[sSkelWalkIndex - 1].childCount);
         } else {
             sSkelWalkIndex++;
         }
-        n--;
+        count--;
     }
 }
