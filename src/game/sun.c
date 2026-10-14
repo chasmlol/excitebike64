@@ -185,18 +185,18 @@ void sun_check_occlusion(s32 unused)
 #define SIN16(a) gCosTable[(((a) >> 4) - 0x400) & 0xFFF]
 
 /* sun_alloc_vtx written inline */
-static inline Vtx *allocVtx(s32 view, s32 count) {
-    s32 used = sSunVtxUsed[view];
+static inline Vtx *allocVtx(s32 fb, s32 count) {
+    s32 used = sSunVtxUsed[fb];
     if (used + count > SUN_NUM_VTX) {
         return NULL;
     }
-    sSunVtxUsed[view] = used + count;
-    return &sSunVtxBufs[view][used];
+    sSunVtxUsed[fb] = used + count;
+    return &sSunVtxBufs[fb][used];
 }
 
 /* Draws the lens flares: for each visible flare, four hexagonal rings along the line from it through the centre
    of the screen, then its glare sprite (turning on stadium tracks). The sun's brightness becomes gSunGlare. */
-Gfx *sun_draw_flare(Gfx *gdl, u8 *dyn, s32 view) {
+Gfx *sun_draw_flare(Gfx *gdl, u8 *dyn, s32 fb) {
     s32 i, j, k;
     Flare *flare;
     Vtx *ringVtx;
@@ -209,7 +209,7 @@ Gfx *sun_draw_flare(Gfx *gdl, u8 *dyn, s32 view) {
     if (sSunList == NULL) {
         return gdl;
     }
-    sSunVtxUsed[view] = 0;
+    sSunVtxUsed[fb] = 0;
     if (gCheatFlags & CHEAT_NIGHT) {
         return gdl;
     }
@@ -242,7 +242,7 @@ Gfx *sun_draw_flare(Gfx *gdl, u8 *dyn, s32 view) {
                     if (i == 0) {
                         gSunGlare = alpha;
                     }
-                    ringVtx = allocVtx(view, 28); /* 4 rings of a centre and 6 corners */
+                    ringVtx = allocVtx(fb, 28); /* 4 rings of a centre and 6 corners */
                     if (ringVtx != NULL) {
                         x = flare->sx - gScreenWidth / 2;
                         y = flare->sy - gScreenHeight / 2;
@@ -314,7 +314,7 @@ Gfx *sun_draw_flare(Gfx *gdl, u8 *dyn, s32 view) {
                 stepY = tex->height - 1;
                 dx = (SIN16((x + y) * 32) * stepY >> 14) * 2 / 3;
                 dy = (COS16((x + y) * 32) * stepY >> 14) * 2 / 3;
-                quadVtx = allocVtx(view, 4);
+                quadVtx = allocVtx(fb, 4);
                 if (quadVtx != NULL) {
                     quadVtx[0].v.ob[0] = x + dx;
                     quadVtx[0].v.ob[1] = y + dy;
@@ -479,12 +479,12 @@ s32 zbuffer_decode(s32 x) {
     return ((v << sh) + add) >> 3;
 }
 
-/* Takes count vertices from a view's buffer, or NULL when it is full. */
-Vtx *sun_alloc_vtx(s32 count, s32 view) {
-    s32 n = sSunVtxUsed[view] + count;
+/* Takes count vertices from frame fb's buffer, or NULL when it is full. */
+Vtx *sun_alloc_vtx(s32 count, s32 fb) {
+    s32 n = sSunVtxUsed[fb] + count;
     if (n > SUN_NUM_VTX) {
         return 0;
     }
-    sSunVtxUsed[view] = n;
-    return &sSunVtxBufs[view][n - count];
+    sSunVtxUsed[fb] = n;
+    return &sSunVtxBufs[fb][n - count];
 }

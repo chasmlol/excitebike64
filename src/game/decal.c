@@ -1,18 +1,21 @@
 #include "game.h"
 
+/* gCurTrack as this file sees it: the CPU riders' time scale per difficulty */
 typedef struct {
     u8 pad0[0x20];
-    f32 f20[1];
+    f32 timeScale[1];
 } Ply;
 
 extern Ply *gCurTrack_31;
 
+/* A debug display whose printing is stubbed out: C-up pages through tuning values, the last impact, and the CPU
+   riders' time scale and skill. */
 void debug_update_value_display(void)
 {
     s32 i;
     char buf[0x28];
 
-    if (gPlayerInputs_2 & 0x80) {
+    if (gPlayerInputs_2 & INPUT_C_UP) {
         if (gPlayerInputsPrev == 0) {
             sDebugPage++;
             if (sDebugPage == 4) {
@@ -24,7 +27,7 @@ void debug_update_value_display(void)
     }
     switch (sDebugPage) {
     case 1:
-        if (*(s32 *)((u8 *)gCurTrack_31 + 0x2C) == 2) {
+        if (*(s32 *)((u8 *)gCurTrack_31 + 0x2C) == TRACK_ENV_DESERT) {
             break;
         }
         if (D_800C8D08 != 0 || D_800C8D10 != 0 || D_800C8D00 != 0 || D_800C8D18 != 0) {
@@ -43,71 +46,75 @@ void debug_update_value_display(void)
         break;
     case 2:
         for (i = 0; i < 6; i++) {
-            debug_ftoa(buf, gRiders[i].timeScale / gCurTrack_31->f20[gGame.difficulty - 1], 4);
+            debug_ftoa(buf, gRiders[i].timeScale / gCurTrack_31->timeScale[gGame.difficulty - 1], 4);
             debug_print_float(buf, gRiders[i].aiSkill);
         }
         break;
     }
 }
 
+/* The text buffers of debug_dump_spline, in the order of its stack frame */
 typedef struct {
-    u8 b10[16];
-    u8 b20[16];
-    u8 b30[16];
-    u8 b40[16];
-} Frame5CB20;
+    u8 x[16];
+    u8 y[16];
+    u8 z[16];
+    u8 count[16];
+} SplineText;
 
+/* Writes the recorded spline as text to the (stubbed-out) debug log. */
 void debug_dump_spline(void)
 {
-    Frame5CB20 f;
+    SplineText text;
     s32 k;
-    u32 u;
+    u32 groundY;
 
     debug_log(sStrSplineFileHeader);
-    int_to_str(sSplineNodeCount, f.b40);
-    debug_log(f.b40);
+    int_to_str(sSplineNodeCount, text.count);
+    debug_log(text.count);
     debug_log(sStrSplineCountComment);
     for (k = 1; k <= sSplineNodeCount; k++) {
-        int_to_str((s32)(sSplineNodes[k].x * 1000.0f), f.b10);
-        int_to_str((s32)(sSplineNodes[k].z * 1000.0f), f.b30);
-        u = height_get_ground((s32)(sSplineNodes[k].x * 1000.0f), (s32)(sSplineNodes[k].y * 1000.0f), (s32)(sSplineNodes[k].z * 1000.0f));
-        int_to_str(u, f.b20);
-        debug_log(f.b10);
+        int_to_str((s32)(sSplineNodes[k].x * 1000.0f), text.x);
+        int_to_str((s32)(sSplineNodes[k].z * 1000.0f), text.z);
+        groundY = height_get_ground((s32)(sSplineNodes[k].x * 1000.0f), (s32)(sSplineNodes[k].y * 1000.0f), (s32)(sSplineNodes[k].z * 1000.0f));
+        int_to_str(groundY, text.y);
+        debug_log(text.x);
         debug_log(sStrSplineSep);
-        debug_log(f.b30);
+        debug_log(text.z);
         debug_log(sStrSplineNodeTail);
     }
     debug_log(sStrSplineFileFooter);
 }
 
+/* A rider as this file sees it: the bike's position (Rider.bike.pos) */
 struct Obj_40 {
     u8 pad[0x48];
     Vec3f pos;
 };
 
-void debug_record_spline_node(Obj_40 *o)
+/* Adds the rider's position to the spline recorder (up to 2000 nodes) when it moved more than a metre. */
+void debug_record_spline_node(Obj_40 *body)
 {
     s32 n;
-    s32 ni;
-    Vec3f **gp;
-    Vec3f *p;
-    Vec3f *q;
+    s32 newCount;
+    Vec3f **nodes;
+    Vec3f *last;
+    Vec3f *next;
     f32 dx;
     f32 dy;
     f32 dz;
 
     if (sSplineNodeCount < 2000) {
-        gp = &sSplineNodes;
+        nodes = &sSplineNodes;
         n = sSplineNodeCount;
-        p = (Vec3f *)((u32)(n * 12) + (u32)*gp);
-        dx = p->x - o->pos.x;
-        dy = p->y - o->pos.y;
-        dz = p->z - o->pos.z;
+        last = (Vec3f *)((u32)(n * 12) + (u32)*nodes);
+        dx = last->x - body->pos.x;
+        dy = last->y - body->pos.y;
+        dz = last->z - body->pos.z;
         if (1.0f < dx * dx + dy * dy + dz * dz) {
-            ni = n + 1;
-            q = (Vec3f *)((u32)(ni * 12) + (u32)*gp);
-            sSplineNodeCount = ni;
-            *q = o->pos;
+            newCount = n + 1;
+            next = (Vec3f *)((u32)(newCount * 12) + (u32)*nodes);
+            sSplineNodeCount = newCount;
+            *next = body->pos;
         }
     }
 }
@@ -118,55 +125,56 @@ typedef struct {
 
 extern S4_2 sStrFtoaBig;
 
-void debug_ftoa(char *p, f32 x, s32 n)
+/* Formats a float with up to `digits` digits ("BIG" past a million). */
+void debug_ftoa(char *out, f32 value, s32 digits)
 {
-    s32 ip;
-    s32 pw;
+    s32 intPart;
+    s32 pow10;
     s32 d;
 
-    if (x < 0.0f) {
-        *p++ = '-';
-        x = -x;
+    if (value < 0.0f) {
+        *out++ = '-';
+        value = -value;
     } else {
-        *p++ = ' ';
+        *out++ = ' ';
     }
-    if (x >= 1.0f) {
-        if (x > 1000000.0f) {
-            *(S4_2 *)p = sStrFtoaBig;
+    if (value >= 1.0f) {
+        if (value > 1000000.0f) {
+            *(S4_2 *)out = sStrFtoaBig;
             return;
         }
-        pw = 10;
-        ip = (s32)x;
-        x -= (f32)ip;
-        while (ip >= pw) {
-            pw *= 10;
+        pow10 = 10;
+        intPart = (s32)value;
+        value -= (f32)intPart;
+        while (intPart >= pow10) {
+            pow10 *= 10;
         }
-        pw /= 10;
+        pow10 /= 10;
         do {
-            n--;
-            *p++ = ip / pw + '0';
-            ip -= (ip / pw) * pw;
-            pw /= 10;
-        } while (pw != 0);
+            digits--;
+            *out++ = intPart / pow10 + '0';
+            intPart -= (intPart / pow10) * pow10;
+            pow10 /= 10;
+        } while (pow10 != 0);
     } else {
-        *p++ = '0';
+        *out++ = '0';
     }
-    if (n > 0) {
-        if (x > 0.0001f) {
-            *p++ = '.';
+    if (digits > 0) {
+        if (value > 0.0001f) {
+            *out++ = '.';
         }
         do {
-            n--;
+            digits--;
             {
-                f32 t = x;
+                f32 t = value;
                 if (!(t > 0.0001f)) break;
             }
-            ip = (s32)(x * 10.0f + 0.0001f);
-            *p++ = ip + '0';
-            x = x * 10.0f - (f32)ip;
-        } while (n > 0);
+            intPart = (s32)(value * 10.0f + 0.0001f);
+            *out++ = intPart + '0';
+            value = value * 10.0f - (f32)intPart;
+        } while (digits > 0);
     }
-    *p = '\0';
+    *out = '\0';
 }
 
 f32 func_8005CEFC(f32 x)
@@ -177,36 +185,38 @@ f32 func_8005CEFC(f32 x)
     return x / 200.0f;
 }
 
+/* Rounds to three significant digits. */
 f32 debug_round_sig3(f32 x)
 {
-    f32 a;
-    f32 b;
-    f32 sx;
+    f32 mag;
+    f32 pow10;
+    f32 orig;
     f32 res;
 
-    sx = x;
-    a = x;
-    if (0.0f < sx) {
-        a = x;
+    orig = x;
+    mag = x;
+    if (0.0f < orig) {
+        mag = x;
     } else {
-        a = -x;
+        mag = -x;
     }
-    b = 1.0f;
-    for (; b < a; b = b * 10.0f) {
+    pow10 = 1.0f;
+    for (; pow10 < mag; pow10 = pow10 * 10.0f) {
     }
-    for (; a < b; b = b / 10.0f) {
+    for (; mag < pow10; pow10 = pow10 / 10.0f) {
     }
-    res = a;
-    if (b == 0.0f) {
+    res = mag;
+    if (pow10 == 0.0f) {
         return res;
     }
-    a = ((f32)(s32)((a * 100.0f) / b + 0.5f) * b) / 100.0f;
-    if (0.0f < sx) {
-        return a;
+    mag = ((f32)(s32)((mag * 100.0f) / pow10 + 0.5f) * pow10) / 100.0f;
+    if (0.0f < orig) {
+        return mag;
     }
-    return -a;
+    return -mag;
 }
 
+/* The debug printers: each formats its line into a buffer and prints nothing. */
 void debug_print_float(char *label, f32 value)
 {
     char buf[40];
@@ -238,7 +248,7 @@ void debug_print_float2(char *label, f32 a, f32 b)
     debug_ftoa(buf + 6 + n, b, 3);
 }
 
-void debug_print_vec3(s32 arg0, f32 *v)
+void debug_print_vec3(s32 unused, f32 *v)
 {
     char bx[24];
     char by[24];
@@ -269,24 +279,25 @@ void debug_print_hex(char *label, u32 value) {
     u32_to_hex_str(value, s + strlen(s));
 }
 
+/* Allocates the 128 tire-track quads and their vertices, and builds the 8x1 IA8 texture of a track. */
 void decal_init(void)
 {
     s32 i;
 
-    sTireTracks = mem_alloc_dbg(0xC00, 0, (s32)sStrDecalC, 0x67);
-    sTireTrackVtx = mem_alloc_dbg(0x2000, 0, (s32)sStrDecalC, 0x68);
+    sTireTracks = mem_alloc_dbg(DECAL_NUM_TRACKS * sizeof(TireTrack), 0, (s32)sStrDecalC, 0x67);
+    sTireTrackVtx = mem_alloc_dbg(DECAL_NUM_TRACKS * 4 * sizeof(Vtx), 0, (s32)sStrDecalC, 0x68);
     sTireTrackNext = 0;
     mem_fill((u8 *)sTireTrackCur, 0, 0x20);
     mem_fill((u8 *)gTireTrackTimers, 0, 0x20);
     mem_fill((u8 *)sTireTrackLastY, 0, 0x20);
     mem_fill((u8 *)sTireTrackMudTimer, 0, 0x20);
-    mem_fill((u8 *)sTireTracks, 0, 0xC00);
+    mem_fill((u8 *)sTireTracks, 0, DECAL_NUM_TRACKS * sizeof(TireTrack));
     mem_fill((u8 *)sTireTrackSurface, 0, 0x20);
     mem_fill((u8 *)sTireTrackMudSurface, 0, 0x20);
-    for (i = 0; i < 0x80; i++) {
+    for (i = 0; i < DECAL_NUM_TRACKS; i++) {
         sTireTracks[i].active = 0;
     }
-    for (i = 0; i < 0x200; i += 4) {
+    for (i = 0; i < DECAL_NUM_TRACKS * 4; i += 4) {
         sTireTrackVtx[i].v.tc[0] = 0;
         sTireTrackVtx[i].v.tc[1] = 0;
         sTireTrackVtx[i + 1].v.tc[0] = 0x200;
@@ -307,149 +318,154 @@ void decal_init(void)
     sTireTrackTexture[7] = 0x1F;
 }
 
+/* Lays tire tracks under the rear wheel of each skidding rider (and for 45 frames after leaving mud): the current
+   quad stretches while the track keeps its direction and area, else a new one starts from its far edge. */
 void decal_update_tire_tracks(void)
 {
-    s32 pos[3];
-    s32 a[3];
-    s32 b[3];
-    s32 d[3];
-    s32 m[10];
-    s32 c[3];
-    s32 e[3];
-    s32 qr[4];
-    s32 i, changed, area, surface, ox, oz, dx, dz, nx, nz, len, curArea;
-    Rider *p;
-    Surface *prev;
-    TireTrack *r;
+    s32 contact[3];
+    s32 edgeA[3];
+    s32 edgeB[3];
+    s32 half[3];
+    s32 rot[10];
+    s32 prevA[3];
+    s32 prevB[3];
+    s32 blk[4];
+    s32 i, changed, area, surface, originX, originZ, dx, dz, quadX, quadZ, len, curArea;
+    Rider *rider;
+    Surface *prevSurface;
+    TireTrack *cur;
     s32 n;
-    s32 l2;
+    s32 dist;
 
     for (i = 0; i < 8; i++) {
         if (gRiders[i].inactive != 0) continue;
-        p = &gRiders[i];
+        rider = &gRiders[i];
         if (sTireTrackMudTimer[i] != 0) sTireTrackMudTimer[i]--;
         if (gRiders[i].rearWheel.slip != 0.0f) {
             gTireTrackTimers[i] = 1;
         } else if (gTireTrackTimers[i] != 0) {
             gTireTrackTimers[i]--;
         }
-        if (!(p->rearWheel.surface->flags & 1)) gTireTrackTimers[i] = 0;
-        prev = sTireTrackSurface[i];
-        if (p->rearWheel.surface != prev) {
+        if (!(rider->rearWheel.surface->flags & 1)) gTireTrackTimers[i] = 0; /* a surface that takes tracks */
+        prevSurface = sTireTrackSurface[i];
+        if (rider->rearWheel.surface != prevSurface) {
             changed = 1;
-            if (prev != NULL && (prev->flags & 0x40) && p->rearWheel.airTicks <= 0) {
-                sTireTrackMudSurface[i] = prev;
+            if (prevSurface != NULL && (prevSurface->flags & 0x40) && rider->rearWheel.airTicks <= 0) { /* left mud */
+                sTireTrackMudSurface[i] = prevSurface;
                 gTireTrackTimers[i] = 45;
                 sTireTrackMudTimer[i] = 45;
             }
         } else {
             changed = 0;
         }
-        sTireTrackSurface[i] = p->rearWheel.surface;
-        if (p->crashState != 0) gTireTrackTimers[i] = 0;
+        sTireTrackSurface[i] = rider->rearWheel.surface;
+        if (rider->crashState != 0) gTireTrackTimers[i] = 0;
         if (gDebugFreeze != 0) gTireTrackTimers[i] = 0;
         if (gTireTrackTimers[i] == 0) {
             sTireTrackCur[i] = NULL;
             continue;
         }
-        pos[0] = p->rearWheel.contact.x * 1000.0f;
-        pos[1] = p->rearWheel.contact.y * 1000.0f;
-        pos[2] = p->rearWheel.contact.z * 1000.0f;
-        quat_to_mtx3i(m, p->drawQuat);
-        d[0] = -p->rearWheel.contactDelta.z * 1000.0f;
-        d[2] = p->rearWheel.contactDelta.x * 1000.0f;
-        len = isqrt_u32_2(d[0] * d[0] + d[2] * d[2]);
+        contact[0] = rider->rearWheel.contact.x * 1000.0f;
+        contact[1] = rider->rearWheel.contact.y * 1000.0f;
+        contact[2] = rider->rearWheel.contact.z * 1000.0f;
+        quat_to_mtx3i(rot, rider->drawQuat);
+        half[0] = -rider->rearWheel.contactDelta.z * 1000.0f;
+        half[2] = rider->rearWheel.contactDelta.x * 1000.0f;
+        len = isqrt_u32_2(half[0] * half[0] + half[2] * half[2]);
         if (len == 0) {
-            d[1] = 0;
-            d[0] = m[0];
-            d[2] = m[2];
-            len = isqrt_u32_2(m[0] * m[0] + m[2] * m[2]);
+            half[1] = 0;
+            half[0] = rot[0];
+            half[2] = rot[2];
+            len = isqrt_u32_2(rot[0] * rot[0] + rot[2] * rot[2]);
         }
         if (len != 0) {
-            d[0] = d[0] * 50 / len;
-            d[2] = d[2] * 50 / len;
+            half[0] = half[0] * 50 / len;
+            half[2] = half[2] * 50 / len;
         }
-        a[0] = pos[0] - d[0];
-        a[2] = pos[2] - d[2];
-        b[0] = pos[0] + d[0];
-        b[2] = pos[2] + d[2];
-        a[1] = height_get_ground(a[0], pos[1], a[2]);
-        b[1] = height_get_ground(b[0], pos[1], b[2]);
+        edgeA[0] = contact[0] - half[0];
+        edgeA[2] = contact[2] - half[2];
+        edgeB[0] = contact[0] + half[0];
+        edgeB[2] = contact[2] + half[2];
+        edgeA[1] = height_get_ground(edgeA[0], contact[1], edgeA[2]);
+        edgeB[1] = height_get_ground(edgeB[0], contact[1], edgeB[2]);
         if (gGroundFound == 0) continue;
         area = gGroundArea;
-        if (gCurTrack_5->mode == 2) {
-            divmod_floor(pos[0], 128000, &qr[0], &qr[1]);
-            divmod_floor(pos[2], 128000, &qr[2], &qr[3]);
-            area = (qr[0] << 16) | (u16)qr[2];
+        if (gCurTrack_5->mode == TRACK_ENV_DESERT) {
+            /* the desert's area: its block of 8000 units (128 m), x << 16 | z */
+            divmod_floor(contact[0], 128000, &blk[0], &blk[1]);
+            divmod_floor(contact[2], 128000, &blk[2], &blk[3]);
+            area = (blk[0] << 16) | (u16)blk[2];
         }
-        if (sTireTrackCur[i] != NULL && (u32)(a[1] - sTireTrackLastY[i] + 500) > 1000) {
+        /* a step of more than half a metre ends the track */
+        if (sTireTrackCur[i] != NULL && (u32)(edgeA[1] - sTireTrackLastY[i] + 500) > 1000) {
             sTireTrackCur[i] = NULL;
             gTireTrackTimers[i] = 0;
             continue;
         }
-        surface = p->rearWheel.surface - gSurfaceTablePtr;
+        surface = rider->rearWheel.surface - gSurfaceTablePtr;
         if (sTireTrackMudTimer[i] != 0) surface = sTireTrackMudSurface[i] - gSurfaceTablePtr;
         if (sTireTrackCur[i] != NULL) {
             curArea = sTireTrackCur[i]->area;
-            if (gCurTrack_5->mode == 1) {
-                ox = (sHeightAreas->e[curArea].x0 + sHeightAreas->e[curArea].x1) / 2;
-                oz = (sHeightAreas->e[curArea].z0 + sHeightAreas->e[curArea].z1) / 2;
-            } else if (gCurTrack_5->mode == 2) {
-                ox = (curArea >> 16) * 8000 + 4000;
-                oz = (s16)curArea * 8000 + 4000;
+            if (gCurTrack_5->mode == TRACK_ENV_OUTDOOR) {
+                originX = (sHeightAreas->e[curArea].x0 + sHeightAreas->e[curArea].x1) / 2;
+                originZ = (sHeightAreas->e[curArea].z0 + sHeightAreas->e[curArea].z1) / 2;
+            } else if (gCurTrack_5->mode == TRACK_ENV_DESERT) {
+                originX = (curArea >> 16) * 8000 + 4000;
+                originZ = (s16)curArea * 8000 + 4000;
             } else {
-                ox = oz = 0;
+                originX = originZ = 0;
             }
-            r = sTireTrackCur[i];
-            dx = pos[0] - r->x;
-            dz = pos[2] - r->z;
-            nx = r->dirX;
-            nz = r->dirZ;
-            l2 = isqrt_u32_2(dx * dx + dz * dz);
-            if (l2 != 0) {
-                dx = (dx << 14) / l2;
-                dz = (dz << 14) / l2;
+            cur = sTireTrackCur[i];
+            dx = contact[0] - cur->x;
+            dz = contact[2] - cur->z;
+            quadX = cur->dirX;
+            quadZ = cur->dirZ;
+            dist = isqrt_u32_2(dx * dx + dz * dz);
+            if (dist != 0) {
+                dx = (dx << 14) / dist;
+                dz = (dz << 14) / dist;
             }
-            if ((nx * dx + nz * dz) >> 14 < 0x3F07 || area != sTireTrackCur[i]->area || changed) {
+            /* turned by more than about 10 degrees (cos 0.984), another area or surface: a new quad */
+            if ((quadX * dx + quadZ * dz) >> 14 < 0x3F07 || area != sTireTrackCur[i]->area || changed) {
                 Vtx *v;
                 s16 *q, *q2;
                 len = sTireTrackCur[i] - sTireTracks;
                 v = (Vtx *)((len << 6) + (u32)sTireTrackVtx);
                 q = v[2].v.ob;
-                c[0] = q[0] + ox;
-                c[1] = q[1];
-                c[2] = q[2] + oz;
+                prevA[0] = q[0] + originX;
+                prevA[1] = q[1];
+                prevA[2] = q[2] + originZ;
                 q2 = v[3].v.ob;
-                e[0] = q2[0] + ox;
-                e[1] = q2[1];
-                e[2] = q2[2] + oz;
-                c[0] *= 16;
-                c[1] *= 16;
-                c[2] *= 16;
-                e[0] *= 16;
-                e[1] *= 16;
-                e[2] *= 16;
-                sTireTrackCur[i] = decal_add_quad(area, c, e, a, b, surface);
-                sTireTrackLastY[i] = a[1];
+                prevB[0] = q2[0] + originX;
+                prevB[1] = q2[1];
+                prevB[2] = q2[2] + originZ;
+                prevA[0] *= 16;
+                prevA[1] *= 16;
+                prevA[2] *= 16;
+                prevB[0] *= 16;
+                prevB[1] *= 16;
+                prevB[2] *= 16;
+                sTireTrackCur[i] = decal_add_quad(area, prevA, prevB, edgeA, edgeB, surface);
+                sTireTrackLastY[i] = edgeA[1];
             } else {
-                sTireTrackCur[i]->x = pos[0];
-                sTireTrackCur[i]->z = pos[2];
+                sTireTrackCur[i]->x = contact[0];
+                sTireTrackCur[i]->z = contact[2];
                 {
                 Vtx *v;
                 len = sTireTrackCur[i] - sTireTracks;
                 v = &sTireTrackVtx[len * 4];
-                v[2].v.ob[0] = a[0] / 16 - ox;
-                v[2].v.ob[1] = a[1] / 16;
-                v[2].v.ob[2] = a[2] / 16 - oz;
-                v[3].v.ob[0] = b[0] / 16 - ox;
-                v[3].v.ob[1] = b[1] / 16;
-                v[3].v.ob[2] = b[2] / 16 - oz;
+                v[2].v.ob[0] = edgeA[0] / 16 - originX;
+                v[2].v.ob[1] = edgeA[1] / 16;
+                v[2].v.ob[2] = edgeA[2] / 16 - originZ;
+                v[3].v.ob[0] = edgeB[0] / 16 - originX;
+                v[3].v.ob[1] = edgeB[1] / 16;
+                v[3].v.ob[2] = edgeB[2] / 16 - originZ;
                 }
-                sTireTrackLastY[i] = a[1];
+                sTireTrackLastY[i] = edgeA[1];
             }
         } else {
-            sTireTrackCur[i] = decal_add_quad(area, a, b, a, b, surface);
-            sTireTrackLastY[i] = a[1];
+            sTireTrackCur[i] = decal_add_quad(area, edgeA, edgeB, edgeA, edgeB, surface);
+            sTireTrackLastY[i] = edgeA[1];
         }
     }
 }
@@ -462,76 +478,79 @@ extern Ctl_17 *gCurTrack_32;
 TireTrack *decal_add_quad(s32 area, s32 *a0, s32 *a1, s32 *b0, s32 *b1, s32 surface)
 {
     s32 i, j, mode;
-    s32 sx, sy;
-    s32 cz, dx, dz;
-    u32 r;
-    Vtx *pt;
+    s32 originX, originZ;
+    s32 farZ, dx, dz;
+    u32 len;
+    Vtx *vtx;
     Vtx *q;
-    TireTrack *rec;
-    TireTrack *r2;
-    TireTrack *rb;
+    TireTrack *track;
+    TireTrack *same;
+    TireTrack *tracks;
 
     for (i = 0; i < 4; i++) {
         if (&sTireTracks[sTireTrackNext] == sTireTrackCur[i]) sTireTrackCur[i] = 0;
     }
 
     mode = gCurTrack_32->mode;
-    if (mode == 1) {
-        sx = (sHeightAreas->e[area].x0 + sHeightAreas->e[area].x1) / 2;
-        sy = (sHeightAreas->e[area].z0 + sHeightAreas->e[area].z1) / 2;
-    } else if (mode == 2) {
-        sx = (s16)(area >> 16) * 8000 + 4000;
-        sy = (s16)area * 8000 + 4000;
+    /* vertices relative to the centre of the area */
+    if (mode == TRACK_ENV_OUTDOOR) {
+        originX = (sHeightAreas->e[area].x0 + sHeightAreas->e[area].x1) / 2;
+        originZ = (sHeightAreas->e[area].z0 + sHeightAreas->e[area].z1) / 2;
+    } else if (mode == TRACK_ENV_DESERT) {
+        originX = (s16)(area >> 16) * 8000 + 4000;
+        originZ = (s16)area * 8000 + 4000;
     } else {
-        sx = sy = 0;
+        originX = originZ = 0;
     }
 
     j = sTireTrackNext * 4;
-    pt = (Vtx *)((u32)(j * 16) + (u32)sTireTrackVtx);
-    pt[0].v.ob[0] = (a0[0] >> 4) - sx;
-    pt[0].v.ob[1] = a0[1] >> 4;
-    pt[0].v.ob[2] = (a0[2] >> 4) - sy;
-    pt[1].v.ob[0] = (a1[0] >> 4) - sx;
-    q = &pt[1];
+    vtx = (Vtx *)((u32)(j * 16) + (u32)sTireTrackVtx);
+    vtx[0].v.ob[0] = (a0[0] >> 4) - originX;
+    vtx[0].v.ob[1] = a0[1] >> 4;
+    vtx[0].v.ob[2] = (a0[2] >> 4) - originZ;
+    vtx[1].v.ob[0] = (a1[0] >> 4) - originX;
+    q = &vtx[1];
     q->v.ob[1] = a1[1] >> 4;
-    q->v.ob[2] = (a1[2] >> 4) - sy;
-    pt[2].v.ob[0] = (b0[0] >> 4) - sx;
-    q = &pt[2];
+    q->v.ob[2] = (a1[2] >> 4) - originZ;
+    vtx[2].v.ob[0] = (b0[0] >> 4) - originX;
+    q = &vtx[2];
     q->v.ob[1] = b0[1] >> 4;
-    q->v.ob[2] = (b0[2] >> 4) - sy;
-    pt[3].v.ob[0] = (b1[0] >> 4) - sx;
-    pt = &pt[3];
-    pt->v.ob[1] = b1[1] >> 4;
-    pt->v.ob[2] = (b1[2] >> 4) - sy;
+    q->v.ob[2] = (b0[2] >> 4) - originZ;
+    vtx[3].v.ob[0] = (b1[0] >> 4) - originX;
+    vtx = &vtx[3];
+    vtx->v.ob[1] = b1[1] >> 4;
+    vtx->v.ob[2] = (b1[2] >> 4) - originZ;
 
     j = j / 4;
-    rb = sTireTracks;
-    rec = (TireTrack *)((s32)(j * 24) + (s32)rb);
-    rec->x = (b0[0] + b1[0]) / 2;
-    rec->z = cz = (b0[2] + b1[2]) / 2;
-    dx = rec->x - (a0[0] + a1[0]) / 2;
-    dz = cz - (a0[2] + a1[2]) / 2;
-    r = isqrt_u32_3(dx * dx + dz * dz);
-    if (r != 0) {
-        dx = (dx * 0x4000) / (s32)r;
-        dz = (dz * 0x4000) / (s32)r;
+    tracks = sTireTracks;
+    track = (TireTrack *)((s32)(j * 24) + (s32)tracks);
+    track->x = (b0[0] + b1[0]) / 2;
+    track->z = farZ = (b0[2] + b1[2]) / 2;
+    dx = track->x - (a0[0] + a1[0]) / 2;
+    dz = farZ - (a0[2] + a1[2]) / 2;
+    len = isqrt_u32_3(dx * dx + dz * dz);
+    if (len != 0) {
+        dx = (dx * 0x4000) / (s32)len;
+        dz = (dz * 0x4000) / (s32)len;
     }
 
-    r2 = (TireTrack *)((u32)(j * 24) + (u32)sTireTracks);
-    r2->active = 1;
-    r2->dirX = dx;
-    r2->dirZ = dz;
-    r2->area = area;
+    same = (TireTrack *)((u32)(j * 24) + (u32)sTireTracks); /* the same quad, through a second pointer */
+    same->active = 1;
+    same->dirX = dx;
+    same->dirZ = dz;
+    same->area = area;
     sTireTracks[j].surface = surface;
 
-    sTireTrackNext = (sTireTrackNext + 1) % 128;
+    sTireTrackNext = (sTireTrackNext + 1) % DECAL_NUM_TRACKS;
     return &sTireTracks[j];
 }
 
 #define RAW(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
-    s32 i, j, k, m, a, idx, started, v, hi, lo;
+/* Draws the tire tracks of a view, area by area (desert blocks, outdoor sections, or all at once in the
+   stadium), in the surface's colour with an alpha that fades with age; the 16 oldest are not drawn. */
+Gfx *decal_draw(Gfx *gdl, s32 fb, Mtx *dyn, s32 view) {
+    s32 i, j, k, m, age, idx, mtxLoaded, v, hi, lo;
 
     if (gDebugFreeze != 0) {
         return gdl;
@@ -546,21 +565,21 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
     gDPLoadTextureBlock(gdl++, sTireTrackTexture, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 1, 0,
                         G_TX_CLAMP, G_TX_NOMIRROR | G_TX_WRAP, 3, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
 
-    if (gCurTrack_5->mode == 2) {
+    if (gCurTrack_5->mode == TRACK_ENV_DESERT) {
         for (i = 0; i < sDesBlockCount; i++) {
-            started = 0;
-            for (j = 0; j < 128; j++) {
+            mtxLoaded = 0;
+            for (j = 0; j < DECAL_NUM_TRACKS; j++) {
                 if (!sTireTracks[j].active) continue;
                 v = sTireTracks[j].area;
                 hi = v >> 16;
                 lo = (s16)v;
                 if (hi == gDesBlockX[i] && lo == gDesBlockZ[i]) {
                     k = j + 1;
-                    if (!started) {
-                        gSPMatrix(gdl++, &sDesBlockMtx[arg1][i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                        started = 1;
+                    if (!mtxLoaded) {
+                        gSPMatrix(gdl++, &sDesBlockMtx[fb][i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                        mtxLoaded = 1;
                     }
-                    for (; k < 128; k++) {
+                    for (; k < DECAL_NUM_TRACKS; k++) {
                         if (k >= j + 8) break;
                         if (!sTireTracks[k].active) break;
                         v = sTireTracks[k].area;
@@ -572,10 +591,10 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                     gSPVertex(gdl++, &sTireTrackVtx[j * 4], k * 4, 0);
                     for (m = 0; m < k; m++) {
                         idx = m + j;
-                        a = idx - sTireTrackNext;
-                        if (a < 0) a += 128;
-                        if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], a);
+                        age = idx - sTireTrackNext;
+                        if (age < 0) age += DECAL_NUM_TRACKS;
+                        if (age >= 16) {
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], age);
                             gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                         }
                     }
@@ -583,21 +602,21 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                 }
             }
         }
-    } else if (gCurTrack_5->mode == 1) {
+    } else if (gCurTrack_5->mode == TRACK_ENV_OUTDOOR) {
         TrackModelList *l = sHeightAreas;
         u32 bit;
         {
             for (i = 0; i < sHeightAreas->count; i++) {
-                if (l->e[i].mask & (1 << (arg3 * 2))) {
-                started = 0;
-                for (j = 0; j < 128; j++) {
+                if (l->e[i].mask & TRACK_MODEL_VISIBLE(view)) {
+                mtxLoaded = 0;
+                for (j = 0; j < DECAL_NUM_TRACKS; j++) {
                     if (sTireTracks[j].active && sTireTracks[j].area == i) {
                         k = j + 1;
-                        if (!started) {
-                            gSPMatrix(gdl++, gSectionMtxs[i * 4 + arg3], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                            started = 1;
+                        if (!mtxLoaded) {
+                            gSPMatrix(gdl++, gSectionMtxs[i * 4 + view], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                            mtxLoaded = 1;
                         }
-                        for (; k < 128; k++) {
+                        for (; k < DECAL_NUM_TRACKS; k++) {
                             if (k >= j + 8) break;
                             if (!sTireTracks[k].active) break;
                             if (sTireTracks[k].area != i) break;
@@ -606,10 +625,10 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                         gSPVertex(gdl++, &sTireTrackVtx[j * 4], k * 4, 0);
                         for (m = 0; m < k; m++) {
                             idx = m + j;
-                            a = idx - sTireTrackNext;
-                            if (a < 0) a += 128;
-                            if (a >= 16) {
-                                gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], a);
+                            age = idx - sTireTrackNext;
+                            if (age < 0) age += DECAL_NUM_TRACKS;
+                            if (age >= 16) {
+                                gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], age);
                                 gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                             }
                         }
@@ -620,16 +639,16 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
             }
         }
     } else {
-        for (i = 0; i < 128; i += 8) {
+        for (i = 0; i < DECAL_NUM_TRACKS; i += 8) {
             gSPVertex(gdl++, &sTireTrackVtx[i * 4], 32, 0);
             for (j = 0; j < 8; j++) {
                 idx = i + j;
                 if (sTireTracks[idx].active) {
-                    if (sHeightAreas->e[sTireTracks[idx].area].mask & (1 << (arg3 * 2))) {
-                        a = idx - sTireTrackNext;
-                        if (a < 0) a += 128;
-                        if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], a);
+                    if (sHeightAreas->e[sTireTracks[idx].area].mask & TRACK_MODEL_VISIBLE(view)) {
+                        age = idx - sTireTrackNext;
+                        if (age < 0) age += DECAL_NUM_TRACKS;
+                        if (age >= 16) {
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr[sTireTracks[idx].surface].color[8], gSurfaceTablePtr[sTireTracks[idx].surface].color[9], gSurfaceTablePtr[sTireTracks[idx].surface].color[10], age);
                             gSP2Triangles(gdl++, j * 4, j * 4 + 1, j * 4 + 2, 0, j * 4 + 2, j * 4 + 1, j * 4 + 3, 0);
                         }
                     }
@@ -637,11 +656,12 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
             }
         }
     }
-    gSPMatrix(gdl++, arg2 + 16, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gdl++, dyn + 16 /* Dyn.m4 */, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPPipeSync(gdl++);
     return gdl;
 }
 
+/* Frees the tire tracks. */
 void decal_free(void)
 {
     mem_free(sTireTrackTexture);
@@ -649,18 +669,20 @@ void decal_free(void)
     mem_free(sTireTracks);
 }
 
+/* Ends a rider's current track: the next one starts a new quad. */
 void decal_end_track(s32 rider)
 {
     sTireTrackCur[rider] = 0;
 }
 
+/* Removes all tire tracks. */
 void decal_clear_all(void) {
     s32 i;
     for (i = 0; i < 8; i++) {
         sTireTrackCur[i] = 0;
         gTireTrackTimers[i] = 0;
     }
-    for (i = 0; i < 0x80; i++) {
+    for (i = 0; i < DECAL_NUM_TRACKS; i++) {
         sTireTracks[i].active = 0;
     }
 }

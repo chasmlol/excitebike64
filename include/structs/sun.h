@@ -11,7 +11,7 @@
 #define FLARE_ON_SCREEN 0x08
 #define FLARE_SAMPLED   0x10 /* its visibility was read from the Z buffer */
 
-#define SUN_NUM_VTX   128 /* the vertex buffer of each view (sSunVtxBufs) */
+#define SUN_NUM_VTX   128 /* the vertex buffer of each frame (sSunVtxBufs) */
 #define SUN_NUM_STARS 64
 
 /* gSkyMode: what the background of a race is */
