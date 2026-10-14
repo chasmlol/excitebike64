@@ -2893,11 +2893,11 @@ typedef struct {
     s32 unk0;
     u16 *palette;
     Glyph glyphs[1];
-} Font;
+} GlyphFont;
 
 typedef struct {
     u8 unk0[0x730];
-    Font *font;
+    GlyphFont *font;
 } Hud_4;
 
 extern Hud_4 gGame_43;

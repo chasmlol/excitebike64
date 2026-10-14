@@ -985,11 +985,11 @@ void arned_set_scissor(s32 a0, s32 a1, s32 a2, s32 a3);
 
 /* src/game/gui.c */
 void gui_init(void);
-s32 *gui_draw_message(Gfx *gdl, s32 a1, s32 a2, s32 a3);
+Gfx *gui_draw_message(Gfx *gdl, s32 a1, s32 a2, char *msg);
 Gfx *gui_draw_prompt(Gfx *gdl, s32 arg1, s32 arg2, char *s0, char *s1, char *s2, s32 f1, s32 f2);
-s32 gui_menu_input(Ctl_22 *c, s32 arg1);
-Gfx *gui_draw_menu(s32 arg0, Gfx *gdl, Menu_5 *m, s32 x, s32 y);
-s32 gui_menu_fix_cursor(Ctl_2 *c);
+s32 gui_menu_input(GuiMenu *menu);
+Gfx *gui_draw_menu(s32 fb, Gfx *gdl, GuiMenu *menu, s32 x, s32 y);
+s32 gui_menu_fix_cursor(GuiMenu *menu);
 void gui_free(void);
 
 /* src/game/edit.c */
@@ -1425,21 +1425,21 @@ u32 *decoder_decode_sample(u32 *param_1);
 Out_6 *func_800C055C(Src_5 *p);
 
 /* src/game/fontcode.c */
-s32 font_load(ResFile *arc, u32 **ids, char *name);
-u8 *font_draw_text(s32 *p, s32 x, s32 y);
-s32 font_get_char_pos(Obj_83 *p, s32 x, s32 unused, s32 n);
-u8 *font_measure_text(u8 *s, Font_6 *f, u32 *outMax, s32 *outW);
+s32 font_load(ResFile *arc, u32 **ids, u32 *palette);
+u8 *font_draw_text(TextObj *t, s32 x, s32 y);
+s32 font_get_char_pos(TextObj *p, s32 x, s32 unused, s32 n);
+u8 *font_measure_text(u8 *s, Font *f, u32 *outMax, u32 *outW);
 Gfx *font_render(Gfx *gdl);
-Gfx *font_render_pages_scaled(Gfx *gdl, Spr **list);
-Gfx *font_render_pages(Gfx *gdl, Spr **lists);
-s32 font_pack_glyphs(u8 *hdr);
+Gfx *font_render_pages_scaled(Gfx *gdl, FontSprite **list);
+Gfx *font_render_pages(Gfx *gdl, FontSprite **lists);
+s32 font_pack_glyphs(Font *font);
 s32 font_alloc_glyph_space(u32 *map);
 void font_set_scale(s32 a, s32 b, s32 c, s32 d);
 u32 font_unload(void);
-s32 *font_text_create(s32 *param_1, s32 param_2, s32 param_3, s32 param_4, s32 param_5);
-u8 *font_text_clear(u8 *p);
-char *font_text_add(Text *p, char *s);
-void func_800C204C(s32 arg0);
+TextObj *font_text_create(TextObj *t, s32 size, s32 font, s32 color, u32 flags);
+TextObj *font_text_clear(TextObj *t);
+char *font_text_add(TextObj *t, char *s);
+void func_800C204C(TextObj *t);
 void str_make_initials(char *dst, char *src);
 void func_800C20F0(u8 *s);
 void font_name_upper(u8 *s);

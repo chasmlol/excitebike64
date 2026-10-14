@@ -100,7 +100,6 @@ typedef struct Obj_59 Obj_59;
 typedef struct Obj_60 Obj_60;
 typedef struct Mdl2 Mdl2;
 typedef struct Obj2 Obj2;
-typedef struct Menu_5 Menu_5;
 typedef struct Game_36 Game_36;
 typedef struct Rec_49 Rec_49;
 typedef struct Spr_5 Spr_5;
@@ -123,9 +122,6 @@ typedef struct Hdr_14 Hdr_14;
 typedef struct Src_4 Src_4;
 typedef struct Src_5 Src_5;
 typedef struct Out_6 Out_6;
-typedef struct Obj_83 Obj_83;
-typedef struct Font_6 Font_6;
-typedef struct Text Text;
 typedef struct Bike_25 Bike_25;
 
 typedef struct { u8 r, g, b; } Rgb;
@@ -1055,32 +1051,6 @@ typedef struct Obj_57 {
     s32 f744;
 } Obj_57;
 
-typedef struct Slot {
-    s32 w0;
-    u32 flags;
-    s16 n;
-    s16 cur;
-    u32 mask;
-} Slot;
-
-typedef struct Ctl_22 {
-    s32 w0;
-    s16 n;
-    s16 cur;
-    Slot *ents;
-    u32 flags;
-    s16 last;
-} Ctl_22;
-
-typedef struct Ctl_2 {
-    s32 w0;
-    s16 count;
-    s16 x;
-    Slot *slots;
-    s32 w3;
-    s16 sel;
-} Ctl_2;
-
 typedef struct Node_28 {
     s32 f0;
     struct Node_28 *a;     /* 0x04 */
@@ -1261,14 +1231,8 @@ typedef struct Q_3 {
     s32 *f14;
 } Q_3;
 
-typedef struct Spr {
-    struct Spr *next;
-    s16 x;
-    s16 y;
-    u8 w, h, s, t;
-    u8 r, g, b, a;
-} Spr;
-
+#include "structs/font.h"
+#include "structs/gui.h"
 #include "structs/shell.h"
 
 #endif

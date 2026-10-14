@@ -3147,7 +3147,7 @@ typedef struct {
     s32 w68;
     s32 w6C;
     s32 w70;
-    s32 w74[48];
+    TextObj *w74[48];
     u8 pad134[0x13C - 0x134];
     u16 *p13C;
     u8 pad140[0x17C - 0x140];
@@ -3262,7 +3262,7 @@ void shell_load_screen(Screen *screen) {
     gGame_71.w484 = LD(D_800D1398);
     if ((screen->flags & SCREEN_TEXT_OBJECTS) && screen->left == NULL) {
         for (i = 0; i < 48; i++) {
-            gGame_71.w74[i] = (s32)font_text_create(0, 0x40, 4, 2, 0x20);
+            gGame_71.w74[i] = font_text_create(0, 0x40, 4, 2, 0x20);
         }
     }
     if (screen->flags & SCREEN_PANELS) {
@@ -3666,7 +3666,7 @@ void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
     }
 }
 
-typedef struct { s32 f0; s32 pad[14]; s32 mode; s32 pad2[13]; s32 *slot[64]; } G_3;
+typedef struct { s32 f0; s32 pad[14]; s32 mode; s32 pad2[13]; TextObj *slot[64]; } G_3;
 
 extern G_3 gGame_73;
 
@@ -3716,7 +3716,7 @@ typedef struct {
     u8 pad0[0x4C];
     s32 mode;
     u8 pad50[0x74 - 0x50];
-    s32 *f74[3];
+    TextObj *f74[3];
     u8 pad80[0x17C - 0x80];
     s32 f17C;
     u8 pad180[0x3A4 - 0x180];
@@ -3789,7 +3789,7 @@ typedef struct {
     u8 pad40[0x4C - 0x40];
     s32 f4C;
     u8 pad50[0x74 - 0x50];
-    s32 *f74[4];
+    TextObj *f74[4];
     u8 pad84[0x17C - 0x84];
     s32 f17C;
     u8 pad180[0x390 - 0x180];
@@ -3934,7 +3934,7 @@ Gfx *shell_draw_players_difficulty_popup(Gfx *gdl, s32 p2, s32 p3)
 
 typedef struct {
     u8 pad0[0x74];
-    s32 *f74;
+    TextObj *f74;
     u8 pad78[0x17C - 0x78];
     s32 f17C;
     u8 pad180[0x3A4 - 0x180];
@@ -3997,7 +3997,7 @@ typedef struct {
     s32 sel[8];
     s32 flag;
     u8 pad40[0x34];
-    s32 *obj[40];
+    TextObj *obj[40];
 } State_9;
 
 extern State_9 gGame_77;
@@ -4108,7 +4108,7 @@ typedef struct {
     s32 f68;
     s32 f6C;
     u32 f70;
-    s32 *txt[48];
+    TextObj *txt[48];
     s16 h134;
     u8 pad136[0x13C - 0x136];
     void *p13C;

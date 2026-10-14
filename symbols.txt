@@ -887,8 +887,6 @@ gui_init                              game  0x8008F0B0  func    0x180
 gui_draw_message                      game  0x8008F230  func    0x228
 gui_draw_prompt                       game  0x8008F458  func    0x420
 gui_menu_input                        game  0x8008F878  func    0x290
-gui_menu_input_2                      game  0x8008F878  func        -  gui_menu_input
-gui_menu_input_3                      game  0x8008F878  func        -  gui_menu_input
 gui_draw_menu                         game  0x8008FB08  func    0x890
 gui_menu_fix_cursor                   game  0x80090398  func     0xec
 gui_free                              game  0x80090484  func     0xd8
@@ -2115,11 +2113,6 @@ sArnedCells                           game  0x800CE1FC  data      0x4
 sArnedCells_2                         game  0x800CE1FC  data        -  sArnedCells
 sArnedCells_3                         game  0x800CE1FC  data        -  sArnedCells
 gGui                                  game  0x800CE200  data     0x10
-gGui_2                                game  0x800CE200  data        -  gGui
-gGui_3                                game  0x800CE200  data        -  gGui
-gGui_4                                game  0x800CE200  data        -  gGui
-gGui_5                                game  0x800CE200  data        -  gGui
-gGui_6                                game  0x800CE200  data        -  gGui
 sEditCamTarget                        game  0x800CE210  data      0xc
 sEditCamTarget_2                      game  0x800CE210  data        -  sEditCamTarget
 sEditCamTarget_3                      game  0x800CE210  data        -  sEditCamTarget
@@ -2203,15 +2196,8 @@ sEditMainMenuItems                    game  0x800CEA88  data     0x80
 sEditMainMenu                         game  0x800CEB08  data     0x10
 sEditMainMenuChoice                   game  0x800CEB18  data      0x4
 sEditTrackMenuItems                   game  0x800CEB1C  data     0x38
-sEditTrackMenuItems_2                 game  0x800CEB1C  data        -  sEditTrackMenuItems
 sEditUserPieceItemCount               game  0x800CEB54  data     0x48
 sEditTrackMenu                        game  0x800CEB9C  data     0x14
-sEditTrackMenu_2                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_3                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_4                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_5                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_6                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_7                      game  0x800CEB9C  data        -  sEditTrackMenu
 sEditMultiUseWarning                  game  0x800CEBB0  data     0x1c
 sEditSizeLockWarning                  game  0x800CEBCC  data     0x14
 sNesExitMsg                           game  0x800CEBE0  data     0x20
@@ -5287,19 +5273,15 @@ sResTypeHandlers_2                    game  0x80100AB8  data        -  sResTypeH
 sFontAllocX                           game  0x80101350  data        -
 sFontAllocY                           game  0x80101354  data        -
 sFontAllocW                           game  0x80101358  data        -
-sFontAllocW_2                         game  0x80101358  data        -  sFontAllocW
 sFontAllocH                           game  0x8010135C  data        -
 sFontSprPoolEnd                       game  0x80101360  data        -
 sFontSprPool                          game  0x80101368  data        -
 gFontDirectDrawFunc                   game  0x80105368  data        -
 sFontSprNext                          game  0x8010536C  data        -
 sFontPageMaps                         game  0x80105370  data        -
-sFontPageMaps_2                       game  0x80105370  data        -  sFontPageMaps
 sFontPageCount                        game  0x80105374  data        -
 sFontPageTop                          game  0x80105378  data        -
-sFontPageTop_2                        game  0x80105378  data        -  sFontPageTop
 sFontPalette                          game  0x8010537C  data        -
-sFontPalette_2                        game  0x8010537C  data        -  sFontPalette
 sFontTable                            game  0x80105380  data        -
 D_801053C0                            game  0x801053C0  data        -
 D_80105440                            game  0x80105440  data        -

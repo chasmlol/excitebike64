@@ -1063,7 +1063,7 @@ typedef struct {
     s32 wC;
     s32 w10;
     s32 w14;
-} Gui;
+} PauseGui;
 
 typedef struct {
     u8 pad0[4];
@@ -1098,7 +1098,7 @@ extern Pad24 D_800E3750;
 extern Pad24 D_800E3718;
 extern Player_7 gRiders_15[8];
 extern Sess gEvent_10;
-extern Gui D_800E3730_6;
+extern PauseGui D_800E3730_6;
 extern Res_2 *D_800E7728_4;
 extern Opt_2 gSaveData_3;
 extern S930 *gSeason_8;

@@ -8,16 +8,6 @@ typedef struct {
 } V3_3;
 
 typedef struct { s16 f0; u8 pad[0x22]; } Ent24_2;
-typedef struct { u8 pad0[6]; s16 f6; u8 pad8[8]; s16 f10; } Cfg_12;
-typedef struct { u8 pad[0xC]; u32 flags; } Obj_2;
-
-typedef struct {
-    u8 pad0[6];
-    s16 f6;
-    u8 pad8[4];
-    s32 fC;
-    s16 f10;
-} Menu_6;
 
 typedef struct Node_24 {
     s32 f0;
@@ -50,8 +40,8 @@ struct Game_36 {
     char name[11];
     u8 f16C5[0xB];
     s32 f16D0, f16D4, f16D8, f16DC;
-    Menu_6 *f16E0;
-    Menu_6 *f16E4;
+    GuiMenu *f16E0;
+    GuiMenu *f16E4;
     u32 f16E8;
     u8 pad16EC[8];
     s32 f16F4;
@@ -64,12 +54,6 @@ struct Game_36 {
     s16 f17FE;
     s16 f1800;
 };
-
-typedef struct Ctl_23 {
-    u8 pad0[0xC];
-    u32 fC;
-    s16 h10;
-} Ctl_23;
 
 typedef struct Ent_4 {
     s16 dim[2];
@@ -117,8 +101,8 @@ typedef struct Edit {
     s16 f16B0;
     s16 f16B2;
     u8 pad16B4[0x16E0 - 0x16B4];
-    Ctl_23 *f16E0;
-    Ctl_23 *f16E4;
+    GuiMenu *f16E0;
+    GuiMenu *f16E4;
     u32 f16E8;
     u8 pad16EC[0x17B0 - 0x16EC];
     Ent_4 *f17B0;
@@ -181,7 +165,7 @@ extern V3_3 sEditCamDelta;
 extern V3_3 sEditCamPosFixed;
 extern V3_3 sEditCamPos;
 extern V3_3 sEditCamTarget;
-extern Cfg_12 sEditMainMenu;
+extern GuiMenu sEditMainMenu;
 extern Edit *gEditor_11;
 extern Ent_4 gPieceTypesTurn[];
 extern Ent_4 gPieceTypesJump[];
@@ -528,15 +512,15 @@ void edit_init(void)
         if (m6 != 0) {
             gEditor_8->f174 = m6;
             if (fl & 0x2000) {
-                sEditMainMenu.f10 = 2;
-                sEditMainMenu.f6 = 2;
+                sEditMainMenu.choice = 2;
+                sEditMainMenu.cursor = 2;
             } else {
-                sEditMainMenu.f10 = 3;
-                sEditMainMenu.f6 = 3;
+                sEditMainMenu.choice = 3;
+                sEditMainMenu.cursor = 3;
             }
         } else {
-            sEditMainMenu.f10 = 1;
-            sEditMainMenu.f6 = 1;
+            sEditMainMenu.choice = 1;
+            sEditMainMenu.cursor = 1;
             gEditor_8->f174 = 0;
         }
     }
@@ -627,7 +611,7 @@ typedef struct {
     s32 x;
     s32 y;
     s32 len;
-    Obj_2 *obj;
+    GuiMenu *obj;
 } Game_35;
 
 extern Game_35 *gEditor_9;
@@ -664,7 +648,7 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
             } else if (g->sel == 0x27) {
                 g->name = *(Name11 *)g->buf;
                 gEditor_9->f170 = 0;
-                gEditor_9->obj->flags |= 1;
+                gEditor_9->obj->flags |= GUI_MENU_ACTIVE;
             } else {
                 g->len++;
                 if (g->len >= 10) {
@@ -817,7 +801,7 @@ typedef struct {
 
 extern Save_7 gSaveData_16;
 extern Sys gGame_89;
-extern Menu_6 sEditTrackMenu;
+extern GuiMenu sEditTrackMenu;
 extern Cam_6 sEditCamPos_3;
 extern Cam_6 sEditCamTarget_3;
 
@@ -831,14 +815,14 @@ void edit_update_main_menu(void)
         if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
             gEditor_10->f174 &= ~0x800;
-            gEditor_10->f16E0->fC |= 1;
+            gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
             snd_play_menu_sound(1);
         }
     } else if (flags & 0x1000) {
         if ((gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) {
             gPadInputPrev_2[0] |= 0x20;
             gEditor_10->f174 &= ~0x1000;
-            gEditor_10->f16E0->fC |= 1;
+            gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
             snd_play_menu_sound(2);
         } else if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
@@ -864,10 +848,10 @@ void edit_update_main_menu(void)
                         usrtrk_load_into_editor(D_800F1DF4);
                         edit_try_close_loop(gEditor_10->f180);
                         gEditor_10->f170 = 0;
-                        gEditor_10->f16E0->fC |= 1;
+                        gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                         edit_find_start_piece();
                         arned_load_piece_textures(gEditor_10->f17F8, gEditor_10->f1724, gEditor_10->f1728);
-                        gEditor_10->f16E0->fC |= 1;
+                        gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                         gEditor_10->f174 &= ~0x1000;
                     } else {
                         gEditor_10->f1800 = 0;
@@ -881,7 +865,7 @@ void edit_update_main_menu(void)
                     save_write(4, 0);
                     mem_free(gGame_89.f3E8);
                     gGame_89.f3E8 = 0;
-                    gEditor_10->f16E0->fC |= 1;
+                    gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                     gEditor_10->f174 &= ~0x1000;
                     break;
                 case 5:
@@ -895,7 +879,7 @@ void edit_update_main_menu(void)
                         save_write(4, 0);
                         mem_free(gGame_89.f3E8);
                         gGame_89.f3E8 = 0;
-                        gEditor_10->f16E0->fC |= 1;
+                        gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                         gEditor_10->f174 &= ~0x1000;
                     }
                     break;
@@ -903,7 +887,7 @@ void edit_update_main_menu(void)
                     gGame_89.f0 |= 2;
                     gEditor_10->f178 = 0;
                     gEditor_10->f174 |= 0x10;
-                    gEditor_10->f16E0->fC |= 1;
+                    gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                     gEditor_10->f174 &= ~0x1000;
                     break;
                 case 4:
@@ -927,7 +911,7 @@ void edit_update_main_menu(void)
                     gEditor_10->f17C = 0;
                     gEditor_10->f180 = gEditor_10->f184;
                     edit_update_piece_ports(gEditor_10->f184);
-                    gEditor_10->f16E0->fC |= 1;
+                    gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                     gEditor_10->f17F8 = 0;
                     gEditor_10->f174 &= ~0x1000;
                     arned_load_piece_textures(0, gEditor_10->f1724, gEditor_10->f1728);
@@ -948,7 +932,7 @@ void edit_update_main_menu(void)
                     gGame_89.f0 |= 2;
                     gEditor_10->f178 = 0;
                     gEditor_10->f174 = (gEditor_10->f174 | 0x2010) & ~0x4000;
-                    gEditor_10->f16E0->fC |= 1;
+                    gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                     gEditor_10->f174 &= ~0x1000;
                     break;
                 case 5:
@@ -961,7 +945,7 @@ void edit_update_main_menu(void)
                     }
                     *(u32 *)gGame_89.f3E8 = calc_checksum24(gGame_89.f3E8 + 4, 0x3FC);
                 default:
-                    gEditor_10->f16E0->fC |= 1;
+                    gEditor_10->f16E0->flags |= GUI_MENU_ACTIVE;
                     gEditor_10->f174 &= ~0x1000;
                     break;
                 }
@@ -989,7 +973,7 @@ void edit_update_main_menu(void)
         }
         if (gEditor_10->f170 == 7 || gEditor_10->f170 == 8) {
             edit_update_name_entry(p, flags);
-        } else if (gui_menu_input(gEditor_10->f16E0, flags)) {
+        } else if (gui_menu_input(gEditor_10->f16E0)) {
             switch (sEditMainMenuChoice) {
             case 1:
                 gEditor_10->f170 = 0;
@@ -1013,14 +997,14 @@ void edit_update_main_menu(void)
                     }
                     gEditor_10->f174 &= ~0x10000;
                 }
-                sEditTrackMenu.f10 = 0;
-                sEditTrackMenu.f6 = 0;
+                sEditTrackMenu.choice = 0;
+                sEditTrackMenu.cursor = 0;
                 gEditor_10->f16C = 1;
                 break;
             case 0:
                 gEditor_10->f17FC = 4;
                 gEditor_10->f174 |= 0x1000;
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor_10->f16E0->flags &= ~GUI_MENU_ACTIVE;
                 gEditor_10->f17FE = 0;
                 break;
             case 2:
@@ -1036,19 +1020,19 @@ void edit_update_main_menu(void)
                         gEditor_10->f17FE = 0;
                     }
                 }
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor_10->f16E0->flags &= ~GUI_MENU_ACTIVE;
                 break;
             case 3:
                 if (gEditor_10->name[0] == '<') {
                     gEditor_10->f174 |= 0x800;
-                    gEditor_10->f16E0->fC &= ~1;
+                    gEditor_10->f16E0->flags &= ~GUI_MENU_ACTIVE;
                     gEditor_10->f1800 = 4;
-                    sEditMainMenu.f10 = 6;
-                    sEditMainMenu.f6 = 6;
+                    sEditMainMenu.choice = 6;
+                    sEditMainMenu.cursor = 6;
                 } else {
                     gEditor_10->f17FC = 5;
                     gEditor_10->f174 |= 0x1000;
-                    gEditor_10->f16E0->fC &= ~1;
+                    gEditor_10->f16E0->flags &= ~GUI_MENU_ACTIVE;
                     gEditor_10->f17FE = 0;
                 }
                 break;
@@ -1062,7 +1046,7 @@ void edit_update_main_menu(void)
                 gEditor_10->f17FC = 3;
                 gEditor_10->f17FE = 0;
                 gEditor_10->f174 = (gEditor_10->f174 & ~0x6000) | 0x1000;
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor_10->f16E0->flags &= ~GUI_MENU_ACTIVE;
                 break;
             case 6:
                 gEditor_10->f16DC = 0;
@@ -1071,7 +1055,7 @@ void edit_update_main_menu(void)
                 gEditor_10->f16D8 = 0;
                 mem_fill(gEditor_10->f16C5, 0, 0xB);
                 gEditor_10->f170 = 7;
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor_10->f16E0->flags &= ~GUI_MENU_ACTIVE;
                 break;
             case 4:
                 if (gGame_89.f410 == 0) {
@@ -1110,17 +1094,6 @@ void edit_update_main_menu(void)
 
 #define PRESSED_2(m) ((gPadInput & (m)) && !(gPadInputPrev_3[0] & (m)))
 #define DEL()                                                                          if (gEditor_11->cur != NULL) {                                                         if (gEditor_11->cur->prev == NULL) {                                                   n = gEditor_11->cur;                                                               gEditor_11->cur = n->next;                                                         edit_delete_piece(n);                                                                  sel();                                                                         } else if (gEditor_11->cur->next == NULL || gEditor_11->head->prev == gEditor_11->tail) {             n = gEditor_11->cur;                                                               gEditor_11->cur = n->prev;                                                         edit_delete_piece(n);                                                                  sel();                                                                         }                                                                              }
-
-typedef struct Item_15 {
-    s32 f0;
-    u32 flags;
-    u8 pad8[8];
-} Item_15;
-
-extern Item_15 sEditTrackMenuItems[];
-extern Ctl_23 sEditTrackMenu_2;
-
-s32 gui_menu_input_2(Ctl_23 *c);
 
 static inline s32 chk(Edit *e, Node_25 *c) {
     Node_25 *n;
@@ -1215,26 +1188,26 @@ void edit_update_track_menu(void) {
         }
     }
     if (gEditor_11->cur != NULL && (gEditor_11->cur->st & 4)) {
-        sEditTrackMenuItems[6].flags &= ~0x10;
-        sEditTrackMenuItems[4].flags &= ~0x10;
-        sEditTrackMenuItems[7].flags &= ~0x10;
-        sEditTrackMenuItems[5].flags &= ~0x10;
+        sEditTrackMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[7].flags &= ~GUI_ITEM_ENABLED;
+        sEditTrackMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
         gEditor_11->flags &= ~0x8000;
     } else {
-        sEditTrackMenuItems[7].flags |= 0x10;
+        sEditTrackMenuItems[7].flags |= GUI_ITEM_ENABLED;
         if (gEditor_11->cur == NULL ||
             (gEditor_11->cur->next != NULL && gEditor_11->cur->prev != NULL && gEditor_11->head->prev == NULL) ||
             (e = gEditor_11, c = e->cur, !chk(e, c))) {
-            sEditTrackMenuItems[6].flags &= ~0x10;
+            sEditTrackMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
             gEditor_11->flags &= ~0x8000;
         } else {
             gEditor_11->flags |= 0x8000;
-            sEditTrackMenuItems[6].flags |= 0x10;
+            sEditTrackMenuItems[6].flags |= GUI_ITEM_ENABLED;
         }
         if (gEditor_11->flags & 0x1E0) {
-            sEditTrackMenuItems[4].flags |= 0x10;
+            sEditTrackMenuItems[4].flags |= GUI_ITEM_ENABLED;
         } else {
-            sEditTrackMenuItems[4].flags &= ~0x10;
+            sEditTrackMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
         }
     }
     if (gEditor_11->f16E0 != NULL) {
@@ -1244,14 +1217,14 @@ void edit_update_track_menu(void) {
         if (PRESSED_2(0x10)) {
             gPadInputPrev_3[0] |= 0x10;
             gEditor_11->flags &= ~0x800;
-            gEditor_11->f16E0->fC |= 1;
+            gEditor_11->f16E0->flags |= GUI_MENU_ACTIVE;
         }
     } else {
         if (gEditor_11->mode == 10 || gEditor_11->mode == 11) {
             if (PRESSED_2(0x10)) {
                 gEditor_11->mode = 6;
             } else if (PRESSED_2(0x20)) {
-                gEditor_11->f16E0->fC |= 1;
+                gEditor_11->f16E0->flags |= GUI_MENU_ACTIVE;
                 gEditor_11->mode = 9;
                 gEditor_11->flags &= ~0x1000;
             }
@@ -1277,12 +1250,12 @@ void edit_update_track_menu(void) {
                     n = n->next;
                 } while (n != NULL && n != gEditor_11->head);
                 gEditor_11->mode = 0;
-                gEditor_11->f16E0->fC |= 1;
+                gEditor_11->f16E0->flags |= GUI_MENU_ACTIVE;
                 ok = 1;
                 snd_play_menu_sound(2);
             } else if (PRESSED_2(0x10)) {
                 gEditor_11->mode = 0;
-                gEditor_11->f16E0->fC |= 1;
+                gEditor_11->f16E0->flags |= GUI_MENU_ACTIVE;
                 snd_play_menu_sound(1);
             } else if ((gEditor_11->flags & 0x20) && PRESSED_2(0x2000)) {
                 n = gEditor_11->head;
@@ -1329,8 +1302,8 @@ void edit_update_track_menu(void) {
                     }
                 }
             }
-        } else if (gui_menu_input_2(gEditor_11->f16E0)) {
-            switch (sEditTrackMenu_2.h10) {
+        } else if (gui_menu_input(gEditor_11->f16E0)) {
+            switch (sEditTrackMenu.choice) {
             case 0:
             case 1:
             case 2:
@@ -1347,7 +1320,7 @@ void edit_update_track_menu(void) {
                         gEditor_11->cur->st |= 4;
                         gEditor_11->mode = 0;
                         gEditor_11->tail = gEditor_11->cur;
-                        gEditor_11->f16E0->fC |= 1;
+                        gEditor_11->f16E0->flags |= GUI_MENU_ACTIVE;
                         gEditor_11->mode = 9;
                         gEditor_11->flags |= 0x200;
                     } else {
@@ -1373,7 +1346,7 @@ void edit_update_track_menu(void) {
                     gEditor_11->f16B0 = gEditor_11->head->x;
                     gEditor_11->f16B2 = gEditor_11->head->y;
                     gEditor_11->mode = 4;
-                    gEditor_11->f16E0->fC &= ~1;
+                    gEditor_11->f16E0->flags &= ~GUI_MENU_ACTIVE;
                 }
                 break;
             case 7:
@@ -1453,7 +1426,7 @@ void edit_update_track_menu(void) {
 }
 
 #define PRESSED_3(m) ((gPadInput & (m)) && !(gPadInputPrev & (m)))
-#define IDX (sEditTrackMenu_3.p8[sEditTrackMenu_3.h10].hA)
+#define IDX (sEditTrackMenu.items[sEditTrackMenu.choice].value)
 
 #define INSERT(T)                                                                          \
     if (gEditor_12->cur == NULL) {                                                         \
@@ -1469,11 +1442,6 @@ void edit_update_track_menu(void) {
         gEditor_12->cur = edit_insert_piece(NULL, gEditor_12->cur, &T[IDX]);                   \
         gEditor_12->head = gEditor_12->cur;                                                \
     }
-
-typedef struct Ctl_24 {
-    u8 pad0[0xC];
-    u32 fC;
-} Ctl_24;
 
 typedef struct Node_26 {
     s16 used;
@@ -1504,7 +1472,7 @@ typedef struct Edit_2 {
     s16 scrollx;
     s16 scrolly;
     u8 pad16BA[0x16E0 - 0x16BA];
-    Ctl_24 *f16E0;
+    GuiMenu *f16E0;
     u8 pad16E4[0x16FC - 0x16E4];
     s32 f16FC;
     u8 pad1700[0x17B0 - 0x1700];
@@ -1513,24 +1481,7 @@ typedef struct Edit_2 {
     s16 f1800;
 } Edit_2;
 
-typedef struct Sel_4 {
-    u8 pad0[0xA];
-    s16 hA;
-    u8 padC[4];
-} Sel_4;
-
-typedef struct Menu_7 {
-    u8 pad0[6];
-    s16 h6;
-    Sel_4 *p8;
-    u8 padC[4];
-    s16 h10;
-} Menu_7;
-
 extern Edit_2 *gEditor_12;
-extern Menu_7 sEditTrackMenu_3;
-
-s32 gui_menu_input_3(Ctl_24 *c);
 
 void edit_update_place_piece(void) {
     Node_26 *cur;
@@ -1598,7 +1549,7 @@ void edit_update_place_piece(void) {
         }
     } else if (PRESSED_3(0x20000)) {
         if (gEditor_12->cur != NULL && (gEditor_12->cur->pt->fC.h.hi & 0x40)) {
-            gEditor_12->f16E0->fC &= ~1;
+            gEditor_12->f16E0->flags &= ~GUI_MENU_ACTIVE;
             edit_update_user_piece_usage();
             edit_user_piece_reset_cursor(0);
             if (gEditor_12->cur->pt->fC.h.hi & 0x400) {
@@ -1626,9 +1577,9 @@ void edit_update_place_piece(void) {
     if (gEditor_12->mode == 6) {
         edit_update_user_piece();
         gEditor_12->flags |= 0x200;
-    } else if (gui_menu_input_3(gEditor_12->f16E0)) {
+    } else if (gui_menu_input(gEditor_12->f16E0)) {
         ok = 0;
-        switch (sEditTrackMenu_3.h10) {
+        switch (sEditTrackMenu.choice) {
         case 3:
             edit_remove_preview_pieces_2();
             gEditor_12->f16FC = IDX;
@@ -1678,16 +1629,16 @@ void edit_update_place_piece(void) {
                 gEditor_12->flags |= 0x800;
                 if (gEditor_12->head->prev != NULL) {
                     gEditor_12->f1800 = 2;
-                    sEditTrackMenu_3.h10 = 7;
-                    sEditTrackMenu_3.h6 = 7;
+                    sEditTrackMenu.choice = 7;
+                    sEditTrackMenu.cursor = 7;
                 } else {
                     gEditor_12->f1800 = 3;
                 }
-                gEditor_12->f16E0->fC &= ~1;
+                gEditor_12->f16E0->flags &= ~GUI_MENU_ACTIVE;
             }
         }
     } else {
-        switch (sEditTrackMenu_3.h10) {
+        switch (sEditTrackMenu.choice) {
         case 3:
             edit_remove_preview_pieces_2();
             gEditor_12->f16FC = IDX;
@@ -1932,35 +1883,7 @@ typedef struct {
     void *f17B0;
 } Edit_3;
 
-typedef struct {
-    s32 f0;
-    u32 f4;
-    s32 f8;
-    s32 fC;
-} Btn;
-
-typedef struct {
-    u8 pad0[0x54];
-    u32 f54;
-} Lbl;
-
-typedef struct {
-    u8 pad0[0xA];
-    s16 hA;
-    u8 padC[4];
-} Sel_5;
-
-typedef struct {
-    u8 pad0[8];
-    Sel_5 *p8;
-    u8 padC[4];
-    s16 h10;
-} Menu_8;
-
 extern Edit_3 *gEditor_15;
-extern Btn sEditMainMenuItems[];
-extern Lbl sEditTrackMenuItems_2;
-extern Menu_8 sEditTrackMenu_4;
 
 void edit_update(void) {
     Edit_3 *g;
@@ -2066,28 +1989,28 @@ void edit_update(void) {
         edit_set_start_piece_choices();
     }
     if (gEditor_15->f184 == NULL) {
-        sEditMainMenuItems[0].f4 &= ~0x10;
-        sEditMainMenuItems[6].f4 &= ~0x10;
+        sEditMainMenuItems[0].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[6].flags &= ~GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[0].f4 |= 0x10;
-        sEditMainMenuItems[6].f4 |= 0x10;
+        sEditMainMenuItems[0].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[6].flags |= GUI_ITEM_ENABLED;
     }
     if (gEditor_15->f184 != NULL && (gEditor_15->f184->p14->hC & 2) && gEditor_15->f190 != 0) {
-        sEditTrackMenuItems_2.f54 |= 0x10;
+        sEditTrackMenuItems[5].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditTrackMenuItems_2.f54 &= ~0x10;
+        sEditTrackMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor_15->f190 != 0) {
-        sEditMainMenuItems[4].f4 |= 0x10;
-        sEditMainMenuItems[5].f4 |= 0x10;
+        sEditMainMenuItems[4].flags |= GUI_ITEM_ENABLED;
+        sEditMainMenuItems[5].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[4].f4 &= ~0x10;
-        sEditMainMenuItems[5].f4 &= ~0x10;
+        sEditMainMenuItems[4].flags &= ~GUI_ITEM_ENABLED;
+        sEditMainMenuItems[5].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor_15->f190 != 0 && gEditor_15->f17C->p8 == gEditor_15->f180) {
-        sEditMainMenuItems[3].f4 |= 0x10;
+        sEditMainMenuItems[3].flags |= GUI_ITEM_ENABLED;
     } else {
-        sEditMainMenuItems[3].f4 &= ~0x10;
+        sEditMainMenuItems[3].flags &= ~GUI_ITEM_ENABLED;
     }
     if (gEditor_15->f16E0 != NULL) {
         gui_menu_fix_cursor(gEditor_15->f16E0);
@@ -2097,18 +2020,18 @@ void edit_update(void) {
         gEditor_15->f16E0 = gEditor_15->f16E4;
         gEditor_15->f16E4 = NULL;
     }
-    switch (sEditTrackMenu_4.h10) {
+    switch (sEditTrackMenu.choice) {
     case 0:
-        gEditor_15->f17B0 = &gPieceTypes[sEditTrackMenu_4.p8[0].hA];
+        gEditor_15->f17B0 = &gPieceTypes[sEditTrackMenu.items[0].value];
         break;
     case 1:
-        gEditor_15->f17B0 = &gPieceTypesTurn[sEditTrackMenu_4.p8[1].hA];
+        gEditor_15->f17B0 = &gPieceTypesTurn[sEditTrackMenu.items[1].value];
         break;
     case 2:
-        gEditor_15->f17B0 = &gPieceTypesJump[sEditTrackMenu_4.p8[2].hA];
+        gEditor_15->f17B0 = &gPieceTypesJump[sEditTrackMenu.items[2].value];
         break;
     case 3:
-        gEditor_15->f17B0 = &gPieceTypesUser[sEditTrackMenu_4.p8[3].hA];
+        gEditor_15->f17B0 = &gPieceTypesUser[sEditTrackMenu.items[3].value];
         break;
     }
     if (gEditor_15->f174 & 0x10) {
@@ -2146,15 +2069,9 @@ typedef struct {
     char pad1[0x8];
     s32 mode;
     char pad2[0x38];
-    s32 *font;
+    TextObj *font;
 } Menu_9;
 
-typedef struct {
-    char pad0[4];
-    u8 *img;
-} Res_8;
-
-extern Res_8 *gGui_5;
 extern Menu_9 *gEditor_16;
 
 Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
@@ -2170,7 +2087,7 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
     RAW(gdl++, 0xE3001001, 0);
     RAW(gdl++, 0xE200001C, 0x00404240);
     RAW(gdl++, 0xD7000002, 0x80008000);
-    p = gGui_5->img + 0x48;
+    p = (u8 *)gGui->images + 0x48;
     gdl = render_draw_image(0xBC, 0x78 - (p[1] >> 1), p, gdl, arg1, 1, 1, 6, 0);
     font_text_create(gEditor_16->font, 0x40, 2, 2, 0x20);
     font_text_add(gEditor_16->font, sStrTrackNameLabel);
@@ -2189,7 +2106,7 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
             x = k * 26 - (i * 5 + c);
             font_draw_text(gEditor_16->font, x, i * 17 + 0x48);
             if (idx == gEditor_16->sel) {
-                p = gGui_5->img + 0x50;
+                p = (u8 *)gGui->images + 0x50;
                 gdl = render_draw_image(x - p[0] * 4 + 4, i * 17 - (p[1] >> 1) + 0x49, p, gdl, arg1, 1, 1, 6, 0);
                 do { } while (0);
                 idx++;
@@ -2268,13 +2185,7 @@ typedef struct {
     Pic *pic1808;       /* 0x1808 */
 } Menu_10;
 
-typedef struct {
-    s32 f0;
-    u8 *img;
-} Res_9;
-
 extern Menu_10 *gEditor_17;
-extern Res_9 *gGui_6;
 extern Trk_15 gPieceTypes_6[];
 
 void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
@@ -2393,7 +2304,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        p = gGui_6->img + 0x58;
+        p = (u8 *)gGui->images + 0x58;
         font_text_create(gEditor_17->font, 0x20, 5, 2, 0x21);
         font_text_add(gEditor_17->font, sStrTrackNameLabel);
         font_text_add(gEditor_17->font, gEditor_17->name);
@@ -3557,11 +3468,8 @@ void edit_place_piece_before(Spr_5 *a, Spr_5 *b)
 }
 
 typedef struct { u8 pad[0xC]; u16 f; u8 rest[0x32]; } Blk_23;
-typedef struct { s32 f0; u32 flags; s16 n; s16 pad; u32 mask; } Rec_50;
-typedef struct { s32 f0; s32 f4; Rec_50 *recs; } Grp;
 
 extern Blk_23 gPieceTypes_7[];
-extern Grp sEditTrackMenu_5;
 
 void edit_set_start_piece_choices(void)
 {
@@ -3605,19 +3513,19 @@ void edit_set_start_piece_choices(void)
             t0 = 0x12;
             break;
         }
-        sEditTrackMenu_5.recs[i].mask = 0;
-        for (k = 0; k < sEditTrackMenu_5.recs[i].n; k++) {
+        sEditTrackMenu.items[i].valueMask = 0;
+        for (k = 0; k < sEditTrackMenu.items[i].numValues; k++) {
             if (gPieceTypes_7[t0 + k].f & 0x30) {
-                sEditTrackMenu_5.recs[i].mask |= 1 << k;
+                sEditTrackMenu.items[i].valueMask |= 1 << k;
             }
         }
-        if (sEditTrackMenu_5.recs[i].mask == 0) {
-            sEditTrackMenu_5.recs[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].valueMask == 0) {
+            sEditTrackMenu.items[i].flags &= ~GUI_ITEM_ENABLED;
         } else {
-            sEditTrackMenu_5.recs[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= GUI_ITEM_ENABLED;
         }
     }
-    gui_menu_fix_cursor(&sEditTrackMenu_5);
+    gui_menu_fix_cursor(&sEditTrackMenu);
 }
 
 typedef struct Size {
@@ -3905,20 +3813,20 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
         default:
             continue;
         }
-        sEditTrackMenu_6.slots[i].mask = 0;
-        for (n = 0; n < sEditTrackMenu_6.slots[i].n; n++) {
+        sEditTrackMenu.items[i].valueMask = 0;
+        for (n = 0; n < sEditTrackMenu.items[i].numValues; n++) {
             if (gPieceTypes_8[j + n].flags & 0x30) {
-                sEditTrackMenu_6.slots[i].mask |= 1 << n;
+                sEditTrackMenu.items[i].valueMask |= 1 << n;
             }
         }
-        if (sEditTrackMenu_6.slots[i].mask == 0) {
-            sEditTrackMenu_6.slots[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].valueMask == 0) {
+            sEditTrackMenu.items[i].flags &= ~GUI_ITEM_ENABLED;
         } else {
             ret = 1;
-            sEditTrackMenu_6.slots[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= GUI_ITEM_ENABLED;
         }
     }
-    gui_menu_fix_cursor(&sEditTrackMenu_6);
+    gui_menu_fix_cursor(&sEditTrackMenu);
     return ret;
 }
 
@@ -4532,7 +4440,7 @@ typedef struct {
     s32 f170;
     u32 f174;
     u8 pad178[0x16E0 - 0x178];
-    Obj_2 *sub;
+    GuiMenu *sub;
     u8 pad16E4[0x16F4 - 0x16E4];
     s32 f16F4;
     s32 f16F8;
@@ -4543,21 +4451,6 @@ typedef struct {
     s16 f17FC;
     s16 f17FE;
 } Game_42;
-
-typedef struct {
-    u8 pad0[0x34];
-    u32 f34;
-    u8 pad38[4];
-    u32 f3C;
-} Obj_73;
-
-typedef struct {
-    u8 pad0[6];
-    s16 f6;
-    Obj_73 *obj;
-    u8 padC[4];
-    s16 f10;
-} Menu_11;
 
 typedef struct {
     u8 pad0[2];
@@ -4571,7 +4464,6 @@ typedef struct {
 } Tab_9;
 
 extern Game_42 *gEditor_29;
-extern Menu_11 sEditTrackMenu_7;
 
 void edit_update_user_piece(void)
 {
@@ -4580,7 +4472,7 @@ void edit_update_user_piece(void)
     if (gEditor_29->f174 & 0x1000) {
         if (PRESSED_4(0x20)) {
             gPadInputPrev_3[0] |= 0x20;
-            gEditor_29->sub->flags |= 1;
+            gEditor_29->sub->flags |= GUI_MENU_ACTIVE;
             gEditor_29->f174 &= ~0x1000;
         } else if (PRESSED_4(0x10)) {
             gPadInputPrev_3[0] |= 0x10;
@@ -4605,7 +4497,7 @@ void edit_update_user_piece(void)
                     break;
                 }
             }
-            gEditor_29->sub->flags |= 1;
+            gEditor_29->sub->flags |= GUI_MENU_ACTIVE;
             gEditor_29->f174 &= ~0x1000;
         } else if (PRESSED_4(0x800) || PRESSED_4(0x1000)) {
             gEditor_29->f17FE ^= 1;
@@ -4613,11 +4505,11 @@ void edit_update_user_piece(void)
         }
     } else if (PRESSED_4(0x10)) {
         gEditor_29->f170 = 9;
-        gEditor_29->sub->flags |= 1;
-        sEditTrackMenu_7.f10 = 3;
-        sEditTrackMenu_7.f6 = 3;
-        sEditTrackMenu_7.obj->f34 |= 0x10;
-        sEditTrackMenu_7.obj->f3C |= 1 << (gEditor_29->f16F4 - 1);
+        gEditor_29->sub->flags |= GUI_MENU_ACTIVE;
+        sEditTrackMenu.choice = 3;
+        sEditTrackMenu.cursor = 3;
+        sEditTrackMenu.items[3].flags |= GUI_ITEM_ENABLED;
+        sEditTrackMenu.items[3].valueMask |= 1 << (gEditor_29->f16F4 - 1);
     } else {
         if (PRESSED_4(0x10000)) {
             Tab_9 *b = gPieceTypes;
@@ -4628,7 +4520,7 @@ void edit_update_user_piece(void)
                 if (gEditor_29->f16F8 == 1 || gEditor_29->f16F8 == t->n * 2 - 1) {
                     gEditor_29->f17FC = 1;
                     gEditor_29->f174 |= 0x1000;
-                    gEditor_29->sub->flags &= ~1;
+                    gEditor_29->sub->flags &= ~GUI_MENU_ACTIVE;
                     gEditor_29->f17FE = 0;
                     goto end;
                 }
@@ -4646,7 +4538,7 @@ void edit_update_user_piece(void)
                 if (t->n < gEditor_29->f1702 && !(t->fC & 0x200)) {
                     gEditor_29->f17FC = 0;
                     gEditor_29->f174 |= 0x1000;
-                    gEditor_29->sub->flags &= ~1;
+                    gEditor_29->sub->flags &= ~GUI_MENU_ACTIVE;
                     gEditor_29->f17FE = 0;
                 }
             }
@@ -4662,7 +4554,7 @@ void edit_update_user_piece(void)
             } else if (t->n < gEditor_29->f1702 && !(t->fC & 0x200)) {
                 gEditor_29->f17FC = 0;
                 gEditor_29->f174 |= 0x1000;
-                gEditor_29->sub->flags &= ~1;
+                gEditor_29->sub->flags &= ~GUI_MENU_ACTIVE;
                 gEditor_29->f17FE = 0;
             }
         }
