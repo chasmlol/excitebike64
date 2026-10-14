@@ -80,6 +80,22 @@
 #define GAME_FLAG_SPLASH_3          0x10000000 /* SCREEN_SPLASH_3 is up: screen_draw_wipe draws at full level */
 #define GAME_FLAG_DEBUG             0x20000000 /* the Debug cheat */
 
+/* gCheatFlags and sCheatMask: bit n is the cheat of sCheatTable[n], entered on the cheat screen */
+#define CHEAT_BIG_HEAD              0x0001
+#define CHEAT_MIRROR                0x0002
+#define CHEAT_DEBUG                 0x0004
+#define CHEAT_DOWN_HILL             0x0008
+#define CHEAT_STUNT_BONUS           0x0010
+#define CHEAT_INVISIBLE_RIDER       0x0020
+#define CHEAT_NIGHT                 0x0040
+#define CHEAT_ODD_COLOR             0x0080
+#define CHEAT_TRANSPARENT_RIDER     0x0100
+#define CHEAT_ALL_STUNTS            0x0200
+#define CHEAT_INVINCIBLE            0x0400
+#define CHEAT_TEAM_PHOTO            0x0800
+#define CHEAT_BEAT_THIS             0x1000
+#define CHEAT_PIN_HEAD              0x2000
+
 /* gGame.fadeState: the fade between two screens (gGame.fadeLevel) */
 #define FADE_OUT    0       /* the screen left fades out */
 #define FADE_SWAP   1       /* faded out: the screens are unloaded and loaded */

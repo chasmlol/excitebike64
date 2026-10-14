@@ -589,9 +589,6 @@ void shell_records_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
 #define CHEAT_CODE_LEN   10
 #define INITIALS_LEN     3
 #define NUM_CHEATS       14 /* sCheatTable */
-#define CHEAT_DEBUG      2  /* sets GAME_FLAG_DEBUG instead of its bit of sCheatMask */
-#define CHEAT_STUNT_BONUS 4
-#define CHEAT_ALL_STUNTS  9
 
 typedef struct {
     u8 c[3];
@@ -649,7 +646,7 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
                             found = 1;
                             c = 1 << i;
                             gGame.cheatEntered = i;
-                            if (c == 1 << CHEAT_DEBUG) {
+                            if (c == CHEAT_DEBUG) { /* Debug sets GAME_FLAG_DEBUG instead */
                                 gGame.flags ^= GAME_FLAG_DEBUG;
                             } else {
                                 sCheatMask ^= c;
@@ -2435,7 +2432,7 @@ void shell_exit(void)
     switch (gGame.mode) {
     case GAME_MODE_TIME_TRIAL:
     case GAME_MODE_TUTORIAL:
-        gCheatFlags = sCheatMask & ~((1 << CHEAT_STUNT_BONUS) | (1 << CHEAT_ALL_STUNTS));
+        gCheatFlags = sCheatMask & ~(CHEAT_STUNT_BONUS | CHEAT_ALL_STUNTS);
         break;
     }
     switch (gGame.mode) {
@@ -4713,7 +4710,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         if (cheat && gGame.screenState == SCREEN_STATE_CHEAT_ACCEPTED) {
             font_text_create(gGame.texts[0], 0x20, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
             font_text_add(gGame.texts[0], sCheatTable[gGame.cheatEntered].name);
-            if (((1 << gGame.cheatEntered) == 1 << CHEAT_DEBUG && (gGame.flags & GAME_FLAG_DEBUG)) || ((sCheatMask >> gGame.cheatEntered) & 1)) {
+            if (((1 << gGame.cheatEntered) == CHEAT_DEBUG && (gGame.flags & GAME_FLAG_DEBUG)) || ((sCheatMask >> gGame.cheatEntered) & 1)) {
                 font_text_add(gGame.texts[0], sStrEnabledSuffix);
             } else {
                 font_text_add(gGame.texts[0], sStrDisabledSuffix);
