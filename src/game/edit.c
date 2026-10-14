@@ -167,8 +167,6 @@ typedef struct {
     u8 pad38[8];
 } Rec_5;
 
-
-
 extern EditCamPos sEditCamDelta;
 extern EditCamPos sEditCamPosFixed; /* 1/1024 */
 extern EditCamPos sEditCamPos;
@@ -3699,9 +3697,6 @@ int func_8009D788(int n, s16 *p)
 #define LIM_2 (gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2)
 #define T1_2 ((s16 *)gUserPieceHeights)
 
-
-
-
 static inline s16 *At(s16 *b, s32 c, s32 i)
 {
     return &b[c * 15 + i];
@@ -3809,8 +3804,6 @@ s32 func_8009DC6C(s32 param_1)
 #define MAX_2(x, y) ((x) > (y) ? (x) : (y))
 #define CELL (({ s16 *_tb = (s16 *)gUserPieceHeights; _tb; })[({ s32 _c = A_2 - 1; B_2 * 15 + _c; })])
 
-
-
 void edit_user_piece_adjust_height(void)
 {
     volatile s32 pad[8];
@@ -3886,67 +3879,21 @@ void edit_user_piece_adjust_height(void)
 
 #define PRESSED_4(b) ((gPadInput & (b)) && !(gPadInputPrev_3[0] & (b)))
 
-typedef struct {
-    u8 pad0[0x170];
-    s32 f170;
-    u32 f174;
-    u8 pad178[0x16E0 - 0x178];
-    Obj_2 *sub;
-    u8 pad16E4[0x16F4 - 0x16E4];
-    s32 f16F4;
-    s32 f16F8;
-    s32 f16FC;
-    u8 pad1700[2];
-    s16 f1702;
-    u8 pad1704[0x17FC - 0x1704];
-    s16 f17FC;
-    s16 f17FE;
-} Game_42;
-
-typedef struct {
-    u8 pad0[0x34];
-    u32 f34;
-    u8 pad38[4];
-    u32 f3C;
-} Obj_73;
-
-typedef struct {
-    u8 pad0[6];
-    s16 f6;
-    Obj_73 *obj;
-    u8 padC[4];
-    s16 f10;
-} Menu_11;
-
-typedef struct {
-    u8 pad0[2];
-    s16 n;
-    u8 pad4[8];
-    u16 fC;
-    u8 padE[0x30 - 0xE];
-    void *a;
-    void *b;
-    u8 pad38[8];
-} Tab_9;
-
-extern Game_42 *gEditor_29;
-extern Menu_11 sEditTrackMenu_7;
-
 void edit_update_user_piece(void)
 {
     s32 i;
 
-    if (gEditor_29->f174 & 0x1000) {
+    if (gEditor->flags & 0x1000) {
         if (PRESSED_4(0x20)) {
             gPadInputPrev_3[0] |= 0x20;
-            gEditor_29->sub->flags |= 1;
-            gEditor_29->f174 &= ~0x1000;
+            gEditor->menu->flags |= 1;
+            gEditor->flags &= ~0x1000;
         } else if (PRESSED_4(0x10)) {
             gPadInputPrev_3[0] |= 0x10;
-            if (gEditor_29->f17FE != 0) {
-                switch (gEditor_29->f17FC) {
+            if (gEditor->dialogChoice != 0) {
+                switch (gEditor->dialog) {
                 case 0:
-                    if (gEditor_29->f16F8 == 1) {
+                    if (gEditor->heightSel == 1) {
                         edit_user_piece_prepend_segment();
                     } else {
                         edit_user_piece_append_segment();
@@ -3954,9 +3901,9 @@ void edit_update_user_piece(void)
                     break;
                 case 1:
                     for (i = 0; i < 15; i++) {
-                        gUserPieceHeights[gEditor_29->f16FC][i] = 0;
+                        gUserPieceHeights[gEditor->userPiece][i] = 0;
                     }
-                    if (gEditor_29->f16F8 == 1) {
+                    if (gEditor->heightSel == 1) {
                         edit_user_piece_remove_first_segment();
                     } else {
                         edit_user_piece_remove_last_segment();
@@ -3964,76 +3911,76 @@ void edit_update_user_piece(void)
                     break;
                 }
             }
-            gEditor_29->sub->flags |= 1;
-            gEditor_29->f174 &= ~0x1000;
+            gEditor->menu->flags |= 1;
+            gEditor->flags &= ~0x1000;
         } else if (PRESSED_4(0x800) || PRESSED_4(0x1000)) {
-            gEditor_29->f17FE ^= 1;
+            gEditor->dialogChoice ^= 1;
             snd_play_menu_sound(0);
         }
     } else if (PRESSED_4(0x10)) {
-        gEditor_29->f170 = 9;
-        gEditor_29->sub->flags |= 1;
-        sEditTrackMenu_7.f10 = 3;
-        sEditTrackMenu_7.f6 = 3;
-        sEditTrackMenu_7.obj->f34 |= 0x10;
-        sEditTrackMenu_7.obj->f3C |= 1 << (gEditor_29->f16F4 - 1);
+        gEditor->mode = 9;
+        gEditor->menu->flags |= 1;
+        sEditTrackMenu.sel = 3;
+        sEditTrackMenu.cursor = 3;
+        sEditTrackMenu.items[3].flags |= 0x10;
+        sEditTrackMenu.items[3].mask |= 1 << (gEditor->userPieceCount - 1);
     } else {
         if (PRESSED_4(0x10000)) {
-            Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-            Tab_9 *t;
+            PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+            PieceType *t;
             t = &b[k];
-            if (t->n >= 5 && !(t->fC & 0x200)) {
-                if (gEditor_29->f16F8 == 1 || gEditor_29->f16F8 == t->n * 2 - 1) {
-                    gEditor_29->f17FC = 1;
-                    gEditor_29->f174 |= 0x1000;
-                    gEditor_29->sub->flags &= ~1;
-                    gEditor_29->f17FE = 0;
+            if (t->dim[1] >= 5 && !(t->flags & 0x200)) {
+                if (gEditor->heightSel == 1 || gEditor->heightSel == t->dim[1] * 2 - 1) {
+                    gEditor->dialog = 1;
+                    gEditor->flags |= 0x1000;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->dialogChoice = 0;
                     goto end;
                 }
             }
         }
-        if ((PRESSED_4(0x4000) && (gEditor_29->f174 & 1)) || (PRESSED_4(0x2000) && !(gEditor_29->f174 & 1))) {
-            if (gEditor_29->f16F8 >= 2) {
-                gEditor_29->f16F8--;
+        if ((PRESSED_4(0x4000) && (gEditor->flags & 1)) || (PRESSED_4(0x2000) && !(gEditor->flags & 1))) {
+            if (gEditor->heightSel >= 2) {
+                gEditor->heightSel--;
                 snd_play_menu_sound(0);
             } else {
-                Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-                Tab_9 *t;
+                PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+                PieceType *t;
             t = &b[k];
-                if (t->n < gEditor_29->f1702 && !(t->fC & 0x200)) {
-                    gEditor_29->f17FC = 0;
-                    gEditor_29->f174 |= 0x1000;
-                    gEditor_29->sub->flags &= ~1;
-                    gEditor_29->f17FE = 0;
+                if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
+                    gEditor->dialog = 0;
+                    gEditor->flags |= 0x1000;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->dialogChoice = 0;
                 }
             }
         }
-        if ((PRESSED_4(0x4000) && !(gEditor_29->f174 & 1)) || (PRESSED_4(0x2000) && (gEditor_29->f174 & 1))) {
-            Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-            Tab_9 *t;
+        if ((PRESSED_4(0x4000) && !(gEditor->flags & 1)) || (PRESSED_4(0x2000) && (gEditor->flags & 1))) {
+            PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+            PieceType *t;
             t = &b[k];
-            if (gEditor_29->f16F8 < t->n * 2 - 1) {
-                gEditor_29->f16F8++;
+            if (gEditor->heightSel < t->dim[1] * 2 - 1) {
+                gEditor->heightSel++;
                 snd_play_menu_sound(0);
-            } else if (t->n < gEditor_29->f1702 && !(t->fC & 0x200)) {
-                gEditor_29->f17FC = 0;
-                gEditor_29->f174 |= 0x1000;
-                gEditor_29->sub->flags &= ~1;
-                gEditor_29->f17FE = 0;
+            } else if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
+                gEditor->dialog = 0;
+                gEditor->flags |= 0x1000;
+                gEditor->menu->flags &= ~1;
+                gEditor->dialogChoice = 0;
             }
         }
         edit_user_piece_adjust_height();
     }
 end:
     {
-        Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-        Tab_9 *t;
+        PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+        PieceType *t;
             t = &b[k];
-        usrtrk_apply_heights(t->a, t->b, gUserPieceHeights[gEditor_29->f16FC], t->n);
+        usrtrk_apply_heights(t->meshA, t->meshB, gUserPieceHeights[gEditor->userPiece], t->dim[1]);
     }
 }
 
@@ -4042,12 +3989,13 @@ s32 func_8009EB00(s32 a, s32 b)
     return b;
 }
 
-s32 func_8009EB08(Ctx_4 *c)
+/* Unused: whether c's prev can be reached from its next (1 also when either is missing). */
+s32 func_8009EB08(EditPiece *c)
 {
-    Node_31 *n = c->head;
-    if (n != NULL && c->end != NULL) {
+    EditPiece *n = c->next;
+    if (n != NULL && c->prev != NULL) {
         do {
-            if (n == c->end) {
+            if (n == c->prev) {
                 return 1;
             }
             n = n->next;
@@ -4058,80 +4006,63 @@ s32 func_8009EB08(Ctx_4 *c)
 }
 
 void edit_find_start_piece(void) {
-    u8 *p = gEditor;
-    u8 *n;
-    if (*(u8 **)(p + 0x190) != 0) {
+    Editor *p = gEditor;
+    EditPiece *n;
+    if (p->start != NULL) {
         return;
     }
-    n = *(u8 **)(p + 0x17C);
-    if (n == 0) {
+    n = p->first;
+    if (n == NULL) {
         return;
     }
     do {
-        if (*(u16 *)(*(u8 **)(n + 0x14) + 0xC) & 2) {
-            *(u8 **)(p + 0x190) = n;
+        if (n->type->flags & PIECE_START) {
+            p->start = n;
             return;
         }
-        n = *(u8 **)(n + 4);
-        if (n == *(u8 **)(p + 0x17C)) {
+        n = n->next;
+        if (n == p->first) {
             return;
         }
-    } while (n != 0);
+    } while (n != NULL);
 }
 
+/* Puts the height cursor at the user piece's first point, or its last when the view is reversed. */
 void edit_user_piece_reset_cursor(s32 arg0)
 {
-    u8 *p = gEditor;
-    if (*(u32 *)(p + 0x174) & 1) {
-        s32 idx = *(s32 *)(p + 0x16FC);
-        *(s32 *)(p + 0x16F8) = gPieceTypes[idx + 0x12].dim[1] * 2 - 1;
+    Editor *p = gEditor;
+    if (p->flags & EDIT_REVERSED) {
+        s32 idx = p->userPiece;
+        p->heightSel = gPieceTypes[idx + 0x12].dim[1] * 2 - 1;
         return;
     }
-    *(s32 *)(p + 0x16F8) = 1;
+    p->heightSel = 1;
 }
-
-typedef struct {
-    u8 pad[0x172C];
-    s32 a;
-    s32 b;
-    s32 c;
-} Obj_74;
-
-extern Obj_74 *gEditor_30;
 
 void edit_calc_track_cam_elevation(void)
 {
     f32 x, y;
     s32 d;
 
-    x = gEditor_30->a;
-    gEditor_30->c = ((x - 20000.0f) * 38000.0f) / 165000.0f + 40000.0f;
-    y = gEditor_30->c;
+    x = gEditor->cam[0].dist;
+    gEditor->cam[0].height = ((x - 20000.0f) * 38000.0f) / 165000.0f + 40000.0f;
+    y = gEditor->cam[0].height;
     d = __builtin_sqrtf(y * y + x * x);
-    gEditor_30->b = math_asini((gEditor_30->c << 14) / d & 0x3FFF) & 0xFFFF;
+    gEditor->cam[0].pitch = math_asini((gEditor->cam[0].height << 14) / d & 0x3FFF) & 0xFFFF;
 }
 
-typedef struct Gs_3 {
-    u8 pad[0x1738];
-    s32 f1738;
-    s32 f173c;
-    s32 f1740;
-} Gs_3;
-
-extern Gs_3 *gEditor_31;
-
 void edit_calc_piece_cam_elevation(void) {
-    Gs_3 *g;
+    Editor *g;
     f32 x;
     s32 n;
     f32 hyp;
 
-    g = gEditor_31;
-    x = (f32)g->f1738;
+    g = gEditor;
+    x = (f32)g->cam[1].dist;
     n = (s32)((x - 20000.0f) * 32000.0f / 100000.0f + 8000.0f);
-    g->f1740 = n;
+    g->cam[1].height = n;
     hyp = __builtin_sqrtf((f32)n * (f32)n + x * x);
-    gEditor_31->f173c = math_asini((gEditor_31->f1740 << 14) / (s32)hyp & 0x3FFF) & 0xFFFF;
+    gEditor->cam[1].pitch = math_asini((gEditor->cam[1].height << 14) / (s32)hyp & 0x3FFF) & 0xFFFF;
 }
 
 s32 edit_ease_delta(s32 mode, s32 v, s32 d, s32 f)
@@ -4198,24 +4129,13 @@ s32 edit_ease_delta(s32 mode, s32 v, s32 d, s32 f)
     return res;
 }
 
-typedef struct {
-    u8 pad0[0x174];
-    u32 f174;
-    u8 pad1[0x16E0 - 0x178];
-    s32 cur;
-    s32 e4;
-    s32 state;
-} Ctx_5;
-
-extern Ctx_5 *gEditor_32;
-
-void func_8009EF20(s32 a0)
+void func_8009EF20(GuiMenu *a0)
 {
-    Ctx_5 *st = gEditor_32;
-    if (st->cur != a0) {
-        s32 s = st->state;
+    Editor *st = gEditor;
+    if (st->menu != a0) {
+        s32 s = st->slideState;
         if (s == 1) {
-            st->cur = a0;
+            st->menu = a0;
             goto tail;
         }
         if (s == 0) goto c0;
@@ -4223,61 +4143,52 @@ void func_8009EF20(s32 a0)
         if (s == 3) goto c3;
         goto tail;
 c0:
-        st->state = 1;
-        st->e4 = a0;
+        st->slideState = 1;
+        st->nextMenu = a0;
         goto tail;
 c2:
-        st->state = 3;
-        st->e4 = a0;
+        st->slideState = 3;
+        st->nextMenu = a0;
         goto tail;
 c3:
-        st->state = 1;
-        st->cur = a0;
+        st->slideState = 1;
+        st->menu = a0;
 tail:
-        gEditor_32->f174 &= 0xFFFEFFFF;
+        gEditor->flags &= 0xFFFEFFFF; /* ~EDIT_A_HELD */
     }
 }
 
 void edit_cam_snap(void)
 {
-    u32 *dst = &sEditCamPos;
-    u32 *src = &sEditCamTarget;
+    EditCamPos *dst = &sEditCamPos;
+    EditCamPos *src = &sEditCamTarget;
     u32 a, b, c;
 
-    a = src[0];
-    b = src[1];
-    c = dst[2];
+    a = src->x;
+    b = src->z;
+    c = dst->yaw;
     sEditCamMoving = 0;
-    dst[0] = a;
-    dst[1] = b;
-    dst[2] = ((c + 0x800) >> 13) << 13;
+    dst->x = a;
+    dst->z = b;
+    dst->yaw = ((c + 0x800) >> 13) << 13;
 }
 
-#define G_6 ((u8 *)gEditor_33)
-
 void edit_clear_track(s32 a0) {
-    u8 *p;
     s32 i;
 
-    *(s32 *)(G_6 + 0x17C) = 0;
-    *(s32 *)(G_6 + 0x180) = 0;
-    *(s32 *)(G_6 + 0x184) = 0;
-    *(s32 *)(G_6 + 0x190) = 0;
-    *(s16 *)(G_6 + 0x16B6) = 0;
-    *(s16 *)(G_6 + 0x16B8) = 0;
-
-    p = G_6 + 0x14F4;
-    i = 0x95;
-    do {
-        *(s16 *)(p + 0x194) = 0;
-        i--;
-        p -= 0x24;
-    } while (i >= 0);
-
-    if (a0 != 0) {
-        *(s32 *)(G_6 + 0x16F4) = 8;
+    gEditor->first = NULL;
+    gEditor->last = NULL;
+    gEditor->cur = NULL;
+    gEditor->start = NULL;
+    gEditor->scrollX = 0;
+    gEditor->scrollY = 0;
+    for (i = 149; i >= 0; i--) {
+        gEditor->pieces[i].used = 0;
     }
-    strcpy((char *)gEditor_33 + 0x16BA, "<NONE>");
+    if (a0 != 0) {
+        gEditor->userPieceCount = 8;
+    }
+    strcpy(gEditor->name, "<NONE>");
 }
 
 typedef struct { u8 pad[0x3E8]; void *ptr; } GS_2;
@@ -4296,46 +4207,23 @@ void edit_save_track_to_game_pak(void)
     gGame_90.ptr = 0;
 }
 
-typedef struct Sub_12 {
-    u8 pad[0xC];
-    u16 flags;
-} Sub_12;
-
-typedef struct Node_32 {
-    s32 w0;
-    struct Node_32 *next;
-    s32 w8;
-    s32 w12;
-    s32 w16;
-    Sub_12 *sub;
-} Node_32;
-
-typedef struct Obj_75 {
-    u8 p0[0x17C];
-    Node_32 *list;
-    u8 p1[4];
-    Node_32 *cur;
-    u8 p2[8];
-    Node_32 *other;
-} Obj_75;
-
 s32 edit_can_delete_piece(void) {
-    Obj_75 *o = gEditor;
-    Node_32 *a = o->cur;
-    Node_32 *n;
+    Editor *o = gEditor;
+    EditPiece *a = o->cur;
+    EditPiece *n;
     s32 r;
-    if (a == NULL || a != o->other || (a->w8 == 0 && a->next == NULL)) {
+    if (a == NULL || a != o->start || (a->prev == 0 && a->next == NULL)) {
         goto ret1;
     }
-    n = o->list;
+    n = o->first;
     r = 0;
     while (n != NULL) {
-        if (n != a && (n->sub->flags & 2) != 0) {
+        if (n != a && (n->type->flags & PIECE_START) != 0) {
             r = 1;
             break;
         }
         n = n->next;
-        if (n == o->list) {
+        if (n == o->first) {
             break;
         }
     }
@@ -4351,30 +4239,11 @@ void edit_reset_overlay_lines(s32 param_1) {
     mem_fill((u8 *)gEditor->lineVtx[p], 0, 0xF00);
 }
 
-typedef struct {
-    u8 pad0[0xC];
-    u16 f0C;
-    u8 rest[0x40 - 0xE];
-} Slot_14;
-
-typedef struct Node_33 {
-    u8 pad0[4];
-    struct Node_33 *next;
-    u32 f8;
-    u8 pad1[0x14 - 0xC];
-    Slot_14 *owner;
-} Node_33;
-
-typedef struct {
-    u8 pad0[0x17C];
-    Node_33 *head;
-} Obj_76;
-
 void edit_update_user_piece_usage(void)
 {
-    Obj_76 *obj;
-    Slot_14 *blk;
-    Node_33 *n;
+    Editor *obj;
+    PieceType *blk;
+    EditPiece *n;
     s32 i;
     s32 cnt, flag;
     s32 m;
@@ -4384,73 +4253,47 @@ void edit_update_user_piece_usage(void)
     for (; i < 8; i++) {
         u32 c;
         blk = &gPieceTypesUser[i];
-        c = blk->f0C;
-        n = obj->head;
-        blk->f0C = c & m;
+        c = (u16)blk->flags; /* read unsigned here */
+        n = obj->first;
+        blk->flags = c & m;
         cnt = 0;
         flag = cnt;
         if (n != 0) {
             do {
-                if (n->owner == blk) {
+                if (n->type == blk) {
                     cnt++;
-                    if (n->f8 != 0 && n->next != 0) {
+                    if (n->prev != 0 && n->next != 0) {
                         flag = 1;
                     }
                 }
                 n = n->next;
-            } while (n != obj->head && n != 0);
+            } while (n != obj->first && n != 0);
         }
         if (flag) {
-            blk->f0C = blk->f0C | 0x200;
+            blk->flags = blk->flags | 0x200;
         }
         if (cnt >= 2) {
-            blk->f0C = blk->f0C | 0x600;
+            blk->flags = blk->flags | 0x600;
         }
     }
 }
-
-typedef struct {
-    s32 unk0;
-    s32 p;
-    u8 pad[0x18];
-} Cell_10;
-
-typedef struct {
-    s16 unk0;
-    s16 rows;
-    u8 pad4[0x2C];
-    Cell_10 *a;
-    Cell_10 *b;
-    u8 pad38[8];
-} Rec_52;
-
-typedef struct {
-    Rec_52 rec[28];
-    u8 pad[0x30];
-    u32 *w;
-} Big_3;
-
-extern Big_3 gPieceTypes_13;
 
 void edit_free_user_piece_meshes(s32 n)
 {
     u32 *wp;
     s32 i, j;
     u32 k;
-    u32 o;
-    Cell_10 *a;
-    Cell_10 *b;
+    PieceMeshSet *a;
+    PieceMeshSet *b;
 
-    wp = gPieceTypes_13.w;
+    wp = &gPieceTypes[PIECE_TYPE_TEMPLATE].meshA->count;
     for (i = 0; i < n; i++) {
-        a = gPieceTypes_13.rec[i + 18].a;
-        b = gPieceTypes_13.rec[i + 18].b;
-        for (j = 0; j < gPieceTypes_13.rec[i + 18].rows; j++) {
+        a = gPieceTypes[i + 18].meshA;
+        b = gPieceTypes[i + 18].meshB;
+        for (j = 0; j < gPieceTypes[i + 18].dim[1]; j++) {
             for (k = 0; k < *wp; k++) {
-                o = (j * *wp + k) * 32;
-                mem_free(*(s32 *)((u8 *)a + o + 4));
-                o = (j * *wp + k) * 32;
-                mem_free(*(s32 *)((u8 *)b + o + 4));
+                mem_free(a->cells[j * *wp + k].mesh);
+                mem_free(b->cells[j * *wp + k].mesh);
             }
         }
         mem_free(a);

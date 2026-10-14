@@ -1143,17 +1143,6 @@ typedef struct {
     u8 rest[60];
 } Row;
 
-typedef struct Node_31 {
-    s32 f0;
-    struct Node_31 *next;
-} Node_31;
-
-typedef struct Ctx_4 {
-    s32 f0;
-    Node_31 *head;
-    Node_31 *end;
-} Ctx_4;
-
 typedef struct Ring {
     s32 f00;
     s32 cur;        /* 0x04 */
