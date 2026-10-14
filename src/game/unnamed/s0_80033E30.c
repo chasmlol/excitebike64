@@ -1,95 +1,121 @@
 #include "game.h"
 
+/* gSkyMode, chosen by render_init from the track's resources. */
+#define SKY_MODE_CLEAR          0   /* no sky: the views are cleared to the fog colour */
+#define SKY_MODE_IMAGE          1   /* the 2D backdrop drawn here (GID_PkgSky) */
+#define SKY_MODE_MODEL          2   /* a sky model (GID_ArnSky) */
+#define SKY_MODE_MODEL_TEXTURED 3   /* a sky model textured with the sky image */
+
+/* The sky image is 256 x 256 CI8 texels, loaded and drawn in strips of 8 rows; this is the last strip's row. */
+#define SKY_LAST_STRIP  0xF8
+
+/* A Z buffer value above this is still the clear value: nothing was drawn there. */
+#define ZBUFFER_FAR     0xFFEF
+
 /* The clip height written through a one-field struct: as a plain s32 the store is scheduled differently. */
 typedef struct { s32 v; } ClipStore;
-typedef struct { u8 pad[0x2C]; s32 f2c; } Obj_26;
 
-extern Obj_26 *gCurTrack_24;
+/* A track record of gTracks (0xA0 bytes) as far as this file reads it. */
+typedef struct { u8 pad[0x2C]; s32 envType; } SkyTrack;
 
-void sky_scan_zbuffer(s32 arg0)
+extern SkyTrack *gCurTrack_24;
+
+/* After each frame of a race (gGame flag 0x10000), finds for each view how far down the sky shows: on every 16th
+   row and 8th column of the Z buffer, the lowest row still at the clear value. The backdrop is drawn only down to
+   there (sSkyClipHeight), which rises by at most 16 lines per frame; on stadium tracks it covers the whole view. */
+void sky_scan_zbuffer(s32 frame)
 {
-    s32 i, x, y, m;
-    Rect *r;
-    Rect *q;
-    ClipStore *p;
+    s32 i, x, y, layout;
+    Rect *rect;
+    Rect *rect2;
+    ClipStore *clip;
 
     if ((gGame.flags & 0x10000) == 0) {
         return;
     }
-    m = gNumViews - 1;
+    layout = gNumViews - 1;
     for (i = 0; i < gNumViews; i++) {
-        if (gCurTrack_24->f2c == 0) {
-            sSkyClipHeight[i] = gViewRects[m][i].h;
+        if (gCurTrack_24->envType == 0) {
+            sSkyClipHeight[i] = gViewRects[layout][i].h;
         } else {
             sSkyClipHeight[i] = 0;
-            y = gViewRects[m][i].y;
-            /* r and q add the row and column offsets to the base in one go (&gViewRects[m][i] does not match) */
-            r = (Rect *)((u8 *)gViewRects + (m * 64 + i * 16));
-            if (y < r->y + r->h) {
-            yl:
-                p = (ClipStore *)&sSkyClipHeight[i];
-                for (x = r->x; x < r->x + r->w; x += 8) {
-                    if (*(u16 *)((u32)gZBuffer + ((y * gScreenWidth + x) << 1)) > 0xFFEF) {
-                        p->v = y - r->y;
+            y = gViewRects[layout][i].y;
+            /* rect and rect2 add the row and column offsets to the base in one go (&gViewRects[layout][i] does not
+               compile the same) */
+            rect = (Rect *)((u8 *)gViewRects + (layout * 64 + i * 16));
+            if (y < rect->y + rect->h) {
+            next_row:
+                clip = (ClipStore *)&sSkyClipHeight[i];
+                for (x = rect->x; x < rect->x + rect->w; x += 8) {
+                    if (*(u16 *)((u32)gZBuffer + ((y * gScreenWidth + x) << 1)) > ZBUFFER_FAR) {
+                        clip->v = y - rect->y;
                     }
                 }
                 y += 16;
-                if (y < r->y + r->h) goto yl;
+                if (y < rect->y + rect->h) goto next_row;
             }
             sSkyClipHeight[i] += 16;
             if (sSkyPrevClipHeight[i] > 16 && sSkyClipHeight[i] < sSkyPrevClipHeight[i] - 16) {
                 sSkyClipHeight[i] = sSkyPrevClipHeight[i] - 16;
             }
-            q = (Rect *)((u8 *)gViewRects + (m * 64 + i * 16));
-            if (sSkyClipHeight[i] > q->h) {
-                sSkyClipHeight[i] = q->h;
+            rect2 = (Rect *)((u8 *)gViewRects + (layout * 64 + i * 16));
+            if (sSkyClipHeight[i] > rect2->h) {
+                sSkyClipHeight[i] = rect2->h;
             }
-            if (sSkyClipHeight[i] < q->h / 2) {
-                sSkyClipHeight[i] = q->h;
+            if (sSkyClipHeight[i] < rect2->h / 2) {
+                sSkyClipHeight[i] = rect2->h;
             }
         }
         sSkyPrevClipHeight[i] = sSkyClipHeight[i];
     }
 }
 
+/* Scrolls the backdrop with each view's camera: the image repeats every eighth of a turn of yaw (0x2000), and the
+   pitch moves it up and down (lower on Hill Climb). */
 void sky_update_scroll(void)
 {
     s32 i;
-    s32 t;
-    s32 v;
-    s32 n;
+    s32 height;
+    s32 scroll;
+    s32 numViews;
 
     if (gSkyImage != 0) {
-        t = gSkyImage->tex[0].height;
-        if (t == 0) {
-            t = 0x100;
+        height = gSkyImage->tex[0].height;
+        if (height == 0) {
+            height = 0x100;
         }
         i = 0;
         if (i < gNumViews) {
-        n = gNumViews;
+        numViews = gNumViews;
         do {
             sSkyScaleX[i] = 0x80;
             sSkyScaleY[i] = 0x68;
-            v = gCamYaw[i] & 0x1FFF;
+            scroll = gCamYaw[i] & 0x1FFF;
             if (gMirrorMode != 0) {
-                v = 0x2000 - v;
+                scroll = 0x2000 - scroll;
             }
-            sSkyScrollX[i] = (v / 32 - t) & 0xFF;
-            v = gCamPitch[i];
-            v = v / 32;
-            v += 0x80;
+            sSkyScrollX[i] = (scroll / 32 - height) & 0xFF;
+            scroll = gCamPitch[i];
+            scroll = scroll / 32;
+            scroll += 0x80;
             if (gCurTrack == &gTracks[TRACK_HILL_CLIMB]) {
-                v -= 0x50;
+                scroll -= 0x50;
             }
-            sSkyScrollY[i] = v;
+            sSkyScrollY[i] = scroll;
             i++;
-        } while (i < n);
+        } while (i < numViews);
         }
     }
 }
 
-static inline Gfx *drawTex(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gfx *gdl, s32 du, s32 dv,
-                           s32 x0, s32 y0, s32 x1, s32 y1, s32 *flag)
+/* A textured rectangle at (x, y), w x h pixels, clipped to (x0, y0)-(x1, y1): the texture coordinates (u, v) (s10.5)
+   advance by the steps (du, dv) (s5.10 per pixel) over what is cut off at the left and the top. When *texture is
+   set, the strip at that address (256 x 8 CI8) is loaded first and *texture cleared. Returns the display list after
+   it, or `gdl` when nothing is left to draw. The rectangle is written by hand: G_TEXRECT with the corners, then
+   G_RDPHALF_1 (0xE1) with the coordinates and G_RDPHALF_2 (0xF1) with the steps. sky_strip_rect_2 and sky_texrect
+   are the same function, written for their callers to compile the same. */
+static inline Gfx *sky_strip_rect(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gfx *gdl, s32 du, s32 dv,
+                                  s32 x0, s32 y0, s32 x1, s32 y1, s32 *texture)
 {
     if (x1 < x + w) {
         w = x1 - x;
@@ -108,10 +134,10 @@ static inline Gfx *drawTex(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gfx
         y = y0;
     }
     if (w > 0 && h > 0) {
-        if (*flag != 0) {
-            gDPLoadTextureBlock(g++, *flag, G_IM_FMT_CI, G_IM_SIZ_8b, 256, 8, 0,
+        if (*texture != 0) {
+            gDPLoadTextureBlock(g++, *texture, G_IM_FMT_CI, G_IM_SIZ_8b, 256, 8, 0,
                                 G_TX_WRAP | G_TX_NOMIRROR, G_TX_CLAMP, 8, 3, G_TX_NOLOD, G_TX_NOLOD);
-            *flag = 0;
+            *texture = 0;
         }
         {
             Gfx *_g = g++;
@@ -133,8 +159,8 @@ static inline Gfx *drawTex(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gfx
     return gdl;
 }
 
-static inline Gfx *drawTexA(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gfx *gdl, s32 du, s32 dv,
-                           s32 x0, s32 y0, s32 x1, s32 y1, s32 *flag)
+static inline Gfx *sky_strip_rect_2(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gfx *gdl, s32 du, s32 dv,
+                                    s32 x0, s32 y0, s32 x1, s32 y1, s32 *texture)
 {
     if (x1 < x + w) {
         w = x1 - x;
@@ -156,10 +182,10 @@ static inline Gfx *drawTexA(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gf
         return gdl;
     }
     {
-        if (*flag != 0) {
-            gDPLoadTextureBlock(g++, *flag, G_IM_FMT_CI, G_IM_SIZ_8b, 256, 8, 0,
+        if (*texture != 0) {
+            gDPLoadTextureBlock(g++, *texture, G_IM_FMT_CI, G_IM_SIZ_8b, 256, 8, 0,
                                 G_TX_WRAP | G_TX_NOMIRROR, G_TX_CLAMP, 8, 3, G_TX_NOLOD, G_TX_NOLOD);
-            *flag = 0;
+            *texture = 0;
         }
         {
             Gfx *_g = g++;
@@ -181,107 +207,118 @@ static inline Gfx *drawTexA(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gf
     return gdl;
 }
 
-Gfx *sky_draw_strip(s32 a, s32 b, s32 *tex, Gfx *gdl)
+/* Draws the strip of the backdrop that starts at image row `row` in view `view`, twice side by side so that the
+   scrolled image wraps around. The first strip is repeated up to the top of the screen, the last one down to the
+   clip height. */
+Gfx *sky_draw_strip(s32 row, s32 view, s32 *texture, Gfx *gdl)
 {
-    s32 rw, rh, xoff, yoff, tw, th, x0, y0;
+    s32 viewW, viewH, xoff, yoff, tileW, tileH, x0, y0;
     s32 y;
     Gfx *p;
     Gfx *q;
 
-    rh = gViewRects[gNumViews - 1][b].h;
-    rw = gViewRects[gNumViews - 1][b].w;
-    tw = (rw << 7) / sSkyScaleX[b];
-    th = (rh * 4) / sSkyScaleY[b];
-    yoff = (a - sSkyScrollY[b]) * (rh / 2) / sSkyScaleY[b];
-    xoff = sSkyScrollX[b] * (rw / 2) / sSkyScaleX[b];
-    yoff += rh / 2;
-    x0 = gViewRects[gNumViews - 1][b].x;
-    y0 = gViewRects[gNumViews - 1][b].y;
-    q = drawTex(gdl, x0 + xoff - tw, y0 + yoff, tw, th + 1, 0, 0, gdl, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw, y0 + sSkyClipHeight[b] - 1, tex);
-    gdl = drawTex(q, x0 + xoff, y0 + yoff, tw, th + 1, 0, 0, q, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw, y0 + sSkyClipHeight[b] - 1, tex);
-    if (a == 0) {
+    viewH = gViewRects[gNumViews - 1][view].h;
+    viewW = gViewRects[gNumViews - 1][view].w;
+    tileW = (viewW << 7) / sSkyScaleX[view];
+    tileH = (viewH * 4) / sSkyScaleY[view];
+    yoff = (row - sSkyScrollY[view]) * (viewH / 2) / sSkyScaleY[view];
+    xoff = sSkyScrollX[view] * (viewW / 2) / sSkyScaleX[view];
+    yoff += viewH / 2;
+    x0 = gViewRects[gNumViews - 1][view].x;
+    y0 = gViewRects[gNumViews - 1][view].y;
+    q = sky_strip_rect(gdl, x0 + xoff - tileW, y0 + yoff, tileW, tileH + 1, 0, 0, gdl, 0x40000 / tileW,
+                       0x2000 / tileH, x0, y0, x0 + viewW, y0 + sSkyClipHeight[view] - 1, texture);
+    gdl = sky_strip_rect(q, x0 + xoff, y0 + yoff, tileW, tileH + 1, 0, 0, q, 0x40000 / tileW, 0x2000 / tileH,
+                         x0, y0, x0 + viewW, y0 + sSkyClipHeight[view] - 1, texture);
+    if (row == 0) {
         y = y0 + yoff;
         while (y > 0) {
-            y -= th;
+            y -= tileH;
         }
-        for (; y < y0 + yoff; y += th) {
+        for (; y < y0 + yoff; y += tileH) {
             p = gdl;
-            p = drawTexA(p, x0 + xoff - tw, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, (p = gdl = 0, tex));
+            /* the comma expression in the last argument is how this compiles the same */
+            p = sky_strip_rect_2(p, x0 + xoff - tileW, y, tileW, tileH + 1, 0, 0, p, 0x40000 / tileW, 0x2000 / tileH,
+                                 x0, y0, x0 + viewW - 1, y0 + sSkyClipHeight[view] - 1, (p = gdl = 0, texture));
             gdl = p;
-            gdl = drawTex(gdl, x0 + xoff, y, tw, th + 1, 0, 0, gdl, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, tex);
+            gdl = sky_strip_rect(gdl, x0 + xoff, y, tileW, tileH + 1, 0, 0, gdl, 0x40000 / tileW, 0x2000 / tileH,
+                                 x0, y0, x0 + viewW - 1, y0 + sSkyClipHeight[view] - 1, texture);
         }
     }
-    if (a == 0xF8) {
-        for (y = y0 + yoff + th; y < y0 + sSkyClipHeight[b]; y += th) {
+    if (row == SKY_LAST_STRIP) {
+        for (y = y0 + yoff + tileH; y < y0 + sSkyClipHeight[view]; y += tileH) {
             p = gdl;
-            p = drawTexA(p, x0 + xoff - tw, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, (p = gdl = 0, tex));
-            gdl = drawTex(p, x0 + xoff, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, tex);
+            p = sky_strip_rect_2(p, x0 + xoff - tileW, y, tileW, tileH + 1, 0, 0, p, 0x40000 / tileW, 0x2000 / tileH,
+                                 x0, y0, x0 + viewW - 1, y0 + sSkyClipHeight[view] - 1, (p = gdl = 0, texture));
+            gdl = sky_strip_rect(p, x0 + xoff, y, tileW, tileH + 1, 0, 0, p, 0x40000 / tileW, 0x2000 / tileH,
+                                 x0, y0, x0 + viewW - 1, y0 + sSkyClipHeight[view] - 1, texture);
         }
     }
     return gdl;
 }
 
+/* Draws the 2D sky backdrop (SKY_MODE_IMAGE) into every view, strip by strip: point sampled, without perspective
+   correction and with noise dither, which are set back afterwards. */
 Gfx *sky_draw(Gfx *gdl, s32 unused, TexSet *sky)
 {
-    Gfx *g0, *g1, *g2, *g3, *g4, *g5, *g6, *g7, *g8, *q0, *q1, *q2;
-    s32 n;
-    s32 i, j;
-    s32 local;
+    s32 height;
+    s32 row, view;
+    s32 strip;
 
-    n = sky->tex[0].height;
-    if (n == 0) {
-        n = 0x100;
+    height = sky->tex[0].height;
+    if (height == 0) {
+        height = 0x100;
     }
-    g0 = gdl++; ((u32 *)g0)[0] = 0xFD100000; ((u32 *)g0)[1] = (u32)sky->pal;
-    g1 = gdl++; ((u32 *)g1)[0] = 0xE8000000; ((u32 *)g1)[1] = 0;
-    g2 = gdl++; ((u32 *)g2)[0] = 0xF5000100; ((u32 *)g2)[1] = 0x07000000;
-    g3 = gdl++; ((u32 *)g3)[0] = 0xE6000000; ((u32 *)g3)[1] = 0;
-    g4 = gdl++; ((u32 *)g4)[0] = 0xF0000000; ((u32 *)g4)[1] = 0x073FC000;
-    g5 = gdl++; ((u32 *)g5)[0] = 0xE7000000; ((u32 *)g5)[1] = 0;
-    g6 = gdl++; ((u32 *)g6)[0] = 0xE3000C00; ((u32 *)g6)[1] = 0;
-    g7 = gdl++; ((u32 *)g7)[0] = 0xE3001201; ((u32 *)g7)[1] = 0;
-    g8 = gdl++; ((u32 *)g8)[0] = 0xE3001801; ((u32 *)g8)[1] = 0x80;
+    gDPLoadTLUT_pal256(gdl++, sky->pal);
+    gDPSetTexturePersp(gdl++, G_TP_NONE);
+    gDPSetTextureFilter(gdl++, G_TF_POINT);
+    gDPSetColorDither(gdl++, G_CD_NOISE);
 
     if (gInsetViewActive == 0) {
-        for (i = 0; i < n; i += 8) {
-            local = (s32)sky->tex[0].data + i * 0x100;
-            for (j = 0; j < gNumViews; j++) {
-                gdl = sky_draw_strip(i, j, &local, gdl);
+        for (row = 0; row < height; row += 8) {
+            strip = (s32)sky->tex[0].data + row * 0x100;
+            for (view = 0; view < gNumViews; view++) {
+                gdl = sky_draw_strip(row, view, &strip, gdl);
             }
         }
     } else {
+        /* the inset view shows the whole backdrop */
         sSkyClipHeight[1] = gViewRects[1][1].h;
-        for (j = 0; j < gNumViews; j++) {
-            for (i = 0; i < n; i += 8) {
-                local = (s32)sky->tex[0].data + i * 0x100;
-                gdl = sky_draw_strip(i, j, &local, gdl);
+        for (view = 0; view < gNumViews; view++) {
+            for (row = 0; row < height; row += 8) {
+                strip = (s32)sky->tex[0].data + row * 0x100;
+                gdl = sky_draw_strip(row, view, &strip, gdl);
             }
         }
     }
 
-    q0 = gdl++; ((u32 *)q0)[0] = 0xE3001201; ((u32 *)q0)[1] = 0x2000;
-    q1 = gdl++; ((u32 *)q1)[0] = 0xE3000C00; ((u32 *)q1)[1] = 0x00080000;
-    q2 = gdl++; ((u32 *)q2)[0] = 0xE3001801; ((u32 *)q2)[1] = 0;
+    gDPSetTextureFilter(gdl++, G_TF_BILERP);
+    gDPSetTexturePersp(gdl++, G_TP_PERSP);
+    gDPSetColorDither(gdl++, G_CD_MAGICSQ);
     return gdl;
 }
 
+/* The sun's position on screen for sun.c's flares, in view `view` drawn with `mtx`: with a sky image, x from the
+   camera yaw (offset by 0x7AEC) and y from the backdrop's scroll; otherwise a fixed point of the track projected
+   (another one on Mountain Quarry). Returns 1 when it is more than 50 pixels off screen. */
 s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view)
 {
     s32 x, y, z, w;
-    s32 t;
-    s32 m;
+    s32 scale;
+    s32 product;
 
-    if (gSkyMode == 1) {
-        t = (gViewRects[0][0].w << 7) / sSkyScaleX[view];
+    if (gSkyMode == SKY_MODE_IMAGE) {
+        scale = (gViewRects[0][0].w << 7) / sSkyScaleX[view];
         x = (s16)((u16)gCamYaw[0] - 0x7AEC);
-        m = x * t;
-        t = (gViewRects[0][0].h << 2) / sSkyScaleY[view];
-        x = m / 8192;
+        product = x * scale;
+        scale = (gViewRects[0][0].h << 2) / sSkyScaleY[view];
+        x = product / 8192;
         y = gCamPitch[view];
-        y = 45 - y * t / 1024;
+        /* the height from the pitch is computed, then replaced by one from the backdrop's scroll */
+        y = 45 - y * scale / 1024;
         y = 0xB9 - sSkyScrollY[view];
     } else {
-        if (gCurTrack_7 - gTracks_3 == 1) {
+        if (gCurTrack_7 - gTracks_3 == TRACK_MOUNTAIN_QUARRY) {
             if (project_to_screen(300, 0x14, 50, &x, &y, &z, &w, mtx, view)) {
                 return 1;
             }
@@ -299,16 +336,20 @@ s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view)
     return 0;
 }
 
+/* Empty: called by render_init. */
 void sky_init(void)
 {
 }
 
-void sky_reset_clip(void) {
+/* Clears the sky's clip heights (one per view) before a race. */
+void sky_reset_clip(void)
+{
     mem_fill(sSkyClipHeight, 0, 0x10);
 }
 
+/* sky_strip_rect as a function of its own; nothing calls it. */
 Gfx *sky_texrect(Gfx *gdl, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, s32 du, s32 dv,
-                   s32 x0, s32 y0, s32 x1, s32 y1, u32 *flag)
+                   s32 x0, s32 y0, s32 x1, s32 y1, u32 *texture)
 {
     if (x1 < x + w) {
         w = x1 - x;
@@ -327,10 +368,10 @@ Gfx *sky_texrect(Gfx *gdl, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, s32 du, s32
         y = y0;
     }
     if (w > 0 && h > 0) {
-        if (*flag != 0) {
-            gDPLoadTextureBlock(gdl++, *flag, G_IM_FMT_CI, G_IM_SIZ_8b, 256, 8, 0,
+        if (*texture != 0) {
+            gDPLoadTextureBlock(gdl++, *texture, G_IM_FMT_CI, G_IM_SIZ_8b, 256, 8, 0,
                                 G_TX_WRAP | G_TX_NOMIRROR, G_TX_CLAMP, 8, 3, G_TX_NOLOD, G_TX_NOLOD);
-            *flag = 0;
+            *texture = 0;
         }
         {
             Gfx *_g = gdl++;
