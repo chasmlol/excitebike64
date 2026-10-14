@@ -4,6 +4,35 @@
 
 #include "common.h"
 
+/* The driver's output modes (SndDriver.init, getCaps; also softmix.c's sSoftmixFlags). */
+#define SFX_MODE_STEREO     1
+#define SFX_MODE_16BIT      2
+
+/* The highest output rate the driver mixes at, in Hz. */
+#define SFX_MAX_RATE        22050
+
+/* A driver voice's flags (voiceSetFlags, voiceGetFlags, SfxSound.voiceFlags, SoftmixVoice.flags). */
+#define SFX_VOICE_PLAYING   1
+#define SFX_VOICE_LOOPED    2
+
+/* Pool sizes: sSfxSamples (as many as the driver's sample slots) and sSfxSoundPool. */
+#define SFX_NUM_SAMPLES     0x100
+#define SFX_NUM_SOUNDS      0x80
+
+/* SfxSound.flags */
+#define SFX_SOUND_STOP      1   /* stop requested: the sound gives up its voice and ends */
+#define SFX_SOUND_ENDED     2   /* sfx_reap_sounds unlinks it */
+
+/* SfxSound.endCallbackFlags, and the event endCallback is called with. */
+#define SFX_EVENT_END       1
+
+/* Fixed point: SfxSound.position and step are 24.8, fadeVolume and fadeStep 16.16 volumes. */
+#define SFX_POS_SHIFT       8
+#define SFX_FADE_SHIFT      16
+#define SFX_FADE_ONE        0x10000
+
+#define SFX_VOLUME_MAX      0x7F
+
 /* The sound driver: gSfxDriver points at n64snd.c's table, gN64SndDriver (29 slots). sfx.c reaches the mixer only
    through it. */
 typedef struct SndDriver {
@@ -12,9 +41,9 @@ typedef struct SndDriver {
     /* 0x08 */ void (*shutdown)(void);
     /* 0x0C */ s32 (*loadSampleNamed)(u8 *name);
     /* 0x10 */ s32 (*loadSampleIndex)(s32 resId);
-    /* 0x14 */ s32 (*createSample)(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 unk);
+    /* 0x14 */ s32 (*createSample)(u8 *data, u32 length, s32 loopStart, s32 loopEnd, s32 rate);
     /* 0x18 */ void (*freeSample)(s32 sample);
-    /* 0x1C */ void (*getSampleInfo)(s32 sample, s32 *info);    /* length, loop start, loop end, unk_10 */
+    /* 0x1C */ void (*getSampleInfo)(s32 sample, s32 *info);    /* length, loop start, loop end, rate (Hz) */
     /* 0x20 */ void (*setSampleInfo)(s32 sample, s32 *info);
     /* 0x24 */ void (*writeSample)(s32 sample, u8 *data, u32 size);
     /* 0x28 */ void (*voiceSetSample)(s32 voice, s32 sample);
@@ -32,7 +61,7 @@ typedef struct SndDriver {
     /* 0x58 */ void (*echoEnable)(s32 on);
     /* 0x5C */ void (*echoSetLevel)(s32 level);
     /* 0x60 */ void (*echoFree)(void);
-    /* 0x64 */ void (*unk_64)(void);
+    /* 0x64 */ void (*unk_64)(void);                            /* unk_64-unk_6C: empty in n64snd (n64snd_stub1-3) */
     /* 0x68 */ void (*unk_68)(void);
     /* 0x6C */ void (*unk_6C)(void);
     /* 0x70 */ void (*setMute)(s32 on);
@@ -44,7 +73,7 @@ typedef struct SfxSample {
     /* 0x04 */ s32 length;          /* the driver's sample info: */
     /* 0x08 */ s32 loopStart;
     /* 0x0C */ s32 loopEnd;
-    /* 0x10 */ s32 unk_10;
+    /* 0x10 */ s32 unk_10;          /* the sample's own rate in Hz (what the game passes to sfx_play) */
     /* 0x14 */ s32 refCount;        /* -1: locked, never freed (sfx_lock_sample) */
 } SfxSample; /* size 0x18 */
 
@@ -63,14 +92,14 @@ typedef struct SfxSound {
     /* 0x24 */ s32 volume;          /* 0-0x7F */
     /* 0x28 */ s32 pan;
     /* 0x2C */ s32 priority;
-    /* 0x30 */ s32 voiceFlags;      /* as the driver reports them: 1 playing, 2 looped */
+    /* 0x30 */ s32 voiceFlags;      /* SFX_VOICE_*, as the driver reports them */
     /* 0x34 */ s32 fadeStep;        /* added to `fadeVolume` each update */
     /* 0x38 */ s32 fadeVolume;      /* volume << 16 */
-    /* 0x3C */ void (*endCallback)(s32 handle, s32 arg);
-    /* 0x40 */ s32 endCallbackFlags;    /* 1: call endCallback when the sound ends */
+    /* 0x3C */ void (*endCallback)(s32 handle, s32 event);
+    /* 0x40 */ s32 endCallbackFlags;    /* SFX_EVENT_END: call endCallback when the sound ends */
     /* 0x44 */ u32 position;        /* 24.8, kept while the sound has no voice */
     /* 0x48 */ s32 step;            /* position step per output sample, 24.8 */
-    /* 0x4C */ u32 flags;           /* 1: stop requested, 2: ended (sfx_reap_sounds unlinks it) */
+    /* 0x4C */ u32 flags;           /* SFX_SOUND_STOP, SFX_SOUND_ENDED */
 } SfxSound; /* size 0x50 */
 
 /* A streamed sound (sfx_stream_create), linked in sSfxStreams: a ring buffer the game writes to and two driver
