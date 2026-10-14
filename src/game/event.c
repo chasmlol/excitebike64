@@ -1,12 +1,5 @@
 #include "game.h"
 
-#define gDPRaw(pkt, a, b) \
-{ \
-    Gfx *_g = (Gfx *)(pkt); \
-    _g->words.w0 = (a); \
-    _g->words.w1 = (b); \
-}
-
 /* the lesson being ridden */
 #define LESSON (gTutorialLessons[gSeason->round])
 
@@ -1920,7 +1913,7 @@ void *event_draw_position(void *gdl, s32 riderIdx, TextObj *text)
     }
     gdl = font_render(gdl);
     font_reset_queue();
-    /* the place and its suffix glyph ('{' st ... '=' the plain th) */
+    /* the place and its suffix: this font has st, nd, rd and th as the glyphs ':' to '=' */
     buf[0] = ((u8 *)&rider->race.prevPlace)[1] + '1';
     buf[1] = (rider->race.prevPlace < 3) ? ((u8 *)&rider->race.prevPlace)[1] + ':' : '=';
     buf[2] = 0;
