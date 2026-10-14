@@ -4873,8 +4873,7 @@ u32 sEditCamMoving[0xb] = {
     /* 0x010 */ 0x6AB, 0x4000001, 0x10000, 0xFC0006AB,
     /* 0x020 */ 0x1, 0x1F955, 0xFC000001,
 };
-u32 gEditArena = 0xF000F;
-u32 D_800CE270[0x4] = { (u32)&D_800D126C, (u32)&D_800D12DC };
+u32 gEditArena[0x5] = { 0xF000F, (u32)&D_800D126C, (u32)&D_800D12DC };
 u32 gPieceTypes[0x20] = {
     /* 0x000 */ 0x20002, 0x20000, 0, 0xA0002,
     /* 0x010 */ 0x10000, 0x9088, 0, (u32)D_800DA9FC,

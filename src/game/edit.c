@@ -157,7 +157,7 @@ void edit_init(void)
     gEditor->cursorTex = res_load(gEditor->pieceRes, D_800D125C);
     gEditor->cursorModel = res_load(gEditor->pieceRes, D_800D1368);
     gEditor->objectTex = res_load(gEditor->pieceRes, D_800D1370);
-    gEditor->wallTex = res_load(gEditor->pieceRes, *D_800CE270[0]);
+    gEditor->wallTex = res_load(gEditor->pieceRes, *gEditArena.wallTexId);
     gEditor->res170C = res_load(gEditor->pieceRes, D_800D1274);
     if (!(gEditor->flags & 0x6000)) {
         if (gUserTrackLayout != NULL) {
@@ -183,7 +183,7 @@ void edit_init(void)
         gEditor->menu = &sEditMainMenu;
         gEditor->mode = 0;
     }
-    gEditor->gridSize = gEditArena;
+    gEditor->gridSize = &gEditArena.w;
     gEditor->cur = 0;
     gEditor->selType = gPieceTypes;
     gEditor->markStart = 0;

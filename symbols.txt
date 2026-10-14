@@ -2140,10 +2140,9 @@ sEditCamPos_4                         game  0x800CE21C  data        -  sEditCamP
 sEditCamPosFixed                      game  0x800CE228  data      0xc
 sEditCamDelta                         game  0x800CE234  data      0xc
 sEditCamMoving                        game  0x800CE240  data     0x2c
-gEditArena                            game  0x800CE26C  data      0x4
+gEditArena                            game  0x800CE26C  data     0x14
 gEditArena_2                          game  0x800CE26C  data        -  gEditArena
 gEditArena_3                          game  0x800CE26C  data        -  gEditArena
-D_800CE270                            game  0x800CE270  data     0x10
 gPieceTypes                           game  0x800CE280  data     0x80
 gPieceTypes_10                        game  0x800CE280  data        -  gPieceTypes
 gPieceTypes_11                        game  0x800CE280  data        -  gPieceTypes

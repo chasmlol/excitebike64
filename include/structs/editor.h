@@ -216,6 +216,16 @@ typedef struct Editor {
     /* 0x180C */ u8 unk_180C[4];
 } Editor; /* size 0x1810 */
 
+/* gEditArena: the editor's grid and the arena around it. */
+typedef struct EditArena {
+    /* 0x00 */ s16 w;               /* grid size in cells (Editor.gridSize points here) */
+    /* 0x02 */ s16 h;
+    /* 0x04 */ u32 *wallTexId;      /* resource ids (pointers to the id words) */
+    /* 0x08 */ u32 *collisionId;
+    /* 0x0C */ s32 unk_0C;
+    /* 0x10 */ struct CollisionMesh *collision; /* the arena walls, loaded for a race (usrtrk_load_pieces) */
+} EditArena; /* size 0x14 */
+
 /* A user track as edit.c keeps it for a race (usrtrk_layout_from_editor) and as the race gets it
    (usrtrk_load_layout): the user pieces' heights, then the pieces from the start piece on. */
 typedef struct UserTrackPiece {
