@@ -72,20 +72,13 @@ void arned_add_wall_quad(s32 x, s32 z, s32 w, s32 h)
     sArnedWallVtxCount++;
 }
 
-typedef struct {
-    u8 pad[0x170];
-    s32 mode;
-} GState_6;
-
-extern GState_6 *gEditor_4;
-
 Gfx *arned_draw_walls(Gfx *gdl)
 {
     s32 i, j, n;
     TexSet_4 *s;
     Img_2 *t;
 
-    if (gEditor_4->mode == 6) {
+    if (gEditor->mode == EDIT_MODE_USER_PIECE) {
         return gdl;
     }
     {
@@ -285,15 +278,6 @@ typedef struct {
     ObjEnt ent[12];
 } ObjSet;
 
-typedef struct {
-    u8 pad0[0x170];
-    s32 mode;
-    u8 pad174[0x1710 - 0x174];
-    Seg_19 *segs;
-    Model_7 *mdl;
-} Scene;
-
-extern Scene *gEditor_5;
 extern ObjSet *sArnedObjViews_2;
 
 Gfx *arned_draw(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, s32 p8, s32 p9) {
@@ -427,7 +411,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p
                 cell->m0->v = out;
                 n = cell->m0->n;
             }
-            if (cell->m4 != NULL && (gEditor_5->mode != 6 || !(cell->flags & 1)) && (u32)(cell->m4->n + n) < 0x76) {
+            if (cell->m4 != NULL && (gEditor->mode != 6 || !(cell->flags & 1)) && (u32)(cell->m4->n + n) < 0x76) {
                 gDPPipeSync(gdl++);
                 gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
                 gSPClearGeometryMode(gdl++, 0x220004);
@@ -438,7 +422,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p
             }
         }
     }
-    if (p8 != -1 && gEditor_5->mode != 6) {
+    if (p8 != -1 && gEditor->mode != 6) {
         gDPPipeSync(gdl++);
         m = &D_800F4B00[idx];
         mtx_from_angles_pos_scale(m, 0, 0, p8 + 0x4000, p6, 2500, p7, 0x100);
@@ -447,7 +431,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0x80);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF67B);
         gDPPipeSync(gdl++);
-        gdl = prim_build_dl(12, gEditor_5->mdl, &gEditor_5->segs, gdl);
+        gdl = prim_build_dl(12, (Model *)gEditor->cursorModel, (Seg_3 **)&gEditor->cursorTex, gdl);
         gDPPipeSync(gdl++);
         gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     }
@@ -492,7 +476,7 @@ void arned_load_piece_textures(s32 param_1, s32 param_2, s32 param_3)
     s32 *w;
     s32 *q;
     s32 *slot;
-    u8 *p;
+    Editor *p;
 
     cur = sArnedTexSetIdx;
     sArnedPieceTex2 = param_2;
@@ -505,9 +489,9 @@ void arned_load_piece_textures(s32 param_1, s32 param_2, s32 param_3)
             res_load(gEditor->pieceRes, *sArnedTexResIds[param_1]);
             res_set_load_buffer(0);
             p = gEditor;
-            *(s32 *)(((s32 *)*(s32 *)(p + 0x1720))[1] + *sArnedTexResIds[sArnedTexSetIdx] * 4) = 0;
+            *(s32 *)(p->pieceRes[1] + *sArnedTexResIds[sArnedTexSetIdx] * 4) = 0;
             w = sArnedTexResIds[param_1];
-            q = (s32 *)*(s32 *)(p + 0x1720);
+            q = p->pieceRes;
             slot = (s32 *)(*w * 4 + q[1]);
             *slot = *slot & 0xFFFFFFFC;
         }

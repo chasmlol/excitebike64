@@ -88,13 +88,7 @@ typedef struct {
     s32 *txt[3];
 } Hud_5;
 
-typedef struct {
-    u8 pad[0x17FE];
-    s16 sel;
-} Game_34;
-
 extern Hud_5 *gGui_3;
-extern Game_34 *gEditor_6;
 
 Gfx *gui_draw_prompt(Gfx *gdl, s32 arg1, s32 arg2, char *s0, char *s1, char *s2, s32 f1, s32 f2)
 {
@@ -119,7 +113,7 @@ Gfx *gui_draw_prompt(Gfx *gdl, s32 arg1, s32 arg2, char *s0, char *s1, char *s2,
             gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
             spr = (Spr_3 *)((u8 *)gGui_3->tex + 8);
         }
-        if (1 - gEditor_6->sel == i - 1) {
+        if (1 - gEditor->dialogChoice == i - 1) {
             gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, 255);
         } else {
             gDPSetPrimColor(gdl++, 0, 0, 180, 180, 180, 255);
@@ -130,8 +124,8 @@ Gfx *gui_draw_prompt(Gfx *gdl, s32 arg1, s32 arg2, char *s0, char *s1, char *s2,
     }
 
     font_text_create(gGui_3->txt[0], 0x40, 5, 2, 0x21);
-    font_text_create(gGui_3->txt[1], 0x40, 5, gEditor_6->sel == 1 ? 7 : 2, f1 == 0 ? 0x20000021 : 0x21);
-    font_text_create(gGui_3->txt[2], 0x40, 5, gEditor_6->sel == 0 ? 7 : 2, f2 == 0 ? 0x20000021 : 0x21);
+    font_text_create(gGui_3->txt[1], 0x40, 5, gEditor->dialogChoice == 1 ? 7 : 2, f1 == 0 ? 0x20000021 : 0x21);
+    font_text_create(gGui_3->txt[2], 0x40, 5, gEditor->dialogChoice == 0 ? 7 : 2, f2 == 0 ? 0x20000021 : 0x21);
     font_text_add(gGui_3->txt[0], s0);
     font_text_add(gGui_3->txt[1], s1);
     font_text_add(gGui_3->txt[2], s2);

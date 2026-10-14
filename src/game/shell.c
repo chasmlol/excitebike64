@@ -184,11 +184,8 @@ typedef struct {
     s16 h64;
 } Sel_3;
 
-typedef struct { u8 pad0[0x174]; s32 w174; } Ctl_18;
-
 extern Game_27 gGame_54;
 extern Course_2 gTracks_14[];
-extern Ctl_18 *gEditor_3;
 extern Menu sScreens[];
 extern Sel_3 *gSeason_15;
 
@@ -312,8 +309,8 @@ void shell_init(void)
             gGame_54.w0 &= 0xFFF7FFFF;
         }
     }
-    if (gEditor_3 != NULL) {
-        if (gEditor_3->w174 & 0x2000) {
+    if (gEditor != NULL) {
+        if (gEditor->flags & EDIT_PAK_LOAD) {
             D_800F01F8 = 3;
             shell_goto_screen_3(&sScreens[15], 0, 1);
         } else {

@@ -276,7 +276,7 @@ their names say what they hold or where they start.
   speed 0x10, lateral vector 0x14/0x18, curvature 0x1C, bank 0x20, slope 0x24, x/z spline coefficients
   0x2C-0x40; links next 0x46, branch 0x48, previous 0x4A, join 0x4C, alternative 0x4E; half-widths 0x58/0x5C,
   flags 0x64, speed tweak 0x65, lap progress 0x66. `path_init` loads it from the track's resource (`path_load`),
-  from the user track (`gUserTrackPath`) or, for Excite 3D, generates a straight line (`path_generate_straight`);
+  from the user track (`gUserTrackData.path`) or, for Excite 3D, generates a straight line (`path_generate_straight`);
   corner speeds, braking limits and jump speeds are precomputed for the CPU riders. Per bike, `path_update_bike`
   tracks the segment, the lateral offset and progress, the lap (`path_check_lap` at `gPathFinishNode`), triggers and
   the respawn timer. `gPathStartNode` is the starting grid.
@@ -558,7 +558,7 @@ floor, the arena walls and the cursor, plus the camera, viewport and scissor set
   2, type 6). `usrtrk_load_layout` unpacks it into `gUserTrackLayout`, `usrtrk_load_into_editor` into `gEditor`.
 - For a race, `usrtrk_load_pieces` and `usrtrk_build_track` (called from the stadium code) fill `gUserTrackData`:
   two mesh sets of 500x500 cells with rotated vertices and 1-bit textures, the dirt texture, the racing line
-  (`gUserTrackPath`, header 0xAA000003) and the merged collision with a 16x16 hash.
+  (`gUserTrackData.path`, header 0xAA000003) and the merged collision with a 16x16 hash.
 
 ## The LodgeNet build
 
