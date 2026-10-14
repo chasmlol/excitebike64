@@ -4729,12 +4729,6 @@ sTempGaugeTextures_3                  game  0x800F0524  data        -  sTempGaug
 sSoccerMapTexture                     game  0x800F0528  data        -
 sSoccerMapTexture_2                   game  0x800F0528  data        -  sSoccerMapTexture
 gHudTextObjs                          game  0x800F0530  data        -
-gHudTextObjs_2                        game  0x800F0530  data        -  gHudTextObjs
-gHudTextObjs_3                        game  0x800F0530  data        -  gHudTextObjs
-gHudTextObjs_4                        game  0x800F0530  data        -  gHudTextObjs
-D_800F0544                            game  0x800F0544  data        -
-D_800F0548                            game  0x800F0548  data        -
-D_800F054C                            game  0x800F054C  data        -
 gEvent                                game  0x800F05A8  data        -
 gEvent_10                             game  0x800F05A8  data        -  gEvent
 gEvent_11                             game  0x800F05A8  data        -  gEvent
