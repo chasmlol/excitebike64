@@ -5,47 +5,30 @@ typedef struct { u8 pad[0x10]; void *p; } Obj_3;
 extern Obj_3 *sPodiumModel;
 extern Obj_3 *D_800E1B78;
 
-typedef struct Rec_7 {
-    s16 x, y, z, a, b, c;
-} Rec_7;
-
-typedef struct Seg {
-    s32 f00;
-    s32 len;
-    s32 f08;
-    s32 f0c;
-    Rec_7 *data;
-} Seg;
-
-typedef struct Entry_3 {
-    s32 w0;
-    Seg *seg;
-} Entry_3;
-
-extern Entry_3 sPodiumCameraClips[];
+extern PodiumCameraClip sPodiumCameraClips[];
 
 void podium_update_camera(void)
 {
     s32 t = sPodiumFrame;
     s32 n = 0;
-    Rec_7 *p;
+    PodiumCamFrame *p;
     s16 *tp;
     s32 o;
     u16 *ap;
     s32 ang, s, c, A, B, X, Y, as, bs, y2, x2;
 
-    while (t >= sPodiumCameraClips[n].seg->len) {
-        t -= sPodiumCameraClips[n].seg->len;
+    while (t >= sPodiumCameraClips[n].clip->numFrames) {
+        t -= sPodiumCameraClips[n].clip->numFrames;
         n++;
-        if (sPodiumCameraClips[n].w0 == 0) {
+        if (sPodiumCameraClips[n].resId == 0) {
             n--;
-            t = sPodiumCameraClips[n].seg->len - 1;
+            t = sPodiumCameraClips[n].clip->numFrames - 1;
             break;
         }
     }
 
     o = t * 12;
-    p = (Rec_7 *)((u8 *)sPodiumCameraClips[n].seg->data + o);
+    p = (PodiumCamFrame *)((u8 *)sPodiumCameraClips[n].clip->frames + o);
     A = p->x;
     gCamPos_5.x = A;
     B = p->z;
@@ -66,22 +49,18 @@ void podium_update_camera(void)
     gCamPos_5.x = X + x2;
     gCamPos_5.z = y2;
     gCamPos_5.y = p->y + sPodiumPos_2.y;
-    gCamPitch_2 = p->a;
-    gCamRoll_2 = p->b;
-    gCamYaw_2 = p->c + sPodiumYaw;
+    gCamPitch_2 = p->pitch;
+    gCamRoll_2 = p->roll;
+    gCamYaw_2 = p->yaw + sPodiumYaw;
 }
 
-typedef struct { s32 *a; s32 *c; Obj_3 *b; Obj_3 *d; } Rec_8;
-typedef struct { s32 *a; Obj_3 *b; } Rec2;
-
-extern Rec_8 *sPodiumRiderClips[];
-extern Rec2 sPodiumCameraClips_2[];
+extern PodiumRiderClip *sPodiumRiderClips[];
 extern Obj_3 *sPodiumTexture;
 
 void podium_init(void)
 {
     s32 i;
-    Rec_8 *r;
+    PodiumRiderClip *r;
     Obj_3 *o;
 
     gRaceFrame = 0;
@@ -107,18 +86,18 @@ void podium_init(void)
     D_800E1B78 = res_load(D_800E7728, D_800D0E34);
 
     for (i = 0; i < 3; i++) {
-        for (r = sPodiumRiderClips[i]; r->a != 0; r++) {
-            r->b = res_load(D_800E7728, *r->a);
-            r->b->p = (u8 *)r->b + 0x14;
-            if (r->c != 0) {
-                r->d = res_load(D_800E7728, *r->c);
-                r->d->p = (u8 *)r->d + 0x1C;
+        for (r = sPodiumRiderClips[i]; r->poseResId != 0; r++) {
+            r->pose = (PodiumClip *)res_load(D_800E7728, *r->poseResId);
+            r->pose->frames = (u8 *)r->pose + 0x14;
+            if (r->propResId != 0) {
+                r->prop = (PodiumClip *)res_load(D_800E7728, *r->propResId);
+                r->prop->frames = (u8 *)r->prop + 0x1C;
             }
         }
     }
-    for (i = 0; sPodiumCameraClips_2[i].a != 0; i++) {
-        sPodiumCameraClips_2[i].b = res_load(D_800E7728, *sPodiumCameraClips_2[i].a);
-        sPodiumCameraClips_2[i].b->p = (u8 *)sPodiumCameraClips_2[i].b + 0x1C;
+    for (i = 0; sPodiumCameraClips[i].resId != 0; i++) {
+        sPodiumCameraClips[i].clip = (PodiumClip *)res_load(D_800E7728, *sPodiumCameraClips[i].resId);
+        sPodiumCameraClips[i].clip->frames = (u8 *)sPodiumCameraClips[i].clip + 0x1C;
     }
     palmod_register(sPodiumTexture, 0);
 }
@@ -172,10 +151,6 @@ Gfx *podium_draw(Gfx *gdl, s32 x, s32 arg2)
 
 #define LO9C (cam[1])
 
-typedef struct { s32 f0; s32 len; s32 pad8[2]; void *data; } Clip;
-typedef struct { s32 f0; s32 f4; Clip *f8; Clip *fC; } Seg_2;
-typedef struct { s16 x, y, z; Rgb c[15]; u8 pad; } Rec34;
-typedef struct { s16 x, y, z; u8 c[3]; u8 pad[3]; } Rec12;
 
 typedef struct {
     u8 pad0[4];
@@ -197,7 +172,6 @@ typedef struct {
     u8 pad7A6[0x7E0 - 0x7A6];
 } Player_6;
 
-extern Seg_2 *sPodiumRiderClips_2[];
 extern Player_6 gRiders_10[];
 
 static inline void rot(s32 *px, s32 *pz, s32 ang)
@@ -219,7 +193,7 @@ void podium_update(void)
     Spot *e;
     Player_6 *p;
     Bike_2 *b;
-    Rec34 *r;
+    PodiumPoseFrame *r;
     u8 *cp;
     u16 *cam;
 
@@ -246,12 +220,12 @@ void podium_update(void)
         t = sPodiumFrame;
         b = gRiders_10[i].bike;
         k = 0;
-        while (t >= sPodiumRiderClips_2[i][k].f8->len) {
-            t -= sPodiumRiderClips_2[i][k].f8->len;
+        while (t >= sPodiumRiderClips[i][k].pose->numFrames) {
+            t -= sPodiumRiderClips[i][k].pose->numFrames;
             k++;
-            if (sPodiumRiderClips_2[i][k].f0 == 0) {
+            if (sPodiumRiderClips[i][k].poseResId == 0) {
                 k--;
-                t %= sPodiumRiderClips_2[i][k].f8->len;
+                t %= sPodiumRiderClips[i][k].pose->numFrames;
                 if (gDesaturation == 0) {
                     gDesaturation = 1;
                     tunes_queue_crowd(2);
@@ -259,8 +233,8 @@ void podium_update(void)
                 break;
             }
         }
-        { s32 off = t * sizeof(Rec34); r = (Rec34 *)((u8 *)sPodiumRiderClips_2[i][k].f8->data + off); }
-        { Rgb *cc = r->c; for (j = 0; j < 15; j++) {
+        { s32 off = t * sizeof(PodiumPoseFrame); r = (PodiumPoseFrame *)((u8 *)sPodiumRiderClips[i][k].pose->frames + off); }
+        { Rgb *cc = r->rot; for (j = 0; j < 15; j++) {
             s32 *dst = (s32 *)((u8 *)b + j * 0x80 + 0x10);
             s32 x, y, z;
             if (j == 0) dst = (s32 *)((u8 *)b + 0x40);
@@ -282,24 +256,24 @@ void podium_update(void)
         if (k != 0) {
             k = 1;
             t = sPodiumFrame;
-            t -= sPodiumRiderClips_2[i][0].f8->len;
-            while (t >= sPodiumRiderClips_2[i][k].fC->len) {
-                t -= sPodiumRiderClips_2[i][k].fC->len;
+            t -= sPodiumRiderClips[i][0].pose->numFrames;
+            while (t >= sPodiumRiderClips[i][k].prop->numFrames) {
+                t -= sPodiumRiderClips[i][k].prop->numFrames;
                 k++;
-                if (sPodiumRiderClips_2[i][k].f4 == 0) {
+                if (sPodiumRiderClips[i][k].propResId == 0) {
                     k--;
                     if (i == 0) {
-                        t = sPodiumRiderClips_2[i][k].fC->len - 1;
+                        t = sPodiumRiderClips[i][k].prop->numFrames - 1;
                     } else {
-                        t %= sPodiumRiderClips_2[i][k].fC->len;
+                        t %= sPodiumRiderClips[i][k].prop->numFrames;
                     }
                     break;
                 }
             }
-            { s32 off = t * sizeof(Rec12); r = (Rec34 *)((u8 *)sPodiumRiderClips_2[i][k].fC->data + off); }
+            { s32 off = t * sizeof(PodiumPropFrame); r = (PodiumPoseFrame *)((u8 *)sPodiumRiderClips[i][k].prop->frames + off); }
             {
                 s32 *px = &D_800E1BC8[i][0], *pz = &D_800E1BC8[i][2];
-                s32 x = ((Rec12 *)r)->x, z = ((Rec12 *)r)->z;
+                s32 x = ((PodiumPropFrame *)r)->x, z = ((PodiumPropFrame *)r)->z;
                 s32 a = (s32)(LO9C << 16) >> 20;
                 s32 c = gCosTable[a & 0xFFF];
                 s32 s = gCosTable[(a - 0x400) & 0xFFF];
@@ -312,11 +286,11 @@ void podium_update(void)
                 *pz = (zc + xs) >> 14;
                 *px = (xc - zs) >> 14;
             }
-            D_800E1BC8[i][1] = ((Rec12 *)r)->y;
+            D_800E1BC8[i][1] = ((PodiumPropFrame *)r)->y;
             D_800E1BC8[i][0] += sPodiumPos[0];
             D_800E1BC8[i][1] += sPodiumPos[1];
             D_800E1BC8[i][2] += sPodiumPos[2];
-            cp = (u8 *)((Rec12 *)r)->c;
+            cp = (u8 *)((PodiumPropFrame *)r)->rot;
             D_800E1B88[i][0] = cp[0];
             D_800E1B88[i][1] = cp[1];
             D_800E1B88[i][2] = cp[2] + LO9C;

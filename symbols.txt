@@ -1546,9 +1546,7 @@ D_800C2800                            game  0x800C2800  data     0x40
 D_800C2840                            game  0x800C2840  data     0x40
 D_800C2880                            game  0x800C2880  data     0x40
 sPodiumRiderClips                     game  0x800C28C0  data      0xc
-sPodiumRiderClips_2                   game  0x800C28C0  data        -  sPodiumRiderClips
 sPodiumCameraClips                    game  0x800C28CC  data     0x54
-sPodiumCameraClips_2                  game  0x800C28CC  data        -  sPodiumCameraClips
 D_800C2920                            game  0x800C2920  data      0x4
 gRumbleResetRequest                   game  0x800C2924  data      0x4
 sEepromType                           game  0x800C2928  data      0x4
