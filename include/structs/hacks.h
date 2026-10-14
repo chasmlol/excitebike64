@@ -24,11 +24,13 @@ typedef struct TrackHack {
 #define GRAVEL_PIT_NUM_MODELS   4
 #define GRAVEL_PIT_ITEM_LENGTH  11500   /* mm of line per item */
 
+/* hack_gravel_pit_init lays the line through the middle of the data's two points, in their direction, count items
+   long, at the ground height of the middle. */
 typedef struct GravelPitMover {
-    /* 0x00 */ s32 lineX0, lineZ0;      /* the line as the data gives it: its direction and middle count */
+    /* 0x00 */ s32 lineX0, lineZ0;      /* the two points of the data */
     /* 0x08 */ s32 lineX1, lineZ1;
-    /* 0x10 */ Vec3i start;             /* hack_gravel_pit_init: the line through the middle, count items long, at */
-    /* 0x1C */ Vec3i end;               /* the ground height of the middle */
+    /* 0x10 */ Vec3i start;             /* the line's ends */
+    /* 0x1C */ Vec3i end;
     /* 0x28 */ s32 count;               /* items on the line, 3 at most */
     /* 0x2C */ s32 section;             /* the track section (gGroundArea) of the middle */
     /* 0x30 */ u16 angle;               /* the line's direction */
