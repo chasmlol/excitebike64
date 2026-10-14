@@ -579,23 +579,37 @@ void shell_records_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *
 #define BT gPadInput_2[pad]
 #define PRESSED_2(pad, m) ((gPadInput_2[pad] & (m)) && !(gPadInputPrev_2[pad] & (m)))
 
+/* The text entry keyboard (gKeyboardKeys): 8 keys a row, 5 rows. The cursor moves in 0-799 on both axes, a key
+   being 100 wide and 160 high. */
+#define KEYBOARD_COLUMNS 8
+#define KEY_DEL          38
+#define KEY_OK           39
+#define KEY_CURSOR_RANGE 800
+#define CHEAT_CODE_LEN   10
+#define INITIALS_LEN     3
+#define NUM_CHEATS       14 /* sCheatTable */
+#define CHEAT_DEBUG      2  /* sets GAME_FLAG_DEBUG instead of its bit of sCheatMask */
+
 typedef struct {
     u8 c[3];
-} Trip;
+} Initials;
 
+/* Cheat code and initials entry: the stick or the D-pad moves over the keyboard, A types the key (Del and OK
+   included), B deletes. A cheat code toggles its cheat; initials go to the race's records (gEvent.record) and
+   the player's initials, then to the next player who set a record. */
 void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
     s32 isCheat;
     s32 pad;
-    s32 sel;
+    s32 player;
     s32 found;
     s32 i;
-    s32 snd;
-    s32 b;
-    s32 old;
-    s32 lo, hi, lo2, hi2;
-    u8 *p;
-    u8 *q;
-    s32 m;
+    s32 sound;
+    s32 pressed;
+    s32 oldKey;
+    s32 minX, maxX, minY, maxY;
+    u8 *code;
+    u8 *name;
+    s32 c;
 
     isCheat = screen->type == SCREEN_TYPE_CHEAT_ENTRY;
     if (++gGame.blinkTimer == 120) {
@@ -604,40 +618,41 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
     if (isCheat) {
         pad = 0;
     } else {
-        sel = gGame.recordPlayer[gGame.entryRecord];
-        pad = gGame.playerPad[sel];
+        player = gGame.recordPlayer[gGame.entryRecord];
+        pad = gGame.playerPad[player];
     }
-    if ((u32)(gGame.screenState - 0x11) < 2) {
-        if (buttons[pad] & 0x10) {
+    if ((u32)(gGame.screenState - SCREEN_STATE_CHEAT_ACCEPTED) < 2) {
+        /* the cheat's result: A goes back to the main menu */
+        if (buttons[pad] & INPUT_A) {
             shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 0);
         }
         return;
     }
-    b = buttons[pad];
-    if (b & 0x10) {
+    pressed = buttons[pad];
+    if (pressed & INPUT_A) {
         found = 0;
-        if (gGame.keyIndex == 0x26 && gGame.nameLen == 0) {
-            snd = MENU_SOUND_ERROR;
-        } else if (isCheat && gGame.keyIndex == 0x27) {
+        if (gGame.keyIndex == KEY_DEL && gGame.nameLen == 0) {
+            sound = MENU_SOUND_ERROR;
+        } else if (isCheat && gGame.keyIndex == KEY_OK) {
             {
-                for (i = 0; i < 14; i++) {
-                    p = (u8 *)sCheatTable[i].code;
-                    q = gGame.name;
+                for (i = 0; i < NUM_CHEATS; i++) {
+                    code = (u8 *)sCheatTable[i].code;
+                    name = gGame.name;
                 loop:
-                    m = *p;
-                    if (m == *q) {
-                        if (m == 0) {
+                    c = *code;
+                    if (c == *name) {
+                        if (c == 0) {
                             found = 1;
-                            m = 1 << i;
+                            c = 1 << i;
                             gGame.cheatEntered = i;
-                            if (m == 4) {
-                                gGame.flags ^= 0x20000000;
+                            if (c == 1 << CHEAT_DEBUG) {
+                                gGame.flags ^= GAME_FLAG_DEBUG;
                             } else {
-                                sCheatMask ^= m;
+                                sCheatMask ^= c;
                             }
                         } else {
-                            p++;
-                            q++;
+                            code++;
+                            name++;
                             goto loop;
                         }
                     }
@@ -645,18 +660,18 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
                         goto ok;
                     }
                 }
-                snd = MENU_SOUND_ERROR;
+                sound = MENU_SOUND_ERROR;
             }
         } else {
         ok:
-            snd = MENU_SOUND_SELECT;
+            sound = MENU_SOUND_SELECT;
         }
-        snd_play_menu_sound(snd);
-        if (gGame.keyIndex == 0x26) {
+        snd_play_menu_sound(sound);
+        if (gGame.keyIndex == KEY_DEL) {
             if (gGame.nameLen != 0) {
                 gGame.name[gGame.nameLen--] = 0;
             }
-        } else if (gGame.keyIndex == 0x27) {
+        } else if (gGame.keyIndex == KEY_OK) {
             if (isCheat) {
                 if (found) {
                     gGame.screenState = SCREEN_STATE_CHEAT_ACCEPTED;
@@ -665,20 +680,22 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
                 }
                 return;
             }
+            /* the same initials for the player's other records of the race */
             for (i = gGame.entryRecord + 1; i < 4; i++) {
                 if (gGame.recordPlayer[i] == gGame.recordPlayer[gGame.entryRecord]) {
-                    *(Trip *)gEvent.record.initials[i] = *(Trip *)gGame.name;
+                    *(Initials *)gEvent.record.initials[i] = *(Initials *)gGame.name;
                     if (i == 3) {
                         gGame.bestLapPlayer = gGame.recordPlayer[i];
                     }
                     gGame.recordPlayer[i] = -1;
                 }
             }
-            { s32 k = gGame.entryRecord; *(Trip *)gEvent.record.initials[k] = *(Trip *)gGame.name; }
+            { s32 k = gGame.entryRecord; *(Initials *)gEvent.record.initials[k] = *(Initials *)gGame.name; }
             {
-                Trip *t = (Trip *)gGame.playerInitials;
-                t[sel] = *(Trip *)gGame.name;
+                Initials *initials = (Initials *)gGame.playerInitials;
+                initials[player] = *(Initials *)gGame.name;
             }
+            /* the next player with a record */
             for (i = gGame.entryRecord + 1; i < 4; i++) {
                 if (gGame.recordPlayer[i] != gGame.recordPlayer[gGame.entryRecord] && gGame.recordPlayer[i] != -1) {
                     gGame.entryRecord = i;
@@ -688,15 +705,16 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
             if (i < 4) {
                 s32 k = gGame.recordPlayer[gGame.entryRecord];
                 if (gGame.playerInitials[k][0] != 0) {
-                    Trip *t = (Trip *)gGame.playerInitials;
-                    *(Trip *)gGame.name = t[k];
+                    /* the player's initials of before, the cursor on OK */
+                    Initials *initials = (Initials *)gGame.playerInitials;
+                    *(Initials *)gGame.name = initials[k];
                     gGame.name[3] = 0;
                     gGame.nameLen = strlen(gGame.name);
-                    gGame.keyCursorX = 0x31F;
-                    gGame.keyCursorY = 0x31F;
-                    gGame.keyIndex = 0x27;
+                    gGame.keyCursorX = KEY_CURSOR_RANGE - 1;
+                    gGame.keyCursorY = KEY_CURSOR_RANGE - 1;
+                    gGame.keyIndex = KEY_OK;
                 } else {
-                    gGame.name[0] = 0x41;
+                    gGame.name[0] = 'A';
                     gGame.name[1] = 0;
                     gGame.name[2] = 0;
                     gGame.name[3] = 0;
@@ -706,81 +724,84 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
                     gGame.keyIndex = 0;
                 }
                 {
-                    Pic *t = screen->bg;
+                    Pic *bg = screen->bg;
                     screen->bg = (Pic *)gGame.otherBg;
-                    gGame.otherBg = (Img *)t;
+                    gGame.otherBg = (Img *)bg;
                 }
                 return;
             }
             shell_goto_screen(screen->items->target, 0, 0);
         } else {
-            s32 n = (s16)++gGame.nameLen;
-            if (n >= (isCheat ? 10 : 3)) {
-                gGame.keyCursorX = 0x31F;
-                gGame.keyCursorY = 0x31F;
-                gGame.keyIndex = 0x27;
+            /* a character: the cursor goes to OK once the name is full */
+            s32 len = (s16)++gGame.nameLen;
+            if (len >= (isCheat ? CHEAT_CODE_LEN : INITIALS_LEN)) {
+                gGame.keyCursorX = KEY_CURSOR_RANGE - 1;
+                gGame.keyCursorY = KEY_CURSOR_RANGE - 1;
+                gGame.keyIndex = KEY_OK;
             }
         }
         return;
     }
-    if (b & 0x20) {
+    if (pressed & INPUT_B) {
         if (gGame.nameLen != 0) {
             gGame.name[gGame.nameLen - 1] = gGame.name[gGame.nameLen];
-            snd = MENU_SOUND_SELECT;
+            sound = MENU_SOUND_SELECT;
             gGame.name[gGame.nameLen--] = 0;
         } else {
-            snd = MENU_SOUND_ERROR;
+            sound = MENU_SOUND_ERROR;
         }
-        snd_play_menu_sound(snd);
+        snd_play_menu_sound(sound);
         return;
     }
-    old = gGame.keyIndex;
-    if (gGame.nameLen < (isCheat ? 10 : 3)) {
-        s32 x, v;
-        s32 col, row;
-        lo = 0;
-        lo2 = lo;
-        hi = 0x320;
-        hi2 = hi;
-        gGame.keyCursorX += (BT & 0xC) ? ((BT & 8) ? ((BT >> 24) & 0xF) : -((BT >> 24) & 0xF)) : 0;
-        if (PRESSED_2(pad, 0x2000)) {
+    oldKey = gGame.keyIndex;
+    if (gGame.nameLen < (isCheat ? CHEAT_CODE_LEN : INITIALS_LEN)) {
+        /* the stick moves the cursor by how far it is pushed, the D-pad a key at a time; it wraps around */
+        s32 cursorX, cursorY;
+        minX = 0;
+        minY = minX;
+        maxX = KEY_CURSOR_RANGE;
+        maxY = maxX;
+        gGame.keyCursorX += (BT & (INPUT_LEFT | INPUT_RIGHT)) ? ((BT & INPUT_RIGHT) ? ((BT >> 24) & 0xF) : -((BT >> 24) & 0xF)) : 0;
+        if (PRESSED_2(pad, INPUT_DPAD_LEFT)) {
             gGame.keyCursorX -= 100;
         }
-        if (PRESSED_2(pad, 0x4000)) {
+        if (PRESSED_2(pad, INPUT_DPAD_RIGHT)) {
             gGame.keyCursorX += 100;
         }
-        if (gGame.keyCursorX >= hi) {
-            gGame.keyCursorX = lo;
-        } else if (gGame.keyCursorX < lo) {
-            gGame.keyCursorX = hi - 1;
+        if (gGame.keyCursorX >= maxX) {
+            gGame.keyCursorX = minX;
+        } else if (gGame.keyCursorX < minX) {
+            gGame.keyCursorX = maxX - 1;
         }
-        gGame.keyCursorY -= (BT & 3) ? ((BT & 1) ? ((s32)((u32)BT >> 28) * 3 >> 1) : (-(s32)((u32)BT >> 28) * 3) / 2) : 0;
-        if (PRESSED_2(pad, 0x800)) {
-            gGame.keyCursorY -= 0xA0;
+        gGame.keyCursorY -= (BT & (INPUT_UP | INPUT_DOWN)) ? ((BT & INPUT_UP) ? ((s32)((u32)BT >> 28) * 3 >> 1) : (-(s32)((u32)BT >> 28) * 3) / 2) : 0;
+        if (PRESSED_2(pad, INPUT_DPAD_UP)) {
+            gGame.keyCursorY -= 160;
         }
-        if (PRESSED_2(pad, 0x1000)) {
-            gGame.keyCursorY += 0xA0;
+        if (PRESSED_2(pad, INPUT_DPAD_DOWN)) {
+            gGame.keyCursorY += 160;
         }
-        if (gGame.keyCursorY >= hi2) {
-            gGame.keyCursorY = lo2;
-        } else if (gGame.keyCursorY < lo2) {
-            gGame.keyCursorY = hi2 - 1;
+        if (gGame.keyCursorY >= maxY) {
+            gGame.keyCursorY = minY;
+        } else if (gGame.keyCursorY < minY) {
+            gGame.keyCursorY = maxY - 1;
         }
-        col = gGame.keyCursorX;
-        row = gGame.keyCursorY;
-        gGame.keyIndex = col / 100 + row / 160 * 8;
-    } else if (buttons[pad] & 0xC) {
-        if (gGame.keyIndex == 0x27) {
-            gGame.keyCursorX = 0x258;
-            gGame.keyCursorY = 0x31F;
-            gGame.keyIndex = 0x26;
+        cursorX = gGame.keyCursorX;
+        cursorY = gGame.keyCursorY;
+        gGame.keyIndex = cursorX / 100 + cursorY / 160 * KEYBOARD_COLUMNS;
+    } else if (buttons[pad] & (INPUT_LEFT | INPUT_RIGHT)) {
+        /* the name is full: left and right go between Del and OK */
+        if (gGame.keyIndex == KEY_OK) {
+            gGame.keyCursorX = 600;
+            gGame.keyCursorY = KEY_CURSOR_RANGE - 1;
+            gGame.keyIndex = KEY_DEL;
         } else {
-            gGame.keyCursorX = 0x31F;
-            gGame.keyCursorY = 0x31F;
-            gGame.keyIndex = 0x27;
+            gGame.keyCursorX = KEY_CURSOR_RANGE - 1;
+            gGame.keyCursorY = KEY_CURSOR_RANGE - 1;
+            gGame.keyIndex = KEY_OK;
         }
     }
-    if (gGame.keyIndex < 0x26) {
+    /* the key under the cursor shows as the next character */
+    if (gGame.keyIndex < KEY_DEL) {
         if (strlen(gGame.name) == 0) {
             gGame.name[1] = 0;
         }
@@ -788,7 +809,7 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
     } else {
         gGame.name[gGame.nameLen] = 0;
     }
-    if (old != gGame.keyIndex) {
+    if (oldKey != gGame.keyIndex) {
         snd_play_menu_sound(MENU_SOUND_MOVE);
     }
 }
