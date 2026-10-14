@@ -87,7 +87,7 @@ screenshot dump to `e:\log\scr*.raw` whose file writes are gone.
 
 ## Input
 
-The game input word (`gPadInput[4]`, and per rider at rider+0x5B0):
+The game input word (`gPadInput[4]`, and per rider in `Rider.input`):
 
 | bits | meaning |
 |---|---|
@@ -137,11 +137,10 @@ drawn by arngfx.c; 1 outdoor, tubegfx.c; 2 desert, desgfx.c) and the replay came
 | 7 | Long Island, NY | 16 | Los Angeles, CA | 25 | Desert |
 | 8 | Congo Course | 17 | Construction Yard | 26 | Tutorial |
 
-**Riders**: `gRiders` (8 x 0x7E0 bytes, below) is the simulation state; `gRiderGfx` (8 x 0xA80) the render side:
-texture sets, rider and bike palettes, the rider's colour at +0x21C, body display lists skinned on the 15-bone
-`gRiderSkelTemplate`, six bike-part display lists on the 10-bone `gBikeSkelTemplate`, matrices, and the ponytail
-nodes at +0xA48. `gRiderAlpha` holds per-rider transparency (0x80 for the ghost). `gRiderStandings` is the race
-order.
+**Riders**: `gRiders` (8 `Rider`s of 0x7E0 bytes, below) is the simulation state; `gRiderGfx` (8 x 0xA80) the render
+side: texture sets, rider and bike palettes, the rider's colour at +0x21C, body display lists skinned on the 15-bone
+`gRiderSkelTemplate`, six bike-part display lists on the 10-bone `gBikeSkelTemplate`, matrices, and the ponytail nodes
+at +0xA48. `gRiderAlpha` holds per-rider transparency (0x80 for the ghost). `gRiderStandings` is the race order.
 
 **Race**: `gRacePhase` runs 0-3 (intro: track preview, laps), 4 (fade in), 5 (racing), 6 (fade out requested by
 `event_request_exit`) and 7 (leave or restart). `gEvent` (`Event`, include/structs/race.h) holds the rules state of
@@ -155,7 +154,7 @@ the running event:
 - +0x68/+0x6A soccer scores, +0x70 tutorial action.
 
 Other shared globals: `gFrameCounter` (retraces), `gRaceFrame` (frames of the race), `gPhysDeltaTime` (ticks times
-the time scale / 60), `gSurfaceTable` (16 ground surfaces; colours at +0x2C/+0x30), `gPathNodes` (the
+the time scale / 60), `gSurfaceTable` (16 ground surfaces, `Surface`), `gPathNodes` (the
 racing line, path.c), the camera output `gCamPos`/`gCamPitch`/`gCamRoll`/`gCamYaw`, `gNumViews` and `gViewRects`
 (split screen), `gCheatFlags` and `gDrawFlags`.
 
@@ -168,8 +167,10 @@ Entering a code in the front end toggles a bit of `sCheatMask`; Debug Mode sets 
 Mud, ClrScrn, Collision, Vtx Wind, Hud.
 
 **Structures**: include/structs.h declares the types several source files share; the named structures of the game's
-subsystems are in include/structs/ (119 structs in 31 headers, which structs.h includes):
+subsystems are in include/structs/ (135 structs in 33 headers, which structs.h includes):
 
+- the riders: rider.h (`Rider` and its parts, the skeletons, the sphere trees, the animations, the ponytail; the
+  section below) and surface.h (`Surface`, the ground surfaces);
 - the track and what is drawn on it: model.h (`PrimModel`, the compact models prim.c compiles; `TexSet`, texture
   sets), track.h (`TrackModelList` of sections, objects and water; `CollGrid`, a section's ground triangles;
   `WallMesh`, the wall mesh, which UsrTrk.c also builds for a user track; `SurfacePoly`; `Instance`), camera.h
@@ -187,39 +188,46 @@ subsystems are in include/structs/ (119 structs in 31 headers, which structs.h i
 
 ## The rider struct
 
-`gRiders`, 8 entries of 0x7E0 bytes. Positions are in millimetres (s32) for drawing and in metres (float) for the
-physics. The C declares it as `Rider` in include/structs/rider.h, with `RigidBody`, `Wheel`, `RiderEngine`,
-`RiderRace`, the skeletons (`Bone`), the sphere trees (`CollideNode`), the animations (`RiderAnim`) and the
-ponytail (`PonytailNode`); include/structs/surface.h has the ground surfaces the wheels point at.
+`gRiders`: 8 `Rider`s of 0x7E0 bytes, declared in include/structs/rider.h. Positions are in millimetres (s32) for
+drawing and in metres (float) for the physics; s32 and s16 angles are 0x10000 per turn.
 
-| offset | field |
+| offset | fields |
 |---|---|
-| 0x000 | bike render position (s32 mm); 0x00C rider-body render position when thrown off |
-| 0x018, 0x024 | Euler angles for rendering and from the physics quaternion (0x022 s16 yaw) |
-| 0x030 | steering; 0x038/0x03C suspension compression for rendering |
-| 0x044 | crash state: 0 riding, 1 crashed, 2 rider clear of the bike |
-| 0x045 | pending crash: positive = crash on landing, negative = now; 0x19 backwards, 0x1C forwards, 0x1F/0x22 side |
-| 0x048 | bike rigid body (0x184 bytes): position 0x48, velocity 0x54, acceleration 0x60, quaternion 0x78, angular velocity 0x88, angular acceleration 0x94, matrix 0xA0 (rows right 0xA0, up 0xAC, forward 0xB8), sphere tree 0xC4, contact points 0xC8, mass 0x1BC, inertia 0x1C0, type 0x1C4 (0 human, 1 CPU, 2 crashed), owner 0x1C8 |
-| 0x1CC | rider rigid body, same layout (the thrown rider): quaternion 0x1FC, matrix 0x224, tree 0x248, mass 0x340 (90), type 0x348 (3) |
-| 0x370 | render quaternion; 0x38C trick quaternion, offset 0x39C, blend 0x3A8 |
-| 0x3C8 | race-progress key; 0x3D0 s8 current trick or animation (-1 none); 0x3FF finish-celebration state |
-| 0x412-0x41D | state bytes: 0x414 wheelie balance, 0x416 wheelie timer, 0x419/0x41A left/right foot out, 0x41B power slide, 0x41C hard turn, 0x41D no collisions (ghost, respawn) |
-| 0x420 | speed; 0x424 forward speed; 0x428 speed cap after a crash; 0x430 local angular velocity |
-| 0x43C | velocity at the crash; 0x448 rear drive force; 0x44C time scale |
-| 0x454, 0x4F8 | rear and front wheel, 0xA4 bytes each: +0x4 air counter, +0x8 tire force, +0x1C spring force, +0x28 suspension length, +0x40 contact point, +0x68 brake torque, +0x6C ground normal, +0x78/+0x84 lateral and longitudinal axes, +0x90 surface (`gSurfaceTable` entry), +0x98 wheel speed, +0x9C slip, +0xA0 grip |
-| 0x5A0 | steering angle (radians); 0x5A8/0x5AA camera mode (saved, current) |
-| 0x5B0, 0x5B4 | input word, last frame's; 0x5B8/0x5BC frame Z was pressed / released; 0x5C0 frames R held (+) or released (-) |
-| 0x5CC | landing assist; 0x5CD rough-landing timer; 0x5CF dirt-spray level; 0x5D0/0x5D2 s8 steer and lean input |
-| 0x620/0x621 | blink count and timer; 0x624 crash timer |
-| 0x628 | track segment (path node); 0x62C progress along it; 0x638 lateral offset |
-| 0x658/0x65C | bike and rider skeleton copies; 0x662 grid lane; 0x668 celebration animation; 0x690 flags (0x10 finished: brake automatically) |
-| 0x6E8 | CPU-controlled (humans become CPU riders after the finish); 0x6E9 reversing; 0x6ED lap counter |
-| 0x6F4-0x734 | landing prediction: time, point, normal, track nodes |
-| 0x738/0x73C | pitch control in the air; 0x744 frames airborne (negative on the ground) |
-| 0x748-0x758 | jump distance: take-off position 0x74C, distance 0x758; 0x768 landing impact; 0x774 landing frame |
-| 0x784 | [8] frame of the last contact with each other rider |
-| 0x7A4 | frozen; 0x7A8 award or event flag; 0x7A9 grid slot |
-| 0x7B4-0x7D8 | handling stats: 0x7B4 weight (collision mass scale), 0x7B8 landing, 0x7BC handling, 0x7C0 turbo, 0x7C4 air turns, 0x7C8 air float, 0x7D0 turn radius, 0x7D8 power |
+| 0x000 | `drawPos` bike render position; 0x00C `drawBodyPos` the thrown rider's |
+| 0x018 | `drawRot` render angles (from `drawQuat`), 0x024 `rot` angles of the bike body; 0x030 `drawSteer`, 0x034 `heading`; 0x038/0x03C `drawSuspFront`/`drawSuspRear` suspension for rendering |
+| 0x044 | `crashState`: 0 riding, 1 crashed, 2 rider clear of the bike; 0x045 `pendingCrash`: > 0 crash on landing, < 0 now (0x19 backwards, 0x1C forwards, 0x1F/0x22 sideways) |
+| 0x048 | `bike` (`RigidBody`, 0x184 bytes): `pos`, `vel`, `acc`, `smoothPos` (extrapolated for far CPU riders), `quat` (w, x, y, z), `angVel`, `angAcc`, the matrix rows `right`, `up`, `fwd`, the sphere `tree`, 20 `contacts`, `mass`, `inertia`, `type` (0 human bike, 1 CPU bike, 2 crashed bike, 3 rider, 4 ball), `hitTimer`, `owner` |
+| 0x1CC | `body`: the thrown rider, the same `RigidBody` (mass 90, type 3); the soccer ball is one too (`gSoccerBall`) |
+| 0x350 | `sparkTimer`, `sparkDir`; 0x370 `drawQuat`; 0x38C `trickQuat`, `trickOffset`, `trickBlend` |
+| 0x3AC | animation: `animFrame` (8.8), `animSpeed`, `animHold`, `trickCount`, `headYaw`; 0x3C4 `stuntScore`; 0x3C8 `raceKey` (race order) |
+| 0x3D0 | `anim` (current trick or animation in `gRiderAnims`, -1 none), `prevAnim`, `trick`, `queuedTrick`, the stick history, `trickHist`, `trickList` |
+| 0x3FE | `pipTimer` (stunt replay inset); 0x3FF `finishState`; 0x400 `celebrationTimer`; 0x402 `checkpoint`, 0x404 `checkpointDist` (desert) |
+| 0x410 | `crestCrouch`, `wheelieBalance`, `wheelieTimer`, `crestAhead`, `leftFootOut`/`rightFootOut`, `powerSlide`, `hardTurn`, `noCollide` (ghost, respawn) |
+| 0x420 | `speed`, `fwdSpeed`, `crashSpeedCap`, `laneOffset`, `localAngVel`, `crashVel`, `driveForce` (rear wheel), `timeScale`, `aiSkill` |
+| 0x454, 0x4F8 | `rearWheel`, `frontWheel` (`Wheel`, 0xA4 bytes): `airTicks`, tire `force`, `springForce`, `suspLength`, `groundDist`, `bump`, `contact`, `brakeTorque`, ground `normal`, `latAxis`/`lonAxis`, `surface` (its `gSurfaceTable` entry), `spin`, `slip`, `grip` |
+| 0x5A0 | `steer` (radians); 0x5A8/0x5AA `savedCamMode`/`camMode` (`gCamModes`) |
+| 0x5B0 | `input`, `prevInput` (the input word above); `turboPressFrame`/`turboReleaseFrame`, `rHeld` (frames R held, or released if negative) |
+| 0x5CC | `landingAssist`, `roughLanding`, `dirtSpray`; 0x5D0/0x5D2 `stickX`/`stickY`; input histories up to 0x61F |
+| 0x620 | `blinkCount`, `blinkTimer`; 0x624 `crashTimer` |
+| 0x628 | `segment` (path node), `segmentDist`, `distToGo`, `progressSpeed`, `lateral` (offset from the racing line), `segmentT` |
+| 0x644 | `engine` (`RiderEngine`: rpm, turbo heat, torque, gear, throttle); 0x658/0x65C `bikeSkel`/`riderSkel` |
+| 0x660 | `race` (`RiderRace`: lap, place, finishing place, gap, lap times, finish time); 0x690 `flags` (0x8 out of the race, 0x10 finished: brake automatically); 0x69C `timeLimit`; 0x6B2 `bestSegment` |
+| 0x6E8 | `isCpu` (humans become CPU riders after the finish), `reversing`, `pathSearch`, `landingPick`, `lapAdjust`, `wrongWay` |
+| 0x6F0 | landing prediction: `takeoffVelY`, `landingTime`, and two candidates (time, point, normal, path node) |
+| 0x738 | `airPitch`, `airPitchInput`; 0x744 `airFrames` (negative on the ground); 0x748 `jumpState`, `takeoffPos`, `jumpDist` |
+| 0x764 | `impactFlags`, `landingImpact`, `landingFrame`; 0x780 `surfaceIdx`; 0x784 `contactFrame[8]` (the last contact with each other rider) |
+| 0x7A4 | `frozen`, `inactive`, `laneBlocked`, `standing` (index in `gRiderStandings`), `fistPump`, `gridSlot`, `laneChange`; 0x7AC `offTrackTimer`; 0x7B0 `spawnFrame` |
+| 0x7B4 | handling stats from `sRiderStatsTable`: `weight` (collision mass scale), `landing`, `handling`, `turbo`, `airTurn`, `airFloat`, `turnRadius`, `power` |
+
+What hangs off a rider: `bikeSkel` and `riderSkel` are copies of `gBikeSkelTemplate` (`BikeSkeleton`, 10 bones) and
+`gRiderSkelTemplate` (`RiderSkeleton`, 15) made of 0x80-byte `Bone`s (parent, local position and rotation, world
+position and rotation, angles); `rider_update_pose` fills `sRiderIkTargets` (`RiderIkTargets`: hands, feet, hips)
+for `rider_apply_ik`. A body's `tree` is a bounding-sphere tree of `CollideNode`s that collide.c builds from
+`CollideSphereDesc` tables (`sBikeSphereTreeDesc`, `sRiderSphereDesc`). `gRiderAnims` (`RiderAnim`, indexed by
+`anim`) gives each trick and animation its body and root `AnimClip`s, its button glyphs, name, riders, points and
+announcer clip. The ponytail is a chain of four `PonytailNode`s per rider, in `gRiderGfx`. The ground surfaces the
+wheels point at are `Surface`s (include/structs/surface.h): name, drag, grip, bumps, flags, three colours and a
+rolling sound.
 
 ## Source files
 
@@ -318,27 +326,27 @@ their names say what they hold or where they start.
 
 ### Bikes and riders
 
-- **bikenew.c**: the bike and rider simulation. `bikes_init` sets up the eight riders (skeleton buffers, sphere
-  trees, grid places) and copies each rider's handling profile from `sRiderStatsTable` (8 profiles; debug names
-  lightweight, fatboy, english jim, duke of dirt, tomboy, standard, trickster) into rider+0x7B4. `bikes_update`
-  copies the input words into the riders and runs `bike_update` once per 60 Hz tick (CPU riders far from any view
-  take one double step every other frame). A tick: input (`bike_process_input`), wheelie, jumps and air control,
-  drive and brakes, tire constraints and traction, the sum of forces, integration, suspension (`bike_update_suspension`,
-  wheel ground search `bike_wheel_find_ground`) and the render pose. Constants: gravity 14.7, spring 15000, damper
-  2200, bike mass 250, rider mass 90. `sBikeTune` is a debug tuning table (float, sldown, lane chg, rmp bst,
-  landing, pitch, gravity, rate, damping, power); mode 6 uses its spring and damper.
+- **bikenew.c**: the bike and rider simulation. `bikes_init` sets up the eight riders (skeleton buffers, sphere trees,
+  grid places) and copies each rider's handling profile from `sRiderStatsTable` (8 profiles; debug names lightweight,
+  fatboy, english jim, duke of dirt, tomboy, standard, trickster) into the rider's handling stats. `bikes_update` copies
+  the input words into the riders and runs `bike_update` once per 60 Hz tick (CPU riders far from any view take one
+  double step every other frame). A tick: input (`bike_process_input`), wheelie, jumps and air control, drive and
+  brakes, tire constraints and traction, the sum of forces, integration, suspension (`bike_update_suspension`, wheel
+  ground search `bike_wheel_find_ground`) and the render pose. Constants: gravity 14.7, spring 15000, damper 2200, bike
+  mass 250, rider mass 90. `sBikeTune` is a debug tuning table (float, sldown, lane chg, rmp bst, landing, pitch,
+  gravity, rate, damping, power); mode 6 uses its spring and damper.
 - **unnamed/s0_800358C0.c**: the engine: rpm, the automatic gearbox, torque (`engine_torque_at_rpm`) and turbo heat
   (`engine_update_heat`; turbo, normal and overheated power, `sTurboTraction`).
-- **collide.c**: bounding-sphere trees (40-byte nodes from a 16000-byte pool) built from {child, child2, x, y, z,
-  r} descriptions. `collide_bodies` tests two rigid bodies (overlap, then the deepest pair of leaves), applies an
-  impulse (`collide_apply_impulse`) and handles riders knocking each other down (`collide_resolve_rider_hit`),
-  noting when each pair last touched (rider+0x784).
+- **collide.c**: bounding-sphere trees (40-byte `CollideNode`s from a 16000-byte pool) built from
+  `CollideSphereDesc` {child, next, x, y, z, radius} descriptions. `collide_bodies` tests two rigid bodies
+  (overlap, then the deepest pair of leaves), applies an impulse (`collide_apply_impulse`) and handles riders
+  knocking each other down (`collide_resolve_rider_hit`), noting when each pair last touched (`contactFrame`).
 - **unnamed/s0_800445B0.c**: crashes and rigid bodies: `bike_crash_begin` / `bike_crash_update`, `phys_body_step`
   (bikes, thrown riders and the soccer ball, with 11 contact points per bike), contact impulses and `bike_respawn`.
 - **unnamed/s0_8003C8E0.c**: the rider's pose: arm and leg IK to the grips and pegs (`rider_ik_*`), head look,
   keyframe animations from `gRiderAnims` (tricks, PUMP, finish poses, crashes CB/CF/CL/CR).
-- **skel.c**: skeletons: resources of 0x38-byte entries with child counts become 0x80-byte bones {parent,
-  position, rotation[9], world position, world matrix}; `skel_update_world_transforms` walks the hierarchy.
+- **skel.c**: skeletons: resources of 0x38-byte entries with child counts become 0x80-byte `Bone`s {parent,
+  position, rotation, world position, world rotation, angles}; `skel_update_world_transforms` walks the hierarchy.
 - **shadow.c**: each rider and each thrown body is drawn from above into a 32x32 IA8 texture (`sShadowTextures`,
   16 slots); ground triangles within a metre are clipped to a box and drawn with it (`shadow_draw`).
 - **ponytail.c**: a four-node spring chain (gravity, wind from the rider's speed, length limits, a sine wobble)
@@ -346,7 +354,7 @@ their names say what they hold or where they start.
 
 ### Track, camera and effects
 
-- **camera.c**: one camera per view (`gCamView`). The camera mode (rider+0x5AA) indexes `gCamModes`, 12 entries
+- **camera.c**: one camera per view (`gCamView`). The camera mode (`Rider.camMode`) indexes `gCamModes`, 12 entries
   {init, update(rider, s32 out[6]), exit, flags}: 0 soccer (sweeps around the ball), 1-3 chase near/mid/far (the
   only ones the Camera button cycles through; flag 8 excludes the others), 4 side view (Excite 3D), 6 hill climb,
   7 stunt replay in an inset view, 9 fall view, 10 finish celebration, 11 first person. The output {x, y, z,
