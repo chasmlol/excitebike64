@@ -104,17 +104,19 @@ swaps B, R and Z). `race_update` maps controllers to players into `gPlayerInputs
 
 ## Main data
 
-**`gGame`** (0x7B0 bytes, cleared by `shell_init`) is the setup that carries across states:
+**`gGame`** (`Game`, include/structs/game.h; 0x7B0 bytes, cleared by `shell_init`) is the setup that carries across
+states:
 
 - +0x00 flags: 0x2 editor back to shell, 0x4 run the same state again, 0x20 editor, 0x40 NES, 0x80 track chosen,
   0x8000 replay playback, 0x40000 podium ceremony (`gPodiumMode`), 0x100000/0x400000/0x800000 unlock messages,
   0x20000000 debug cheat;
-- +0x0C round, +0x10 track, +0x1C rider per player, +0x3C number of players, +0x40 laps;
-- +0x4C game mode (`gGameMode`, below), +0x54 front-end fade state (0 out, 1 swap, 2 in, 3 active);
+- +0x0C cup, +0x10 track, +0x1C rider per racer, +0x3C number of players, +0x40 laps;
+- +0x4C game mode (`mode`, below), +0x54 front-end fade state (0 out, 1 swap, 2 in, 3 active);
 - +0x2C8 controller-to-player map, +0x2E8 screen sub-state, +0x410 difficulty, +0x488 Controller Pak screen mode,
-  +0x730 font, +0x740 idle frames (the front end times out after 0xE10).
+  +0x730 HUD glyphs, +0x740 idle frames (the front end times out after 0xE10).
 
-**Game modes** (`gGameMode`): 0 exhibition, 1 season (`gSeason`; points `gRacePoints` 5/3/2/1), 2 soccer,
+**Game modes** (`gGame.mode`): 0 exhibition, 1 season (`gSeason`, a `Season` of the cups `gCups`; points `gRacePoints`
+5/3/2/1), 2 soccer,
 5 desert (ten checkpoints shown as campfires), 6 Excite 3D, 7 hill climb (stage time limits), 8 time trial (ghost),
 9 tutorial (`gTutorialLessons`, 17 lessons and tests), 10 stunt course, 12 Original Excitebike (the NES game),
 13 and 14 the editor's test ride. Modes 3 and 4 are not identified.
@@ -142,13 +144,14 @@ nodes at +0xA48. `gRiderAlpha` holds per-rider transparency (0x80 for the ghost)
 order.
 
 **Race**: `gRacePhase` runs 0-3 (intro: track preview, laps), 4 (fade in), 5 (racing), 6 (fade out requested by
-`event_request_exit`) and 7 (leave or restart). `gEvent` holds the rules state of the running event:
+`event_request_exit`) and 7 (leave or restart). `gEvent` (`Event`, include/structs/race.h) holds the rules state of
+the running event:
 
 - +0x00 state (0-5 start countdown, 6-12 soccer halves and overtime, 13-15 tutorial);
-- +0x04 the track's three best times and initials, +0x10 best lap, +0x20 laps, +0x22 riders (`gEventNumRiders`),
+- +0x04 the track's three best times and initials, +0x10 best lap, +0x20 laps, +0x22 riders,
   +0x24 next finishing place, +0x26 countdown;
-- +0x2C race time in frames (`gEventTime`), +0x40 all finished (`gEventAllFinished`), +0x50 finishing order;
-- +0x58 flags (`gEventFlags`: 0x10 timer paused, 0x800 message, 0x1000 takedown required, 0x2000 lesson done);
+- +0x2C race time in frames, +0x40 all finished, +0x50 finishing order;
+- +0x58 flags (0x10 timer paused, 0x800 message, 0x1000 takedown required, 0x2000 lesson done);
 - +0x68/+0x6A soccer scores, +0x70 tutorial action.
 
 Other shared globals: `gFrameCounter` (retraces), `gRaceFrame` (frames of the race), `gPhysDeltaTime` (ticks times

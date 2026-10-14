@@ -10,7 +10,7 @@
    0x4 run the same game state again, 0x10 rider select, 0x20 editor, 0x40 NES, 0x80 track chosen, 0x8000 replay
    playback, 0x40000 podium ceremony (gPodiumMode), 0x100000/0x400000/0x800000 unlock messages (0x800000: the next
    race is the credits run), 0x20000000 the Debug cheat.
-   mode (gGameMode): 0 exhibition, 1 season, 2 soccer, 5 desert, 6 Excite 3D, 7 hill climb, 8 time trial, 9 tutorial,
+   mode: 0 exhibition, 1 season, 2 soccer, 5 desert, 6 Excite 3D, 7 hill climb, 8 time trial, 9 tutorial,
    10 stunt course, 12 Original Excitebike, 13 and 14 the editor's test ride. */
 typedef struct Game {
     /* 0x000 */ u32 flags;
@@ -27,7 +27,7 @@ typedef struct Game {
     /* 0x044 */ s32 numCpuRiders;
     /* 0x048 */ s16 unk_048;            /* a 10-frame animation of the front end */
     /* 0x04A */ s16 unk_04A;
-    /* 0x04C */ u32 mode;               /* gGameMode */
+    /* 0x04C */ u32 mode;
     /* 0x050 */ u8 padConfig[4];        /* the button layout of each controller (A-D) */
     /* 0x054 */ u32 fadeState;          /* front end fade: 0 out, 1 swap, 2 in, 3 done */
     /* 0x058 */ s16 fadeLevel;

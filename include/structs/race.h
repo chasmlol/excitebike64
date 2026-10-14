@@ -1,4 +1,5 @@
-/* The running event: gEvent, the rules state of a race (event.c), and the track records it keeps. */
+/* The race: gEvent, the rules state of a race (event.c), the track records, the season (gSeason, gCups), the
+   tutorial lessons, the pause screen and the HUD's glyph images. */
 #ifndef STRUCTS_RACE_H
 #define STRUCTS_RACE_H
 
@@ -79,20 +80,20 @@ typedef struct Event {
     /* 0x00 */ u32 state;
     /* 0x04 */ TrackRecord record;  /* the track's records, updated during the race */
     /* 0x20 */ s16 numLaps;
-    /* 0x22 */ s16 numRiders;       /* gEventNumRiders */
+    /* 0x22 */ s16 numRiders;
     /* 0x24 */ s16 numFinished;     /* the next finishing place */
     /* 0x26 */ s16 countdown;
     /* 0x28 */ s16 messageTimer;
     /* 0x2A */ s16 unk_2A;
-    /* 0x2C */ s32 time;            /* frames (gEventTime) */
+    /* 0x2C */ s32 time;            /* frames (also gEventTime) */
     /* 0x30 */ s16 lapLeaderTimes[6]; /* the time (low half) the first rider completed each lap, -1 none */
     /* 0x3C */ s32 noPlayers;       /* a race of the front end or a replay: gGame.flags & 0x81 */
-    /* 0x40 */ s32 allFinished;     /* gEventAllFinished */
+    /* 0x40 */ s32 allFinished;
     /* 0x44 */ s32 camTarget;       /* gCamTargetOverride */
     /* 0x48 */ s32 unk_48;          /* hill climb: -1 */
     /* 0x4C */ s32 idleFrames;      /* frames without input */
     /* 0x50 */ u8 finishOrder[8];   /* rider of each finishing place */
-    /* 0x58 */ u32 flags;           /* gEventFlags */
+    /* 0x58 */ u32 flags;           /* also gEventFlags */
     /* 0x5C */ u8 unk_5C[0x68 - 0x5C];
     /* 0x68 */ s16 goals[2];        /* soccer score */
     /* 0x6C */ s16 goalTimer;       /* soccer: 180 frames after a goal */
