@@ -1,92 +1,99 @@
 #include "game.h"
 
-static inline void wr(s32 a, s32 v)
+/* Bus accesses of the opcode handlers and addressing modes: RAM (mirrored), the registers at $2000-$7FFF, or the
+   ROM (writes ignored). The variants are copies written per caller so that each one compiles as in the original;
+   they are kept apart on purpose. */
+static inline void bus_write(s32 addr, s32 value)
 {
-    if (a < 0x2000) {
-        NES->mem[a & 0x7FF] = v;
-    } else if (a > 0x7FFF) {
+    if (addr < NES_IO_START) {
+        NES->mem[addr & NES_RAM_MASK] = value;
+    } else if (addr > 0x7FFF) {
     } else {
-        nes_write_io(a, v);
+        nes_write_io(addr, value);
     }
 }
 
-static inline void wr_2(s32 a, s32 v)
+static inline void bus_write_2(s32 addr, s32 value)
 {
-    if (a < 0x2000) {
-        a &= 0x7FF;
-        NES->mem[a] = v;
-    } else if (a > 0x7FFF) {
+    if (addr < NES_IO_START) {
+        addr &= NES_RAM_MASK;
+        NES->mem[addr] = value;
+    } else if (addr > 0x7FFF) {
     } else {
-        nes_write_io(a, v);
+        nes_write_io(addr, value);
     }
 }
 
-static inline u32 rd(s32 a)
+static inline u32 bus_read(s32 addr)
 {
-    if (a < 0x2000) {
-        a &= 0x7FF;
-    } else if (a > 0x7FFF) {
+    if (addr < NES_IO_START) {
+        addr &= NES_RAM_MASK;
+    } else if (addr > 0x7FFF) {
     } else {
-        return nes_read_io_2(a);
+        return nes_read_io_2(addr);
     }
-    return NES->mem[a];
+    return NES->mem[addr];
 }
 
+/* Starts the emulator (game state 3): loads Excitebike's ROM and its saved machine state, decodes the CHR ROM into
+   CI4 tiles, converts the palette, and runs three frames before drawing starts. */
 void nes_init(void)
 {
-    s32 *obj;
-    u8 *src;
-    s32 m, t, x, y;
+    s32 *set;
+    u8 *rom;
+    s32 nesAddr, vramOfs, lo, hi;
     u32 r, g, b;
     s32 i, j, n, k;
-    u32 v, c;
-    u16 *p;
+    u32 planes, pixel;
+    u16 *pal;
 
     sNesFrameCount = 0;
-    if (res_open_set(sStrNesres, &obj) != 0) {
+    if (res_open_set(sStrNesres, &set) != 0) {
         fatal_halt(1);
     }
     sNesMemory = NES;
     mem_fill(sNesMemory, 0, sizeof(Nes));
-    src = res_load(obj, sNesRomResId);
-    __builtin_memcpy(&sNesMemory->mem[0x8000], src, 0x4000);
-    __builtin_memcpy(&sNesMemory->mem[0xC000], src, 0x4000);
-    __builtin_memcpy(sNesMemory->vram, src + 0x4000, 0x2000);
+    rom = res_load(set, sNesRomResId);
+    __builtin_memcpy(&sNesMemory->mem[NES_PRG_ROM], rom, NES_PRG_SIZE);
+    __builtin_memcpy(&sNesMemory->mem[NES_PRG_ROM_MIRROR], rom, NES_PRG_SIZE);
+    __builtin_memcpy(sNesMemory->vram, rom + NES_PRG_SIZE, NES_CHR_SIZE);
     nes_cpu_reset(sNesMemory, nes_draw_bg_row);
     sNesSnapshot = mem_alloc_dbg(sizeof(NesSnapshot), 0, sStrNesn64C, 0x9C);
-    __builtin_memcpy(sNesSnapshot, src + 0x6000, sizeof(NesSnapshot));
-    res_close_set(obj);
+    __builtin_memcpy(sNesSnapshot, rom + 0x6000, sizeof(NesSnapshot)); /* after the PRG and CHR ROM */
+    res_close_set(set);
+    /* Each 16-byte CHR tile (two bit planes of 8 rows) becomes a 16x8 CI4 tile of 64 bytes, the right half unused. */
     sNesChrTiles = mem_alloc_dbg(0x8000, 0, sStrNesn64C, 0xA4);
-    m = (s32)NES;
-    t = 0x10000; /* m + t: NES->vram, the CHR ROM */
-    for (i = 0; i < 0x2000; i += 0x10) {
+    nesAddr = (s32)NES;
+    vramOfs = 0x10000; /* nesAddr + vramOfs: NES->vram, the CHR ROM */
+    for (i = 0; i < NES_CHR_SIZE; i += 0x10) {
         k = i * 4;
         for (j = 0; j < 8; j++) {
-            x = i + j;
-            y = x + 8;
-            c = *(u8 *)(y + m + t);
-            v = *(u8 *)(x + m + t);
-            v |= c << 8;
+            lo = i + j;
+            hi = lo + 8;
+            pixel = *(u8 *)(hi + nesAddr + vramOfs);
+            planes = *(u8 *)(lo + nesAddr + vramOfs);
+            planes |= pixel << 8;
             for (n = 0; n < 8; n += 2) {
-                c = (v >> 7) & 1;
-                if (v & 0x8000) {
-                    c |= 2;
+                pixel = (planes >> 7) & 1;
+                if (planes & 0x8000) {
+                    pixel |= 2;
                 }
-                v <<= 1;
-                sNesChrTiles[k] = c << 4;
-                c = (v >> 7) & 1;
-                if (v & 0x8000) {
-                    c |= 2;
+                planes <<= 1;
+                sNesChrTiles[k] = pixel << 4;
+                pixel = (planes >> 7) & 1;
+                if (planes & 0x8000) {
+                    pixel |= 2;
                 }
-                v <<= 1;
-                sNesChrTiles[k] |= c;
+                planes <<= 1;
+                sNesChrTiles[k] |= pixel;
                 k++;
             }
             k += 4;
         }
     }
+    /* The RGB palette to RGBA5551 (j, n, k: red, green, blue), opaque, except one colour. */
     sNesPalette = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xBF);
-    p = sNesPalette;
+    pal = sNesPalette;
     for (i = 0; i < 0x100; i++) {
         j = sNesRgbPalette[i * 3] >> 3;
         j <<= 11;
@@ -94,9 +101,9 @@ void nes_init(void)
         n <<= 6;
         k = sNesRgbPalette[i * 3 + 2] >> 3;
         k <<= 1;
-        p[i] = j | n | k | 1;
-        if (p[i] == 0x8685) {
-            p[i] &= 0xFFFE;
+        pal[i] = j | n | k | 1;
+        if (pal[i] == 0x8685) {
+            pal[i] &= 0xFFFE;
         }
     }
     for (i = 0; i < 2; i++) {
@@ -113,79 +120,85 @@ void nes_init(void)
     sNesRestoreTimer = 0;
 }
 
-void nes_update_input(volatile s32 *p)
+/* The state's update: maps the game input word to the NES joypad (Z is B too, L is Select, the stick works as the
+   D-pad), restores the snapshot when the restore timer runs out, and leaves on L+Z. */
+void nes_update_input(volatile s32 *input)
 {
-    s32 w, v;
-    s32 f;
-    s32 k;
-    s32 hi, lo;
-    u8 b;
-    NesSnapshot *m;
+    s32 buttons, held;
+    s32 pad;
+    s32 i;
+    s32 stickY, stickX;
+    u8 status;
+    NesSnapshot *snap;
     Nes *nes;
 
-    w = *p;
-    f = ((w & 0x800) != 0) << 4;
-    if (w & 0x1000) f |= 0x20;
-    if (w & 0x2000) f |= 0x40;
-    if (w & 0x4000) f |= 0x80;
-    if (w & 0x10) f |= 1;
-    if (w & 0x20000) f |= 2;
-    if (w & 0x20) f |= 2;
-    if (w & 0x8000) f |= 4;
-    if (w & 0x40) f |= 8;
+    buttons = *input;
+    pad = ((buttons & INPUT_D_UP) != 0) << 4; /* NES_PAD_UP */
+    if (buttons & INPUT_D_DOWN) pad |= NES_PAD_DOWN;
+    if (buttons & INPUT_D_LEFT) pad |= NES_PAD_LEFT;
+    if (buttons & INPUT_D_RIGHT) pad |= NES_PAD_RIGHT;
+    if (buttons & INPUT_A) pad |= NES_PAD_A;
+    if (buttons & INPUT_Z) pad |= NES_PAD_B;
+    if (buttons & INPUT_B) pad |= NES_PAD_B;
+    if (buttons & INPUT_L) pad |= NES_PAD_SELECT;
+    if (buttons & INPUT_START) pad |= NES_PAD_START;
     if (sNesRestoreTimer != 0) {
         if (--sNesRestoreTimer == 0) {
+            /* Back to the machine state of the resource, with the design track put back from the save block. */
             __builtin_memcpy(NES->mem, sNesSnapshot->ram, 0x800);
-            __builtin_memcpy(&NES->vram[0x2000], sNesSnapshot->vram, 0x2000);
-            m = sNesSnapshot;
+            __builtin_memcpy(&NES->vram[NES_VRAM_NAMETABLE], sNesSnapshot->vram, 0x2000);
+            snap = sNesSnapshot;
             nes = NES;
-            nes->pc = m->pc;
-            nes->vramAddr = m->vramAddr;
-            nes->a = m->a;
-            nes->x = m->x;
-            nes->y = m->y;
-            nes->s = m->s;
-            b = m->p;
-            nes->p = b;
-            nes->ppuLatch = m->ppuLatch;
-            nes->scrollX = m->scrollX;
-            nes->scrollY = m->scrollY;
-            nes->oamAddr = m->oamAddr;
-            nes->n = b & 0x80;
-            nes->v = b & 0x40;
-            nes->b = b & 0x10;
-            nes->d = b & 0x8;
-            nes->i = b & 0x4;
+            nes->pc = snap->pc;
+            nes->vramAddr = snap->vramAddr;
+            nes->a = snap->a;
+            nes->x = snap->x;
+            nes->y = snap->y;
+            nes->s = snap->s;
+            status = snap->p;
+            nes->p = status;
+            nes->ppuLatch = snap->ppuLatch;
+            nes->scrollX = snap->scrollX;
+            nes->scrollY = snap->scrollY;
+            nes->oamAddr = snap->oamAddr;
+            nes->n = status & NES_FLAG_N;
+            nes->v = status & NES_FLAG_V;
+            nes->b = status & NES_FLAG_B;
+            nes->d = status & NES_FLAG_D;
+            nes->i = status & NES_FLAG_I;
             nes->joypad = 0;
             nes->unk_14121[0] = 0;
             nes->joypadBit = 0;
             nes->unk_14128 = 0;
-            nes->z = b & 0x2;
-            nes->c = b & 0x1;
-            for (k = 0; k < 4; k++) {
-                NES->apu[k].rate = 0;
-                NES->apu[k].unk_04 = 0;
+            nes->z = status & NES_FLAG_Z;
+            nes->c = status & NES_FLAG_C;
+            for (i = 0; i < 4; i++) {
+                NES->apu[i].rate = 0;
+                NES->apu[i].unk_04 = 0;
             }
             __builtin_memcpy(&NES->mem[NES_TRACK_ADDR], gSaveData.nesTrack, NES_TRACK_SIZE);
         }
     }
-    v = *p;
-    lo = (v >> 24) & 0xF;
-    hi = (v >> 28) & 0xF;
-    if ((v & 1) && hi > 8) f |= 0x10;
-    if ((*p & 2) && hi > 8) f |= 0x20;
-    if ((*p & 4) && lo > 8) f |= 0x40;
-    if ((*p & 8) && lo > 8) f |= 0x80;
-    NES->joypad = f;
-    if ((*p & 0x28000) == 0x28000) {
+    /* The stick counts as the D-pad past half way. */
+    held = *input;
+    stickX = (held >> INPUT_STICK_X_SHIFT) & 0xF;
+    stickY = (held >> INPUT_STICK_Y_SHIFT) & 0xF;
+    if ((held & INPUT_STICK_UP) && stickY > 8) pad |= NES_PAD_UP;
+    if ((*input & INPUT_STICK_DOWN) && stickY > 8) pad |= NES_PAD_DOWN;
+    if ((*input & INPUT_STICK_LEFT) && stickX > 8) pad |= NES_PAD_LEFT;
+    if ((*input & INPUT_STICK_RIGHT) && stickX > 8) pad |= NES_PAD_RIGHT;
+    NES->joypad = pad;
+    if ((*input & (INPUT_L | INPUT_Z)) == (INPUT_L | INPUT_Z)) {
         gRaceExitCode = 2;
-        gCurGameState->mode = 3;
+        gCurGameState->mode = 3; /* exit requested */
     }
 }
 
-Gfx *nes_draw_setup(s32 a0, s32 a1, Gfx *gdl)
+/* Starts the frame's display list: RDP and RSP init, a viewport and scissor of the whole screen, the framebuffer
+   `fb` (cleared while sNesClearFrames counts down), and the background's texture state with the NES palette. */
+Gfx *nes_draw_setup(s32 gfxCtx, s32 fb, Gfx *gdl)
 {
-    mtx_from_angles_pos_scale(a0 + 0x400, 0, 0, 0, 0, 0, 0, 0x100);
+    mtx_from_angles_pos_scale(gfxCtx + 0x400, 0, 0, 0, 0, 0, 0, 0x100); /* the context's matrix */
     gSPSegment(gdl++, 0, 0);
     gSPDisplayList(gdl++, gRdpInitDL);
     gSPDisplayList(gdl++, gRspInitDL);
@@ -196,7 +209,7 @@ Gfx *nes_draw_setup(s32 a0, s32 a1, Gfx *gdl)
     sNesViewport.vp.vtrans[1] = gScreenHeight * 2;
     gSPViewport(gdl++, &sNesViewport);
     gDPPipeSync(gdl++);
-    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[a1]);
+    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
     if (sNesClearFrames != 0) {
         sNesClearFrames--;
         gDPPipeSync(gdl++);
@@ -214,8 +227,8 @@ Gfx *nes_draw_setup(s32 a0, s32 a1, Gfx *gdl)
     }
     {
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
-        gDPSetRenderMode(gdl++, 0x0C084000, 0);
-        gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
+        gDPSetRenderMode(gdl++, 0x0C084000, 0);          /* G_RM_OPA_SURF */
+        gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);     /* G_CC_DECALRGB, G_CC_DECALRGB */
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetTextureFilter(gdl++, G_TF_POINT);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -225,20 +238,24 @@ Gfx *nes_draw_setup(s32 a0, s32 a1, Gfx *gdl)
     return gdl;
 }
 
-void nes_draw_frame(s32 a0, s32 a1, Gfx **pgdl)
+/* The state's draw: runs one emulated frame (the background rows are drawn as it goes), draws the sprites, blinks
+   the exit message, catches design-mode SAVE and LOAD, fills the picture with the border colour while the
+   background is off, and feeds the audio. */
+void nes_draw_frame(s32 gfxCtx, s32 fb, Gfx **pgdl)
 {
     u8 *p;
-    s32 k;
+    s32 ntAddr;
     s32 i;
     s32 t;
 
     sNesGfx = *pgdl;
-    sNesGfx = nes_draw_setup(a0, a1, sNesGfx);
+    sNesGfx = nes_draw_setup(gfxCtx, fb, sNesGfx);
     if (sNesClearFrames != 0) {
         *pgdl = sNesGfx;
         return;
     }
     {
+        /* gDPSetScissor(G_SC_NON_INTERLACE, 36, 0, 284, 240): the NES picture without its leftmost 8 pixels */
         Gfx *g = sNesGfx++;
         g->words.w0 = 0xED090000;
         g->words.w1 = 0x4703C0;
@@ -251,51 +268,55 @@ void nes_draw_frame(s32 a0, s32 a1, Gfx **pgdl)
     gDPPipeSync(sNesGfx++);
     nes_draw_sprites(sNesInstrPerFrame);
     gDPPipeSync(sNesGfx++);
+    /* Twice a second the message is written into both name tables, then blanked again. */
     if (nes_should_show_exit_msg() != 0) {
-        k = 0x2342;
+        ntAddr = NES_EXIT_MSG_ADDR;
         if ((sNesFrameCount / 30) & 1) {
             if (sNesExitMsg[0] != 0) {
                 i = 0;
                 do {
                     if (sNesExitMsg[i] != ' ') {
-                        sNesCpuMemory->vram[k] = sNesExitMsg[i] - 0x37;
-                        sNesCpuMemory->vram[k + 0x400] = sNesExitMsg[i] - 0x37;
+                        sNesCpuMemory->vram[ntAddr] = sNesExitMsg[i] - NES_TILE_FROM_ASCII;
+                        sNesCpuMemory->vram[ntAddr + NES_NAMETABLE_SIZE] = sNesExitMsg[i] - NES_TILE_FROM_ASCII;
                     }
                     i++;
-                    k++;
+                    ntAddr++;
                 } while (sNesExitMsg[i] != 0);
             }
-            mem_fill(&sNesCpuMemory->vram[0x23F0], 0x5F, 8);
+            mem_fill(&sNesCpuMemory->vram[0x23F0], 0x5F, 8); /* the palettes of the bottom rows */
         } else {
             t = 0;
             if (sNesExitMsg[0] != 0) {
                 do {
                     t++;
-                    sNesCpuMemory->vram[k] = 0xFC;
-                    sNesCpuMemory->vram[k + 0x400] = 0xFC;
-                    k++;
+                    sNesCpuMemory->vram[ntAddr] = NES_TILE_BLANK;
+                    sNesCpuMemory->vram[ntAddr + NES_NAMETABLE_SIZE] = NES_TILE_BLANK;
+                    ntAddr++;
                 } while (sNesExitMsg[t] != 0);
             }
         }
     }
-    if (NES->pc == 0xC661 || NES->pc == 0xC66A) {
+    /* Design mode's SAVE writes the track to the save block, LOAD reads it back; the snapshot is restored later. */
+    if (NES->pc == NES_PC_SAVE_1 || NES->pc == NES_PC_SAVE_2) {
         if (sNesRestoreTimer == 0) {
-            sNesRestoreTimer = 0x3C;
+            sNesRestoreTimer = NES_RESTORE_DELAY;
             __builtin_memcpy(gSaveData.nesTrack, &NES->mem[NES_TRACK_ADDR], NES_TRACK_SIZE);
             save_write(0, 0);
         }
-    } else if (NES->pc == 0xC641 || NES->pc == 0xC69A) {
+    } else if (NES->pc == NES_PC_LOAD_1 || NES->pc == NES_PC_LOAD_2) {
         if (sNesRestoreTimer == 0) {
-            sNesRestoreTimer = 0x3C;
+            sNesRestoreTimer = NES_RESTORE_DELAY;
             __builtin_memcpy(&NES->mem[NES_TRACK_ADDR], gSaveData.nesTrack, NES_TRACK_SIZE);
         }
     }
-    if (!(NES->mem[0x2001] & 8) || sNesFrameCount < 10) {
+    if (!(NES->mem[NES_PPUMASK] & NES_PPUMASK_BG) || sNesFrameCount < NES_BLANK_FRAMES) {
         gDPPipeSync(sNesGfx++);
         gDPSetCycleType(sNesGfx++, G_CYC_FILL);
-        t = NES->mem[0x2001] >> 5;
+        /* PPUMASK's top 3 bits index a table of 4 colours: values 4-7 read the words after it */
+        t = NES->mem[NES_PPUMASK] >> NES_PPUMASK_EMPHASIS_SHIFT;
         gDPSetFillColor(sNesGfx++, sNesBorderColors[t]);
         {
+            /* gDPFillRectangle(36, 0, 284, 240) */
             Gfx *g = sNesGfx++;
             g->words.w0 = 0xF64703C0;
             g->words.w1 = 0x90000;
@@ -313,162 +334,171 @@ void nes_draw_frame(s32 a0, s32 a1, Gfx **pgdl)
     nes_audio_update();
 }
 
+/* sNesRowCallback, called in the middle of each row of 8 lines: loads the background TLUT once a frame, then draws
+   the tile row `row` of the visible name table and, past the X scroll, of the next one, a texture rectangle per tile
+   (a texture load only when the tile or palette changes). */
 void nes_draw_bg_row(s32 row)
 {
-    s32 i, j, k, idx;
-    u16 **pp;
-    u8 *base;
-    u8 *ntp;
-    s32 nt;
-    s32 y;
-    s32 sx, fine;
+    s32 i, j, palAddr, tlutIndex;
+    u16 **tluts;
+    u8 *tiles;
+    u8 *nameTable;
+    s32 ntAddr;
+    s32 top;
+    s32 coarseX, fineX;
     s32 col, x;
-    s32 pal, key, ofs, tile, a, sh;
+    s32 pal, key, tileOfs, tile, attrIndex, attrShift;
 
-    if ((NES->mem[0x2001] & 8) && sNesFrameCount >= 10) {
+    if ((NES->mem[NES_PPUMASK] & NES_PPUMASK_BG) && sNesFrameCount >= NES_BLANK_FRAMES) {
         sNesLastTileKey = -1;
         if (sNesBgTlutLoaded == 0) {
-            k = 0x3F00;
-            idx = 0;
+            /* 4 palettes of 4 colours, 16 entries apart. Colour 0 gets alpha and bit 1 clear, the others both set:
+               bit 1 marks opaque background pixels for nes_draw_back_sprites. */
+            palAddr = NES_VRAM_BG_PALETTE;
+            tlutIndex = 0;
             for (i = 0; i < 4; i++) {
                 for (j = 0; j < 4; j++) {
-                    sNesBgTluts[gGfxFrameIndex][idx] = sNesPalette[NES->vram[k]];
-                    k++;
+                    sNesBgTluts[gGfxFrameIndex][tlutIndex] = sNesPalette[NES->vram[palAddr]];
+                    palAddr++;
                     if (j == 0) {
-                        sNesBgTluts[gGfxFrameIndex][idx] &= 0xFFFC;
+                        sNesBgTluts[gGfxFrameIndex][tlutIndex] &= 0xFFFC;
                     } else {
-                        sNesBgTluts[gGfxFrameIndex][idx] |= 3;
+                        sNesBgTluts[gGfxFrameIndex][tlutIndex] |= 3;
                     }
-                    idx++;
+                    tlutIndex++;
                 }
-                idx += 12;
+                tlutIndex += 12;
             }
             sNesBgTlutLoaded = 1;
             gDPPipeSync(sNesGfx++);
             gDPLoadTLUT_pal256(sNesGfx++, sNesBgTluts[gGfxFrameIndex]);
         }
-        base = sNesChrTiles;
+        tiles = sNesChrTiles;
         gDPPipeSync(sNesGfx++);
-        if (NES->mem[0x2000] & 0x10) {
-            base += 0x4000;
+        if (NES->mem[NES_PPUCTRL] & NES_PPUCTRL_BG_TABLE) {
+            tiles += NES_TILES_TABLE_SIZE;
         }
-        nt = (NES->mem[0x2000] & 3) << 10;
-        nt += 0x2000;
-        ntp = &NES->vram[nt];
-        y = row << 5;
-        sx = NES->scrollX >> 3;
-        fine = NES->scrollX & 7;
-        x = (0x1C - fine) << 2;
-        nt += y;
-        nt += sx;
-        col = sx + 1;
+        ntAddr = (NES->mem[NES_PPUCTRL] & NES_PPUCTRL_NAMETABLE) << 10;
+        ntAddr += NES_VRAM_NAMETABLE;
+        nameTable = &NES->vram[ntAddr];
+        /* Screen coordinates in 10.2 fixed point; the first tile column (coarseX) is skipped. */
+        top = row << 5;
+        coarseX = NES->scrollX >> 3;
+        fineX = NES->scrollX & 7;
+        x = (NES_SCREEN_X - fineX) << 2;
+        ntAddr += top;
+        ntAddr += coarseX;
+        col = coarseX + 1;
         x += 0x20;
-        nt++;
+        ntAddr++;
 
         for (i = col; i < 0x20; i++) {
 
-            tile = NES->vram[nt];
-            ofs = tile << 6;
-            a = (col >> 2) + ((row >> 2) << 3);
-            sh = ((col >> 1) & 1) | (row & 2);
-            sh <<= 1;
-            pal = (ntp[a + 0x3C0] >> sh) & 3;
+            tile = NES->vram[ntAddr];
+            tileOfs = tile << 6;
+            attrIndex = (col >> 2) + ((row >> 2) << 3);
+            attrShift = ((col >> 1) & 1) | (row & 2);
+            attrShift <<= 1;
+            pal = (nameTable[attrIndex + NES_ATTR_TABLE] >> attrShift) & 3;
             key = tile | (pal << 8);
             if (key != sNesLastTileKey) {
-                gDPLoadTextureBlock_4b(sNesGfx++, base + ofs, G_IM_FMT_CI, 16, 8, pal,
+                gDPLoadTextureBlock_4b(sNesGfx++, tiles + tileOfs, G_IM_FMT_CI, 16, 8, pal,
                                        G_TX_WRAP, G_TX_WRAP, 4, 3, G_TX_NOLOD, G_TX_NOLOD);
             }
             sNesLastTileKey = key;
-            gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
+            gSPTextureRectangle(sNesGfx++, x, top, x + 32, top + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
             x += 32;
-            nt++;
+            ntAddr++;
             col++;
         }
-        nt = ((NES->mem[0x2000] & 3) << 10) ^ 0x400;
-        nt += 0x2000;
-        ntp = &NES->vram[nt];
+        /* The rest of the row from the horizontally adjacent name table. */
+        ntAddr = ((NES->mem[NES_PPUCTRL] & NES_PPUCTRL_NAMETABLE) << 10) ^ NES_NAMETABLE_SIZE;
+        ntAddr += NES_VRAM_NAMETABLE;
+        nameTable = &NES->vram[ntAddr];
         col = 0;
-        nt += row << 5;
-        if (fine != 0) {
-            sx++;
+        ntAddr += row << 5;
+        if (fineX != 0) {
+            coarseX++;
         }
-        for (i = 0; i < sx; i++) {
+        for (i = 0; i < coarseX; i++) {
 
-            tile = NES->vram[nt];
-            ofs = tile << 6;
-            a = (col >> 2) + ((row >> 2) << 3);
-            sh = ((col >> 1) & 1) | (row & 2);
-            sh <<= 1;
-            pal = (ntp[a + 0x3C0] >> sh) & 3;
+            tile = NES->vram[ntAddr];
+            tileOfs = tile << 6;
+            attrIndex = (col >> 2) + ((row >> 2) << 3);
+            attrShift = ((col >> 1) & 1) | (row & 2);
+            attrShift <<= 1;
+            pal = (nameTable[attrIndex + NES_ATTR_TABLE] >> attrShift) & 3;
             key = tile | (pal << 8);
             if (key != sNesLastTileKey) {
-                gDPLoadTextureBlock_4b(sNesGfx++, base + ofs, G_IM_FMT_CI, 16, 8, pal,
+                gDPLoadTextureBlock_4b(sNesGfx++, tiles + tileOfs, G_IM_FMT_CI, 16, 8, pal,
                                        G_TX_CLAMP, G_TX_CLAMP, 4, 3, G_TX_NOLOD, G_TX_NOLOD);
             }
             sNesLastTileKey = key;
-            gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
+            gSPTextureRectangle(sNesGfx++, x, top, x + 32, top + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
             x += 32;
-            nt++;
+            ntAddr++;
             col++;
         }
     }
 }
 
-void nes_draw_sprites(s32 arg0)
+/* Loads the sprite TLUT and draws the sprites in front of the background with the RDP, sprite 0 last (on top). */
+void nes_draw_sprites(s32 instrPerFrame)
 {
-    s32 i, j, x, k, s, idx;
-    u16 **pp;
-    u8 *base;
-    u16 *pal;
+    s32 i, j, x, palAddr, s, tlutIndex;
+    u16 **tluts;
+    u8 *tiles;
+    u16 *palette;
     NesSprite *spr;
-    s32 t;
+    s32 vramOfs;
     s32 y;
     u16 c;
     Nes *nes = NES;
     u8 *mem;
 
-    if (nes->mem[0x2001] & 0x10) {
-        base = sNesChrTiles;
+    if (nes->mem[NES_PPUMASK] & NES_PPUMASK_SPRITES) {
+        tiles = sNesChrTiles;
         gDPPipeSync(sNesGfx++);
-        gDPSetRenderMode(sNesGfx++, 0x0C087008, 0);
-        gDPSetCombine(sNesGfx++, 0xFFFFFF, 0xFFFCF279);
+        gDPSetRenderMode(sNesGfx++, 0x0C087008, 0);         /* G_RM_TEX_EDGE */
+        gDPSetCombine(sNesGfx++, 0xFFFFFF, 0xFFFCF279);    /* G_CC_DECALRGBA, G_CC_DECALRGBA */
         gDPSetAlphaCompare(sNesGfx++, G_AC_THRESHOLD);
-        if (nes->mem[0x2000] & 8) {
-            base += 0x4000;
+        if (nes->mem[NES_PPUCTRL] & NES_PPUCTRL_SPR_TABLE) {
+            tiles += NES_TILES_TABLE_SIZE;
         }
-        k = 0x3F10;
-        idx = 0;
+        /* 4 palettes of 4 colours, 16 entries apart: colour 0 transparent, bit 1 set (as opaque background) */
+        palAddr = NES_VRAM_SPR_PALETTE;
+        tlutIndex = 0;
         i = 0;
         mem = NES->mem;
-        t = 0x10000;
-        pal = sNesPalette;
-        pp = sNesSpriteTluts;
+        vramOfs = 0x10000; /* mem + vramOfs: NES->vram */
+        palette = sNesPalette;
+        tluts = sNesSpriteTluts;
     outer:
         for (j = 0; j < 4; j++) {
-            x = pal[*(u8 *)(k + (s32)mem + t)] | 2;
-            pp[gGfxFrameIndex][idx] = x;
-            k++;
+            x = palette[*(u8 *)(palAddr + (s32)mem + vramOfs)] | 2;
+            tluts[gGfxFrameIndex][tlutIndex] = x;
+            palAddr++;
             if (j == 0) {
-                pp[gGfxFrameIndex][idx] &= 0xFFFE;
+                tluts[gGfxFrameIndex][tlutIndex] &= 0xFFFE;
             }
-            idx++;
+            tlutIndex++;
         }
-        idx += 12;
+        tlutIndex += 12;
         if (++i < 4) goto outer;
         gDPPipeSync(sNesGfx++);
         gDPLoadTLUT_pal256(sNesGfx++, sNesSpriteTluts[gGfxFrameIndex]);
         gDPPipeSync(sNesGfx++);
         for (i = 63; i >= 0; i--) {
             spr = &NES->oam.sprites[i];
-            if (spr->y < 0xF1 && !(spr->attr & 0x20)) {
+            if (spr->y < NES_SPR_Y_OFFSCREEN && !(spr->attr & NES_SPR_BEHIND)) {
                 j = spr->tile * 64;
-                gDPLoadTextureBlock_4b(sNesGfx++, base + j, G_IM_FMT_CI, 16, 8, spr->attr & 3,
+                gDPLoadTextureBlock_4b(sNesGfx++, tiles + j, G_IM_FMT_CI, 16, 8, spr->attr & NES_SPR_PALETTE,
                                        G_TX_CLAMP, G_TX_CLAMP, 4, 3, G_TX_NOLOD, G_TX_NOLOD);
                 x = spr->x;
-                x = (x + 0x1C) * 4;
+                x = (x + NES_SCREEN_X) * 4;
                 y = spr->y + 1;
                 y <<= 2;
-                if (!(spr->attr & 0x40)) {
+                if (!(spr->attr & NES_SPR_FLIP_X)) {
                     gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
                 } else {
                     gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 7 << 5, 0, -1 << 10, 1 << 10);
@@ -480,48 +510,51 @@ void nes_draw_sprites(s32 arg0)
     }
 }
 
-void nes_draw_back_sprites(s32 param)
+/* Called from the graphics-done handler (main.c) for framebuffer `fb`: draws the sprites behind the background into
+   it with the CPU, only over background pixels of colour 0 (bit 1 clear) and inside the visible picture. */
+void nes_draw_back_sprites(s32 fb)
 {
     Nes *nes;
-    s32 bas;
+    s32 tiles;
     s32 i;
     s32 row, k, col;
-    s32 t0;
+    s32 palBase;
     u8 *src;
     u16 *dst;
-    NesSprite *e;
-    u32 v;
+    NesSprite *spr;
+    u32 pixel;
 
     nes = NES;
-    if (nes->mem[0x2001] & 0x10) {
+    if (nes->mem[NES_PPUMASK] & NES_PPUMASK_SPRITES) {
         osInvalDCache(0, 0x400000);
-        bas = sNesChrTiles;
-        if (nes->mem[0x2000] & 8) {
-            bas += 0x4000;
+        tiles = sNesChrTiles;
+        if (nes->mem[NES_PPUCTRL] & NES_PPUCTRL_SPR_TABLE) {
+            tiles += NES_TILES_TABLE_SIZE;
         }
         for (i = 63; i >= 0; i--) {
-            e = &NES->oam.sprites[i];
-            if (e->y < 0xF1 && (e->attr & 0x20)) {
-                t0 = e->attr & 3;
-                t0 <<= 4;
-                row = e->tile << 6;
-                src = (u8 *)(bas + row);
-                col = e->x + 0x1c;
-                dst = gFramebuffers_2[param] + ((e->y + 1) * 0x140 + col);
+            spr = &NES->oam.sprites[i];
+            if (spr->y < NES_SPR_Y_OFFSCREEN && (spr->attr & NES_SPR_BEHIND)) {
+                palBase = spr->attr & NES_SPR_PALETTE;
+                palBase <<= 4;
+                row = spr->tile << 6;
+                src = (u8 *)(tiles + row);
+                col = spr->x + NES_SCREEN_X;
+                /* 320-pixel framebuffer rows; columns 36-283 are visible (the scissor of nes_draw_frame) */
+                dst = gFramebuffers_2[fb] + ((spr->y + 1) * 0x140 + col);
                 for (row = 0; row < 8; row++) {
-                    col = e->x + 0x1c;
-                    if (e->attr & 0x40) {
+                    col = spr->x + NES_SCREEN_X;
+                    if (spr->attr & NES_SPR_FLIP_X) {
                         src += 3;
                         for (k = 0; k < 4; k++) {
-                            v = *src & 0xF;
-                            if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = sNesSpriteTluts[param][v + t0];
+                            pixel = *src & 0xF;
+                            if (pixel != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
+                                *dst = sNesSpriteTluts[fb][pixel + palBase];
                             }
                             dst++;
                             col++;
-                            v = *src >> 4;
-                            if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = sNesSpriteTluts[param][v + t0];
+                            pixel = *src >> 4;
+                            if (pixel != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
+                                *dst = sNesSpriteTluts[fb][pixel + palBase];
                             }
                             dst++;
                             col++;
@@ -530,15 +563,15 @@ void nes_draw_back_sprites(s32 param)
                         src += 9;
                     } else {
                         for (k = 0; k < 4; k++) {
-                            v = *src >> 4;
-                            if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = sNesSpriteTluts[param][v + t0];
+                            pixel = *src >> 4;
+                            if (pixel != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
+                                *dst = sNesSpriteTluts[fb][pixel + palBase];
                             }
                             dst++;
                             col++;
-                            v = *src & 0xF;
-                            if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = sNesSpriteTluts[param][v + t0];
+                            pixel = *src & 0xF;
+                            if (pixel != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
+                                *dst = sNesSpriteTluts[fb][pixel + palBase];
                             }
                             dst++;
                             col++;
@@ -546,79 +579,89 @@ void nes_draw_back_sprites(s32 param)
                         }
                         src += 4;
                     }
-                    dst += 0x138;
+                    dst += 0x138; /* the next row: 320 - 8 */
                 }
             }
         }
-        osWritebackDCache(gFramebuffers_2[param], 0x25800);
+        osWritebackDCache(gFramebuffers_2[fb], 0x25800); /* 320 x 240 x 2 */
     }
 }
 
+/* Sets the audio rate and allocates two output buffers, each a frame of stereo s16 samples. */
 void nes_audio_init(void)
 {
     s32 i;
-    void *q;
+    void *buf;
 
-    sNesAudioFreq = osAiSetFrequency(0x5622);
+    sNesAudioFreq = osAiSetFrequency(NES_AUDIO_RATE);
     sNesAudioFrameSamples = ((sNesAudioChunks * sNesAudioFreq) / 60 + 7) & -8;
     for (i = 0; i < 2; i++) {
-        q = mem_alloc_dbg(sNesAudioFrameSamples << 2, 0, sStrNesn64C, 0x396);
-        sNesAudioBufs[i] = (s32)q;
-        mem_fill(q, 0, sNesAudioFrameSamples << 2);
+        buf = mem_alloc_dbg(sNesAudioFrameSamples << 2, 0, sStrNesn64C, 0x396);
+        sNesAudioBufs[i] = (s32)buf;
+        mem_fill(buf, 0, sNesAudioFrameSamples << 2);
     }
     sNesAudioBufIndex = 1;
 }
 
-void nes_apu_render(s16 *p)
+/* Synthesizes one audio chunk into `out` (interleaved stereo): the triangle (or silence), plus the two squares and
+   the noise; then advances each channel's length count and envelope. */
+void nes_apu_render(s16 *out)
 {
-    s32 n, i, j, v;
-    NesApuChannel *c;
-    s32 old;
+    s32 count, i, j, sample;
+    NesApuChannel *ch;
+    s32 oldPhase;
 
-    n = sNesAudioFrameSamples / sNesAudioChunks;
+    count = sNesAudioFrameSamples / sNesAudioChunks;
     if (sNesCpuMemory == 0) {
         return;
     }
-    if (!(NES->apu[2].flags & NES_APU_ENABLED) || NES->apu[2].elapsed >= NES->apu[2].length || NES->apu[2].volume == 0) {
-        mem_fill((u8 *)p, 0, n * 4);
+    if (!(NES->apu[NES_APU_TRIANGLE].flags & NES_APU_ENABLED)
+        || NES->apu[NES_APU_TRIANGLE].elapsed >= NES->apu[NES_APU_TRIANGLE].length
+        || NES->apu[NES_APU_TRIANGLE].volume == 0) {
+        mem_fill((u8 *)out, 0, count * 4);
     } else {
-        for (j = 0; j < n * 2; j += 2) {
-            NES->apu[2].phase += (u16)NES->apu[2].rate;
-            v = NES->apu[2].phase;
-            v -= 0x4000;
-            if (v > 0x4000) {
-                v = 0x8000 - v;
+        for (j = 0; j < count * 2; j += 2) {
+            NES->apu[NES_APU_TRIANGLE].phase += (u16)NES->apu[NES_APU_TRIANGLE].rate;
+            sample = NES->apu[NES_APU_TRIANGLE].phase;
+            sample -= 0x4000;
+            if (sample > 0x4000) {
+                sample = 0x8000 - sample;
             }
-            v >>= 1;
-            p[j] = v;
-            p[j + 1] = v;
+            sample >>= 1;
+            out[j] = sample;
+            out[j + 1] = sample;
         }
     }
+    /* the squares */
     for (i = 0; i < 2; i++) {
         if ((NES->apu[i].flags & NES_APU_ENABLED) && NES->apu[i].elapsed < NES->apu[i].length && NES->apu[i].volume != 0) {
-                for (j = 0; j < n * 2; j += 2) {
+            for (j = 0; j < count * 2; j += 2) {
                 NES->apu[i].phase += (u16)NES->apu[i].rate;
                 if (NES->apu[i].duty < NES->apu[i].phase) {
-                    v = 0x1000;
+                    sample = 0x1000;
                 } else {
-                    v = -0x1000;
+                    sample = -0x1000;
                 }
-                v = (v * NES->apu[i].volume) >> 16;
-                p[j] += v;
-                p[j + 1] += v;
+                sample = (sample * NES->apu[i].volume) >> 16;
+                out[j] += sample;
+                out[j + 1] += sample;
             }
         }
     }
-    if ((NES->apu[3].flags & NES_APU_ENABLED) && NES->apu[3].elapsed < NES->apu[3].length && NES->apu[3].volume != 0) {
-        for (j = 0; j < n * 2; j += 2) {
-            old = NES->apu[3].phase;
-            NES->apu[3].phase += (u16)NES->apu[3].rate;
-            if (NES->apu[3].phase < old) {
-                v = ((s32)random_byte() - 0x80) << 4;
-                v = v * NES->apu[3].volume >> 16;
+    /* The noise: a new random level each time the phase wraps, held in between (at the start of the chunk, `sample`
+       still holds whatever the code above left in it). */
+    if ((NES->apu[NES_APU_NOISE].flags & NES_APU_ENABLED)
+        && NES->apu[NES_APU_NOISE].elapsed < NES->apu[NES_APU_NOISE].length
+        && NES->apu[NES_APU_NOISE].volume != 0) {
+        for (j = 0; j < count * 2; j += 2) {
+            oldPhase = NES->apu[NES_APU_NOISE].phase;
+            NES->apu[NES_APU_NOISE].phase += (u16)NES->apu[NES_APU_NOISE].rate;
+            if (NES->apu[NES_APU_NOISE].phase < oldPhase) {
+                sample = ((s32)random_byte() - 0x80) << 4;
+                sample = sample * NES->apu[NES_APU_NOISE].volume >> 16;
             }
-            p[j] += v;
-            p[j + 1] += v;
+            out[j] += sample;
+            out[j + 1] += sample;
         }
     }
     for (i = 0; i < 4; i++) {
@@ -635,17 +678,18 @@ void nes_apu_render(s16 *p)
     }
 }
 
+/* Once a frame: when the AI can take a buffer, renders a frame of audio into the next one and queues it. */
 void nes_audio_update(void)
 {
     s32 i;
-    s16 *p;
+    s16 *out;
 
     osInvalDCache(0, 0x400000);
     if (osAiGetStatus_2() >= 0) {
-        p = (s16 *)sNesAudioBufs[sNesAudioBufIndex];
+        out = (s16 *)sNesAudioBufs[sNesAudioBufIndex];
         for (i = 0; i < sNesAudioChunks; i++) {
-            nes_apu_render(p);
-            p += (sNesAudioFrameSamples / sNesAudioChunks) * 2;
+            nes_apu_render(out);
+            out += (sNesAudioFrameSamples / sNesAudioChunks) * 2;
         }
         osWritebackDCache((s16 *)sNesAudioBufs[sNesAudioBufIndex], sNesAudioFrameSamples << 2);
         osAiSetNextBuffer((s16 *)sNesAudioBufs[sNesAudioBufIndex], sNesAudioFrameSamples << 2);
@@ -653,6 +697,7 @@ void nes_audio_update(void)
     }
 }
 
+/* The state's exit: frees the emulator's buffers and gives the sound back to the game. */
 void nes_exit(void)
 {
     s32 i;
@@ -671,20 +716,22 @@ void nes_exit(void)
 
 void nes_audio_free(void)
 {
-    u32 *p = &sNesAudioBufs;
-    mem_free(p[0]);
-    mem_free(p[1]);
+    u32 *bufs = &sNesAudioBufs;
+    mem_free(bufs[0]);
+    mem_free(bufs[1]);
 }
 
+/* Whether the exit message goes on this screen: two tiles of the first name table identify it. */
 s32 nes_should_show_exit_msg(void)
 {
-    u8 *p = sNesMemory->vram;
-    if (p[0x2084] == 0x27 && p[0x2108] == 0x9A) {
+    u8 *vram = sNesMemory->vram;
+    if (vram[0x2084] == 0x27 && vram[0x2108] == 0x9A) {
         return 1;
     }
     return 0;
 }
 
+/* Silences the four channels. */
 void nes_apu_reset_channels(void)
 {
     s32 i;
@@ -694,204 +741,213 @@ void nes_apu_reset_channels(void)
     }
 }
 
-void nes_init_saved_track(u8 *p)
+/* Fills a save block's design track (gSaveData.nesTrack) with Excitebike's empty track. */
+void nes_init_saved_track(u8 *track)
 {
-    mem_fill(p, 0x40, 0x220);
-    p[0] = 1;
-    p[0xCF] = 9;
-    mem_fill(p + 0xD0, 0, 0x30);
-    p[0x100] = 1;
-    p[0x1CF] = 9;
-    mem_fill(p + 0x1D0, 0, 0x50);
-    *(s16 *)(p + 0x200) = 0x5A10;
-    p[0x204] = 0x2D;
-    *(s16 *)(p + 0x20C) = -0x73FF;
-    p[0x209] = 1;
-    p[0x21B] = 1;
+    mem_fill(track, 0x40, NES_TRACK_SIZE);
+    track[0] = 1;
+    track[0xCF] = 9;
+    mem_fill(track + 0xD0, 0, 0x30);
+    track[0x100] = 1;
+    track[0x1CF] = 9;
+    mem_fill(track + 0x1D0, 0, 0x50);
+    *(s16 *)(track + 0x200) = 0x5A10;
+    track[0x204] = 0x2D;
+    *(s16 *)(track + 0x20C) = -0x73FF;
+    track[0x209] = 1;
+    track[0x21B] = 1;
 }
 
-void nes_apu_update_square(s32 idx, s32 mode)
+/* After a write to register `reg` (0-3) of square channel `idx`: updates its rate, duty, length, enable bit and
+   envelope. A write to register 0 restarts the volume, one to register 3 the length count. */
+void nes_apu_update_square(s32 idx, s32 reg)
 {
-    NesApuChannel *r;
-    s32 per;
-    s32 a0;
-    s32 v;
-    u8 *p;
+    NesApuChannel *ch;
+    s32 period;
+    s32 bits;
+    s32 volume;
+    u8 *ctrl;
 
-    per = NES->mem[idx * 4 + 0x4002] | ((NES->mem[idx * 4 + 0x4003] & 7) << 8);
-    r = &NES->apu[idx];
-    if (per == 0) {
-        per = 1;
+    period = NES->mem[idx * 4 + NES_APU_TIMER_LO] | ((NES->mem[idx * 4 + NES_APU_TIMER_HI] & 7) << 8);
+    ch = &NES->apu[idx];
+    if (period == 0) {
+        period = 1;
     }
-    per = 0x36EE8 / per;
-    per = (per << 15) / 22050;
-    r->rate = per;
-    a0 = NES->mem[idx * 4 + 0x4000] >> 6;
-    r->duty = sNesDutyTable[a0];
-    a0 = NES->mem[idx * 4 + 0x4003] >> 3;
-    if (a0 & 1) {
-        a0 >>= 1;
-        if (a0 == 0) {
-            r->length = 0x7E;
+    period = NES_APU_CLOCK / period;
+    period = (period << 15) / NES_AUDIO_RATE;
+    ch->rate = period;
+    bits = NES->mem[idx * 4 + NES_APU_CTRL] >> NES_APU_DUTY_SHIFT;
+    ch->duty = sNesDutyTable[bits];
+    /* the length: with bit 3 set, bits 4-7 (0 meaning 0x7E); otherwise from sNesLengthTable */
+    bits = NES->mem[idx * 4 + NES_APU_TIMER_HI] >> 3;
+    if (bits & 1) {
+        bits >>= 1;
+        if (bits == 0) {
+            ch->length = 0x7E;
         } else {
-            r->length = a0;
+            ch->length = bits;
         }
     } else {
-        r->length = sNesLengthTable[a0 >> 1];
+        ch->length = sNesLengthTable[bits >> 1];
     }
-    if (NES->mem[0x4000 + idx * 4] & 0x20) {
-        r->lengthStep = 0;
-        r->elapsed = 0;
+    if (NES->mem[NES_APU_CTRL + idx * 4] & NES_APU_LENGTH_HALT) {
+        ch->lengthStep = 0;
+        ch->elapsed = 0;
     } else {
-        r->lengthStep = 1;
+        ch->lengthStep = 1;
     }
-    if (mode == 3) {
-        r->elapsed = 0;
+    if (reg == 3) {
+        ch->elapsed = 0;
     }
-    if ((NES->mem[0x4015] >> idx) & 1) {
-        r->flags |= NES_APU_ENABLED;
+    if ((NES->mem[NES_APU_STATUS] >> idx) & 1) {
+        ch->flags |= NES_APU_ENABLED;
     } else {
-        r->flags &= ~NES_APU_ENABLED;
+        ch->flags &= ~NES_APU_ENABLED;
     }
-    if (mode == 0) {
-        r->volume = 0xFFFF;
+    if (reg == 0) {
+        ch->volume = 0xFFFF;
     }
-    p = &NES->mem[0x4000 + idx * 4];
-    a0 = *p & 0x10;
-    v = *p & 0xF;
-    if (a0) {
-        r->volume = (v << 16) / 16;
-        r->decay = 0;
-        r->flags &= ~NES_APU_LOOP;
+    ctrl = &NES->mem[NES_APU_CTRL + idx * 4];
+    bits = *ctrl & NES_APU_CONST_VOLUME;
+    volume = *ctrl & NES_APU_VOLUME;
+    if (bits) {
+        ch->volume = (volume << 16) / 16;
+        ch->decay = 0;
+        ch->flags &= ~NES_APU_LOOP;
         return;
     }
-    r->decay = 0x4000 / (v + 1);
-    if (*p & 0x20) {
-        r->flags |= NES_APU_LOOP;
+    ch->decay = 0x4000 / (volume + 1);
+    if (*ctrl & NES_APU_LENGTH_HALT) {
+        ch->flags |= NES_APU_LOOP;
         return;
     }
-    r->flags &= ~NES_APU_LOOP;
+    ch->flags &= ~NES_APU_LOOP;
 }
 
-void nes_apu_update_triangle(s32 n, s32 m)
+/* The same for the triangle (channel `idx`, 2): an octave lower for the same period, full volume, decaying by the
+   linear counter's reload value unless that is halted. */
+void nes_apu_update_triangle(s32 idx, s32 reg)
 {
     Nes *nes;
-    NesApuChannel *c;
-    s32 v;
-    s32 bVar1;
-    s32 k;
-    u8 *p;
+    NesApuChannel *ch;
+    s32 period;
+    s32 bits;
+    s32 regAddr;
+    u8 *timerHi;
 
     nes = NES;
-    k = n * 4;
-    k += 0x4003;
-    p = &nes->mem[k];
-    v = nes->mem[n * 4 + 0x4002] | ((*p & 7) << 8);
-    c = &NES->apu[n];
-    if (v == 0) {
-        v = 1;
+    regAddr = idx * 4;
+    regAddr += NES_APU_TIMER_HI;
+    timerHi = &nes->mem[regAddr];
+    period = nes->mem[idx * 4 + NES_APU_TIMER_LO] | ((*timerHi & 7) << 8);
+    ch = &NES->apu[idx];
+    if (period == 0) {
+        period = 1;
     }
-    v = 0x36EE8 / v;
-    v = (v << 14) / 0x5622;
-    c->rate = v;
-    bVar1 = *p >> 3;
-    if (bVar1 & 1) {
-        bVar1 >>= 1;
-        if (bVar1 == 0) {
-            c->length = 0x7e;
+    period = NES_APU_CLOCK / period;
+    period = (period << 14) / NES_AUDIO_RATE;
+    ch->rate = period;
+    bits = *timerHi >> 3;
+    if (bits & 1) {
+        bits >>= 1;
+        if (bits == 0) {
+            ch->length = 0x7e;
         } else {
-            c->length = bVar1;
+            ch->length = bits;
         }
     } else {
-        c->length = sNesLengthTable[bVar1 >> 1];
+        ch->length = sNesLengthTable[bits >> 1];
     }
-    if ((NES->mem[0x4000 + n * 4] & 0x20) != 0) {
-        c->lengthStep = 0;
-        c->elapsed = 0;
+    /* the squares' halt bit (the triangle's is NES_APU_TRI_HALT) */
+    if ((NES->mem[NES_APU_CTRL + idx * 4] & NES_APU_LENGTH_HALT) != 0) {
+        ch->lengthStep = 0;
+        ch->elapsed = 0;
     } else {
-        c->lengthStep = 1;
+        ch->lengthStep = 1;
     }
-    if (m == 3) {
-        c->elapsed = 0;
+    if (reg == 3) {
+        ch->elapsed = 0;
     }
-    if (((NES->mem[0x4015] >> n) & 1) != 0) {
-        c->flags = c->flags | NES_APU_ENABLED;
+    if (((NES->mem[NES_APU_STATUS] >> idx) & 1) != 0) {
+        ch->flags = ch->flags | NES_APU_ENABLED;
     } else {
-        c->flags = c->flags & ~NES_APU_ENABLED;
+        ch->flags = ch->flags & ~NES_APU_ENABLED;
     }
-    c->volume = 0xffff;
-    bVar1 = NES->mem[0x4000 + n * 4];
-    if ((bVar1 & 0x80) != 0) {
-        c->decay = 0;
+    ch->volume = 0xffff;
+    bits = NES->mem[NES_APU_CTRL + idx * 4];
+    if ((bits & NES_APU_TRI_HALT) != 0) {
+        ch->decay = 0;
         return;
     }
-    c->decay = 0x40000 / ((bVar1 & 0x7f) + 1);
+    ch->decay = 0x40000 / ((bits & 0x7f) + 1);
 }
 
-void nes_apu_update_noise(s32 n, s32 m)
+/* The same for the noise channel (`idx`, 3): its rate from sNesNoisePeriods, the length and the envelope as for the
+   squares. */
+void nes_apu_update_noise(s32 idx, s32 reg)
 {
     Nes *nes;
-    NesApuChannel *c;
-    s32 v;
-    s32 b;
-    u8 *p;
-    u8 *q;
-    s32 k;
-    s32 t;
-    s32 e, mm;
-    s32 *tb;
+    NesApuChannel *ch;
+    s32 rate;
+    s32 bits;
+    u8 *regs;
+    u8 *ctrl;
+    s32 regAddr;
+    s32 constVolume;
+    s32 ctrlByte, volume;
+    s32 *periods;
 
-    tb = sNesNoisePeriods;
+    periods = sNesNoisePeriods;
     nes = NES;
-    k = n * 4 + 0x4002;
-    v = tb[nes->mem[k] & 0xF];
-    v = (v * 0x28F) / 0xDC;
-    p = &nes->mem[n * 4];
-    c = &NES->apu[n];
-    c->rate = v * 4;
-    b = p[0x4003] >> 3;
-    if (b & 1) {
-        b >>= 1;
-        if (b == 0) {
-            c->length = 0x7e;
+    regAddr = idx * 4 + NES_APU_TIMER_LO;
+    rate = periods[nes->mem[regAddr] & 0xF];
+    rate = (rate * 0x28F) / 0xDC;
+    regs = &nes->mem[idx * 4];
+    ch = &NES->apu[idx];
+    ch->rate = rate * 4;
+    bits = regs[NES_APU_TIMER_HI] >> 3;
+    if (bits & 1) {
+        bits >>= 1;
+        if (bits == 0) {
+            ch->length = 0x7e;
         } else {
-            c->length = b;
+            ch->length = bits;
         }
     } else {
-        c->length = sNesLengthTable[b >> 1];
+        ch->length = sNesLengthTable[bits >> 1];
     }
-    if ((NES->mem[0x4000 + n * 4] & 0x20) != 0) {
-        c->lengthStep = 0;
-        c->elapsed = 0;
+    if ((NES->mem[NES_APU_CTRL + idx * 4] & NES_APU_LENGTH_HALT) != 0) {
+        ch->lengthStep = 0;
+        ch->elapsed = 0;
     } else {
-        c->lengthStep = 1;
+        ch->lengthStep = 1;
     }
-    if (m == 3) {
-        c->elapsed = 0;
+    if (reg == 3) {
+        ch->elapsed = 0;
     }
-    if (((NES->mem[0x4015] >> n) & 1) != 0) {
-        c->flags = c->flags | NES_APU_ENABLED;
+    if (((NES->mem[NES_APU_STATUS] >> idx) & 1) != 0) {
+        ch->flags = ch->flags | NES_APU_ENABLED;
     } else {
-        c->flags = c->flags & ~NES_APU_ENABLED;
+        ch->flags = ch->flags & ~NES_APU_ENABLED;
     }
-    if (m == 0) {
-        c->volume = 0xffff;
+    if (reg == 0) {
+        ch->volume = 0xffff;
     }
-    k = n * 4;
-    q = &NES->mem[0x4000 + k];
-    e = *q;
-    t = e & 0x10;
-    mm = e & 0xF;
-    if (t != 0) {
-        c->volume = (mm << 16) / 16;
-        c->decay = 0;
-        c->flags = c->flags & ~NES_APU_LOOP;
+    regAddr = idx * 4;
+    ctrl = &NES->mem[NES_APU_CTRL + regAddr];
+    ctrlByte = *ctrl;
+    constVolume = ctrlByte & NES_APU_CONST_VOLUME;
+    volume = ctrlByte & NES_APU_VOLUME;
+    if (constVolume != 0) {
+        ch->volume = (volume << 16) / 16;
+        ch->decay = 0;
+        ch->flags = ch->flags & ~NES_APU_LOOP;
     } else {
-        c->decay = 0x4000 / (mm + 1);
-        if ((*q & 0x20) != 0) {
-            c->flags = c->flags | NES_APU_LOOP;
+        ch->decay = 0x4000 / (volume + 1);
+        if ((*ctrl & NES_APU_LENGTH_HALT) != 0) {
+            ch->flags = ch->flags | NES_APU_LOOP;
         } else {
-            c->flags = c->flags & ~NES_APU_LOOP;
+            ch->flags = ch->flags & ~NES_APU_LOOP;
         }
     }
 }
@@ -1040,7 +1096,7 @@ void nes_op_asr(void)
         if (sNesOperand & 0x40) {
             sNesOperand |= 0x80;
         }
-        wr(sNesEffAddr, sNesOperand);
+        bus_write(sNesEffAddr, sNesOperand);
         NES->z = (sNesOperand & 0xFF) == 0;
         NES->n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
@@ -1066,7 +1122,7 @@ void nes_op_rol(void)
             do { sNesOperand |= 1; } while (0);
         }
         NES->c = bit;
-        wr(sNesEffAddr, sNesOperand);
+        bus_write(sNesEffAddr, sNesOperand);
         NES->z = (sNesOperand & 0xFF) == 0;
         NES->n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
@@ -1092,7 +1148,7 @@ void nes_op_ror(void)
             do { sNesOperand |= 0x80; } while (0);
         }
         NES->c = bit;
-        wr(sNesEffAddr, sNesOperand);
+        bus_write(sNesEffAddr, sNesOperand);
         NES->z = (sNesOperand & 0xFF) == 0;
         NES->n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
@@ -1513,7 +1569,7 @@ void nes_op_dec(void)
     Nes *nes;
 
     sNesOperand = sNesOperand - 1;
-    wr_2(sNesEffAddr, sNesOperand);
+    bus_write_2(sNesEffAddr, sNesOperand);
     nes = NES;
     nes->z = (sNesOperand & 0xFF) == 0;
     nes->n = sNesOperand & 0x80;
@@ -1555,7 +1611,7 @@ void nes_op_inc(void) {
     s32 c = sNesOperand + 1;
 
     sNesOperand = c;
-    wr_2(sNesEffAddr, c);
+    bus_write_2(sNesEffAddr, c);
     nes = NES;
     nes->z = (sNesOperand & 0xFF) == 0;
     nes->n = ((u8 *)&sNesOperand)[3] & 0x80;
@@ -1877,7 +1933,7 @@ void nes_am_zeropage_stub(void)
 {
 }
 
-static inline s32 rd2(s32 a)
+static inline s32 bus_read_2(s32 a)
 {
     if (a < 0x2000) {
         a = a & 0x7FF;
@@ -1893,7 +1949,7 @@ void nes_am_zeropage(void)
     s32 a = NES->mem[NES_AT(pc) + 1];
     s32 r;
     sNesEffAddr = a;
-    r = rd2(a);
+    r = bus_read_2(a);
     sNesOperand = r;
 }
 
@@ -1955,7 +2011,7 @@ void nes_am_absolute_y(void)
 
     a = (p[1] | (ram[(u16)(i + 2)] << 8)) + nes->y;
     sNesEffAddr = a;
-    r = rd((u16)a);
+    r = bus_read((u16)a);
     sNesOperand = r;
 }
 
@@ -1976,7 +2032,7 @@ void nes_am_indexed_indirect(void)
     a = p[1] + nes->x;
     *out = a;
     *out = ram[a] | (ram[(u16)(a + 1)] << 8);
-    r = rd(*out);
+    r = bus_read(*out);
     sNesOperand = r;
 }
 
@@ -1998,7 +2054,7 @@ void nes_am_indirect_indexed(void)
     *out = a;
     b = (ram[a] | (ram[(u16)(a + 1)] << 8)) + nes->y;
     *out = b;
-    r = rd((u16)b);
+    r = bus_read((u16)b);
     sNesOperand = r;
 }
 
@@ -2029,7 +2085,7 @@ void nes_am_zeropage_y_stub(void)
 {
 }
 
-static inline u32 rd2_2(s32 a)
+static inline u32 bus_read_3(s32 a)
 {
     if (a < 0x2000) {
         a &= 0x7FF;
@@ -2046,7 +2102,7 @@ void nes_am_zeropage_y(void)
     s32 a;
     a = ram[nes->pc + 1] + nes->y;
     sNesEffAddr = a;
-    *(u32 *)&sNesOperand = rd2_2(a); /* an unsigned store: as s32 the inlined read schedules differently */
+    *(u32 *)&sNesOperand = bus_read_3(a); /* an unsigned store: as s32 the inlined read schedules differently */
 }
 
 void nes_am_relative_stub(void)
@@ -2139,14 +2195,14 @@ void nes_ea_indexed_indirect(void)
     *out = ram[a] | (ram[(u16)(a + 1)] << 8);
 }
 
-static inline u32 rd_2(u32 addr) { return NES->mem[addr]; }
+static inline u32 ram_read(u32 addr) { return NES->mem[addr]; }
 
 void nes_ea_indirect_indexed(void)
 {
     Nes *nes = NES;
-    u32 a = rd_2(nes->pc + 1);
+    u32 a = ram_read(nes->pc + 1);
     sNesEffAddr = a;
-    sNesEffAddr = (rd_2(a) | (rd_2(a + 1) << 8)) + nes->y;
+    sNesEffAddr = (ram_read(a) | (ram_read(a + 1) << 8)) + nes->y;
 }
 
 void nes_ea_zeropage_x(void)
