@@ -1,116 +1,125 @@
 #include "game.h"
 
-typedef struct { u8 r0; u8 key[7]; } Rec_43;
+/* Stunts: the stick sequences of the tricks, starting and animating a trick or animation of gRiderAnims, and the
+   points. Stick directions (Rider.stickHist): 1 trick button released, 2 centred, 3-6 pushed. */
 
-extern Rec_43 *sStuntSeqByDir[];
+/* A trick's stick sequence: the directions, newest first, 0-terminated. The tables end with trick 0xFF. */
+typedef struct { u8 trick; u8 seq[7]; } Rec_43;
+
+extern Rec_43 *sStuntSeqByDir[];        /* the first entry for each newest direction 2-6 */
 extern Rec_43 *sStuntSeqByDirAlt[];
 
 extern Rec_43 sStuntInputSeqs[13];
-extern Rec_43 sStuntInputSeqsAlt[8];
+extern Rec_43 sStuntInputSeqsAlt[8];    /* with R held */
 
+/* True when a's sequence sorts before b's. */
 static inline u8 cmp(Rec_43 *a, Rec_43 *b)
 {
     s32 k;
 
     for (k = 0; k < 7; k++) {
-        if (a->key[k] > b->key[k]) {
+        if (a->seq[k] > b->seq[k]) {
             return 0;
         }
-        if (a->key[k] < b->key[k]) {
+        if (a->seq[k] < b->seq[k]) {
             return 1;
         }
     }
     return 0;
 }
 
+/* Sorts both sequence tables in decreasing order (the terminator stays last) and indexes them by the newest
+   direction. */
 void stunt_init_input_tables(void)
 {
-    u8 flag;
+    u8 swapped;
     s32 i;
-    u32 m;
-    s32 off;
-    Rec_43 *t, *pa, *pb, *p1;
+    u32 entry;
+    s32 offset;
+    Rec_43 *table, *cur, *next, *second;
     Rec_43 tmp;
 
-    t = sStuntInputSeqs;
-    p1 = &t[1];
+    table = sStuntInputSeqs;
+    second = &table[1];
     do {
-        flag = 0;
+        swapped = 0;
         i = 0;
-        pa = t;
-        off = 8;
-        pb = p1;
+        cur = table;
+        offset = 8;
+        next = second;
         for (; i < sizeof(sStuntInputSeqs) / sizeof(Rec_43) - 2; i++) {
-            if (cmp(pa, pb)) {
-                flag = 1;
-                tmp = *pa;
-                *pa = *(Rec_43 *)(off + (u32)t);
-                *(Rec_43 *)(off + (u32)t) = tmp;
+            if (cmp(cur, next)) {
+                swapped = 1;
+                tmp = *cur;
+                *cur = *(Rec_43 *)(offset + (u32)table);
+                *(Rec_43 *)(offset + (u32)table) = tmp;
             }
-            pa++;
-            off += 8;
-            pb++;
+            cur++;
+            offset += 8;
+            next++;
         }
-    } while (flag);
+    } while (swapped);
     for (i = 0; i < 5; i++) {
-        for (m = 0; m < sizeof(sStuntInputSeqs) / sizeof(Rec_43); m++) {
-            if (sStuntInputSeqs[m].key[0] <= i + 2) {
+        for (entry = 0; entry < sizeof(sStuntInputSeqs) / sizeof(Rec_43); entry++) {
+            if (sStuntInputSeqs[entry].seq[0] <= i + 2) {
                 break;
             }
         }
-        sStuntSeqByDir[i] = (Rec_43 *)(m * 8 + (u32)sStuntInputSeqs);
+        sStuntSeqByDir[i] = (Rec_43 *)(entry * 8 + (u32)sStuntInputSeqs); /* &sStuntInputSeqs[entry] */
     }
 
-    t = sStuntInputSeqsAlt;
-    p1 = &t[1];
+    table = sStuntInputSeqsAlt;
+    second = &table[1];
     do {
-        flag = 0;
+        swapped = 0;
         i = 0;
-        pa = t;
-        off = 8;
-        pb = p1;
+        cur = table;
+        offset = 8;
+        next = second;
         for (; i < sizeof(sStuntInputSeqsAlt) / sizeof(Rec_43) - 2; i++) {
-            if (cmp(pa, pb)) {
-                flag = 1;
-                tmp = *pa;
-                *pa = *(Rec_43 *)(off + (u32)t);
-                *(Rec_43 *)(off + (u32)t) = tmp;
+            if (cmp(cur, next)) {
+                swapped = 1;
+                tmp = *cur;
+                *cur = *(Rec_43 *)(offset + (u32)table);
+                *(Rec_43 *)(offset + (u32)table) = tmp;
             }
-            pa++;
-            off += 8;
-            pb++;
+            cur++;
+            offset += 8;
+            next++;
         }
-    } while (flag);
+    } while (swapped);
     for (i = 0; i < 5; i++) {
-        for (m = 0; m < sizeof(sStuntInputSeqsAlt) / sizeof(Rec_43); m++) {
-            if (sStuntInputSeqsAlt[m].key[0] <= i + 2) {
+        for (entry = 0; entry < sizeof(sStuntInputSeqsAlt) / sizeof(Rec_43); entry++) {
+            if (sStuntInputSeqsAlt[entry].seq[0] <= i + 2) {
                 break;
             }
         }
-        sStuntSeqByDirAlt[i] = (Rec_43 *)(m * 8 + (u32)sStuntInputSeqsAlt);
+        sStuntSeqByDirAlt[i] = (Rec_43 *)(entry * 8 + (u32)sStuntInputSeqsAlt);
     }
 }
 
-void stunt_read_input(Rider *e)
+/* Adds the stick's direction to the stick history and, when the trick button (C down) is pressed or the direction
+   changes while it is held, queues the trick whose sequence the history ends with. */
+void stunt_read_input(Rider *rider)
 {
-    u32 w;
+    u32 input;
     s32 x, y, dir;
-    u8 flag;
+    u8 changed;
     s32 k;
     s32 i;
     u8 **tab;
-    u8 *p;
+    u8 *entry;
 
-    if ((e->prevInput & 0x100) && !(e->input & 0x100)) {
-        e->queuedTrick = -1;
-        e->stickHist[e->stickHistIdx] = 1;
+    if ((rider->prevInput & INPUT_C_DOWN) && !(rider->input & INPUT_C_DOWN)) {
+        rider->queuedTrick = ANIM_NONE;
+        rider->stickHist[rider->stickHistIdx] = 1;
         return;
     }
-    w = e->input;
-    y = w >> 28;
-    if (w & 2) y = -y;
-    x = ((s32)w >> 24) & 0xF;
-    if (w & 8) x = -x;
+    input = rider->input;
+    y = input >> INPUT_STICK_Y_SHIFT;
+    if (input & INPUT_STICK_DOWN) y = -y;
+    x = ((s32)input >> INPUT_STICK_X_SHIFT) & 0xF;
+    if (input & INPUT_STICK_RIGHT) x = -x;
     if (abs(x) < 8 && abs(y) < 8) {
         dir = 2;
     } else {
@@ -118,361 +127,368 @@ void stunt_read_input(Rider *e)
         if (y < x) dir = 5;
         if (-y < x) dir++;
     }
-    flag = 0;
-    if (e->stickHist[e->stickHistIdx] == dir && e->stickHistCount < 0xF0) {
-        e->stickHistCount++;
+    changed = 0;
+    if (rider->stickHist[rider->stickHistIdx] == dir && rider->stickHistCount < 0xF0) {
+        rider->stickHistCount++;
     } else {
-        flag = 1;
-        e->stickHistIdx = (e->stickHistIdx - 1) & 7;
-        e->stickHist[e->stickHistIdx] = dir;
-        e->stickHistCount = 0;
+        changed = 1;
+        rider->stickHistIdx = (rider->stickHistIdx - 1) & 7;
+        rider->stickHist[rider->stickHistIdx] = dir;
+        rider->stickHistCount = 0;
     }
-    if ((e->input & 0x100) && (!(e->prevInput & 0x100) || flag)) {
-        if (e->input & 0x10000) {
-            p = sStuntSeqByDirAlt[dir - 2];
+    if ((rider->input & INPUT_C_DOWN) && (!(rider->prevInput & INPUT_C_DOWN) || changed)) {
+        /* entries sorted in decreasing order: stop at the first one past the history */
+        if (rider->input & INPUT_R) {
+            entry = sStuntSeqByDirAlt[dir - 2];
         } else {
-            p = sStuntSeqByDir[dir - 2];
+            entry = sStuntSeqByDir[dir - 2];
         }
         do {
             for (i = 0; i < 7; i++) {
-                if (p[i + 1] == 0 &&
-                    (((gRiderAnims[p[0]].riderMask >> gGame.riders[e - gRiders]) & 1) ||
-                     (gCheatFlags & 0x200))) {
-                    e->trickFrame = gRaceFrame;
-                    e->queuedTrick = p[0];
+                if (entry[i + 1] == 0 &&
+                    (((gRiderAnims[entry[0]].riderMask >> gGame.riders[rider - gRiders]) & 1) ||
+                     (gCheatFlags & CHEAT_ALL_STUNTS))) {
+                    rider->trickFrame = gRaceFrame;
+                    rider->queuedTrick = entry[0];
                 }
-                if ((p + i)[1] != e->stickHist[(e->stickHistIdx + i) & 7]) break;
+                if ((entry + i)[1] != rider->stickHist[(rider->stickHistIdx + i) & 7]) break;
             }
-            if ((p + i)[1] < e->stickHist[(e->stickHistIdx + i) & 7]) return;
-            p += 8;
+            if ((entry + i)[1] < rider->stickHist[(rider->stickHistIdx + i) & 7]) return;
+            entry += 8;
         } while (i != 0);
     }
 }
 
-
-void stunt_update(Rider *o)
+/* A rider's stunts for a frame: reads the stick, banks a trick's points after landing, starts a queued trick,
+   plays the air turns, and animates the trick (one still going on the ground below 5 m/s crashes). */
+void stunt_update(Rider *rider)
 {
-    s32 found;
+    s32 isNew;
     s32 k;
-    s32 t;
-    s32 v;
-    s32 lim;
-    s8 d2;
-    s8 d3;
-    s8 s;
+    s32 score;
+    s32 ticksLeft;
+    s32 end;
+    s8 trick;
+    s8 queued;
+    s8 anim;
 
-    stunt_read_input(o);
-    if (o->trickDoneTimer != 0) {
-        if (--o->trickDoneTimer == 0) {
-            if ((o->airFrames < 0 || 30.0f < o->landingTime) && gEvent.allFinished == 0) {
-                found = 0;
-                t = o->stuntScore;
-                o->stuntScore = 0;
-                o->stuntTotal += t;
-                d2 = o->trick;
-                if (d2 < 16) {
-                    for (k = 0; k < o->trickListLen; k++) {
-                        if (d2 == o->trickList[k]) break;
+    stunt_read_input(rider);
+    if (rider->trickDoneTimer != 0) {
+        if (--rider->trickDoneTimer == 0) {
+            if ((rider->airFrames < 0 || 30.0f < rider->landingTime) && gEvent.allFinished == 0) {
+                isNew = 0;
+                score = rider->stuntScore;
+                rider->stuntScore = 0;
+                rider->stuntTotal += score;
+                trick = rider->trick;
+                if (trick < ANIM_TRICK_COUNT) {
+                    for (k = 0; k < rider->trickListLen; k++) {
+                        if (trick == rider->trickList[k]) break;
                     }
-                    if (k == o->trickListLen) {
-                        found = 1;
-                        o->trickList[k] = o->trick;
-                        o->trickListLen = k + found;
+                    if (k == rider->trickListLen) {
+                        isNew = 1;
+                        rider->trickList[k] = rider->trick;
+                        rider->trickListLen = k + isNew;
                     }
                     for (k = 4; k >= 0; k--) {
-                        o->trickHist[k + 1] = o->trickHist[k];
+                        rider->trickHist[k + 1] = rider->trickHist[k];
                     }
-                    o->trickHist[0] = o->trick;
+                    rider->trickHist[0] = rider->trick;
                 }
-                if (found && (gCheatFlags & 0x10)) {
-                    o->engine.heat = 0.0f;
+                if (isNew && (gCheatFlags & CHEAT_STUNT_BONUS)) {
+                    rider->engine.heat = 0.0f;
                 }
             } else {
-                o->trickDoneTimer = 1;
+                rider->trickDoneTimer = 1; /* wait for the landing */
             }
         }
     }
-    s = o->anim;
-    if (s < 0) {
-        d3 = o->queuedTrick;
-        if (d3 >= 0) {
-            if (gRaceFrame - o->trickFrame < 60) {
-                stunt_start(o, d3);
+    anim = rider->anim;
+    if (anim < 0) {
+        queued = rider->queuedTrick;
+        if (queued >= 0) {
+            if (gRaceFrame - rider->trickFrame < 60) {
+                stunt_start(rider, queued);
             } else {
-                o->queuedTrick = -1;
+                rider->queuedTrick = ANIM_NONE;
             }
         }
         return;
     }
-    if (o->anim == 16 || o->anim == 17) {
-        if (o->airFrames > 0) {
-            v = (s32)(o->landingTime * 60.0f);
-            if (o->animSpeed > 0 && v >= 16) {
-                o->animFrame += o->animSpeed;
-                lim = gRiderAnims[o->anim].body->count << 8;
-                if (o->animFrame >= lim) {
-                    o->animFrame = lim - 0x100;
-                    o->animSpeed = -0x100;
+    if (rider->anim == ANIM_AIR_TURN || rider->anim == ANIM_AIR_TURN_2) {
+        /* to the last frame and back, back at the first frame when landing */
+        if (rider->airFrames > 0) {
+            ticksLeft = (s32)(rider->landingTime * 60.0f);
+            if (rider->animSpeed > 0 && ticksLeft >= 16) {
+                rider->animFrame += rider->animSpeed;
+                end = gRiderAnims[rider->anim].body->count << 8;
+                if (rider->animFrame >= end) {
+                    rider->animFrame = end - 0x100;
+                    rider->animSpeed = -0x100;
                 }
             } else {
-                o->animSpeed = -0x100;
-                v = (s32)(o->landingTime * 60.0f);
-                if (v < 15) {
-                    if (v < 2) {
-                    neg:
-                        o->anim = -1;
+                rider->animSpeed = -0x100;
+                ticksLeft = (s32)(rider->landingTime * 60.0f);
+                if (ticksLeft < 15) {
+                    if (ticksLeft < 2) {
+                    stop:
+                        rider->anim = ANIM_NONE;
                     } else {
-                        o->animFrame -= o->animFrame / v;
+                        rider->animFrame -= rider->animFrame / ticksLeft;
                     }
                 }
             }
         } else {
-            goto neg;
+            goto stop;
         }
         return;
     }
-    if (o->airFrames < 0 && o->speed < 5.0f && s < 16) {
-        if (o->drawRot[1] > 0) {
-            bike_crash_begin(o, 0x22);
+    if (rider->airFrames < 0 && rider->speed < 5.0f && anim < ANIM_TRICK_COUNT) {
+        if (rider->drawRot[1] > 0) {
+            bike_crash_begin(rider, ANIM_CRASH_RIGHT);
         } else {
-            bike_crash_begin(o, 0x1F);
+            bike_crash_begin(rider, ANIM_CRASH_LEFT);
         }
         return;
     }
-    if (stunt_animate(o, (o->input >> 8) & 1) != 0) {
-        u8 pv = o->anim;
-        o->trickDoneTimer = 0x20;
-        o->anim = -1;
-        o->trick = pv;
+    if (stunt_animate(rider, (rider->input >> 8) & 1) != 0) { /* INPUT_C_DOWN held */
+        u8 done = rider->anim;
+        rider->trickDoneTimer = 0x20;
+        rider->anim = ANIM_NONE;
+        rider->trick = done;
     }
-    if (o->crashState == 0 && o->anim < 16 && o->trick < 16) {
-        o->pipTimer = 15;
+    if (rider->crashState == CRASH_STATE_RIDING && rider->anim < ANIM_TRICK_COUNT && rider->trick < ANIM_TRICK_COUNT) {
+        rider->pipTimer = 15;
     }
 }
 
-
-void stunt_start(Rider *o, s32 n)
+/* Starts a trick or animation of gRiderAnims (a trick in the air only if not landing within half a second, a crash
+   at any time). A trick adds its points to stuntScore: the previous one, still to be banked, makes a combo. */
+void stunt_start(Rider *rider, s32 anim)
 {
-    s32 u;
-    s32 d, k, j, cnt, v, c2; s8 a2;
-    u8 c;
-    s32 id;
+    s32 speed;
+    s32 d, k, j, count, points, crowd; s8 cur;
+    u8 curAnim;
+    s32 riderIdx;
 
-    if (o->airFrames > 0) {
-        if (n < 0x19) {
-            if (o->landingTime < 0.5f) {
+    if (rider->airFrames > 0) {
+        if (anim < ANIM_CRASH_BACK) {
+            if (rider->landingTime < 0.5f) {
                 return;
             }
-            if (o->pendingCrash != 0) {
+            if (rider->pendingCrash != 0) {
                 return;
             }
         }
-    } else if (!(gRiderAnims[n].flags & 0x10)) {
+    } else if (!(gRiderAnims[anim].flags & ANIM_FLAG_ON_GROUND)) {
         return;
     }
-    o->powerSlide = 0;
-    rider_pose_snapshot(o->riderSkel->bones, 0xF);
-    if (n == 0xF) {
-        if (o->airFrames < 3) {
+    rider->powerSlide = POWER_SLIDE_NONE;
+    rider_pose_snapshot(rider->riderSkel->bones, RIDER_BONE_COUNT);
+    if (anim == ANIM_KOBE) { /* only right after the take-off */
+        if (rider->airFrames < 3) {
             return;
         }
-        if (o->airFrames >= 5) {
-            o->queuedTrick = -1;
+        if (rider->airFrames >= 5) {
+            rider->queuedTrick = ANIM_NONE;
             return;
         }
     }
-    o->anim = n;
-    o->animFrame = 0;
-    u = gRiderAnims[n].playSpeed;
-    o->queuedTrick = -1;
-    o->animHold = 0;
-    o->fistPump = 0;
-    o->holdTime = 0;
-    o->heldFrames = 0;
-    o->airTurnYaw = 0;
-    o->animSpeed = u;
-    if (n >= 0x10) {
+    rider->anim = anim;
+    rider->animFrame = 0;
+    speed = gRiderAnims[anim].playSpeed;
+    rider->queuedTrick = ANIM_NONE;
+    rider->animHold = 0;
+    rider->fistPump = 0;
+    rider->holdTime = 0;
+    rider->heldFrames = 0;
+    rider->airTurnYaw = 0;
+    rider->animSpeed = speed;
+    if (anim >= ANIM_TRICK_COUNT) {
         return;
     }
-    if (gRiderAnims[n].announce == -1) {
+    if (gRiderAnims[anim].announce == -1) {
         return;
     }
-    if (o->trickDoneTimer != 0) {
-        d = o->trick;
-        o->trickDoneTimer = 0;
-        if (d < 0x10) {
-            cnt = o->trickListLen;
-            for (k = 0; k < cnt; k++) {
-                if (d == o->trickList[k]) {
+    if (rider->trickDoneTimer != 0) {
+        d = rider->trick;
+        rider->trickDoneTimer = 0;
+        if (d < ANIM_TRICK_COUNT) {
+            count = rider->trickListLen;
+            for (k = 0; k < count; k++) {
+                if (d == rider->trickList[k]) {
                     break;
                 }
             }
-            if (k == o->trickListLen) {
-                o->trickList[k] = o->trick;
-                o->trickListLen = k + 1;
+            if (k == rider->trickListLen) {
+                rider->trickList[k] = rider->trick;
+                rider->trickListLen = k + 1;
             }
             for (k = 4; k >= 0; k--) {
-                o->trickHist[k + 1] = o->trickHist[k];
+                rider->trickHist[k + 1] = rider->trickHist[k];
             }
-            o->trickHist[0] = o->trick;
+            rider->trickHist[0] = rider->trick;
         }
     }
-    c = (u8)o->anim;
+    /* points + 2 per frame held, less for a repeat: 4/8 for the last trick again, then 5/8, 6/8, 7/8 */
+    curAnim = (u8)rider->anim;
     d = 0;
-    if (c >= 0x10) {
-        o->stuntScore = 0;
+    if (curAnim >= ANIM_TRICK_COUNT) {
+        rider->stuntScore = 0;
     } else {
-        a2 = (s8)c;
-        v = gRiderAnims[a2].points;
-        v += o->heldFrames * 2;
+        cur = (s8)curAnim;
+        points = gRiderAnims[cur].points;
+        points += rider->heldFrames * 2;
         for (; d < 4; d++) {
-            if (a2 == o->trickHist[d]) {
+            if (cur == rider->trickHist[d]) {
                 break;
             }
         }
-        v = v * (d + 4);
-        v = v / 8;
-        o->stuntScore += v;
+        points = points * (d + 4);
+        points = points / 8;
+        rider->stuntScore += points;
     }
-    id = ((s32)o - (s32)gRiders) * -0x41041041 >> 5;
-    if (id != gGhostSlot || gGhostRace == 0) {
-        announce_trick(id, gRiderAnims[n].announce);
+    riderIdx = ((s32)rider - (s32)gRiders) * -0x41041041 >> 5; /* rider - gRiders, written out */
+    if (riderIdx != gGhostSlot || gGhostRace == 0) {
+        announce_trick(riderIdx, gRiderAnims[anim].announce);
     }
-    c2 = 0;
+    /* the crowd: silent for a trick done twice in the last four, louder above 1000 points */
+    crowd = 0;
     for (j = 0; j < 4; j++) {
-        if ((s8)o->anim == o->trickHist[j]) {
-            c2++;
+        if ((s8)rider->anim == rider->trickHist[j]) {
+            crowd++;
         }
     }
-    if (c2 < 2) {
-        if (gRiderAnims[n].points < 0x3E9) {
-            c2 = 1;
+    if (crowd < 2) {
+        if (gRiderAnims[anim].points < 0x3E9) {
+            crowd = 1;
         } else {
-            c2 = 2;
+            crowd = 2;
         }
     } else {
-        c2 = 0;
+        crowd = 0;
     }
-    tunes_queue_crowd(c2);
+    tunes_queue_crowd(crowd);
 }
 
-
-s32 stunt_animate(Rider *p, s32 k)
+/* Advances the rider's trick or animation; returns 1 when it is over. A trick plays forward, holds its last frames
+   while held, then plays back by the landing; a Kobe landed more than 22.5 degrees off its heading crashes. */
+s32 stunt_animate(Rider *rider, s32 held)
 {
-    s32 i;
-    s32 top;
-    RiderAnim *e;
-    s32 v;
-    u32 fl;
+    s32 anim;
+    s32 end;
+    RiderAnim *info;
+    s32 step;
+    u32 flags;
 
-    i = p->anim;
-    if (i < 0) {
+    anim = rider->anim;
+    if (anim < 0) {
         goto ret0;
     }
-    e = &gRiderAnims[i];
-    top = e->body->count << 8;
-    fl = e->flags;
+    info = &gRiderAnims[anim];
+    end = info->body->count << 8;
+    flags = info->flags;
 
-    if (i == 15) {
-        s32 d = p->landingTime1 * 60.0f;
-        s32 n;
-        if (d == 0) {
-            d = 1;
+    if (anim == ANIM_KOBE) {
+        s32 ticksLeft = rider->landingTime1 * 60.0f;
+        s32 remaining;
+        if (ticksLeft == 0) {
+            ticksLeft = 1;
         }
-        n = top - p->animFrame - 0x100;
-        v = n / d;
-        if (v > 0x80) {
-            v = 0x80;
+        remaining = end - rider->animFrame - 0x100;
+        step = remaining / ticksLeft;
+        if (step > 0x80) {
+            step = 0x80;
         }
-        p->animFrame += v;
-        if (d != 1 && p->airFrames > 0) {
+        rider->animFrame += step;
+        if (ticksLeft != 1 && rider->airFrames > 0) {
             goto ret0;
         }
         {
-            s32 df = (s16)((u16)p->drawRot[2] - (u16)p->heading);
-            if (df < 0) {
-                df = -df;
+            s32 yawDiff = (s16)((u16)rider->drawRot[2] - (u16)rider->heading);
+            if (yawDiff < 0) {
+                yawDiff = -yawDiff;
             }
-            if (df > 0x1000) {
-                bike_queue_crash_2(p, -0x22);
+            if (yawDiff > 0x1000) {
+                bike_queue_crash_2(rider, -ANIM_CRASH_RIGHT);
             }
         }
         return 1;
     }
 
-    if (p->holdTime != 0) {
-        if (p->holdTime < e->holdFrames || k != 0) {
-            u16 o = p->holdTime;
-            s32 x;
-            s32 y;
-            p->holdTime = o + (u16)p->animSpeed;
-            p->heldFrames = p->heldFrames + 1;
-            x = ((u16)p->holdTime >> 8) & 7;
-            if (x & 4) {
-                x = 8 - x;
+    if (rider->holdTime != 0) {
+        if (rider->holdTime < info->holdFrames || held != 0) {
+            u16 prevHold = rider->holdTime;
+            s32 phase;
+            s32 back;
+            rider->holdTime = prevHold + (u16)rider->animSpeed;
+            rider->heldFrames = rider->heldFrames + 1;
+            phase = ((u16)rider->holdTime >> 8) & 7;
+            if (phase & 4) {
+                phase = 8 - phase;
             }
-            y = (x << 8) + 0x100;
-            p->animFrame = top - y;
+            back = (phase << 8) + 0x100;
+            rider->animFrame = end - back;
             goto ret0;
         }
-        p->animSpeed = -e->speed;
-        p->holdTime = 0;
+        rider->animSpeed = -info->speed;
+        rider->holdTime = 0;
         goto ret0;
     } else {
-        s32 b = p->animSpeed;
-        if (b > 0) {
-            s32 n = p->animFrame + b;
-            p->animFrame = n;
-            if (n < top) {
+        s32 speed = rider->animSpeed;
+        if (speed > 0) {
+            s32 frame = rider->animFrame + speed;
+            rider->animFrame = frame;
+            if (frame < end) {
                 goto ret0;
             }
-            if (fl & 2) {
-                p->animFrame = 0;
+            if (flags & ANIM_FLAG_LOOP) {
+                rider->animFrame = 0;
                 return 1;
             }
-            if ((fl & 8) && k != 0) {
-                s32 q = e->holdSpeed;
-                p->holdTime = 1;
-                p->heldFrames = 1;
-                p->animHold = 1;
-                p->animSpeed = q / 2;
+            if ((flags & ANIM_FLAG_HOLD) && held != 0) {
+                s32 holdSpeed = info->holdSpeed;
+                rider->holdTime = 1;
+                rider->heldFrames = 1;
+                rider->animHold = 1;
+                rider->animSpeed = holdSpeed / 2;
                 goto ret0;
             }
-            if (!(fl & 1)) {
+            if (!(flags & ANIM_FLAG_REVERSE)) {
                 goto ret0;
             }
-            p->holdTime = 0;
-            p->animSpeed = -e->speed;
+            rider->holdTime = 0;
+            rider->animSpeed = -info->speed;
             goto ret0;
         }
         {
-            s32 vv;
-            s32 w;
-            if (p->airFrames > 0) {
-                s32 d = p->landingTime1 * 60.0f;
-                s32 qq;
-                if (d == 0) {
-                    d = 1;
+            s32 delta;
+            s32 frame;
+            if (rider->airFrames > 0) {
+                s32 ticksLeft = rider->landingTime1 * 60.0f;
+                s32 toLand;
+                if (ticksLeft == 0) {
+                    ticksLeft = 1;
                 }
-                qq = -p->animFrame / d;
-                if (qq < b * 2) {
-                    qq = b * 2;
+                toLand = -rider->animFrame / ticksLeft;
+                if (toLand < speed * 2) {
+                    toLand = speed * 2;
                 }
-                if (p->queuedTrick < 0) {
-                    s32 h = b / 2;
-                    vv = (h < qq) ? h : qq;
+                if (rider->queuedTrick < 0) {
+                    s32 half = speed / 2;
+                    delta = (half < toLand) ? half : toLand;
                 } else {
-                    vv = b;
+                    delta = speed;
                 }
             } else {
-                vv = b;
+                delta = speed;
             }
-            w = p->animFrame + vv;
-            p->animFrame = w;
-            if (w > 0) {
+            frame = rider->animFrame + delta;
+            rider->animFrame = frame;
+            if (frame > 0) {
                 goto ret0;
             }
-            p->animFrame = 0;
+            rider->animFrame = 0;
             return 1;
         }
     }
@@ -480,83 +496,92 @@ ret0:
     return 0;
 }
 
+/* The fields of Rider used below. */
 struct Obj_58 {
     u8 pad0[0x3BA];
-    s16 f3ba;
+    s16 heldFrames;
     u8 pad1[0x3C4 - 0x3BC];
-    s32 f3c4;
+    s32 stuntScore;
     u8 pad2[0x3D0 - 0x3C8];
-    u8 f3d0;
+    u8 anim;
     u8 pad3[0x3E4 - 0x3D1];
-    u8 f3e4[4];
+    u8 trickHist[4];
 };
 
-
-void stunt_add_points(Obj_58 *o) {
-    s32 base;
-    s8 idx;
+/* Adds the current trick's points to stuntScore, as stunt_start does (the division by 8 written out). Not called. */
+void stunt_add_points(Obj_58 *rider)
+{
+    s32 points;
+    s8 trick;
     s32 k;
-    s32 t;
-    if (o->f3d0 >= 16) {
-        o->f3c4 = 0;
+    s32 rounded;
+    if (rider->anim >= ANIM_TRICK_COUNT) {
+        rider->stuntScore = 0;
         return;
     }
-    idx = (s8)o->f3d0;
-    base = gRiderAnims[idx].points;
-    base += o->f3ba * 2;
+    trick = (s8)rider->anim;
+    points = gRiderAnims[trick].points;
+    points += rider->heldFrames * 2;
     for (k = 0; k < 4; k++) {
-        if (idx == o->f3e4[k]) {
+        if (trick == rider->trickHist[k]) {
             break;
         }
     }
-    base = base * (k + 4);
-    t = base;
-    if (base < 0) {
-        t = base + 7;
+    points = points * (k + 4);
+    rounded = points;
+    if (points < 0) {
+        rounded = points + 7;
     }
-    base = t >> 3;
-    o->f3c4 += base;
+    points = rounded >> 3;
+    rider->stuntScore += points;
 }
 
-s32 stunt_seq_less(u8 *a, u8 *b) {
+/* cmp on two sequence table entries: true when a's sequence sorts before b's. Not called. */
+s32 stunt_seq_less(u8 *a, u8 *b)
+{
     s32 i;
 
     for (i = 0; i < 7; i++) {
-        u8 *pa = a + i;
-        u8 *pb = b + i;
+        u8 *seqA = a + i;
+        u8 *seqB = b + i;
 
-        if (pa[1] > pb[1]) {
+        if (seqA[1] > seqB[1]) {
             return 0;
         }
-        if (pb[1] > pa[1]) {
+        if (seqB[1] > seqA[1]) {
             return 1;
         }
     }
     return 0;
 }
 
-void stunt_on_takeoff(Rider *b)
+/* Empty; called at each take-off. */
+void stunt_on_takeoff(Rider *rider)
 {
 }
 
-s32 stunt_record_done(Rider *p)
+/* Records the last trick in the trick history and, if new (returns 1), in the list of different tricks. Not called:
+   stunt_update and stunt_start have it written out. */
+s32 stunt_record_done(Rider *rider)
 {
-    s32 ret = 0;
+    s32 isNew = 0;
     s32 i;
 
-    if (p->trick < 16) {
-        for (i = 0; i < p->trickListLen; i++) {
-            if (p->trick == p->trickList[i]) {
+    if (rider->trick < ANIM_TRICK_COUNT) {
+        for (i = 0; i < rider->trickListLen; i++) {
+            if (rider->trick == rider->trickList[i]) {
                 break;
             }
         }
-        if (i == p->trickListLen) {
-            ret = 1;
-            p->trickList[i] = p->trick;
-            p->trickListLen = i + 1;
+        if (i == rider->trickListLen) {
+            isNew = 1;
+            rider->trickList[i] = rider->trick;
+            rider->trickListLen = i + 1;
         }
-        for (i = 4; i >= 0; i--) { p->trickHist[i + 1] = p->trickHist[i]; }
-        p->trickHist[0] = p->trick;
+        for (i = 4; i >= 0; i--) {
+            rider->trickHist[i + 1] = rider->trickHist[i];
+        }
+        rider->trickHist[0] = rider->trick;
     }
-    return ret;
+    return isNew;
 }
