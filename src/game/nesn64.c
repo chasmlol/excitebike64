@@ -634,7 +634,8 @@ void nes_apu_render(s16 *out)
     }
     /* the squares */
     for (i = 0; i < 2; i++) {
-        if ((NES->apu[i].flags & NES_APU_ENABLED) && NES->apu[i].elapsed < NES->apu[i].length && NES->apu[i].volume != 0) {
+        if ((NES->apu[i].flags & NES_APU_ENABLED) && NES->apu[i].elapsed < NES->apu[i].length
+            && NES->apu[i].volume != 0) {
             for (j = 0; j < count * 2; j += 2) {
                 NES->apu[i].phase += (u16)NES->apu[i].rate;
                 if (NES->apu[i].duty < NES->apu[i].phase) {
@@ -952,137 +953,156 @@ void nes_apu_update_noise(s32 idx, s32 reg)
     }
 }
 
+/* A CPU write to a register: the PPU's $2003-$2007, the OAM DMA, the joypad strobe and the APU, whose channel
+   records are updated. Every write also lands in Nes.mem, where the emulator reads PPUCTRL, PPUMASK and the APU
+   registers back. */
 void nes_write_io(s32 addr, s32 value)
 {
-    s32 k;
+    s32 channel;
     u8 *src;
 
-    if (addr == 0x2007) {
+    if (addr == NES_PPUDATA) {
         NES->vram[NES->vramAddr] = value;
-        if (NES->mem[0x2000] & 4) {
-            NES->vramAddr = (NES->vramAddr + 32) % 0x4000;
+        if (NES->mem[NES_PPUCTRL] & NES_PPUCTRL_INC32) {
+            NES->vramAddr = (NES->vramAddr + 32) % NES_VRAM_SIZE;
         } else {
-            NES->vramAddr = (NES->vramAddr + 1) % 0x4000;
+            NES->vramAddr = (NES->vramAddr + 1) % NES_VRAM_SIZE;
         }
-    } else if (addr == 0x2006) {
-        if (NES->ppuLatch & 1) {
+    } else if (addr == NES_PPUADDR) {
+        if (NES->ppuLatch & NES_LATCH_ADDR_LO) {
             NES->vramAddr = (NES->vramAddr & 0xFF00) | value;
-            NES->ppuLatch |= 2;
+            NES->ppuLatch |= NES_LATCH_FIRST_READ;
         } else {
             NES->vramAddr = (NES->vramAddr & 0xFF) | (value << 8);
         }
-        NES->ppuLatch ^= 1;
-    } else if (addr == 0x4016) {
+        NES->ppuLatch ^= NES_LATCH_ADDR_LO;
+    } else if (addr == NES_JOY1) {
         if (value & 1) {
-            NES->joypadBit = 0x7B;
-        } else if (NES->joypadBit == 0x7B) {
+            NES->joypadBit = NES_JOYPAD_STROBE;
+        } else if (NES->joypadBit == NES_JOYPAD_STROBE) {
             NES->joypadBit = 0;
         }
-    } else if (addr == 0x2005) {
-        if (NES->ppuLatch & 4) {
+    } else if (addr == NES_PPUSCROLL) {
+        if (NES->ppuLatch & NES_LATCH_SCROLL_Y) {
             NES->scrollY = value;
         } else {
             NES->scrollX = value;
         }
-        NES->ppuLatch ^= 4;
-    } else if (addr == 0x2003) {
+        NES->ppuLatch ^= NES_LATCH_SCROLL_Y;
+    } else if (addr == NES_OAMADDR) {
         NES->oamAddr = value;
-    } else if (addr == 0x2004) {
+    } else if (addr == NES_OAMDATA) {
         NES->oam.bytes[NES->oamAddr++] = value;
-    } else if (addr == 0x4014) {
+    } else if (addr == NES_OAMDMA) {
         src = &NES->mem[value << 8];
         __builtin_memcpy(NES->oam.bytes, src, sizeof(NES->oam));
     } else {
-        k = addr - 0x4000;
-        if ((u32)k < 0x16) {
+        channel = addr - NES_APU_REGS; /* the register's offset, then (>> 2) its channel */
+        if ((u32)channel < NES_APU_NUM_REGS) {
             NES->mem[addr] = value;
-            k >>= 2;
-            if (k < 2) {
-                nes_apu_update_square(k, addr & 3);
-            } else if (k == 2) {
-                nes_apu_update_triangle(2, addr & 3);
-            } else if (k == 3) {
-                nes_apu_update_noise(3, addr & 3);
+            channel >>= 2;
+            if (channel < 2) {
+                nes_apu_update_square(channel, addr & 3);
+            } else if (channel == NES_APU_TRIANGLE) {
+                nes_apu_update_triangle(NES_APU_TRIANGLE, addr & 3);
+            } else if (channel == NES_APU_NOISE) {
+                nes_apu_update_noise(NES_APU_NOISE, addr & 3);
             }
         }
     }
     NES->mem[addr] = value;
 }
 
-u32 nes_read_io(s32 code, s32 unused, u32 val)
+/* A CPU read of a register: $2007 (which does not advance the address on the first read after it was set), the
+   joypad's next button and the APU status; other addresses read Nes.mem (where nes_run_frame keeps PPUSTATUS).
+   The callers pass nothing in `latch` and `value`: the first is only scratch, and the joypad returns `value` as it
+   came once its 8 buttons have been read. */
+u32 nes_read_io(s32 addr, s32 latch, u32 value)
 {
     u8 *ram;
     Nes *nes;
     s32 pos;
     s32 v;
-    s32 n;
+    s32 bit;
     s32 i;
     u32 mask;
 
-    if (code == 0x2007) {
+    if (addr == NES_PPUDATA) {
         nes = NES;
         __asm__ __volatile__("");
-        code = nes->vramAddr;
-        unused = nes->ppuLatch;
-        val = nes->vram[code];
-        if (unused & 2) {
-            nes->ppuLatch = unused & ~2;
+        addr = nes->vramAddr;
+        latch = nes->ppuLatch;
+        value = nes->vram[addr];
+        if (latch & NES_LATCH_FIRST_READ) {
+            nes->ppuLatch = latch & ~NES_LATCH_FIRST_READ;
         } else {
-            if (nes->mem[0x2000] & 4) {
-                nes->vramAddr = (code + 0x20) % 0x4000;
+            if (nes->mem[NES_PPUCTRL] & NES_PPUCTRL_INC32) {
+                nes->vramAddr = (addr + 0x20) % NES_VRAM_SIZE;
             } else {
-                nes->vramAddr = (code + 1) % 0x4000;
+                nes->vramAddr = (addr + 1) % NES_VRAM_SIZE;
             }
         }
-        return val;
+        return value;
     }
-    if (code == 0x4016) {
+    if (addr == NES_JOY1) {
         nes = NES;
-        n = nes->joypadBit;
-        if (n < 8) {
-            nes->joypadBit = n + 1;
-            val = (nes->joypad >> n) & 1;
+        bit = nes->joypadBit;
+        if (bit < 8) {
+            nes->joypadBit = bit + 1;
+            value = (nes->joypad >> bit) & 1;
         }
-        return val;
+        return value;
     }
-    if (code == 0x4015) {
-        val = 0;
+    if (addr == NES_APU_STATUS) {
+        /* A bit per channel still playing. Each channel's count is compared with the noise channel's length
+           (sNesNoiseLength is NES->apu[NES_APU_NOISE].length). */
+        value = 0;
         for (i = 0; i < 4; i++) {
-            if ((NES->apu[i].flags & NES_APU_ENABLED) && NES->apu[i].elapsed < sNesNoiseLength && NES->apu[i].volume != 0) {
-                val |= 1 << i;
+            if ((NES->apu[i].flags & NES_APU_ENABLED) && NES->apu[i].elapsed < sNesNoiseLength
+                && NES->apu[i].volume != 0) {
+                value |= 1 << i;
             }
         }
-        return val & NES_AT(mem[0x4015]);
+        return value & NES_AT(mem[NES_APU_STATUS]);
     }
-    return NES->mem[code];
+    return NES->mem[addr];
 }
 
+/* The 6502 core. nes_run_frame calls an addressing mode (nes_am_*, or nes_ea_* for the stores), which leaves the
+   effective address in sNesEffAddr and the value read in sNesOperand, then the operation (nes_op_*). sNesOperand16
+   and sNesOperand8 are the low half and the low byte of sNesOperand, as is ((u8 *)&sNesOperand)[3]. Each flag is a
+   byte of its own, nonzero when set. */
+
+/* The shifts and rotates: on A in accumulator mode (sNesEffAddr NES_EA_NONE), else on the operand, which is written
+   back. */
 void nes_op_asl(void)
 {
     s32 addr = sNesEffAddr;
 
-    if (addr == -1) {
+    if (addr == NES_EA_NONE) {
         NES->c = NES->a & 0x80;
         NES->a <<= 1;
         NES->z = NES->a == 0;
         NES->n = NES->a & 0x80;
     } else {
-        u32 v = sNesOperand << 1;
+        u32 result = sNesOperand << 1;
         NES->c = ((u8 *)&sNesOperand)[3] & 0x80;
-        sNesOperand = v;
-        if (addr < 0x2000) {
-            NES->mem[addr & 0x7FF] = v;
-        } else if (addr < 0x8000) {
-            nes_write_io(addr, v);
+        sNesOperand = result;
+        if (addr < NES_IO_START) {
+            NES->mem[addr & NES_RAM_MASK] = result;
+        } else if (addr < NES_PRG_ROM) {
+            nes_write_io(addr, result);
         }
         NES->z = (sNesOperand & 0xFF) == 0;
         NES->n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
 }
 
+/* ASR, the emulator's opcode $4B (ALR, AND then LSR, among the 6502's undocumented ones): an arithmetic shift right.
+   With its immediate operand it always works on A. */
 void nes_op_asr(void)
 {
-    if (sNesEffAddr == -1) {
+    if (sNesEffAddr == NES_EA_NONE) {
         NES->c = NES->a & 1;
         NES->a >>= 1;
         if (NES->a & 0x40) {
@@ -1106,7 +1126,7 @@ void nes_op_rol(void)
 {
     s32 bit;
 
-    if (sNesEffAddr == -1) {
+    if (sNesEffAddr == NES_EA_NONE) {
         bit = NES->a & 0x80;
         NES->a <<= 1;
         if (NES->c) {
@@ -1132,7 +1152,7 @@ void nes_op_ror(void)
 {
     s32 bit;
 
-    if (sNesEffAddr == -1) {
+    if (sNesEffAddr == NES_EA_NONE) {
         bit = NES->a & 1;
         NES->a >>= 1;
         if (NES->c) {
@@ -1156,103 +1176,113 @@ void nes_op_ror(void)
 
 void nes_op_lsr(void)
 {
-    s32 a2 = sNesEffAddr;
+    s32 addr = sNesEffAddr;
 
-    if (a2 == -1) {
+    if (addr == NES_EA_NONE) {
         Nes *nes = NES;
-        u8 b = nes->a;
-        nes->c = b & 1;
-        b = b >> 1;
-        nes->a = b;
-        nes->z = (b == 0);
-        nes->n = b & 0x80;
+        u8 value = nes->a;
+        nes->c = value & 1;
+        value = value >> 1;
+        nes->a = value;
+        nes->z = (value == 0);
+        nes->n = value & 0x80;
         return;
     } else {
-        u8 *pb = (u8 *)&sNesOperand;
-        u8 lo = pb[3];
-        s32 w;
+        u8 *bytes = (u8 *)&sNesOperand;
+        u8 low = bytes[3];
+        s32 result;
 
-        NES_AT(c) = lo & 1;
-        w = sNesOperand >> 1;
-        sNesOperand = w;
-        if (a2 < 0x2000) {
-            *(NES->mem + (a2 & 0x7FF)) = (u8)w;
-        } else if (a2 <= 0x7FFF) {
-            nes_write_io(a2, w);
+        NES_AT(c) = low & 1;
+        result = sNesOperand >> 1;
+        sNesOperand = result;
+        if (addr < NES_IO_START) {
+            *(NES->mem + (addr & NES_RAM_MASK)) = (u8)result;
+        } else if (addr <= 0x7FFF) {
+            nes_write_io(addr, result);
         }
     }
     {
-        Nes *t = NES;
-        t->z = ((sNesOperand & 0xFF) == 0);
-        t->n = ((u8 *)&sNesOperand)[3] & 0x80;
+        Nes *nes = NES;
+        nes->z = ((sNesOperand & 0xFF) == 0);
+        nes->n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
 }
 
+/* BRK: pushes the PC past its padding byte and the status, and jumps through the IRQ vector. */
 void nes_op_brk(void)
 {
     NES->pc++;
-    NES->mem[0x100 + NES->s] = NES->pc >> 8;
+    NES->mem[NES_STACK + NES->s] = NES->pc >> 8;
     NES->s--;
-    NES->mem[0x100 + NES->s] = NES->pc;
+    NES->mem[NES_STACK + NES->s] = NES->pc;
     NES->b = 1;
     NES->s--;
-    NES->p = (NES->n ? 0x80 : 0) | (NES->v ? 0x40 : 0) | 0x20 | (NES->b ? 0x10 : 0) | (NES->d ? 8 : 0) | (NES->i ? 4 : 0) | (NES->z ? 2 : 0) | (NES->c ? 1 : 0);
-    NES->mem[0x100 + NES->s] = NES->p;
+    NES->p = (NES->n ? NES_FLAG_N : 0) | (NES->v ? NES_FLAG_V : 0) | NES_FLAG_U | (NES->b ? NES_FLAG_B : 0)
+           | (NES->d ? NES_FLAG_D : 0) | (NES->i ? NES_FLAG_I : 0) | (NES->z ? NES_FLAG_Z : 0)
+           | (NES->c ? NES_FLAG_C : 0);
+    NES->mem[NES_STACK + NES->s] = NES->p;
     NES->i = 1;
     NES->s--;
-    NES->pc = NES->mem[0xFFFE];
-    NES->pc |= NES->mem[0xFFFF] << 8;
+    NES->pc = NES->mem[NES_VECTOR_IRQ];
+    NES->pc |= NES->mem[NES_VECTOR_IRQ + 1] << 8;
 }
 
+/* PHP: pushes the status byte built from the flags. */
 void nes_op_php(void)
 {
-    NES->p = (NES->n ? 0x80 : 0) | (NES->v ? 0x60 : 0x20)
-        | (NES->b ? 0x10 : 0) | (NES->d ? 8 : 0) | (NES->i ? 4 : 0)
-        | (NES->z ? 2 : 0) | (NES->c ? 1 : 0);
-    NES->mem[0x100 + NES->s] = NES->p;
+    NES->p = (NES->n ? NES_FLAG_N : 0) | (NES->v ? NES_FLAG_V | NES_FLAG_U : NES_FLAG_U)
+        | (NES->b ? NES_FLAG_B : 0) | (NES->d ? NES_FLAG_D : 0) | (NES->i ? NES_FLAG_I : 0)
+        | (NES->z ? NES_FLAG_Z : 0) | (NES->c ? NES_FLAG_C : 0);
+    NES->mem[NES_STACK + NES->s] = NES->p;
     NES->s--;
 }
 
+/* RTI: pulls the status byte into the flags, then the PC as RTS does. */
 void nes_op_rti(void)
 {
-    u32 v;
-    u32 bits;
-    u32 base;
+    u32 sp;
+    u32 status;
+    u32 stack;
 
-    base = (u32)&NES->mem[0x100];
-    v = (u32)sNesRegS + 1;
-    NES_AT(s) = v;
-    v = v & 0xFF;
-    bits = *(u8 *)(base | v);
-    NES_AT(n) = bits & 0x80;
-    NES_AT(v) = bits & 0x40;
-    NES_AT(b) = bits & 0x10;
-    NES_AT(d) = bits & 0x8;
-    NES_AT(i) = bits & 0x4;
-    NES_AT(z) = bits & 0x2;
-    NES_AT(c) = bits & 0x1;
+    stack = (u32)&NES->mem[NES_STACK];
+    sp = (u32)sNesRegS + 1;
+    NES_AT(s) = sp;
+    sp = sp & 0xFF;
+    status = *(u8 *)(stack | sp);
+    NES_AT(n) = status & NES_FLAG_N;
+    NES_AT(v) = status & NES_FLAG_V;
+    NES_AT(b) = status & NES_FLAG_B;
+    NES_AT(d) = status & NES_FLAG_D;
+    NES_AT(i) = status & NES_FLAG_I;
+    NES_AT(z) = status & NES_FLAG_Z;
+    NES_AT(c) = status & NES_FLAG_C;
     nes_op_rts();
 }
 
+/* The NMI: pushes the PC and the status and jumps through the NMI vector. */
 void nes_cpu_nmi(void)
 {
-    NES->mem[0x100 + NES->s] = NES->pc >> 8;
+    NES->mem[NES_STACK + NES->s] = NES->pc >> 8;
     NES->s--;
-    NES->mem[0x100 + NES->s] = NES->pc;
+    NES->mem[NES_STACK + NES->s] = NES->pc;
     NES->s--;
-    NES->p = (NES->n ? 0x80 : 0) | (NES->v ? 0x40 : 0) | 0x20 | (NES->b ? 0x10 : 0) | (NES->d ? 8 : 0) | (NES->i ? 4 : 0) | (NES->z ? 2 : 0) | (NES->c ? 1 : 0);
-    NES->mem[0x100 + NES->s] = NES->p;
+    NES->p = (NES->n ? NES_FLAG_N : 0) | (NES->v ? NES_FLAG_V : 0) | NES_FLAG_U | (NES->b ? NES_FLAG_B : 0)
+           | (NES->d ? NES_FLAG_D : 0) | (NES->i ? NES_FLAG_I : 0) | (NES->z ? NES_FLAG_Z : 0)
+           | (NES->c ? NES_FLAG_C : 0);
+    NES->mem[NES_STACK + NES->s] = NES->p;
     NES->i = 1;
     NES->s--;
-    NES->pc = NES->mem[0xFFFA];
-    NES->pc |= NES->mem[0xFFFB] << 8;
+    NES->pc = NES->mem[NES_VECTOR_NMI];
+    NES->pc |= NES->mem[NES_VECTOR_NMI + 1] << 8;
 }
 
 /* The opcode being run (0x800F5BB4, after sNesFrameCount), reached from a base register. */
-#define CUR (*(NesOpcode **)(glob + 0x5BB4))
-#define R2000 (ram[0x2000])
-#define R2002 (ram[0x2002])
+#define CUR_OPCODE (*(NesOpcode **)(glob + 0x5BB4))
+#define PPUCTRL_REG (ram[NES_PPUCTRL])
+#define PPUSTATUS_REG (ram[NES_PPUSTATUS])
 
+/* Runs one frame of NES_LINES_PER_FRAME lines of NES_CYCLES_PER_LINE CPU cycles, from the start of the vertical
+   blank: sets the PPUSTATUS bits, raises the NMIs, and calls sNesRowCallback in the middle of each row of tiles. */
 void nes_run_frame(void)
 {
     s32 i = 0;
@@ -1262,46 +1292,47 @@ void nes_run_frame(void)
     Nes *cpu = NES;
 
     do {
-        line = (i + 0xf0) % 0xf8;
-        if (NES_AT(cycles) < 0x78) {
-            NesOpcode *tb = sNesOpcodeTable;
+        line = (i + NES_VBLANK_LINE) % NES_LINES_PER_FRAME;
+        if (NES_AT(cycles) < NES_CYCLES_PER_LINE) {
+            NesOpcode *table = sNesOpcodeTable;
             u8 *dseg = (u8 *)0x800D0000;
             do {
-                NesOpcode *e;
-                CUR = (NesOpcode *)((s32)(*(u8 *)(cpu->pc + (s32)ram) * sizeof(NesOpcode)) + (s32)tb);
-                CUR->addrMode();
-                e = CUR;
-                cpu->pc += e->length;
-                e->op(e);
-                (*(s32 *)(dseg - 0x13E4))++;
-                cpu->cycles += CUR->cycles;
-            } while (cpu->cycles < 0x78);
+                NesOpcode *opcode;
+                CUR_OPCODE = (NesOpcode *)((s32)(*(u8 *)(cpu->pc + (s32)ram) * sizeof(NesOpcode)) + (s32)table);
+                CUR_OPCODE->addrMode();
+                opcode = CUR_OPCODE;
+                cpu->pc += opcode->length;
+                opcode->op(opcode);
+                (*(s32 *)(dseg - 0x13E4))++; /* sNesInstrCount */
+                cpu->cycles += CUR_OPCODE->cycles;
+            } while (cpu->cycles < NES_CYCLES_PER_LINE);
         }
-        cpu->cycles -= 0x78;
+        cpu->cycles -= NES_CYCLES_PER_LINE;
         if ((line & 7) == 0) {
             if (line == 0) {
-                R2002 = 0x10;
-            } else if (line == 0xf0) {
-                R2002 |= 0x80;
-                if (R2000 & 0x80) nes_cpu_nmi();
+                PPUSTATUS_REG = 0x10; /* the end of vertical blank: VBLANK and SPRITE0 clear */
+            } else if (line == NES_VBLANK_LINE) {
+                PPUSTATUS_REG |= NES_PPUSTATUS_VBLANK;
+                if (PPUCTRL_REG & NES_PPUCTRL_NMI) nes_cpu_nmi();
             }
         }
-        if ((line & 7) == 4 && line < 0xf0 && sNesRowCallback != 0) sNesRowCallback(line >> 3);
-        if (line == NES_AT(oam.sprites[0].y) && line < 0xf0) {
-            R2002 |= 0x40;
-            if (R2000 & 0x40) nes_cpu_nmi();
+        if ((line & 7) == 4 && line < NES_VBLANK_LINE && sNesRowCallback != 0) sNesRowCallback(line >> 3);
+        if (line == NES_AT(oam.sprites[0].y) && line < NES_VBLANK_LINE) {
+            PPUSTATUS_REG |= NES_PPUSTATUS_SPRITE0;
+            if (PPUCTRL_REG & NES_PPUCTRL_SPRITE0_NMI) nes_cpu_nmi();
         }
         i++;
-    } while (i < 0xf8);
+    } while (i < NES_LINES_PER_FRAME);
     {
-        Nes *c2 = NES;
-        (c2->frameCount)++;
+        Nes *nes = NES;
+        (nes->frameCount)++;
     }
 }
 
+/* Resets the CPU: interrupts disabled, the PC from the reset vector; sets the row callback. */
 s32 nes_cpu_reset(Nes *machine, void (*rowCallback)(s32)) {
     Nes *nes = NES;
-    u8 *ram = &NES->mem[0x8000];
+    u8 *prg = &NES->mem[NES_PRG_ROM];
     sNesCpuMemory = machine;
     sNesRowCallback = rowCallback;
     nes->v = 0;
@@ -1310,69 +1341,76 @@ s32 nes_cpu_reset(Nes *machine, void (*rowCallback)(s32)) {
     nes->i = 1;
     nes->z = 0;
     nes->c = 0;
-    nes->pc = (u16)(ram[0x7FFC] | (ram[0x7FFD] << 8));
+    nes->pc = (u16)(prg[0x7FFC] | (prg[0x7FFD] << 8)); /* NES_VECTOR_RESET */
     return 0;
 }
 
+/* ADC. V is set when bit 7 and up of the result differ from A's (a carry included), not the 6502's signed
+   overflow. */
 void nes_op_adc(void) {
     Nes *nes = NES;
     u32 sum = nes->a;
     u32 old = sum;
-    u32 m = 0xFFFFFF80;
+    u32 signMask = 0xFFFFFF80;
     sum = sum + sNesOperand;
     if (nes->c != 0) {
         sum = sum + 1;
     }
     nes->z = (sum & 0xFF) == 0;
-    nes->n = sum & m;
+    nes->n = sum & signMask;
     nes->c = (sum & 0xFFFFFF00) != 0;
     nes->a = sum;
-    nes->v = (old ^ sum) & m;
+    nes->v = (old ^ sum) & signMask;
 }
 
+/* AND, ORA and EOR */
 void nes_op_and(void)
 {
     Nes *nes;
-    u8 v;
-    u8 z;
-    u8 w;
+    u8 result;
+    u8 zero;
+    u8 neg;
 
     nes = NES;
-    v = nes->a & sNesOperand8;
-    z = (v == 0);
-    nes->a = v;
-    w = v & 0x80;
-    nes->z = z;
-    nes->n = w;
+    result = nes->a & sNesOperand8;
+    zero = (result == 0);
+    nes->a = result;
+    neg = result & 0x80;
+    nes->z = zero;
+    nes->n = neg;
 }
 
+/* The branches: when taken, the PC becomes the target (sNesOperand16, from nes_am_relative) and the branch costs 2
+   more cycles. */
 void nes_op_bcc(void)
 {
     Nes *nes;
-    u16 h;
-    s32 c;
+    u16 target;
+    s32 cycles;
 
     nes = NES;
     if (nes->c == 0) {
-        h = sNesOperand16;
-        c = nes->cycles + 2;
-        nes->pc = h;
-        nes->cycles = c;
+        target = sNesOperand16;
+        cycles = nes->cycles + 2;
+        nes->pc = target;
+        nes->cycles = cycles;
     }
 }
 
+/* BCS; with sNesCorruptRam set (a debugging switch, 0) it also writes the count register to a random address of
+   RDRAM. */
 void nes_op_bcs(void)
 {
     Nes *nes;
-    s32 a;
-    s32 b;
+    s32 count;
+    s32 junk;
     u32 addr;
 
     if (sNesCorruptRam != 0) {
-        a = osGetCount();
-        addr = ((a << 2) & 0xFFFFF) + 0x80000000;
-        b = osGetCount();
-        *(s32 *)addr = b;
+        count = osGetCount();
+        addr = ((count << 2) & 0xFFFFF) + 0x80000000;
+        junk = osGetCount();
+        *(s32 *)addr = junk;
     }
     nes = NES;
     if (nes->c != 0) {
@@ -1384,103 +1422,105 @@ void nes_op_bcs(void)
 void nes_op_beq(void)
 {
     Nes *nes;
-    u16 h;
-    s32 c;
+    u16 target;
+    s32 cycles;
 
     nes = NES;
     if (nes->z != 0) {
-        h = sNesOperand16;
-        c = nes->cycles + 2;
-        nes->pc = h;
-        nes->cycles = c;
+        target = sNesOperand16;
+        cycles = nes->cycles + 2;
+        nes->pc = target;
+        nes->cycles = cycles;
     }
 }
 
+/* BIT: Z from A & operand; N and V are the operand's bits 7 and 6. */
 void nes_op_bit(void) {
     Nes *nes = NES;
     nes->z = ((nes->a & sNesOperand) == 0);
     {
-        u8 b = ((u8 *)&sNesOperand)[3];
-        nes->n = b & 0x80;
-        nes->v = b & 0x40;
+        u8 value = ((u8 *)&sNesOperand)[3];
+        nes->n = value & 0x80;
+        nes->v = value & 0x40;
     }
 }
 
 void nes_op_bmi(void)
 {
     Nes *nes;
-    u16 h;
-    s32 c;
+    u16 target;
+    s32 cycles;
 
     nes = NES;
     if (nes->n != 0) {
-        h = sNesOperand16;
-        c = nes->cycles + 2;
-        nes->pc = h;
-        nes->cycles = c;
+        target = sNesOperand16;
+        cycles = nes->cycles + 2;
+        nes->pc = target;
+        nes->cycles = cycles;
     }
 }
 
 void nes_op_bne(void)
 {
     Nes *nes;
-    u16 h;
-    s32 c;
+    u16 target;
+    s32 cycles;
 
     nes = NES;
     if (nes->z == 0) {
-        h = sNesOperand16;
-        c = nes->cycles + 2;
-        nes->pc = h;
-        nes->cycles = c;
+        target = sNesOperand16;
+        cycles = nes->cycles + 2;
+        nes->pc = target;
+        nes->cycles = cycles;
     }
 }
 
 void nes_op_bpl(void)
 {
     Nes *nes;
-    u16 h;
-    s32 c;
+    u16 target;
+    s32 cycles;
 
     nes = NES;
     if (nes->n == 0) {
-        h = sNesOperand16;
-        c = nes->cycles + 2;
-        nes->pc = h;
-        nes->cycles = c;
+        target = sNesOperand16;
+        cycles = nes->cycles + 2;
+        nes->pc = target;
+        nes->cycles = cycles;
     }
 }
 
 void nes_op_bvc(void)
 {
     Nes *nes;
-    u16 h;
-    s32 c;
+    u16 target;
+    s32 cycles;
 
     nes = NES;
     if (nes->v == 0) {
-        h = sNesOperand16;
-        c = nes->cycles + 2;
-        nes->pc = h;
-        nes->cycles = c;
+        target = sNesOperand16;
+        cycles = nes->cycles + 2;
+        nes->pc = target;
+        nes->cycles = cycles;
     }
 }
 
 void nes_op_bvs(void)
 {
     Nes *nes;
-    u16 h;
-    s32 c;
+    u16 target;
+    s32 cycles;
 
     nes = NES;
     if (nes->v != 0) {
-        h = sNesOperand16;
-        c = nes->cycles + 2;
-        nes->pc = h;
-        nes->cycles = c;
+        target = sNesOperand16;
+        cycles = nes->cycles + 2;
+        nes->pc = target;
+        nes->cycles = cycles;
     }
 }
 
+/* CLC, CLD, CLI, CLV */
 void nes_op_clc(void)
 {
     NES_AT(c) = 0;
@@ -1501,17 +1541,19 @@ void nes_op_clv(void)
     NES_AT(v) = 0;
 }
 
+/* CMP, CPX, CPY. N is set when the register is below the operand, not from bit 7 of the difference as on the
+   6502. */
 void nes_op_cmp(void) {
     Nes *nes = NES;
-    s32 a = nes->a;
-    s32 b = sNesOperand;
-    if (b < a) {
+    s32 reg = nes->a;
+    s32 operand = sNesOperand;
+    if (operand < reg) {
         nes->n = 0;
         nes->c = 1;
         nes->z = 0;
         return;
     }
-    if (a == b) {
+    if (reg == operand) {
         nes->n = 0;
         nes->c = 1;
         nes->z = 1;
@@ -1524,15 +1566,15 @@ void nes_op_cmp(void) {
 
 void nes_op_cpx(void) {
     Nes *nes = NES;
-    s32 a = nes->x;
-    s32 b = sNesOperand;
-    if (b < a) {
+    s32 reg = nes->x;
+    s32 operand = sNesOperand;
+    if (operand < reg) {
         nes->n = 0;
         nes->c = 1;
         nes->z = 0;
         return;
     }
-    if (a == b) {
+    if (reg == operand) {
         nes->n = 0;
         nes->c = 1;
         nes->z = 1;
@@ -1545,15 +1587,15 @@ void nes_op_cpx(void) {
 
 void nes_op_cpy(void) {
     Nes *nes = NES;
-    s32 a = nes->y;
-    s32 b = sNesOperand;
-    if (b < a) {
+    s32 reg = nes->y;
+    s32 operand = sNesOperand;
+    if (operand < reg) {
         nes->n = 0;
         nes->c = 1;
         nes->z = 0;
         return;
     }
-    if (a == b) {
+    if (reg == operand) {
         nes->n = 0;
         nes->c = 1;
         nes->z = 1;
@@ -1564,6 +1606,7 @@ void nes_op_cpy(void) {
     nes->z = 0;
 }
 
+/* DEC, DEX, DEY */
 void nes_op_dec(void)
 {
     Nes *nes;
@@ -1578,40 +1621,41 @@ void nes_op_dec(void)
 void nes_op_dex(void)
 {
     Nes *nes = NES;
-    s32 v = nes->x + -1;
-    u8 m;
-    nes->x = v;
-    m = (u8)v & 0x80;
-    nes->z = ((u8)v == 0);
-    nes->n = m;
+    s32 result = nes->x + -1;
+    u8 neg;
+    nes->x = result;
+    neg = (u8)result & 0x80;
+    nes->z = ((u8)result == 0);
+    nes->n = neg;
 }
 
 void nes_op_dey(void)
 {
     Nes *nes = NES;
-    s32 v = nes->y + -1;
-    u8 m;
-    nes->y = v;
-    m = (u8)v & 0x80;
-    nes->z = ((u8)v == 0);
-    nes->n = m;
+    s32 result = nes->y + -1;
+    u8 neg;
+    nes->y = result;
+    neg = (u8)result & 0x80;
+    nes->z = ((u8)result == 0);
+    nes->n = neg;
 }
 
 void nes_op_eor(void)
 {
     Nes *nes = NES;
-    u8 v = nes->a ^ sNesOperand8;
-    nes->a = v;
-    nes->z = (v == 0);
-    nes->n = v & 0x80;
+    u8 result = nes->a ^ sNesOperand8;
+    nes->a = result;
+    nes->z = (result == 0);
+    nes->n = result & 0x80;
 }
 
+/* INC, INX, INY */
 void nes_op_inc(void) {
     Nes *nes;
-    s32 c = sNesOperand + 1;
+    s32 result = sNesOperand + 1;
 
-    sNesOperand = c;
-    bus_write_2(sNesEffAddr, c);
+    sNesOperand = result;
+    bus_write_2(sNesEffAddr, result);
     nes = NES;
     nes->z = (sNesOperand & 0xFF) == 0;
     nes->n = ((u8 *)&sNesOperand)[3] & 0x80;
@@ -1620,25 +1664,27 @@ void nes_op_inc(void) {
 void nes_op_inx(void)
 {
     Nes *nes = NES;
-    s32 v = nes->x + 1;
-    u8 m;
-    nes->x = v;
-    m = (u8)v & 0x80;
-    nes->z = ((u8)v == 0);
-    nes->n = m;
+    s32 result = nes->x + 1;
+    u8 neg;
+    nes->x = result;
+    neg = (u8)result & 0x80;
+    nes->z = ((u8)result == 0);
+    nes->n = neg;
 }
 
 void nes_op_iny(void)
 {
     Nes *nes = NES;
-    s32 v = nes->y + 1;
-    u8 m;
-    nes->y = v;
-    m = (u8)v & 0x80;
-    nes->z = ((u8)v == 0);
-    nes->n = m;
+    s32 result = nes->y + 1;
+    u8 neg;
+    nes->y = result;
+    neg = (u8)result & 0x80;
+    nes->z = ((u8)result == 0);
+    nes->n = neg;
 }
 
+/* JMP and JSR. JSR pushes the address of the next instruction (the PC has already moved past it), which RTS pulls
+   as it is. */
 void nes_op_jmp(void)
 {
     NES_AT(pc) = sNesOperand16;
@@ -1646,23 +1692,24 @@ void nes_op_jmp(void)
 
 void nes_op_jsr(void) {
     Nes *nes = NES;
-    u32 base = (u32)NES->mem;
-    u8 v;
-    u32 i;
-    u32 j;
+    u32 ramAddr = (u32)NES->mem;
+    u8 pcLo;
+    u32 hiSlot;
+    u32 loSlot;
 
-    i = nes->s;
-    i += 0x100;
-    *(u8 *)(base + i) = (u8)(nes->pc >> 8);
-    v = nes->pc;
+    hiSlot = nes->s;
+    hiSlot += NES_STACK;
+    *(u8 *)(ramAddr + hiSlot) = (u8)(nes->pc >> 8);
+    pcLo = nes->pc;
     nes->s = nes->s - 1;
-    j = (u8)nes->s;
-    j += 0x100;
-    *(u8 *)(base + j) = v;
+    loSlot = (u8)nes->s;
+    loSlot += NES_STACK;
+    *(u8 *)(ramAddr + loSlot) = pcLo;
     nes->s = nes->s - 1;
     nes->pc = sNesOperand16;
 }
 
+/* LDA, LDX, LDY */
 void nes_op_lda(void)
 {
     Nes *nes = NES;
@@ -1675,10 +1722,10 @@ void nes_op_lda(void)
 void nes_op_ldx(void)
 {
     Nes *nes = NES;
-    s8 b = sNesOperand;
-    nes->x = b;
+    s8 value = sNesOperand;
+    nes->x = value;
     nes->z = (sNesOperand & 0xFF) == 0;
-    nes->n = b & 0x80;
+    nes->n = value & 0x80;
 }
 
 void nes_op_ldy(void)
@@ -1697,96 +1744,99 @@ void nes_op_nop(void)
 void nes_op_ora(void)
 {
     Nes *nes;
-    u8 v;
-    u8 z;
-    u8 w;
+    u8 result;
+    u8 zero;
+    u8 neg;
 
     nes = NES;
-    v = nes->a | sNesOperand8;
-    z = (v == 0);
-    nes->a = v;
-    w = v & 0x80;
-    nes->z = z;
-    nes->n = w;
+    result = nes->a | sNesOperand8;
+    zero = (result == 0);
+    nes->a = result;
+    neg = result & 0x80;
+    nes->z = zero;
+    nes->n = neg;
 }
 
+/* PHA, PLA, PLP, RTS: the stack is page $01, `s` the next free slot. */
 void nes_op_pha(void)
 {
     Nes *nes;
-    u32 a;
+    u32 slot;
 
     nes = NES;
-    a = nes->s | (u32)&NES->mem[0x100];
-    *(u8 *)a = nes->a;
+    slot = nes->s | (u32)&NES->mem[NES_STACK];
+    *(u8 *)slot = nes->a;
     nes->s = nes->s - 1;
 }
 
 void nes_op_pla(void)
 {
     Nes *nes;
-    u32 a;
+    u32 slot;
 
     nes = NES;
     nes->s = nes->s + 1;
-    a = (u8)nes->s | (u32)&NES->mem[0x100];
-    nes->a = *(u8 *)a;
+    slot = (u8)nes->s | (u32)&NES->mem[NES_STACK];
+    nes->a = *(u8 *)slot;
 }
 
-/* 6502 PLP: pull the status byte from the stack page and split it into the flag bytes. */
+/* PLP: pulls the status byte and splits it into the flag bytes. */
 void nes_op_plp(void)
 {
     Nes *nes = NES;
     u8 *ram = NES->mem;
-    u32 v;
-    s32 a;
+    u32 status;
+    s32 slot;
 
     nes->s++;
-    a = nes->s + 0x100;
-    v = ram[a];
-    nes->n = v & 0x80;
-    nes->v = v & 0x40;
-    nes->b = v & 0x10;
-    nes->d = v & 0x08;
-    nes->i = v & 0x04;
-    nes->z = v & 0x02;
-    nes->c = v & 0x01;
+    slot = nes->s + NES_STACK;
+    status = ram[slot];
+    nes->n = status & NES_FLAG_N;
+    nes->v = status & NES_FLAG_V;
+    nes->b = status & NES_FLAG_B;
+    nes->d = status & NES_FLAG_D;
+    nes->i = status & NES_FLAG_I;
+    nes->z = status & NES_FLAG_Z;
+    nes->c = status & NES_FLAG_C;
 }
 
-/* 6502 RTS-style pull of a 16-bit word from the stack page. */
+/* RTS: pulls the PC, low byte first. */
 void nes_op_rts(void)
 {
     Nes *nes = NES;
     u8 *ram = NES->mem;
     u32 lo, hi;
-    s32 a, b;
+    s32 loSlot, hiSlot;
 
     nes->s++;
-    a = nes->s + 0x100;
-    lo = ram[a];
+    loSlot = nes->s + NES_STACK;
+    lo = ram[loSlot];
     nes->s++;
-    b = nes->s + 0x100;
-    hi = ram[b];
+    hiSlot = nes->s + NES_STACK;
+    hi = ram[hiSlot];
     nes->pc = lo | (hi << 8);
 }
 
+/* SBC, with V as in nes_op_adc. */
 void nes_op_sbc(void)
 {
     Nes *nes = NES;
-    s32 r = nes->a;
-    s32 a = r;
-    s32 x;
-    r = r - sNesOperand;
+    s32 result = nes->a;
+    s32 old = result;
+    s32 changed;
+    result = result - sNesOperand;
     if (nes->c == 0) {
-        r = r - 1;
+        result = result - 1;
     }
-    nes->c = ((u32)~r) >> 31;
-    nes->z = ((r & 0xFF) == 0);
-    nes->n = r & -0x80;
-    x = a ^ r;
-    nes->a = r;
-    nes->v = x & -0x80;
+    nes->c = ((u32)~result) >> 31;
+    nes->z = ((result & 0xFF) == 0);
+    nes->n = result & -0x80;
+    changed = old ^ result;
+    nes->a = result;
+    nes->v = changed & -0x80;
 }
 
+/* SEC, SED, SEI. There is no decimal mode: SED halts the game. */
 void nes_op_sec(void)
 {
     NES_AT(c) = 1;
@@ -1803,25 +1853,26 @@ void nes_op_sei(void)
     NES_AT(i) = 1;
 }
 
+/* STA, STX, STY */
 void nes_op_sta(void)
 {
     Nes *nes = NES;
-    s32 a = sNesEffAddr;
-    u32 v = nes->a;
-    if (a < 0x2000) {
-        NES->mem[a & 0x7FF] = v;
-    } else if (a < 0x8000) {
-        nes_write_io(a, v);
+    s32 addr = sNesEffAddr;
+    u32 value = nes->a;
+    if (addr < NES_IO_START) {
+        NES->mem[addr & NES_RAM_MASK] = value;
+    } else if (addr < NES_PRG_ROM) {
+        nes_write_io(addr, value);
     }
 }
 
 void nes_op_stx(void) {
-    s32 a = sNesEffAddr;
-    u32 v = NES_AT(x);
-    if (a < 0x2000) {
-        *(NES->mem + (a & 0x7FF)) = v;
-    } else if (a < 0x8000) {
-        nes_write_io(a, v);
+    s32 addr = sNesEffAddr;
+    u32 value = NES_AT(x);
+    if (addr < NES_IO_START) {
+        *(NES->mem + (addr & NES_RAM_MASK)) = value;
+    } else if (addr < NES_PRG_ROM) {
+        nes_write_io(addr, value);
     }
 }
 
@@ -1829,47 +1880,48 @@ void nes_op_sty(void) {
     s32 addr = sNesEffAddr;
     s32 value = NES_AT(y);
 
-    if (addr < 0x2000) {
-        *(NES->mem + (addr & 0x7FF)) = value;
-    } else if (addr < 0x8000) {
+    if (addr < NES_IO_START) {
+        *(NES->mem + (addr & NES_RAM_MASK)) = value;
+    } else if (addr < NES_PRG_ROM) {
         nes_write_io(addr, value);
     }
 }
 
+/* The transfers TAX, TAY, TSX, TXA, TXS, TYA */
 void nes_op_tax(void)
 {
     Nes *nes = NES;
-    u8 v = nes->a;
-    nes->x = v;
-    nes->z = (v == 0);
-    nes->n = v & 0x80;
+    u8 value = nes->a;
+    nes->x = value;
+    nes->z = (value == 0);
+    nes->n = value & 0x80;
 }
 
 void nes_op_tay(void)
 {
     Nes *nes = NES;
-    u8 v = nes->a;
-    nes->y = v;
-    nes->z = (v == 0);
-    nes->n = v & 0x80;
+    u8 value = nes->a;
+    nes->y = value;
+    nes->z = (value == 0);
+    nes->n = value & 0x80;
 }
 
 void nes_op_tsx(void)
 {
     Nes *nes = NES;
-    u8 v = nes->s;
-    nes->x = v;
-    nes->z = (v == 0);
-    nes->n = v & 0x80;
+    u8 value = nes->s;
+    nes->x = value;
+    nes->z = (value == 0);
+    nes->n = value & 0x80;
 }
 
 void nes_op_txa(void)
 {
     Nes *nes = NES;
-    u8 v = nes->x;
-    nes->a = v;
-    nes->z = (v == 0);
-    nes->n = v & 0x80;
+    u8 value = nes->x;
+    nes->a = value;
+    nes->z = (value == 0);
+    nes->n = value & 0x80;
 }
 
 void nes_op_txs(void)
@@ -1881,12 +1933,14 @@ void nes_op_txs(void)
 void nes_op_tya(void)
 {
     Nes *nes = NES;
-    u8 v = nes->y;
-    nes->a = v;
-    nes->z = (v == 0);
-    nes->n = v & 0x80;
+    u8 value = nes->y;
+    nes->a = value;
+    nes->z = (value == 0);
+    nes->n = value & 0x80;
 }
 
+/* The addressing modes. Each has an empty twin before it (NesOpcode.addrModeStub), never called. They run before
+   the PC moves past the instruction, so the operand bytes are at pc + 1 and pc + 2. */
 void nes_am_implied_stub(void)
 {
 }
@@ -1901,7 +1955,7 @@ void nes_am_accumulator_stub(void)
 
 void nes_am_accumulator(void)
 {
-    sNesEffAddr = -1;
+    sNesEffAddr = NES_EA_NONE;
     sNesOperand = NES_AT(a);
 }
 
@@ -1910,47 +1964,48 @@ void nes_am_absolute_stub(void)
 }
 
 void nes_am_absolute(void) {
-    u8 *nes = NES->mem;
-    s32 i = NES_AT(pc);
-    u8 *p = nes + i;
-    s32 a, r;
+    u8 *ram = NES->mem;
+    s32 pc = NES_AT(pc);
+    u8 *instr = ram + pc;
+    s32 addr, value;
 
-    sNesEffAddr = p[1] | (nes[(u16)(i + 2)] << 8);
-    a = sNesEffAddr;
-    if (a < 0x2000) {
-        a &= 0x7FF;
-    } else if (a > 0x7FFF) {
+    sNesEffAddr = instr[1] | (ram[(u16)(pc + 2)] << 8);
+    addr = sNesEffAddr;
+    if (addr < NES_IO_START) {
+        addr &= NES_RAM_MASK;
+    } else if (addr > 0x7FFF) {
     } else {
-        r = nes_read_io_2(a);
+        value = nes_read_io_2(addr);
         goto store;
     }
-    r = NES->mem[a];
+    value = NES->mem[addr];
 store:
-    sNesOperand = r;
+    sNesOperand = value;
 }
 
 void nes_am_zeropage_stub(void)
 {
 }
 
-static inline s32 bus_read_2(s32 a)
+/* bus_read again, for nes_am_zeropage */
+static inline s32 bus_read_2(s32 addr)
 {
-    if (a < 0x2000) {
-        a = a & 0x7FF;
-    } else if (a > 0x7FFF) {
+    if (addr < NES_IO_START) {
+        addr = addr & NES_RAM_MASK;
+    } else if (addr > 0x7FFF) {
     } else {
-        return nes_read_io_2(a);
+        return nes_read_io_2(addr);
     }
-    return NES->mem[a];
+    return NES->mem[addr];
 }
 
 void nes_am_zeropage(void)
 {
-    s32 a = NES->mem[NES_AT(pc) + 1];
-    s32 r;
-    sNesEffAddr = a;
-    r = bus_read_2(a);
-    sNesOperand = r;
+    s32 addr = NES->mem[NES_AT(pc) + 1];
+    s32 value;
+    sNesEffAddr = addr;
+    value = bus_read_2(addr);
+    sNesOperand = value;
 }
 
 void nes_am_immediate_stub(void)
@@ -1961,13 +2016,13 @@ void nes_am_immediate(void)
 {
     Nes *nes;
     u8 *ram;
-    u32 idx;
+    u32 pc;
 
     nes = NES;
     ram = NES->mem;
-    sNesEffAddr = -1;
-    idx = nes->pc;
-    sNesOperand = ram[idx + 1];
+    sNesEffAddr = NES_EA_NONE;
+    pc = nes->pc;
+    sNesOperand = ram[pc + 1];
 }
 
 void nes_am_absolute_x_stub(void)
@@ -1977,23 +2032,23 @@ void nes_am_absolute_x_stub(void)
 void nes_am_absolute_x(void) {
     Nes *nes = NES;
     u8 *ram = NES->mem;
-    s32 i = nes->pc;
-    u8 *p = ram + i;
-    s32 s, r, a;
+    s32 pc = nes->pc;
+    u8 *instr = ram + pc;
+    s32 sum, value, addr;
 
-    s = (p[1] | (ram[(u16)(i + 2)] << 8)) + nes->x;
-    sNesEffAddr = s;
-    a = (u16)s;
-    if (a < 0x2000) {
-        a &= 0x7FF;
-    } else if (a > 0x7FFF) {
+    sum = (instr[1] | (ram[(u16)(pc + 2)] << 8)) + nes->x;
+    sNesEffAddr = sum;
+    addr = (u16)sum;
+    if (addr < NES_IO_START) {
+        addr &= NES_RAM_MASK;
+    } else if (addr > 0x7FFF) {
     } else {
-        r = nes_read_io_2(a);
+        value = nes_read_io_2(addr);
         goto store;
     }
-    r = NES->mem[a];
+    value = NES->mem[addr];
 store:
-    sNesOperand = r;
+    sNesOperand = value;
 }
 
 void nes_am_absolute_y_stub(void)
@@ -2004,58 +2059,60 @@ void nes_am_absolute_y(void)
 {
     Nes *nes = NES;
     u8 *ram = NES->mem;
-    s32 i = nes->pc;
-    u8 *p = ram + i;
-    u32 r;
-    s32 a;
+    s32 pc = nes->pc;
+    u8 *instr = ram + pc;
+    u32 value;
+    s32 addr;
 
-    a = (p[1] | (ram[(u16)(i + 2)] << 8)) + nes->y;
-    sNesEffAddr = a;
-    r = bus_read((u16)a);
-    sNesOperand = r;
+    addr = (instr[1] | (ram[(u16)(pc + 2)] << 8)) + nes->y;
+    sNesEffAddr = addr;
+    value = bus_read((u16)addr);
+    sNesOperand = value;
 }
 
 void nes_am_indexed_indirect_stub(void)
 {
 }
 
+/* (zp,X) */
 void nes_am_indexed_indirect(void)
 {
     u32 *out = &sNesEffAddr;
     u8 *ram = NES->mem;
     Nes *nes = NES;
-    s32 i = nes->pc;
-    u8 *p = ram + i;
-    s32 a;
-    u32 r;
+    s32 pc = nes->pc;
+    u8 *instr = ram + pc;
+    s32 ptr;
+    u32 value;
 
-    a = p[1] + nes->x;
-    *out = a;
-    *out = ram[a] | (ram[(u16)(a + 1)] << 8);
-    r = bus_read(*out);
-    sNesOperand = r;
+    ptr = instr[1] + nes->x;
+    *out = ptr;
+    *out = ram[ptr] | (ram[(u16)(ptr + 1)] << 8);
+    value = bus_read(*out);
+    sNesOperand = value;
 }
 
 void nes_am_indirect_indexed_stub(void)
 {
 }
 
+/* (zp),Y */
 void nes_am_indirect_indexed(void)
 {
     u32 *out = &sNesEffAddr;
     u8 *ram = NES->mem;
     Nes *nes = NES;
-    s32 i = nes->pc;
-    u8 *p = ram + i;
-    s32 a, b;
-    u32 r;
+    s32 pc = nes->pc;
+    u8 *instr = ram + pc;
+    s32 ptr, addr;
+    u32 value;
 
-    a = p[1];
-    *out = a;
-    b = (ram[a] | (ram[(u16)(a + 1)] << 8)) + nes->y;
-    *out = b;
-    r = bus_read((u16)b);
-    sNesOperand = r;
+    ptr = instr[1];
+    *out = ptr;
+    addr = (ram[ptr] | (ram[(u16)(ptr + 1)] << 8)) + nes->y;
+    *out = addr;
+    value = bus_read((u16)addr);
+    sNesOperand = value;
 }
 
 void nes_am_zeropage_x_stub(void)
@@ -2065,56 +2122,58 @@ void nes_am_zeropage_x_stub(void)
 void nes_am_zeropage_x(void) {
     Nes *nes = NES;
     u8 *ram = NES->mem;
-    s32 a, r;
+    s32 addr, value;
 
     sNesEffAddr = ram[nes->pc + 1] + nes->x;
-    a = sNesEffAddr;
-    if (a < 0x2000) {
-        a &= 0x7FF;
-    } else if (a > 0x7FFF) {
+    addr = sNesEffAddr;
+    if (addr < NES_IO_START) {
+        addr &= NES_RAM_MASK;
+    } else if (addr > 0x7FFF) {
     } else {
-        r = nes_read_io_2(a);
+        value = nes_read_io_2(addr);
         goto store;
     }
-    r = NES->mem[a];
+    value = NES->mem[addr];
 store:
-    sNesOperand = r;
+    sNesOperand = value;
 }
 
 void nes_am_zeropage_y_stub(void)
 {
 }
 
-static inline u32 bus_read_3(s32 a)
+/* bus_read again, for nes_am_zeropage_y */
+static inline u32 bus_read_3(s32 addr)
 {
-    if (a < 0x2000) {
-        a &= 0x7FF;
-    } else if (a <= 0x7FFF) {
-        return nes_read_io_3(a);
+    if (addr < NES_IO_START) {
+        addr &= NES_RAM_MASK;
+    } else if (addr <= 0x7FFF) {
+        return nes_read_io_3(addr);
     }
-    return NES->mem[a];
+    return NES->mem[addr];
 }
 
 void nes_am_zeropage_y(void)
 {
     Nes *nes = NES;
     u8 *ram = NES->mem;
-    s32 a;
-    a = ram[nes->pc + 1] + nes->y;
-    sNesEffAddr = a;
-    *(u32 *)&sNesOperand = bus_read_3(a); /* an unsigned store: as s32 the inlined read schedules differently */
+    s32 addr;
+    addr = ram[nes->pc + 1] + nes->y;
+    sNesEffAddr = addr;
+    *(u32 *)&sNesOperand = bus_read_3(addr); /* an unsigned store: as s32 the inlined read schedules differently */
 }
 
 void nes_am_relative_stub(void)
 {
 }
 
+/* The branch target: the next instruction plus the signed offset. */
 void nes_am_relative(void)
 {
     s32 *dst = &sNesOperand;
-    u32 a = NES_AT(pc);
-    s32 v = a + (s8)NES->mem[a + 1] + 2;
-    *dst = v & 0xFFFF;
+    u32 pc = NES_AT(pc);
+    s32 target = pc + (s8)NES->mem[pc + 1] + 2;
+    *dst = target & 0xFFFF;
 }
 
 void nes_am_jump_absolute_stub(void)
@@ -2124,43 +2183,45 @@ void nes_am_jump_absolute_stub(void)
 void nes_am_jump_absolute(void)
 {
     u32 *out = &sNesOperand;
-    u8 *nes = NES->mem;
-    s32 i = NES_AT(pc);
-    u8 *p = nes + i;
-    *out = p[1] | (nes[(u16)(i + 2)] << 8);
+    u8 *ram = NES->mem;
+    s32 pc = NES_AT(pc);
+    u8 *instr = ram + pc;
+    *out = instr[1] | (ram[(u16)(pc + 2)] << 8);
 }
 
 void nes_am_jump_indirect_stub(void)
 {
 }
 
+/* JMP (addr) */
 void nes_am_jump_indirect(void)
 {
     u32 *out = &sNesOperand;
-    u8 *nes = NES->mem;
-    s32 i = NES_AT(pc);
-    u8 *p = nes + i;
-    u16 v = (nes[(u16)(i + 2)] << 8) | p[1];
-    u8 *q = nes + v;
-    u32 w;
-    *out = v;
-    w = q[0] | (nes[(u16)(v + 1)] << 8);
-    *out = w;
+    u8 *ram = NES->mem;
+    s32 pc = NES_AT(pc);
+    u8 *instr = ram + pc;
+    u16 ptr = (ram[(u16)(pc + 2)] << 8) | instr[1];
+    u8 *vector = ram + ptr;
+    u32 target;
+    *out = ptr;
+    target = vector[0] | (ram[(u16)(ptr + 1)] << 8);
+    *out = target;
 }
 
+/* The effective address alone, for the stores (nothing is read). */
 void nes_ea_absolute(void)
 {
     s32 *dst = &sNesEffAddr;
-    u8 *base = NES->mem;
-    u32 h = NES_AT(pc);
-    u8 *p = (u8 *)((u32)base + h);
-    *dst = (u32)p[1] | ((u32)base[(u16)(h + 2)] << 8);
+    u8 *ram = NES->mem;
+    u32 pc = NES_AT(pc);
+    u8 *instr = (u8 *)((u32)ram + pc);
+    *dst = (u32)instr[1] | ((u32)ram[(u16)(pc + 2)] << 8);
 }
 
 void nes_ea_zeropage(void)
 {
-    u32 a = NES_AT(pc);
-    sNesEffAddr = NES->mem[a + 1];
+    u32 pc = NES_AT(pc);
+    sNesEffAddr = NES->mem[pc + 1];
 }
 
 void nes_ea_absolute_x(void)
@@ -2168,9 +2229,9 @@ void nes_ea_absolute_x(void)
     u32 *out = &sNesEffAddr;
     u8 *ram = NES->mem;
     Nes *nes = NES;
-    s32 i = nes->pc;
-    u8 *p = ram + i;
-    *out = (p[1] | (ram[(u16)(i + 2)] << 8)) + nes->x;
+    s32 pc = nes->pc;
+    u8 *instr = ram + pc;
+    *out = (instr[1] | (ram[(u16)(pc + 2)] << 8)) + nes->x;
 }
 
 void nes_ea_absolute_y(void)
@@ -2178,9 +2239,9 @@ void nes_ea_absolute_y(void)
     u32 *out = &sNesEffAddr;
     u8 *ram = NES->mem;
     Nes *nes = NES;
-    s32 i = nes->pc;
-    u8 *p = ram + i;
-    *out = (p[1] | (ram[(u16)(i + 2)] << 8)) + nes->y;
+    s32 pc = nes->pc;
+    u8 *instr = ram + pc;
+    *out = (instr[1] | (ram[(u16)(pc + 2)] << 8)) + nes->y;
 }
 
 void nes_ea_indexed_indirect(void)
@@ -2188,73 +2249,76 @@ void nes_ea_indexed_indirect(void)
     u32 *out = &sNesEffAddr;
     u8 *ram = NES->mem;
     Nes *nes = NES;
-    s32 i = nes->pc;
-    u8 *p = ram + i;
-    s32 a = p[1] + nes->x;
-    *out = a;
-    *out = ram[a] | (ram[(u16)(a + 1)] << 8);
+    s32 pc = nes->pc;
+    u8 *instr = ram + pc;
+    s32 ptr = instr[1] + nes->x;
+    *out = ptr;
+    *out = ram[ptr] | (ram[(u16)(ptr + 1)] << 8);
 }
 
+/* A plain read of the CPU address space (no mirroring or registers), for nes_ea_indirect_indexed */
 static inline u32 ram_read(u32 addr) { return NES->mem[addr]; }
 
 void nes_ea_indirect_indexed(void)
 {
     Nes *nes = NES;
-    u32 a = ram_read(nes->pc + 1);
-    sNesEffAddr = a;
-    sNesEffAddr = (ram_read(a) | (ram_read(a + 1) << 8)) + nes->y;
+    u32 ptr = ram_read(nes->pc + 1);
+    sNesEffAddr = ptr;
+    sNesEffAddr = (ram_read(ptr) | (ram_read(ptr + 1) << 8)) + nes->y;
 }
 
 void nes_ea_zeropage_x(void)
 {
     Nes *nes = NES;
-    u32 a = nes->pc;
-    sNesEffAddr = NES->mem[a + 1] + nes->x;
+    u32 pc = nes->pc;
+    sNesEffAddr = NES->mem[pc + 1] + nes->x;
 }
 
 void nes_ea_zeropage_y(void)
 {
     Nes *nes;
     u8 *ram;
-    u32 idx;
+    u32 pc;
 
     nes = NES;
     ram = NES->mem;
-    idx = nes->pc;
-    sNesEffAddr = ram[idx + 1] + nes->y;
+    pc = nes->pc;
+    sNesEffAddr = ram[pc + 1] + nes->y;
 }
 
-void nes_apu_write(s32 p, u8 v)
+/* Unused: a write to an APU register, passed on to its channel (as nes_write_io does). */
+void nes_apu_write(s32 addr, u8 value)
 {
-    s32 u;
+    s32 channel;
 
-    NES->mem[p] = v;
-    u = (p - 0x4000) >> 2;
-    if (u < 2) {
-        nes_apu_update_square(u, p & 3);
-    } else if (u == 2) {
-        nes_apu_update_triangle(2, p & 3);
-    } else if (u == 3) {
-        nes_apu_update_noise(3, p & 3);
+    NES->mem[addr] = value;
+    channel = (addr - NES_APU_REGS) >> 2;
+    if (channel < 2) {
+        nes_apu_update_square(channel, addr & 3);
+    } else if (channel == NES_APU_TRIANGLE) {
+        nes_apu_update_triangle(NES_APU_TRIANGLE, addr & 3);
+    } else if (channel == NES_APU_NOISE) {
+        nes_apu_update_noise(NES_APU_NOISE, addr & 3);
     }
 }
 
+/* Unused: a CPU read and write of any address. */
 s32 nes_cpu_read(s32 addr)
 {
     addr &= 0xFFFF;
-    if (addr < 0x2000) {
-        addr &= 0x7FF;
-    } else if (addr < 0x8000) {
+    if (addr < NES_IO_START) {
+        addr &= NES_RAM_MASK;
+    } else if (addr < NES_PRG_ROM) {
         return nes_read_io_4(addr);
     }
     return NES->mem[addr];
 }
 
-void nes_cpu_write(s32 addr, s32 val) {
-    if (addr < 0x2000) {
+void nes_cpu_write(s32 addr, s32 value) {
+    if (addr < NES_IO_START) {
         u8 *ram = NES->mem;
-        ram[addr & 0x7FF] = val;
-    } else if (addr < 0x8000) {
-        nes_write_io(addr, val);
+        ram[addr & NES_RAM_MASK] = value;
+    } else if (addr < NES_PRG_ROM) {
+        nes_write_io(addr, value);
     }
 }

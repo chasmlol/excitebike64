@@ -145,6 +145,10 @@ typedef struct Nes {
 #define NES_APU_CLOCK   0x36EE8     /* 225000, about the CPU clock / 8 (223722) */
 #define NES_AUDIO_RATE  22050       /* output sample rate */
 
+/* sNesEffAddr when the instruction has no memory operand (accumulator and immediate modes): the read-modify-write
+   operations then work on A. */
+#define NES_EA_NONE (-1)
+
 /* 6502 vectors */
 #define NES_VECTOR_NMI      0xFFFA
 #define NES_VECTOR_RESET    0xFFFC
@@ -177,6 +181,7 @@ typedef struct Nes {
 #define NES_CYCLES_PER_LINE 0x78    /* 120 */
 
 /* PPU memory (Nes.vram) */
+#define NES_VRAM_SIZE           0x4000  /* $2006/$2007 addresses wrap here */
 #define NES_VRAM_NAMETABLE      0x2000
 #define NES_NAMETABLE_SIZE      0x400   /* 32 x 30 tiles, then the attribute table */
 #define NES_ATTR_TABLE          0x3C0   /* the attribute table's offset in a name table: a palette per 2x2 tiles */
