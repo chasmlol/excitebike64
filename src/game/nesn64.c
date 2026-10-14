@@ -1,5 +1,9 @@
 #include "game.h"
 
+/* The NES emulator (overview.md, NES emulator). The machine lives at NES (0x80380000). Some accesses to it are
+   written as NES_AT(field), as numeric addresses, or as byte offsets added to the base, rather than NES->field:
+   each form gives the original's address loads (compiler-notes.md, NES emulator), so they stay as they are. */
+
 /* Bus accesses of the opcode handlers and addressing modes: RAM (mirrored), the registers at $2000-$7FFF, or the
    ROM (writes ignored). The variants are copies written per caller so that each one compiles as in the original;
    they are kept apart on purpose. */
@@ -91,7 +95,8 @@ void nes_init(void)
             k += 4;
         }
     }
-    /* The RGB palette to RGBA5551 (j, n, k: red, green, blue), opaque, except one colour. */
+    /* The RGB palette to RGBA5551 (j, n, k: red, green, blue), opaque except one colour. The table has the NES's 64
+       colours; the other 192 entries are converted from the data after it. */
     sNesPalette = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xBF);
     pal = sNesPalette;
     for (i = 0; i < 0x100; i++) {
@@ -145,7 +150,7 @@ void nes_update_input(volatile s32 *input)
     if (sNesRestoreTimer != 0) {
         if (--sNesRestoreTimer == 0) {
             /* Back to the machine state of the resource, with the design track put back from the save block. */
-            __builtin_memcpy(NES->mem, sNesSnapshot->ram, 0x800);
+            __builtin_memcpy(NES->mem, sNesSnapshot->ram, NES_RAM_SIZE);
             __builtin_memcpy(&NES->vram[NES_VRAM_NAMETABLE], sNesSnapshot->vram, 0x2000);
             snap = sNesSnapshot;
             nes = NES;
@@ -268,7 +273,7 @@ void nes_draw_frame(s32 gfxCtx, s32 fb, Gfx **pgdl)
     gDPPipeSync(sNesGfx++);
     nes_draw_sprites(sNesInstrPerFrame);
     gDPPipeSync(sNesGfx++);
-    /* Twice a second the message is written into both name tables, then blanked again. */
+    /* The message blinks: in both name tables for 30 frames, blanked for the next 30. */
     if (nes_should_show_exit_msg() != 0) {
         ntAddr = NES_EXIT_MSG_ADDR;
         if ((sNesFrameCount / 30) & 1) {
@@ -283,7 +288,7 @@ void nes_draw_frame(s32 gfxCtx, s32 fb, Gfx **pgdl)
                     ntAddr++;
                 } while (sNesExitMsg[i] != 0);
             }
-            mem_fill(&sNesCpuMemory->vram[0x23F0], 0x5F, 8); /* the palettes of the bottom rows */
+            mem_fill(&sNesCpuMemory->vram[0x23F0], 0x5F, 8); /* the attribute bytes of tile rows 24-27 */
         } else {
             t = 0;
             if (sNesExitMsg[0] != 0) {
@@ -301,7 +306,7 @@ void nes_draw_frame(s32 gfxCtx, s32 fb, Gfx **pgdl)
         if (sNesRestoreTimer == 0) {
             sNesRestoreTimer = NES_RESTORE_DELAY;
             __builtin_memcpy(gSaveData.nesTrack, &NES->mem[NES_TRACK_ADDR], NES_TRACK_SIZE);
-            save_write(0, 0);
+            save_write(SAVE_SECTION_NES_TRACK, 0);
         }
     } else if (NES->pc == NES_PC_LOAD_1 || NES->pc == NES_PC_LOAD_2) {
         if (sNesRestoreTimer == 0) {
@@ -715,6 +720,7 @@ void nes_exit(void)
     gRaceExitCode = 6;
 }
 
+/* Frees the two audio buffers. */
 void nes_audio_free(void)
 {
     u32 *bufs = &sNesAudioBufs;
@@ -1330,7 +1336,8 @@ void nes_run_frame(void)
 }
 
 /* Resets the CPU: interrupts disabled, the PC from the reset vector; sets the row callback. */
-s32 nes_cpu_reset(Nes *machine, void (*rowCallback)(s32)) {
+s32 nes_cpu_reset(Nes *machine, void (*rowCallback)(s32))
+{
     Nes *nes = NES;
     u8 *prg = &NES->mem[NES_PRG_ROM];
     sNesCpuMemory = machine;
@@ -1347,7 +1354,8 @@ s32 nes_cpu_reset(Nes *machine, void (*rowCallback)(s32)) {
 
 /* ADC. V is set when bit 7 and up of the result differ from A's (a carry included), not the 6502's signed
    overflow. */
-void nes_op_adc(void) {
+void nes_op_adc(void)
+{
     Nes *nes = NES;
     u32 sum = nes->a;
     u32 old = sum;
@@ -1363,7 +1371,7 @@ void nes_op_adc(void) {
     nes->v = (old ^ sum) & signMask;
 }
 
-/* AND, ORA and EOR */
+/* AND */
 void nes_op_and(void)
 {
     Nes *nes;
@@ -1435,7 +1443,8 @@ void nes_op_beq(void)
 }
 
 /* BIT: Z from A & operand; N and V are the operand's bits 7 and 6. */
-void nes_op_bit(void) {
+void nes_op_bit(void)
+{
     Nes *nes = NES;
     nes->z = ((nes->a & sNesOperand) == 0);
     {
@@ -1543,7 +1552,8 @@ void nes_op_clv(void)
 
 /* CMP, CPX, CPY. N is set when the register is below the operand, not from bit 7 of the difference as on the
    6502. */
-void nes_op_cmp(void) {
+void nes_op_cmp(void)
+{
     Nes *nes = NES;
     s32 reg = nes->a;
     s32 operand = sNesOperand;
@@ -1564,7 +1574,8 @@ void nes_op_cmp(void) {
     nes->z = 0;
 }
 
-void nes_op_cpx(void) {
+void nes_op_cpx(void)
+{
     Nes *nes = NES;
     s32 reg = nes->x;
     s32 operand = sNesOperand;
@@ -1585,7 +1596,8 @@ void nes_op_cpx(void) {
     nes->z = 0;
 }
 
-void nes_op_cpy(void) {
+void nes_op_cpy(void)
+{
     Nes *nes = NES;
     s32 reg = nes->y;
     s32 operand = sNesOperand;
@@ -1640,6 +1652,7 @@ void nes_op_dey(void)
     nes->n = neg;
 }
 
+/* EOR */
 void nes_op_eor(void)
 {
     Nes *nes = NES;
@@ -1650,7 +1663,8 @@ void nes_op_eor(void)
 }
 
 /* INC, INX, INY */
-void nes_op_inc(void) {
+void nes_op_inc(void)
+{
     Nes *nes;
     s32 result = sNesOperand + 1;
 
@@ -1690,7 +1704,8 @@ void nes_op_jmp(void)
     NES_AT(pc) = sNesOperand16;
 }
 
-void nes_op_jsr(void) {
+void nes_op_jsr(void)
+{
     Nes *nes = NES;
     u32 ramAddr = (u32)NES->mem;
     u8 pcLo;
@@ -1737,10 +1752,12 @@ void nes_op_ldy(void)
     nes->n = sNesOperand & 0x80;
 }
 
+/* NOP */
 void nes_op_nop(void)
 {
 }
 
+/* ORA */
 void nes_op_ora(void)
 {
     Nes *nes;
@@ -1866,7 +1883,8 @@ void nes_op_sta(void)
     }
 }
 
-void nes_op_stx(void) {
+void nes_op_stx(void)
+{
     s32 addr = sNesEffAddr;
     u32 value = NES_AT(x);
     if (addr < NES_IO_START) {
@@ -1876,7 +1894,8 @@ void nes_op_stx(void) {
     }
 }
 
-void nes_op_sty(void) {
+void nes_op_sty(void)
+{
     s32 addr = sNesEffAddr;
     s32 value = NES_AT(y);
 
@@ -1963,7 +1982,8 @@ void nes_am_absolute_stub(void)
 {
 }
 
-void nes_am_absolute(void) {
+void nes_am_absolute(void)
+{
     u8 *ram = NES->mem;
     s32 pc = NES_AT(pc);
     u8 *instr = ram + pc;
@@ -2029,7 +2049,8 @@ void nes_am_absolute_x_stub(void)
 {
 }
 
-void nes_am_absolute_x(void) {
+void nes_am_absolute_x(void)
+{
     Nes *nes = NES;
     u8 *ram = NES->mem;
     s32 pc = nes->pc;
@@ -2119,7 +2140,8 @@ void nes_am_zeropage_x_stub(void)
 {
 }
 
-void nes_am_zeropage_x(void) {
+void nes_am_zeropage_x(void)
+{
     Nes *nes = NES;
     u8 *ram = NES->mem;
     s32 addr, value;
@@ -2314,7 +2336,8 @@ s32 nes_cpu_read(s32 addr)
     return NES->mem[addr];
 }
 
-void nes_cpu_write(s32 addr, s32 value) {
+void nes_cpu_write(s32 addr, s32 value)
+{
     if (addr < NES_IO_START) {
         u8 *ram = NES->mem;
         ram[addr & NES_RAM_MASK] = value;

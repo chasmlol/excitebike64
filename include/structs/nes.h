@@ -88,6 +88,7 @@ typedef struct Nes {
 
 /* The CPU address space (Nes.mem). Addresses below $2000 are the 2 KB of RAM, mirrored; $2000-$7FFF are registers
    (nes_write_io, nes_read_io); writes to the PRG ROM, $8000 and up, are ignored. */
+#define NES_RAM_SIZE        0x800
 #define NES_RAM_MASK        0x7FF
 #define NES_IO_START        0x2000
 #define NES_STACK           0x100   /* the stack page */
