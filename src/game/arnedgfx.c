@@ -184,6 +184,7 @@ void arned_set_camera(s32 frame, s32 x, s32 y, s32 z, s16 yaw, s16 pitch)
     screenH1 = gScreenHeight;
     screenH2 = gScreenHeight;
     screenH3 = gScreenHeight;
+    /* gCosTable[0xC00] is 0: the scale comes out infinite, as in the original */
     projScale = (f32)screenH1 * 0.5f * gCosTable[0] / gCosTable[0xC00];
     *(volatile f32 *)&gProjScale = projScale;
     gProjScale = projScale * screenH2 * 0.00390625f;
@@ -197,7 +198,8 @@ void arned_set_camera(s32 frame, s32 x, s32 y, s32 z, s16 yaw, s16 pitch)
     gArnedCamMtx[frame] = res;
 }
 
-#define SINS(a) gCosTable[((a) >> 4) & 0xFFF]
+/* cos(a / 0x10000 turns), 1.0 = 0x4000 */
+#define COS16(a) gCosTable[((a) >> 4) & 0xFFF]
 
 /* Draws the editor's 3D view for frame buffer `frame`: rebuilds the vertex buffers of the changed cells, then draws
    the floor (drawGrid), the walls' outsides, the cells' pieces (selected ones pulsing), the start cursor (cursorRot
@@ -323,7 +325,7 @@ Gfx *arned_draw(s32 frame, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32
                 if (cell->flags & ARNED_CELL_SELECTED) {
                     s32 phase;
                     phase = gFrameCounter << 10;
-                    gDPSetPrimColor(gdl++, 0, 0, (SINS(phase) * 25 >> 13) + 128, (SINS(phase) * 25 >> 13) + 128, (SINS(phase) * 127 >> 14) + 128, 0xFF);
+                    gDPSetPrimColor(gdl++, 0, 0, (COS16(phase) * 25 >> 13) + 128, (COS16(phase) * 25 >> 13) + 128, (COS16(phase) * 127 >> 14) + 128, 0xFF);
                     gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
                     gSPClearGeometryMode(gdl++, G_SHADE | G_LIGHTING | G_SHADING_SMOOTH);
                 } else {
@@ -453,6 +455,7 @@ void arned_set_object_view(s32 frame, s32 view, s32 x, s32 y, s32 w, s32 h, s32 
     ov->vp[frame].vp.vtrans[1] = (y + h / 2) * 4;
     ov->vp[frame].vp.vtrans[2] = G_MAXZ / 2;
     ov->unk_AE = unk;
+    /* infinite, as in arned_set_camera */
     projScale = (f32)gScreenHeight * 0.5f * (f32)gCosTable[0] / (f32)gCosTable[0xC00];
     projScale2 = projScale * (f32)gScreenHeight * 0.00390625f;
     aspect = 320.0f / (f32)gScreenHeight;
