@@ -399,11 +399,9 @@ typedef struct {
     u8 pad38[8];
 } Obj_69;
 
-typedef struct { s32 f0; u8 pad4[0x3E4]; void *f3E8; } Glob70;
 typedef struct { s32 f0, f4, f8; } Tri3_4;
 
 extern State_11 *gEditor_8;
-extern Glob70 gGame_87;
 extern Obj_69 gPieceTypes_5[];
 extern Tri3_4 sEditCamTarget_2;
 extern Tri3_4 sEditCamPos_2;
@@ -422,7 +420,7 @@ void edit_init(void)
         gEditor_8 = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
         mem_fill((u8 *)gEditor_8, 0, 0x1810);
     } else {
-        gGame_87.f0 &= ~2;
+        gGame.flags &= ~2;
         gEditor_8->f174 &= ~0x10;
     }
     shell_load_gui_res();
@@ -552,11 +550,11 @@ void edit_init(void)
     gui_init();
     gEditor_8->f1804 = res_load(gGuiRes, D_800D13E0);
     gEditor_8->f1808 = res_load(gGuiRes, D_800D142C);
-    if (gGame_87.f3E8 != NULL) {
+    if (gGame.userTrack != NULL) {
         gEditor_8->f174 &= ~0x6000;
-        usrtrk_load_into_editor((u8 *)gGame_87.f3E8 + 4);
-        mem_free(gGame_87.f3E8);
-        gGame_87.f3E8 = NULL;
+        usrtrk_load_into_editor((u8 *)gGame.userTrack + 4);
+        mem_free(gGame.userTrack);
+        gGame.userTrack = NULL;
         edit_try_close_loop(gEditor_8->f180);
     }
     edit_cam_update_target();
@@ -567,10 +565,6 @@ void edit_init(void)
     arned_load_piece_textures(gEditor_8->f17F8, gEditor_8->f1724, gEditor_8->f1728);
     osViSetSpecialFeatures(0xAA);
 }
-
-typedef struct { u8 pad[0x3E8]; s32 *p; } FB;
-
-extern FB gGame_88;
 
 void edit_exit(void)
 {
@@ -604,11 +598,11 @@ void edit_exit(void)
         n = (iVar7 - 1) * 0xc + 0x110;
         memcpy(gZBuffer + 0x400, gUserTrackLayout_2, n);
         mem_free(gUserTrackLayout_2);
-        mem_free(gGame_88.p);
+        mem_free(gGame.userTrack);
         gUserTrackLayout_2 = mem_alloc_dbg(n, 0, sStrEditFile, 0x651);
-        gGame_88.p = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x652);
+        gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x652);
         memcpy(gUserTrackLayout_2, gZBuffer + 0x400, n);
-        __builtin_memcpy(gGame_88.p, gZBuffer, 0x400);
+        __builtin_memcpy(gGame.userTrack, gZBuffer, 0x400);
     }
     font_unload_set();
 }
@@ -792,18 +786,6 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
 }
 
 typedef struct {
-    s32 f0;
-    u8 pad4[0x38];
-    s32 f3C;
-    u8 pad40[0xC];
-    s32 f4C;
-    u8 pad50[0x398];
-    u8 *f3E8;
-    u8 pad3EC[0x24];
-    s32 f410;
-} Sys;
-
-typedef struct {
     u8 pad0[0x2C4];
     u8 f2C4;
     u8 pad2C5[0x22F];
@@ -816,7 +798,6 @@ typedef struct {
 } Cam_6;
 
 extern Save_7 gSaveData_16;
-extern Sys gGame_89;
 extern Menu_6 sEditTrackMenu;
 extern Cam_6 sEditCamPos_3;
 extern Cam_6 sEditCamTarget_3;
@@ -875,12 +856,12 @@ void edit_update_main_menu(void)
                     }
                     break;
                 case 8:
-                    gGame_89.f3E8 = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
-                    usrtrk_pack_track_2(gGame_89.f3E8);
-                    __builtin_memcpy(D_800F1DF4, gGame_89.f3E8, 0x310);
+                    gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
+                    usrtrk_pack_track_2(gGame.userTrack);
+                    __builtin_memcpy(D_800F1DF4, gGame.userTrack, 0x310);
                     save_write(4, 0);
-                    mem_free(gGame_89.f3E8);
-                    gGame_89.f3E8 = 0;
+                    mem_free(gGame.userTrack);
+                    gGame.userTrack = 0;
                     gEditor_10->f16E0->fC |= 1;
                     gEditor_10->f174 &= ~0x1000;
                     break;
@@ -889,18 +870,18 @@ void edit_update_main_menu(void)
                         gEditor_10->f17FC = 8;
                         gEditor_10->f17FE = 0;
                     } else {
-                        gGame_89.f3E8 = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
-                        usrtrk_pack_track_2(gGame_89.f3E8);
-                        __builtin_memcpy(gSaveData_16.f4F4, gGame_89.f3E8, 0x310);
+                        gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
+                        usrtrk_pack_track_2(gGame.userTrack);
+                        __builtin_memcpy(gSaveData_16.f4F4, gGame.userTrack, 0x310);
                         save_write(4, 0);
-                        mem_free(gGame_89.f3E8);
-                        gGame_89.f3E8 = 0;
+                        mem_free(gGame.userTrack);
+                        gGame.userTrack = 0;
                         gEditor_10->f16E0->fC |= 1;
                         gEditor_10->f174 &= ~0x1000;
                     }
                     break;
                 case 3:
-                    gGame_89.f0 |= 2;
+                    gGame.flags |= 2;
                     gEditor_10->f178 = 0;
                     gEditor_10->f174 |= 0x10;
                     gEditor_10->f16E0->fC |= 1;
@@ -945,21 +926,21 @@ void edit_update_main_menu(void)
                     gEditor_10->f174 = (gEditor_10->f174 & ~0x1000) | 0x800;
                     break;
                 case 6:
-                    gGame_89.f0 |= 2;
+                    gGame.flags |= 2;
                     gEditor_10->f178 = 0;
                     gEditor_10->f174 = (gEditor_10->f174 | 0x2010) & ~0x4000;
                     gEditor_10->f16E0->fC |= 1;
                     gEditor_10->f174 &= ~0x1000;
                     break;
                 case 5:
-                    gGame_89.f0 |= 2;
+                    gGame.flags |= 2;
                     gEditor_10->f178 = 0;
                     gEditor_10->f174 = (gEditor_10->f174 | 0x4010) & ~0x2000;
-                    gGame_89.f3E8 = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x7B3);
-                    for (n = usrtrk_pack_track_2(gGame_89.f3E8 + 4) + 4; n < 0x400; n++) {
-                        gGame_89.f3E8[n] = 0;
+                    gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x7B3);
+                    for (n = usrtrk_pack_track_2(gGame.userTrack + 4) + 4; n < 0x400; n++) {
+                        gGame.userTrack[n] = 0;
                     }
-                    *(u32 *)gGame_89.f3E8 = calc_checksum24(gGame_89.f3E8 + 4, 0x3FC);
+                    *(u32 *)gGame.userTrack = calc_checksum24(gGame.userTrack + 4, 0x3FC);
                 default:
                     gEditor_10->f16E0->fC |= 1;
                     gEditor_10->f174 &= ~0x1000;
@@ -1074,25 +1055,25 @@ void edit_update_main_menu(void)
                 gEditor_10->f16E0->fC &= ~1;
                 break;
             case 4:
-                if (gGame_89.f410 == 0) {
-                    gGame_89.f410 = 1;
+                if (gGame.difficulty == 0) {
+                    gGame.difficulty = 1;
                 }
                 if (gEditor_10->f17C->next == gEditor_10->f180) {
-                    gGame_89.f4C = 0xD;
+                    gGame.mode = 0xD;
                 } else {
-                    gGame_89.f4C = 0xE;
+                    gGame.mode = 0xE;
                 }
-                gGame_89.f3C = 1;
-                gGame_89.f0 &= ~2;
+                gGame.numPlayers = 1;
+                gGame.flags &= ~2;
                 gEditor_10->f174 &= ~0x6000;
-                gGame_89.f0 |= 0x4000000;
+                gGame.flags |= 0x4000000;
                 gEditor_10->f174 |= 0x410;
                 gEditor_10->f178 = 0;
                 gEditor_10->f174 &= ~0x1000;
-                if (gGame_89.f3E8 == NULL) {
-                    gGame_89.f3E8 = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x88C);
-                    for (n = usrtrk_pack_track_2(gGame_89.f3E8 + 4) + 4; n < 0x400; n++) {
-                        gGame_89.f3E8[n] = 0;
+                if (gGame.userTrack == NULL) {
+                    gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x88C);
+                    for (n = usrtrk_pack_track_2(gGame.userTrack + 4) + 4; n < 0x400; n++) {
+                        gGame.userTrack[n] = 0;
                     }
                 }
                 break;
@@ -4921,20 +4902,18 @@ void edit_clear_track(s32 a0) {
     strcpy((char *)gEditor_33 + 0x16BA, "<NONE>");
 }
 
-typedef struct { u8 pad[0x3E8]; void *ptr; } GS_2;
 typedef struct { u8 b[0x310]; } Blk_24;
 
-extern GS_2 gGame_90;
 extern Blk_24 D_800F1DF4_2;
 
 void edit_save_track_to_game_pak(void)
 {
-    gGame_90.ptr = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x6FE);
-    usrtrk_pack_track(gGame_90.ptr);
-    D_800F1DF4_2 = *(Blk_24 *)gGame_90.ptr;
+    gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x6FE);
+    usrtrk_pack_track(gGame.userTrack);
+    D_800F1DF4_2 = *(Blk_24 *)gGame.userTrack;
     save_write(4, 0);
-    mem_free(gGame_90.ptr);
-    gGame_90.ptr = 0;
+    mem_free(gGame.userTrack);
+    gGame.userTrack = 0;
 }
 
 typedef struct Sub_12 {

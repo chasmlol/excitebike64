@@ -57,17 +57,7 @@ typedef struct {
     u8 pad7A6[0x7E0 - 0x7A6];
 } Bike_27;
 
-typedef struct {
-    s32 state;
-    u8 pad4[0x1C];
-    s16 f20;
-    s16 n;              /* 0x22 */
-    u8 pad24[0x1C];
-    s32 f40;            /* 0x40 */
-} Game_18;
-
 extern Bike_27 gRiders_50[];
-extern Game_18 gEvent_17;
 extern Bike_27 *gRiderStandings_2[];
 
 void desert_update_race(void)
@@ -81,7 +71,7 @@ void desert_update_race(void)
     s32 pad[4];
 
     d = 0.0f;
-    for (b = gRiders_50; b < &gRiders_50[gEvent_17.n]; b++) {
+    for (b = gRiders_50; b < &gRiders_50[gEvent.numRiders]; b++) {
         b->f44C = 1.0f;
         if (b->f7A5 != 0) {
             continue;
@@ -124,7 +114,7 @@ void desert_update_race(void)
                 if (b->f3FF == 0) {
                     event_rider_finished(b - gRiders_50);
                     if (b == gRiders_50) {
-                        gEvent_17.f40 = 1;
+                        gEvent.allFinished = 1;
                     }
                 }
             } else {
@@ -141,7 +131,7 @@ void desert_update_race(void)
     if (D_800E3EA8 == 0) {
         do {
             swapped = 0;
-            for (i = 0; i < gEvent_17.n - 1; i++) {
+            for (i = 0; i < gEvent.numRiders - 1; i++) {
                 a = gRiderStandings_2[i];
                 if (a->f668 < 0) {
                     c = gRiderStandings_2[i + 1];
@@ -153,7 +143,7 @@ void desert_update_race(void)
                 }
             }
         } while (swapped);
-        for (i = 0; i < gEvent_17.n; i++) {
+        for (i = 0; i < gEvent.numRiders; i++) {
             gRiderStandings_2[i]->f662 = i;
         }
         race_announce_position_changes();

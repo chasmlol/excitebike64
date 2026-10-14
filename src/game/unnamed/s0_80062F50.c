@@ -301,8 +301,8 @@ void race_announce_position_changes(void)
     s32 v;
     s32 idx;
 
-    if (gEvent_37.f2C < 0x78) return;
-    for (p = gRiders_80; p < gRiders_80 + gGame_9.count; p++) {
+    if (gEvent.time < 0x78) return;
+    for (p = gRiders_80; p < gRiders_80 + gGame.numPlayers; p++) {
         v = p->f668 >= 0 ? p->f668 : p->f662;
         if (v != p->f664) {
             if (p->f666 > 0x180) {
@@ -311,7 +311,7 @@ void race_announce_position_changes(void)
             p->f666 -= 0x20;
             if (p->f666 <= 0) {
                 if (p->f6E8 == 0 && p->f668 < 0) {
-                    if (gRaceFrame - gAnnounceTimes[p - gRiders_80] > 300 && gEvent_37.f2C > 600) {
+                    if (gRaceFrame - gAnnounceTimes[p - gRiders_80] > 300 && gEvent.time > 600) {
                         announce_place_change(p - gRiders_80, v, p->f664);
                     }
                 }
@@ -326,13 +326,7 @@ void race_announce_position_changes(void)
     }
 }
 
-typedef struct {
-    u8 pad[0x22];
-    s16 count;
-} Race_5;
-
 extern Bike_39 *gRiderStandings_4[];
-extern Race_5 gEvent_38;
 
 void race_sort_positions(void)
 {
@@ -354,7 +348,7 @@ void race_sort_positions(void)
 
     do {
         swapped = 0;
-        for (i = 0; i < gEvent_38.count - 1; i++) {
+        for (i = 0; i < gEvent.numRiders - 1; i++) {
             if (gRiderStandings_4[i]->f630 < gRiderStandings_4[i + 1]->f630
                 && (gRiderStandings_4[i]->b7A5 | gRiderStandings_4[i + 1]->b7A5) == 0
                 && gRiderStandings_4[i]->h668 < 0) {
@@ -366,7 +360,7 @@ void race_sort_positions(void)
         }
     } while (swapped);
 
-    for (i = 0; i < gEvent_38.count; i++) {
+    for (i = 0; i < gEvent.numRiders; i++) {
         gRiderStandings_4[i]->h662 = i;
     }
     if (gEventTime > 120) {
@@ -505,32 +499,11 @@ typedef struct {
 } Player_23;
 
 typedef struct {
-    u32 w0;
-    u8 pad4[0x1C];
-    s16 h20;
-    s16 h22;
-    u8 pad24[8];
-    s32 w2C;
-    u8 pad30[0x28];
-    s32 w58;
-} Mode_4;
-
-typedef struct {
-    s32 w0;
-    u8 pad4[0x48];
-    s32 w4C;
-    u8 pad50[0x410 - 0x50];
-    s32 w410;
-} Cfg_9;
-
-typedef struct {
     u8 pad0[0x20];
     f32 f20[4];
 } Tune;
 
 extern Player_23 gRiders_83[];
-extern Mode_4 gEvent_39;
-extern Cfg_9 gGame_46;
 extern Tune *gCurTrack_33;
 extern Player_23 *gRiderStandings_6[];
 
@@ -558,7 +531,7 @@ void race_update_riders(void)
     n0 = 0;
     sum0 = 0.0f;
     sum1 = 0.0f;
-    for (i = 0; i < gEvent_39.h22; i++) {
+    for (i = 0; i < gEvent.numRiders; i++) {
         if (gRiders_83[i].b7A5 == 0) {
             switch (gRiders_83[i].b6E8) {
             case 0:
@@ -586,13 +559,13 @@ void race_update_riders(void)
                     }
                 }
                 if (idx >= 0) {
-                    if (gRiders_83[idx].f62C > 150.0f || (gRiders_83[idx].h662 != 0 && gRiders_83[idx].h660 != gEvent_39.h20 - 1)) {
+                    if (gRiders_83[idx].f62C > 150.0f || (gRiders_83[idx].h662 != 0 && gRiders_83[idx].h660 != gEvent.numLaps - 1)) {
                         announce_place(idx, gRiders_83[idx].h662 + 1);
                     }
                 }
             } else {
                 pl = gRiders_83;
-                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->f62C > 150.0f || (pl->h662 != 0 && pl->h660 != gEvent_39.h20 - 1)))) {
+                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->f62C > 150.0f || (pl->h662 != 0 && pl->h660 != gEvent.numLaps - 1)))) {
                     if (pl->h662 != 0) {
                         pl = gRiderStandings_6[pl->h662 - 1];
                     } else {
@@ -602,7 +575,7 @@ void race_update_riders(void)
                 announce_place(pl - gRiders_83, pl->h662 + 1);
             }
         }
-        if (gEvent_39.w2C == 300) {
+        if (gEvent.time == 300) {
             announce_early_leader(gRiderStandings_6[0] - gRiders_83);
         }
     }
@@ -617,9 +590,9 @@ void race_update_riders(void)
     if (n1 == 0) {
         sum1 = sum0;
     }
-    if (gGame_46.w0 & 0x10) {
+    if (gGame.flags & 0x10) {
         k = 0;
-        for (i = 0; i < gEvent_39.h22; i++) {
+        for (i = 0; i < gEvent.numRiders; i++) {
             pl = gRiderStandings_6[i];
             if (pl->b6E8 == 1) {
                 e = pl->f630 - sum1;
@@ -642,7 +615,7 @@ void race_update_riders(void)
         }
     } else if (n0 == 0) {
         k = 0;
-        for (i = 0; i < gEvent_39.h22; i++) {
+        for (i = 0; i < gEvent.numRiders; i++) {
             pl = gRiderStandings_6[i];
             if (pl->b6E8 == 1) {
                 e = pl->f630 - sum1;
@@ -663,14 +636,14 @@ void race_update_riders(void)
                 k++;
             }
         }
-    } else if (gGame_46.w4C != 8 && gEvent_39.w0 >= 5) {
+    } else if (gGame.mode != 8 && gEvent.state >= 5) {
         d = ((sum1 - sum0) - 30.0f) * 0.00390625f;
         if (d > 0.15f) {
             d = 0.15f;
         } else if (d < -0.15f) {
             d = -0.15f;
         }
-        for (i = 0; i < gEvent_39.h22; i++) {
+        for (i = 0; i < gEvent.numRiders; i++) {
             pl = &gRiders_83[i];
             if (pl->b6E8 != 0) {
                 f = 0.0f;
@@ -687,9 +660,9 @@ void race_update_riders(void)
                 } else if (gCheatFlags & 0x1000) {
                     f *= gCurTrack_33->f20[2] + 0.05f;
                 } else {
-                    g = gCurTrack_33->f20[gGame_46.w410 - 1];
+                    g = gCurTrack_33->f20[gGame.difficulty - 1];
                     f *= g;
-                    if (gEvent_39.w58 & 0x200) {
+                    if (gEvent.flags & 0x200) {
                         f = g * 1.15f;
                     }
                 }
@@ -1167,22 +1140,22 @@ void race_grid_from_standings(void)
     s32 j;
     s32 n;
     u8 *arr;
-    Cnt *t;
+    Event *t;
     u8 *hb;
 
     mem_fill_3(sGridOrderNext, -1, 6);
     if (gGameMode == 1) {
-        Cnt *p = &gEvent;
+        Event *p = &gEvent;
         i = 0;
-        if (p->n > 0) {
+        if (p->numRiders > 0) {
             t = p;
             do {
                 j = 0;
-                if (t->n > 0) {
+                if (t->numRiders > 0) {
                     arr = gSeason;
                     hb = (u8 *)0x800F0000;
                     __asm__ __volatile__("" : "+r"(hb));
-                    n = *(s16 *)(hb + 0x5CA);
+                    n = *(s16 *)(hb + 0x5CA); /* gEvent.numRiders */
 inner:
                     if (*(u8 *)((u32)arr + (u32)j + 0x6c) == i) {
                         goto store;
@@ -1195,7 +1168,7 @@ inner:
 store:
                 sGridOrderNext[i] = (u8)j;
                 i++;
-            } while (i < t->n);
+            } while (i < t->numRiders);
         }
     }
 }

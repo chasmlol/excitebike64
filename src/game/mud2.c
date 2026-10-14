@@ -311,7 +311,7 @@ void particles_emit_bike_dirt(void)
                 bC = 1;
             }
             if (bC) {
-                if (gEvent_4 >= 5 || (gRaceFrame & 1)) {
+                if (gEvent.state >= 5 || (gRaceFrame & 1)) {
                     A.y = 0.07f;
                     A.z += (s32)(random_byte() - 0x80) / kr;
                     A.x += (s32)(random_byte() - 0x80) / kr;

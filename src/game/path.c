@@ -1191,7 +1191,7 @@ void path_update_bike(Bike_28 *b)
             }
         }
     }
-    if (gEvent_4 < 5 && gGameMode != 9) {
+    if (gEvent.state < 5 && gGameMode != 9) {
         gPathSegmentT = 0.0f;
         b->seg = D_800EE496;
     } else {
@@ -1335,7 +1335,7 @@ void path_check_lap(Ent_47 *p, s32 a1)
     if (h == cur || h == SEG(cur)->f46) {
         iv = SEG(cur)->f4A;
         if (a1 == iv || a1 == SEG(iv)->f4A) {
-            if ((s8)p->f6ED == 0 && (gGame & 1) == 0) {
+            if ((s8)p->f6ED == 0 && (gGame.flags & 1) == 0) {
                 v = p - gRiders_51;
                 if (v < gEventNumRiders) {
                     event_rider_lap_completed(v);

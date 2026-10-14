@@ -37,21 +37,6 @@ typedef struct St {
 typedef struct { u8 pad[8]; s16 arr[1]; } Trk_5;
 typedef struct { Trk_5 *trk; u8 pad4[0x60]; s16 f64; } Race;
 
-typedef struct {
-    s32 flags;                  /* 0x000 */
-    u8 pad4[0x18];
-    s32 f1C[6];                 /* 0x01C */
-    u8 pad34[0x8];
-    s32 f3C;                    /* 0x03C */
-    u8 pad40[0xC];
-    s32 f4C;                    /* 0x04C */
-    u8 pad50[0x43C - 0x50];
-    u8 f43C[6];                 /* 0x43C */
-    u8 pad442[0x778 - 0x442];
-    s32 f778[6];                /* 0x778 */
-    s32 f790[6];                /* 0x790 */
-} Game_8;
-
 extern St gGameStates[];
 extern St *gCurGameState_2;
 extern Race *gSeason_6;
@@ -60,7 +45,6 @@ extern Pad gPadInputPrev_4[4];
 extern Ctx gGfxContexts[2];
 extern Ctx *gCurGfxContext;
 extern Pad gPadInput_4[4];
-extern Game_8 gGame_18;
 
 void game_main(void)
 {
@@ -188,7 +172,7 @@ void game_main(void)
                 mem_fill((u8 *)gFramebuffers_2[1], 0, gFbAllocWidth * gFbAllocHeight * 2);
                 gCurGameState_2->mode = 2;
                 D_800C29E4 = 4;
-                if (gGame_18.flags & 0x8000) {
+                if (gGame.flags & 0x8000) {
                     gReplayPlayback = 1;
                 } else {
                     gReplayPlayback = 0;
@@ -245,7 +229,7 @@ void game_main(void)
                     gCurGameState_2->mode = 0;
                     if (i == 2) {
                         i = 0;
-                        if (gGame_18.flags & 2) {
+                        if (gGame.flags & 2) {
                             gRaceExitCode = 6;
                         } else {
                             gCurTrack = &gTracks[21];
@@ -253,35 +237,35 @@ void game_main(void)
                         }
                     } else if (i == 3) {
                         i = 0;
-                    } else if (gGame_18.flags & 0x40) {
+                    } else if (gGame.flags & 0x40) {
                         i = 3;
-                    } else if (i == 0 && (gGame_18.flags & 0x20)) {
+                    } else if (i == 0 && (gGame.flags & 0x20)) {
                         i = 2;
                     } else if (D_800CA924[0] > 0 && D_800CA924[1] < D_800CA924[0]) {
                         i = 1;
                     } else {
-                        if (gGame_18.f4C == 1 && gSeason_6 != NULL && !(gGame_18.flags & 0x8000)) {
+                        if (gGame.mode == 1 && gSeason_6 != NULL && !(gGame.flags & 0x8000)) {
                             gCurTrack = &gTracks[gSeason_6->trk->arr[gSeason_6->f64]];
                         }
                         if (i == 1) {
-                            if (gGame_18.flags & 0x40000) {
+                            if (gGame.flags & 0x40000) {
                                 s32 k;
                                 for (k = 0; k < 6; k++) {
-                                    gGame_18.f1C[k] = gGame_18.f778[k];
-                                    gGame_18.f43C[k] = gGame_18.f790[k];
+                                    gGame.riders[k] = gGame.savedRiders[k];
+                                    gGame.riderSkins[k] = gGame.savedRiderSkins[k];
                                 }
                             }
                         }
                         if (i == 1 && gRaceExitCode == 8) {
                             i = 2;
-                        } else if (i == 1 && (gGame_18.flags & 0x808000) == 0x800000) {
+                        } else if (i == 1 && (gGame.flags & 0x808000) == 0x800000) {
                             gCreditsMode = 1;
-                            gGame_18.f4C = 0;
-                            gGame_18.flags = (gGame_18.flags | 0x4000000) & 0xFF0BFF7F;
+                            gGame.mode = 0;
+                            gGame.flags = (gGame.flags | 0x4000000) & 0xFF0BFF7F;
                             gRaceExitCode = 6;
                             gCurTrack = &gTracks[13];
-                            gGame_18.f3C = 1;
-                        } else if (!(gGame_18.flags & 4)) {
+                            gGame.numPlayers = 1;
+                        } else if (!(gGame.flags & 4)) {
                             i ^= 1;
                         }
                     }

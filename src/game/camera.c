@@ -94,30 +94,6 @@ void cam_build_segment_order(void) {
 }
 
 typedef struct {
-    s32 f0;
-    u8 pad4[0x1C - 4];
-    s32 f1C[4];
-    u8 pad2C[0x3C - 0x2C];
-    s32 f3C;
-    u8 pad40[0x4C - 0x40];
-    s32 f4C;
-    u8 pad50[0x2C8 - 0x50];
-    s8 f2C8[4];
-    u8 pad2CC[0x760 - 0x2CC];
-    u8 f760[4];
-} Game_13;
-
-typedef struct {
-    s32 f0;
-    u8 pad4[0x26 - 4];
-    s16 f26;
-    u8 pad28[0x40 - 0x28];
-    s32 f40;
-    u8 pad44[0x58 - 0x44];
-    s32 f58;
-} Cam_2;
-
-typedef struct {
     u16 flags;
     s16 mode;
     u8 pad[4];
@@ -146,8 +122,6 @@ extern Player_10 gRiders_25[];
 extern CamFlags gCamZoneState_3[];
 extern CamPos sCamHistorySum_2[];
 extern Area *gPathNodes_6;
-extern Game_13 gGame_28;
-extern Cam_2 gEvent_12;
 
 void cam_update(void) {
     s32 buf[6];
@@ -175,9 +149,9 @@ void cam_update(void) {
         podium_update_camera();
         return;
     }
-    if (gCamView < gGame_28.f3C && gGame_28.f4C != 7 && gGame_28.f4C != 2) {
+    if (gCamView < gGame.numPlayers && gGame.mode != 7 && gGame.mode != 2) {
         if (gRiders_25[gCamView].f5AA != 10) {
-            gGame_28.f760[gGame_28.f2C8[gCamView]] = gRiders_25[gCamView].f5AA;
+            gGame.padCamMode[gGame.playerPad[gCamView]] = gRiders_25[gCamView].f5AA;
         }
     }
     if (gCamTargetOverride == -1) {
@@ -191,8 +165,8 @@ void cam_update(void) {
             sCamTarget = 0;
         }
     }
-    if (gEvent_12.f0 == 0) {
-        m2 = gEvent_12.f26;
+    if (gEvent.state == 0) {
+        m2 = gEvent.countdown;
         if (m2 == 0xFF && gCamView == 0) {
             func_8004F5C8(0);
         }
@@ -200,12 +174,12 @@ void cam_update(void) {
             if (m2 >= 2) {
                 m2 = 1;
             }
-            gEvent_12.f26 = m2;
+            gEvent.countdown = m2;
             changed = 1;
         }
     }
-    if (gGame_28.f0 & 0x10) {
-        t = gGame_28.f1C[gCamView];
+    if (gGame.flags & 0x10) {
+        t = gGame.riders[gCamView];
         sCamTarget = t;
         cam_update_rider_select(&gRiders_25[t], buf, t != gCamTargets[gCamView]);
         gCamTargets[gCamView] = sCamTarget;
@@ -221,9 +195,9 @@ void cam_update(void) {
             if (n != gCamLastModes[kk]) changed = 1;
             gCamLastModes[kk] = n;
         }
-        if (gGame_28.f4C == 9 && (gEvent_12.f58 & 0x80)) {
+        if (gGame.mode == 9 && (gEvent.flags & 0x80)) {
             changed = 1;
-            gEvent_12.f58 &= ~0x80;
+            gEvent.flags &= ~0x80;
         }
         if (cam_find_zone() != 0) {
             gCamZoneState_3[gCamView].flags |= 2;
@@ -233,7 +207,7 @@ void cam_update(void) {
         if (D_800EE140 != 0) {
             func_8002D888(&gRiders_25[sCamTarget], buf);
         } else {
-            if ((gReplayPlayback != 0 || gCreditsMode != 0 || (gGame_28.f0 & 0x81)) &&
+            if ((gReplayPlayback != 0 || gCreditsMode != 0 || (gGame.flags & 0x81)) &&
                 (gCamZoneState_3[gCamView].flags & 2)) {
                 if (!(gCamZoneState_3[gCamView].flags & 1)) {
                     gCamZoneState_3[gCamView].flags |= 1;
@@ -263,8 +237,8 @@ void cam_update(void) {
                     if (gGhostRace != 0 && gGhostSlot == 0) {
                         k = 1;
                     }
-                    if ((gPlayerInputs[k] & 0x80) && !(gPlayerInputsPrev_3[k] & 0x80) && !(gEvent_12.f58 & 0x800) &&
-                        gEvent_12.f0 != 0 && gEvent_12.f40 == 0) {
+                    if ((gPlayerInputs[k] & 0x80) && !(gPlayerInputsPrev_3[k] & 0x80) && !(gEvent.flags & 0x800) &&
+                        gEvent.state != 0 && gEvent.allFinished == 0) {
                         s32 md = gRiders_25[sCamTarget].f5AA;
                         if (md != 9 && gGameMode != 7) {
                             sel = 1;
@@ -492,24 +466,10 @@ f32 cam_calc_air_pitch(u8 *p)
     return fVar2;
 }
 
-typedef struct {
-    s32 flags;
-    u8 pad0[0x3C - 4];
-    s32 mode;
-    u8 pad1[0x2A8 - 0x40];
-    s32 tab[16][2];
-    u8 pad2[0x408 - 0x2A8 - 0x80];
-    s16 f408;
-    s16 pad3;
-    u8 f40C;
-} Ctl_6;
-
 struct Obj_14 {
     u8 pad[0x6C];
     f32 x, y, z;
 };
-
-extern Ctl_6 gGame_29;
 
 void cam_update_rider_select(Obj_14 *p, s32 *out, s32 arg2)
 {
@@ -519,19 +479,19 @@ void cam_update_rider_select(Obj_14 *p, s32 *out, s32 arg2)
     s32 amp, yoff;
     s32 r, z;
     s32 *e;
-    Ctl_6 *g = &gGame_29;
+    Game *g = &gGame;
 
     if (g->flags & (0x400 << gCamView)) {
         amp = 4000;
         yoff = 0x672;
     } else {
         amp = 6000;
-        if (g->mode == 2 && gSplitVertical != 0) {
+        if (g->numPlayers == 2 && gSplitVertical != 0) {
             amp = 7200;
         }
         yoff = 0x8FC;
     }
-    e = gGame_29.tab[gCamView];
+    e = gGame.riderSelectRot[gCamView];
     out[0] = p->x * 1000.0f + (f32)((gCosTable[((e[0] >> 4) - 0x400) & 0xFFF] * amp) >> 14);
     out[1] = p->y * 1000.0f + (f32)yoff;
     r = 0;
@@ -541,17 +501,17 @@ void cam_update_rider_select(Obj_14 *p, s32 *out, s32 arg2)
     out[4] = 0;
     out[5] = (0x8000U - e[0]) & 0xFFFF;
     mtx3i_from_angles(buf, out[3], out[4], out[5]);
-    switch (gGame_29.mode) {
+    switch (gGame.numPlayers) {
     case 1:
-        switch (gGame_29.f40C) {
+        switch (gGame.riderSelectState[0]) {
         case 1:
-            r = 0x3E - gGame_29.f408;
+            r = 0x3E - gGame.riderSelectAnim[0];
             break;
         case 2:
             r = 0x3E;
             break;
         case 3:
-            r = gGame_29.f408;
+            r = gGame.riderSelectAnim[0];
             break;
         }
         break;
@@ -570,7 +530,7 @@ void cam_update_rider_select(Obj_14 *p, s32 *out, s32 arg2)
         break;
     }
     r = (r * -0x564) / 0x3E;
-    if (gGame_29.flags & (0x400 << gCamView)) {
+    if (gGame.flags & (0x400 << gCamView)) {
         in[0] = 0;
         in[1] = 0;
         in[2] = 0;
@@ -639,14 +599,6 @@ struct Bike_16 {
     u8 pad54[0x7E0 - 0x54];
 };
 
-typedef struct {
-    u8 pad0[0x58];
-    s32 f58;
-    u8 pad5C[0x6C - 0x5C];
-    s16 f6C;
-} State_3;
-
-extern State_3 gEvent_13;
 extern Bike_16 gRiders_26[];
 
 s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
@@ -660,19 +612,19 @@ s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
     s32 i;
     s32 ang, q, ang3, q3;
 
-    n = gEvent_13.f58 & 0xF;
+    n = gEvent.flags & 0xF;
     if (n != 0) {
     i = n - 1;
     if (i == ((bike - gRiders_26) >> ((gNumPlayers - 1) >> 1))) {
         switch (n) {
         case 1:
             s = 1000.0f;
-            q = gEvent_13.f6C * 10500 / 180;
+            q = gEvent.goalTimer * 10500 / 180;
             { s32 r = 0x4844; s16 *tb = gCosTable;
-            ang = gEvent_13.f6C * 15000 / 180 - 8000;
+            ang = gEvent.goalTimer * 15000 / 180 - 8000;
             out->x = gSoccerBall.x * s + (f32)(((r - q) * tb[(((ang) >> 4) - 0x400) & 0xFFF]) >> 14); }
-            out->y = 6000.0f - (f32)gEvent_13.f6C * s * 3.0f / 180.0f;
-            fz = gSoccerBall.z * s - (f32)(((0x4844 - gEvent_13.f6C * 10500 / 180) * SINT(gEvent_13.f6C * 15000 / 180 - 8000)) >> 14);
+            out->y = 6000.0f - (f32)gEvent.goalTimer * s * 3.0f / 180.0f;
+            fz = gSoccerBall.z * s - (f32)(((0x4844 - gEvent.goalTimer * 10500 / 180) * SINT(gEvent.goalTimer * 15000 / 180 - 8000)) >> 14);
             out->z = z = fz;
             math_to_polar(gSoccerBall.x * s - (f32)out->x, gSoccerBall.z * s - (f32)z, &a1, &ratio);
             math_to_polar(ratio, gSoccerBall.y * s - (f32)out->y, &a2, &ratio);
@@ -682,12 +634,12 @@ s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
             break;
         case 2:
             s = 1000.0f;
-            q3 = gEvent_13.f6C * 10500 / 180;
+            q3 = gEvent.goalTimer * 10500 / 180;
             { s32 r = 0x4844; s16 *tb = gCosTable;
-            ang3 = gEvent_13.f6C * 15000 / 180 - 8000;
+            ang3 = gEvent.goalTimer * 15000 / 180 - 8000;
             out->x = gSoccerBall.x * s - (f32)(((r - q3) * tb[(((ang3) >> 4) - 0x400) & 0xFFF]) >> 14); }
-            out->y = 6000.0f - (f32)gEvent_13.f6C * s * 3.0f / 180.0f;
-            fz = gSoccerBall.z * s + (f32)(((0x4844 - gEvent_13.f6C * 10500 / 180) * SINT(gEvent_13.f6C * 15000 / 180 - 8000)) >> 14);
+            out->y = 6000.0f - (f32)gEvent.goalTimer * s * 3.0f / 180.0f;
+            fz = gSoccerBall.z * s + (f32)(((0x4844 - gEvent.goalTimer * 10500 / 180) * SINT(gEvent.goalTimer * 15000 / 180 - 8000)) >> 14);
             out->z = z = fz;
             math_to_polar(gSoccerBall.x * s - (f32)out->x, gSoccerBall.z * s - (f32)z, &a1, &ratio);
             math_to_polar(ratio, gSoccerBall.y * s - (f32)out->y, &a2, &ratio);
@@ -701,20 +653,20 @@ s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
     } else switch (n) {
     case 1: {
         Bike_16 *p = &gRiders_26[i];
-        out->x = p->f48 * 1000.0f + (f32)((COST(gEvent_13.f6C * 14000 / 180 - 7000) * 625) >> 11);
+        out->x = p->f48 * 1000.0f + (f32)((COST(gEvent.goalTimer * 14000 / 180 - 7000) * 625) >> 11);
         out->y = 1000;
-        out->z = p->f50 * 1000.0f - (f32)((SINT(gEvent_13.f6C * 14000 / 180 - 7000) * 625) >> 11);
+        out->z = p->f50 * 1000.0f - (f32)((SINT(gEvent.goalTimer * 14000 / 180 - 7000) * 625) >> 11);
         out->rx = 1000;
-        out->rz = gEvent_13.f6C * 14000 / 180 - 7000;
+        out->rz = gEvent.goalTimer * 14000 / 180 - 7000;
         out->ry = 0;
         break; }
     case 2: {
         Bike_16 *p = &gRiders_26[i];
-        out->x = p->f48 * 1000.0f + (f32)((COST(7000 - gEvent_13.f6C * 14000 / 180) * 625) >> 11);
+        out->x = p->f48 * 1000.0f + (f32)((COST(7000 - gEvent.goalTimer * 14000 / 180) * 625) >> 11);
         out->y = 1000;
-        out->z = p->f50 * 1000.0f + (f32)((SINT(7000 - gEvent_13.f6C * 14000 / 180) * 625) >> 11);
+        out->z = p->f50 * 1000.0f + (f32)((SINT(7000 - gEvent.goalTimer * 14000 / 180) * 625) >> 11);
         out->rx = 1000;
-        out->rz = gEvent_13.f6C * 14000 / 180 + 0x64A8;
+        out->rz = gEvent.goalTimer * 14000 / 180 + 0x64A8;
         out->ry = 0;
         break; }
     }
@@ -833,9 +785,6 @@ void cam_mode_hill_climb(Obj_15 *p, s32 *out)
     cam_smooth_to(out);
 }
 
-typedef struct { u32 flags; u8 pad4[0x48]; s32 mode; } Game_14;
-typedef struct { s32 active; u8 pad4[0x22]; s16 t; } Rep;
-
 struct Bike_17 {
     u8 pad0[0x34];
     u16 h34;
@@ -858,9 +807,6 @@ struct Bike_17 {
     u8 pad748[0x77C - 0x748];
     s16 h77C;
 };
-
-extern Game_14 gGame_30;
-extern Rep gEvent_14;
 
 void cam_update_chase(Bike_17 *p, s32 *out, s32 z)
 {
@@ -919,8 +865,8 @@ first:
     d *= fc;
     e->pos += nv;
     do { e->vel = d; } while (0);
-    if ((zero = gGame_30.mode, rot = p->h34, zero != 9) && !(gGame_30.flags & 0x8000)) {
-        if ((p->f5B0 & 0x200) && gEvent_14.active != 0) {
+    if ((zero = gGame.mode, rot = p->h34, zero != 9) && !(gGame.flags & 0x8000)) {
+        if ((p->f5B0 & 0x200) && gEvent.state != 0) {
             rot += -0x8000;
         }
     }
@@ -931,8 +877,8 @@ first:
     vec[0] = 0;
     vec[1] = 0;
     vec[2] = z;
-    if (gEvent_14.active == 0) {
-        g = (f32)gEvent_14.t * 0.00390625f;
+    if (gEvent.state == 0) {
+        g = (f32)gEvent.countdown * 0.00390625f;
         if (g < 0.5f) {
             g = 2.0f * (g * g);
         } else {
@@ -944,7 +890,7 @@ first:
         tb = gCosTable[(tv >> 4) & 0xFFF] / 8;
         dy = 0;
         dz = -12000;
-        if (!(gGame_30.flags & 0x8000)) {
+        if (!(gGame.flags & 0x8000)) {
             rot += tv;
             vec[0] = (f32)tb * g;
             vec[1] = g * (f32)dy;
@@ -960,8 +906,8 @@ first:
     out[3] = ang - 500;
     out[5] = (s16)rot;
     out[4] = 0;
-    if (gGame_30.mode != 9) {
-        if ((p->f5B0 & 0x200) || ((gPlayerInputs_2 & 0x10) && gEvent_14.active == 0 && !(gGame_30.flags & 0x8000))) {
+    if (gGame.mode != 9) {
+        if ((p->f5B0 & 0x200) || ((gPlayerInputs_2 & 0x10) && gEvent.state == 0 && !(gGame.flags & 0x8000))) {
             cam_snap_to(out);
         } else if (p->f5B4 & 0x200) {
             cam_snap_to_moving(out, p->v54);
@@ -1234,11 +1180,6 @@ typedef struct Flag {
     void *p4;
 } Flag;
 
-typedef struct G {
-    u8 pad0[0x3C];
-    s32 f3C;
-} G;
-
 typedef struct Big {
     u8 pad0[0x628];
     s16 f628;
@@ -1269,7 +1210,7 @@ s32 cam_find_zone(void)
     Obj_16 *P;
     u16 *pf;
     Flag *fl;
-    G *g;
+    Event *g;
     s16 *tab;
     void *rec;
     s32 a2, b2;
@@ -1298,7 +1239,7 @@ s32 cam_find_zone(void)
                     a = tab[(*(RecA *)(off + (s32)P->la)).i0];
                     if ((b < a && (*pv >= a || *pv < b)) ||
                         (a < b && *pv >= a && *pv < b)) {
-                        if (g->f3C != 0 || !((*(RecA *)(off + (s32)P->la)).flags & 2)) {
+                        if (g->noPlayers != 0 || !((*(RecA *)(off + (s32)P->la)).flags & 2)) {
                             ((s16 *)pf)[1] = 1;
                             rec = (RecA *)((u8 *)P->la + off);
                             v = rec != *(void **)(pf + 2);
@@ -1336,7 +1277,7 @@ s32 cam_find_zone(void)
                     a2 = tab[(*(RecB *)(off + (s32)P->lb)).i0];
                     if ((b2 < a2 && (*pv >= a2 || *pv < b2)) ||
                         (a2 < b2 && *pv >= a2 && *pv < b2)) {
-                        if (g->f3C != 0 || !((*(RecB *)(off + (s32)P->lb)).flags & 2)) {
+                        if (g->noPlayers != 0 || !((*(RecB *)(off + (s32)P->lb)).flags & 2)) {
                             ((s16 *)pf)[1] = 0;
                             rec2 = (RecB *)((u8 *)P->lb + off);
                             v = rec2 != *(void **)(pf + 2);

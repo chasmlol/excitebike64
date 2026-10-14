@@ -156,7 +156,7 @@ Gfx *podium_draw(Gfx *gdl, s32 x, s32 arg2)
     render_make_world_mtx(sPodiumMtxBuf + gGfxFrameIndex * 0x100, 0, 0, sPodiumYaw, sPodiumPos[0], sPodiumPos[1], sPodiumPos[2], 0x10, 0);
     W2(gdl++, 0xDA380003, sPodiumMtxBuf + gGfxFrameIndex * 0x100);
     gdl = prim_build_dl(0, sPodiumModel, &sPodiumTexture_2, gdl);
-    for (; i < gEvent.n; i++) {
+    for (; i < gEvent.numRiders; i++) {
         render_make_world_mtx((s32)&((Mtx *)(sPodiumMtxBuf + gGfxFrameIndex * 0x100))[i + 1], D_800E1B88[i][0], D_800E1B88[i][1], D_800E1B88[i][2], D_800E1BC8[i][0], D_800E1BC8[i][1], D_800E1BC8[i][2], 0x10, 0);
         W2(gdl++, 0xDA380003, (s32)&((Mtx *)(sPodiumMtxBuf + gGfxFrameIndex * 0x100))[i + 1]);
         W2(gdl++, 0xFD100000, gRiderGfx_8[i].tex);

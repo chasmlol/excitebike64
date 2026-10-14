@@ -1,14 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    s32 flags;
-    u8 pad4[0x50];
-    s32 mode;
-    s16 f58;
-} State_6;
-
-extern State_6 gGame_52;
-
 Gfx *screen_draw_wipe(Gfx *gdl, Dyn *arg1, s32 arg2)
 {
     s32 a;
@@ -17,24 +8,24 @@ Gfx *screen_draw_wipe(Gfx *gdl, Dyn *arg1, s32 arg2)
     s32 w;
     s32 x;
 
-    if (gGame_52.flags & 0x10000000) {
+    if (gGame.flags & 0x10000000) {
         a = 0xFF;
     } else {
-        if (gGame_52.mode == 1) {
+        if (gGame.fadeState == 1) {
             return gdl;
         }
-        if (gGame_52.mode == 0) {
+        if (gGame.fadeState == 0) {
             goto m0;
         }
-        if (gGame_52.mode == 2) {
+        if (gGame.fadeState == 2) {
             goto m2;
         }
         goto body;
     m0:
-        a = 0xFF - gGame_52.f58;
+        a = 0xFF - gGame.fadeLevel;
         goto body;
     m2:
-        a = gGame_52.f58;
+        a = gGame.fadeLevel;
     }
 body:
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
@@ -52,7 +43,7 @@ body:
         }
         w = gScreenWidth / 64;
         x = i * gScreenWidth / 64;
-        if (gGame_52.mode == 2) {
+        if (gGame.fadeState == 2) {
             x = gScreenWidth - w - x;
         }
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, c);

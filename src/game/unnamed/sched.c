@@ -136,7 +136,7 @@ void sched_thread(void)
             osWritebackDCacheAll();
             osViSwapBuffer(gFramebuffers_3);
             osViBlack(0);
-            if (!(gGame & 0x20000000)) {
+            if (!(gGame.flags & 0x20000000)) {
                 for (;;) ;
             }
             fault_draw_hex(0x32, 0x1E, D_800F46EC);

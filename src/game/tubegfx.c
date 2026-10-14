@@ -929,7 +929,7 @@ void tube_load_pvs(void)
         for (j = 0; j < *gTrackSections_3; j++) {
             a = sPvsData_2[idx];
             b = sPvsData_2[idx + 1];
-            if (i == 0 || i == gGame_4[15] - 1) {
+            if (i == 0 || i == gGame.numPlayers - 1) {
                 n = a + b;
                 *offs++ = dst - gZBuffer;
                 memcpy(dst, (u16 *)((idx << 1) + (s32)sPvsData_2), (n + 2) * 2);

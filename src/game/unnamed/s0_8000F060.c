@@ -105,7 +105,7 @@ void snd_race_init(Slot_2 *param_1)
     if (gPodiumMode != 0) {
         return;
     }
-    if (!(gGame_5[0] & 0x80)) {
+    if (!(gGame.flags & 0x80)) {
         snd_load_engine_samples();
     }
     i = gCurTrack_2 - gTracks;
@@ -159,7 +159,7 @@ void snd_race_init(Slot_2 *param_1)
             tunes_play_song(D_800D11D8);
         } else {
             idx = gCurTrack_2 - gTracks;
-            f = gGame_5[0];
+            f = gGame.flags;
             if ((f & 0x91) == 1 || !(f & 1)) {
                 if (f & 0x40000) {
                     tunes_play_song(D_800D11E4);
@@ -169,7 +169,7 @@ void snd_race_init(Slot_2 *param_1)
                     tunes_play_song(D_800D11EC);
                 } else if (f & 1) {
                     tunes_play_song(D_800D1214);
-                } else if (gGame_5[0x13] != 9) {
+                } else if (gGame.mode != 9) {
                     if (idx < 0x1B) {
                         tunes_play_song(*sTrackTunes[idx]);
                     } else {

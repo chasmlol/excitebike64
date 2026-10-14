@@ -336,40 +336,25 @@ void replay_decode_block(void)
 void replay_write_header(void)
 {
     s32 i;
-    u8 *q;
-    u8 *p;
     u32 lo, hi;
 
-    replay_write_bits(gGame_2[0x3F], 8);
-    replay_write_bits(gGame_2[0x47], 8);
-    replay_write_bits(gGame_2[0x13], 8);
-    replay_write_bits(gGame_2[0x43], 8);
+    replay_write_bits((u8)gGame.numPlayers, 8);
+    replay_write_bits((u8)gGame.numCpuRiders, 8);
+    replay_write_bits((u8)gGame.trackSel, 8);
+    replay_write_bits((u8)gGame.numLaps, 8);
     for (i = 0; i < 6; i++) {
-        q = gGame_2 + i;
-        lo = q[0x43C] & 0xF;
-        hi = (q[0x7AA] & 0xF) << 4;
+        lo = gGame.riderSkins[i] & 0xF;
+        hi = (gGame.bikeSkins[i] & 0xF) << 4;
         replay_write_bits(hi | lo, 8);
     }
     for (i = 0; i < 6; i++) {
-        p = gGame_2;
         if (gGhostSlot == i) {
-            replay_write_bits(((s32)p[i * 4 + 0x1F] | -0x80) & 0xFF, 8);
+            replay_write_bits(((s32)(u8)gGame.riders[i] | -0x80) & 0xFF, 8);
         } else {
-            replay_write_bits(p[i * 4 + 0x1F], 8);
+            replay_write_bits((u8)gGame.riders[i], 8);
         }
     }
 }
-
-typedef struct {
-    s32 pad0[7];
-    s32 w[6];
-    u8 pad34[0x43C - 0x34];
-    u8 lo[6];
-    u8 pad442[0x7AA - 0x442];
-    u8 hi[6];
-} Tab_6;
-
-extern Tab_6 gGame_45;
 
 static inline s32 getbits(s32 n)
 {
@@ -406,12 +391,12 @@ void replay_read_header(void)
     getbits(8);
     for (i = 0; i < 6; i++) {
         n = getbits(8);
-        gGame_45.lo[i] = n & 0xF;
-        gGame_45.hi[i] = (n >> 4) & 0xF;
+        gGame.riderSkins[i] = n & 0xF;
+        gGame.bikeSkins[i] = (n >> 4) & 0xF;
     }
     for (i = 0; i < 6; i++) {
         n = getbits(8);
-        gGame_45.w[i] = n & 0x7F;
+        gGame.riders[i] = n & 0x7F;
         if (n & 0x80) {
             gGhostSlot = i;
         }

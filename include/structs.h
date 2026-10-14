@@ -184,7 +184,6 @@ typedef struct Vec {
     s32 x, y, z;
 } Vec;
 
-typedef struct { u8 pad[0x22]; s16 n; } Cnt;
 typedef struct { s32 m[9]; } Mtx3;
 typedef struct { f32 x, y, z; u8 pad[0x60]; } Spot;
 
@@ -881,18 +880,12 @@ typedef struct Bike_26 {
 typedef struct { s32 w[7]; } V7;
 typedef struct { u8 pad[0x24]; } Ent24;
 typedef struct { u8 b0, b1, b2, b3; } Pts;
-typedef struct { s32 f0; u8 pad[0x48]; s32 f4C; } Cfg_2;
 typedef struct { u8 w; u8 h; u8 pad[2]; void *img; } Img_2;
 
 typedef struct {
     u8 pad0[0x50];
     s32 w50;
 } Track;
-
-typedef struct {
-    u8 pad0[0x3C];
-    s32 count;
-} Ctr;
 
 typedef struct { u32 mask; u8 pad[0x1C]; } Obj;
 
@@ -1327,5 +1320,8 @@ typedef struct Spr {
     u8 w, h, s, t;
     u8 r, g, b, a;
 } Spr;
+
+#include "structs/race.h"
+#include "structs/game.h"
 
 #endif

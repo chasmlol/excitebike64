@@ -545,7 +545,7 @@ void rider_anims_load(u8 *param_1)
             gRiders_40[i].v = m;
         }
         for (i = 0; gRiderAnims_3[i].f04 != 0; i++) {
-            if (i >= 16 || !(gGame & 0x10)) {
+            if (i >= 16 || !(gGame.flags & 0x10)) {
                 gRiderAnims_3[i].f0C = res_load(param_1, *gRiderAnims_3[i].f04);
                 gRiderAnims_3[i].f0C->p = gRiderAnims_3[i].f0C->data;
                 if (gRiderAnims_3[i].f08 != 0) {

@@ -318,11 +318,6 @@ Gfx *arn_draw_far(Gfx *gdl, s32 a1, s32 a2, s32 mode)
 }
 
 typedef struct {
-    u8 pad[0x4C];
-    s32 mode;
-} Game_12;
-
-typedef struct {
     s32 pad0;
     s32 x0;
     s32 z0;
@@ -332,8 +327,6 @@ typedef struct {
     s32 flag;
     u32 bits;
 } Rec_10;
-
-extern Game_12 gGame_27;
 
 void arn_cull_models(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
 {
@@ -387,7 +380,7 @@ void arn_cull_models(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
         if (far < r[2] && strict != 0) {
             rec->bits |= 2 << (p * 2);
         }
-        if (gGame_27.mode == 9 || gGame_27.mode == 2 || gNumScreens == 2) {
+        if (gGame.mode == 9 || gGame.mode == 2 || gNumScreens == 2) {
             if (r[2] >= -799 && r[2] < 1200 && r[0] >= -799 && r[0] < 800) goto visible;
         } else {
             if (r[2] >= -399 && r[2] < 800 && r[0] >= -399 && r[0] < 400) goto visible;
