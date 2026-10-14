@@ -816,15 +816,24 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
 
 typedef struct {
     u8 pad[0x50];
-    u32 f50;
+    u32 flags;          /* TRACK_FLAG_* */
 } Trk_11;
 
 extern Trk_11 *gCurTrack_38;
 
+/* The menu of the results screens (gGame.menuSel; the strings are sExhibitionResultOptions and the others) */
+#define RESULTS_RETRY  0 /* Retry, New Track, Continue */
+#define RESULTS_REPLAY 1 /* Show Replay; time trial: Save Ghost (greyed and skipped in this build's menus) */
+#define RESULTS_QUIT   2 /* Quit, Main Menu, Retire */
+
+#define GHOST_SIZE 0x2800 /* a time trial's replay, as saved */
+
+/* Race results: A opens the menu, then runs its choice: race again or pick a new track, watch the replay (save
+   the ghost in a time trial), or quit to the main menu. The replay item is skipped when the replay did not fit. */
 void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
-    u32 fl;
-    s32 orig, v, i;
+    u32 pressed;
+    s32 oldSel, sel, i;
 
     gGame.menuAnimTimer++;
     if (gGame.menuAnimTimer == 60) {
@@ -834,24 +843,24 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
     if (gGame.blinkTimer == 120) {
         gGame.blinkTimer = 0;
     }
-    fl = *buttons;
-    if (fl & 0x20) {
+    pressed = *buttons;
+    if (pressed & INPUT_B) {
         if (gGame.screenState == SCREEN_STATE_RESULTS_MENU) {
             gGame.screenState = SCREEN_STATE_NORMAL;
         }
         return;
     }
-    if (fl & 0x10) {
+    if (pressed & INPUT_A) {
         snd_play_menu_sound(MENU_SOUND_SELECT);
         if (gGame.screenState == SCREEN_STATE_RESULTS_MENU) {
             switch (gGame.menuSel) {
-            case 0:
+            case RESULTS_RETRY:
                 if (gGame.mode == GAME_MODE_TIME_TRIAL) {
-                    if (!(gGame.flags & 0x80000)) {
+                    if (!(gGame.flags & GAME_FLAG_GHOST_LOADED)) {
                         gActiveReplay = 0;
                     }
                     shell_goto_screen(0, 0, 0);
-                } else if (gCurTrack_38->f50 & 2) {
+                } else if (gCurTrack_38->flags & TRACK_FLAG_USER) {
                     shell_goto_screen(0, 0, 0);
                     gActiveReplay = 0;
                 } else {
@@ -859,11 +868,12 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
                     shell_goto_screen(&sScreens[SCREEN_BRONZE_TRACKS], 0, 1);
                 }
                 break;
-            case 1:
+            case RESULTS_REPLAY:
                 if (gGame.mode == GAME_MODE_TIME_TRIAL) {
                     gGame.pakScreenMode = PAK_SCREEN_SAVE_GHOST;
                     shell_goto_screen(&sScreens[SCREEN_PAK], 1, 1);
                 } else {
+                    /* as shell_backup_race_results */
                     gGame.resultsNumRiders = gEvent.numRiders;
                     for (i = 0; i < 6; i++) {
                         gGame.resultsOrder[i] = gEvent.finishOrder[i];
@@ -876,12 +886,12 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
                     shell_goto_screen(0, 0, 1);
                     gReplayPlayback = 1;
                     gGame.returnScreen = screen;
-                    gGame.flags |= 0x8000;
+                    gGame.flags |= GAME_FLAG_REPLAY;
                 }
                 break;
-            case 2:
-                gGame.flags &= ~0x80000;
-                if (gCurTrack_38->f50 & 2) {
+            case RESULTS_QUIT:
+                gGame.flags &= ~GAME_FLAG_GHOST_LOADED;
+                if (gCurTrack_38->flags & TRACK_FLAG_USER) {
                     mem_free((void *)gUserTrackLayout);
                     gUserTrackLayout = 0;
                 }
@@ -892,7 +902,7 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
         } else if (screen->type == SCREEN_TYPE_SEASON_RACE_RESULT) {
             shell_goto_screen(&sScreens[SCREEN_SEASON_STANDINGS], 1, 1);
         } else {
-            gGame.menuSel = 0;
+            gGame.menuSel = RESULTS_RETRY;
             gGame.screenState = SCREEN_STATE_RESULTS_MENU;
         }
         return;
@@ -900,49 +910,51 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
     if (gGame.screenState != SCREEN_STATE_RESULTS_MENU) {
         return;
     }
-    orig = gGame.menuSel;
-    if (fl & 0x801) {
+    oldSel = gGame.menuSel;
+    if (pressed & (INPUT_DPAD_UP | INPUT_UP)) {
         if (gReplayWritePtr - gReplayBuf >= gReplayBufSize || gGame.mode == GAME_MODE_TIME_TRIAL) {
-            gGame.menuSel = orig ^ 2;
+            gGame.menuSel = oldSel ^ 2;
         } else {
-            gGame.menuSel = orig - 1;
-            if (orig - 1 < 0) {
-                gGame.menuSel = orig + 2;
+            gGame.menuSel = oldSel - 1;
+            if (oldSel - 1 < 0) {
+                gGame.menuSel = oldSel + 2;
             }
         }
     }
-    if (*buttons & 0x1002) {
+    if (*buttons & (INPUT_DPAD_DOWN | INPUT_DOWN)) {
         if (gReplayWritePtr - gReplayBuf >= gReplayBufSize || gGame.mode == GAME_MODE_TIME_TRIAL) {
             gGame.menuSel ^= 2;
         } else {
-            v = gGame.menuSel;
-            gGame.menuSel = v + 1;
-            if (v + 1 >= 3) {
-                gGame.menuSel = v - 2;
+            sel = gGame.menuSel;
+            gGame.menuSel = sel + 1;
+            if (sel + 1 >= 3) {
+                gGame.menuSel = sel - 2;
             }
         }
     }
-    if (gGame.menuSel != orig) {
+    if (gGame.menuSel != oldSel) {
         snd_play_menu_sound(MENU_SOUND_MOVE);
     }
 }
 
 
+/* Season results and standings: A opens the menu: Continue to the next round (or the podium, or the round over
+   screen), Show Replay, or Retire (with a yes / no dialog). */
 void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads)
 {
-    u32 b;
-    Cup *t;
+    u32 pressed;
+    Cup *cup;
     s32 i;
-    s32 d;
+    s32 replaySize;
 
-    if (++gGame.menuAnimTimer == 0x3C) {
+    if (++gGame.menuAnimTimer == 60) {
         gGame.menuAnimTimer = 0;
     }
-    if (++gGame.blinkTimer == 0x78) {
+    if (++gGame.blinkTimer == 120) {
         gGame.blinkTimer = 0;
     }
-    b = *buttons;
-    if (b & 0x20) {
+    pressed = *buttons;
+    if (pressed & INPUT_B) {
         snd_play_menu_sound(MENU_SOUND_BACK);
         if (gGame.screenState == SCREEN_STATE_SEASON_MENU) {
             gGame.screenState = SCREEN_STATE_NORMAL;
@@ -955,21 +967,23 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
         if (screen->back != NULL) {
             shell_goto_screen(screen->back, 0, 0);
         }
-    } else if (b & 0x10) {
+    } else if (pressed & INPUT_A) {
         snd_play_menu_sound(MENU_SOUND_SELECT);
         if (gGame.screenState == SCREEN_STATE_SEASON_MENU) {
             switch (gGame.menuSel) {
-            case 0:
-                gGame.flags |= 0x80;
-                t = gSeason->cup;
-                if (gSeason->round + 1 >= t->numRounds) {
-                    if (gSeason->standings[0] == 0 && (t - gCups != CUP_CHALLENGE || gEvent.finishOrder[0] == 0)) {
-                        gGame.flags = (gGame.flags & ~0x80) | 0x40000;
+            case RESULTS_RETRY:
+                gGame.flags |= GAME_FLAG_TRACK_CHOSEN;
+                cup = gSeason->cup;
+                if (gSeason->round + 1 >= cup->numRounds) {
+                    /* the last round: the podium when first overall (and the challenge race won) */
+                    if (gSeason->standings[0] == 0 && (cup - gCups != CUP_CHALLENGE || gEvent.finishOrder[0] == 0)) {
+                        gGame.flags = (gGame.flags & ~GAME_FLAG_TRACK_CHOSEN) | GAME_FLAG_PODIUM;
                         shell_goto_screen(0, 0, 1);
                         gActiveReplay = 0;
                         return;
                     }
-                } else if (t - gCups != CUP_CHALLENGE || gEvent.finishOrder[0] == 0) {
+                } else if (cup - gCups != CUP_CHALLENGE || gEvent.finishOrder[0] == 0) {
+                    /* the next round */
                     shell_goto_screen(0, 0, 1);
                     gSeason->round++;
                     race_jitter_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
@@ -980,7 +994,8 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
                 shell_goto_screen(&sScreens[SCREEN_ROUND_OVER], 0, 1);
                 gActiveReplay = 0;
                 return;
-            case 1:
+            case RESULTS_REPLAY:
+                /* as shell_backup_race_results */
                 gGame.resultsNumRiders = gEvent.numRiders;
                 for (i = 0; i < 6; i++) {
                     gGame.resultsOrder[i] = gEvent.finishOrder[i];
@@ -993,9 +1008,9 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
                 shell_goto_screen(0, 0, 1);
                 gReplayPlayback = 1;
                 gGame.returnScreen = screen;
-                gGame.flags |= 0x8000;
+                gGame.flags |= GAME_FLAG_REPLAY;
                 return;
-            case 2:
+            case RESULTS_QUIT:
                 gGame.screenState = SCREEN_STATE_RETIRE_DIALOG;
                 gGame.dialogSel = 0;
                 return;
@@ -1003,7 +1018,7 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
         } else {
             if (gGame.screenState == SCREEN_STATE_RETIRE_DIALOG) {
                 switch (gGame.dialogSel) {
-                case 1:
+                case 1: /* yes */
                     shell_goto_screen(&sScreens[SCREEN_MAIN_MENU], 0, 1);
                     gActiveReplay = 0;
                     return;
@@ -1012,20 +1027,20 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
                     return;
                 }
             } else {
-                gGame.menuSel = 0;
+                gGame.menuSel = RESULTS_RETRY;
                 gGame.screenState = SCREEN_STATE_SEASON_MENU;
             }
         }
     } else {
         if (gGame.screenState == SCREEN_STATE_RETIRE_DIALOG) {
-            if (b & 3) {
+            if (pressed & (INPUT_UP | INPUT_DOWN)) {
                 gGame.dialogSel ^= 1;
                 snd_play_menu_sound(MENU_SOUND_MOVE);
             }
         } else if (gGame.screenState == SCREEN_STATE_SEASON_MENU) {
-            if (b & 0x801) {
-                d = gReplayWritePtr - gReplayBuf;
-                if (gGame.mode != GAME_MODE_TIME_TRIAL ? d >= gReplayBufSize : d >= 0x2800) {
+            if (pressed & (INPUT_DPAD_UP | INPUT_UP)) {
+                replaySize = gReplayWritePtr - gReplayBuf;
+                if (gGame.mode != GAME_MODE_TIME_TRIAL ? replaySize >= gReplayBufSize : replaySize >= GHOST_SIZE) {
                     gGame.menuSel ^= 2;
                 } else {
                     if (--gGame.menuSel < 0) {
@@ -1034,10 +1049,10 @@ void shell_season_standings_input(Screen *screen, ScreenItem *item, u32 *buttons
                 }
                 snd_play_menu_sound(MENU_SOUND_MOVE);
             }
-            if (*buttons & 0x1002) {
+            if (*buttons & (INPUT_DPAD_DOWN | INPUT_DOWN)) {
                 snd_play_menu_sound(MENU_SOUND_MOVE);
-                d = gReplayWritePtr - gReplayBuf;
-                if (gGame.mode != GAME_MODE_TIME_TRIAL ? d >= gReplayBufSize : d >= 0x2800) {
+                replaySize = gReplayWritePtr - gReplayBuf;
+                if (gGame.mode != GAME_MODE_TIME_TRIAL ? replaySize >= gReplayBufSize : replaySize >= GHOST_SIZE) {
                     gGame.menuSel ^= 2;
                 } else {
                     if (++gGame.menuSel >= 3) {
