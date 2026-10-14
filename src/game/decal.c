@@ -10,13 +10,6 @@ typedef struct {
 extern E16 *sTireTrackVtx;
 
 typedef struct {
-    u8 pad0[0x44C];
-    f32 f44C;
-    f32 f450;
-    u8 pad1[0x7E0 - 0x454];
-} Ent_58;
-
-typedef struct {
     u8 pad0[0x20];
     f32 f20[1];
 } Ply;
@@ -28,7 +21,6 @@ typedef struct {
 
 extern Ply *gCurTrack_31;
 extern Gm gGame_44;
-extern Ent_58 gRiders_73[];
 
 void debug_update_value_display(void)
 {
@@ -66,8 +58,8 @@ void debug_update_value_display(void)
         break;
     case 2:
         for (i = 0; i < 6; i++) {
-            debug_ftoa(buf, gRiders_73[i].f44C / gCurTrack_31->f20[gGame_44.f410 - 1], 4);
-            debug_print_float(buf, gRiders_73[i].f450);
+            debug_ftoa(buf, gRiders[i].timeScale / gCurTrack_31->f20[gGame_44.f410 - 1], 4);
+            debug_print_float(buf, gRiders[i].unk_450);
         }
         break;
     }
@@ -357,29 +349,6 @@ typedef struct Cell_4 {
     u8 pad[0x20 - 0x18];
 } Cell_4;
 
-typedef struct Bike_35 {
-    u8 pad0[0x44];
-    u8 f44;
-    u8 pad45[0x370 - 0x45];
-    s32 f370[1];
-    u8 pad374[0x458 - 0x374];
-    s32 f458;
-    u8 pad45C[0x494 - 0x45C];
-    f32 x, y, z;          /* 0x494 */
-    u8 pad4A0[0x4AC - 0x4A0];
-    f32 f4AC;
-    f32 f4B0;
-    f32 f4B4;
-    u8 pad4B8[0x4E4 - 0x4B8];
-    Seg_14 *seg;             /* 0x4E4 */
-    u8 pad4E8[0x4F0 - 0x4E8];
-    f32 f4F0;
-    u8 pad4F4[0x7A5 - 0x4F4];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Bike_35;
-
-extern Bike_35 gRiders_74[];
 extern Cell_4 *sHeightAreas_5;
 extern Seg_14 *gSurfaceTablePtr_2;
 extern Rec_32 *sTireTracks_2;
@@ -399,7 +368,7 @@ void decal_update_tire_tracks(void)
     s32 e[3];
     s32 qr[4];
     s32 i, chg, key, idx, ox, oz, dx, dz, nx, nz, len, k;
-    Bike_35 *p;
+    Rider *p;
     Seg_14 *t;
     Rec_32 *r;
     s32 n;
@@ -407,19 +376,19 @@ void decal_update_tire_tracks(void)
     Cell_4 *ce;
 
     for (i = 0; i < 8; i++) {
-        if (gRiders_74[i].f7A5 != 0) continue;
-        p = &gRiders_74[i];
+        if (gRiders[i].inactive != 0) continue;
+        p = &gRiders[i];
         if (sTireTrackMudTimer_2[i] != 0) sTireTrackMudTimer_2[i]--;
-        if (gRiders_74[i].f4F0 != 0.0f) {
+        if (gRiders[i].rearWheel.slip != 0.0f) {
             gTireTrackTimers[i] = 1;
         } else if (gTireTrackTimers[i] != 0) {
             gTireTrackTimers[i]--;
         }
-        if (!(p->seg->flags & 1)) gTireTrackTimers[i] = 0;
+        if (!(p->rearWheel.surface->flags & 1)) gTireTrackTimers[i] = 0;
         t = sTireTrackSurface_2[i];
-        if (p->seg != t) {
+        if (p->rearWheel.surface != t) {
             chg = 1;
-            if (t != NULL && (t->flags & 0x40) && p->f458 <= 0) {
+            if (t != NULL && (t->flags & 0x40) && p->rearWheel.airTicks <= 0) {
                 sTireTrackMudSurface_2[i] = t;
                 gTireTrackTimers[i] = 45;
                 sTireTrackMudTimer_2[i] = 45;
@@ -427,19 +396,19 @@ void decal_update_tire_tracks(void)
         } else {
             chg = 0;
         }
-        sTireTrackSurface_2[i] = p->seg;
-        if (p->f44 != 0) gTireTrackTimers[i] = 0;
+        sTireTrackSurface_2[i] = p->rearWheel.surface;
+        if (p->crashState != 0) gTireTrackTimers[i] = 0;
         if (D_800EE140 != 0) gTireTrackTimers[i] = 0;
         if (gTireTrackTimers[i] == 0) {
             sTireTrackCur_2[i] = NULL;
             continue;
         }
-        pos[0] = p->x * 1000.0f;
-        pos[1] = p->y * 1000.0f;
-        pos[2] = p->z * 1000.0f;
-        quat_to_mtx3i(m, p->f370);
-        d[0] = -p->f4B4 * 1000.0f;
-        d[2] = p->f4AC * 1000.0f;
+        pos[0] = p->rearWheel.contact.x * 1000.0f;
+        pos[1] = p->rearWheel.contact.y * 1000.0f;
+        pos[2] = p->rearWheel.contact.z * 1000.0f;
+        quat_to_mtx3i(m, p->drawQuat);
+        d[0] = -p->rearWheel.contactDelta.z * 1000.0f;
+        d[2] = p->rearWheel.contactDelta.x * 1000.0f;
         len = isqrt_u32_2(d[0] * d[0] + d[2] * d[2]);
         if (len == 0) {
             d[1] = 0;
@@ -469,7 +438,7 @@ void decal_update_tire_tracks(void)
             gTireTrackTimers[i] = 0;
             continue;
         }
-        idx = p->seg - gSurfaceTablePtr_2;
+        idx = (Seg_14 *)p->rearWheel.surface - gSurfaceTablePtr_2;
         if (sTireTrackMudTimer_2[i] != 0) idx = sTireTrackMudSurface_2[i] - gSurfaceTablePtr_2;
         if (sTireTrackCur_2[i] != NULL) {
             k = sTireTrackCur_2[i]->key;

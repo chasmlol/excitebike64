@@ -3898,8 +3898,6 @@ D_800E1758                            game  0x800E1758  data        -
 D_800E1774                            game  0x800E1774  data        -
 sRiderTint                            game  0x800E1818  data        -
 gBikeSkelTemplate                     game  0x800E1878  data        -
-gBikeSkelTemplate_2                   game  0x800E1878  data        -  gBikeSkelTemplate
-gBikeSkelTemplate_3                   game  0x800E1878  data        -  gBikeSkelTemplate
 gBikeSkelTemplate_4                   game  0x800E1878  data        -  gBikeSkelTemplate
 D_800E1880                            game  0x800E1880  data        -
 gNumScreens                           game  0x800E1898  data        -
@@ -3921,9 +3919,6 @@ sGaugeX                               game  0x800E1A50  data        -
 sGaugeY                               game  0x800E1A54  data        -
 sRiderCamDist                         game  0x800E1A58  data        -
 gRiderSkelTemplate                    game  0x800E1A78  data        -
-gRiderSkelTemplate_2                  game  0x800E1A78  data        -  gRiderSkelTemplate
-gRiderSkelTemplate_3                  game  0x800E1A78  data        -  gRiderSkelTemplate
-gRiderSkelTemplate_4                  game  0x800E1A78  data        -  gRiderSkelTemplate
 D_800E1A80                            game  0x800E1A80  data        -
 sRiderPalDirty                        game  0x800E1A90  data        -
 sRidersDrawn                          game  0x800E1A98  data        -
@@ -4060,122 +4055,12 @@ sDemoActive                           game  0x800E37A8  data        -
 gPausePlayer                          game  0x800E37AC  data        -
 sBikeMaxReverseSpeed                  game  0x800E37BC  data        -
 gRiders                               game  0x800E37C0  data        -
-gRiders_10                            game  0x800E37C0  data        -  gRiders
-gRiders_11                            game  0x800E37C0  data        -  gRiders
-gRiders_12                            game  0x800E37C0  data        -  gRiders
-gRiders_13                            game  0x800E37C0  data        -  gRiders
-gRiders_14                            game  0x800E37C0  data        -  gRiders
-gRiders_15                            game  0x800E37C0  data        -  gRiders
-gRiders_16                            game  0x800E37C0  data        -  gRiders
-gRiders_17                            game  0x800E37C0  data        -  gRiders
-gRiders_18                            game  0x800E37C0  data        -  gRiders
-gRiders_19                            game  0x800E37C0  data        -  gRiders
-gRiders_2                             game  0x800E37C0  data        -  gRiders
-gRiders_20                            game  0x800E37C0  data        -  gRiders
-gRiders_21                            game  0x800E37C0  data        -  gRiders
-gRiders_22                            game  0x800E37C0  data        -  gRiders
-gRiders_23                            game  0x800E37C0  data        -  gRiders
-gRiders_24                            game  0x800E37C0  data        -  gRiders
-gRiders_25                            game  0x800E37C0  data        -  gRiders
-gRiders_26                            game  0x800E37C0  data        -  gRiders
-gRiders_27                            game  0x800E37C0  data        -  gRiders
-gRiders_28                            game  0x800E37C0  data        -  gRiders
-gRiders_29                            game  0x800E37C0  data        -  gRiders
-gRiders_3                             game  0x800E37C0  data        -  gRiders
-gRiders_30                            game  0x800E37C0  data        -  gRiders
-gRiders_31                            game  0x800E37C0  data        -  gRiders
-gRiders_32                            game  0x800E37C0  data        -  gRiders
-gRiders_33                            game  0x800E37C0  data        -  gRiders
-gRiders_34                            game  0x800E37C0  data        -  gRiders
-gRiders_35                            game  0x800E37C0  data        -  gRiders
-gRiders_36                            game  0x800E37C0  data        -  gRiders
-gRiders_37                            game  0x800E37C0  data        -  gRiders
-gRiders_38                            game  0x800E37C0  data        -  gRiders
-gRiders_39                            game  0x800E37C0  data        -  gRiders
-gRiders_4                             game  0x800E37C0  data        -  gRiders
-gRiders_40                            game  0x800E37C0  data        -  gRiders
-gRiders_41                            game  0x800E37C0  data        -  gRiders
-gRiders_42                            game  0x800E37C0  data        -  gRiders
-gRiders_43                            game  0x800E37C0  data        -  gRiders
-gRiders_44                            game  0x800E37C0  data        -  gRiders
-gRiders_45                            game  0x800E37C0  data        -  gRiders
-gRiders_46                            game  0x800E37C0  data        -  gRiders
-gRiders_47                            game  0x800E37C0  data        -  gRiders
-gRiders_48                            game  0x800E37C0  data        -  gRiders
-gRiders_49                            game  0x800E37C0  data        -  gRiders
-gRiders_5                             game  0x800E37C0  data        -  gRiders
-gRiders_50                            game  0x800E37C0  data        -  gRiders
-gRiders_51                            game  0x800E37C0  data        -  gRiders
-gRiders_52                            game  0x800E37C0  data        -  gRiders
-gRiders_53                            game  0x800E37C0  data        -  gRiders
-gRiders_54                            game  0x800E37C0  data        -  gRiders
-gRiders_55                            game  0x800E37C0  data        -  gRiders
-gRiders_56                            game  0x800E37C0  data        -  gRiders
-gRiders_57                            game  0x800E37C0  data        -  gRiders
-gRiders_58                            game  0x800E37C0  data        -  gRiders
-gRiders_59                            game  0x800E37C0  data        -  gRiders
-gRiders_6                             game  0x800E37C0  data        -  gRiders
-gRiders_60                            game  0x800E37C0  data        -  gRiders
-gRiders_61                            game  0x800E37C0  data        -  gRiders
-gRiders_62                            game  0x800E37C0  data        -  gRiders
-gRiders_63                            game  0x800E37C0  data        -  gRiders
-gRiders_64                            game  0x800E37C0  data        -  gRiders
-gRiders_65                            game  0x800E37C0  data        -  gRiders
-gRiders_66                            game  0x800E37C0  data        -  gRiders
-gRiders_67                            game  0x800E37C0  data        -  gRiders
-gRiders_68                            game  0x800E37C0  data        -  gRiders
-gRiders_69                            game  0x800E37C0  data        -  gRiders
-gRiders_7                             game  0x800E37C0  data        -  gRiders
-gRiders_70                            game  0x800E37C0  data        -  gRiders
-gRiders_71                            game  0x800E37C0  data        -  gRiders
-gRiders_72                            game  0x800E37C0  data        -  gRiders
-gRiders_73                            game  0x800E37C0  data        -  gRiders
-gRiders_74                            game  0x800E37C0  data        -  gRiders
-gRiders_75                            game  0x800E37C0  data        -  gRiders
-gRiders_76                            game  0x800E37C0  data        -  gRiders
-gRiders_77                            game  0x800E37C0  data        -  gRiders
-gRiders_78                            game  0x800E37C0  data        -  gRiders
-gRiders_79                            game  0x800E37C0  data        -  gRiders
-gRiders_8                             game  0x800E37C0  data        -  gRiders
-gRiders_80                            game  0x800E37C0  data        -  gRiders
-gRiders_81                            game  0x800E37C0  data        -  gRiders
-gRiders_82                            game  0x800E37C0  data        -  gRiders
-gRiders_83                            game  0x800E37C0  data        -  gRiders
-gRiders_84                            game  0x800E37C0  data        -  gRiders
-gRiders_85                            game  0x800E37C0  data        -  gRiders
-gRiders_86                            game  0x800E37C0  data        -  gRiders
-gRiders_87                            game  0x800E37C0  data        -  gRiders
-gRiders_88                            game  0x800E37C0  data        -  gRiders
-gRiders_89                            game  0x800E37C0  data        -  gRiders
-gRiders_9                             game  0x800E37C0  data        -  gRiders
-gRiders_90                            game  0x800E37C0  data        -  gRiders
-gRiders_91                            game  0x800E37C0  data        -  gRiders
-gRiders_92                            game  0x800E37C0  data        -  gRiders
-gRiders_93                            game  0x800E37C0  data        -  gRiders
-D_800E37E2                            game  0x800E37E2  data        -
-D_800E3808                            game  0x800E3808  data        -
-D_800E3808_2                          game  0x800E3808  data        -  D_800E3808
-D_800E3BBE                            game  0x800E3BBE  data        -
-D_800E3BBF                            game  0x800E3BBF  data        -
-D_800E3BC2                            game  0x800E3BC2  data        -
-D_800E3D6A                            game  0x800E3D6A  data        -
-D_800E3DE8                            game  0x800E3DE8  data        -
-D_800E3E20                            game  0x800E3E20  data        -
-D_800E3E20_2                          game  0x800E3E20  data        -  D_800E3E20
-D_800E3E2A                            game  0x800E3E2A  data        -
-D_800E3E50                            game  0x800E3E50  data        -
-D_800E3EA8                            game  0x800E3EA8  data        -
-D_800E3F68                            game  0x800E3F68  data        -
 D_800E3FA0                            game  0x800E3FA0  data        -
-D_800E439F                            game  0x800E439F  data        -
-D_800E43EC                            game  0x800E43EC  data        -
-D_800E4748                            game  0x800E4748  data        -
 D_800E4780                            game  0x800E4780  data        -
 D_800E4F60                            game  0x800E4F60  data        -
 D_800E5740                            game  0x800E5740  data        -
 D_800E5F20                            game  0x800E5F20  data        -
 sExtraRiders                          game  0x800E6700  data        -
-sExtraRiders_2                        game  0x800E6700  data        -  sExtraRiders
 D_800E6EE0                            game  0x800E6EE0  data        -
 D_800E76C0                            game  0x800E76C0  data        -
 gPhysTicks                            game  0x800E76C4  data        -
@@ -4914,12 +4799,6 @@ sRidersByLapPos                       game  0x800F0BE0  data        -
 sRiderQueueBehindCount                game  0x800F0C04  data        -
 sExtraRiderLanes                      game  0x800F0C08  data        -
 gRiderStandings                       game  0x800F0C10  data        -
-gRiderStandings_2                     game  0x800F0C10  data        -  gRiderStandings
-gRiderStandings_3                     game  0x800F0C10  data        -  gRiderStandings
-gRiderStandings_4                     game  0x800F0C10  data        -  gRiderStandings
-gRiderStandings_5                     game  0x800F0C10  data        -  gRiderStandings
-gRiderStandings_6                     game  0x800F0C10  data        -  gRiderStandings
-gRiderStandings_7                     game  0x800F0C10  data        -  gRiderStandings
 sRiderQueueAhead                      game  0x800F0C30  data        -
 sRiderQueueAhead_2                    game  0x800F0C30  data        -  sRiderQueueAhead
 sAiRiderOrder                         game  0x800F0C90  data        -
@@ -5003,8 +4882,6 @@ sFlashCandidates_2                    game  0x800F14F8  data        -  sFlashCan
 sFlashCandidateCount                  game  0x800F14FC  data        -
 sExcite3DSpawnTime                    game  0x800F1504  data        -
 gSoccerBall                           game  0x800F1510  data        -
-gSoccerBall_2                         game  0x800F1510  data        -  gSoccerBall
-gSoccerBall_3                         game  0x800F1510  data        -  gSoccerBall
 D_800F16E0                            game  0x800F16E0  data        -
 sPropMtx                              game  0x800F16E8  data        -
 sPropMtx_2                            game  0x800F16E8  data        -  sPropMtx

@@ -114,18 +114,7 @@ typedef struct {
     u8 v[8];
 } Ent_62;
 
-typedef struct {
-    u8 pad0[0x3D0];
-    s8 f3D0;
-    u8 pad3D1[0x6E8 - 0x3D1];
-    u8 f6E8;
-    u8 pad6E9[0x7A5 - 0x6E9];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Player_20;
-
 extern Ent_62 D_800CCB90_2[];
-extern Player_20 gRiders_77[];
 
 void hack_gravel_pit_update(void)
 {
@@ -144,7 +133,7 @@ void hack_gravel_pit_update(void)
     }
 
     for (i = 0; i < 8; i++) {
-        if (gRiders_77[i].f7A5 == 0 && gRiders_77[i].f6E8 == 0 && gRiders_77[i].f3D0 != -1 && gRiders_77[i].f3D0 < 16) {
+        if (gRiders[i].inactive == 0 && gRiders[i].isCpu == 0 && gRiders[i].anim != -1 && gRiders[i].anim < 16) {
             if (gRiderSection[i] == D_800CCB90_2[0].id || gRiderSection[i] == D_800CCB90_2[1].id) {
                 D_800CCB20 = 300;
             }
@@ -224,27 +213,8 @@ Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
     return gdl;
 }
 
-typedef struct {
-    u8 pad0[0x458];
-    s32 s458;
-    u8 pad45C[0x494 - 0x45C];
-    f32 f494;
-    f32 f498;
-    f32 f49C;
-    u8 pad4A0[0x4FC - 0x4A0];
-    s32 s4FC;
-    u8 pad500[0x538 - 0x500];
-    f32 f538;
-    f32 f53C;
-    f32 f540;
-    u8 pad544[0x7A5 - 0x544];
-    u8 b7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Bike_37;
-
 typedef struct { u8 pad[0x1A]; s16 h; u8 pad2[0x40 - 0x1C]; } Obj_44;
 
-extern Bike_37 gRiders_78[];
 extern Obj_44 *gInstanceMtx;
 
 void hack_mill_update(void)
@@ -252,7 +222,7 @@ void hack_mill_update(void)
     s32 c, s;
     s32 i, j, m;
     u32 k;
-    Bike_37 *b, *bb, *base;
+    Rider *b, *bb, *base;
     V4 *p;
     Vec3i *e;
     Obj_44 *o;
@@ -266,16 +236,16 @@ void hack_mill_update(void)
         sMillObjState[m].z = 0;
     }
     for (m = 0; m < 8; m++) {
-        if (gRiders_78[m].b7A5 != 0 || gRiders_78[m].s458 >= 0x15 || gRiders_78[m].s4FC >= 0x15) continue;
+        if (gRiders[m].inactive != 0 || gRiders[m].rearWheel.airTicks >= 0x15 || gRiders[m].frontWheel.airTicks >= 0x15) continue;
         for (i = 0; i < sMillObjCount; i++) {
-            dx = (s32)(gRiders_78[m].f538 * 1000.0f) - gInstanceItems[i].x;
+            dx = (s32)(gRiders[m].frontWheel.contact.x * 1000.0f) - gInstanceItems[i].x;
             if ((u32)(dx + 0x10000) > 0x20000) continue;
-            dz = (s32)(gRiders_78[m].f540 * 1000.0f) - gInstanceItems[i].z;
+            dz = (s32)(gRiders[m].frontWheel.contact.z * 1000.0f) - gInstanceItems[i].z;
             if ((u32)(dz + 0x10000) > 0x20000) continue;
             a = (dx * c + dz * s) >> 14;
-            dx = (s32)(gRiders_78[m].f494 * 1000.0f) - gInstanceItems[i].x;
+            dx = (s32)(gRiders[m].rearWheel.contact.x * 1000.0f) - gInstanceItems[i].x;
             if ((u32)(dx + 0x10000) > 0x20000) continue;
-            dz = (s32)(gRiders_78[m].f49C * 1000.0f) - gInstanceItems[i].z;
+            dz = (s32)(gRiders[m].rearWheel.contact.z * 1000.0f) - gInstanceItems[i].z;
             if ((u32)(dz + 0x10000) > 0x20000) continue;
             v = (dx * c + dz * s) >> 14;
             if (a > 0 && v < 0) {

@@ -13,17 +13,8 @@ typedef struct {
     u8 f50[6];
 } Cfg_3;
 
-typedef struct {
-    u8 pad[0x669];
-    u8 f669;
-    u8 pad66A[0x68C - 0x66A];
-    s32 f68C;
-    u8 pad690[0x7E0 - 0x690];
-} Ent_3;
-
 extern Track_2 gTutorialLessons_2[];
 extern Cfg_3 gEvent_6;
-extern Ent_3 gRiders_3[];
 
 s32 shell_format_pak_file_label(u8 *src, char *dst, s32 flag)
 {
@@ -1057,8 +1048,8 @@ void shell_race_results_input(Obj_62 *p1, s32 p2, u32 *p3, Pad16 *arg3)
                     gGame_60.f418 = gEvent_6.f22;
                     for (i = 0; i < 6; i++) {
                         gGame_60.f41A[i] = gEvent_6.f50[i];
-                        gGame_60.f420[i] = gRiders_3[i].f68C;
-                        gGame_60.f76A[i] = gRiders_3[i].f669;
+                        gGame_60.f420[i] = gRiders[i].race.finishTime;
+                        gGame_60.f76A[i] = (u8)gRiders[i].race.finishPlace;
                         if (gSeason != 0) {
                             gGame_60.f764[i] = (gSeason + i)[0x6C];
                         }
@@ -1216,8 +1207,8 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
                 gGame_61.f418 = gEvent_6.f22;
                 for (i = 0; i < 6; i++) {
                     gGame_61.f41A[i] = gEvent_6.f50[i];
-                    gGame_61.f420[i] = gRiders_3[i].f68C;
-                    gGame_61.f76A[i] = gRiders_3[i].f669;
+                    gGame_61.f420[i] = gRiders[i].race.finishTime;
+                    gGame_61.f76A[i] = (u8)gRiders[i].race.finishPlace;
                     if (gSeason_17 != 0) {
                         gGame_61.f764[i] = gSeason_17->f6C[i];
                     }
@@ -4355,14 +4346,6 @@ typedef struct {
     u8 pad1C[0x3C - 0x1C];
 } BikeDef;
 
-typedef struct {
-    u8 pad0[0x668];
-    s16 h668;
-    u8 pad66A[0x68C - 0x66A];
-    s32 f68C;
-    u8 pad690[0x7E0 - 0x690];
-} Racer_3;
-
 extern Glob_8 gGame_78;
 extern Track_17 *gCurTrack_41;
 extern Cheat sCheatTable_2[];
@@ -4373,7 +4356,6 @@ extern BikeDef gRiderAnims_17[];
 extern Champ *gSeason_23;
 extern Race_9 gEvent_40;
 extern Rider_8 sRiderBios_3[];
-extern Racer_3 gRiders_91[];
 
 static inline s32 avail8(s32 n)
 {
@@ -5646,7 +5628,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             img = (Spr_2 *)((r < D.f3C || D.f4C == 8) ? ((D.f4C == 8) ? ((r == D_800C8CE0) ? 4 : 2) : 4) : 2);
             font_text_create(D.txt[j * 4 + 5], 0x20, 1, (s32)img, 0x20);
             pl = j;
-            while (pl > 0 && s->state == 13 && gRiders_91[R.b50[pl]].f68C == gRiders_91[R.b50[pl - 1]].f68C) {
+            while (pl > 0 && s->state == 13 && gRiders[R.b50[pl]].race.finishTime == gRiders[R.b50[pl - 1]].race.finishTime) {
                 s32 d0;
 
                 pl--;
@@ -5673,7 +5655,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             if (s->state == 14 && !CHAMP4) {
                 int_to_str((*gSeason_23).pts[r], buf);
             } else {
-                event_format_time(gRiders_91[r].f68C, buf);
+                event_format_time(gRiders[r].race.finishTime, buf);
             }
             font_text_add(D.txt[j * 4 + 7], buf);
             switch (s->state) {
@@ -5724,7 +5706,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                 buf[1] = '\0';
                 font_text_add(D.txt[R.h22 * 4 + 5 + j], buf);
                 font_draw_text(D.txt[R.h22 * 4 + 5 + j], wid[j] + 5 + img->w * 4,
-                              (img->h >> 1) + 0x37 + gRiders_91[j].h668 * 25 + ((s->state != 14) ? 7 : 0));
+                              (img->h >> 1) + 0x37 + gRiders[j].race.finishPlace * 25 + ((s->state != 14) ? 7 : 0));
             } else {
                 gDPLoadTLUT_pal256(gdl++, D.p39C->data);
             }
@@ -5737,7 +5719,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
             }
             px = 5 + wid[j + D_800C8CE0] + rx;
             if (s->state != 14 || CHAMP4) {
-                y = 0x3E + rowh * gRiders_91[j + D_800C8CE0].h668 + ry;
+                y = 0x3E + rowh * gRiders[j + D_800C8CE0].race.finishPlace + ry;
             } else {
                 y = 0x3E + rowh * k + ry;
             }
@@ -6522,17 +6504,8 @@ typedef struct {
     u8 b76A[6];
 } DstB;
 
-typedef struct {
-    u8 p0[0x669];
-    u8 f669;
-    u8 p66A[0x68C - 0x66A];
-    u32 f68C;
-    u8 pad[0x7E0 - 0x690];
-} EntE;
-
 extern SrcA gEvent_41;
 extern DstB gGame_84;
-extern EntE gRiders_92[];
 
 void shell_backup_race_results(void)
 {
@@ -6541,22 +6514,14 @@ void shell_backup_race_results(void)
     gGame_84.h418 = gEvent_41.h22;
     do {
         gGame_84.b41A[i] = gEvent_41.b50[i];
-        gGame_84.w420[i] = gRiders_92[i].f68C;
-        gGame_84.b76A[i] = gRiders_92[i].f669;
+        gGame_84.w420[i] = gRiders[i].race.finishTime;
+        gGame_84.b76A[i] = (u8)gRiders[i].race.finishPlace;
         if (gSeason != 0) {
             gGame_84.b764[i] = (gSeason + i)[0x6C];
         }
         i++;
     } while (i < 6);
 }
-
-typedef struct {
-    u8 pad0[0x668];
-    u16 h668;
-    u8 pad1[0x68C - 0x66A];
-    u32 w68C;
-    u8 pad2[0x7E0 - 0x690];
-} Elem_4;
 
 typedef struct {
     u8 pad0[0x418];
@@ -6582,7 +6547,6 @@ typedef struct {
 
 extern Info_3 gEvent_42;
 extern Src_3 gGame_85;
-extern Elem_4 gRiders_93[];
 extern Out_4 *gSeason_25;
 
 void shell_restore_race_results(void)
@@ -6592,8 +6556,8 @@ void shell_restore_race_results(void)
     gEvent_42.h22 = gGame_85.h418;
     for (i = 0; i < 6; i++) {
         gEvent_42.b50[i] = gGame_85.b41A[i];
-        gRiders_93[i].w68C = gGame_85.w420[i];
-        gRiders_93[i].h668 = gGame_85.b76A[i];
+        gRiders[i].race.finishTime = gGame_85.w420[i];
+        gRiders[i].race.finishPlace = gGame_85.b76A[i];
         if (gSeason_25 != 0) {
             gSeason_25->b6C[i] = gGame_85.b764[i];
         }

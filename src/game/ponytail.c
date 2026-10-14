@@ -30,21 +30,6 @@ typedef struct {
     u8 padA54[0xA80 - 0xA54];
 } Rider_7;
 
-typedef struct {
-    s32 pos[3];         /* 0x00 */
-    s32 alt[3];         /* 0x0C */
-    u8 pad18[0x44 - 0x18];
-    u8 f44;
-    u8 pad45[0x54 - 0x45];
-    Vec3f vel;          /* 0x54 */
-    f32 f60;
-    f32 f64;
-    f32 f68;
-    u8 pad6C[0x420 - 0x6C];
-    f32 f420;
-    u8 pad424[0x7E0 - 0x424];
-} Player_26;
-
 struct Obj_60 {
     u8 pad0[0xB4];
     s32 pos[3];         /* 0xB4 */
@@ -55,7 +40,6 @@ struct Obj_60 {
 };
 
 extern Rider_7 gRiderGfx_12[];
-extern Player_26 gRiders_90[];
 
 void ponytail_simulate(s32 idx, Obj_60 *o) {
     Vec3f prev;
@@ -88,14 +72,14 @@ void ponytail_simulate(s32 idx, Obj_60 *o) {
     w[0] += o->off[0];
     w[1] += o->off[1];
     w[2] += o->off[2];
-    if (gRiders_90[idx].f44 == 0) {
-        bx = gRiders_90[idx].pos[0];
-        by = gRiders_90[idx].pos[1];
-        bz = gRiders_90[idx].pos[2];
+    if (gRiders[idx].crashState == 0) {
+        bx = gRiders[idx].drawPos.x;
+        by = gRiders[idx].drawPos.y;
+        bz = gRiders[idx].drawPos.z;
     } else {
-        bx = gRiders_90[idx].alt[0];
-        by = gRiders_90[idx].alt[1];
-        bz = gRiders_90[idx].alt[2];
+        bx = gRiders[idx].drawBodyPos.x;
+        by = gRiders[idx].drawBodyPos.y;
+        bz = gRiders[idx].drawBodyPos.z;
     }
     n->pos.x = (f32)(w[0] + bx) / 1000.0f;
     n->pos.y = (f32)(w[1] + by) / 1000.0f;
@@ -110,7 +94,7 @@ void ponytail_simulate(s32 idx, Obj_60 *o) {
     }
 
     g = 9.8f;
-    prev = gRiders_90[idx].vel;
+    prev = gRiders[idx].bike.vel;
     {
         f32 l = __builtin_sqrtf(prev.x * prev.x + prev.y * prev.y + prev.z * prev.z);
         if (l != 0.0f) {
@@ -119,7 +103,7 @@ void ponytail_simulate(s32 idx, Obj_60 *o) {
             prev.z /= l;
         }
     }
-    t = gRiders_90[idx].f60 * prev.z - gRiders_90[idx].f68 * prev.x;
+    t = gRiders[idx].bike.acc.x * prev.z - gRiders[idx].bike.acc.z * prev.x;
     if (t < 2.0f && t > -2.0f) {
         t = 0.0f;
     }
@@ -132,9 +116,9 @@ void ponytail_simulate(s32 idx, Obj_60 *o) {
         n[i].acc.z = 0.0f;
         n[i].acc.x -= prev.z * 0.1f;
         n[i].acc.z += prev.x * 0.1f;
-        n[i].acc.x -= gRiders_90[idx].vel.x * 0.05f;
-        n[i].acc.y -= gRiders_90[idx].vel.y * 0.05f;
-        n[i].acc.z -= gRiders_90[idx].vel.z * 0.05f;
+        n[i].acc.x -= gRiders[idx].bike.vel.x * 0.05f;
+        n[i].acc.y -= gRiders[idx].bike.vel.y * 0.05f;
+        n[i].acc.z -= gRiders[idx].bike.vel.z * 0.05f;
     }
 
     for (k = 1; k < 4; k++) {
@@ -231,8 +215,8 @@ void ponytail_simulate(s32 idx, Obj_60 *o) {
         math_to_polar((n[i + 1].pos.x - n[i].ppos.x) * 1000.0f, (n[i + 1].pos.z - n[i].ppos.z) * 1000.0f, &a1, &r1);
         math_to_polar(iy, r1, &a2, &r2);
         if (i != 0) {
-            a1 = a1 + gCosTable[((u32)(gRaceFrame * 4000 + i * 10000) >> 4) & 0xFFF] / 16 * gRiders_90[idx].f420 / 25.0f;
-            a2 = a2 + (s16)((s16)gCosTable[(((gRaceFrame * 4400 + i * 12000) >> 4) - 0x400) & 0xFFF] / 12) * gRiders_90[idx].f420 / 25.0f;
+            a1 = a1 + gCosTable[((u32)(gRaceFrame * 4000 + i * 10000) >> 4) & 0xFFF] / 16 * gRiders[idx].speed / 25.0f;
+            a2 = a2 + (s16)((s16)gCosTable[(((gRaceFrame * 4400 + i * 12000) >> 4) - 0x400) & 0xFFF] / 12) * gRiders[idx].speed / 25.0f;
         }
         mtx3i_from_angles(sk[i].m, a2, 0, 0x8000 - a1);
         c[0] = 0;

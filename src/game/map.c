@@ -1,16 +1,6 @@
 #include "game.h"
 
 typedef struct {
-    u8 pad0[0x44];
-    u8 f44;
-    u8 pad45[0x6E8 - 0x45];
-    u8 f6E8;
-    u8 pad6E9[0x7A5 - 0x6E9];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Racer;
-
-typedef struct {
     u8 unk0[0x21C];
     u8 r;
     u8 g;
@@ -18,7 +8,6 @@ typedef struct {
     u8 unk21F[0xA80 - 0x21F];
 } Player;
 
-extern Racer gRiders_2[];
 extern Player gRiderGfx[];
 
 void map_init(void)
@@ -132,18 +121,18 @@ Gfx *map_draw_progress_bar(Gfx *gdl)
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
 
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 == 0) {
-            if (gRiders_2[i].f44 == 0 || gRaceFrame % 8 >= 4) {
-                if (gRiders_2[i].f6E8 != 0) {
+        if (gRiders[i].inactive == 0) {
+            if (gRiders[i].crashState == 0 || gRaceFrame % 8 >= 4) {
+                if (gRiders[i].isCpu != 0) {
                     gdl = map_draw_progress_marker(gdl, i, 0);
                 }
             }
         }
     }
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 == 0) {
-            if (gRiders_2[i].f44 == 0 || gRaceFrame % 8 >= 4) {
-                if (gRiders_2[i].f6E8 == 0) {
+        if (gRiders[i].inactive == 0) {
+            if (gRiders[i].crashState == 0 || gRaceFrame % 8 >= 4) {
+                if (gRiders[i].isCpu == 0) {
                     gdl = map_draw_progress_marker(gdl, i, 1);
                 }
             }
@@ -299,7 +288,7 @@ Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 #define WD(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
 Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
-    Racer *e;
+    Rider *e;
     s32 i;
 
     if (gHudLevel != 0 || sMapImage == 0 || (gGame_8.f0 & 0x81) || gInsetViewActive != 0) {
@@ -329,19 +318,19 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     WD(gdl++, 0xE200001C, 0x0C084000);
     WD(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
 
-    e = gRiders_2;
+    e = gRiders;
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 != 0) continue;
-        if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
-        if (gRiders_2[i].f6E8 != 0 || (gGame_8.f4C == 8 && i != D_800C8CE0)) {
+        if (gRiders[i].inactive != 0) continue;
+        if (gRiders[i].crashState != 0 && gRaceFrame % 8 < 4) continue;
+        if (gRiders[i].isCpu != 0 || (gGame_8.f4C == 8 && i != D_800C8CE0)) {
             gdl = map_draw_rider_dot(gdl, i, 0);
         }
     }
-    e = gRiders_2;
+    e = gRiders;
     for (i = 0; i < 6; i++) {
-        if (gRiders_2[i].f7A5 != 0) continue;
-        if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
-        if (gRiders_2[i].f6E8 != 0) continue;
+        if (gRiders[i].inactive != 0) continue;
+        if (gRiders[i].crashState != 0 && gRaceFrame % 8 < 4) continue;
+        if (gRiders[i].isCpu != 0) continue;
         if (gGame_8.f4C == 8 && i != D_800C8CE0) continue;
         gdl = map_draw_rider_dot(gdl, i, 1);
     }

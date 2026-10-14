@@ -298,14 +298,6 @@ void shatter_update_pieces(void)
 }
 
 typedef struct {
-    u8 pad0[0x48];
-    f32 f48, f4c, f50, f54, f58, f5c;
-    u8 pad1[0x7A5 - 0x60];
-    u8 flag;
-    u8 pad2[0x7E0 - 0x7A6];
-} Ent_69;
-
-typedef struct {
     u8 pad0[0xC];
     s16 c0, c1, c2;
     u8 pad1[0x24 - 0x12];
@@ -321,26 +313,24 @@ typedef struct {
     Item_7 *list;
 } Elem_3;
 
-extern Ent_69 gRiders_85[8];
-
 void shatter_check_riders(void)
 {
     s32 h, i, j, u, sel, x, y, z, dx, dy;
-    Ent_69 *s;
+    Rider *s;
     Elem_3 *e;
     Item_7 *it;
 
     for (i = 0; i < 8; i++) {
-        s = &gRiders_85[i];
-        if (s->flag != 0) continue;
+        s = &gRiders[i];
+        if (s->inactive != 0) continue;
         for (j = 0; j < sShatterCount; j++) {
             e = &sShatterObjects[j];
             if (e->flag < 0 && (h = e->f0 - 4, !(gObjectFlags[(h - gTrackObjects_3) >> 5] & 6))) {
-                x = (s32)(s->f48 * 1000.0f) >> 4;
-                y = (s32)(s->f50 * 1000.0f) >> 4;
+                x = (s32)(s->bike.pos.x * 1000.0f) >> 4;
+                y = (s32)(s->bike.pos.z * 1000.0f) >> 4;
                 u = (x - e->f0c) * e->f24 + (y - e->f14) * e->f28;
                 u >>= 14;
-                z = (s32)(s->f4c * 1000.0f) >> 4;
+                z = (s32)(s->bike.pos.y * 1000.0f) >> 4;
                 if (e->f10 - e->f0c < 30 && e->f18 - e->f14 < 30) {
                     sel = (u32)(u + 30) < 61;
                 } else {
@@ -373,9 +363,9 @@ void shatter_check_riders(void)
                             it->d1 = it[-1].d1;
                             it->d2 = it[-1].d2;
                         } else {
-                            it->c0 = (s32)((s->f54 * 1000.0f) / 60.0f);
-                            it->c1 = (s32)((s->f58 * 1000.0f) / 60.0f);
-                            it->c2 = (s32)((s->f5c * 1000.0f) / 60.0f);
+                            it->c0 = (s32)((s->bike.vel.x * 1000.0f) / 60.0f);
+                            it->c1 = (s32)((s->bike.vel.y * 1000.0f) / 60.0f);
+                            it->c2 = (s32)((s->bike.vel.z * 1000.0f) / 60.0f);
                             it->d0 = (random_byte() - 0x80) * 4;
                             it->d1 = (random_byte() - 0x80) * 5;
                             it->d2 = (random_byte() - 0x80) * 2;

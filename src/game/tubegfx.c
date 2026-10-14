@@ -468,9 +468,6 @@ Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
 
 typedef struct { s32 f0, f4, f8, fC, f10, f14, f18, f1C; } Rec_11;
 struct List_4 { u32 count; Rec_11 r[1]; };
-typedef struct { u8 pad[0x5AA]; s16 f5AA; u8 pad2[0x7E0 - 0x5AC]; } Player_9;
-
-extern Player_9 gRiders_22[];
 
 void tube_cull_sections(List_4 *l, s32 n)
 {
@@ -497,7 +494,7 @@ void tube_cull_sections(List_4 *l, s32 n)
     if (gNumScreens == 2) {
         sCullSlope = 0x9C;
     }
-    if (gCurTrack_2 - gTracks == 20 && D_800E3D6A == 4) {
+    if (gCurTrack_2 - gTracks == 20 && gRiders[0].camMode == 4) {
         n1 = gRiderSection[0];
         if (n1 >= 0 && n1 < l->count) {
             s32 ref = l->r[n1].f8 + l->r[n1].f10;
@@ -519,7 +516,7 @@ void tube_cull_sections(List_4 *l, s32 n)
         py = gCamPos[n].y;
         pz = gCamPos[n].z;
         cnt = 0;
-        if (gRiders_22[n].f5AA == 9) {
+        if (gRiders[n].camMode == 9) {
             sCamSection = gRiderSection[k];
         } else {
             gGroundFound = 0;
@@ -955,11 +952,9 @@ void tube_load_pvs(void)
     }
 }
 
-typedef struct { u8 pad[0x628]; s16 f628; u8 rest[0x7E0 - 0x62A]; } Rec7E0;
 typedef struct { u8 pad[0x46]; s16 next; u8 pad2[0x60 - 0x48]; u32 bits; u8 rest[0x6C - 0x64]; } Node_2;
 typedef struct { u8 pad[0x58]; u16 a[4]; u16 b[4]; u8 rest[0xA0 - 0x68]; } Trk_7;
 
-extern Rec7E0 gRiders_23[];
 extern Trk_7 *gCurTrack_19;
 extern Trk_7 gTracks_8[];
 
@@ -977,7 +972,7 @@ void tube_calc_fog_range(s32 a, s32 *b, s32 *c)
     v[0] = (f32)gCamPos[a].x / 1000.0f;
     v[1] = (f32)gCamPos[a].y / 1000.0f;
     v[2] = (f32)gCamPos[a].z / 1000.0f;
-    path_get_segment_and_t(v, &n, &t, gRiders_23[gCamTargets[a]].f628);
+    path_get_segment_and_t(v, &n, &t, gRiders[gCamTargets[a]].segment);
     base = gPathNodes;
     g = gNumScreens;
     i = g - 1;
@@ -1152,17 +1147,9 @@ void tube_animate_textures(void)
     }
 }
 
-typedef struct {
-    u8 pad0[0x4F8];
-    s32 f4F8;
-    u8 rest[0x7E0 - 0x4F8 - 4];
-} Rec37;
-
-extern Rec37 gRiders_24[];
-
 void tube_spawn_splash(s32 param_1, s32 param_2, s32 param_3, s32 param_4)
 {
-    if (sSplashTimer[param_1] == 0 && gRiders_24[param_1].f4F8 >= 0) {
+    if (sSplashTimer[param_1] == 0 && gRiders[param_1].frontWheel.groundArea >= 0) {
         gGroundFound = 0;
         height_get_ground(param_2, param_3, param_4);
         if (gGroundFound != 0) sSplashSection[param_1] = gGroundArea;

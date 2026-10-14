@@ -185,20 +185,7 @@ typedef struct {
     Mtx3 rot;
 } Bike_2;
 
-typedef struct {
-    s32 f0, f4, f8;
-    s32 fC, f10, f14;
-    u8 pad18[0x44 - 0x18];
-    u8 f44;
-    u8 pad45[0x65C - 0x45];
-    Bike_2 *bike;
-    u8 pad660[0x7A5 - 0x660];
-    u8 f7A5;
-    u8 pad7A6[0x7E0 - 0x7A6];
-} Player_6;
-
 extern Seg_2 *sPodiumRiderClips_2[];
-extern Player_6 gRiders_10[];
 
 static inline void rot(s32 *px, s32 *pz, s32 ang)
 {
@@ -217,7 +204,7 @@ void podium_update(void)
     u16 o0, o1, o2;
     s32 i, j, k, t, ang, c, s;
     Spot *e;
-    Player_6 *p;
+    Rider *p;
     Bike_2 *b;
     Rec34 *r;
     u8 *cp;
@@ -241,10 +228,10 @@ void podium_update(void)
     }
     for (i = 0; i < gEventNumRiders; i++) {
         cam = (u16 *)&sPodiumYaw;
-        gRiders_10[i].f7A5 = 0;
-        gRiders_10[i].f44 = 1;
+        gRiders[i].inactive = 0;
+        gRiders[i].crashState = 1;
         t = sPodiumFrame;
-        b = gRiders_10[i].bike;
+        b = gRiders[i].riderSkel;
         k = 0;
         while (t >= sPodiumRiderClips_2[i][k].f8->len) {
             t -= sPodiumRiderClips_2[i][k].f8->len;
@@ -275,9 +262,9 @@ void podium_update(void)
         vx = r->x;
         vz = r->z;
         rot(&vx, &vz, ang);
-        gRiders_10[i].f0 = gRiders_10[i].fC = sPodiumPos[0] + vx;
-        gRiders_10[i].f4 = gRiders_10[i].f10 = sPodiumPos[1] + r->y;
-        gRiders_10[i].f8 = gRiders_10[i].f14 = sPodiumPos[2] + vz;
+        gRiders[i].drawPos.x = gRiders[i].drawBodyPos.x = sPodiumPos[0] + vx;
+        gRiders[i].drawPos.y = gRiders[i].drawBodyPos.y = sPodiumPos[1] + r->y;
+        gRiders[i].drawPos.z = gRiders[i].drawBodyPos.z = sPodiumPos[2] + vz;
         skel_update_world_transforms((s32 *)b, 15);
         if (k != 0) {
             k = 1;
@@ -322,9 +309,9 @@ void podium_update(void)
             D_800E1B88[i][2] = cp[2] + LO9C;
         } else {
             s32 *q = D_800E1BC8[i];
-            q[0] = b->pos[0] + gRiders_10[i].fC;
-            q[1] = b->pos[1] + gRiders_10[i].f10;
-            q[2] = b->pos[2] + gRiders_10[i].f14;
+            q[0] = b->pos[0] + gRiders[i].drawBodyPos.x;
+            q[1] = b->pos[1] + gRiders[i].drawBodyPos.y;
+            q[2] = b->pos[2] + gRiders[i].drawBodyPos.z;
             q[0] += (b->rot.m[3] * 200) >> 15;
             q[1] += (b->rot.m[4] * 200) >> 15;
             q[2] += (b->rot.m[5] * 200) >> 15;
