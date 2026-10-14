@@ -134,7 +134,7 @@ Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 fb, s32 view)
     visBit = view * 2;
     gDPPipeSync(gdl++);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
-    gDPSetRenderMode(gdl++, 0x00443078, 0);
+    gDPSetRenderMode(gdl++, G_RM_AA_ZB_TEX_EDGE, G_RM_NOOP2);
     gDPSetCombineMode(gdl++, G_CC_MODULATEIDECALA, G_CC_MODULATEIDECALA);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
