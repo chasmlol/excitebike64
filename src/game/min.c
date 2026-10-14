@@ -1635,15 +1635,6 @@ typedef struct {
 } Src;
 
 typedef struct {
-    char name[0x10];
-    f32 v[6];
-    s32 f28;
-    B12 b;
-    s32 f38;
-    s32 pad3C;
-} Dst;
-
-typedef struct {
     s32 n;
     Src e[1];
 } File;
@@ -1653,7 +1644,6 @@ struct Res_3 {
     u32 *arr;
 };
 
-extern Dst gSurfaceTable_3[];
 
 void race_load_surface_table(Res_3 *r, s32 idx)
 {
@@ -1664,29 +1654,29 @@ void race_load_surface_table(Res_3 *r, s32 idx)
     tab = res_load(gSfxResSet_3, D_800D123C);
     f = res_load(r, idx);
     for (i = 0; i < 16; i++) {
-        str_copy(gSurfaceTable_3[i].name, f->e[i].name);
+        str_copy(gSurfaceTable[i].name, f->e[i].name);
         for (j = 0; j < 6; j++) {
-            ((f32 *)&gSurfaceTable_3[i])[j + 4] = (f32)f->e[i].v[j] / 1000.0f;
+            ((f32 *)&gSurfaceTable[i])[j + 4] = (f32)f->e[i].v[j] / 1000.0f;
         }
-        gSurfaceTable_3[i].f28 = f->e[i].f28;
-        gSurfaceTable_3[i].b.b[0] = f->e[i].b.b[0];
-        gSurfaceTable_3[i].b.b[1] = f->e[i].b.b[1];
-        gSurfaceTable_3[i].b.b[2] = f->e[i].b.b[2];
-        gSurfaceTable_3[i].b.b[3] = f->e[i].b.b[3];
-        gSurfaceTable_3[i].b.b[4] = f->e[i].b.b[4];
-        gSurfaceTable_3[i].b.b[5] = f->e[i].b.b[5];
-        gSurfaceTable_3[i].b.b[6] = f->e[i].b.b[6];
-        gSurfaceTable_3[i].b.b[7] = f->e[i].b.b[7];
-        gSurfaceTable_3[i].b.b[8] = f->e[i].b.b[8];
-        gSurfaceTable_3[i].b.b[9] = f->e[i].b.b[9];
-        gSurfaceTable_3[i].b.b[10] = f->e[i].b.b[10];
-        gSurfaceTable_3[i].b.b[11] = f->e[i].b.b[11];
+        gSurfaceTable[i].flags = f->e[i].f28;
+        gSurfaceTable[i].color[0] = f->e[i].b.b[0];
+        gSurfaceTable[i].color[1] = f->e[i].b.b[1];
+        gSurfaceTable[i].color[2] = f->e[i].b.b[2];
+        gSurfaceTable[i].color[3] = f->e[i].b.b[3];
+        gSurfaceTable[i].color[4] = f->e[i].b.b[4];
+        gSurfaceTable[i].color[5] = f->e[i].b.b[5];
+        gSurfaceTable[i].color[6] = f->e[i].b.b[6];
+        gSurfaceTable[i].color[7] = f->e[i].b.b[7];
+        gSurfaceTable[i].color[8] = f->e[i].b.b[8];
+        gSurfaceTable[i].color[9] = f->e[i].b.b[9];
+        gSurfaceTable[i].color[10] = f->e[i].b.b[10];
+        gSurfaceTable[i].color[11] = f->e[i].b.b[11];
         for (j = 0; tab[j].key != 0; j++) {
             if (tab[j].key == f->e[i].key) {
                 break;
             }
         }
-        gSurfaceTable_3[i].f38 = tab[j].val;
+        gSurfaceTable[i].unk_38 = tab[j].val;
     }
     res_unload(&r->arr[idx]);
     res_unload(&gSfxResSet_3->arr[D_800D123C]);

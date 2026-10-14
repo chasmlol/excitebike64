@@ -919,9 +919,7 @@ void cam_mode_fall_view(Rider *e, Rec_4 *r)
     }
 }
 
-typedef struct { f32 v[16]; } Row_3;
 
-extern Row_3 gSurfaceTable_5[];
 
 void cam_start_fall_view(Rider *p)
 {
@@ -951,7 +949,7 @@ void cam_start_fall_view(Rider *p)
             }
             p->heading = ang;
             mtx3i_from_angles(m, 0x1000, 0, ang);
-            f = gSurfaceTable_5[(gGroundSurface >> 4) & 0xF].v[7];
+            f = gSurfaceTable[(gGroundSurface >> 4) & 0xF].bumpHeight;
             if (-0.1f < f) {
                 f = -0.1f;
             }

@@ -439,7 +439,7 @@ s32 stunt_animate(Rider *p, s32 k)
                 df = -df;
             }
             if (df > 0x1000) {
-                bike_queue_crash_3(p, -0x22);
+                bike_queue_crash_2(p, -0x22);
             }
         }
         return 1;

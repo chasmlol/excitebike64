@@ -526,7 +526,7 @@ void bike_wheel_find_ground(Rider *b, Wheel *w, f32 dt, u8 flag)
     t += 0.5f;
     Q.y = L;
     if (gGroundFound) {
-        w->surface = gSurfaceTable + ((gGroundSurface << 2) & 0x3C0);
+        w->surface = (Surface *)((u8 *)gSurfaceTable + ((gGroundSurface << 2) & 0x3C0)); /* bits 4-7 */
         w->groundFlags = gGroundSurface;
         w->groundArea = gGroundArea;
         height_get_ground_normal(&w->normal.x);
@@ -574,12 +574,12 @@ void bike_update_wheel_contacts(Rider *b) {
         diff = b->bike.pos.y - (f32)h / 1000.0f;
         idx = (D_800E84F4[1] >> 4) & 0xF;
         *(volatile s32 *)&b->surfaceIdx = idx;
-        if ((gGameMode == 7 || gCurTrack == D_800CBB70) && diff > 2.0f && (gSurfaceTable_2[idx].flags & 0x800)) {
+        if ((gGameMode == 7 || gCurTrack == D_800CBB70) && diff > 2.0f && (gSurfaceTable[idx].flags & 0x800)) {
             bike_queue_crash_2(b, -25);
             return;
         }
     } else {
-        b->surfaceIdx = (Ent64 *)b->rearWheel.surface - gSurfaceTable_2;
+        b->surfaceIdx = b->rearWheel.surface - gSurfaceTable;
     }
     if (diff < 1.0f) {
         if (b->frontWheel.groundDist < -2.0f || b->rearWheel.groundDist < -2.0f) {
@@ -2179,12 +2179,6 @@ void bike_update_wheelie(Rider *e)
 }
 
 typedef struct {
-    u8 pad0[0x28];
-    s32 f28;
-    u8 pad2C[0x14];
-} Surf_3;
-
-typedef struct {
     u8 pad0[0xC];
     Trk_2 *fC;
     u8 pad10[0x2C];
@@ -2196,7 +2190,6 @@ typedef struct {
     u8 pad65[0x7];
 } Seg_4;
 
-extern Surf_3 gSurfaceTable_4[];
 extern Ent_13 gRiderAnims[];
 extern Seg_4 *gPathNodes_4;
 
@@ -2271,7 +2264,7 @@ void bike_update_jump(Rider *b) {
                     Vec3f *q = &b->takeoffPos;
                     if (b->speed > 4.0f) {
                     th = q->x; sp = q->z; if (b == 0) r = 0; height_get_ground(th * 1000.0f, q->y * 1000.0f, sp * 1000.0f);
-                    if (gSurfaceTable_4[(gGroundSurface >> 4) & 0xF].f28 & 0x400) {
+                    if (gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & 0x400) {
                         f32 k;
                         k = 10.0f;
                         g = sBikeTuneRampBoost * k / b->speed + 1.0f;

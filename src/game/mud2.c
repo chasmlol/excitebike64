@@ -310,7 +310,7 @@ void particles_emit_water_splash(Rider *p)
     idx = p - gRiders;
     mv = p->surfaceIdx;
     if (!(1.0f < p->speed)) goto done;
-    if (!(gSurfaceTable_2[mv].flags & 8)) goto done;
+    if (!(gSurfaceTable[mv].flags & 8)) goto done;
 
     *(Vec3f *)pt = p->bike.pos;
     if (!tube_get_water_level((s32)(pt[0] * 1000.0f), (s32)(pt[2] * 1000.0f), loc)) goto done;
@@ -359,7 +359,7 @@ void particles_emit_water_splash(Rider *p)
         particle_spawn_3(3, mv, pt, A, gParticleWhite);
     }
 
-    if ((gSurfaceTable_2[mv].flags & 0x180) != 0) {
+    if ((gSurfaceTable[mv].flags & 0x180) != 0) {
         if (gRiderViewLod[idx] != 0) {
             tube_spawn_splash(idx, (s32)(pt[0] * 1000.0f), loc[0], (s32)(pt[2] * 1000.0f));
         }
@@ -428,20 +428,12 @@ typedef struct {
     TexInfo e[1];
 } TexTab_2;
 
-typedef struct {
-    u8 pad[0x2C];
-    u8 r1, g1, b1, a1; /* 0x2C */
-    u8 r2, g2, b2;     /* 0x30 */
-    u8 pad33[0xD];
-} ColDef;
-
 extern Part_3 *sParticles_4;
 extern TexTab_2 *sPuffTextures_2;
 extern TexTab_2 *sSplashTextures_2;
 extern TexTab_2 *sExhaustTextures_2;
 extern TexTab_2 *sClodTextures_2;
 extern TexTab_2 *sSparkleTextures_2;
-extern ColDef gSurfaceTable_6[];
 
 static inline s32 project(Vec3f *p, s32 view, s32 arg2, s32 *sx, s32 *sy, s32 *sz, s32 *w) {
     if (gCurTrack_4->f2C == 0) {
@@ -519,12 +511,12 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 dsdx = (sPuffTextures_2->e[0].w << 13) / size;
                 a = sParticles_4[i].color;
                 hh = size * 2 / 3;
-                alpha = 0xFF - gSurfaceTable_6[a].a1;
+                alpha = 0xFF - gSurfaceTable[a].color[3];
                 alpha = (((sParticles_4[i].life << 7) / sParticles_4[i].max + 0x7F) * alpha) >> 8;
                 dtdy = (sPuffTextures_2->e[0].h << 10) / hh;
                 if (alpha != 0) {
-                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r1 * sParticles_4[i].r) >> 8,
-                                    (gSurfaceTable_6[a].g1 * sParticles_4[i].g) >> 8, (gSurfaceTable_6[a].b1 * sParticles_4[i].b) >> 8,
+                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable[a].color[0] * sParticles_4[i].r) >> 8,
+                                    (gSurfaceTable[a].color[1] * sParticles_4[i].g) >> 8, (gSurfaceTable[a].color[2] * sParticles_4[i].b) >> 8,
                                     alpha);
                     gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                     gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
@@ -717,8 +709,8 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                     hh = size * 2 / 3;
                     dtdy = (sClodTextures_2->e[0].h << 10) / hh;
                     a = sParticles_4[i].color;
-                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r2 * sParticles_4[i].r) >> 8,
-                                    (gSurfaceTable_6[a].g2 * sParticles_4[i].g) >> 8, (gSurfaceTable_6[a].b2 * sParticles_4[i].b) >> 8,
+                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable[a].color[4] * sParticles_4[i].r) >> 8,
+                                    (gSurfaceTable[a].color[5] * sParticles_4[i].g) >> 8, (gSurfaceTable[a].color[6] * sParticles_4[i].b) >> 8,
                                     (sParticles_4[i].life << 7) / sParticles_4[i].max + 0x40);
                     gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                     gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,

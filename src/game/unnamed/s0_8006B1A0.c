@@ -314,34 +314,23 @@ void excite3d_player_steer(Rider *p)
     p->bike.pos.x = p->gridSlot * 2.178f - p->laneChange * (2.178f / gLaneChangeFrames);
 }
 
-struct Obj_53 {
-    u8 pad0[0x50];
-    f32 f50;
-    u8 pad54[0x8];
-    f32 f5C;
-    u8 pad60[0x4E4 - 0x60];
-    Ent64 *e;
-    u8 pad4E8[0x7A9 - 0x4E8];
-    u8 b7A9;
-};
-
-s32 excite3d_lane_is_clear(Obj_53 *o, s32 n)
+s32 excite3d_lane_is_clear(Rider *o, s32 n)
 {
     V3 a, b;
     f32 z, bx, r1, r2, sgn, step;
     s32 i;
     u32 fl;
 
-    if (o->e->flags & 0x400) {
+    if (o->rearWheel.surface->flags & 0x400) {
         return 0;
     }
     a.x = (f32)n * 2.178f;
-    bx = (f32)o->b7A9 * 2.178f;
+    bx = (f32)o->gridSlot * 2.178f;
     z = 0.0f;
     a.y = z;
     b.y = z;
     b.x = bx;
-    a.z = o->f50;
+    a.z = o->bike.pos.z;
     b.z = a.z;
     r1 = bike_get_ground_height(&b);
     r2 = bike_get_ground_height(&a);
@@ -350,19 +339,19 @@ ret0:
         return 0;
     }
     sgn = 1.0f;
-    if (z < o->f5C) {
+    if (z < o->bike.vel.z) {
         sgn = -1.0f;
     }
-    step = o->f5C * gLaneChangeFrames / 60.0f - sgn - sgn;
+    step = o->bike.vel.z * gLaneChangeFrames / 60.0f - sgn - sgn;
     for (i = 0; i < 5; i++) {
         b = a;
         b.z += (f32)i * step * 0.25f + sgn;
         bike_get_ground_height(&b);
-        if (gSurfaceTable_2[(gGroundSurface >> 4) & 0xF].flags & 0x400) {
+        if (gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & 0x400) {
             goto ret0;
         }
     }
-    fl = gSurfaceTable_2[(gGroundSurface >> 4) & 0xF].flags & 0x400;
+    fl = gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & 0x400;
     return fl == 0;
 }
 

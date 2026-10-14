@@ -455,7 +455,6 @@ bike_respawn                          game  0x80046CC0  func    0xaf4
 bike_set_contact_friction             game  0x800477B4  func     0x3c
 bike_queue_crash                      game  0x800477F0  func     0x24
 bike_queue_crash_2                    game  0x800477F0  func        -  bike_queue_crash
-bike_queue_crash_3                    game  0x800477F0  func        -  bike_queue_crash
 body_time_to_ground                   game  0x80047814  func     0xfc
 rider_change_anim                     game  0x80047910  func     0x28
 desert_init                           game  0x80047940  func     0xdc
@@ -1650,12 +1649,6 @@ sSteerRateBySpeed                     game  0x800C8FD8  data     0x44
 sSteerMaxBySpeed                      game  0x800C901C  data     0x34
 sSteerSpeedSteps                      game  0x800C9050  data     0x30
 gSurfaceTable                         game  0x800C9080  data    0x400
-gSurfaceTable_2                       game  0x800C9080  data        -  gSurfaceTable
-gSurfaceTable_3                       game  0x800C9080  data        -  gSurfaceTable
-gSurfaceTable_4                       game  0x800C9080  data        -  gSurfaceTable
-gSurfaceTable_5                       game  0x800C9080  data        -  gSurfaceTable
-gSurfaceTable_6                       game  0x800C9080  data        -  gSurfaceTable
-gSurfaceTable_7                       game  0x800C9080  data        -  gSurfaceTable
 sStartLineOffsets                     game  0x800C9480  data     0x30
 sSuspSpringScale                      game  0x800C94B0  data      0x4
 sSuspDampScale                        game  0x800C94B4  data      0x4

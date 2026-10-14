@@ -492,7 +492,6 @@ void bike_respawn(Rider *b);
 void bike_set_contact_friction(f32 x);
 void bike_queue_crash(Rider *p, u8 v);
 void bike_queue_crash_2(Rider *b, s32 arg1);
-void bike_queue_crash_3(Rider *p, s32 v);
 f32 body_time_to_ground(f32 *p);
 void rider_change_anim(Rider *o, s32 b);
 
@@ -811,7 +810,7 @@ void excite3d_init(void);
 void excite3d_cpu_steer(Rider *p);
 void excite3d_update(void);
 void excite3d_player_steer(Rider *p);
-s32 excite3d_lane_is_clear(Obj_53 *o, s32 n);
+s32 excite3d_lane_is_clear(Rider *o, s32 n);
 u8 excite3d_lane_is_clear_2(Rider *p, s32 a1);
 void excite3d_update_progress(Rider *o);
 void excite3d_find_segment(Obj_55 *o);

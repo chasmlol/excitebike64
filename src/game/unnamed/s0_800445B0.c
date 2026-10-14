@@ -119,10 +119,8 @@ void bike_crash_begin(Rider *b, s32 n)
 #define DAMPR(x) { f32 r, k, v, w; k = (gGame_31.f4C == 6) ? gBikeTuneSpringRate * 20000.0f : 15000.0f; v = (x); w = v; if (gGame_31.f4C == 6) r = v - v * (k / ((gBikeTuneDamping * 2000.0f) / gPhysDeltaTime)); else r = w - w * (k / (2200.0f / gPhysDeltaTime)); (x) = r; }
 #define CLAMP(b, p) { m = __builtin_sqrtf(b->p.vel.x * b->p.vel.x + b->p.vel.y * b->p.vel.y + b->p.vel.z * b->p.vel.z);     if (b->crashSpeedCap < m) { b->p.vel.x *= b->crashSpeedCap / m; b->p.vel.y *= b->crashSpeedCap / m; b->p.vel.z *= b->crashSpeedCap / m; } }
 
-typedef struct { u8 pad[0x28]; s32 flags; u8 pad2[0x40 - 0x2C]; } Track_9;
 typedef struct { u8 pad[0x3C]; s32 f3C; u8 pad2[0x4C - 0x40]; s32 f4C; } Game_15;
 
-extern Track_9 gSurfaceTable_7[];
 extern Game_15 gGame_31;
 
 static inline f32 airtime(RigidBody *p, f32 g)
@@ -156,7 +154,7 @@ void bike_crash_update(Rider *b)
         gCrashSlowMotion = 1;
     }
     height_get_ground(b->bike.pos.x * 1000.0f, b->bike.pos.y * 1000.0f, b->bike.pos.z * 1000.0f);
-    if ((gSurfaceTable_7[(gGroundSurface >> 4) & 0xF].flags & 0x800) && b->isCpu == 0) {
+    if ((gSurfaceTable[(gGroundSurface >> 4) & 0xF].flags & 0x800) && b->isCpu == 0) {
         cam_start_fall_view(b);
     }
     if (b->bike.flags & 1) {

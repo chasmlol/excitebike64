@@ -39,7 +39,6 @@ typedef struct Spawn Spawn;
 typedef struct Box_4 Box_4;
 typedef struct Tri3_2 Tri3_2;
 typedef struct Mdl_2 Mdl_2;
-typedef struct Obj_53 Obj_53;
 typedef struct Obj_55 Obj_55;
 typedef struct Obj_58 Obj_58;
 typedef struct Mdl2 Mdl2;
