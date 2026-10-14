@@ -4,6 +4,8 @@
 
 #include "common.h"
 
+#define DECAL_NUM_TRACKS 128
+
 /* One quad of the ring of 128 tire tracks (sTireTracks), laid under a skidding bike. Its four vertices are
    sTireTrackVtx[i * 4 ..]: 0 and 1 the near edge, 2 and 3 the far edge, relative to the centre of the area
    in units of 16 mm. A rider's current quad (sTireTrackCur) is stretched while it keeps its direction. */

@@ -26,11 +26,13 @@ typedef struct ShatterPiece {
     /* 0x2A */ s16 bounces; /* left before it sinks; 0 stops it */
 } ShatterPiece; /* size 0x2C */
 
-/* A breakable object (object flag 1 in gObjectFlags). */
+#define SHATTER_FRAMES 181 /* a broken object is hidden this many frames after it broke */
+
+/* A breakable object (OBJ_BREAKABLE in gObjectFlags). */
 typedef struct ShatterObj {
     /* 0x00 */ TrackModel *obj;  /* its entry in gTrackObjects */
     /* 0x04 */ s32 numPieces;    /* triangles */
-    /* 0x08 */ s32 timer;        /* -1 whole, else frames since it broke; hidden at 181 */
+    /* 0x08 */ s32 timer;        /* -1 whole, else frames since it broke; hidden at SHATTER_FRAMES */
     /* 0x0C */ s32 x0;           /* its box, 16 mm units */
     /* 0x10 */ s32 x1;
     /* 0x14 */ s32 z0;

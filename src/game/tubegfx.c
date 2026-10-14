@@ -1,10 +1,12 @@
 #include "game.h"
 
+/* tube_alloc_mtx written inline: a matrix of the frame's pool placing a model at (x, y, z) (16 mm units) relative to
+   the view's camera, or NULL when the pool is used up. */
 static inline MtxS *getmtx(s32 x, s32 y, s32 z, s32 view)
 {
     MtxS *m;
 
-    if (sTubeMtxCount >= 300) {
+    if (sTubeMtxCount >= TUBE_MTX_POOL) {
         return NULL;
     }
     x = x * 16 - gCamPos[view].x;
@@ -16,6 +18,8 @@ static inline MtxS *getmtx(s32 x, s32 y, s32 z, s32 view)
     return m;
 }
 
+/* Loads an outdoor track: textures, objects and sections with their display lists, object flags, breakable objects,
+   the PVS, walls and ground, each section's bounds grown to hold its objects, and the instances. */
 void tube_init(void)
 {
     s32 i, j;
@@ -23,8 +27,8 @@ void tube_init(void)
     WallMesh **walls;
 
     for (i = 0; i < 2; i++) {
-        sTubeMtxPool[i] = mem_alloc_dbg(0x4B00, 0, sStrTubegfxC, 0xCA);
-        for (j = 0; j < 300; j++) {
+        sTubeMtxPool[i] = mem_alloc_dbg(TUBE_MTX_POOL * sizeof(Mtx), 0, sStrTubegfxC, 0xCA);
+        for (j = 0; j < TUBE_MTX_POOL; j++) {
             mtx_from_angles_pos_scale(&sTubeMtxPool[i][j], 0, 0, 0, 0, 0, 0, 0x100);
         }
     }
@@ -42,11 +46,11 @@ void tube_init(void)
     sObjectSegs[0] = gObjectTexSet;
     sObjectSegs[1] = gAltTexSet;
     sObjectSegs[2] = gAnimTexSet;
-    gObjectDLs = tube_build_dlists(gTrackObjects, sObjectSegs, 0x4C, 1);
+    gObjectDLs = tube_build_dlists(gTrackObjects, sObjectSegs, PRIM_TLUT_SEGMENT | PRIM_RESET_TLUT | PRIM_LOAD_TLUT, 1);
     gTrackSections = (TrackModelList *)track_res_get(gGidArnGround);
     gSectionDLs = tube_build_dlists(gTrackSections, terrain, 0, 0);
     gWaterModels = (TrackModelList *)track_res_get(gGidArnWater);
-    if (gCheatFlags & 0x80) {
+    if (gCheatFlags & CHEAT_ODD_COLOR) {
         tube_rotate_vertex_colors(gTrackSections);
         tube_rotate_vertex_colors(gTrackObjects);
     }
@@ -55,10 +59,10 @@ void tube_init(void)
         gObjectFlags[i] = gTrackObjects->e[i].mask;
     }
     shatter_init(gTrackObjects);
-    gSectionMtxs = mem_alloc_dbg(gTrackSections->count * 16, 0, sStrTubegfxC, 0x103);
+    gSectionMtxs = mem_alloc_dbg(gTrackSections->count * 4 * sizeof(Mtx *), 0, sStrTubegfxC, 0x103); /* per view */
     tube_load_pvs();
     for (i = 0; i < 256; i++) {
-        if (gObjectTexSet->pal[i] == 0xF83F) {
+        if (gObjectTexSet->pal[i] == 0xF83F) { /* opaque magenta: the colour key, made transparent */
             gObjectTexSet->pal[i] = 0;
         }
     }
@@ -80,6 +84,7 @@ void tube_init(void)
     instances_load(gResourceSet, track_res_find(gGidInstanceDef), 0, gTrackSections, gObjectTexSet);
 }
 
+/* Frees the outdoor track's display lists, matrices, PVS, ground and walls. */
 void tube_free(void)
 {
     u32 i;
@@ -120,22 +125,23 @@ void tube_free(void)
     gTrackSections = NULL;
 }
 
-/* Culls the sections for view n, then gives each object and water model the view bits of its section. */
-void tube_update_view(s32 n)
+/* Culls the sections for a view, then gives each object and water model the view bits of its section (whose index
+   is in the high half of its mask). */
+void tube_update_view(s32 view)
 {
     u32 i;
-    TrackModel *it;
+    TrackModel *model;
 
-    tube_calc_fog_range(n, &sTubeFogNear[n], &sTubeFogFar[n]);
-    tube_cull_sections(gTrackSections, n);
+    tube_calc_fog_range(view, &sTubeFogNear[view], &sTubeFogFar[view]);
+    tube_cull_sections(gTrackSections, view);
     for (i = 0; i < gTrackObjects->count; i++) {
-        it = &gTrackObjects->e[i];
-        it->mask = (it->mask & 0xFFFF0000) | gTrackSections->e[it->mask >> 16].mask;
+        model = &gTrackObjects->e[i];
+        model->mask = (model->mask & 0xFFFF0000) | gTrackSections->e[model->mask >> 16].mask;
     }
     if (gWaterModels != NULL) {
         for (i = 0; i < gWaterModels->count; i++) {
-            it = &gWaterModels->e[i];
-            it->mask = (it->mask & 0xFFFF0000) | gTrackSections->e[it->mask >> 16].mask;
+            model = &gWaterModels->e[i];
+            model->mask = (model->mask & 0xFFFF0000) | gTrackSections->e[model->mask >> 16].mask;
         }
     }
     if (gGfxFrameIndex != sTubeMtxFrame) {
@@ -144,12 +150,14 @@ void tube_update_view(s32 n)
     sTubeMtxFrame = gGfxFrameIndex;
 }
 
-Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
+/* Draws the near sections and objects of a view, either those within the fog range (fog 0) or those beyond it with
+   fog (fog 1, with the near instances). */
+Gfx *tube_draw_layer(Gfx *gdl, s32 dyn, s32 fb, s32 view, s32 fog)
 {
     u32 i;
-    MtxS *m;
-    TrackModel *it;
-    u32 sh;
+    MtxS *mtx;
+    TrackModel *model;
+    u32 bits;
 
     gDPPipeSync(gdl++);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
@@ -168,29 +176,29 @@ Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
     }
 
     for (i = 0; i < gTrackSections->count; i++) {
-        it = &gTrackSections->e[i];
-        sh = it->mask >> (view * 2);
-        if (!(sh & 1)) continue;
-        if (sh & 2) continue;
-        if (it->mask & (0x100 << view)) {
+        model = &gTrackSections->e[i];
+        bits = model->mask >> (view * 2);
+        if (!(bits & 1)) continue;
+        if (bits & 2) continue;
+        if (model->mask & TRACK_MODEL_FOGGED(view)) {
             if (fog == 0) continue;
         } else {
             if (fog != 0) continue;
         }
         {
-            s32 x = (it->x0 + it->x1) / 2;
-            s32 z = (it->z0 + it->z1) / 2;
-            m = getmtx(x, 0, z, view);
-            gSectionMtxs[i * 4 + view] = m;
-            if (m != NULL) {
-                gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+            s32 x = (model->x0 + model->x1) / 2;
+            s32 z = (model->z0 + model->z1) / 2;
+            mtx = getmtx(x, 0, z, view);
+            gSectionMtxs[i * 4 + view] = mtx;
+            if (mtx != NULL) {
+                gSPMatrix(gdl++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(gdl++, gSectionDLs[i]);
             }
         }
     }
     gDPPipeSync(gdl++);
     if (fog != 0) {
-        gdl = instances_draw(gdl, (Mtx *)mtx, a2, view, 1);
+        gdl = instances_draw(gdl, (Mtx *)dyn, fb, view, 1);
         gDPPipeSync(gdl++);
     }
     gDPSetBlendColor(gdl++, 0, 0, 0, 255);
@@ -204,12 +212,12 @@ Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
     }
 
     for (i = 0; i < gTrackObjects->count; i++) {
-        if (gObjectFlags[i] & 8) continue;
-        it = &gTrackObjects->e[i];
-        sh = it->mask >> (view * 2);
-        if (!(sh & 1)) continue;
-        if (sh & 2) continue;
-        if (it->mask & (0x100 << view)) {
+        if (gObjectFlags[i] & OBJ_HIDDEN) continue;
+        model = &gTrackObjects->e[i];
+        bits = model->mask >> (view * 2);
+        if (!(bits & 1)) continue;
+        if (bits & 2) continue;
+        if (model->mask & TRACK_MODEL_FOGGED(view)) {
             if (fog == 0) continue;
         } else {
             if (fog != 0) continue;
@@ -217,16 +225,16 @@ Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
         {
             s32 x, z;
             gdl = tube_set_anim_tex_segs(gdl, i);
-            x = (it->x0 + it->x1) / 2;
-            z = (it->z0 + it->z1) / 2;
-            m = getmtx(x, 0, z, view);
-            if (m != NULL) {
-                if (gObjectFlags[i] & 1) {
+            x = (model->x0 + model->x1) / 2;
+            z = (model->z0 + model->z1) / 2;
+            mtx = getmtx(x, 0, z, view);
+            if (mtx != NULL) {
+                if (gObjectFlags[i] & OBJ_BREAKABLE) {
                     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
                 }
-                gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                gSPMatrix(gdl++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(gdl++, gObjectDLs[i]);
-                if (gObjectFlags[i] & 1) {
+                if (gObjectFlags[i] & OBJ_BREAKABLE) {
                     gSPSetGeometryMode(gdl++, gCullMode);
                 }
             }
@@ -236,16 +244,18 @@ Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
     gSPClearGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gSPSetGeometryMode(gdl++, G_FOG);
-    gSPMatrix(gdl++, mtx + 0x400, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gdl++, dyn + 0x400 /* Dyn.m4 */, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     return gdl;
 }
 
-Gfx *tube_draw_far(Gfx *gdl, s32 mtx, s32 a2, s32 view)
+/* Draws the sections, instances and objects of a view beyond the level-of-detail distance, fogged, with the far
+   viewport. */
+Gfx *tube_draw_far(Gfx *gdl, s32 dyn, s32 fb, s32 view)
 {
     u32 i;
-    MtxS *m;
-    TrackModel *it;
-    u32 sh;
+    MtxS *mtx;
+    TrackModel *model;
+    u32 bits;
     s32 tmp[18];
 
     gSPSegment(gdl++, 1, gObjectTexSet->pal);
@@ -269,51 +279,51 @@ Gfx *tube_draw_far(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     gSPViewport(gdl++, &gViewports[view + 4]);
 
     for (i = 0; i < gTrackSections->count; i++) {
-        it = &gTrackSections->e[i];
-        sh = it->mask >> (view * 2);
-        if (!(sh & 1)) continue;
-        if (sh & 2) {
-            s32 x = (it->x0 + it->x1) / 2;
-            s32 z = (it->z0 + it->z1) / 2;
-            m = getmtx(x, 0, z, view);
-            gSectionMtxs[i * 4 + view] = m;
-            if (m != NULL) {
-                gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        model = &gTrackSections->e[i];
+        bits = model->mask >> (view * 2);
+        if (!(bits & 1)) continue;
+        if (bits & 2) {
+            s32 x = (model->x0 + model->x1) / 2;
+            s32 z = (model->z0 + model->z1) / 2;
+            mtx = getmtx(x, 0, z, view);
+            gSectionMtxs[i * 4 + view] = mtx;
+            if (mtx != NULL) {
+                gSPMatrix(gdl++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(gdl++, gSectionDLs[i]);
             }
         }
     }
     gDPPipeSync(gdl++);
-    gdl = instances_draw(gdl, (Mtx *)mtx, a2, view, 3);
+    gdl = instances_draw(gdl, (Mtx *)dyn, fb, view, 3);
     gDPSetBlendColor(gdl++, 0, 0, 0, 255);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
     gSPSegment(gdl++, 6, sTexOpaqueFogDL);
     gSPSegment(gdl++, 7, sTexCutoutFogDL);
 
     for (i = 0; i < gTrackObjects->count; i++) {
-        if (gObjectFlags[i] & 8) continue;
-        it = &gTrackObjects->e[i];
-        sh = it->mask >> (view * 2);
-        if (!(sh & 1)) continue;
-        if (sh & 2) {
+        if (gObjectFlags[i] & OBJ_HIDDEN) continue;
+        model = &gTrackObjects->e[i];
+        bits = model->mask >> (view * 2);
+        if (!(bits & 1)) continue;
+        if (bits & 2) {
             s32 x, z;
             gdl = tube_set_anim_tex_segs(gdl, i);
-            x = (it->x0 + it->x1) / 2;
-            z = (it->z0 + it->z1) / 2;
-            m = getmtx(x, 0, z, view);
-            if (m != NULL) {
-                if (gObjectFlags[i] & 1) {
+            x = (model->x0 + model->x1) / 2;
+            z = (model->z0 + model->z1) / 2;
+            mtx = getmtx(x, 0, z, view);
+            if (mtx != NULL) {
+                if (gObjectFlags[i] & OBJ_BREAKABLE) {
                     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
                 }
-                gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                gSPMatrix(gdl++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(gdl++, gObjectDLs[i]);
-                if (gObjectFlags[i] & 1) {
+                if (gObjectFlags[i] & OBJ_BREAKABLE) {
                     gSPSetGeometryMode(gdl++, gCullMode);
                 }
             }
         }
     }
-    gSPMatrix(gdl++, mtx + 0x400, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gdl++, dyn + 0x400 /* Dyn.m4 */, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPPipeSync(gdl++);
     gSPClearGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gSPClearGeometryMode(gdl++, G_FOG);
@@ -321,11 +331,12 @@ Gfx *tube_draw_far(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     return gdl;
 }
 
-Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
+/* Draws the visible water models (IA textures tinted by their palette colour) and the riders' big splashes. */
+Gfx *tube_draw_water(Gfx *gdl, s32 dyn, s32 fb, s32 view)
 {
     s32 i;
-    MtxS *m;
-    TrackModel *it;
+    MtxS *mtx;
+    TrackModel *model;
     s32 tmp[18];
 
     if (gWaterModels == NULL) {
@@ -338,18 +349,18 @@ Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     gDPSetRenderMode(gdl++, 0x404A50, 0);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
-    gSPFogPosition(gdl++, sTubeFogFar[view], sTubeFogNear[view]);
+    gSPFogPosition(gdl++, sTubeFogFar[view], sTubeFogNear[view]); /* near and far swapped */
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gPrimIATextures = 1;
 
     for (i = 0; i < gWaterModels->count; i++) {
-        it = &gWaterModels->e[i];
-        if ((it->mask >> (view * 2)) & 1) {
-            s32 x = (it->x0 + it->x1) / 2;
-            s32 z = (it->z0 + it->z1) / 2;
-            m = getmtx(x, 0, z, view);
-            if (m != NULL) {
-                gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        model = &gWaterModels->e[i];
+        if ((model->mask >> (view * 2)) & 1) {
+            s32 x = (model->x0 + model->x1) / 2;
+            s32 z = (model->z0 + model->z1) / 2;
+            mtx = getmtx(x, 0, z, view);
+            if (mtx != NULL) {
+                gSPMatrix(gdl++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gdl = prim_build_dl(0, gWaterModels->e[i].model, &gWaterTexSet, gdl);
             }
         }
@@ -359,25 +370,26 @@ Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
     for (i = 0; i < 8; i++) {
         if (sSplashTimer[i] == 0) continue;
-        it = &gTrackSections->e[sSplashSection[i]];
-        if ((it->mask >> (view * 2)) & 1) {
-            s32 a = sSplashTimer[i] / 2;
-            s32 f;
-            if (a >= 256) {
-                a = 255;
+        model = &gTrackSections->e[sSplashSection[i]];
+        if ((model->mask >> (view * 2)) & 1) {
+            s32 alpha = sSplashTimer[i] / 2;
+            s32 frame;
+            if (alpha >= 256) {
+                alpha = 255;
             }
-            gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, a);
-            f = (120 - sSplashTimer[i]) / 12;
-            if (f >= 5) {
-                f = (f - 2) % 3 + 2;
+            gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, alpha);
+            /* frames 0-4, then 2-4 looping */
+            frame = (120 - sSplashTimer[i]) / 12;
+            if (frame >= 5) {
+                frame = (frame - 2) % 3 + 2;
             }
-            gDPLoadTextureBlock(gdl++, gWaterSplashTextures->tex[f].data, G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
+            gDPLoadTextureBlock(gdl++, gWaterSplashTextures->tex[frame].data, G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
                                 G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
-            m = getmtx(sSplashPos[i].x, sSplashPos[i].y, sSplashPos[i].z, view);
-            if (m != NULL) {
-                mtx_from_angles_pos_scale(m, 0, 0, 0, sSplashPos[i].x * 16 - gCamPos[view].x, sSplashPos[i].y * 16 - gCamPos[view].y,
+            mtx = getmtx(sSplashPos[i].x, sSplashPos[i].y, sSplashPos[i].z, view);
+            if (mtx != NULL) {
+                mtx_from_angles_pos_scale(mtx, 0, 0, 0, sSplashPos[i].x * 16 - gCamPos[view].x, sSplashPos[i].y * 16 - gCamPos[view].y,
                               sSplashPos[i].z * 16 - gCamPos[view].z, 0x100);
-                gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                gSPMatrix(gdl++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPVertex(gdl++, sSplashQuadVtx, 4, 0);
                 gSP2Triangles(gdl++, 0, 1, 2, 0, 0, 2, 3, 0);
             }
@@ -385,7 +397,7 @@ Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     }
     gPrimIATextures = 0;
     gDPPipeSync(gdl++);
-    gSPMatrix(gdl++, mtx + 0x400, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gdl++, dyn + 0x400 /* Dyn.m4 */, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gSPClearGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
@@ -394,134 +406,136 @@ Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     return gdl;
 }
 
-/* Sets the sections' view bits for view n from the PVS list of the section under the camera, then clears those
-   behind the camera or outside the field of view and marks the distant ones fogged (0x100 << n). On Excite 3D the
-   sections near the leader are visible instead. */
-void tube_cull_sections(TrackModelList *l, s32 n)
+/* Sets the sections' bits for a view from the PVS list of the section under the camera (its near list also far),
+   then clears those behind the camera or outside the field of view and marks those past the fog's start fogged.
+   On Excite 3D's side view the sections near the player's are visible instead. */
+void tube_cull_sections(TrackModelList *sections, s32 view)
 {
-    s32 k;
+    s32 target;
     s32 i;
-    s32 base;
-    s32 px, py, pz;
-    s32 cnt;
-    s32 bit;
-    u16 *e;
-    s32 n1, tot;
+    s32 pvsBase;
+    s32 camX, camY, camZ;
+    s32 count;
+    s32 visBit;
+    u16 *pvs;
+    s32 numFar, total;
     s32 h;
-    s32 lim;
-    s32 ang;
-    s32 sn, cs;
+    s32 fogDepth;
+    s32 yaw;
+    s32 cosYaw, sinYaw;
     s32 d[4];
-    s32 w[4];
+    s32 slope[4];
 
-    k = n;
+    target = view;
     if (gCamTargetOverride != -1) {
-        k = gCamTargetOverride;
+        target = gCamTargetOverride;
     }
     sCullSlope = 0x68;
     if (gNumScreens == 2) {
         sCullSlope = 0x9C;
     }
-    if (gCurTrack_2 - gTracks == 20 && gRiders[0].camMode == 4) {
-        n1 = gRiderSection[0];
-        if (n1 >= 0 && n1 < l->count) {
-            s32 ref = l->e[n1].z0 + l->e[n1].z1;
-            for (i = 0; i < l->count; i++) {
-                s32 v = l->e[i].mask & (-4 << (n * 2));
-                s32 dd = l->e[i].z0 + l->e[i].z1;
-                l->e[i].mask = v;
-                if (dd >= ref - 7500 && dd <= ref + 2500) {
-                    l->e[i].mask = v | (1 << (n * 2));
+    if (gCurTrack_2 - gTracks == TRACK_EXCITE_3D && gRiders[0].camMode == CAM_MODE_SIDE_VIEW) {
+        numFar = gRiderSection[0]; /* here the player's section */
+        if (numFar >= 0 && numFar < sections->count) {
+            s32 refMid = sections->e[numFar].z0 + sections->e[numFar].z1;
+            for (i = 0; i < sections->count; i++) {
+                s32 bitsKept = sections->e[i].mask & (-4 << (view * 2)); /* also clears the views before */
+                s32 mid = sections->e[i].z0 + sections->e[i].z1;
+                sections->e[i].mask = bitsKept;
+                if (mid >= refMid - 7500 && mid <= refMid + 2500) {
+                    sections->e[i].mask = bitsKept | TRACK_MODEL_VISIBLE(view);
                 }
             }
         }
     } else {
-        base = 0;
+        pvsBase = 0;
         if (gNumScreens != 1) {
-            base = l->count;
+            pvsBase = sections->count;
         }
-        px = gCamPos[n].x;
-        py = gCamPos[n].y;
-        pz = gCamPos[n].z;
-        cnt = 0;
-        if (gRiders[n].camMode == 9) {
-            sCamSection = gRiderSection[k];
+        camX = gCamPos[view].x;
+        camY = gCamPos[view].y;
+        camZ = gCamPos[view].z;
+        count = 0;
+        if (gRiders[view].camMode == CAM_MODE_FALL_VIEW) {
+            sCamSection = gRiderSection[target];
         } else {
             gGroundFound = 0;
-            height_get_ground(px, py, pz);
+            height_get_ground(camX, camY, camZ);
             if (gGroundFound == 0) {
-                sCamSection = gRiderSection[k];
+                sCamSection = gRiderSection[target];
                 gGroundFound = 1;
             } else {
                 sCamSection = gGroundArea;
             }
         }
-        bit = 1 << (n * 2);
-        for (i = 0; i < l->count; i++) {
-            l->e[i].mask &= ~(3 << (n * 2));
+        visBit = 1 << (view * 2);
+        for (i = 0; i < sections->count; i++) {
+            sections->e[i].mask &= ~TRACK_MODEL_BITS(view);
         }
-        e = sPvsIndex[sCamSection + base];
-        n1 = e[0];
-        tot = n1 + e[1];
-        for (i = 0; i < tot; i++) {
-            l->e[e[i + 2]].mask |= bit;
+        pvs = sPvsIndex[sCamSection + pvsBase];
+        numFar = pvs[0];
+        total = numFar + pvs[1];
+        for (i = 0; i < total; i++) {
+            sections->e[pvs[i + 2]].mask |= visBit;
         }
-        for (i = 0; i < n1; i++) {
-            l->e[e[i + 2]].mask |= 2 << (n * 2);
+        for (i = 0; i < numFar; i++) {
+            sections->e[pvs[i + 2]].mask |= TRACK_MODEL_FAR(view);
         }
-        px >>= 4;
-        pz >>= 4;
-        l->e[sCamSection].mask |= bit;
-        lim = 0xC48A / (0x3EE - sTubeFogNear[n]);
-        ang = gCamYaw[n] >> 4;
-        sn = gCosTable[ang & 0xFFF];
-        cs = gCosTable[(ang - 0x400) & 0xFFF];
-        for (i = 0; i < l->count; i++) {
-            TrackModel *r = &l->e[i];
-            TrackBounds *q = &sSectionBounds[i];
-            if (r->mask & bit) {
-                cnt++;
-                if (gGroundFound == 0 && cnt >= 16) {
-                    r->mask &= ~bit;
-                    cnt--;
+        camX >>= 4;
+        camZ >>= 4;
+        sections->e[sCamSection].mask |= visBit;
+        fogDepth = 0xC48A / (0x3EE - sTubeFogNear[view]);
+        yaw = gCamYaw[view] >> 4;
+        cosYaw = gCosTable[yaw & 0xFFF];
+        sinYaw = gCosTable[(yaw - 0x400) & 0xFFF];
+        for (i = 0; i < sections->count; i++) {
+            TrackModel *sec = &sections->e[i];
+            TrackBounds *bounds = &sSectionBounds[i];
+            if (sec->mask & visBit) {
+                count++;
+                if (gGroundFound == 0 && count >= 16) {
+                    sec->mask &= ~visBit;
+                    count--;
                 } else {
                     s32 t, u, f, x, z;
-                    x = r->x0;
-                    z = r->z0;
-                    t = (sn * (z - pz) - cs * (x - px)) >> 14;
-                    x = r->x1 - x;
-                    h = (-cs * x) >> 14;
-                    f = (sn * (r->z1 - z)) >> 14;
+                    x = sec->x0;
+                    z = sec->z0;
+                    t = (cosYaw * (z - camZ) - sinYaw * (x - camX)) >> 14;
+                    x = sec->x1 - x;
+                    h = (-sinYaw * x) >> 14;
+                    f = (cosYaw * (sec->z1 - z)) >> 14;
                     u = t + h;
                     d[0] = t;
                     d[1] = u;
                     d[2] = t + f;
                     d[3] = u + f;
+                    /* behind the camera */
                     if (d[0] < 11 && d[1] < 11 && d[2] < 11 && d[3] < 11) {
-                        cnt--;
-                        r->mask &= ~(3 << (n * 2));
+                        count--;
+                        sec->mask &= ~TRACK_MODEL_BITS(view);
                     } else {
-                        if (d[0] >= lim || d[1] >= lim || d[2] >= lim || d[3] >= lim) {
-                            r->mask |= 0x100 << n;
+                        if (d[0] >= fogDepth || d[1] >= fogDepth || d[2] >= fogDepth || d[3] >= fogDepth) {
+                            sec->mask |= TRACK_MODEL_FOGGED(view);
                         } else {
-                            r->mask &= ~(0x100 << n);
+                            sec->mask &= ~TRACK_MODEL_FOGGED(view);
                         }
-                        if (gCurTrack_2 - gTracks != 20 && d[0] > 300 && d[1] > 300 && d[2] > 300 && d[3] > 300) {
-                            s32 y = q->x0;
+                        /* outside the field of view: every corner's side / depth beyond the slope */
+                        if (gCurTrack_2 - gTracks != TRACK_EXCITE_3D && d[0] > 300 && d[1] > 300 && d[2] > 300 && d[3] > 300) {
+                            s32 y = bounds->x0;
                             s32 u2;
-                            t = (sn * (y - px) + cs * (q->z0 - pz)) >> 14;
-                            y = q->x1 - y;
-                            h = (sn * y) >> 14;
+                            t = (cosYaw * (y - camX) + sinYaw * (bounds->z0 - camZ)) >> 14;
+                            y = bounds->x1 - y;
+                            h = (cosYaw * y) >> 14;
                             u2 = t + h;
-                            f = (cs * (q->z1 - q->z0)) >> 14;
-                            w[0] = (t << 8) / d[0];
-                            w[1] = (u2 << 8) / d[1];
-                            w[2] = ((t + f) << 8) / d[2];
-                            w[3] = ((u2 + f) << 8) / d[3];
-                            if ((w[0] < -sCullSlope && w[1] < -sCullSlope && w[2] < -sCullSlope && w[3] < -sCullSlope) ||
-                                (sCullSlope < w[0] && sCullSlope < w[1] && sCullSlope < w[2] && sCullSlope < w[3])) {
-                                cnt--;
-                                r->mask &= ~(3 << (n * 2));
+                            f = (sinYaw * (bounds->z1 - bounds->z0)) >> 14;
+                            slope[0] = (t << 8) / d[0];
+                            slope[1] = (u2 << 8) / d[1];
+                            slope[2] = ((t + f) << 8) / d[2];
+                            slope[3] = ((u2 + f) << 8) / d[3];
+                            if ((slope[0] < -sCullSlope && slope[1] < -sCullSlope && slope[2] < -sCullSlope && slope[3] < -sCullSlope) ||
+                                (sCullSlope < slope[0] && sCullSlope < slope[1] && sCullSlope < slope[2] && sCullSlope < slope[3])) {
+                                count--;
+                                sec->mask &= ~TRACK_MODEL_BITS(view);
                             }
                         }
                     }
@@ -533,96 +547,96 @@ void tube_cull_sections(TrackModelList *l, s32 n)
 
 /* Assigns each model of list a to the section under its centre (or the nearest one) and grows that section's
    bounds to hold it. */
-void tube_assign_objects(TrackModelList *a, TrackModelList *b)
+void tube_assign_objects(TrackModelList *models, TrackModelList *sections)
 {
     u32 i, k;
-    s32 x, z, fx, fz, d, dx, dz;
-    s32 best, bd;
+    s32 x, z, cx, cz, dist, dx, dz;
+    s32 section, bestDist;
 
-    for (i = 0; i < a->count; i++) {
+    for (i = 0; i < models->count; i++) {
         gGroundFound = 0;
-        x = (a->e[i].x0 + a->e[i].x1) / 2;
-        z = (a->e[i].z0 + a->e[i].z1) / 2;
+        x = (models->e[i].x0 + models->e[i].x1) / 2;
+        z = (models->e[i].z0 + models->e[i].z1) / 2;
         height_get_ground(x << 4, 999999, z << 4);
         if (gGroundFound != 0) {
-            { s32 n = gGroundArea; if (n) dz = 1; best = n; }
+            { s32 n = gGroundArea; if (n) dz = 1; section = n; }
         } else {
             x /= 4;
             z /= 4;
-            for (k = 0; k < b->count; k++) {
-                fx = (b->e[k].x0 + b->e[k].x1) / 2;
-                fz = (b->e[k].z0 + b->e[k].z1) / 2;
-                fx /= 4;
-                fz /= 4;
-                dx = x - fx;
-                dz = z - fz;
-                { s32 t; t = dx * dx; do { d = dz * dz; } while (0); dz = d; d = t + dz; }
-                if (d < bd || k == 0) {
-                    bd = d;
-                    best = k;
+            for (k = 0; k < sections->count; k++) {
+                cx = (sections->e[k].x0 + sections->e[k].x1) / 2;
+                cz = (sections->e[k].z0 + sections->e[k].z1) / 2;
+                cx /= 4;
+                cz /= 4;
+                dx = x - cx;
+                dz = z - cz;
+                { s32 t; t = dx * dx; do { dist = dz * dz; } while (0); dz = dist; dist = t + dz; }
+                if (dist < bestDist || k == 0) {
+                    bestDist = dist;
+                    section = k;
                 }
             }
         }
         do {
-            a->e[i].mask = best << 16;
+            models->e[i].mask = section << 16;
         } while (0);
-        if (a->e[i].x0 < ((TrackBounds *)((best << 4) + (u32)sSectionBounds))->x0) {
-            sSectionBounds[best].x0 = a->e[i].x0;
+        if (models->e[i].x0 < ((TrackBounds *)((section << 4) + (u32)sSectionBounds))->x0) {
+            sSectionBounds[section].x0 = models->e[i].x0;
         }
-        if (a->e[i].z0 < sSectionBounds[best].z0) {
-            sSectionBounds[best].z0 = a->e[i].z0;
+        if (models->e[i].z0 < sSectionBounds[section].z0) {
+            sSectionBounds[section].z0 = models->e[i].z0;
         }
-        if (sSectionBounds[best].x1 < a->e[i].x1) {
-            sSectionBounds[best].x1 = a->e[i].x1;
+        if (sSectionBounds[section].x1 < models->e[i].x1) {
+            sSectionBounds[section].x1 = models->e[i].x1;
         }
-        if (sSectionBounds[best].z1 < a->e[i].z1) {
-            sSectionBounds[best].z1 = a->e[i].z1;
+        if (sSectionBounds[section].z1 < models->e[i].z1) {
+            sSectionBounds[section].z1 = models->e[i].z1;
         }
     }
 }
 
 /* The height of the water under (x, z) in mm: the triangle of a water model containing the point. */
-s32 tube_get_water_level(s32 x, s32 y, s32 *out)
+s32 tube_get_water_level(s32 x, s32 z, s32 *out)
 {
     u32 i;
     s32 k;
-    s32 la[4];
-    s32 lb[4];
-    s32 fx, fy;
-    TrackModel *e;
-    u8 *pb;
-    u8 *base;
+    s32 xs[4];
+    s32 zs[4];
+    s32 px, pz;
+    TrackModel *water;
+    u8 *cmd;
+    u8 *vtxBase;
 
     if (gWaterModels == NULL) {
         return 0;
     }
     x >>= 4;
-    y >>= 4;
+    z >>= 4;
     for (i = 0; i < gWaterModels->count; i++) {
-        e = &gWaterModels->e[i];
-        if (x < e->x0 || e->x1 < x || y < e->z0 || e->z1 < y) {
+        water = &gWaterModels->e[i];
+        if (x < water->x0 || water->x1 < x || z < water->z0 || water->z1 < z) {
             continue;
         }
-        if (gCurTrack_3[0xb] == 1) {
-            fx = x - (e->x0 + e->x1) / 2;
-            fy = y - (e->z0 + e->z1) / 2;
+        if (gCurTrack_3[0xb] == TRACK_ENV_OUTDOOR) { /* gTracks +0x2C: vertices relative to the box's centre */
+            px = x - (water->x0 + water->x1) / 2;
+            pz = z - (water->z0 + water->z1) / 2;
         } else {
-            fx = x;
-            fy = y;
+            px = x;
+            pz = z;
         }
         /* walk the model's commands: vertex loads set the base, triangles are tested in x/z */
-        for (pb = e->model->cmds; pb[0] != 0; pb += 4) {
-            if ((pb[0] >> 4) == 3) {
+        for (cmd = water->model->cmds; cmd[0] != 0; cmd += 4) {
+            if ((cmd[0] >> 4) == PRIM_CMD_TRI) {
                 for (k = 0; k < 3; k++) {
-                    la[k] = *(s16 *)((u32)(pb[k + 1] << 4) + (u32)base);
-                    lb[k] = *(s16 *)((u32)(pb[k + 1] << 4) + (u32)base + 4);
+                    xs[k] = *(s16 *)((u32)(cmd[k + 1] << 4) + (u32)vtxBase);
+                    zs[k] = *(s16 *)((u32)(cmd[k + 1] << 4) + (u32)vtxBase + 4);
                 }
-                if (point_in_tri_xz(la, lb, fx, fy)) {
-                    *out = *(s16 *)((u32)(pb[1] << 4) + (u32)base + 2) << 4;
+                if (point_in_tri_xz(xs, zs, px, pz)) {
+                    *out = *(s16 *)((u32)(cmd[1] << 4) + (u32)vtxBase + 2) << 4;
                     return 1;
                 }
-            } else if ((pb[0] >> 4) == 1) {
-                base = (u8 *)e->model->vtx + (*(u16 *)(pb + 2) << 4);
+            } else if ((cmd[0] >> 4) == PRIM_CMD_VTX) {
+                vtxBase = (u8 *)water->model->vtx + (*(u16 *)(cmd + 2) << 4);
             }
         }
     }
@@ -632,49 +646,50 @@ s32 tube_get_water_level(s32 x, s32 y, s32 *out)
 /* Builds the display lists of a model list. Track resources first move their command streams to the spare
    framebuffer so the resource can shrink to the vertices. With animTex, records the animated texture segments each
    model uses (tube_remap_tex_addr). */
-Gfx **tube_build_dlists(TrackModelList *h, TexSet **sets, u32 flags, s32 animTex)
+Gfx **tube_build_dlists(TrackModelList *list, TexSet **sets, u32 flags, s32 animTex)
 {
-    u8 *buf;
+    u8 *spare;
     s32 off;
-    s32 n;
+    s32 size;
     u32 i;
-    Gfx **tbl;
-    Gfx *t;
+    Gfx **dls;
+    Gfx *dl;
     s32 sz;
-    TexSegRef *nb;
+    TexSegRef *copy;
     s32 j;
-    s32 d;
+    s32 delta;
 
-    buf = gFramebuffers[1 - gGfxFrameIndex];
-    if (!(*(s32 *)(gCurTrack + 0x50) & 2)) {
-        i = (s32)h->e[0].model->cmds - (s32)h;
-        n = mem_get_size(h);
-        memcpy(buf, (u8 *)h + i, n - i);
-        h = mem_realloc_dbg(h, i, 0, sStrTubegfxC, 0x51B);
+    spare = gFramebuffers[1 - gGfxFrameIndex];
+    if (!(*(s32 *)(gCurTrack + 0x50) & TRACK_FLAG_USER)) {
+        i = (s32)list->e[0].model->cmds - (s32)list;
+        size = mem_get_size(list);
+        memcpy(spare, (u8 *)list + i, size - i);
+        list = mem_realloc_dbg(list, i, 0, sStrTubegfxC, 0x51B);
         do { } while (0);
         sz = 0;
-        d = (s32)buf - ((s32)h + i);
-        if (h->count != 0) {
+        delta = (s32)spare - ((s32)list + i);
+        if (list->count != 0) {
             do {
-                h->e[sz].model->cmds += d;
+                list->e[sz].model->cmds += delta;
                 sz++;
-            } while (sz < h->count);
+            } while (sz < list->count);
         }
     }
-    tbl = mem_alloc_dbg(h->count * 4, 0, sStrTubegfxC, 0x524);
+    dls = mem_alloc_dbg(list->count * 4, 0, sStrTubegfxC, 0x524);
     prim_set_tex_mode_callback(animTex ? tube_tex_mode_callback : NULL);
     if (animTex && gAnimTexSet) {
         tube_init_tex_groups();
-        sTexSegListIndex = mem_alloc_dbg((h->count + 1) * 4, 0, sStrTubegfxC, 0x52E);
+        sTexSegListIndex = mem_alloc_dbg((list->count + 1) * 4, 0, sStrTubegfxC, 0x52E);
         sTexSegListCur = sTexSegList = (TexSegRef *)(gZBuffer + 0x1E000);
     }
-    for (i = 0; i < h->count; i++) {
+    for (i = 0; i < list->count; i++) {
         gPrimTexAlphaMode = -1;
-        t = mem_alloc_dbg((s32)prim_build_dl(flags | 1, h->e[i].model, sets, (Gfx *)gZBuffer) - gZBuffer, 0,
+        /* built once into the Z buffer to measure it */
+        dl = mem_alloc_dbg((s32)prim_build_dl(flags | PRIM_END_DL, list->e[i].model, sets, (Gfx *)gZBuffer) - gZBuffer, 0,
                           sStrTubegfxC, 0x541);
-        tbl[i] = t;
-        if (t == NULL) {
-            for (;;) {
+        dls[i] = dl;
+        if (dl == NULL) {
+            for (;;) { /* out of memory: hang */
             }
         }
         if (animTex && gAnimTexSet) {
@@ -683,7 +698,7 @@ Gfx **tube_build_dlists(TrackModelList *h, TexSet **sets, u32 flags, s32 animTex
             sTexSegCount = 0;
         }
         gPrimTexAlphaMode = -1;
-        prim_build_dl(flags | 1, h->e[i].model, sets, tbl[i]);
+        prim_build_dl(flags | PRIM_END_DL, list->e[i].model, sets, dls[i]);
         if (animTex && gAnimTexSet) {
             sTexSegListCur += sTexSegCount;
             prim_set_tex_addr_callback(NULL);
@@ -695,18 +710,18 @@ Gfx **tube_build_dlists(TrackModelList *h, TexSet **sets, u32 flags, s32 animTex
         sz = (s32)sTexSegListCur - (s32)sTexSegList;
         if (sz != 0) {
             sz *= 4;
-            nb = mem_alloc_dbg(sz, 0, sStrTubegfxC, 0x565);
-            memcpy(nb, sTexSegList, sz);
+            copy = mem_alloc_dbg(sz, 0, sStrTubegfxC, 0x565);
+            memcpy(copy, sTexSegList, sz);
             for (j = 0; j < (s32)i; j++) {
-                sTexSegListIndex[j] = nb + (((s32)sTexSegListIndex[j] - (s32)sTexSegList) >> 2);
+                sTexSegListIndex[j] = copy + (((s32)sTexSegListIndex[j] - (s32)sTexSegList) >> 2);
             }
-            sTexSegList = nb;
+            sTexSegList = copy;
         } else {
             sTexSegList = NULL;
         }
     }
     prim_set_tex_mode_callback(NULL);
-    return tbl;
+    return dls;
 }
 
 /* prim_build_dl's texture address callback while building the outdoor models: a texture of an animated group
@@ -718,15 +733,15 @@ void tube_remap_tex_addr(u32 *addr)
     s32 last;
     s32 k;
     u8 *pb;
-    u32 a;
+    u32 texAddr;
 
-    a = *addr;
+    texAddr = *addr;
     last = gAnimTexSet->count - 1;
-    if (((u32)gAnimTexSet->tex[0].data <= a) && (a <= (u32)gAnimTexSet->tex[last].data) && (-1 < last)) {
+    if (((u32)gAnimTexSet->tex[0].data <= texAddr) && (texAddr <= (u32)gAnimTexSet->tex[last].data) && (-1 < last)) {
         k = 0;
         row = gAnimTexSet;
         while (k <= last) {
-            if ((u32)row->tex[0].data == a) {
+            if ((u32)row->tex[0].data == texAddr) {
                 break;
             }
             k = k + 1;
@@ -742,7 +757,7 @@ void tube_remap_tex_addr(u32 *addr)
             }
             if (last == sTexSegCount) {
                 if (last <= 7) goto store;
-                do {
+                do { /* more than 8 animated textures in a model: hang */
                 } while (1);
 store:
                 /* the low bytes of the s32 entries */
@@ -765,7 +780,7 @@ void tube_init_tex_groups(void)
     sTexAnimGroupLen = sTexAnimGroupStart + gAnimTexSet->count;
     start = 0;
     for (i = 0; i < gAnimTexSet->count; i++) {
-        if (!(gAnimTexSet->tex[i].flags & 0x34)) {
+        if (!(gAnimTexSet->tex[i].flags & TEX_ANIM_RATE)) {
             for (k = start; k <= i; k++) {
                 sTexAnimGroupStart[k] = start;
                 sTexAnimGroupLen[k] = i - start + 1;
@@ -775,21 +790,23 @@ void tube_init_tex_groups(void)
     }
 }
 
+/* Loads the PVS resource and keeps the lists for one screen and for the number of players: per section, a count of
+   near and of far sections, then their indices (sPvsIndex points at each section's). */
 void tube_load_pvs(void)
 {
     s32 idx;
     s32 i;
     u32 j;
     s32 n;
-    s32 a, b;
+    s32 numFar, numOther;
     u8 *dst;
-    s32 *offs;
+    s32 *index;
     s32 sz;
-    s32 *q;
-    u16 *p;
+    s32 *entry;
+    u16 *data;
     s32 t1, t2;
 
-    while (sched_get_current_task() != 0) {
+    while (sched_get_current_task() != 0) { /* the Z buffer is free once the GPU is idle */
     }
     sPvsData = (u16 *)track_res_get(gGidVisInfo);
     if (gTrackSections->count != *sPvsData) {
@@ -797,19 +814,19 @@ void tube_load_pvs(void)
     }
     idx = 1;
     dst = gZBuffer;
-    offs = (s32 *)(gZBuffer + 0x1E000);
+    index = (s32 *)(gZBuffer + 0x1E000);
     for (i = 0; i < 4; i++) {
         for (j = 0; j < gTrackSections->count; j++) {
-            a = sPvsData[idx];
-            b = sPvsData[idx + 1];
+            numFar = sPvsData[idx];
+            numOther = sPvsData[idx + 1];
             if (i == 0 || i == gGame.numPlayers - 1) {
-                n = a + b;
-                *offs++ = dst - gZBuffer;
+                n = numFar + numOther;
+                *index++ = dst - gZBuffer;
                 memcpy(dst, (u16 *)((idx << 1) + (s32)sPvsData), (n + 2) * 2);
                 dst += n * 2 + 4;
             }
             t1 = idx + 2;
-            t2 = a + b;
+            t2 = numFar + numOther;
             idx = t1 + t2;
         }
     }
@@ -818,84 +835,88 @@ void tube_load_pvs(void)
     i = dst - gZBuffer;
     sPvsData = mem_alloc_dbg(i, idx, sStrTubegfxC, 0x61B);
     memcpy(sPvsData, gZBuffer, i);
-    i = (s32)offs + (-0x1E000 - (s32)gZBuffer);
+    i = (s32)index + (-0x1E000 - (s32)gZBuffer);
     sPvsIndex = mem_alloc_dbg(i, idx, sStrTubegfxC, 0x620);
     memcpy(sPvsIndex, gZBuffer + 0x1E000, i);
-    p = sPvsData;
-    q = (s32 *)sPvsIndex;
+    data = sPvsData;
+    entry = (s32 *)sPvsIndex;
     for (; idx < i / 4; idx++) {
-        *q++ += (s32)p;
+        *entry++ += (s32)data;
     }
 }
 
-typedef struct { u8 pad[0x58]; u16 a[4]; u16 b[4]; u8 rest[0xA0 - 0x68]; } Trk_7;
+/* gTracks as this file sees it: the fog range per number of screens */
+typedef struct { u8 pad[0x58]; u16 fogNear[4]; u16 fogFar[4]; u8 rest[0xA0 - 0x68]; } Trk_7;
 
 extern Trk_7 *gCurTrack_19;
 extern Trk_7 gTracks_8[];
 
-void tube_calc_fog_range(s32 a, s32 *b, s32 *c)
+/* A view's fog range: the track's, moved by the racing line's per-node offsets (interpolated along the camera's
+   segment). */
+void tube_calc_fog_range(s32 view, s32 *fogNear, s32 *fogFar)
 {
     f32 v[3];
-    s32 n;
-    f32 t, fa, fb, fx, fy;
-    s32 i, sh, sh4;
-    s32 a0, a1, b0, b1;
-    u32 w, w2;
-    PathNode *nd, *base;
-    s32 x, y, j, g;
+    s32 seg;
+    f32 t, nearT, farT, nearF, farF;
+    s32 shift, sh, shift4;
+    s32 nearOfs, farOfs, nearStep, farStep;
+    u32 range, nextRange;
+    PathNode *node, *nodes;
+    s32 near, far, j, screens;
 
-    v[0] = (f32)gCamPos[a].x / 1000.0f;
-    v[1] = (f32)gCamPos[a].y / 1000.0f;
-    v[2] = (f32)gCamPos[a].z / 1000.0f;
-    path_get_segment_and_t(v, &n, &t, gRiders[gCamTargets[a]].segment);
-    base = gPathNodes;
-    g = gNumScreens;
-    i = g - 1;
-    nd = (PathNode *)(n * sizeof(PathNode) + (u32)base);
-    j = nd->next;
-    if (i > 2) {
-        i = 2;
+    v[0] = (f32)gCamPos[view].x / 1000.0f;
+    v[1] = (f32)gCamPos[view].y / 1000.0f;
+    v[2] = (f32)gCamPos[view].z / 1000.0f;
+    path_get_segment_and_t(v, &seg, &t, gRiders[gCamTargets[view]].segment);
+    nodes = gPathNodes;
+    screens = gNumScreens;
+    shift = screens - 1;
+    node = (PathNode *)(seg * sizeof(PathNode) + (u32)nodes);
+    j = node->next;
+    if (shift > 2) {
+        shift = 2;
     }
-    i *= 8;
-    sh4 = i + 4;
-    w = nd->fogRange;
-    a0 = (w >> sh4) & 0xF;
-    if (a0 >= 8) a0 -= 16;
-    a1 = (w >> i) & 0xF;
-    if (a1 >= 8) a1 -= 16;
-    w2 = ((PathNode *)(j * sizeof(PathNode) + (u32)base))->fogRange;
-    b0 = (w2 >> sh4) & 0xF;
-    if (b0 >= 8) b0 -= 16;
-    b1 = (w2 >> i) & 0xF;
-    if (b1 >= 8) b1 -= 16;
-    b0 -= a0;
-    b0 *= 16;
-    b1 -= a1;
-    b1 *= 2;
-    fa = (f32)b0 * t;
-    fb = (f32)b1 * t;
-    a0 *= 16;
-    a1 *= 2;
-    fx = (f32)a0 + fa;
-    fy = (f32)a1 + fb;
-    x = (s32)fx;
-    y = (s32)fy;
-    x = gCurTrack_19->a[g - 1] - x;
-    y = gCurTrack_19->b[g - 1] - y;
-    if (y < x) {
-        x = y;
+    shift *= 8;
+    shift4 = shift + 4;
+    range = node->fogRange;
+    nearOfs = (range >> shift4) & 0xF;
+    if (nearOfs >= 8) nearOfs -= 16;
+    farOfs = (range >> shift) & 0xF;
+    if (farOfs >= 8) farOfs -= 16;
+    nextRange = ((PathNode *)(j * sizeof(PathNode) + (u32)nodes))->fogRange;
+    nearStep = (nextRange >> shift4) & 0xF;
+    if (nearStep >= 8) nearStep -= 16;
+    farStep = (nextRange >> shift) & 0xF;
+    if (farStep >= 8) farStep -= 16;
+    nearStep -= nearOfs;
+    nearStep *= 16;
+    farStep -= farOfs;
+    farStep *= 2;
+    nearT = (f32)nearStep * t;
+    farT = (f32)farStep * t;
+    nearOfs *= 16;
+    farOfs *= 2;
+    nearF = (f32)nearOfs + nearT;
+    farF = (f32)farOfs + farT;
+    near = (s32)nearF;
+    far = (s32)farF;
+    near = gCurTrack_19->fogNear[screens - 1] - near;
+    far = gCurTrack_19->fogFar[screens - 1] - far;
+    if (far < near) {
+        near = far;
     }
-    if (gCurTrack_19 - gTracks_8 == 8 && g == 1) {
-        x = 1000;
-        y = 0x41A;
+    if (gCurTrack_19 - gTracks_8 == TRACK_CONGO_COURSE && screens == 1) {
+        near = 1000;
+        far = 0x41A;
     }
-    *b = x;
-    *c = y;
+    *fogNear = near;
+    *fogFar = far;
 }
 
-/* G_MOVEWORD 0xDB, index 6 (segment table), offset seg*4 */
-Gfx *tube_draw(Gfx *gdl, s32 a, s32 b, s32 c) {
-    Gfx *q;
+/* Draws the near part of an outdoor track: the texture sets' palettes in segments 1-3, then the sections and
+   objects within the fog and beyond it. */
+Gfx *tube_draw(Gfx *gdl, s32 dyn, s32 fb, s32 view) {
+    Gfx *p;
 
     gSPSegment(gdl++, 1, gObjectTexSet->pal);
     if (gAltTexSet != NULL) {
@@ -904,35 +925,38 @@ Gfx *tube_draw(Gfx *gdl, s32 a, s32 b, s32 c) {
     if (gAnimTexSet != NULL) {
         gSPSegment(gdl++, 3, gAnimTexSet->pal);
     }
-    q = tube_draw_layer(gdl, a, b, c, 0);
-    return tube_draw_layer(q, a, b, c, 1);
+    p = tube_draw_layer(gdl, dyn, fb, view, 0);
+    return tube_draw_layer(p, dyn, fb, view, 1);
 }
 
-short *tube_alloc_mtx(s32 p1, s32 p2, s32 p3, s32 p4)
+/* A matrix of the frame's pool placing a model at (x, y, z) (16 mm units) relative to the view's camera, or NULL
+   when the pool is used up. */
+short *tube_alloc_mtx(s32 view, s32 x, s32 y, s32 z)
 {
-    short *r;
-    s32 n;
-    s32 t;
+    short *mtx;
+    s32 count;
+    s32 offset;
 
-    n = sTubeMtxCount;
-    if (n >= 300) {
+    count = sTubeMtxCount;
+    if (count >= TUBE_MTX_POOL) {
         return 0;
     }
-    p2 = p2 * 0x10 - gCamPos[p1].x;
-    p3 = p3 * 0x10 - gCamPos[p1].y;
-    p4 = p4 * 0x10 - gCamPos[p1].z;
-    t = n * 0x40;
-    r = (short *)((u8 *)sTubeMtxPool[gGfxFrameIndex] + t);
-    mtx_from_angles_pos_scale(r, 0, 0, 0, p2, p3, p4, 0x100);
+    x = x * 0x10 - gCamPos[view].x;
+    y = y * 0x10 - gCamPos[view].y;
+    z = z * 0x10 - gCamPos[view].z;
+    offset = count * sizeof(Mtx);
+    mtx = (short *)((u8 *)sTubeMtxPool[gGfxFrameIndex] + offset);
+    mtx_from_angles_pos_scale(mtx, 0, 0, 0, x, y, z, 0x100);
     sTubeMtxCount = sTubeMtxCount + 1;
-    return r;
+    return mtx;
 }
 
-Gfx *tube_set_anim_tex_segs(Gfx *gdl, s32 idx)
+/* Points segments 8 and up at the current frame of each animated texture the object uses. */
+Gfx *tube_set_anim_tex_segs(Gfx *gdl, s32 object)
 {
     if (gAnimTexSet != NULL && sTexSegListIndex != NULL) {
-        TexSegRef *cur = sTexSegListIndex[idx];
-        TexSegRef *end = sTexSegListIndex[idx + 1];
+        TexSegRef *cur = sTexSegListIndex[object];
+        TexSegRef *end = sTexSegListIndex[object + 1];
         s32 i;
 
         for (i = 0; cur != end; cur++, i++) {
@@ -942,6 +966,7 @@ Gfx *tube_set_anim_tex_segs(Gfx *gdl, s32 idx)
     return gdl;
 }
 
+/* Frees the animated texture segment lists. */
 void tube_free_tex_segs(void)
 {
     if (sTexSegList != 0) {
@@ -957,21 +982,21 @@ void tube_free_tex_segs(void)
 /* Shows the broken objects again. */
 void tube_reset_objects(void)
 {
-    TrackModelList *p = gTrackObjects;
-    TrackModelList *c;
+    TrackModelList *objects = gTrackObjects;
+    TrackModelList *list;
     u32 i = 0;
-    u32 *q;
-    u32 m;
+    u32 *flags;
+    u32 mask;
 
-    if (p->count != 0) {
-        m = 0xfffffff7;
-        c = p;
-        q = gObjectFlags;
+    if (objects->count != 0) {
+        mask = ~OBJ_HIDDEN;
+        list = objects;
+        flags = gObjectFlags;
         do {
             i++;
-            *q = *q & m;
-            q++;
-        } while (i < c->count);
+            *flags = *flags & mask;
+            flags++;
+        } while (i < list->count);
     }
     shatter_reset();
     remove_walls_reset();
@@ -990,15 +1015,16 @@ void tube_rotate_vertex_colors(TrackModelList *list)
     }
 }
 
+/* Every other frame: the next frame of the animated and the water textures. */
 void tube_animate_textures(void)
 {
     volatile s32 pad[10];
-    s32 v = gRaceFrame / 2;
-    if (v == sTexAnimTick) return;
-    sTexAnimTick = v;
+    s32 tick = gRaceFrame / 2;
+    if (tick == sTexAnimTick) return;
+    sTexAnimTick = tick;
     if (gPodiumMode != 0 && gDesaturation == 0x100) return;
     if (gAnimTexSet != 0) {
-        prim_animate_textures(gAnimTexSet, v);
+        prim_animate_textures(gAnimTexSet, tick);
     }
     if (gWaterTexSet != 0) {
         gPrimIATextures = 1;
@@ -1007,40 +1033,44 @@ void tube_animate_textures(void)
     }
 }
 
-void tube_spawn_splash(s32 param_1, s32 param_2, s32 param_3, s32 param_4)
+/* A big splash where a rider hit deep water, (x, y, z) in mm: 120 frames, drawn with the section under it. */
+void tube_spawn_splash(s32 rider, s32 x, s32 y, s32 z)
 {
-    if (sSplashTimer[param_1] == 0 && gRiders[param_1].frontWheel.groundArea >= 0) {
+    if (sSplashTimer[rider] == 0 && gRiders[rider].frontWheel.groundArea >= 0) {
         gGroundFound = 0;
-        height_get_ground(param_2, param_3, param_4);
-        if (gGroundFound != 0) sSplashSection[param_1] = gGroundArea;
-        else sSplashSection[param_1] = gRiderSection[param_1];
-        sSplashTimer[param_1] = 0x78;
-        sSplashPos[param_1].x = param_2 >> 4;
-        sSplashPos[param_1].y = param_3 >> 4;
-        sSplashPos[param_1].z = param_4 >> 4;
-        snd_play_rider_sfx(6, param_1, 0xff);
+        height_get_ground(x, y, z);
+        if (gGroundFound != 0) sSplashSection[rider] = gGroundArea;
+        else sSplashSection[rider] = gRiderSection[rider];
+        sSplashTimer[rider] = 120;
+        sSplashPos[rider].x = x >> 4;
+        sSplashPos[rider].y = y >> 4;
+        sSplashPos[rider].z = z >> 4;
+        snd_play_rider_sfx(6, rider, 0xff); /* the big splash sound */
     }
 }
 
+/* Counts the splashes down. */
 void tube_update_splashes(void)
 {
     s32 i;
-    s32 *p;
+    s32 *timer;
 
     i = 0;
-    p = sSplashTimer;
+    timer = sSplashTimer;
     do {
         i = i + 1;
-        if (*p != 0) {
-            *p = *p - 1;
+        if (*timer != 0) {
+            *timer = *timer - 1;
         }
-        p = p + 1;
+        timer = timer + 1;
     } while (i < 8);
 }
 
-Gfx *tube_tex_mode_callback(Gfx *gdl, s32 flag)
+/* prim_build_dl's texture mode callback: calls the render mode display list of segment 7 (cut-out) or 6
+   (opaque), which the drawing code points at the fogged or plain versions. */
+Gfx *tube_tex_mode_callback(Gfx *gdl, s32 cutout)
 {
-    if (flag) {
+    if (cutout) {
         gSPDisplayList(gdl++, 0x07000000);
     } else {
         gSPDisplayList(gdl++, 0x06000000);

@@ -1,50 +1,50 @@
 #include "game.h"
 
 /* The midpoint of the piece's longest edge (relative to the object's box centre). */
-s32 shatter_tri_longest_edge(ShatterPiece *t, s32 *outI, s32 *outN, s32 *ox, s32 *oy, s32 *oz)
+s32 shatter_tri_longest_edge(ShatterPiece *piece, s32 *outI, s32 *outN, s32 *ox, s32 *oy, s32 *oz)
 {
-    s32 i, n, d, best, bi;
+    s32 i, next, lenSq, bestLenSq, longest;
     s32 dx, dy, dz;
 
     for (i = 0; i < 3; i++) {
-        n = (i + 1) % 3;
-        dx = t->cx[n] - t->cx[i];
-        dy = t->cy[n] - t->cy[i];
-        dz = t->cz[n] - t->cz[i];
-        d = dx * dx + dy * dy + dz * dz;
-        if (d >= best || i == 0) {
-            best = d;
-            bi = i;
+        next = (i + 1) % 3;
+        dx = piece->cx[next] - piece->cx[i];
+        dy = piece->cy[next] - piece->cy[i];
+        dz = piece->cz[next] - piece->cz[i];
+        lenSq = dx * dx + dy * dy + dz * dz;
+        if (lenSq >= bestLenSq || i == 0) {
+            bestLenSq = lenSq;
+            longest = i;
         }
     }
-    n = (bi + 1) % 3;
-    *ox = (t->cx[bi] + t->cx[n]) / 2 + t->x;
-    *oy = (t->cy[bi] + t->cy[n]) / 2 + t->y;
-    *oz = (t->cz[bi] + t->cz[n]) / 2 + t->z;
-    *outI = bi;
-    *outN = n;
+    next = (longest + 1) % 3;
+    *ox = (piece->cx[longest] + piece->cx[next]) / 2 + piece->x;
+    *oy = (piece->cy[longest] + piece->cy[next]) / 2 + piece->y;
+    *oz = (piece->cz[longest] + piece->cz[next]) / 2 + piece->z;
+    *outI = longest;
+    *outN = next;
     return 0;
 }
 
 /* Splits every breakable object of the list into pieces, one per triangle of its model (whose vertices are three
    per triangle), and groups the triangles that share their longest edge's midpoint so they fly off together. */
-void shatter_init(TrackModelList *p)
+void shatter_init(TrackModelList *objects)
 {
     s32 x, y, z;
     s32 a, b;
     s32 i;
-    s32 j, k, m, cnt;
+    s32 j, k, m, groupSize;
     s32 vy;
-    ShatterObj *s;
-    ShatterObj *sp;
-    PrimModel *me;
-    TrackModel *e;
-    ShatterPiece *t;
+    ShatterObj *obj;
+    ShatterObj *objs;
+    PrimModel *model;
+    TrackModel *trackObj;
+    ShatterPiece *piece;
 
     j = 0;
-    sShatterModelList = p;
-    for (i = 0; i < p->count; i++) {
-        if (gObjectFlags[i] & 1) {
+    sShatterModelList = objects;
+    for (i = 0; i < objects->count; i++) {
+        if (gObjectFlags[i] & OBJ_BREAKABLE) {
             j++;
         }
     }
@@ -52,110 +52,114 @@ void shatter_init(TrackModelList *p)
     if (j == 0) {
         return;
     }
-    sp = sShatterObjects = mem_alloc_dbg(j * 0x30, 0, (s32)sStrShatterC, 0x74);
+    objs = sShatterObjects = mem_alloc_dbg(j * sizeof(ShatterObj), 0, (s32)sStrShatterC, 0x74);
     j = 0;
-    for (i = 0; i < p->count; i++) {
-        if (gObjectFlags[i] & 1) {
-            sp[j++].obj = &p->e[i];
+    for (i = 0; i < objects->count; i++) {
+        if (gObjectFlags[i] & OBJ_BREAKABLE) {
+            objs[j++].obj = &objects->e[i];
         }
     }
     for (i = 0; i < sShatterCount; i++) {
-        s = &sShatterObjects[i];
-        s->x0 = s->obj->x0;
-        e = s->obj;
-        s->x1 = e->x1;
-        s->z0 = e->z0;
-        s->z1 = e->z1;
-        x = s->z1 - s->z0;
-        z = s->x0 - s->x1;
+        obj = &sShatterObjects[i];
+        obj->x0 = obj->obj->x0;
+        trackObj = obj->obj;
+        obj->x1 = trackObj->x1;
+        obj->z0 = trackObj->z0;
+        obj->z1 = trackObj->z1;
+        /* the normal of the box's diagonal */
+        x = obj->z1 - obj->z0;
+        z = obj->x0 - obj->x1;
         y = isqrt_u32_2(x * x + z * z) + 1;
-        s->minY = 999999;
-        s->maxY = -999999;
-        s->nx = (x << 14) / y;
-        s->nz = (z << 14) / y;
+        obj->minY = 999999;
+        obj->maxY = -999999;
+        obj->nx = (x << 14) / y;
+        obj->nz = (z << 14) / y;
     }
     for (i = 0; i < sShatterCount; i++) {
-        s = &sShatterObjects[i];
-        me = s->obj->model;
-        s->numPieces = me->numVtx / 3;
-        s->pieces = mem_alloc_dbg(s->numPieces * 0x2C, 0, (s32)sStrShatterC, 0x96);
-        for (j = 0; j < s->numPieces; j++) {
+        obj = &sShatterObjects[i];
+        model = obj->obj->model;
+        obj->numPieces = model->numVtx / 3;
+        obj->pieces = mem_alloc_dbg(obj->numPieces * sizeof(ShatterPiece), 0, (s32)sStrShatterC, 0x96);
+        for (j = 0; j < obj->numPieces; j++) {
             x = y = z = 0;
             for (a = 0; a < 3; a++) {
-                vy = me->vtx[j * 3 + a].v.ob[1];
-                x += me->vtx[j * 3 + a].v.ob[0];
+                vy = model->vtx[j * 3 + a].v.ob[1];
+                x += model->vtx[j * 3 + a].v.ob[0];
                 y += vy;
-                z += me->vtx[j * 3 + a].v.ob[2];
-                if (s->maxY < vy) {
-                    s->maxY = vy;
+                z += model->vtx[j * 3 + a].v.ob[2];
+                if (obj->maxY < vy) {
+                    obj->maxY = vy;
                 }
-                if (vy < s->minY) {
-                    s->minY = vy;
+                if (vy < obj->minY) {
+                    obj->minY = vy;
                 }
             }
+            /* the triangle's centre, in 16 mm units (the vertices' are 16 times coarser) */
             x = (x * 16) / 3;
             y = (y * 16) / 3;
             z = (z * 16) / 3;
-            s->pieces[j].x = x;
-            s->pieces[j].y = y;
-            s->pieces[j].z = z;
-            s->pieces[j].homeX = s->pieces[j].x;
-            s->pieces[j].homeY = s->pieces[j].y;
-            s->pieces[j].homeZ = s->pieces[j].z;
+            obj->pieces[j].x = x;
+            obj->pieces[j].y = y;
+            obj->pieces[j].z = z;
+            obj->pieces[j].homeX = obj->pieces[j].x;
+            obj->pieces[j].homeY = obj->pieces[j].y;
+            obj->pieces[j].homeZ = obj->pieces[j].z;
             for (a = 0; a < 3; a++) {
-                s->pieces[j].cx[a] = me->vtx[j * 3 + a].v.ob[0] * 16 - x;
-                s->pieces[j].cy[a] = me->vtx[j * 3 + a].v.ob[1] * 16 - y;
-                s->pieces[j].cz[a] = me->vtx[j * 3 + a].v.ob[2] * 16 - z;
+                obj->pieces[j].cx[a] = model->vtx[j * 3 + a].v.ob[0] * 16 - x;
+                obj->pieces[j].cy[a] = model->vtx[j * 3 + a].v.ob[1] * 16 - y;
+                obj->pieces[j].cz[a] = model->vtx[j * 3 + a].v.ob[2] * 16 - z;
             }
         }
-        s->timer = -1;
+        obj->timer = -1;
     }
     for (i = 0; i < sShatterCount; i++) {
-        s = &sShatterObjects[i];
-        for (j = 0; j < s->numPieces; j += cnt) {
-            t = &s->pieces[j];
-            if (shatter_tri_longest_edge(t, &a, &b, &x, &y, &z) == 0) {
+        obj = &sShatterObjects[i];
+        for (j = 0; j < obj->numPieces; j += groupSize) {
+            piece = &obj->pieces[j];
+            if (shatter_tri_longest_edge(piece, &a, &b, &x, &y, &z) == 0) {
                 k = j + 1;
-                for (m = k; m < s->numPieces; m++) {
+                for (m = k; m < obj->numPieces; m++) {
                     s32 x2, y2, z2;
-                    ShatterPiece *u = &s->pieces[m];
+                    ShatterPiece *u = &obj->pieces[m];
                     if (shatter_tri_longest_edge(u, &a, &b, &x2, &y2, &z2) == 0 &&
                         x == x2 && y == y2 && z == z2) {
+                        /* move it next to the group, swapping pieces and vertices through the Z buffer */
                         __builtin_memcpy(gZBuffer, u, sizeof(ShatterPiece));
-                        __builtin_memcpy(u, &s->pieces[k], sizeof(ShatterPiece));
-                        __builtin_memcpy(&s->pieces[k], gZBuffer, sizeof(ShatterPiece));
-                        __builtin_memcpy(gZBuffer, &s->obj->model->vtx[m * 3], 0x30);
-                        __builtin_memcpy(&s->obj->model->vtx[m * 3], &s->obj->model->vtx[k * 3], 0x30);
-                        __builtin_memcpy(&s->obj->model->vtx[k * 3], gZBuffer, 0x30);
+                        __builtin_memcpy(u, &obj->pieces[k], sizeof(ShatterPiece));
+                        __builtin_memcpy(&obj->pieces[k], gZBuffer, sizeof(ShatterPiece));
+                        __builtin_memcpy(gZBuffer, &obj->obj->model->vtx[m * 3], 0x30);
+                        __builtin_memcpy(&obj->obj->model->vtx[m * 3], &obj->obj->model->vtx[k * 3], 0x30);
+                        __builtin_memcpy(&obj->obj->model->vtx[k * 3], gZBuffer, 0x30);
                         k++;
                     }
                 }
-                cnt = k - j;
-                if (cnt != 1) {
+                groupSize = k - j;
+                if (groupSize != 1) {
+                    /* the group turns about its common centre */
                     x = 0;
                     y = 0;
                     z = 0;
-                    for (a = 0; a < cnt; a++) {
-                        x += t[a].x;
-                        y += t[a].y;
-                        z += t[a].z;
+                    for (a = 0; a < groupSize; a++) {
+                        x += piece[a].x;
+                        y += piece[a].y;
+                        z += piece[a].z;
                     }
-                    x /= cnt;
-                    y /= cnt;
-                    z /= cnt;
-                    for (a = 0; a < cnt; a++) {
+                    x /= groupSize;
+                    y /= groupSize;
+                    z /= groupSize;
+                    for (a = 0; a < groupSize; a++) {
                         for (b = 0; b < 3; b++) {
-                            t[a].cx[b] += t[a].x;
-                            t[a].cy[b] += t[a].y;
-                            t[a].cz[b] += t[a].z;
+                            piece[a].cx[b] += piece[a].x;
+                            piece[a].cy[b] += piece[a].y;
+                            piece[a].cz[b] += piece[a].z;
                         }
-                        t[a].homeX = t[a].x = x;
-                        t[a].homeY = t[a].y = y;
-                        t[a].homeZ = t[a].z = z;
+                        piece[a].homeX = piece[a].x = x;
+                        piece[a].homeY = piece[a].y = y;
+                        piece[a].homeZ = piece[a].z = z;
                         for (b = 0; b < 3; b++) {
-                            t[a].cx[b] -= t[a].x;
-                            t[a].cy[b] -= t[a].y;
-                            t[a].cz[b] -= t[a].z;
+                            piece[a].cx[b] -= piece[a].x;
+                            piece[a].cy[b] -= piece[a].y;
+                            piece[a].cz[b] -= piece[a].z;
                         }
                     }
                 }
@@ -171,115 +175,120 @@ void shatter_update_pieces(void)
     s32 in[4];
     s32 out[4];
     s32 i, j, k;
-    ShatterObj *rec;
-    TrackModel *mdl;
-    ShatterPiece *p;
-    Vtx *v;
-    s32 ox, oz, h;
+    ShatterObj *obj;
+    TrackModel *trackObj;
+    ShatterPiece *piece;
+    Vtx *vtx;
+    s32 centerX, centerZ, addr;
     s16 z;
 
     for (i = 0; i < sShatterCount; i++) {
-        rec = &sShatterObjects[i];
-        if (rec->timer < 0) continue;
-        if (rec->timer >= 0xB5) continue;
-        mdl = rec->obj;
-        p = rec->pieces;
-        ox = (mdl->x0 + mdl->x1) * 8;
-        v = mdl->model->vtx;
-        oz = (mdl->z0 + mdl->z1) * 8;
-        for (j = 0; j < rec->numPieces; j++, p++, v += 3) {
-            if (p->bounces == 0) continue;
-            p->x += p->vx;
-            p->y += p->vy;
-            p->z += p->vz;
-            if (rec->timer > 0) {
-                k = height_get_ground(p->x + ox, p->y + 500, p->z + oz);
-                if (p->y < k) {
-                    p->y = k;
-                    p->vy = -(p->vy * 3) / 4;
-                    if (--p->bounces == 0) p->y = k - 5000;
+        obj = &sShatterObjects[i];
+        if (obj->timer < 0) continue;
+        if (obj->timer >= SHATTER_FRAMES) continue;
+        trackObj = obj->obj;
+        piece = obj->pieces;
+        /* the box's centre in mm */
+        centerX = (trackObj->x0 + trackObj->x1) * 8;
+        vtx = trackObj->model->vtx;
+        centerZ = (trackObj->z0 + trackObj->z1) * 8;
+        for (j = 0; j < obj->numPieces; j++, piece++, vtx += 3) {
+            if (piece->bounces == 0) continue;
+            piece->x += piece->vx;
+            piece->y += piece->vy;
+            piece->z += piece->vz;
+            if (obj->timer > 0) {
+                k = height_get_ground(piece->x + centerX, piece->y + 500, piece->z + centerZ);
+                if (piece->y < k) {
+                    piece->y = k;
+                    piece->vy = -(piece->vy * 3) / 4;
+                    if (--piece->bounces == 0) piece->y = k - 5000; /* sinks out of sight */
                 }
             }
-            p->vy -= 2;
-            mtx3i_from_angles(mtx, p->rx * rec->timer, p->ry * rec->timer, p->rz * rec->timer);
+            piece->vy -= 2;
+            mtx3i_from_angles(mtx, piece->rx * obj->timer, piece->ry * obj->timer, piece->rz * obj->timer);
             for (k = 0; k < 3; k++) {
-                in[0] = p->cx[k];
-                in[1] = p->cy[k];
-                in[2] = p->cz[k];
+                in[0] = piece->cx[k];
+                in[1] = piece->cy[k];
+                in[2] = piece->cz[k];
                 vec3i_mul_mtx3i(in, mtx, out);
-                v[k].v.ob[0] = (out[0] + p->x) >> 4;
-                v[k].v.ob[1] = (out[1] + p->y) >> 4;
-                v[k].v.ob[2] = (out[2] + p->z) >> 4;
+                vtx[k].v.ob[0] = (out[0] + piece->x) >> 4;
+                vtx[k].v.ob[1] = (out[1] + piece->y) >> 4;
+                vtx[k].v.ob[2] = (out[2] + piece->z) >> 4;
             }
         }
-        if (++rec->timer >= 0xB5) {
+        if (++obj->timer >= SHATTER_FRAMES) {
             /* hide the object: its index in the list */
-            h = (s32)rec->obj - 4;
-            j = (h - (s32)sShatterModelList) >> 5;
-            gObjectFlags[j] |= 8;
+            addr = (s32)obj->obj - 4;
+            j = (addr - (s32)sShatterModelList) >> 5;
+            gObjectFlags[j] |= OBJ_HIDDEN;
         }
     }
-    osWritebackDCache(0, 0x800000);
+    osWritebackDCache(0, 0x800000); /* all of RDRAM: the vertices the RSP reads */
 }
 
 /* Breaks a whole object (not one removed with walls) when a rider crosses its box's diagonal within its height. */
 void shatter_check_riders(void)
 {
-    s32 h, i, j, u, sel, x, y, z, dx, dy;
-    Rider *s;
-    ShatterObj *e;
-    ShatterPiece *it;
+    s32 addr, i, j, d, near, x, y, z, dx, dy;
+    Rider *rider;
+    ShatterObj *obj;
+    ShatterPiece *piece;
 
     for (i = 0; i < 8; i++) {
-        s = &gRiders[i];
-        if (s->inactive != 0) continue;
+        rider = &gRiders[i];
+        if (rider->inactive != 0) continue;
         for (j = 0; j < sShatterCount; j++) {
-            e = &sShatterObjects[j];
-            if (e->timer < 0 && (h = (s32)e->obj - 4, !(gObjectFlags[(h - (s32)gTrackObjects) >> 5] & 6))) {
-                x = (s32)(s->bike.pos.x * 1000.0f) >> 4;
-                y = (s32)(s->bike.pos.z * 1000.0f) >> 4;
-                u = (x - e->x0) * e->nx + (y - e->z0) * e->nz;
-                u >>= 14;
-                z = (s32)(s->bike.pos.y * 1000.0f) >> 4;
-                if (e->x1 - e->x0 < 30 && e->z1 - e->z0 < 30) {
-                    sel = (u32)(u + 30) < 61;
+            obj = &sShatterObjects[j];
+            if (obj->timer < 0 &&
+                (addr = (s32)obj->obj - 4, !(gObjectFlags[(addr - (s32)gTrackObjects) >> 5] & OBJ_WALL_GROUP))) {
+                /* the bike in 16 mm units, and its distance d from the diagonal */
+                x = (s32)(rider->bike.pos.x * 1000.0f) >> 4;
+                y = (s32)(rider->bike.pos.z * 1000.0f) >> 4;
+                d = (x - obj->x0) * obj->nx + (y - obj->z0) * obj->nz;
+                d >>= 14;
+                z = (s32)(rider->bike.pos.y * 1000.0f) >> 4;
+                /* within 30 units of a small object's diagonal, 100 of a large one's */
+                if (obj->x1 - obj->x0 < 30 && obj->z1 - obj->z0 < 30) {
+                    near = (u32)(d + 30) < 61;
                 } else {
-                    sel = (u32)(u + 100) < 201;
+                    near = (u32)(d + 100) < 201;
                 }
-                if (sel) {
-                    u = e->x1 - e->x0;
-                    if (u < 0) u = -u;
-                    dy = e->z1 - e->z0;
+                if (near) {
+                    d = obj->x1 - obj->x0;
+                    if (d < 0) d = -d;
+                    dy = obj->z1 - obj->z0;
                     if (dy < 0) dy = -dy;
-                    if (dy < u) {
-                        if (x < e->x1 && x < e->x0) continue;
-                        if (e->x1 < x && e->x0 < x) continue;
+                    if (dy < d) {
+                        if (x < obj->x1 && x < obj->x0) continue;
+                        if (obj->x1 < x && obj->x0 < x) continue;
                     } else {
-                        if (y < e->z1 && y < e->z0) continue;
-                        if (e->z1 < y && e->z0 < y) continue;
+                        if (y < obj->z1 && y < obj->z0) continue;
+                        if (obj->z1 < y && obj->z0 < y) continue;
                     }
-                    if (z < e->minY - 50) continue;
-                    if (e->maxY + 50 < z) continue;
-                    snd_play_rider_sfx(4, i, 0xFF);
-                    e->timer = 0;
-                    for (u = 0; u < e->numPieces; u++) {
-                        it = &e->pieces[u];
-                        if (u & 1) {
-                            it->bounces = 3;
-                            it->vx = it[-1].vx;
-                            it->vy = it[-1].vy;
-                            it->vz = it[-1].vz;
-                            it->rx = it[-1].rx;
-                            it->ry = it[-1].ry;
-                            it->rz = it[-1].rz;
+                    if (z < obj->minY - 50) continue;
+                    if (obj->maxY + 50 < z) continue;
+                    snd_play_rider_sfx(4, i, 0xFF); /* the impact sound */
+                    obj->timer = 0;
+                    for (d = 0; d < obj->numPieces; d++) {
+                        piece = &obj->pieces[d];
+                        if (d & 1) {
+                            piece->bounces = 3;
+                            piece->vx = piece[-1].vx;
+                            piece->vy = piece[-1].vy;
+                            piece->vz = piece[-1].vz;
+                            piece->rx = piece[-1].rx;
+                            piece->ry = piece[-1].ry;
+                            piece->rz = piece[-1].rz;
                         } else {
-                            it->vx = (s32)((s->bike.vel.x * 1000.0f) / 60.0f);
-                            it->vy = (s32)((s->bike.vel.y * 1000.0f) / 60.0f);
-                            it->vz = (s32)((s->bike.vel.z * 1000.0f) / 60.0f);
-                            it->rx = (random_byte() - 0x80) * 4;
-                            it->ry = (random_byte() - 0x80) * 5;
-                            it->rz = (random_byte() - 0x80) * 2;
-                            it->bounces = 3;
+                            /* the bike's velocity per frame, a random spin */
+                            piece->vx = (s32)((rider->bike.vel.x * 1000.0f) / 60.0f);
+                            piece->vy = (s32)((rider->bike.vel.y * 1000.0f) / 60.0f);
+                            piece->vz = (s32)((rider->bike.vel.z * 1000.0f) / 60.0f);
+                            piece->rx = (random_byte() - 0x80) * 4;
+                            piece->ry = (random_byte() - 0x80) * 5;
+                            piece->rz = (random_byte() - 0x80) * 2;
+                            piece->bounces = 3;
                         }
                     }
                 }
@@ -290,65 +299,65 @@ void shatter_check_riders(void)
 
 /* Breaks object index of gTrackObjects (remove.c): its pieces fly off at random. */
 void shatter_break_object(s32 index) {
-    ShatterObj *ent;
-    ShatterObj *p;
-    s32 cnt;
-    s32 key;
+    ShatterObj *obj;
+    ShatterObj *cur;
+    s32 count;
+    s32 target;
     s32 i;
-    s32 uVar5;
-    s32 off;
-    u8 *rec; /* a ShatterPiece; written as u16 halves */
-    s32 t;
-    s32 n2;
+    s32 j;
+    s32 offset;
+    u8 *piece; /* a ShatterPiece; its fields written as u16 to match */
+    s32 total;
+    s32 numPieces;
 
-    t = sShatterCount;
+    total = sShatterCount;
     i = 0;
-    if (t > 0) {
-        cnt = t;
-        p = sShatterObjects;
-        key = (s32)&gTrackObjects->e[index];
+    if (total > 0) {
+        count = total;
+        cur = sShatterObjects;
+        target = (s32)&gTrackObjects->e[index];
     loop:
-        ent = p;
-        if ((s32)ent->obj == key) {
+        obj = cur;
+        if ((s32)obj->obj == target) {
             goto chk;
         }
         i++;
-        p = ent + 1;
-        if (i < cnt) {
+        cur = obj + 1;
+        if (i < count) {
             goto loop;
         }
     }
 chk:
-    uVar5 = 0;
+    j = 0;
     if (i != sShatterCount) {
-        ent->timer = 0;
-        if (ent->numPieces > 0) {
-            off = 0;
+        obj->timer = 0;
+        if (obj->numPieces > 0) {
+            offset = 0;
             do {
-                rec = (u8 *)ent->pieces + off;
-                ((ShatterPiece *)rec)->bounces = 3;
-                if ((uVar5 & 1) != 0) {
+                piece = (u8 *)obj->pieces + offset;
+                ((ShatterPiece *)piece)->bounces = 3;
+                if ((j & 1) != 0) {
                     /* the same motion as the previous piece */
-                    *(u16 *)&((ShatterPiece *)rec)->vx = *(u16 *)&((ShatterPiece *)rec)[-1].vx;
-                    *(u16 *)&((ShatterPiece *)rec)->vy = *(u16 *)&((ShatterPiece *)rec)[-1].vy;
-                    *(u16 *)&((ShatterPiece *)rec)->vz = *(u16 *)&((ShatterPiece *)rec)[-1].vz;
-                    *(u16 *)&((ShatterPiece *)rec)->rx = *(u16 *)&((ShatterPiece *)rec)[-1].rx;
-                    *(u16 *)&((ShatterPiece *)rec)->ry = *(u16 *)&((ShatterPiece *)rec)[-1].ry;
-                    *(u16 *)&((ShatterPiece *)rec)->rz = *(u16 *)&((ShatterPiece *)rec)[-1].rz;
+                    *(u16 *)&((ShatterPiece *)piece)->vx = *(u16 *)&((ShatterPiece *)piece)[-1].vx;
+                    *(u16 *)&((ShatterPiece *)piece)->vy = *(u16 *)&((ShatterPiece *)piece)[-1].vy;
+                    *(u16 *)&((ShatterPiece *)piece)->vz = *(u16 *)&((ShatterPiece *)piece)[-1].vz;
+                    *(u16 *)&((ShatterPiece *)piece)->rx = *(u16 *)&((ShatterPiece *)piece)[-1].rx;
+                    *(u16 *)&((ShatterPiece *)piece)->ry = *(u16 *)&((ShatterPiece *)piece)[-1].ry;
+                    *(u16 *)&((ShatterPiece *)piece)->rz = *(u16 *)&((ShatterPiece *)piece)[-1].rz;
                 } else {
-                    *(u16 *)&((ShatterPiece *)rec)->vx = 0;
-                    *(u16 *)&((ShatterPiece *)rec)->vy = 0;
-                    *(u16 *)&((ShatterPiece *)rec)->vz = 0;
-                    *(u16 *)&((ShatterPiece *)rec)->vx = *(u16 *)&((ShatterPiece *)rec)->vx + ((s32)random_byte() - 0x80) / 2;
-                    *(u16 *)&((ShatterPiece *)rec)->vy = *(u16 *)&((ShatterPiece *)rec)->vy + (((s32)random_byte() - 0x80) >> 2) / 2;
-                    *(u16 *)&((ShatterPiece *)rec)->vz = *(u16 *)&((ShatterPiece *)rec)->vz + ((s32)random_byte() - 0x80) / 2;
-                    *(u16 *)&((ShatterPiece *)rec)->rx = ((s32)random_byte() - 0x80) * 4;
-                    *(u16 *)&((ShatterPiece *)rec)->ry = ((s32)random_byte() - 0x80) * 5;
-                    *(u16 *)&((ShatterPiece *)rec)->rz = ((s32)random_byte() - 0x80) * 2;
+                    *(u16 *)&((ShatterPiece *)piece)->vx = 0;
+                    *(u16 *)&((ShatterPiece *)piece)->vy = 0;
+                    *(u16 *)&((ShatterPiece *)piece)->vz = 0;
+                    *(u16 *)&((ShatterPiece *)piece)->vx = *(u16 *)&((ShatterPiece *)piece)->vx + ((s32)random_byte() - 0x80) / 2;
+                    *(u16 *)&((ShatterPiece *)piece)->vy = *(u16 *)&((ShatterPiece *)piece)->vy + (((s32)random_byte() - 0x80) >> 2) / 2;
+                    *(u16 *)&((ShatterPiece *)piece)->vz = *(u16 *)&((ShatterPiece *)piece)->vz + ((s32)random_byte() - 0x80) / 2;
+                    *(u16 *)&((ShatterPiece *)piece)->rx = ((s32)random_byte() - 0x80) * 4;
+                    *(u16 *)&((ShatterPiece *)piece)->ry = ((s32)random_byte() - 0x80) * 5;
+                    *(u16 *)&((ShatterPiece *)piece)->rz = ((s32)random_byte() - 0x80) * 2;
                 }
-                n2 = ent->numPieces;
-                off += 0x2C;
-            } while ((s32)(++uVar5) < n2);
+                numPieces = obj->numPieces;
+                offset += sizeof(ShatterPiece);
+            } while ((s32)(++j) < numPieces);
         }
     }
 }
@@ -356,42 +365,43 @@ chk:
 /* Puts the broken objects back together. */
 void shatter_reset(void)
 {
-    s32 n;
-    s32 nt;
-    s32 m;
-    ShatterObj *base;
+    s32 count;
+    s32 total;
+    s32 whole;
+    ShatterObj *objs;
     s32 i, j, k;
-    ShatterObj *r;
-    ShatterPiece *s;
-    Vtx *v;
+    ShatterObj *obj;
+    ShatterPiece *piece;
+    Vtx *vtx;
 
-    nt = sShatterCount;
+    total = sShatterCount;
     i = 0;
-    if (nt > 0) {
-    m = -1;
-    n = nt;
-    base = sShatterObjects;
+    if (total > 0) {
+    whole = -1;
+    count = total;
+    objs = sShatterObjects;
     do {
-        r = &base[i];
-        s = r->pieces;
-        r->timer = m;
-        v = r->obj->model->vtx;
-        for (j = 0; j < r->numPieces; j++, s++, v += 3) {
-            s->x = s->homeX;
-            s->y = s->homeY;
-            s->z = s->homeZ;
+        obj = &objs[i];
+        piece = obj->pieces;
+        obj->timer = whole;
+        vtx = obj->obj->model->vtx;
+        for (j = 0; j < obj->numPieces; j++, piece++, vtx += 3) {
+            piece->x = piece->homeX;
+            piece->y = piece->homeY;
+            piece->z = piece->homeZ;
             for (k = 0; k < 3; k++) {
-                v[k].v.ob[0] = (s->cx[k] + s->x) >> 4;
-                v[k].v.ob[1] = (s->cy[k] + s->y) >> 4;
-                v[k].v.ob[2] = (s->cz[k] + s->z) >> 4;
+                vtx[k].v.ob[0] = (piece->cx[k] + piece->x) >> 4;
+                vtx[k].v.ob[1] = (piece->cy[k] + piece->y) >> 4;
+                vtx[k].v.ob[2] = (piece->cz[k] + piece->z) >> 4;
             }
         }
         i++;
-    } while (i < n);
+    } while (i < count);
     }
     osWritebackDCache(0, 0x800000);
 }
 
+/* Frees the pieces and the objects. */
 void shatter_free(void)
 {
     s32 i;
@@ -405,6 +415,7 @@ void shatter_free(void)
     }
 }
 
+/* A frame: riders break objects, the pieces move. */
 void shatter_update(void)
 {
     shatter_check_riders();

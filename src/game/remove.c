@@ -2,25 +2,25 @@
 
 /* Groups the objects whose flags (bits 1-2) name a wall group with the wall edges of that group (edge flags
    bits 3-4). */
-void remove_walls_init(TrackModelList *m, WallMesh *o)
+void remove_walls_init(TrackModelList *objects, WallMesh *walls)
 {
-    s32 i, j, k;
+    s32 i, j, edge;
     RemoveGroup *e;
 
     sRemoveGroupCount = 0;
-    for (i = 0; i < m->count; i++) {
-        if (m->e[i].mask & 6) {
+    for (i = 0; i < objects->count; i++) {
+        if (objects->e[i].mask & OBJ_WALL_GROUP) {
             sRemoveGroups[sRemoveGroupCount].objIndex = i;
-            sRemoveGroups[sRemoveGroupCount].flags = m->e[i].mask;
-            sRemoveGroups[sRemoveGroupCount++].id = (m->e[i].mask >> 1) & 3;
+            sRemoveGroups[sRemoveGroupCount].flags = objects->e[i].mask;
+            sRemoveGroups[sRemoveGroupCount++].id = (objects->e[i].mask >> 1) & 3;
         }
     }
     if (sRemoveGroupCount == 0) return;
     for (i = 0; i < sRemoveGroupCount; i++) {
         sRemoveGroups[i].count = 0;
     }
-    for (k = 0; k < o->numEdges; k++) {
-        i = (gWallEdgeFlags[k] >> 3) & 3;
+    for (edge = 0; edge < walls->numEdges; edge++) {
+        i = WALL_EDGE_GROUP(gWallEdgeFlags[edge]);
         if (i) {
             for (j = 0; j < sRemoveGroupCount; j++) {
                 if (sRemoveGroups[j].id == i) break;
@@ -34,13 +34,13 @@ void remove_walls_init(TrackModelList *m, WallMesh *o)
             sRemoveGroups[i].count = 0;
         }
     }
-    for (k = 0; k < o->numEdges; k++) {
-        i = (gWallEdgeFlags[k] >> 3) & 3;
+    for (edge = 0; edge < walls->numEdges; edge++) {
+        i = WALL_EDGE_GROUP(gWallEdgeFlags[edge]);
         if (i) {
             for (j = 0; j < sRemoveGroupCount; j++) {
                 if (sRemoveGroups[j].id == i) break;
             }
-            sRemoveGroups[j].edges[sRemoveGroups[j].count++] = k;
+            sRemoveGroups[j].edges[sRemoveGroups[j].count++] = edge;
         }
     }
 }
@@ -58,17 +58,18 @@ void remove_walls_trigger(s32 id)
     }
     if (i != sRemoveGroupCount) {
         for (k = 0; k < sRemoveGroups[i].count; k++) {
-            gWallEdgeFlags[sRemoveGroups[i].edges[k]] |= 0x20;
+            gWallEdgeFlags[sRemoveGroups[i].edges[k]] |= WALL_EDGE_REMOVED;
         }
         k = sRemoveGroups[i].objIndex;
-        if (gObjectFlags[k] & 1) {
+        if (gObjectFlags[k] & OBJ_BREAKABLE) {
             shatter_break_object(k);
         } else {
-            gObjectFlags[k] |= 8;
+            gObjectFlags[k] |= OBJ_HIDDEN;
         }
     }
 }
 
+/* Frees the groups' edge lists. */
 void remove_walls_free(void)
 {
     s32 i = 0;
@@ -87,10 +88,10 @@ void remove_walls_reset(void) {
     s32 i;
     s32 j;
     for (i = 0; i < sRemoveGroupCount; i++) {
-        RemoveGroup *e = &sRemoveGroups[i];
-        for (j = 0; j < e->count; j++) {
-            u8 *b = gWallEdgeFlags + e->edges[j];
-            *b &= 0xDF;
+        RemoveGroup *group = &sRemoveGroups[i];
+        for (j = 0; j < group->count; j++) {
+            u8 *flags = gWallEdgeFlags + group->edges[j];
+            *flags &= ~WALL_EDGE_REMOVED;
         }
     }
 }

@@ -5,6 +5,18 @@
 #include "common.h"
 #include "structs/model.h"
 
+/* The terrain: gDesertHeightMap, 512x512 cells of 2000 mm in a 4x4 window of tiles of 128x128 cells. A cell holds
+   the height / 64 mm, stored + 0x80 (read back as a signed byte). */
+#define DESERT_MAP_SIZE   512
+#define DESERT_TILE_CELLS 128
+#define DESERT_NUM_TILES  16
+#define DESERT_CELL_MM    2000
+#define DESERT_TILE_MM    256000 /* DESERT_TILE_CELLS * DESERT_CELL_MM */
+#define DESERT_TILE_OBJS  8      /* objects per tile */
+
+/* DesertObj.kind */
+#define DESERT_OBJ_CAMPFIRE 2 /* 0 and 1 are scenery */
+
 /* An object standing on the desert, in mm: scenery placed at random on each tile, or a campfire. height.c copies the
    ones near a bike into sDesertObjs and pushes the bikes out of their boxes. */
 typedef struct DesertObj {
@@ -40,8 +52,11 @@ typedef struct DesertTile {
     /* 0x318 */ s32 smoothCur;   /* which of smooth[] is the current row */
     /* 0x31C */ u8 *map;         /* the tile's first cell in gDesertHeightMap (rows of 512) */
     /* 0x320 */ s32 numObjs;
-    /* 0x324 */ DesertObj objs[8];
+    /* 0x324 */ DesertObj objs[DESERT_TILE_OBJS];
 } DesertTile; /* size 0x404 */
+
+/* The desert's checkpoints (sDesertCheckpoints, in metres), a lap of them; a campfire burns at each. */
+#define DESERT_NUM_CHECKPOINTS 10
 
 /* A campfire, one at each of the ten checkpoints (desert_export_checkpoints), in mm. fractal_place_objects puts it
    on the ground of its tile. */
@@ -56,6 +71,13 @@ typedef struct DesObjModel {
     /* 0x00 */ s32 *res;    /* resource ids; the first is loaded */
     /* 0x04 */ PrimModel *model;
 } DesObjModel; /* size 0x8 */
+
+/* desgfx.c's patch cache */
+#define DES_NUM_PATCHES 250
+#define DES_NUM_RINGS   3      /* of detail: ring r has patches of 1 << r cells */
+#define DES_GRID_SIZE   32     /* patches per side of a ring (sDesPatchGrid) */
+#define DES_BLOCK_MM    128000 /* a block, the unit of the patches' matrices: 8000 units of 16 mm */
+#define DES_MAX_OBJECTS 16     /* objects drawn (sDesObjects) */
 
 /* A cached patch of the desert ground: 5x5 vertices, every 1 << lod cells of the height map. 250 of them serve the
    three rings of sDesPatchGrid (32x32 patches each, 500 << lod units apart); a patch not used for two frames is

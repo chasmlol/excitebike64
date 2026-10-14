@@ -1,63 +1,68 @@
 #include "game.h"
 
+/* Blizzard Blitz with one view: allocates the 128 snowflakes and scatters them ahead of the camera. */
 void snow_init(void)
 {
     s32 i;
 
-    if (gCurTrack_2 - gTracks == 0x13 && gNumViews == 1) {
-        sSnowflakes = mem_alloc_dbg(0xE00, 0, (s32)sStrSnowC, 0x6B);
+    if (gCurTrack_2 - gTracks == TRACK_BLIZZARD_BLITZ && gNumViews == 1) {
+        sSnowflakes = mem_alloc_dbg(SNOW_NUM_FLAKES * sizeof(Snowflake), 0, (s32)sStrSnowC, 0x6B);
         sSnowTextures = (TexSet *)res_load(gResourceSet, sSnowTexResId);
-        for (i = 0; i < 0x80; i++) {
+        for (i = 0; i < SNOW_NUM_FLAKES; i++) {
             snow_respawn_flake(&sSnowflakes[i]);
         }
         sSnowSplatTimer = 0;
     }
 }
 
-Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2)
+/* Draws the flakes as textured rectangles (smaller and fainter with distance, with a sine wobble) and, while its
+   timer runs, the flake splatted on the lens. dyn is the frame's matrices (Dyn). */
+Gfx *snow_draw(Gfx *gdl, s32 dyn, s32 unused)
 {
-    Snowflake *p;
-    s32 i, cx, cy, s, x, y, z, a, r;
+    Snowflake *flakes;
+    s32 i, halfW, halfH, wobble, x, y, z, alpha, radius;
 
-    p = sSnowflakes;
-    if (p == NULL) {
+    flakes = sSnowflakes;
+    if (flakes == NULL) {
         return gdl;
     }
     gDPPipeSync(gdl++);
     gSPSetOtherMode(gdl++, G_SETOTHERMODE_L, G_MDSFT_RENDERMODE, 29, 0x404240);
     gDPSetCombine(gdl++, 0xFF97FF, 0xFF2DFEFF);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
+    /* gDPSetTextureLUT(G_TT_NONE) and gDPSetTexturePersp(G_TP_NONE): w1 is 0, written as an expression of the
+       packet's address in the original */
     { Gfx *g = gdl++; g->words.w0 = 0xE3000C00; g->words.w1 = ((u32)g & 1) >> 1; }
     { Gfx *g = gdl++; g->words.w0 = 0xE3001001; g->words.w1 = ((u32)g & 1) >> 1; }
     {
         s32 w = gScreenWidth;
         s32 h = gScreenHeight;
-        cx = w / 2;
-        cy = h / 2;
+        halfW = w / 2;
+        halfH = h / 2;
     }
     gDPLoadTextureBlock(gdl++, sSnowTextures->tex[1].data, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 8, 0,
                         G_TX_CLAMP, G_TX_CLAMP, 3, 3, G_TX_NOLOD, G_TX_NOLOD);
-    for (i = 0; i < 0x80; i++) {
-        if (p[i].visible != 0) {
-            s = gCosTable[(((gRaceFrame & 0xFFFFFF) * 256 + i * 512) >> 4) & 0xFFF] / 2;
-            z = p[i].z;
-            x = p[i].x + s;
-            x = cx + x * cx / z;
-            y = p[i].y + s;
-            y = cy - y * cy / z;
-            a = 0xFF - (z >> 8);
-            if (a < 0x20) {
-                a = 0x20;
+    for (i = 0; i < SNOW_NUM_FLAKES; i++) {
+        if (flakes[i].visible != 0) {
+            wobble = gCosTable[(((gRaceFrame & 0xFFFFFF) * 256 + i * 512) >> 4) & 0xFFF] / 2;
+            z = flakes[i].z;
+            x = flakes[i].x + wobble;
+            x = halfW + x * halfW / z;
+            y = flakes[i].y + wobble;
+            y = halfH - y * halfH / z;
+            alpha = 0xFF - (z >> 8);
+            if (alpha < 0x20) {
+                alpha = 0x20;
             }
-            r = 0x80 / (z >> 8);
-            r = (r >> 1) + 1;
-            if (r > 4) {
-                r = 4;
+            radius = 0x80 / (z >> 8);
+            radius = (radius >> 1) + 1;
+            if (radius > 4) {
+                radius = 4;
             }
             gDPPipeSync(gdl++);
-            gDPSetColor(gdl++, G_SETPRIMCOLOR, a | 0xFFFFFF00);
-            gSPTextureRectangle(gdl++, (x - r) << 2, (y - r) << 2, (x + r) << 2, (y + r) << 2,
-                                G_TX_RENDERTILE, 0, 0, sSnowflakeTexScale[r].b, sSnowflakeTexScale[r].b);
+            gDPSetColor(gdl++, G_SETPRIMCOLOR, alpha | 0xFFFFFF00);
+            gSPTextureRectangle(gdl++, (x - radius) << 2, (y - radius) << 2, (x + radius) << 2, (y + radius) << 2,
+                                G_TX_RENDERTILE, 0, 0, sSnowflakeTexScale[radius].b, sSnowflakeTexScale[radius].b);
         }
     }
     if (sSnowSplatTimer != 0) {
@@ -67,7 +72,8 @@ Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2)
                             G_TX_CLAMP, G_TX_CLAMP, 8, 8, G_TX_NOLOD, G_TX_NOLOD);
         gDPPipeSync(gdl++);
         gDPSetTexturePersp(gdl++, G_TP_PERSP);
-        gSPMatrix(gdl++, mtx + 0x300, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+        /* Dyn.m3, the orthographic projection */
+        gSPMatrix(gdl++, dyn + 0x300, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
         gSPVertex(gdl++, sSnowSplatVtx, 4, 0);
         gSP2Triangles(gdl++, 0, 2, 1, 0, 0, 3, 2, 0);
     }
@@ -75,66 +81,69 @@ Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2)
     return gdl;
 }
 
-static inline void respawn(Snowflake *p, s32 k) {
-    if (gCamSegFlags[0] & 0x40) {
-        p->visible = 0;
+/* snow_respawn_flake written inline (snow_update's copy) */
+static inline void respawn(Snowflake *flake, s32 index) {
+    if (gCamSegFlags[0] & CAM_SEG_COVERED) {
+        flake->visible = 0;
     } else {
-        p->visible = 1;
+        flake->visible = 1;
     }
-    p->z = random_byte() * 192 + 0x4000;
-    p->x = ((s32)random_byte() - 128) * p->z / 128;
+    flake->z = random_byte() * 192 + 0x4000;
+    flake->x = ((s32)random_byte() - 128) * flake->z / 128;
     if (random_byte() & 1) {
-        p->y = ((s32)random_byte() - 128) * p->z / 256;
+        flake->y = ((s32)random_byte() - 128) * flake->z / 256;
     } else {
-        p->y = p->z;
+        flake->y = flake->z;
     }
-    p->fallSpeed = random_byte() + 0x100;
+    flake->fallSpeed = random_byte() + 0x100;
 }
 
+/* Moves the flakes against the camera's motion and turn, respawns those that leave the view and, when one hits
+   the lens, starts the splat at its screen position. */
 void snow_update(void) {
-    s32 dx, dz, ang, s, c;
-    s32 mx, mz, rot, dy, ny;
+    s32 moveX, moveZ, yaw, cosYaw, sinYaw;
+    s32 sideMove, fwdMove, yawDelta, moveY, liftY;
     s32 i;
-    s32 x, y, z, sx, sy, hw, hh;
-    s32 a, t3, t2;
+    s32 x, y, z, screenX, screenY, halfW, halfH;
+    s32 a, cornerX, cornerY;
     s32 w, h;
 
     if (sSnowflakes == NULL || gPauseMenu != 0 || (gPodiumMode != 0 && gDesaturation == 0x100)) {
         return;
     }
-    dz = gCamPos[0].z - sSnowLastCamPos.z;
-    ang = -gCamYaw[0] >> 4;
-    s = gCosTable[ang & 0xFFF];
-    c = gCosTable[(ang - 0x400) & 0xFFF];
-    dx = gCamPos[0].x - sSnowLastCamPos.x;
+    moveZ = gCamPos[0].z - sSnowLastCamPos.z;
+    yaw = -gCamYaw[0] >> 4;
+    cosYaw = gCosTable[yaw & 0xFFF];
+    sinYaw = gCosTable[(yaw - 0x400) & 0xFFF];
+    moveX = gCamPos[0].x - sSnowLastCamPos.x;
     sSnowSplatX = -1;
-    dy = gCamPos[0].y - sSnowLastCamPos.y;
-    mz = (s * dz + c * dx) >> 14;
-    mx = (c * dz - s * dx) >> 14;
-    rot = (gCamYaw[0] - sSnowLastCamYaw) / 64;
+    moveY = gCamPos[0].y - sSnowLastCamPos.y;
+    fwdMove = (cosYaw * moveZ + sinYaw * moveX) >> 14;
+    sideMove = (sinYaw * moveZ - cosYaw * moveX) >> 14;
+    yawDelta = (gCamYaw[0] - sSnowLastCamYaw) / 64;
     i = 0;
-    ny = -dy * 3;
+    liftY = -moveY * 3;
     sSnowLastCamPos.x = gCamPos[0].x;
     sSnowLastCamPos.y = gCamPos[0].y;
     sSnowLastCamPos.z = gCamPos[0].z;
     sSnowLastCamYaw = gCamYaw[0];
     h = gScreenHeight;
-    for (; i < 128; i++) {
-        { s32 t = sSnowflakes[i].z; sSnowflakes[i].z = t - mz * 3; }
-        sSnowflakes[i].y += ny - sSnowflakes[i].fallSpeed;
-        { s32 t = sSnowflakes[i].x; sSnowflakes[i].x = t + mx * 3; }
-        sSnowflakes[i].x += rot * sSnowflakes[i].z / 256;
+    for (; i < SNOW_NUM_FLAKES; i++) {
+        { s32 t = sSnowflakes[i].z; sSnowflakes[i].z = t - fwdMove * 3; }
+        sSnowflakes[i].y += liftY - sSnowflakes[i].fallSpeed;
+        { s32 t = sSnowflakes[i].x; sSnowflakes[i].x = t + sideMove * 3; }
+        sSnowflakes[i].x += yawDelta * sSnowflakes[i].z / 256;
         z = sSnowflakes[i].z;
         if (z < 0x1000) {
             if (sSnowflakes[i].x < z && -z < sSnowflakes[i].x) {
                 if (sSnowflakes[i].y < z && -z < sSnowflakes[i].y && z > 0 && sSnowflakes[i].visible != 0) {
-                    hw = gScreenWidth / 2;
-                    sx = hw + sSnowflakes[i].x * hw / z;
-                    hh = gScreenHeight / 2;
-                    sy = hh - sSnowflakes[i].y * hh / z;
-                    if (sx >= 20 && sx < gScreenWidth - 20 && sy >= 20 && sy < gScreenHeight - 20) {
-                        sSnowSplatX = sx;
-                        sSnowSplatY = sy;
+                    halfW = gScreenWidth / 2;
+                    screenX = halfW + sSnowflakes[i].x * halfW / z;
+                    halfH = gScreenHeight / 2;
+                    screenY = halfH - sSnowflakes[i].y * halfH / z;
+                    if (screenX >= 20 && screenX < gScreenWidth - 20 && screenY >= 20 && screenY < gScreenHeight - 20) {
+                        sSnowSplatX = screenX;
+                        sSnowSplatY = screenY;
                     }
                 }
             }
@@ -156,56 +165,58 @@ void snow_update(void) {
     random_byte();
     if (sSnowSplatTimer == 0 && sSnowSplatX != -1) {
         i = random_byte() << 5;
-        t2 = gCosTable[(i >> 4) & 0xFFF] >> 10;
-        t3 = gCosTable[((i >> 4) - 0x400) & 0xFFF] >> 10;
+        cornerY = gCosTable[(i >> 4) & 0xFFF] >> 10;
+        cornerX = gCosTable[((i >> 4) - 0x400) & 0xFFF] >> 10;
         x = sSnowSplatX;
         y = sSnowSplatY;
         sSnowSplatTimer = 60;
-        sSnowSplatVtx[0].v.ob[0] = (x + t3 - 160) * gScreenWidth / 320;
-        sSnowSplatVtx[0].v.ob[1] = (y + t2 - 120) * gScreenHeight / 240;
-        sSnowSplatVtx[1].v.ob[0] = (x + t2 - 160) * gScreenWidth / 320;
-        sSnowSplatVtx[1].v.ob[1] = (y - t3 - 120) * gScreenHeight / 240;
-        sSnowSplatVtx[2].v.ob[0] = (x - t3 - 160) * gScreenWidth / 320;
-        sSnowSplatVtx[2].v.ob[1] = (y - t2 - 120) * gScreenHeight / 240;
-        sSnowSplatVtx[3].v.ob[0] = (x - t2 - 160) * gScreenWidth / 320;
-        sSnowSplatVtx[3].v.ob[1] = (y + t3 - 120) * gScreenHeight / 240;
+        sSnowSplatVtx[0].v.ob[0] = (x + cornerX - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[0].v.ob[1] = (y + cornerY - 120) * gScreenHeight / 240;
+        sSnowSplatVtx[1].v.ob[0] = (x + cornerY - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[1].v.ob[1] = (y - cornerX - 120) * gScreenHeight / 240;
+        sSnowSplatVtx[2].v.ob[0] = (x - cornerX - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[2].v.ob[1] = (y - cornerY - 120) * gScreenHeight / 240;
+        sSnowSplatVtx[3].v.ob[0] = (x - cornerY - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[3].v.ob[1] = (y + cornerX - 120) * gScreenHeight / 240;
     }
 }
 
+/* Puts a flake at a random point ahead of the camera, hidden in covered areas. */
 void snow_respawn_flake(Snowflake *flake)
 {
-    s32 x;
-    u32 u;
+    s32 v;
+    u32 rnd;
 
-    if (gCamSegFlags[0] & 0x40) {
+    if (gCamSegFlags[0] & CAM_SEG_COVERED) {
         flake->visible = 0;
     } else {
         flake->visible = 1;
     }
-    u = random_byte();
-    flake->z = u * 0xc0 + 0x4000;
-    u = random_byte();
-    x = ((s32)u - 0x80) * flake->z;
-    if (x < 0) {
-        x += 0x7f;
+    rnd = random_byte();
+    flake->z = rnd * 0xc0 + 0x4000;
+    rnd = random_byte();
+    v = ((s32)rnd - 0x80) * flake->z;
+    if (v < 0) {
+        v += 0x7f;
     }
-    flake->x = x >> 7;
-    u = random_byte();
-    if (u & 1) {
-        u = random_byte();
-        x = ((s32)u - 0x80) * flake->z;
-        if (x < 0) {
-            x += 0xff;
+    flake->x = v >> 7;
+    rnd = random_byte();
+    if (rnd & 1) {
+        rnd = random_byte();
+        v = ((s32)rnd - 0x80) * flake->z;
+        if (v < 0) {
+            v += 0xff;
         }
-        x = x >> 8;
+        v = v >> 8;
     } else {
-        x = flake->z;
+        v = flake->z;
     }
-    flake->y = x;
-    u = random_byte();
-    flake->fallSpeed = u + 0x100;
+    flake->y = v;
+    rnd = random_byte();
+    flake->fallSpeed = rnd + 0x100;
 }
 
+/* Frees the snowflakes. */
 void snow_free(void)
 {
     if (sSnowflakes != 0) {

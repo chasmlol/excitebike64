@@ -1,79 +1,87 @@
 #include "game.h"
 
-void fractal_update_tiles(s32 px, s32 pz)
+/* Keeps the 4x4 tiles around the camera (mm) in the window, starting the tiles that came into it, and finishes the
+   work of the tiles near the camera at once. */
+void fractal_update_tiles(s32 camX, s32 camZ)
 {
-    s32 i, j, x, z, idx, tx, tz, q, wa, xa;
+    s32 i, j, x, z, idx, originX, originZ, rowBase, endX, endZ;
 
-    px /= 2000;
-    pz /= 2000;
-    sFractalCenterX = (px + 0x40) >> 7;
-    sFractalCenterZ = (pz + 0x40) >> 7;
+    camX /= DESERT_CELL_MM;
+    camZ /= DESERT_CELL_MM;
+    sFractalCenterX = (camX + 0x40) >> 7;
+    sFractalCenterZ = (camZ + 0x40) >> 7;
     for (i = -2; i < 2; i++) {
         for (j = -2; j < 2; j++) {
             z = sFractalCenterZ + i;
-            q = (z & 3) * 4;
+            rowBase = (z & 3) * 4;
             x = sFractalCenterX + j;
-            idx = q + (x & 3);
+            idx = rowBase + (x & 3);
             if (gDesertTiles[idx].x != x || gDesertTiles[idx].z != z) {
-                gDesertTiles[idx].map = sFractalMap + ((idx / 4) * 0x10000 + (idx % 4) * 0x80);
+                gDesertTiles[idx].map = sFractalMap + ((idx / 4) * 0x10000 + (idx % 4) * DESERT_TILE_CELLS);
                 fractal_tile_init(&gDesertTiles[idx], x, z);
             }
+            /* near: within a tile's width of the camera */
             gDesertTiles[idx].visible = 1;
-            tx = gDesertTiles[idx].x * 0x80;
-            tz = gDesertTiles[idx].z << 7;
-            wa = tx + 0x7f;
-            xa = tz + 0x7f;
-            if (px + 0x7f < tx) gDesertTiles[idx].visible = 0;
-            if (pz + 0x7f < tz) gDesertTiles[idx].visible = 0;
-            if (wa < px - 0x80) gDesertTiles[idx].visible = 0;
-            if (xa < pz - 0x80) gDesertTiles[idx].visible = 0;
+            originX = gDesertTiles[idx].x * 0x80;
+            originZ = gDesertTiles[idx].z << 7;
+            endX = originX + 0x7f;
+            endZ = originZ + 0x7f;
+            if (camX + 0x7f < originX) gDesertTiles[idx].visible = 0;
+            if (camZ + 0x7f < originZ) gDesertTiles[idx].visible = 0;
+            if (endX < camX - 0x80) gDesertTiles[idx].visible = 0;
+            if (endZ < camZ - 0x80) gDesertTiles[idx].visible = 0;
         }
     }
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < DESERT_NUM_TILES; i++) {
         if (gDesertTiles[i].visible != 0) fractal_generate(&gDesertTiles[i], -1);
     }
 }
 
+/* The next value of the terrain's random generator (a linear congruential one modulo 65531) */
 #define RND() (sFractalRand = (sFractalRand * 0x35DF + 0x3038) % 65531)
 
-void fractal_generate(DesertTile *f, s32 n)
+/* Runs up to `steps` work items of a tile (all of them with -1): smoothing a row, a diamond-square step, or placing
+   the objects. */
+
+void fractal_generate(DesertTile *tile, s32 steps)
 {
-    u32 e;
+    u32 item;
     s32 row, col, i, v, t;
     u8 *prev, *cur, *p, *next;
-    s32 lvl, x, y, size, x2, y2, xm, ym, amp, idx;
+    s32 level, x, y, size, x2, y2, xm, ym, amp, idx;
     s32 c00, c01, c10, c11;
-    s32 cnt;
-    u32 u;
+    s32 left;
+    u32 itemX;
 
-    cnt = n;
-    sFractalRand = f->seed;
-    while (cnt != 0) {
-        if (f->sp == 0) {
+    left = steps;
+    sFractalRand = tile->seed;
+    while (left != 0) {
+        if (tile->sp == 0) {
             return;
         }
-        f->sp--;
-        e = f->stack[f->sp];
-        if ((e >> 24) == DESERT_WORK_OBJECTS) {
-            fractal_place_objects(f);
+        tile->sp--;
+        item = tile->stack[tile->sp];
+        if ((item >> 24) == DESERT_WORK_OBJECTS) {
+            fractal_place_objects(tile);
             continue;
         }
-        if ((e >> 24) == DESERT_WORK_SMOOTH) {
-            e &= 0xFFFFFF;
-            row = e >> 7;
-            col = e & 0x7F;
+        if ((item >> 24) == DESERT_WORK_SMOOTH) {
+            item &= 0xFFFFFF;
+            row = item >> 7;
+            col = item & 0x7F;
             if (row == 0 && col == 0) {
-                __builtin_memcpy(f->smooth[0], f->map, 128);
-                f->smoothCur = 1;
+                __builtin_memcpy(tile->smooth[0], tile->map, 128);
+                tile->smoothCur = 1;
             }
-            t = f->smoothCur;
-            prev = f->smooth[1 - t];
-            cur = f->smooth[t];
-            p = f->map + (row << 9);
+            t = tile->smoothCur;
+            prev = tile->smooth[1 - t];
+            cur = tile->smooth[t];
+            p = tile->map + (row << 9);
+            /* a 3x3 weighted average of the original heights, squared to sharpen the dunes */
             if (row == 127) {
-                next = f->nextRow;
+                next = tile->nextRow;
             } else {
-                next = p + 0x200;
+                next = p + DESERT_MAP_SIZE;
             }
             prev += col;
             cur += col;
@@ -98,7 +106,7 @@ void fractal_generate(DesertTile *f, s32 n)
                 prev++;
                 cur++;
                 next++;
-                e++;
+                item++;
             }
             for (i = col; i < col + 64; i++) {
                 if (i == 127) {
@@ -124,22 +132,22 @@ void fractal_generate(DesertTile *f, s32 n)
                 prev++;
                 cur++;
                 next++;
-                e++;
+                item++;
             }
             if (i == 127) {
                 v = prev[-1];
                 v += prev[0] * 2;
                 if (row != 0) {
-                    v += f->nextCol[row - 1];
+                    v += tile->nextCol[row - 1];
                 } else {
-                    v += f->nextCol[row];
+                    v += tile->nextCol[row];
                 }
                 v += cur[-1] * 2;
                 v += cur[0] * 4;
-                v += f->nextCol[row] * 2;
+                v += tile->nextCol[row] * 2;
                 v += next[-1];
                 v += next[0] * 2;
-                v += f->nextCol[row + 1];
+                v += tile->nextCol[row + 1];
                 v >>= 4;
                 v = (v * v) >> 8;
                 if (v < 4) {
@@ -147,78 +155,79 @@ void fractal_generate(DesertTile *f, s32 n)
                 }
                 v ^= 0x80;
                 *p = v;
-                e++;
-                f->smoothCur ^= 1;
+                item++;
+                tile->smoothCur ^= 1;
             }
-            if (e < 0x4000) {
-                f->stack[f->sp++] = e | (DESERT_WORK_SMOOTH << 24);
+            if (item < DESERT_TILE_CELLS * DESERT_TILE_CELLS) {
+                tile->stack[tile->sp++] = item | (DESERT_WORK_SMOOTH << 24);
             }
-            cnt--;
+            left--;
         } else {
-            row = (e >> 8) & 0xFF;
-            u = e >> 16;
-            lvl = e & 0xFF;
-            size = 1 << lvl;
-            x = u & 0xFF;
+            /* diamond-square: the midpoints of the square's edges and its centre, from its corners plus noise */
+            row = (item >> 8) & 0xFF;
+            itemX = item >> 16;
+            level = item & 0xFF;
+            size = 1 << level;
+            x = itemX & 0xFF;
             y = row << 9;
             x2 = x + size;
             y2 = y + (size << 9);
             xm = x + (size >> 1);
             ym = y + (size << 8);
-            c00 = f->map[y | x];
+            c00 = tile->map[y | x];
             if (x2 == 128) {
                 if (y2 == 0x10000) {
-                    c01 = f->nextCol[y / 512];
-                    c10 = f->nextRow[x];
-                    c11 = f->nextCol[128];
+                    c01 = tile->nextCol[y / 512];
+                    c10 = tile->nextRow[x];
+                    c11 = tile->nextCol[128];
                 } else {
-                    c01 = f->nextCol[y / 512];
-                    c10 = f->map[y2 | x];
-                    c11 = f->nextCol[y2 / 512];
+                    c01 = tile->nextCol[y / 512];
+                    c10 = tile->map[y2 | x];
+                    c11 = tile->nextCol[y2 / 512];
                 }
             } else {
                 if (y2 == 0x10000) {
-                    c01 = f->map[y | x2];
-                    c10 = f->nextRow[x];
-                    c11 = f->nextRow[x2];
+                    c01 = tile->map[y | x2];
+                    c10 = tile->nextRow[x];
+                    c11 = tile->nextRow[x2];
                 } else {
-                    c01 = f->map[y | x2];
-                    c10 = f->map[y2 | x];
-                    c11 = f->map[y2 | x2];
+                    c01 = tile->map[y | x2];
+                    c10 = tile->map[y2 | x];
+                    c11 = tile->map[y2 | x2];
                 }
             }
             x2 %= 128;
             y2 %= 0x10000;
-            amp = sFractalAmplitudes[lvl];
-            if (f->map[y | xm] == 0) {
+            amp = sFractalAmplitudes[level];
+            if (tile->map[y | xm] == 0) {
                 RND();
                 v = ((c00 + c01) >> 1) + ((sFractalRand & 0xFF) - 0x80) * amp / 32;
                 if (v <= 0) v = 1;
                 if (v >= 0x100) v = 0xFF;
-                f->map[y | xm] = v;
+                tile->map[y | xm] = v;
             }
-            if (f->map[ym | x] == 0) {
+            if (tile->map[ym | x] == 0) {
                 RND();
                 v = ((c00 + c10) >> 1) + ((sFractalRand & 0xFF) - 0x80) * amp / 32;
                 if (v <= 0) v = 1;
                 if (v >= 0x100) v = 0xFF;
-                f->map[ym | x] = v;
+                tile->map[ym | x] = v;
             }
-            if (f->map[ym | x2] == 0) {
+            if (tile->map[ym | x2] == 0) {
                 RND();
                 v = ((c01 + c11) >> 1) + ((sFractalRand & 0xFF) - 0x80) * amp / 32;
                 if (v <= 0) v = 1;
                 if (v >= 0x100) v = 0xFF;
-                f->map[ym | x2] = v;
+                tile->map[ym | x2] = v;
             }
-            if (f->map[y2 | xm] == 0) {
+            if (tile->map[y2 | xm] == 0) {
                 RND();
                 v = ((c10 + c11) >> 1) + ((sFractalRand & 0xFF) - 0x80) * amp / 32;
                 if (v <= 0) v = 1;
                 if (v >= 0x100) v = 0xFF;
-                f->map[y2 | xm] = v;
+                tile->map[y2 | xm] = v;
             }
-            if (f->map[ym | xm] == 0) {
+            if (tile->map[ym | xm] == 0) {
                 RND();
                 v = ((c00 + c01) >> 1) + ((sFractalRand & 0xFF) - 0x80) * amp / 32;
                 RND();
@@ -230,49 +239,51 @@ void fractal_generate(DesertTile *f, s32 n)
                 v >>= 2;
                 if (v <= 0) v = 1;
                 if (v >= 0x100) v = 0xFF;
-                f->map[ym | xm] = v;
+                tile->map[ym | xm] = v;
             }
             if (size != 2) {
-                f->stack[f->sp++] = (xm << 16) | ((ym / 512) << 8) | (lvl - 1);
-                f->stack[f->sp++] = (x << 16) | ((ym / 512) << 8) | (lvl - 1);
-                f->stack[f->sp++] = (xm << 16) | ((y / 512) << 8) | (lvl - 1);
-                f->stack[f->sp++] = (x << 16) | ((y / 512) << 8) | (lvl - 1);
+                tile->stack[tile->sp++] = (xm << 16) | ((ym / 512) << 8) | (level - 1);
+                tile->stack[tile->sp++] = (x << 16) | ((ym / 512) << 8) | (level - 1);
+                tile->stack[tile->sp++] = (xm << 16) | ((y / 512) << 8) | (level - 1);
+                tile->stack[tile->sp++] = (x << 16) | ((y / 512) << 8) | (level - 1);
             }
-            cnt--;
+            left--;
         }
 
     }
-    f->seed = sFractalRand;
+    tile->seed = sFractalRand;
 }
 
-s32 fractal_corner_height(s32 a0, s32 a1)
+/* The height of a tile's corner, from a hash of its coordinates (so that the tiles meeting there agree). */
+s32 fractal_corner_height(s32 x, s32 z)
 {
     s32 y;
 
-    y = ((a0 * (a1 + 0x7B) * 0x1C8) << (a0 % 0x315A)) + a1 * 0x55;
+    y = ((x * (z + 0x7B) * 0x1C8) << (x % 0x315A)) + z * 0x55;
     sFractalRand = (y * 0x35DF + 0x3038) % 0xFFFB;
     return sFractalRand & 0xFF;
 }
 
+/* Fills a 129-entry edge between its two ends by midpoint displacement. */
 void fractal_subdivide_edge(u8 *buf)
 {
     s32 step;
-    s32 u;
-    s32 k;
-    s32 seed;
+    s32 i;
+    s32 stride;
+    s32 rnd;
     s32 v;
     s32 t;
 
     step = 0x40;
     do {
-        u = step;
+        i = step;
         if (step < 0x80) {
-            k = step * 2;
+            stride = step * 2;
             do {
                 sFractalRand = (sFractalRand * 0x35df + 0x3038) % 0xfffb;
-                seed = sFractalRand;
-                t = ((s32)buf[u - step] + (s32)buf[u + step]) >> 1;
-                v = ((seed & 0xff) - 0x80) * step;
+                rnd = sFractalRand;
+                t = ((s32)buf[i - step] + (s32)buf[i + step]) >> 1;
+                v = ((rnd & 0xff) - 0x80) * step;
                 if (v < 0) {
                     v = v + 0x1f;
                 }
@@ -283,26 +294,29 @@ void fractal_subdivide_edge(u8 *buf)
                 if (t > 0xff) {
                     t = 0xff;
                 }
-                buf[u] = (u8)t;
-                u = u + k;
-            } while (u < 0x80);
+                buf[i] = (u8)t;
+                i = i + stride;
+            } while (i < 0x80);
         }
         step = step >> 1;
     } while (step != 0);
 }
 
+/* fractal_tile_seed written inline */
 static inline s32 Seed(s32 x, s32 z)
 {
     return ((x * (z + 123) * 456) << (x % 12634)) + z;
 }
 
+/* Starts tile (x, z): clears its cells, pushes its work (objects, smoothing, subdivision) and makes its edges from
+   the hashes of its corners, so that the neighbouring tiles' edges match. */
 void fractal_tile_init(DesertTile *t, s32 x, s32 z)
 {
     s32 i;
     s32 seed;
 
-    for (i = 0; i < 0x10000; i += 0x200) {
-        mem_fill(t->map + i, 0, 0x80);
+    for (i = 0; i < DESERT_TILE_CELLS * DESERT_MAP_SIZE; i += DESERT_MAP_SIZE) {
+        mem_fill(t->map + i, 0, DESERT_TILE_CELLS);
     }
     /* every store of the count stays: volatile */
     t->stack[0] = DESERT_WORK_OBJECTS << 24;
@@ -341,40 +355,42 @@ void fractal_tile_init(DesertTile *t, s32 x, s32 z)
     }
 }
 
+/* Places a tile's objects: the campfires of the checkpoints that lie on it, then scenery at random points up to
+   eight. */
 void fractal_place_objects(volatile DesertTile *t)
 {
     s32 x, cellX, z, cellZ;
-    s32 i, n, k, y, fireZ, fireY;
-    DesertTile *p;
+    s32 i, count, k, y, fireZ, fireY;
+    DesertTile *tile;
 
     desert_export_checkpoints();
-    n = 0;
+    count = 0;
     for (i = 0; i < gDesertFireCount; i++) {
-        divmod_floor(gDesertFires[i].x, 0x3E800, &x, &cellX);
+        divmod_floor(gDesertFires[i].x, DESERT_TILE_MM, &x, &cellX);
         if (x == t->x) {
-            divmod_floor(gDesertFires[i].z, 0x3E800, &z, &cellZ);
+            divmod_floor(gDesertFires[i].z, DESERT_TILE_MM, &z, &cellZ);
             if (z == t->z) {
-                t->objs[n].x = gDesertFires[i].x;
-                cellX = cellX / 2000;
-                cellZ = cellZ / 2000;
+                t->objs[count].x = gDesertFires[i].x;
+                cellX = cellX / DESERT_CELL_MM;
+                cellZ = cellZ / DESERT_CELL_MM;
                 /* the heights are read signed here */
-                t->objs[n].y = ((s8 *)t->map)[cellZ * 512 + cellX] << 6;
+                t->objs[count].y = ((s8 *)t->map)[cellZ * DESERT_MAP_SIZE + cellX] << 6;
                 fireZ = gDesertFires[i].z;
-                t->objs[n].kind = 2;
-                fireY = t->objs[n].y;
-                t->objs[n].ref = i;
-                t->objs[n].radius = 0;
-                t->objs[n].height = 0;
-                t->objs[n].z = fireZ;
-                n++;
+                t->objs[count].kind = DESERT_OBJ_CAMPFIRE;
+                fireY = t->objs[count].y;
+                t->objs[count].ref = i;
+                t->objs[count].radius = 0;
+                t->objs[count].height = 0;
+                t->objs[count].z = fireZ;
+                count++;
                 gDesertFires[i].y = fireY;
             }
         }
     }
     /* scenery in the rest */
-    p = (DesertTile *)t; /* stores that need not be volatile */
-    i = n;
-    if (i < 8) {
+    tile = (DesertTile *)t; /* stores that need not be volatile */
+    i = count;
+    if (i < DESERT_TILE_OBJS) {
         do {
             do {
                 k = 0;
@@ -382,84 +398,87 @@ void fractal_place_objects(volatile DesertTile *t)
                 x = (sFractalRand & 0xFF) % 120 + 4;
                 RND();
                 z = (sFractalRand & 0xFF) % 120 + 4;
-                y = ((s8 *)t->map)[z * 512 + x];
-                x = x * 2000;
-                x = x + t->x * 0x3E800;
-                z = z * 2000;
-                z = z + t->z * 0x3E800;
+                y = ((s8 *)t->map)[z * DESERT_MAP_SIZE + x];
+                x = x * DESERT_CELL_MM;
+                x = x + t->x * DESERT_TILE_MM;
+                z = z * DESERT_CELL_MM;
+                z = z + t->z * DESERT_TILE_MM;
                 y <<= 6;
                 /* meant to keep it off the objects placed before; it tests the new object itself */
                 for (k = 0; k < i; k++) {
-                    if (p->objs[i].x == x && p->objs[i].z == z) {
+                    if (tile->objs[i].x == x && tile->objs[i].z == z) {
                         break;
                     }
                 }
             } while (k != i);
-            p->objs[i].y = y;
-            p->objs[i].x = x;
-            p->objs[i].z = z;
-            p->objs[i].kind = (s32)random_byte() % 2;
-            p->objs[i].radius = 400;
-            p->objs[i].height = 1000;
-            if (i) k = 1; else k = 2;
+            tile->objs[i].y = y;
+            tile->objs[i].x = x;
+            tile->objs[i].z = z;
+            tile->objs[i].kind = (s32)random_byte() % 2;
+            tile->objs[i].radius = 400;
+            tile->objs[i].height = 1000;
+            if (i) k = 1; else k = 2; /* unused */
             i++;
-        } while (i < 8);
+        } while (i < DESERT_TILE_OBJS);
     }
-    t->numObjs = 8;
+    t->numObjs = DESERT_TILE_OBJS;
 }
 
-s32 fractal_get_visible_objects(s32 x, s32 z, s32 ang, s32 range, DesertObj *out, s32 max)
+/* Copies to out (up to max) the objects of the finished tiles that lie ahead of the camera at (x, z) facing yaw,
+   within range mm and a 90-degree field of view; returns their number. */
+s32 fractal_get_visible_objects(s32 x, s32 z, s32 yaw, s32 range, DesertObj *out, s32 max)
 {
-    s32 n;
+    s32 count;
     s32 i, j;
-    s16 c, s;
-    s32 dx, dz, a, b;
+    s16 cosYaw, sinYaw;
+    s32 dx, dz, side, ahead;
 
     range /= 16;
-    n = 0;
-    c = gCosTable[(ang >> 4) & 0xFFF];
-    s = gCosTable[((ang >> 4) - 0x400) & 0xFFF];
-    for (i = 0; i < 16; i++) {
-        if (n >= max) {
+    count = 0;
+    cosYaw = gCosTable[(yaw >> 4) & 0xFFF];
+    sinYaw = gCosTable[((yaw >> 4) - 0x400) & 0xFFF];
+    for (i = 0; i < DESERT_NUM_TILES; i++) {
+        if (count >= max) {
             break;
         }
         if (gDesertTiles[i].sp == 0) {
             for (j = 0; j < gDesertTiles[i].numObjs; j++) {
-                if (n >= max) {
+                if (count >= max) {
                     break;
                 }
                 dx = (gDesertTiles[i].objs[j].x - x) / 16;
                 dz = (gDesertTiles[i].objs[j].z - z) / 16;
-                a = (c * dx + s * dz) >> 14;
-                b = (c * dz - s * dx) >> 14;
-                if (b > range) {
+                side = (cosYaw * dx + sinYaw * dz) >> 14;
+                ahead = (cosYaw * dz - sinYaw * dx) >> 14;
+                if (ahead > range) {
                     continue;
                 }
-                if (b < -359 || a < -359 || a > 359) {
-                    if (a < 0) {
-                        a -= 360;
+                if (ahead < -359 || side < -359 || side > 359) {
+                    if (side < 0) {
+                        side -= 360;
                     }
-                    if (a > 0) {
-                        a += 360;
+                    if (side > 0) {
+                        side += 360;
                     }
-                    if (b < a || a < -b || b < 0) {
+                    if (ahead < side || side < -ahead || ahead < 0) {
                         continue;
                     }
                 }
-                out[n++] = gDesertTiles[i].objs[j];
+                out[count++] = gDesertTiles[i].objs[j];
             }
         }
     }
-    return n;
+    return count;
 }
 
+/* Every 8 frames, a puff of smoke from the campfire of the next checkpoint. */
 void fractal_emit_fire_smoke(void)
 {
     f32 pos[3];
     f32 vel[3];
     u8 col[4];
     s32 i, j;
-    DesertObj *p;
+    DesertObj *obj;
 
     if ((gRaceFrame & 7) != 0) {
         return;
@@ -468,69 +487,73 @@ void fractal_emit_fire_smoke(void)
     col[1] = 0;
     col[2] = 0;
     col[3] = 0;
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < DESERT_NUM_TILES; i++) {
         for (j = 0; j < gDesertTiles[i].numObjs; j++) {
-            p = &gDesertTiles[i].objs[j];
-            if (p->kind == 2 && p->ref == gDesWaypoint) {
-                pos[0] = (f32)p->x / 1000.0f;
-                pos[1] = (f32)p->y / 1000.0f + 1.0f;
-                pos[2] = (f32)p->z / 1000.0f;
+            obj = &gDesertTiles[i].objs[j];
+            if (obj->kind == DESERT_OBJ_CAMPFIRE && obj->ref == gDesWaypoint) {
+                pos[0] = (f32)obj->x / 1000.0f;
+                pos[1] = (f32)obj->y / 1000.0f + 1.0f;
+                pos[2] = (f32)obj->z / 1000.0f;
                 vel[0] = (f32)(s32)(random_byte() - 0x80) / 10000.0f;
                 vel[1] = 0.1f;
                 vel[2] = (f32)(s32)(random_byte() - 0x80) / 10000.0f;
-                particle_spawn(6, 0, pos, vel, col);
+                particle_spawn(PARTICLE_SMOKE, 0, pos, vel, col);
             }
         }
     }
 }
 
+/* Allocates the 16 tiles over the height map. */
 void fractal_init(u8 *map)
 {
     DesertTile **dst = &gDesertTiles;
 
     sFractalMap = map;
-    *dst = mem_alloc_dbg(16 * sizeof(DesertTile), 0, (s32)&sStrFractalC, 0x266);
+    *dst = mem_alloc_dbg(DESERT_NUM_TILES * sizeof(DesertTile), 0, (s32)&sStrFractalC, 0x266);
 }
 
+/* Empties the tiles and generates the ones around the start. */
 void fractal_reset(void)
 {
     s32 i;
     DesertTile *t;
 
     mem_fill((u8 *)gDesertTiles, 0, 4); /* only the first word */
-    i = 15;
-    t = &gDesertTiles[15];
+    i = DESERT_NUM_TILES - 1;
+    t = &gDesertTiles[DESERT_NUM_TILES - 1];
     do {
         t->x = -999;
         i--;
         t--;
     } while (i >= 0);
     fractal_update_tiles(0, 0);
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < DESERT_NUM_TILES; i++) {
         fractal_generate(&gDesertTiles[i], -1);
     }
 }
 
-void fractal_generate_step(s32 n)
+/* Shares about `steps` work items of this frame among the tiles still being generated. */
+void fractal_generate_step(s32 steps)
 {
-    s32 i, cnt;
+    s32 i, busy;
 
-    cnt = 0;
-    for (i = 0; i < 16; i++) {
+    busy = 0;
+    for (i = 0; i < DESERT_NUM_TILES; i++) {
         if (gDesertTiles[i].sp != 0) {
-            cnt++;
+            busy++;
         }
     }
-    if (cnt != 0) {
-        n = (n + cnt - 1) / cnt;
-        for (i = 0; i < 16; i++) {
+    if (busy != 0) {
+        steps = (steps + busy - 1) / busy;
+        for (i = 0; i < DESERT_NUM_TILES; i++) {
             if (gDesertTiles[i].sp != 0) {
-                fractal_generate(&gDesertTiles[i], n);
+                fractal_generate(&gDesertTiles[i], steps);
             }
         }
     }
 }
 
+/* The next byte of the terrain's random generator. */
 u8 fractal_rand_byte(void)
 {
     s32 x;
@@ -539,7 +562,8 @@ u8 fractal_rand_byte(void)
     return x & 0xff;
 }
 
-s32 fractal_tile_seed(s32 param_1, s32 param_2)
+/* A hash of a tile's coordinates: the seed of its random generator. */
+s32 fractal_tile_seed(s32 x, s32 z)
 {
-    return ((param_1 * (param_2 + 0x7B) * 0x1C8) << (param_1 % 0x315A)) + param_2;
+    return ((x * (z + 0x7B) * 0x1C8) << (x % 0x315A)) + z;
 }
