@@ -10,17 +10,22 @@
 #include "structs/resman.h"
 #include "structs/font.h"
 
+#define GUI_MENU_TEXTS   9 /* the title and up to 8 items */
+#define GUI_UNUSED_TEXTS 4
+#define GUI_DIALOG_TEXTS 3
+
 typedef struct Gui {
     /* 0x00 */ ResSet *res;              /* the "GuiRes" resource set */
     /* 0x04 */ TexSet *images;           /* palette, then the boxes and frames of the dialogs and menus */
     /* 0x08 */ TexSet *cursorImages;     /* palette, then the menu cursor */
-    /* 0x0C */ s32 unk_0C;
+    /* 0x0C */ s32 unk_0C;               /* set to 3, never read */
     /* 0x10 */ u8 unk_10[8];
-    /* 0x18 */ s32 unk_18;
+    /* 0x18 */ s32 unk_18;               /* set to 0, never read */
     /* 0x1C */ u8 unk_1C[8];
-    /* 0x24 */ TextObj *menuText[9];     /* gui_draw_menu: the title, then one per item */
-    /* 0x48 */ TextObj *unkText[4];
-    /* 0x58 */ TextObj *dialogText[3];   /* gui_draw_prompt: the question and the two choices; gui_draw_message: [0] */
+    /* 0x24 */ TextObj *menuText[GUI_MENU_TEXTS];     /* gui_draw_menu: the title, then one per item */
+    /* 0x48 */ TextObj *unusedText[GUI_UNUSED_TEXTS]; /* created, never drawn */
+    /* 0x58 */ TextObj *dialogText[GUI_DIALOG_TEXTS]; /* gui_draw_prompt: the question and the two choices;
+                                                     gui_draw_message: [0] */
 } Gui; /* size 0x64 */
 
 /* GuiMenuItem.flags */

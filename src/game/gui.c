@@ -1,3 +1,4 @@
+/* gui.c: the track editor's dialog boxes and menus, drawn with the "GuiRes" pictures and the menu fonts. */
 #include "game.h"
 
 /* The GUI's picture sets (TexSet), with the pictures as Img */
@@ -9,332 +10,351 @@ typedef struct {
 
 #define GUI_IMAGES(set) ((GuiImgSet *)(set))
 
+/* gGui->images */
+#define GUI_IMG_CHOICE     0 /* a choice of gui_draw_prompt */
+#define GUI_IMG_BOX        1 /* gui_draw_message's box, gui_draw_prompt's question */
+#define GUI_IMG_MENU_ITEM  2
+#define GUI_IMG_MENU_TITLE 3
+#define GUI_IMG_MENU_FRAME 5
+
+/* Opens the "GuiRes" set and creates the text objects of gGui. */
 void gui_init(void)
 {
     s32 i;
-    TextObj *p;
-    s32 r;
+    TextObj *text;
+    s32 res;
 
-    gGui = mem_alloc_dbg(100, 0, sStrGuiFile, 0x3E);
+    gGui = mem_alloc_dbg(sizeof(Gui), 0, sStrGuiFile, 0x3E);
     res_open_set(sStrGuiResSet, &gGui->res);
     gGui->unk_18 = 0;
     gGui->unk_0C = 3;
-    r = res_load(gGui->res, sGuiCursorImagesResId);
-    gGui->cursorImages = (TexSet *)r;
-    r = res_load(gGui->res, sGuiImagesResId);
-    gGui->images = (TexSet *)r;
+    res = res_load(gGui->res, sGuiCursorImagesResId);
+    gGui->cursorImages = (TexSet *)res;
+    res = res_load(gGui->res, sGuiImagesResId);
+    gGui->images = (TexSet *)res;
     i = 0;
     do {
-        p = font_text_create(0, 0x20, 2, 2, 0x21);
-        gGui->menuText[i] = p;
+        text = font_text_create(NULL, 0x20, FONT_SMALL, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+        gGui->menuText[i] = text;
         i++;
-    } while (i < 9);
+    } while (i < GUI_MENU_TEXTS);
     i = 0;
     do {
-        p = font_text_create(0, 0x20, 2, 2, 0x21);
-        gGui->unkText[i] = p;
+        text = font_text_create(NULL, 0x20, FONT_SMALL, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+        gGui->unusedText[i] = text;
         i++;
-    } while (i < 4);
+    } while (i < GUI_UNUSED_TEXTS);
     i = 0;
     do {
-        p = font_text_create(0, 0x40, 2, 2, 0x21);
-        gGui->dialogText[i] = p;
+        text = font_text_create(NULL, 0x40, FONT_SMALL, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+        gGui->dialogText[i] = text;
         i++;
-    } while (i < 3);
-    GUI_IMAGES(gGui->cursorImages)->pal[0] = 0;
+    } while (i < GUI_DIALOG_TEXTS);
+    GUI_IMAGES(gGui->cursorImages)->pal[0] = 0; /* colour 0 transparent */
     font_load_menu_set(gResourceSet);
 }
 
-#define PKT(a, b) { Gfx *_g = (Gfx *)(gdl++); _g->words.w0 = (a); _g->words.w1 = (b); }
-
-Gfx *gui_draw_message(Gfx *gdl, s32 a1, s32 a2, char *msg)
+/* Draws a one-line message in a box at the centre of the screen. */
+Gfx *gui_draw_message(Gfx *gdl, s32 unused, s32 fb, char *msg)
 {
     Gfx *ret;
-    Img *tb;
-
-    PKT(0xE3001001, 0x8000);
-    PKT(0xFC119623, 0xFF2FFFFF);
-    PKT(0xFD100000, (u32)GUI_IMAGES(gGui->images)->pal);
-    PKT(0xE8000000, 0);
-    PKT(0xF5000100, 0x07000000);
-    PKT(0xE6000000, 0);
-    PKT(0xF0000000, 0x073FC000);
-    PKT(0xE7000000, 0);
-    PKT(0xD7000002, 0x80008000);
-    PKT(0xE3000C00, 0);
-    PKT(0xE200001C, 0x0C084000);
-    tb = &GUI_IMAGES(gGui->images)->imgs[1];
-    ret = render_draw_image(0x140 - tb->w * 4, 0x78 - (tb->h >> 1), tb, gdl, a2, 1, 1, 3, 0);
-    font_text_create(gGui->dialogText[0], 0x40, 5, 2, 0x21);
-    font_text_add(gGui->dialogText[0], msg);
-    font_draw_text(gGui->dialogText[0], 0x140, gScreenHeight / 2);
-    return ret;
-}
-
-Gfx *gui_draw_prompt(Gfx *gdl, s32 arg1, s32 arg2, char *s0, char *s1, char *s2, s32 f1, s32 f2)
-{
-    Img *spr;
-    s32 i;
-    s32 k;
-    s32 a;
-    s32 b;
-    s32 x;
+    Img *box;
 
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-    gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
+    gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
     gDPLoadTLUT_pal256(gdl++, GUI_IMAGES(gGui->images)->pal);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
-    gDPSetRenderMode(gdl++, 0x0C084000, 0);
+    gDPSetRenderMode(gdl++, G_RM_OPA_SURF, G_RM_NOOP2);
+    box = &GUI_IMAGES(gGui->images)->imgs[GUI_IMG_BOX];
+    ret = render_draw_image(320 - box->w * 4, 120 - (box->h >> 1), box, gdl, fb, 1, 1, 3, 0);
+    font_text_create(gGui->dialogText[0], 0x40, FONT_MENU, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+    font_text_add(gGui->dialogText[0], msg);
+    font_draw_text(gGui->dialogText[0], 320, gScreenHeight / 2);
+    return ret;
+}
 
-    spr = &GUI_IMAGES(gGui->images)->imgs[1];
+/* Draws a question with two choices under it (gEditor->dialogChoice 1: the first); a choice whose enabled flag is
+   0 is greyed. */
+Gfx *gui_draw_prompt(Gfx *gdl, s32 unused, s32 fb, char *question, char *choice1, char *choice2, s32 enabled1,
+                     s32 enabled2)
+{
+    Img *box;
+    s32 i;
+    s32 y;
+    s32 x;
+
+    gDPSetTextureLUT(gdl++, G_TT_RGBA16);
+    gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gDPLoadTLUT_pal256(gdl++, GUI_IMAGES(gGui->images)->pal);
+    gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
+    gDPSetTexturePersp(gdl++, G_TP_NONE);
+    gDPSetRenderMode(gdl++, G_RM_OPA_SURF, G_RM_NOOP2);
+
+    box = &GUI_IMAGES(gGui->images)->imgs[GUI_IMG_BOX];
     for (i = 0; i < 3; i++) {
+        /* 0: the question, 1 and 2: the choices */
         if (i == 1) {
             gDPSetTextureLUT(gdl++, G_TT_NONE);
-            gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-            spr = &GUI_IMAGES(gGui->images)->imgs[0];
+            gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+            box = &GUI_IMAGES(gGui->images)->imgs[GUI_IMG_CHOICE];
         }
         if (1 - gEditor->dialogChoice == i - 1) {
             gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, 255);
         } else {
             gDPSetPrimColor(gdl++, 0, 0, 180, 180, 180, 255);
         }
-        x = 320 - spr->w * 4;
-        b = (i - 1) * spr->h + 120;
-        gdl = render_draw_image(x, b - (spr->h >> 1), spr, gdl, arg2, 1, 1, i == 0 ? 3 : 6, 0);
+        x = 320 - box->w * 4;
+        y = (i - 1) * box->h + 120;
+        gdl = render_draw_image(x, y - (box->h >> 1), box, gdl, fb, 1, 1, i == 0 ? 3 : 6, 0);
     }
 
-    font_text_create(gGui->dialogText[0], 0x40, 5, 2, 0x21);
-    font_text_create(gGui->dialogText[1], 0x40, 5, gEditor->dialogChoice == 1 ? 7 : 2, f1 == 0 ? 0x20000021 : 0x21);
-    font_text_create(gGui->dialogText[2], 0x40, 5, gEditor->dialogChoice == 0 ? 7 : 2, f2 == 0 ? 0x20000021 : 0x21);
-    font_text_add(gGui->dialogText[0], s0);
-    font_text_add(gGui->dialogText[1], s1);
-    font_text_add(gGui->dialogText[2], s2);
-    font_draw_text(gGui->dialogText[0], 0x140, gScreenHeight / 2 - spr->h);
-    font_draw_text(gGui->dialogText[1], 0x140, gScreenHeight / 2);
-    font_draw_text(gGui->dialogText[2], 0x140, gScreenHeight / 2 + spr->h);
+    font_text_create(gGui->dialogText[0], 0x40, FONT_MENU, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+    font_text_create(gGui->dialogText[1], 0x40, FONT_MENU,
+                     gEditor->dialogChoice == 1 ? TEXT_COLOR_GREEN : TEXT_COLOR_LIGHT_GREY,
+                     enabled1 == 0 ? TEXT_GREYED | TEXT_CENTER : TEXT_CENTER);
+    font_text_create(gGui->dialogText[2], 0x40, FONT_MENU,
+                     gEditor->dialogChoice == 0 ? TEXT_COLOR_GREEN : TEXT_COLOR_LIGHT_GREY,
+                     enabled2 == 0 ? TEXT_GREYED | TEXT_CENTER : TEXT_CENTER);
+    font_text_add(gGui->dialogText[0], question);
+    font_text_add(gGui->dialogText[1], choice1);
+    font_text_add(gGui->dialogText[2], choice2);
+    font_draw_text(gGui->dialogText[0], 320, gScreenHeight / 2 - box->h);
+    font_draw_text(gGui->dialogText[1], 320, gScreenHeight / 2);
+    font_draw_text(gGui->dialogText[2], 320, gScreenHeight / 2 + box->h);
     return gdl;
 }
 
-s32 gui_menu_input(GuiMenu *c) {
-    GuiMenuItem *e;
+/* A menu's input from gPadInput: up and down move to the next enabled item, left and right pick from the item's
+   values. Returns 1 when A chose the item under the cursor (menu->choice). */
+s32 gui_menu_input(GuiMenu *menu) {
+    GuiMenuItem *item;
     s32 i;
-    s16 cc;
-    s32 n;
-    s32 ec;
+    s16 cursor;
+    s32 numItems;
+    s32 value;
     u32 bit;
 
-    if (c == NULL) {
+    if (menu == NULL) {
         return 0;
     }
-    if (c->flags & GUI_MENU_ACTIVE) {
-        e = c->items + c->cursor;
-        if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10)) {
-            c->choice = c->cursor;
-            snd_play_menu_sound(1);
+    if (menu->flags & GUI_MENU_ACTIVE) {
+        item = menu->items + menu->cursor;
+        if ((gPadInput & INPUT_A) && !(gPadInputPrev & INPUT_A)) {
+            menu->choice = menu->cursor;
+            snd_play_menu_sound(MENU_SOUND_SELECT);
             return 1;
         }
-        if ((gPadInput & 0x800) && !(gPadInputPrev & 0x800)) {
-            i = c->cursor;
+        if ((gPadInput & INPUT_DPAD_UP) && !(gPadInputPrev & INPUT_DPAD_UP)) {
+            i = menu->cursor;
             for (;;) {
                 i = i - 1;
-                if (i == c->cursor) {
+                if (i == menu->cursor) {
                     break;
                 }
                 if (i < 0) {
-                    i = c->numItems - 1;
+                    i = menu->numItems - 1;
                 }
-                if (c->items[i].flags & GUI_ITEM_ENABLED) {
-                    c->cursor = i;
+                if (menu->items[i].flags & GUI_ITEM_ENABLED) {
+                    menu->cursor = i;
                     break;
                 }
             }
         }
-        if ((gPadInput & 0x1000) && !(gPadInputPrev & 0x1000)) {
-            i = c->cursor;
+        if ((gPadInput & INPUT_DPAD_DOWN) && !(gPadInputPrev & INPUT_DPAD_DOWN)) {
+            i = menu->cursor;
             i = i + 1;
-            cc = c->cursor;
-            if (i != cc) {
-                n = c->numItems;
+            cursor = menu->cursor;
+            if (i != cursor) {
+                numItems = menu->numItems;
                 do {
-                    if (i >= n) {
+                    if (i >= numItems) {
                         i = 0;
                     }
-                    if (c->items[i].flags & GUI_ITEM_ENABLED) {
-                        c->cursor = i;
+                    if (menu->items[i].flags & GUI_ITEM_ENABLED) {
+                        menu->cursor = i;
                         break;
                     }
                     i = i + 1;
-                } while (i != cc);
+                } while (i != cursor);
             }
         }
-        if (e->numValues != 0) {
-            if ((gPadInput & 0x2000) && !(gPadInputPrev & 0x2000)) {
-                i = e->value;
+        if (item->numValues != 0) {
+            if ((gPadInput & INPUT_DPAD_LEFT) && !(gPadInputPrev & INPUT_DPAD_LEFT)) {
+                i = item->value;
                 for (;;) {
                     i = i - 1;
                     if (i < 0) {
-                        i = e->numValues - 1;
+                        i = item->numValues - 1;
                     }
-                    ec = e->value;
-                    if (i == ec) {
+                    value = item->value;
+                    if (i == value) {
                         break;
                     }
                     bit = (u32)1 << i;
-                    if ((~e->valueMask & bit) == 0) {
+                    if ((~item->valueMask & bit) == 0) {
                         break;
                     }
                 }
-                if (e->value != i) {
-                    e->value = i;
-                    snd_play_menu_sound(0);
+                if (item->value != i) {
+                    item->value = i;
+                    snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             }
-            if ((gPadInput & 0x4000) && !(gPadInputPrev & 0x4000)) {
-                i = e->value;
+            if ((gPadInput & INPUT_DPAD_RIGHT) && !(gPadInputPrev & INPUT_DPAD_RIGHT)) {
+                i = item->value;
                 for (;;) {
                     i = i + 1;
-                    if (i >= e->numValues) {
+                    if (i >= item->numValues) {
                         i = 0;
                     }
-                    ec = e->value;
-                    if (i == ec) {
+                    value = item->value;
+                    if (i == value) {
                         break;
                     }
                     bit = (u32)1 << i;
-                    if ((~e->valueMask & bit) == 0) {
+                    if ((~item->valueMask & bit) == 0) {
                         break;
                     }
                 }
-                if (e->value != i) {
-                    e->value = i;
-                    snd_play_menu_sound(0);
+                if (item->value != i) {
+                    item->value = i;
+                    snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             }
         }
     }
-    if (c->choice != c->cursor) {
-        c->choice = c->cursor;
-        snd_play_menu_sound(0);
+    if (menu->choice != menu->cursor) {
+        menu->choice = menu->cursor;
+        snd_play_menu_sound(MENU_SOUND_MOVE);
     }
     return 0;
 }
 
-Gfx *gui_draw_menu(s32 arg0, Gfx *gdl, GuiMenu *m, s32 x, s32 y)
+/* Draws a menu at (x, y): the frame with the title, then an item bar per item. */
+Gfx *gui_draw_menu(s32 fb, Gfx *gdl, GuiMenu *menu, s32 x, s32 y)
 {
-    GuiImgSet *t;
-    Img *im;
-    Img *ti;
-    u8 *s;
+    GuiImgSet *set;
+    Img *bar;
+    Img *cursor;
+    u8 *text;
     s32 i;
-    s32 c;
-    s32 pad;
-    s32 k;
+    s32 zero;
+    s32 textY;
 
-    if (m == NULL) {
+    if (menu == NULL) {
         return gdl;
     }
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
-    gDPSetRenderMode(gdl++, 0x404240, 0);
+    gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
     gSPClearGeometryMode(gdl++, G_ZBUFFER);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPPipeSync(gdl++);
-    t = GUI_IMAGES(gGui->images);
-    font_text_create(gGui->menuText[0], 0x20, 4, 2, 0x21);
-    font_text_add(gGui->menuText[0], m->title);
-    font_draw_text(gGui->menuText[0], x + t->imgs[3].w * 4, y + 10);
-    gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
+    set = GUI_IMAGES(gGui->images);
+    font_text_create(gGui->menuText[0], 0x20, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
+    font_text_add(gGui->menuText[0], menu->title);
+    font_draw_text(gGui->menuText[0], x + set->imgs[GUI_IMG_MENU_TITLE].w * 4, y + 10);
+    gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
-    for (i = 0; i < m->numItems; i++) {
-        s = (u8 *)m->items[i].text;
-        if (!(m->items[i].flags & GUI_ITEM_ENABLED)) {
-            font_text_create(gGui->menuText[i + 1], 0x20, 5, 2, 0x20000021);
+    for (i = 0; i < menu->numItems; i++) {
+        text = (u8 *)menu->items[i].text;
+        if (!(menu->items[i].flags & GUI_ITEM_ENABLED)) {
+            font_text_create(gGui->menuText[i + 1], 0x20, FONT_MENU, TEXT_COLOR_LIGHT_GREY, TEXT_GREYED | TEXT_CENTER);
         } else {
-            font_text_create(gGui->menuText[i + 1], 0x20, 5, ((m->flags & GUI_MENU_ACTIVE) && m->cursor == i) ? 7 : 2, 0x21);
+            font_text_create(gGui->menuText[i + 1], 0x20, FONT_MENU,
+                             ((menu->flags & GUI_MENU_ACTIVE) && menu->cursor == i) ? TEXT_COLOR_GREEN
+                                                                                    : TEXT_COLOR_LIGHT_GREY,
+                             TEXT_CENTER);
         }
-        pad = 0;
-        im = &GUI_IMAGES(gGui->images)->imgs[2];
-        if ((m->flags & GUI_MENU_ACTIVE) && m->cursor == i) {
+        zero = 0;
+        bar = &GUI_IMAGES(gGui->images)->imgs[GUI_IMG_MENU_ITEM];
+        if ((menu->flags & GUI_MENU_ACTIVE) && menu->cursor == i) {
             gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, 255);
         } else {
             gDPSetPrimColor(gdl++, 0, 0, 180, 180, 180, 255);
         }
-        if (!(m->items[i].flags & GUI_ITEM_ENABLED)) {
-            while (*s == ' ') {
-                s++;
+        if (!(menu->items[i].flags & GUI_ITEM_ENABLED)) {
+            while (*text == ' ') {
+                text++;
             }
         }
-        font_text_add(gGui->menuText[i + 1], (char *)s);
-        k = im->h * (i + 1) + 11;
-        font_draw_text(gGui->menuText[i + 1], (x + im->w * 4) | pad, (y + k) | pad);
-        gdl = render_draw_image(x, y + (i + 1) * im->h, im, gdl, arg0, 1, 1, 6, ((u32)im & 1) >> 1);
-        if (*s == ' ') {
+        font_text_add(gGui->menuText[i + 1], (char *)text);
+        textY = bar->h * (i + 1) + 11;
+        /* the "| zero" and the last argument below (always 0) are as the original computes them */
+        font_draw_text(gGui->menuText[i + 1], (x + bar->w * 4) | zero, (y + textY) | zero);
+        gdl = render_draw_image(x, y + (i + 1) * bar->h, bar, gdl, fb, 1, 1, 6, ((u32)bar & 1) >> 1);
+        if (*text == ' ') {
+            /* an enabled item starting with a space: the cursor picture in that space */
             gDPPipeSync(gdl++);
             gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-            gDPSetRenderMode(gdl++, 0x404240, 0);
-            gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
+            gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
+            gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
             gDPLoadTLUT_pal256(gdl++, GUI_IMAGES(gGui->cursorImages)->pal);
-            ti = &GUI_IMAGES(gGui->cursorImages)->imgs[0];
-            gDPLoadTextureBlock(gdl++, ti->addr, G_IM_FMT_CI, G_IM_SIZ_8b, ti->w * 8, ti->h, 0,
+            cursor = &GUI_IMAGES(gGui->cursorImages)->imgs[0];
+            gDPLoadTextureBlock(gdl++, cursor->addr, G_IM_FMT_CI, G_IM_SIZ_8b, cursor->w * 8, cursor->h, 0,
                                 0, 0, 0, 0, 0, 0);
             gDPPipeSync(gdl++);
-            gSPTextureRectangle(gdl++, (x + 11) << 2, (y + (i + 1) * im->h + 6) << 2,
-                                (x + 11 + ti->w * 8) << 2, (y + (i + 1) * im->h + 6 + (u8)(ti->h / 3)) << 2,
-                                0, 0, (ti->h - 1) << 5, 1 << 10, -1 << 10);
+            gSPTextureRectangle(gdl++, (x + 11) << 2, (y + (i + 1) * bar->h + 6) << 2,
+                                (x + 11 + cursor->w * 8) << 2, (y + (i + 1) * bar->h + 6 + (u8)(cursor->h / 3)) << 2,
+                                0, 0, (cursor->h - 1) << 5, 1 << 10, -1 << 10);
             gDPPipeSync(gdl++);
-            gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
+            gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
         }
     }
-    gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
+    gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gDPLoadTLUT_pal256(gdl++, GUI_IMAGES(gGui->images)->pal);
-    return font_render(render_draw_image(x, y, &GUI_IMAGES(gGui->images)->imgs[5], gdl, arg0, 1, 1, 3, 0));
+    return font_render(render_draw_image(x, y, &GUI_IMAGES(gGui->images)->imgs[GUI_IMG_MENU_FRAME], gdl, fb, 1, 1, 3,
+                                         0));
 }
 
-s32 gui_menu_fix_cursor(GuiMenu *c)
+/* Moves a menu's cursor off a disabled item, then the chosen item's value off a value that cannot be chosen.
+   Returns 0 when no item is enabled or the value was moved, else 1. */
+s32 gui_menu_fix_cursor(GuiMenu *menu)
 {
     s32 i;
     s32 j;
-    GuiMenuItem *s;
-    GuiMenuItem *t;
+    GuiMenuItem *item;
+    GuiMenuItem *chosen;
 
-    s = c->items;
-    if ((s[c->choice].flags & GUI_ITEM_ENABLED) == 0) {
-        for (i = 0; i < c->numItems; i++, s++) {
-            if (s->flags & GUI_ITEM_ENABLED) {
-                c->choice = i;
-                c->cursor = i;
+    item = menu->items;
+    if ((item[menu->choice].flags & GUI_ITEM_ENABLED) == 0) {
+        for (i = 0; i < menu->numItems; i++, item++) {
+            if (item->flags & GUI_ITEM_ENABLED) {
+                menu->choice = i;
+                menu->cursor = i;
                 break;
             }
         }
-        if (i == c->numItems) {
+        if (i == menu->numItems) {
             return 0;
         }
     }
 
-    t = &c->items[c->choice];
-    if (t->numValues == 0) {
+    chosen = &menu->items[menu->choice];
+    if (chosen->numValues == 0) {
         goto ret1;
     }
-    if (t->valueMask & (1 << t->value)) {
+    if (chosen->valueMask & (1 << chosen->value)) {
         goto ret1;
     }
-    for (j = 0; j < t->numValues; j++) {
-        if (t->valueMask & (1 << j)) {
-            t->value = j;
+    for (j = 0; j < chosen->numValues; j++) {
+        if (chosen->valueMask & (1 << j)) {
+            chosen->value = j;
             break;
         }
     }
-    if (j < t->numValues) {
+    if (j < chosen->numValues) {
         return 0;
     }
 ret1:
     return 1;
 }
 
+/* Frees gGui's text objects and closes its resource set. */
 void gui_free(void)
 {
     s32 i;
@@ -344,17 +364,17 @@ void gui_free(void)
         do {
             mem_free(gGui->menuText[i]);
             i++;
-        } while (i < 9);
+        } while (i < GUI_MENU_TEXTS);
         i = 0;
         do {
-            mem_free(gGui->unkText[i]);
+            mem_free(gGui->unusedText[i]);
             i++;
-        } while (i < 4);
+        } while (i < GUI_UNUSED_TEXTS);
         i = 0;
         do {
             mem_free(gGui->dialogText[i]);
             i++;
-        } while (i < 3);
+        } while (i < GUI_DIALOG_TEXTS);
         res_close_set(gGui->res);
         mem_free(gGui);
         gGui = NULL;

@@ -977,8 +977,9 @@ void arned_set_scissor(s32 a0, s32 a1, s32 a2, s32 a3);
 
 /* src/game/gui.c */
 void gui_init(void);
-Gfx *gui_draw_message(Gfx *gdl, s32 a1, s32 a2, char *msg);
-Gfx *gui_draw_prompt(Gfx *gdl, s32 arg1, s32 arg2, char *s0, char *s1, char *s2, s32 f1, s32 f2);
+Gfx *gui_draw_message(Gfx *gdl, s32 unused, s32 fb, char *msg);
+Gfx *gui_draw_prompt(Gfx *gdl, s32 unused, s32 fb, char *question, char *choice1, char *choice2, s32 enabled1,
+                     s32 enabled2);
 s32 gui_menu_input(GuiMenu *menu);
 Gfx *gui_draw_menu(s32 fb, Gfx *gdl, GuiMenu *menu, s32 x, s32 y);
 s32 gui_menu_fix_cursor(GuiMenu *menu);
