@@ -1111,7 +1111,7 @@ end:
 
 /* The event's update: counts the frames without input, runs the mode's rules, and times the checkerboard wipe that
    follows the first player's finish in a one-player race. */
-void event_update(s32 arg0)
+void event_update(s32 unused)
 {
     s32 i;
     s32 *input;
@@ -1461,21 +1461,21 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     }
     if (gGame.flags & GAME_DEBUG) {
         /* rider 0's x and z, and the free memory */
-        TextObj *t1;
-        TextObj *t2;
-        TextObj *t3;
-        t1 = font_text_create(gHudTextObjs[9], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
+        TextObj *xText;
+        TextObj *zText;
+        TextObj *memText;
+        xText = font_text_create(gHudTextObjs[9], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
         debug_ftoa(buf, gRiders[0].bike.pos.x, 5);
-        font_text_add(t1, buf);
-        font_draw_text(t1, 0x28, 0x1E);
-        t2 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
+        font_text_add(xText, buf);
+        font_draw_text(xText, 0x28, 0x1E);
+        zText = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
         debug_ftoa(buf, gRiders[0].bike.pos.z, 5);
-        font_text_add(t2, buf);
-        font_draw_text(t2, 0x28, 0x28);
-        t3 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
+        font_text_add(zText, buf);
+        font_draw_text(zText, 0x28, 0x28);
+        memText = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
         int_to_str(gDebugFreeMem, buf);
-        font_text_add(t3, buf);
-        font_draw_text(t3, 0x28, 0x32);
+        font_text_add(memText, buf);
+        font_draw_text(memText, 0x28, 0x32);
     }
     return font_render(gdl);
 }
@@ -1487,13 +1487,13 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     Rider *rider = &gRiders[view];
     char buf[40];
     s32 trick, t;
-    s32 x, y, ty, yt, yy;
-    s32 x1, y1, xa;
-    s32 x3, y3, ax, ay;
-    s32 k, i;
-    s32 by, dy;
+    s32 x, y, totalY, bottomY, topY;
+    s32 x1, y1, rightX;
+    s32 pointsX, pointsY, nameX, nameY;
+    s32 slide, i;
+    s32 listY, listStep;
     u8 anim;
-    s8 d;
+    s8 lastTrick;
     f32 speed;
 
     font_reset_queue();
@@ -1515,7 +1515,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 dyn, s32 fb, s32 view)
                           gViewRects[gNumScreens - 1][view].x + gViewRects[gNumScreens - 1][view].w / 2,
                           gViewRects[gNumScreens - 1][view].y + gViewRects[gNumScreens - 1][view].h / 2);
         }
-        yt = gViewRects[gNumScreens - 1][view].y + gViewRects[gNumScreens - 1][view].h - 11;
+        bottomY = gViewRects[gNumScreens - 1][view].y + gViewRects[gNumScreens - 1][view].h - 11;
         font_text_create(gHudTextObjs[0], 0x40, 2, 2, TEXT_VALIGN_CENTER);
         font_text_create(gHudTextObjs[1], 0x40, 2, 4, TEXT_VALIGN_CENTER);
         trick = -1;
@@ -1523,60 +1523,60 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 dyn, s32 fb, s32 view)
         } while (0);
         event_format_time(gEvent.time, buf);
         font_text_add(gHudTextObjs[0], "Time:");
-        font_draw_text(gHudTextObjs[0], 0x3C, yt);
+        font_draw_text(gHudTextObjs[0], 0x3C, bottomY);
         font_text_add(gHudTextObjs[1], buf);
-        font_draw_text(gHudTextObjs[1], 100, yt);
-        xa = gViewRects[gNumScreens - 1][view].x + gViewRects[gNumScreens - 1][view].w - 20;
-        yy = gViewRects[gNumScreens - 1][view].y;
+        font_draw_text(gHudTextObjs[1], 100, bottomY);
+        rightX = gViewRects[gNumScreens - 1][view].x + gViewRects[gNumScreens - 1][view].w - 20;
+        topY = gViewRects[gNumScreens - 1][view].y;
         font_text_create(gHudTextObjs[4], 0x40, 2, 2, TEXT_VALIGN_CENTER | TEXT_HALIGN_RIGHT);
         font_text_add(gHudTextObjs[4], "Total");
-        ty = yy + 8;
-        font_draw_text(gHudTextObjs[4], xa, ty);
+        totalY = topY + 8;
+        font_draw_text(gHudTextObjs[4], rightX, totalY);
         font_text_create(gHudTextObjs[5], 0x40, 2, 4, TEXT_VALIGN_CENTER | TEXT_HALIGN_RIGHT);
         int_to_str(rider->raceKey, buf);
         font_text_add(gHudTextObjs[5], buf);
-        font_draw_text(gHudTextObjs[5], xa, yy + 16);
+        font_draw_text(gHudTextObjs[5], rightX, topY + 16);
         /* the trick: the animation playing if it is one (0-15), or the trick just done */
         anim = (u8)rider->anim;
         if (anim < 16) {
             trick = (s8)anim;
         } else if (rider->unk_3FB != 0) {
-            d = rider->trick;
-            if (d < 16) {
-                trick = d;
+            lastTrick = rider->trick;
+            if (lastTrick < 16) {
+                trick = lastTrick;
             }
         }
         if (trick >= 0) {
             font_text_create(gHudTextObjs[2], 0x40, 2, 2, TEXT_VALIGN_CENTER | TEXT_HALIGN_CENTER);
-            x3 = 0x100;
+            pointsX = 0x100;
             font_text_add(gHudTextObjs[2], gRiderAnims[trick].name);
-            y3 = ty + 8;
+            pointsY = totalY + 8;
             font_text_create(gHudTextObjs[3], 0x40, 2, 4, TEXT_VALIGN_CENTER | TEXT_HALIGN_CENTER);
             int_to_str(rider->stuntScore, buf);
             font_text_add(gHudTextObjs[3], buf);
-            ax = 0x100;
-            ay = ty;
+            nameX = 0x100;
+            nameY = totalY;
             if (rider->unk_3FB >= 2) {
                 /* sliding: the points to the total, a new trick's name to the list */
-                k = rider->unk_3FB * 8;
-                x3 = (x3 * k + (xa - (gHudTextObjs[3]->w >> 1)) * (256 - k)) >> 8;
+                slide = rider->unk_3FB * 8;
+                pointsX = (pointsX * slide + (rightX - (gHudTextObjs[3]->w >> 1)) * (256 - slide)) >> 8;
                 for (i = 0; i < rider->trickListLen; i++) {
                     if (trick == rider->trickList[i]) {
                         break;
                     }
                 }
                 if (i == rider->trickListLen) {
-                    ax = (ax * k + ((gHudTextObjs[4]->w >> 1) + 0x23) * (256 - k)) >> 8;
-                    ay = (ay * k + (ty + i * 8) * (256 - k)) / 256;
+                    nameX = (nameX * slide + ((gHudTextObjs[4]->w >> 1) + 0x23) * (256 - slide)) >> 8;
+                    nameY = (nameY * slide + (totalY + i * 8) * (256 - slide)) / 256;
                 }
             }
-            font_draw_text(gHudTextObjs[2], ax, ay);
-            font_draw_text(gHudTextObjs[3], x3, y3);
+            font_draw_text(gHudTextObjs[2], nameX, nameY);
+            font_draw_text(gHudTextObjs[3], pointsX, pointsY);
         }
         for (i = 0; i < rider->trickListLen; i++) {
             font_text_create(gHudTextObjs[i + 8], 0x40, 2, 2, TEXT_VALIGN_CENTER);
             font_text_add(gHudTextObjs[i + 8], gRiderAnims[rider->trickList[i]].name);
-            font_draw_text(gHudTextObjs[i + 8], 0x3C, ty + i * 8);
+            font_draw_text(gHudTextObjs[i + 8], 0x3C, totalY + i * 8);
         }
         font_text_create(gHudTextObjs[6], 0x40, 3, 2, TEXT_VALIGN_BASELINE | TEXT_HALIGN_RIGHT);
         speed = rider->speed;
@@ -1615,20 +1615,20 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 dyn, s32 fb, s32 view)
         font_text_add(gHudTextObjs[5], buf);
         font_draw_text(gHudTextObjs[5], x, y);
         if (gViMode == VI_MODE_HI_RES) {
-            by = 0x69;
-            dy = 0x14;
+            listY = 0x69;
+            listStep = 0x14;
         } else {
-            by = 0x5A;
-            dy = 0xA;
+            listY = 0x5A;
+            listStep = 0xA;
         }
         anim = (u8)rider->anim;
         trick = -1;
         if (anim < 16) {
             trick = (s8)anim;
         } else if (rider->unk_3FB != 0) {
-            d = rider->trick;
-            if (d < 16) {
-                trick = d;
+            lastTrick = rider->trick;
+            if (lastTrick < 16) {
+                trick = lastTrick;
             }
         }
         if (trick >= 0) {
@@ -1637,26 +1637,26 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 dyn, s32 fb, s32 view)
             font_text_create(gHudTextObjs[3], 0x40, 1, 4, TEXT_VALIGN_CENTER | TEXT_HALIGN_CENTER);
             int_to_str(rider->stuntScore, buf);
             font_text_add(gHudTextObjs[3], buf);
-            x3 = gScreenWidth / 2;
-            y3 = gViewRects[0][0].y + 0x28;
-            ax = gScreenWidth / 2;
-            ay = gViewRects[0][0].y + 0x14;
+            pointsX = gScreenWidth / 2;
+            pointsY = gViewRects[0][0].y + 0x28;
+            nameX = gScreenWidth / 2;
+            nameY = gViewRects[0][0].y + 0x14;
             if (rider->unk_3FB >= 2) {
-                k = rider->unk_3FB * 8;
-                x3 = (x3 * k + (x - (gHudTextObjs[3]->w >> 1)) * (256 - k)) >> 8;
-                y3 = (y3 * k + y * (256 - k)) / 256;
+                slide = rider->unk_3FB * 8;
+                pointsX = (pointsX * slide + (x - (gHudTextObjs[3]->w >> 1)) * (256 - slide)) >> 8;
+                pointsY = (pointsY * slide + y * (256 - slide)) / 256;
                 for (i = 0; i < rider->trickListLen; i++) {
                     if (trick == rider->trickList[i]) {
                         break;
                     }
                 }
                 if (i == rider->trickListLen) {
-                    ax = (ax * k + ((gHudTextObjs[4]->w >> 1) + 0x23) * (256 - k)) >> 8;
-                    ay = (ay * k + (by + i * dy) * (256 - k)) / 256;
+                    nameX = (nameX * slide + ((gHudTextObjs[4]->w >> 1) + 0x23) * (256 - slide)) >> 8;
+                    nameY = (nameY * slide + (listY + i * listStep) * (256 - slide)) / 256;
                 }
             }
-            font_draw_text(gHudTextObjs[2], ax, ay);
-            font_draw_text(gHudTextObjs[3], x3, y3);
+            font_draw_text(gHudTextObjs[2], nameX, nameY);
+            font_draw_text(gHudTextObjs[3], pointsX, pointsY);
         }
         speed = gRiders[view].speed;
         int_to_str((s32)((speed > 0.0f ? speed * 3600.0f : -speed * 3600.0f) / 1612.9f), buf);
@@ -1674,7 +1674,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 dyn, s32 fb, s32 view)
         for (i = 0; i < rider->trickListLen; i++) {
             font_text_create(gHudTextObjs[i + 8], 0x40, 2, 2, TEXT_VALIGN_CENTER);
             font_text_add(gHudTextObjs[i + 8], gRiderAnims[rider->trickList[i]].name);
-            font_draw_text(gHudTextObjs[i + 8], 0x23, by + i * dy);
+            font_draw_text(gHudTextObjs[i + 8], 0x23, listY + i * listStep);
         }
         if (gEvent.allFinished != 0) {
             font_text_create(gHudTextObjs[7], 0x40, 1, 4, TEXT_VALIGN_CENTER | TEXT_HALIGN_CENTER);
@@ -1997,19 +1997,19 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 dyn, s32 fb, s32 view)
         }
         if (gGame.flags & GAME_DEBUG) {
             /* rider 0's x and z, and the free memory */
-            TextObj *t1, *t2, *t3;
-            t1 = font_text_create(gHudTextObjs[9], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
+            TextObj *xText, *zText, *memText;
+            xText = font_text_create(gHudTextObjs[9], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
             debug_ftoa(buf, gRiders[0].bike.pos.x, 5);
-            font_text_add(t1, buf);
-            font_draw_text(t1, 0x28, 0x1E);
-            t2 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
+            font_text_add(xText, buf);
+            font_draw_text(xText, 0x28, 0x1E);
+            zText = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
             debug_ftoa(buf, gRiders[0].bike.pos.z, 5);
-            font_text_add(t2, buf);
-            font_draw_text(t2, 0x28, 0x28);
-            t3 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
+            font_text_add(zText, buf);
+            font_draw_text(zText, 0x28, 0x28);
+            memText = font_text_create(gHudTextObjs[10], 0x20, 2, 2, TEXT_VALIGN_BASELINE);
             int_to_str(gDebugFreeMem, buf);
-            font_text_add(t3, buf);
-            font_draw_text(t3, 0x28, 0x32);
+            font_text_add(memText, buf);
+            font_draw_text(memText, 0x28, 0x32);
         }
         if (gGame.mode == MODE_EXCITE_3D && gEvent.time == 0) {
             t = font_text_create(gHudTextObjs[19], 0x20, 2, 2, TEXT_VALIGN_BASELINE | TEXT_HALIGN_CENTER);
@@ -3150,8 +3150,8 @@ void func_8005B2E8(void)
 void event_hud_free(void)
 {
     s32 i;
-    TextObj **p1;
-    TextObj **p2;
+    TextObj **hud;
+    TextObj **menu;
 
     if (gGame.mode == MODE_TUTORIAL) {
         mem_free(sGreyPalette);
@@ -3161,16 +3161,16 @@ void event_hud_free(void)
         mem_free(D_800F0730[1]);
     }
     i = 0;
-    p2 = gMenuTextObjs;
-    p1 = gHudTextObjs;
+    menu = gMenuTextObjs;
+    hud = gHudTextObjs;
     do {
         i++;
-        font_text_destroy(*p1);
-        mem_free(*p1);
-        p1++;
-        font_text_destroy(*p2);
-        mem_free(*p2);
-        p2++;
+        font_text_destroy(*hud);
+        mem_free(*hud);
+        hud++;
+        font_text_destroy(*menu);
+        mem_free(*menu);
+        menu++;
     } while (i < HUD_NUM_TEXTS);
     return;
 }

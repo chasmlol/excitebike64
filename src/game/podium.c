@@ -116,7 +116,7 @@ typedef struct {
 extern RiderGfxPalette gRiderGfx_8[];
 
 /* Draws the podium and each rider's helmet (with the rider's palette). */
-Gfx *podium_draw(Gfx *gdl, s32 projMtx, s32 arg2)
+Gfx *podium_draw(Gfx *gdl, s32 projMtx, s32 unused)
 {
     s32 i;
 

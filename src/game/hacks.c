@@ -264,7 +264,7 @@ void hacks_exit(void) {
 }
 
 /* render.c's hooks: the current track's draw passes, which take and return the display list pointer. */
-s32 hacks_draw_pass2(s32 gdl, Dyn *arg1, s32 arg2, s32 arg3)
+s32 hacks_draw_pass2(s32 gdl, Dyn *dyn, s32 fb, s32 view)
 {
     if (sCurTrackHack != 0) {
         gdl = sCurTrackHack->drawPass2(gdl);
@@ -272,7 +272,7 @@ s32 hacks_draw_pass2(s32 gdl, Dyn *arg1, s32 arg2, s32 arg3)
     return gdl;
 }
 
-s32 hacks_draw_pass1(s32 gdl, Dyn *arg1, s32 arg2, s32 arg3)
+s32 hacks_draw_pass1(s32 gdl, Dyn *dyn, s32 fb, s32 view)
 {
     if (sCurTrackHack != 0) {
         gdl = sCurTrackHack->drawPass1(gdl);
