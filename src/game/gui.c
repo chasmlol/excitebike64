@@ -146,7 +146,7 @@ s32 gui_menu_input(GuiMenu *menu)
             snd_play_menu_sound(MENU_SOUND_SELECT);
             return 1;
         }
-        if ((gPadInput & INPUT_DPAD_UP) && !(gPadInputPrev & INPUT_DPAD_UP)) {
+        if ((gPadInput & INPUT_D_UP) && !(gPadInputPrev & INPUT_D_UP)) {
             i = menu->cursor;
             for (;;) {
                 i = i - 1;
@@ -162,7 +162,7 @@ s32 gui_menu_input(GuiMenu *menu)
                 }
             }
         }
-        if ((gPadInput & INPUT_DPAD_DOWN) && !(gPadInputPrev & INPUT_DPAD_DOWN)) {
+        if ((gPadInput & INPUT_D_DOWN) && !(gPadInputPrev & INPUT_D_DOWN)) {
             i = menu->cursor;
             i = i + 1;
             cursor = menu->cursor;
@@ -181,7 +181,7 @@ s32 gui_menu_input(GuiMenu *menu)
             }
         }
         if (item->numValues != 0) {
-            if ((gPadInput & INPUT_DPAD_LEFT) && !(gPadInputPrev & INPUT_DPAD_LEFT)) {
+            if ((gPadInput & INPUT_D_LEFT) && !(gPadInputPrev & INPUT_D_LEFT)) {
                 i = item->value;
                 for (;;) {
                     i = i - 1;
@@ -202,7 +202,7 @@ s32 gui_menu_input(GuiMenu *menu)
                     snd_play_menu_sound(MENU_SOUND_MOVE);
                 }
             }
-            if ((gPadInput & INPUT_DPAD_RIGHT) && !(gPadInputPrev & INPUT_DPAD_RIGHT)) {
+            if ((gPadInput & INPUT_D_RIGHT) && !(gPadInputPrev & INPUT_D_RIGHT)) {
                 i = item->value;
                 for (;;) {
                     i = i + 1;

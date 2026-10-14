@@ -494,17 +494,17 @@ void pak_screen_update(Pad16 *pads)
     }
     /* the buttons pressed this frame, the D-pad as the stick */
     buttons = gPadInput;
-    if (buttons & INPUT_DPAD_LEFT) {
-        buttons |= INPUT_LEFT;
+    if (buttons & INPUT_D_LEFT) {
+        buttons |= INPUT_STICK_LEFT;
     }
-    if (buttons & INPUT_DPAD_RIGHT) {
-        buttons |= INPUT_RIGHT;
+    if (buttons & INPUT_D_RIGHT) {
+        buttons |= INPUT_STICK_RIGHT;
     }
-    if (buttons & INPUT_DPAD_UP) {
-        buttons |= INPUT_UP;
+    if (buttons & INPUT_D_UP) {
+        buttons |= INPUT_STICK_UP;
     }
-    if (buttons & INPUT_DPAD_DOWN) {
-        buttons |= INPUT_DOWN;
+    if (buttons & INPUT_D_DOWN) {
+        buttons |= INPUT_STICK_DOWN;
     }
     i = sPakPrevButtons;
     sPakPrevButtons = buttons;
@@ -575,7 +575,7 @@ void pak_screen_update(Pad16 *pads)
         drop_new_note_entry(gPakScreen.pak);
         gPakScreen.sel = 0;
         gPakScreen.scroll = 0;
-        if (buttons & INPUT_LEFT) {
+        if (buttons & INPUT_STICK_LEFT) {
             for (i = gPakScreen.pak - 1; i >= 0; i--) {
                 if ((sPakValidMask | sPakBadMask) & (1 << i)) {
                     break;
@@ -587,7 +587,7 @@ void pak_screen_update(Pad16 *pads)
                 gPakScreen.pak = i;
                 sPakSound = MENU_SOUND_MOVE;
             }
-        } else if (buttons & INPUT_RIGHT) {
+        } else if (buttons & INPUT_STICK_RIGHT) {
             for (i = gPakScreen.pak + 1; i < MAXCONTROLLERS; i++) {
                 if ((sPakValidMask | sPakBadMask) & (1 << i)) {
                     break;
@@ -653,11 +653,11 @@ void pak_screen_update(Pad16 *pads)
         /* move to the next note that can be chosen (saving: only over the game's own notes) */
         j = gPakScreen.sel;
         n = 0;
-        if (buttons & INPUT_DOWN) {
+        if (buttons & INPUT_STICK_DOWN) {
             n = 1;
         }
         i = j;
-        if (buttons & INPUT_UP) {
+        if (buttons & INPUT_STICK_UP) {
             n = -1;
         }
         j += n;
@@ -698,7 +698,7 @@ void pak_screen_update(Pad16 *pads)
         if (gPakScreen.scroll < 0) {
             gPakScreen.scroll = 0;
         }
-        if (buttons & (INPUT_UP | INPUT_DOWN)) {
+        if (buttons & (INPUT_STICK_UP | INPUT_STICK_DOWN)) {
             if (i == j) {
                 sPakSound = MENU_SOUND_ERROR;
             } else {

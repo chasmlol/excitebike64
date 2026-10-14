@@ -9,24 +9,24 @@
 /* The game's input word (main_convert_pad_input): gPadInput, Rider.input, and the buttons shell_update passes to
    the screens. It is not libultra's button layout. In the screens' buttons (pressed this frame) the stick bits
    also hold the D-pad, and shell_update drops stick directions under 6. */
-#define INPUT_UP         0x00000001 /* stick up */
-#define INPUT_DOWN       0x00000002
-#define INPUT_LEFT       0x00000004
-#define INPUT_RIGHT      0x00000008
-#define INPUT_A          0x00000010
-#define INPUT_B          0x00000020
-#define INPUT_START      0x00000040
-#define INPUT_C_UP       0x00000080
-#define INPUT_C_DOWN     0x00000100
-#define INPUT_C_LEFT     0x00000200
-#define INPUT_C_RIGHT    0x00000400
-#define INPUT_DPAD_UP    0x00000800
-#define INPUT_DPAD_DOWN  0x00001000
-#define INPUT_DPAD_LEFT  0x00002000
-#define INPUT_DPAD_RIGHT 0x00004000
-#define INPUT_L          0x00008000
-#define INPUT_R          0x00010000
-#define INPUT_Z          0x00020000
+#define INPUT_STICK_UP      0x00000001
+#define INPUT_STICK_DOWN    0x00000002
+#define INPUT_STICK_LEFT    0x00000004
+#define INPUT_STICK_RIGHT   0x00000008
+#define INPUT_A             0x00000010
+#define INPUT_B             0x00000020
+#define INPUT_START         0x00000040
+#define INPUT_C_UP          0x00000080
+#define INPUT_C_DOWN        0x00000100
+#define INPUT_C_LEFT        0x00000200
+#define INPUT_C_RIGHT       0x00000400
+#define INPUT_D_UP          0x00000800
+#define INPUT_D_DOWN        0x00001000
+#define INPUT_D_LEFT        0x00002000
+#define INPUT_D_RIGHT       0x00004000
+#define INPUT_L             0x00008000
+#define INPUT_R             0x00010000
+#define INPUT_Z             0x00020000
 /* Bits 24-27 and 28-31: how far the stick is pushed along x and y (0-15); the direction bits give the signs. */
 #define INPUT_STICK_X_SHIFT 24
 #define INPUT_STICK_Y_SHIFT 28
@@ -38,51 +38,53 @@
 #define MENU_SOUND_ERROR  3
 
 /* gGame.mode, set by the menu items' callbacks. Modes 3 and 4 are not identified (shell_cb_desert_unused sets 4). */
-#define GAME_MODE_EXHIBITION          0
-#define GAME_MODE_SEASON              1
-#define GAME_MODE_SOCCER              2
-#define GAME_MODE_DESERT              5
-#define GAME_MODE_EXCITE_3D           6
-#define GAME_MODE_HILL_CLIMB          7
-#define GAME_MODE_TIME_TRIAL          8
-#define GAME_MODE_TUTORIAL            9
-#define GAME_MODE_STUNT_COURSE        10
-#define GAME_MODE_ORIGINAL_EXCITEBIKE 12
+#define GAME_MODE_EXHIBITION    0
+#define GAME_MODE_SEASON        1
+#define GAME_MODE_SOCCER        2
+#define GAME_MODE_DESERT        5
+#define GAME_MODE_EXCITE_3D     6
+#define GAME_MODE_HILL_CLIMB    7
+#define GAME_MODE_TIME_TRIAL    8
+#define GAME_MODE_TUTORIAL      9
+#define GAME_MODE_STUNT_COURSE  10
+#define GAME_MODE_ORIGINAL      12  /* Original Excitebike, the NES game */
+#define GAME_MODE_TEST_LOOP     13  /* the editor's test ride, closed track */
+#define GAME_MODE_TEST_OPEN     14  /* the editor's test ride, track not closed */
 
 /* gGame.flags (include/structs/game.h) */
-#define GAME_FLAG_SHELL_RACE      0x00000001 /* a race run by the front end (title, rider select) */
-#define GAME_FLAG_EDITOR_TO_SHELL 0x00000002 /* leaving the editor returns to the front end */
-#define GAME_FLAG_RERUN_STATE     0x00000004 /* run the same game state again */
-#define GAME_FLAG_TRACK_LISTS     0x00000008 /* coming back from a race opens the track lists */
-#define GAME_FLAG_RIDER_SELECT    0x00000010
-#define GAME_FLAG_EDITOR          0x00000020 /* leaving the front end starts the track editor */
-#define GAME_FLAG_NES             0x00000040 /* leaving the front end starts Original Excitebike */
-#define GAME_FLAG_TRACK_CHOSEN    0x00000080
-#define GAME_FLAG_PLAYERS_POPUP   0x00000200 /* list screens: the number of players popup is up */
-#define GAME_FLAG_PLAYER_READY(n) (0x400 << (n)) /* rider select: player n has chosen */
-#define GAME_FLAG_PLAYERS_READY   0x00003C00
-#define GAME_FLAG_REPLAY          0x00008000 /* replay playback */
-#define GAME_FLAG_RESULTS_SEEN    0x00020000 /* the race's results were shown (season progress counted) */
-#define GAME_FLAG_PODIUM          0x00040000 /* podium ceremony (gPodiumMode) */
-#define GAME_FLAG_GHOST_LOADED    0x00080000 /* time trial: a ghost was loaded from a Controller Pak */
+#define GAME_FLAG_FRONT_END_RACE    0x00000001 /* a race the front end runs behind the title or rider select */
+#define GAME_FLAG_EDITOR_TO_SHELL   0x00000002 /* leaving the editor returns to the front end */
+#define GAME_FLAG_REPEAT_STATE      0x00000004 /* run the same game state again */
+#define GAME_FLAG_TRACK_LISTS       0x00000008 /* coming back from a race opens the track lists */
+#define GAME_FLAG_RIDER_SELECT      0x00000010
+#define GAME_FLAG_EDITOR            0x00000020 /* leaving the front end starts the track editor */
+#define GAME_FLAG_NES               0x00000040 /* leaving the front end starts Original Excitebike */
+#define GAME_FLAG_TRACK_CHOSEN      0x00000080
+#define GAME_FLAG_PLAYERS_POPUP     0x00000200 /* list screens: the number of players popup is up */
+#define GAME_FLAG_PLAYER_READY(n)   (0x400 << (n)) /* rider select: player n has chosen */
+#define GAME_FLAG_PLAYERS_READY     0x00003C00
+#define GAME_FLAG_REPLAY            0x00008000 /* replay playback */
+#define GAME_FLAG_RESULTS_SEEN      0x00020000 /* the race's results were shown (season progress counted) */
+#define GAME_FLAG_PODIUM            0x00040000 /* the podium ceremony (gPodiumMode) */
+#define GAME_FLAG_GHOST_LOADED      0x00080000 /* time trial: a ghost was loaded from a Controller Pak */
 /* Unlock messages, set by shell_update_season_progress */
-#define GAME_FLAG_ROUND_WON           0x00100000 /* a round won for the first time */
-#define GAME_FLAG_NEW_UNLOCKS         0x00200000 /* save_update_unlocks opened something (gGame.newUnlocks) */
-#define GAME_FLAG_DIFFICULTY_UNLOCKED 0x00400000 /* all rounds won: the next difficulty is open */
-#define GAME_FLAG_ALL_ROUNDS_WON      0x00800000 /* ... at the top difficulty: the next race is the credits run */
-#define GAME_FLAG_UNLOCK_MESSAGES     0x00F00000
+#define GAME_FLAG_ROUND_WON         0x00100000 /* a round won for the first time */
+#define GAME_FLAG_NEW_UNLOCKS       0x00200000 /* save_update_unlocks opened something (gGame.newUnlocks) */
+#define GAME_FLAG_DIFFICULTY_UP     0x00400000 /* all rounds won: the next difficulty is open */
+#define GAME_FLAG_SEASON_COMPLETE   0x00800000 /* ... at the top difficulty: the next race is the credits run */
+#define GAME_FLAG_UNLOCK_MESSAGES   0x00F00000
 #define GAME_FLAG_CREDITS_FROM_OPTIONS 0x01000000 /* the credits run of the options: B leaves it */
-#define GAME_FLAG_RACE_PAK_TRACK  0x02000000 /* the user track loaded from a Controller Pak is raced, not edited */
-#define GAME_FLAG_LOW_RES         0x04000000 /* the race stays in low resolution (min.c) */
-#define GAME_FLAG_NO_CONTROLLER   0x08000000 /* no controller in socket 1 */
-#define GAME_FLAG_SPLASH_3        0x10000000 /* SCREEN_SPLASH_3 is up: screen_draw_wipe draws at full level */
-#define GAME_FLAG_DEBUG           0x20000000 /* the Debug cheat */
+#define GAME_FLAG_RACE_PAK_TRACK    0x02000000 /* the user track loaded from a Controller Pak is raced, not edited */
+#define GAME_FLAG_LOW_RES           0x04000000 /* the race stays in low resolution (min.c) */
+#define GAME_FLAG_NO_CONTROLLER     0x08000000 /* no controller in socket 1 */
+#define GAME_FLAG_SPLASH_3          0x10000000 /* SCREEN_SPLASH_3 is up: screen_draw_wipe draws at full level */
+#define GAME_FLAG_DEBUG             0x20000000 /* the Debug cheat */
 
 /* gGame.fadeState: the fade between two screens (gGame.fadeLevel) */
-#define FADE_OUT  0 /* the screen left fades out */
-#define FADE_SWAP 1 /* black: the screens are unloaded and loaded */
-#define FADE_IN   2
-#define FADE_DONE 3 /* the screen takes input */
+#define FADE_OUT    0       /* the screen left fades out */
+#define FADE_SWAP   1       /* faded out: the screens are unloaded and loaded */
+#define FADE_IN     2
+#define FADE_DONE   3       /* the screen takes input */
 
 /* gGame.pakScreenMode: what the Controller Pak screen is opened for */
 #define PAK_SCREEN_MANAGER         0
@@ -101,18 +103,18 @@
 #define CUP_TUTORIAL  6
 
 /* gSaveData.options */
-#define SAVE_OPTION_STEREO     0x01
-#define SAVE_OPTION_HI_RES     0x02
-#define SAVE_OPTION_USER_TRACK 0x08 /* a user track is saved on the Game Pak */
-#define SAVE_OPTION_DRONES_OFF 0x10
+#define SAVE_OPT_STEREO     0x01
+#define SAVE_OPT_HIGH_RES   0x02
+#define SAVE_OPT_USER_TRACK 0x08    /* a user track is saved on the Game Pak */
+#define SAVE_OPT_NO_DRONES  0x10
 
 /* gTracks flags (+0x50) the front end tests */
-#define TRACK_FLAG_USER         0x0002 /* the user track: no records */
-#define TRACK_FLAG_NEW_TIME     0x0080 /* the race set a record: initials to enter */
-#define TRACK_FLAG_NEW_LAP      0x0100
-#define TRACK_FLAG_NEW_RECORD   0x0180
-#define TRACK_FLAG_RECORDS      0x0200 /* keeps records (gGame.records, the save) */
-#define TRACK_FLAG_SCORES       0x0400 /* the records are scores, not times (stunt course) */
+#define TRACK_FLAG_USER         0x002   /* the user track: keeps no records */
+#define TRACK_FLAG_NEW_LAP      0x080   /* this race set a best lap: the initials are asked for */
+#define TRACK_FLAG_NEW_TIME     0x100   /* ... a best race time (or score) */
+#define TRACK_FLAG_NEW_RECORD   0x180
+#define TRACK_FLAG_RECORDS      0x200   /* keeps records (gGame.records, the save data) */
+#define TRACK_FLAG_SCORES       0x400   /* the records are scores, not times (the stunt course) */
 
 /* gGame.screenState: what the current screen is doing besides its own input (0). Each value belongs to one kind
    of screen. */
@@ -149,7 +151,7 @@ typedef struct Screen Screen;
 
 /* ScreenItem.flags */
 #define SCREEN_ITEM_LOCKED          0x0001 /* greyed out: choosing it plays the error sound */
-#define SCREEN_ITEM_ASK_PLAYERS     0x0100 /* choosing it opens the players and difficulty popup */
+#define SCREEN_ITEM_ASK_DIFFICULTY  0x0100 /* choosing it opens the difficulty popup first */
 #define SCREEN_ITEM_NEED_DIFFICULTY 0x0400 /* ... which then has no difficulty 0 */
 #define SCREEN_ITEM_ASK_GHOST       0x0800 /* asks "Continue" / "Load Saved Ghost Data" first */
 #define SCREEN_ITEM_ASK_USER_TRACK  0x1000 /* asks "Race Saved Track" / "Go To Editor" first */
