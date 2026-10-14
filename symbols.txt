@@ -3795,7 +3795,6 @@ sRiderDrawFlags                       game  0x800DC0B8  data        -
 sGaugeNeedleX                         game  0x800DC0D8  data        -
 sGaugeNeedleY                         game  0x800DC0DC  data        -
 gFogColor                             game  0x800DC0E0  data        -
-gFogColor_2                           game  0x800DC0E0  data        -  gFogColor
 sRiderLightColor                      game  0x800DC0E8  data        -
 sRenderFrame                          game  0x800DC108  data        -
 D_800DC110                            game  0x800DC110  data        -

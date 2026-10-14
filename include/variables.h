@@ -870,7 +870,6 @@ extern s32 sRiderDrawFlags[8];
 extern s32 sGaugeNeedleX;
 extern s32 sGaugeNeedleY;
 extern u8 gFogColor[3];
-extern Rgb gFogColor_2;
 extern u8 sRiderLightColor[][4];
 extern s32 sRenderFrame;
 extern void *D_800DC110[6][2];

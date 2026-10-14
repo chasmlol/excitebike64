@@ -143,7 +143,7 @@ Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
     gDPPipeSync(gdl++);
     gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPSetGeometryMode(gdl++, G_FOG);
-    gDPSetFogColor(gdl++, gFogColor_2.r, gFogColor_2.g, gFogColor_2.b, 255);
+    gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
     fc = gCurTrack;
     gSPFogPosition(gdl++, fc->fmin[gNumViews - 1], fc->fmax[gNumViews - 1]);
     RAW(gdl++, 0xFC127E24, 0xFFFFF9FC);
