@@ -1526,7 +1526,6 @@ D_800C25CC                            game  0x800C25CC  data     0x1c
 gScreenViewport                       game  0x800C25E8  data     0x10
 gScreenViewport_2                     game  0x800C25E8  data        -  gScreenViewport
 gViewAxisMtx                          game  0x800C25F8  data     0x40
-gViewAxisMtx_2                        game  0x800C25F8  data        -  gViewAxisMtx
 sMirrorViewAxisMtx                    game  0x800C2638  data     0x40
 gIdentityMtx                          game  0x800C2678  data     0x40
 sRiderModelTable                      game  0x800C26B8  data     0x10
@@ -2084,8 +2083,6 @@ sPakNewNoteEntry                      game  0x800CE168  data     0x88
 sPakNewNoteEntry_2                    game  0x800CE168  data        -  sPakNewNoteEntry
 sArnedTexResIds                       game  0x800CE1F0  data      0xc
 sArnedCells                           game  0x800CE1FC  data      0x4
-sArnedCells_2                         game  0x800CE1FC  data        -  sArnedCells
-sArnedCells_3                         game  0x800CE1FC  data        -  sArnedCells
 gGui                                  game  0x800CE200  data     0x10
 gGui_2                                game  0x800CE200  data        -  gGui
 gGui_3                                game  0x800CE200  data        -  gGui
@@ -4964,7 +4961,6 @@ gPakScreenAborted                     game  0x800F4AF4  data        -
 D_800F4B00                            game  0x800F4B00  data        -
 sArnedSlotOwner                       game  0x800F4B80  data        -
 gArnedCamMtx                          game  0x800F4F08  data        -
-gArnedCamMtx_2                        game  0x800F4F08  data        -  gArnedCamMtx
 gArnedCamMtx_3                        game  0x800F4F08  data        -  gArnedCamMtx
 sArnedPieceTex                        game  0x800F4F88  data        -
 sArnedGridW                           game  0x800F4F8C  data        -
@@ -4979,13 +4975,9 @@ gArnedViewport_2                      game  0x800F4FD8  data        -  gArnedVie
 D_800F4FE8                            game  0x800F4FE8  data        -
 D_800F4FEC                            game  0x800F4FEC  data        -
 sArnedObjViews                        game  0x800F4FF0  data        -
-sArnedObjViews_2                      game  0x800F4FF0  data        -  sArnedObjViews
-sArnedObjViews_3                      game  0x800F4FF0  data        -  sArnedObjViews
 sArnedPieceTex2                       game  0x800F5574  data        -
 sArnedWallTex                         game  0x800F5578  data        -
 sArnedWallVtx                         game  0x800F557C  data        -
-sArnedWallVtx_2                       game  0x800F557C  data        -  sArnedWallVtx
-sArnedWallVtx_3                       game  0x800F557C  data        -  sArnedWallVtx
 D_800F5580                            game  0x800F5580  data        -
 D_800F5582                            game  0x800F5582  data        -
 D_800F5584                            game  0x800F5584  data        -
@@ -4996,7 +4988,6 @@ D_800F5594                            game  0x800F5594  data        -
 D_800F5598                            game  0x800F5598  data        -
 D_800F559C                            game  0x800F559C  data        -
 sArnedVtxBufs                         game  0x800F55A0  data        -
-sArnedVtxBufs_2                       game  0x800F55A0  data        -  sArnedVtxBufs
 sArnedTexSetIdx                       game  0x800F55A4  data        -
 D_800F55B0                            game  0x800F55B0  data        -
 gUserPieceHeights                     game  0x800F55B8  data        -

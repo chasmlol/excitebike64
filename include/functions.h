@@ -966,18 +966,18 @@ s32 pak_get_plug_mask_2(u8 *param_1);
 void arned_add_wall_quad(s32 x, s32 z, s32 w, s32 h);
 Gfx *arned_draw_walls(Gfx *gdl);
 void arned_init_grid(s32 w, s32 h);
-void arned_set_cell(s32 x, s32 y, s32 w0, s32 b0a, s32 w1, s32 b0b, s32 b0c, s32 h0, s32 h1);
+void arned_set_cell(s32 x, s32 y, PrimModel *piece, s32 rot, PrimModel *piece2, s32 rot2, s32 flags, s32 dx, s32 dz);
 void arned_set_camera(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry);
 void arned_set_camera_2(s32 idx, s32 x, s32 y, s32 z, s32 rx, s32 ry);
-Gfx *arned_draw(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, s32 p8, s32 p9);
-void arned_load_piece_textures(s32 param_1, s32 param_2, s32 param_3);
-void arned_set_object_view(s32 n, s32 id, s32 x, s32 y, s32 w, s32 h, s32 p7, s32 p8, s32 p9, s32 p10, s32 p11, s32 p12);
-void arned_add_object(s32 param_1, s32 param_2, s32 param_3, s32 param_4, s32 param_5);
-s16 *arned_find_vertex(s32 param_1, s32 param_2);
+Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 cursorX, s32 cursorZ, s32 cursorRot, s32 drawGrid);
+void arned_load_piece_textures(s32 set, TexSet *pieceTex2, TexSet *wallTex);
+void arned_set_object_view(s32 frame, s32 view, s32 x, s32 y, s32 w, s32 h, s32 camX, s32 camY, s32 camZ, s32 ry, s32 rx, s32 unk);
+void arned_add_object(s32 frame, s32 view, PrimModel *model, s32 x, s32 z);
+Vtx_t *arned_find_vertex(s32 x, s32 z);
 void arned_free_grid(void);
 void arned_transform_piece_verts(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, s32 dz, s32 flag);
-void arned_set_viewport(s32 a0, s32 a1, s32 a2, s32 a3);
-void func_8008EFFC(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4);
+void arned_set_viewport(s32 x, s32 y, s32 w, s32 h);
+void func_8008EFFC(s32 x, s32 y, s32 w, s32 h, s32 extraH);
 void arned_set_scissor(s32 a0, s32 a1, s32 a2, s32 a3);
 
 /* src/game/gui.c */
