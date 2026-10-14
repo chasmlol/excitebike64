@@ -1134,12 +1134,6 @@ typedef struct Ctl_2 {
     s16 sel;
 } Ctl_2;
 
-typedef struct {
-    s16 h0;
-    s16 h1;
-    u8 rest[60];
-} Row;
-
 typedef struct Ring {
     s32 f00;
     s32 cur;        /* 0x04 */

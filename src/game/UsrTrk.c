@@ -241,7 +241,7 @@ void usrtrk_load_pieces(void)
     for (i = 0; i < 29; i++) {
         gPieceTypes[i].path = 0;
         gPieceTypes[i].collision = 0;
-        if (!(gPieceTypes[i].flags & 0x40)) {
+        if (!(gPieceTypes[i].flags & PIECE_USER)) {
         gPieceTypes[i].meshA = 0;
         gPieceTypes[i].meshB = 0;
         if (gPieceTypes[i].meshAId != 0) {
@@ -284,7 +284,7 @@ void usrtrk_load_pieces(void)
     }
 
     for (i = 18, n = 0; i < 30; i++, n++) {
-        if (!(gPieceTypes[i].flags & 0x40)) continue;
+        if (!(gPieceTypes[i].flags & PIECE_USER)) continue;
         gPieceTypes[i].meshA = mem_alloc_dbg(gUserTrackLayout->segmentCounts[n] << 6 | 4, 0, sStrUsrTrkFile, 0x27F);
         gPieceTypes[i].meshB = mem_alloc_dbg(gUserTrackLayout->segmentCounts[n] << 6 | 4, 0, sStrUsrTrkFile, 0x280);
         gPieceTypes[i].dim[1] = gUserTrackLayout->segmentCounts[n];
@@ -468,7 +468,7 @@ void usrtrk_free_user_piece_meshes(s32 param_1)
     s32 n;
 
     for (n = 18; n < 30; n++) {
-        if (gPieceTypes[n].flags & 0x40) {
+        if (gPieceTypes[n].flags & PIECE_USER) {
             for (i = 0; param_1 == 0 ? i < gPieceTypes[n].dim[1] : i < 8; i++) {
                 for (j = 0; j < 2; j++) {
                     freeOne(&gPieceTypes[n], i * 2 + j);
@@ -621,13 +621,13 @@ void usrtrk_build_track(void)
     nv = gEditArena.collision->vtxCount;
     nt = gEditArena.collision->triCount;
     for (i = 0, p = gUserTrackLayout->pieces; i < gUserTrackLayout->pieceCount; p++, i++) {
-        if (EP.flags & 0x40) {
+        if (EP.flags & PIECE_USER) {
             cnt += EP.dim[1] * 8;
         } else {
             cnt += *EP.path - 1;
         }
         if (EP.collision != NULL) {
-            if (EP.flags & 0x40) {
+            if (EP.flags & PIECE_USER) {
                 m = EP.dim[1] * 2;
                 nv += EP.collision->vtxCount * m;
                 nt += EP.collision->triCount * m;
@@ -783,7 +783,7 @@ void usrtrk_build_track(void)
             gUserTrackData.collision->xMax = 3750;
             gUserTrackData.collision->zMin = -3750;
             gUserTrackData.collision->zMax = 3750;
-            if (e->flags & 0x40) {
+            if (e->flags & PIECE_USER) {
                 reps = e->dim[1] * 2;
             } else {
                 reps = 1;
@@ -1007,7 +1007,7 @@ void usrtrk_build_track(void)
     rec = PATH_LIST->nodes;
     rc = 0;
     for (i = 0, p = gUserTrackLayout->pieces; i < gUserTrackLayout->pieceCount; p++, i++) {
-        if (EP.flags & 0x40) {
+        if (EP.flags & PIECE_USER) {
             n = EP.dim[1] * 8;
         } else {
             n = *EP.path - 1;

@@ -174,14 +174,14 @@ typedef struct EditCam {
 
 /* Editor.flags */
 #define EDIT_REVERSED       0x00000001 /* the view is turned around: left/right swap */
-#define EDIT_TURN_LEFT      0x00000002 /* C buttons: turn the camera a quarter */
+#define EDIT_TURN_LEFT      0x00000002 /* C buttons: turn the view around (toggles EDIT_REVERSED) */
 #define EDIT_TURN_RIGHT     0x00000004
 #define EDIT_FLIP           0x00000008 /* the current piece is flipped */
 #define EDIT_EXIT           0x00000010
-#define EDIT_ROOM_LEFT      0x00000020 /* Move Track: room to move this way */
-#define EDIT_ROOM_RIGHT     0x00000040
-#define EDIT_ROOM_DOWN      0x00000080
-#define EDIT_ROOM_UP        0x00000100
+#define EDIT_ROOM_X_NEG     0x00000020 /* Move Track: room to move the track this way */
+#define EDIT_ROOM_X_POS     0x00000040
+#define EDIT_ROOM_Y_POS     0x00000080
+#define EDIT_ROOM_Y_NEG     0x00000100
 #define EDIT_OPEN_END       0x00000200 /* adding pieces after the last one */
 #define EDIT_TEST_TRACK     0x00000400 /* leaving to race the track */
 #define EDIT_MESSAGE        0x00000800 /* a message box is up (message) */
