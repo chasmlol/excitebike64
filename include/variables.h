@@ -378,6 +378,8 @@ extern char *gOptionsLabels[];
 extern Screen sScreens[SCREEN_COUNT];
 extern ScreenItem gSpecialTracksItems[];
 extern ScreenItem sTrackListItems[];
+extern Cheat sCheatTable[];
+extern RiderBio sRiderBios[];
 extern s16 sShellViewport[];
 extern Pos gControlLabelPos[];
 extern Pos gCameraLabelPos[];

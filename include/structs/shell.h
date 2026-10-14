@@ -101,4 +101,19 @@ struct Screen {
     /* 0x28 */ Screen *back;      /* where B goes */
 }; /* size 0x2C */
 
+/* sCheatTable: entering `code` on the cheat screen toggles bit n of sCheatMask (n = the entry's index) */
+typedef struct Cheat {
+    /* 0x00 */ char *name; /* shown when the cheat is entered */
+    /* 0x04 */ char *code;
+} Cheat; /* size 0x8 */
+
+/* sRiderBios: the rider select screen's text and ratings of each rider */
+typedef struct RiderBio {
+    /* 0x00 */ char *name;
+    /* 0x04 */ char *fullName;  /* with the nickname */
+    /* 0x08 */ char *text[16];  /* [0] age, [1] hometown, [2] speciality (a trick's name in gRiderAnims), [3] "",
+                                   [4..7] their labels, then the quote, a line each and NULL-terminated */
+    /* 0x48 */ s32 stats[4];    /* index in sRiderStatRatings of each of the sRiderStatLabels */
+} RiderBio; /* size 0x58 */
+
 #endif

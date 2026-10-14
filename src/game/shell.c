@@ -728,13 +728,7 @@ typedef struct {
     Trip f84C[4];
 } Game_28;
 
-typedef struct {
-    s32 f0;
-    char *name;
-} NameEnt;
-
 extern Game_28 gGame_59;
-extern NameEnt sCheatTable[];
 extern Trip D_800F05BC[];
 
 void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad16 *pads) {
@@ -775,7 +769,7 @@ void shell_text_entry_input(Screen *screen, ScreenItem *item, u32 *buttons, Pad1
         } else if (isCheat && G_6.f454 == 0x27) {
             {
                 for (i = 0; i < 14; i++) {
-                    p = (u8 *)sCheatTable[i].name;
+                    p = (u8 *)sCheatTable[i].code;
                     q = G_6.f466;
                 loop:
                     m = *p;
@@ -3673,10 +3667,8 @@ void shell_goto_screen(Screen *screen, s32 linkBack, s32 runCallback)
 }
 
 typedef struct { s32 f0; s32 pad[14]; s32 mode; s32 pad2[13]; s32 *slot[64]; } G_3;
-typedef struct { s32 f0; s32 f4; s32 pad[16]; s32 a48[4]; } Tb;
 
 extern G_3 gGame_73;
-extern Tb sRiderBios[];
 
 void shell_draw_rider_stats(s32 x, s32 y, s32 p3, s32 p4)
 {
@@ -3704,7 +3696,7 @@ void shell_draw_rider_stats(s32 x, s32 y, s32 p3, s32 p4)
     for (i = 1; i < 9; i++) {
         font_text_create(gGame_73.slot[i + p4 * 9], 0x40, 1, 2, 0x20);
     }
-    font_text_add(gGame_73.slot[p4 * 9], (char *)sRiderBios[p3].f4);
+    font_text_add(gGame_73.slot[p4 * 9], sRiderBios[p3].fullName);
     font_draw_text(gGame_73.slot[p4 * 9], x, y - 0x1F);
     i = 0;
     do {
@@ -3714,7 +3706,7 @@ void shell_draw_rider_stats(s32 x, s32 y, s32 p3, s32 p4)
         sy = yy + t;
         font_draw_text(gGame_73.slot[p4 * 9 + k], x - 0x46, sy);
         j = i + 5;
-        font_text_add(gGame_73.slot[p4 * 9 + j], (char *)sRiderStatRatings[sRiderBios[p3].a48[i]]);
+        font_text_add(gGame_73.slot[p4 * 9 + j], (char *)sRiderStatRatings[sRiderBios[p3].stats[i]]);
         font_draw_text(gGame_73.slot[p4 * 9 + j], x + 0x12, sy);
         i = k;
     } while (i < 4);
@@ -4001,11 +3993,6 @@ Gfx *shell_draw_yes_no_dialog(Gfx *gdl, s32 p2, char *str)
 }
 
 typedef struct {
-    s32 pad0[2];
-    char *names[20];
-} Entry_5; /* 0x58 */
-
-typedef struct {
     u8 pad0[0x1C];
     s32 sel[8];
     s32 flag;
@@ -4014,7 +4001,6 @@ typedef struct {
 } State_9;
 
 extern State_9 gGame_77;
-extern Entry_5 sRiderBios_2[];
 
 void shell_draw_rider_bio(s32 p, s32 q)
 {
@@ -4026,23 +4012,23 @@ void shell_draw_rider_bio(s32 p, s32 q)
     font_text_create(gGame_77.obj[20], 0x40, 2, 2, 0x20);
     font_text_add(gGame_77.obj[20], D_800D9AD4);
     font_draw_text(gGame_77.obj[20], 0x140, 0x34);
-    font_text_add(gGame_77.obj[p * 20 + 17], sRiderBios_2[gGame_77.sel[p]].names[0]);
+    font_text_add(gGame_77.obj[p * 20 + 17], sRiderBios[gGame_77.sel[p]].text[0]);
     font_draw_text(gGame_77.obj[p * 20 + 17], gViewRects_12.x + 0x10E, q + gViewRects_12.y - 0x6F);
-    font_text_add(gGame_77.obj[p * 20 + 18], sRiderBios_2[gGame_77.sel[p]].names[1]);
+    font_text_add(gGame_77.obj[p * 20 + 18], sRiderBios[gGame_77.sel[p]].text[1]);
     font_draw_text(gGame_77.obj[p * 20 + 18], gViewRects_12.x + 0x10B, q + gViewRects_12.y - 0x62);
-    font_text_add(gGame_77.obj[p * 20 + 19], sRiderBios_2[gGame_77.sel[p]].names[2]);
+    font_text_add(gGame_77.obj[p * 20 + 19], sRiderBios[gGame_77.sel[p]].text[2]);
     font_draw_text(gGame_77.obj[p * 20 + 19], gViewRects_12.x + 0x108, q + gViewRects_12.y - 0x55);
     for (i = 0; i < 4; i++) {
-        font_text_add(gGame_77.obj[p * 20 + 6 + i], sRiderBios_2[gGame_77.sel[p]].names[i + 4]);
+        font_text_add(gGame_77.obj[p * 20 + 6 + i], sRiderBios[gGame_77.sel[p]].text[i + 4]);
         font_draw_text(gGame_77.obj[p * 20 + 6 + i], gViewRects_12.x + 60 - i * 3, q + gViewRects_12.y - 0x6F + i * 13);
     }
     n = 4;
-    while (sRiderBios_2[gGame_77.sel[p]].names[n + 4] != 0) {
+    while (sRiderBios[gGame_77.sel[p]].text[n + 4] != 0) {
         n++;
     }
     off = -100;
-    for (; sRiderBios_2[gGame_77.sel[p]].names[i + 4] != 0; i++) {
-        font_text_add(gGame_77.obj[p * 20 + 6 + i], sRiderBios_2[gGame_77.sel[p]].names[i + 4]);
+    for (; sRiderBios[gGame_77.sel[p]].text[i + 4] != 0; i++) {
+        font_text_add(gGame_77.obj[p * 20 + 6 + i], sRiderBios[gGame_77.sel[p]].text[i + 4]);
         font_draw_text(gGame_77.obj[p * 20 + 6 + i], gViewRects_12.x + 60 - i * 3, q + gViewRects_12.y + off + i * 13);
     }
 }
@@ -4197,11 +4183,6 @@ typedef struct {
 } Save_5;
 
 typedef struct {
-    char *name;
-    s32 x;
-} Cheat;
-
-typedef struct {
     Course_3 *course;
     s16 pts[8];
     u8 pad14[0x6C - 0x14];
@@ -4214,15 +4195,6 @@ typedef struct {
     u8 pad24[0x50 - 0x24];
     u8 b50[8];
 } Race_9;
-
-typedef struct {
-    char *name;
-    char *f4;
-    u8 pad8[8];
-    char *f10;
-    u8 pad14[0x48 - 0x14];
-    s32 stats[4];
-} Rider_8;
 
 typedef struct {
     u8 pad0[0x14];
@@ -4241,14 +4213,12 @@ typedef struct {
 
 extern Glob_8 gGame_78;
 extern Track_17 *gCurTrack_41;
-extern Cheat sCheatTable_2[];
 extern Save_5 gSaveData_13;
 extern Track_17 gTracks_16[];
 extern Course_3 D_800CA9C8_8[];
 extern BikeDef gRiderAnims_17[];
 extern Champ *gSeason_23;
 extern Race_9 gEvent_40;
-extern Rider_8 sRiderBios_3[];
 extern Racer_3 gRiders_91[];
 
 static inline s32 avail8(s32 n)
@@ -5275,7 +5245,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
         }
         if (cheat && D.f2E8 == 17) {
             font_text_create(D.txt[0], 0x20, 1, 2, 0x21);
-            font_text_add(D.txt[0], sCheatTable_2[D.b7A9].name);
+            font_text_add(D.txt[0], sCheatTable[D.b7A9].name);
             if (((1 << D.b7A9) == 4 && (D.flags & 0x20000000)) || ((sCheatMask >> D.b7A9) & 1)) {
                 font_text_add(D.txt[0], D_800DA020);
             } else {
@@ -5531,7 +5501,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
             font_text_add(D.txt[j * 4 + 5], buf);
             x = rx + 0x4E - j * 7;
             font_draw_text(D.txt[j * 4 + 5], (s->type == SCREEN_TYPE_STANDINGS && CHAMP4) ? x - 2 : x, YR);
-            str_copy(buf, sRiderBios_3[D.f1C[r]].name);
+            str_copy(buf, sRiderBios[D.f1C[r]].name);
             font_text_create(D.txt[j * 4 + 6], 0x20, 1, (s32)img, 0x20);
             font_text_add(D.txt[j * 4 + 6], buf);
             font_draw_text(D.txt[j * 4 + 6], rx - (j * 7 - 0x6A), YR);
@@ -5765,7 +5735,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                     }
                 }
                 font_text_create(D.txt[i * 20], 0x40, 5, 4, 0x21);
-                font_text_add(D.txt[i * 20], sRiderBios_3[D.f1C[i]].f4);
+                font_text_add(D.txt[i * 20], sRiderBios[D.f1C[i]].fullName);
                 if (D.f3C == 1) {
                     if (D.flags & (0x400 << i)) {
                         font_draw_text(D.txt[i * 20], VP[0][0].x + VP[0][0].w / 2, VP[0][0].y + VP[0][0].h / 2 + 0x46);
@@ -5810,7 +5780,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                         img = &D.p390[2];
                         DRAWV(VP[0][0].x, VP[0][0].y - img->h + yo, img, 6);
                         for (j = 0; j < 16; j++) {
-                            if (str_icmp(sRiderBios_3[D.f1C[i]].f10, gRiderAnims_17[j].f18) == 0) {
+                            if (str_icmp(sRiderBios[D.f1C[i]].text[2], gRiderAnims_17[j].f18) == 0) {
                                 break;
                             }
                         }
@@ -5826,7 +5796,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                         s32 oy;
 
                         ox = j * 6 - 0x55;
-                        n = (sRiderBios_3[D.f1C[i]].stats[j] + 1) * 2;
+                        n = (sRiderBios[D.f1C[i]].stats[j] + 1) * 2;
                         switch (n >> 1) {
                         case 5:
                             gDPSetPrimColor(gdl++, 0, 0, 0x14, 0xC8, 0x14, 0xFF);
@@ -5872,7 +5842,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                 if (!(D.flags & (0x400 << i))) {
                     img = &D.p390[7];
                     for (j = 0; j < 4; j++) {
-                        nn = (sRiderBios_3[D.f1C[i]].stats[j] + 1) * 2;
+                        nn = (sRiderBios[D.f1C[i]].stats[j] + 1) * 2;
                         nn &= ~1;
                         switch (nn >> 1) {
                         case 5:
@@ -5921,7 +5891,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 e)
                     DRAWV(VP[gNumViews - 1][i].x, VP[gNumViews - 1][i].y + VP[gNumViews - 1][i].h - img->h, img, 6);
                 }
                 font_text_create(D.txt[i * 4], 0x40, 5, 4, 0x21);
-                font_text_add(D.txt[i * 4], sRiderBios_3[D.f1C[i]].f4);
+                font_text_add(D.txt[i * 4], sRiderBios[D.f1C[i]].fullName);
                 {
                     s32 yy = VP[gNumViews - 1][i].y + VP[gNumViews - 1][i].h / 2;
                     s32 xx = VP[gNumViews - 1][i].x + VP[gNumViews - 1][i].w / 2;

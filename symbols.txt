@@ -1493,7 +1493,6 @@ func_800C21F0                         game  0x800C21F0  func     0x34
 font_reset_queue                      game  0x800C2224  func     0x54
 gCheatFlags                           game  0x800C2280  data      0x4
 sCheatTable                           game  0x800C2284  data     0xcc
-sCheatTable_2                         game  0x800C2284  data        -  sCheatTable
 gDrawFlags                            game  0x800C2350  data      0x4
 gRaceTextObjs                         game  0x800C2354  data      0x4
 gRaceTextObjs_2                       game  0x800C2354  data        -  gRaceTextObjs
@@ -2063,8 +2062,6 @@ D_800CDB5C                            game  0x800CDB5C  data      0x4
 D_800CDB60                            game  0x800CDB60  data      0x4
 sTitleSceneRect                       game  0x800CDB64  data     0x14
 sRiderBios                            game  0x800CDB78  data    0x210
-sRiderBios_2                          game  0x800CDB78  data        -  sRiderBios
-sRiderBios_3                          game  0x800CDB78  data        -  sRiderBios
 sRiderStatLabels                      game  0x800CDD88  data     0x10
 sRiderStatRatings                     game  0x800CDD98  data     0x20
 sSeasonResultOptions                  game  0x800CDDB8  data      0xc
