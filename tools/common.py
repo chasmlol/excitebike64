@@ -2,7 +2,7 @@
 
 Settings (toolchain locations) come from environment variables of the same name, else from config.toml at the
 repository root (not tracked; see config.example.toml):
-  VERSION       the version to build or examine: a directory of versions/ (lodgenet, us_rev1; default lodgenet).
+  VERSION       the version to build or examine: a directory of versions/ (lodgenet, us_rev1, eu; default lodgenet).
                 Every tool also takes --version NAME, which wins over the setting.
   SN64_GCC281, SN64_GCC272_0006, SN64_GCC272_0001   folders with SN64 cppn64.exe, cc1n64.exe and asn64.exe
   ULTRALIB      decompals/ultralib checkout (commit e24c836): libultra headers and sources
