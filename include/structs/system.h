@@ -74,6 +74,24 @@
    while a motor runs. */
 #define RUMBLE_OFF              (-1)    /* a rumble_start duration that stops the motor */
 
+/* Maths (unnamed/s0_80011490.c). Angles are 0x10000 per turn (s16 or s32) and the tables take an angle >> 4:
+   gCosTable (0x1000 entries) is the cosine with 1.0 = 0x4000, and 0x400 entries (a quarter turn) back the sine.
+   mtx3i_* matrices are s32[9], row by row, in 2.14 fixed point (1.0 = 0x4000); mtx3f_* the same in f32; mtx_* work
+   on the N64 Mtx (16.16: the s16 integer halves, then the u16 fractions). Quaternions are f32 (w, x, y, z). */
+#define ANGLE_90                0x4000
+#define ANGLE_180               0x8000
+#define ANGLE_270               0xC000
+#define COS_IDX(i)              gCosTable[(i) & 0xFFF]              /* i: an angle >> 4 */
+#define SIN_IDX(i)              gCosTable[((i) - 0x400) & 0xFFF]
+#define FIX14_ONE               0x4000          /* 1.0 in 2.14 fixed point */
+#define FIX14_ONE_F             16384.0f
+#define FIX14_TO_FLOAT          6.1035156e-05f  /* 1.0f / 0x4000 */
+#define MATH_PI_F               3.1415927f
+#define MATH_HALF_PI_F          1.5707964f
+/* The R250 generator (sR250Buffer): each new byte is the byte 250 back xor the byte 147 back. */
+#define R250_SIZE               250
+#define R250_LAG                147
+
 /* The heap (unnamed/lib_800BC3D0.c): blocks of 16-byte units, each starting with a one-unit header {next, prev,
    size in units, check}. A used block's next is its owner (__FILE__), its prev (line << 16) | serial | MEM_USED. */
 #define MEM_UNIT_SHIFT          4
@@ -120,5 +138,16 @@
 #define REPLAY_BTN_C_DOWN       0x08
 #define REPLAY_BTN_R            0x10
 #define REPLAY_NUM_BUTTONS      5
+
+/* The save image (gSaveData, SaveData). */
+#define SAVE_MAGIC              0x5748FB3A
+#define SAVE_CHECKSUM_XOR       0xFCB1121D  /* the checksum is the sum of the other words, xor this */
+#define SAVE_WORDS              0x200       /* words the checksum covers (the first 0x800 bytes) */
+/* save_write's sections: what has changed. */
+#define SAVE_SECTION_NES_TRACK  0       /* the NES design track */
+#define SAVE_SECTION_PROGRESS   1       /* season, custom cup and tutorial progress */
+#define SAVE_SECTION_RECORDS    2       /* a track's records; the second argument is the track */
+#define SAVE_SECTION_USER_TRACK 4
+#define SAVE_SECTION_OPTIONS    5
 
 #endif
