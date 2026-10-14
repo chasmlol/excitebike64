@@ -147,7 +147,7 @@ void bike_crash_update(Rider *b)
     s32 tmp[2];
     f32 g, dt, m;
 
-    stunt_animate((s32)b, 0);
+    stunt_animate(b, 0);
     b->crashTimer++;
     DAMPR(b->frontWheel.suspLength);
     DAMPR(b->rearWheel.suspLength);

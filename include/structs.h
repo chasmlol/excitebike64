@@ -48,7 +48,6 @@ typedef struct Mdl_2 Mdl_2;
 typedef struct Obj_53 Obj_53;
 typedef struct Obj_55 Obj_55;
 typedef struct Obj_58 Obj_58;
-typedef struct Obj_59 Obj_59;
 typedef struct Obj_60 Obj_60;
 typedef struct Mdl2 Mdl2;
 typedef struct Obj2 Obj2;

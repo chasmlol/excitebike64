@@ -1,6 +1,6 @@
 #include "game.h"
 
-void ai_update_throttle(u8 *p)
+void ai_update_throttle(Rider *p)
 {
     s32 iVar1;
     f32 fVar2;
@@ -8,9 +8,9 @@ void ai_update_throttle(u8 *p)
     u32 ev;
     u8 b;
 
-    iVar1 = *(s16 *)(p + 0x628) + 1;
-    fVar2 = *(f32 *)(gPathNodes + *(s16 *)(p + 0x628) * 0x6C + 0x10) * (1.0f - *(f32 *)(p + 0x63C))
-          + *(f32 *)(gPathNodes + (iVar1 % gPathNodeCount) * 0x6C + 0x10) * *(f32 *)(p + 0x63C);
+    iVar1 = p->segment + 1;
+    fVar2 = *(f32 *)(gPathNodes + p->segment * 0x6C + 0x10) * (1.0f - p->segmentT)
+          + *(f32 *)(gPathNodes + (iVar1 % gPathNodeCount) * 0x6C + 0x10) * p->segmentT;
     ev = gGameMode;
     if (ev == 10) goto L_e4;
     if (ev < 11) {
@@ -21,16 +21,16 @@ void ai_update_throttle(u8 *p)
     goto L_gen;
 
 L_e4:
-    if (!(0.5f < *(f32 *)(p + 0x424))) goto ZERO;
+    if (!(0.5f < p->fwdSpeed)) goto ZERO;
 STORE20:
-    *(s32 *)(p + 0x5B0) = 0x20;
+    p->input = 0x20;
     return;
 ZERO:
-    *(s32 *)(p + 0x5B0) = 0;
+    p->input = 0;
     return;
 
 L_gen:
-    b = *(u8 *)(p + 0x3FF);
+    b = p->finishState;
     if (b == 1) goto C1;
     if (b == 2) goto C2;
     goto CS;
@@ -40,21 +40,21 @@ C1:
 C2:
     fVar2 = 5.0f;
 CS:
-    fVar3 = *(f32 *)(p + 0x420) - fVar2;
+    fVar3 = p->speed - fVar2;
     if (0.5f < fVar3) {
-        *(s16 *)(p + 0x55C) = 6;
-        *(s16 *)(p + 0x4B8) = 6;
+        p->frontWheel.brakeRamp = 6;
+        p->rearWheel.brakeRamp = 6;
         goto STORE20;
     }
-    if (fVar3 < -0.5f && *(s32 *)(p + 0x744) < 3 && *(u8 *)(p + 0x7A6) == 0) {
-        if (fVar3 < -5.0f && *(f32 *)(p + 0x648) < 9500.0f) {
-            if ((*(u32 *)(p + 0x5B4) & 0x20000) == 0) {
-                *(s32 *)(p + 0x5B8) = gRaceFrame;
+    if (fVar3 < -0.5f && p->airFrames < 3 && p->laneBlocked == 0) {
+        if (fVar3 < -5.0f && p->engine.heat < 9500.0f) {
+            if ((p->prevInput & 0x20000) == 0) {
+                p->turboPressFrame = gRaceFrame;
             }
-            *(s32 *)(p + 0x5B0) = 0x20000;
+            p->input = 0x20000;
             return;
         }
-        *(s32 *)(p + 0x5B0) = 0x10;
+        p->input = 0x10;
     }
     return;
 
@@ -136,10 +136,10 @@ void ai_update_steering(Rider *b) {
 
     switch (gGameMode_2) {
     case 6:
-        excite3d_cpu_steer((u8 *)b);
+        excite3d_cpu_steer(b);
         break;
     case 5:
-        desert_ai_steer((u8 *)b);
+        desert_ai_steer(b);
         return;
     case 10:
         ai_set_steering(b, 0.0f);
@@ -385,33 +385,32 @@ void ai_update_steering(Rider *b) {
     }
 }
 
-#define FLD(t, p, o) (*(t *)((u8 *)(p) + (o)))
 
-void bike_update_steering(u8 *p, s32 m)
+void bike_update_steering(Rider *p, s32 m)
 {
     s32 dir, i;
     u8 b;
     f32 x, lim, r, w, T, S, g;
 
-    dir = FLD(s8, p, 0x5d0);
-    if (FLD(s16, p, 0x5aa) == 4) {
+    dir = p->stickX;
+    if (p->camMode == 4) {
         excite3d_player_steer(p);
     } else {
-        b = (s32)(FLD(f32, p, 0x48) / 2.178f);
-        FLD(u8, p, 0x7a9) = b;
-        if (FLD(u8, p, 0x44) != 0) {
-            FLD(s8, p, 0x7aa) = 0;
+        b = (s32)(p->bike.pos.x / 2.178f);
+        p->gridSlot = b;
+        if (p->crashState != 0) {
+            p->laneChange = 0;
         } else {
-            FLD(s8, p, 0x7aa) = (s32)((FLD(f32, p, 0x48) - b * 2.178f) * (gLaneChangeFrames / 2.178f));
-            if (FLD(u8, p, 0x7a9) == 0 && FLD(s8, p, 0x7aa) < 0) {
-                FLD(s8, p, 0x7aa) = 0;
+            p->laneChange = (s32)((p->bike.pos.x - b * 2.178f) * (gLaneChangeFrames / 2.178f));
+            if (p->gridSlot == 0 && p->laneChange < 0) {
+                p->laneChange = 0;
             }
         }
     }
-    if (FLD(s32, p, 0x744) >= 8) {
+    if (p->airFrames >= 8) {
         dir = 0;
     }
-    x = FLD(f32, p, 0x420);
+    x = p->speed;
     i = 0;
     while (sSteerSpeedSteps[i + 1] < x) {
         i++;
@@ -423,20 +422,20 @@ void bike_update_steering(u8 *p, s32 m)
     }
     S = 0.012566371f;
     T = dir * S;
-    w = (sSteerMaxBySpeed[i] * r + sSteerMaxBySpeed[i + 1] * (1.0f - r)) * FLD(f32, p, 0x7d0);
+    w = (sSteerMaxBySpeed[i] * r + sSteerMaxBySpeed[i + 1] * (1.0f - r)) * p->turnRadius;
     T *= w;
     lim = 0.18849556f;
     lim *= w;
     S = (sSteerRateBySpeed[i] * r + sSteerRateBySpeed[i + 1] * (1.0f - r)) * 0.327f * m * S;
-    if (FLD(u8, p, 0x6e9) != 0) {
+    if (p->reversing != 0) {
         T *= 0.25f;
     }
-    if (T == 0.0f || T * FLD(f32, p, 0x5a0) < 0.0f) {
+    if (T == 0.0f || T * p->steer < 0.0f) {
         S *= 5.0f;
     }
-    if (FLD(u8, p, 0x41c) != 0) {
+    if (p->hardTurn != 0) {
         T = sHardTurnSteerAngle;
-        if (FLD(s8, p, 0x5d0) <= 0) {
+        if (p->stickX <= 0) {
             T = -T;
         }
     } else if (lim < T) {
@@ -450,18 +449,18 @@ void bike_update_steering(u8 *p, s32 m)
         }
     }
     if (gGameMode == 7) {
-        T += (FLD(f32, p, 0xb8) * FLD(f32, p, 0x56c) - FLD(f32, p, 0xc0) * FLD(f32, p, 0x564)) * 16.0f * S;
+        T += (p->bike.fwd.x * p->frontWheel.normal.z - p->bike.fwd.z * p->frontWheel.normal.x) * 16.0f * S;
     }
-    g = FLD(f32, p, 0x5a0);
+    g = p->steer;
     if (T < g) {
-        FLD(f32, p, 0x5a0) = g - S;
-        if (FLD(f32, p, 0x5a0) < T) {
-            FLD(f32, p, 0x5a0) = T;
+        p->steer = g - S;
+        if (p->steer < T) {
+            p->steer = T;
         }
     } else {
-        FLD(f32, p, 0x5a0) = g + S;
-        if (T < FLD(f32, p, 0x5a0)) {
-            FLD(f32, p, 0x5a0) = T;
+        p->steer = g + S;
+        if (T < p->steer) {
+            p->steer = T;
         }
     }
 }

@@ -296,7 +296,7 @@ f32 cam_calc_air_pitch(Rider *p);
 void cam_update_rider_select(Rider *p, s32 *out, s32 arg2);
 int cam_calc_bike_yaw(Rider *s);
 s32 cam_mode_soccer(Rider *bike, Rec6 *out);
-f32 cam_calc_hill_climb_pitch(u8 *param_1);
+f32 cam_calc_hill_climb_pitch(Rider *param_1);
 void cam_mode_hill_climb(Rider *p, s32 *out);
 void cam_update_chase(Rider *p, s32 *out, s32 z);
 s32 cam_update_chase_2(Rider *p, Rec6 *out, s32 z);
@@ -398,7 +398,7 @@ void particle_spawn_4(s32 a, s32 b, f32 *c, s32 *d, s32 *e);
 void particles_emit_sparks(Rider *param_1);
 void particles_load_textures(void *param_1);
 void particles_emit_bike_dirt(void);
-void particles_emit_water_splash(u8 *p);
+void particles_emit_water_splash(Rider *p);
 void particles_emit_dust_cloud(void);
 Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2);
 Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf);
@@ -407,7 +407,7 @@ void particles_free(void);
 void particles_start_dust_cloud(Vec3f *src, s32 val);
 void rain_init(void);
 void rain_free(void);
-void particles_start_sparks(u8 *p);
+void particles_start_sparks(Rider *p);
 void particles_project_point(f32 *v, s32 *a1, s32 *a2, s32 *a3, s32 *a4, s32 a5, s32 idx);
 void particles_start_exhaust_puff(s32 param_1);
 
@@ -436,7 +436,7 @@ void rider_apply_ik(s32 *param_1);
 void rider_update_pose(Model_4 *m, s32 i);
 void rider_anims_load(u8 *param_1);
 void rider_anim_apply(Bone_2 *bones, s32 param_2, s32 param_3);
-void bike_update_trick_offset(u8 *param_1);
+void bike_update_trick_offset(Rider *param_1);
 void bike_skel_update(s32 *p1, s32 p2);
 void rider_update_head_look(void);
 void rider_update_input_history(Rider *p, s32 n);
@@ -500,7 +500,7 @@ void rider_change_anim(Rider *o, s32 b);
 void desert_init(void);
 void desert_export_checkpoints(void);
 void desert_update_race(void);
-void desert_ai_steer(u8 *s);
+void desert_ai_steer(Rider *s);
 
 /* src/game/unnamed/s0_80048230.c */
 void font_load_race_set(void *arc);
@@ -633,10 +633,10 @@ s32 track_res_find(s32 key);
 void func_8005B5E0(void);
 
 /* src/game/unnamed/s0_8005B5F0.c */
-void ai_update_throttle(u8 *p);
+void ai_update_throttle(Rider *p);
 void ai_set_steering(Rider *b, f32 maxv);
 void ai_update_steering(Rider *b);
-void bike_update_steering(u8 *p, s32 m);
+void bike_update_steering(Rider *p, s32 m);
 void func_8005C8F4(void);
 void func_8005C8FC(void);
 
@@ -808,7 +808,7 @@ void flash_start(s32 x);
 
 /* src/game/unnamed/s0_8006B1A0.c */
 void excite3d_init(void);
-void excite3d_cpu_steer(u8 *p);
+void excite3d_cpu_steer(Rider *p);
 void excite3d_update(void);
 void excite3d_player_steer(Rider *p);
 s32 excite3d_lane_is_clear(Obj_53 *o, s32 n);
@@ -845,8 +845,8 @@ void stunt_start(Rider *o, s32 n);
 s32 stunt_animate(Rider *p, s32 k);
 void stunt_add_points(Obj_58 *o);
 s32 stunt_seq_less(u8 *a, u8 *b);
-void func_80070560(s32 arg0);
-s32 stunt_record_done(Obj_59 *p);
+void func_80070560(Rider *b);
+s32 stunt_record_done(Rider *p);
 
 /* src/game/ponytail.c */
 void ponytail_simulate(s32 idx, Obj_60 *o);

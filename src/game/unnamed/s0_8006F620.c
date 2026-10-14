@@ -587,37 +587,28 @@ s32 stunt_seq_less(u8 *a, u8 *b) {
     return 0;
 }
 
-void func_80070560(s32 arg0)
+void func_80070560(Rider *b)
 {
 }
 
-struct Obj_59 {
-    u8 pad[0x3D2];
-    s8 cur;
-    u8 pad2[0x3E4 - 0x3D3];
-    u8 hist[6];
-    u8 n;
-    s8 list[16];
-};
-
-s32 stunt_record_done(Obj_59 *p)
+s32 stunt_record_done(Rider *p)
 {
     s32 ret = 0;
     s32 i;
 
-    if (p->cur < 16) {
-        for (i = 0; i < p->n; i++) {
-            if (p->cur == p->list[i]) {
+    if (p->trick < 16) {
+        for (i = 0; i < p->trickListLen; i++) {
+            if (p->trick == p->trickList[i]) {
                 break;
             }
         }
-        if (i == p->n) {
+        if (i == p->trickListLen) {
             ret = 1;
-            p->list[i] = p->cur;
-            p->n = i + 1;
+            p->trickList[i] = p->trick;
+            p->trickListLen = i + 1;
         }
-        for (i = 4; i >= 0; i--) { p->hist[i + 1] = p->hist[i]; }
-        p->hist[0] = p->cur;
+        for (i = 4; i >= 0; i--) { p->trickHist[i + 1] = p->trickHist[i]; }
+        p->trickHist[0] = p->trick;
     }
     return ret;
 }

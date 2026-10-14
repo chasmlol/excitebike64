@@ -664,7 +664,7 @@ typedef struct { u8 pad[0x10]; u8 *anim; u8 rest[0x28]; } Slot_8;
 
 extern Slot_8 gRiderAnims_5[];
 
-void bike_update_trick_offset(u8 *param_1)
+void bike_update_trick_offset(Rider *param_1)
 {
     s8 idx;
     u8 *ent;
@@ -680,15 +680,15 @@ void bike_update_trick_offset(u8 *param_1)
     if (gPodiumMode != 0) {
         return;
     }
-    *(s32 *)(param_1 + 0x3A8) = 0;
-    if (*(s8 *)(param_1 + 0x3D0) == -1) {
+    param_1->trickBlend = 0.0f;
+    if (param_1->anim == -1) {
         return;
     }
-    st = gRiderAnims_5[*(s8 *)(param_1 + 0x3D0)].anim;
+    st = gRiderAnims_5[param_1->anim].anim;
     if (st == 0) {
         return;
     }
-    a2 = *(s32 *)(param_1 + 0x3AC);
+    a2 = param_1->animFrame;
     iv = a2 >> 8;
     if (iv < 0) {
         iv = 0;
@@ -701,17 +701,17 @@ void bike_update_trick_offset(u8 *param_1)
     ps = (s16 *)*(u8 **)(st + 0x10) + iv * six;
     f = (f32)a2 * 0.0009765625f;
     cp = (s8 *)((u8 *)ps + 6);
-    *(f32 *)(param_1 + 0x3A8) = f;
+    param_1->trickBlend = f;
     if (1.0f < f) {
-        *(f32 *)(param_1 + 0x3A8) = 1.0f;
+        param_1->trickBlend = 1.0f;
     }
-    quat_from_euler((f32 *)(param_1 + 0x38C),
+    quat_from_euler(param_1->trickQuat,
                   (f32)(*(s8 *)((u8 *)ps + 6)) * 3.1415925f * 0.0078125f,
                   (f32)(cp[1]) * 3.1415925f * 0.0078125f,
                   (f32)(cp[2]) * 3.1415925f * 0.0078125f);
-    *(f32 *)(param_1 + 0x39C) = (f32)(ps[0]) / 1000.0f;
-    *(f32 *)(param_1 + 0x3A0) = (f32)(ps[1]) / 1000.0f;
-    *(f32 *)(param_1 + 0x3A4) = (f32)(ps[2]) / 1000.0f;
+    param_1->trickOffset.x = (f32)(ps[0]) / 1000.0f;
+    param_1->trickOffset.y = (f32)(ps[1]) / 1000.0f;
+    param_1->trickOffset.z = (f32)(ps[2]) / 1000.0f;
 }
 
 typedef struct {

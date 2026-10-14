@@ -31,7 +31,7 @@ typedef struct {
 
 extern Seg_16 *gPathNodes_30;
 
-void excite3d_cpu_steer(u8 *p)
+void excite3d_cpu_steer(Rider *p)
 {
     s32 i0;
     s32 i1;
@@ -47,9 +47,9 @@ void excite3d_cpu_steer(u8 *p)
     f32 h;
     f32 n;
 
-    i0 = *(s16 *)(p + 0x628);
+    i0 = p->segment;
     i1 = i0;
-    side = (s32)((*(f32 *)(p + 0x48) + 1.089f) / 2.178f);
+    side = (s32)((p->bike.pos.x + 1.089f) / 2.178f);
     other = side ^ 1;
     sh1 = side << 1;
     t0 = (gPathNodes_30[i1].f65 >> sh1) & 3;
@@ -57,7 +57,7 @@ void excite3d_cpu_steer(u8 *p)
         for (;;) {
             i1++;
             {
-                f32 dd = gPathNodes_30[i1].f8 - *(f32 *)(p + 0x50);
+                f32 dd = gPathNodes_30[i1].f8 - p->bike.pos.z;
                 if (!(-40.0f < dd)) break;
             }
             t0 = (gPathNodes_30[i1].f65 >> sh1) & 3;
@@ -70,7 +70,7 @@ void excite3d_cpu_steer(u8 *p)
         for (;;) {
             i0++;
             {
-                f32 dd = gPathNodes_30[i0].f8 - *(f32 *)(p + 0x50);
+                f32 dd = gPathNodes_30[i0].f8 - p->bike.pos.z;
                 if (!(-40.0f < dd)) break;
             }
             t1 = (gPathNodes_30[i0].f65 >> sh2) & 3;
@@ -79,32 +79,32 @@ void excite3d_cpu_steer(u8 *p)
     }
     if ((t0 == 1 && (t1 != t0 || i1 < i0)) || t1 == 2) {
         side = other;
-        if (10.0f < *(f32 *)(p + 0x420)) {
-            *(s32 *)(p + 0x5B0) &= 0xFFFDFFEF;
+        if (10.0f < p->speed) {
+            p->input &= 0xFFFDFFEF;
         }
     }
     f = side * 2.178f;
-    h = *(f32 *)(p + 0x48);
+    h = p->bike.pos.x;
     d = f - h;
-    *(f32 *)(p + 0x42C) = -f;
+    p->laneOffset = -f;
     if (0.21779999f < d) {
-        n = h + *(f32 *)(p + 0x420) * gPhysDeltaTime / 10.0f;
+        n = h + p->speed * gPhysDeltaTime / 10.0f;
     } else if (d < -0.21779999f) {
-        n = h - *(f32 *)(p + 0x420) * gPhysDeltaTime / 10.0f;
+        n = h - p->speed * gPhysDeltaTime / 10.0f;
     } else {
         goto done;
     }
-    *(f32 *)(p + 0x48) = n;
-    *(f32 *)(p + 0x42C) = -n;
+    p->bike.pos.x = n;
+    p->laneOffset = -n;
 done:
-    if (*(s32 *)(p + 0x744) <= 0) {
+    if (p->airFrames <= 0) {
         if (t0 == 3) {
-            *(s16 *)(p + 0x416) = 0x10;
-            *(s16 *)(p + 0x414) = 0;
+            p->wheelieTimer = 0x10;
+            p->wheelieBalance = 0;
             return;
         }
-        if (*(s16 *)(p + 0x416) != 0) {
-            *(s16 *)(p + 0x416) -= 1;
+        if (p->wheelieTimer != 0) {
+            p->wheelieTimer -= 1;
         }
     }
 }
@@ -145,7 +145,7 @@ void excite3d_update(void)
 
     for (p = gRiders; p < &gRiders[8]; p++) {
         if (p->frozen == 0 && p->isCpu != 0 && p->crashState == 0 && p->airFrames < 3) {
-            excite3d_cpu_steer((u8 *)p);
+            excite3d_cpu_steer(p);
         }
     }
 
@@ -293,8 +293,8 @@ void excite3d_player_steer(Rider *p)
     if (gEventTime <= 0) {
         return;
     }
-    if ((s8)p->laneChange != 0) {
-        if ((s8)p->laneChange > 0) {
+    if (p->laneChange != 0) {
+        if (p->laneChange > 0) {
             p->laneChange--;
         } else {
             p->laneChange++;
@@ -311,7 +311,7 @@ void excite3d_player_steer(Rider *p)
         }
     }
     p->bike.vel.x = 0.0f;
-    p->bike.pos.x = p->gridSlot * 2.178f - (s8)p->laneChange * (2.178f / gLaneChangeFrames);
+    p->bike.pos.x = p->gridSlot * 2.178f - p->laneChange * (2.178f / gLaneChangeFrames);
 }
 
 struct Obj_53 {

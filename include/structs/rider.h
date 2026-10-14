@@ -297,7 +297,7 @@ typedef struct Rider {
     /* 0x7A7 */ u8 standing;         /* index in gRiderStandings */
     /* 0x7A8 */ s8 award;
     /* 0x7A9 */ u8 gridSlot;
-    /* 0x7AA */ u8 laneChange;      /* Excite 3D lane change frames */
+    /* 0x7AA */ s8 laneChange;      /* Excite 3D lane change frames */
     /* 0x7AB */ u8 unk_7AB;
     /* 0x7AC */ s16 offTrackTimer;
     /* 0x7AE */ s16 unk_7AE;

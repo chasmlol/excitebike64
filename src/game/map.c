@@ -200,20 +200,12 @@ typedef struct {
     u8 pad68[0x6C - 0x68];
 } Node_19;
 
-typedef struct {
-    u8 pad0[0x628];
-    s16 node;
-    u8 pad62A[0x63C - 0x62A];
-    f32 frac;
-    u8 pad640[0x7E0 - 0x640];
-} Rider_5;
-
 extern Node_19 *gPathNodes_27;
 
 Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 {
-    Rider_5 *r;
-    Rider_5 *rb;
+    Rider *r;
+    Rider *rb;
     Node_19 *a;
     Node_19 *b;
     s32 v;
@@ -223,13 +215,13 @@ Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 
     rb = gRiders;
     r = &rb[idx];
-    k = r->node;
+    k = r->segment;
     a = &gPathNodes_27[k];
     v = a->pos;
     k = a->next;
     b = &gPathNodes_27[k];
     if (b->pos < a->pos) {
-        f = r->frac;
+        f = r->segmentT;
         if (f < 0.0f) {
             f = 0.0f;
         }
@@ -339,15 +331,14 @@ Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
 }
 
 typedef struct { f32 x, y; } V2;
-typedef struct { u8 pad[0x628]; s16 obj; u8 pad2[0x63C - 0x62A]; f32 t; u8 pad3[0x7E0 - 0x640]; } Player_25;
 typedef struct { u8 pad[0x46]; s16 next; u8 pad2[0x6C - 0x48]; } Obj_50;
 
 extern Obj_50 *gPathNodes_28;
 
 void map_get_rider_pos(s32 player, s32 *px, s32 *py)
 {
-    Player_25 *pl;
-    Player_25 *base;
+    Rider *pl;
+    Rider *base;
     Obj_50 *o;
     Obj_50 *o2;
     V2 a, b;
@@ -360,11 +351,11 @@ void map_get_rider_pos(s32 player, s32 *px, s32 *py)
     pl = &base[player];
     cx = (sMapBoundsMin_2[0] + sMapBoundsMax_2[0]) * 0.5f;
     cy = (sMapBoundsMin_2[1] + sMapBoundsMax_2[1]) * 0.5f;
-    o = &gPathNodes_28[pl->obj];
+    o = &gPathNodes_28[pl->segment];
     o2 = &gPathNodes_28[o->next];
     map_get_node_pos((f32 *)o, &a.x, &a.y);
     map_get_node_pos((f32 *)o2, &b.x, &b.y);
-    t = pl->t;
+    t = pl->segmentT;
     if (t < 0.0f) {
         t = 0.0f;
     }

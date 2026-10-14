@@ -666,7 +666,7 @@ s32 cam_mode_soccer(Rider *bike, Rec6 *out) {
     }
 }
 
-f32 cam_calc_hill_climb_pitch(u8 *param_1)
+f32 cam_calc_hill_climb_pitch(Rider *param_1)
 {
     f32 fs;
     f32 v[3];
@@ -678,20 +678,20 @@ f32 cam_calc_hill_climb_pitch(u8 *param_1)
     u8 fl;
     s32 *gp = &sCamHillPitch;
 
-    fl = gPathNodes[*(s16 *)(param_1 + 0x628) * 0x6C + 0x64];
+    fl = gPathNodes[param_1->segment * 0x6C + 0x64];
     fs = (f32)*gp;
     if ((fl & 1) == 0) {
-        s2 = *(f32 *)(param_1 + 0xB8) * *(f32 *)(param_1 + 0xB8) +
-             *(f32 *)(param_1 + 0xC0) * *(f32 *)(param_1 + 0xC0);
+        s2 = param_1->bike.fwd.x * param_1->bike.fwd.x +
+             param_1->bike.fwd.z * param_1->bike.fwd.z;
         k8 = 8.0f;
         len = sqrtf(s2);
-        v[0] = *(f32 *)(param_1 + 0x494) + (*(f32 *)(param_1 + 0xB8) * k8) / len;
-        v[2] = *(f32 *)(param_1 + 0x49C) + (*(f32 *)(param_1 + 0xC0) * k8) / len;
-        v[1] = *(f32 *)(param_1 + 0x498);
+        v[0] = param_1->rearWheel.contact.x + (param_1->bike.fwd.x * k8) / len;
+        v[2] = param_1->rearWheel.contact.z + (param_1->bike.fwd.z * k8) / len;
+        v[1] = param_1->rearWheel.contact.y;
         d = bike_get_ground_height(v);
         v[1] = d;
         if (gGroundFound != 0) {
-            t = *(f32 *)(param_1 + 0x498) - d;
+            t = param_1->rearWheel.contact.y - d;
             fs = t * 1024.0f;
             if ((gCheatFlags & 8) == 0) {
                 if (fs < -2048.0f) fs = -2048.0f;
@@ -725,7 +725,7 @@ void cam_mode_hill_climb(Rider *p, s32 *out)
 
     if (p->crashState == 0) {
         rot = (u16)p->heading;
-        h = cam_calc_hill_climb_pitch((u8 *)p);
+        h = cam_calc_hill_climb_pitch(p);
         mtx3i_from_angles(m, h, 0, rot);
         v[0] = 0;
         v[1] = 0;
