@@ -139,9 +139,9 @@ s32 sfx_play(s32 sample, s32 rate, s32 volume, s32 pan, s32 priority, s32 unused
     s32 numPlaying;
     s32 step;
     s32 clock;
-    s32 m1;         /* -1, the `prev` of a free pool entry */
-    s32 t5;         /* the priority */
-    s32 id;         /* the new handle */
+    s32 freeMark;
+    s32 prio;
+    s32 handle;
     MethodFn getClock;
 
     if (sSfxInitialized == 0) {
@@ -152,12 +152,13 @@ s32 sfx_play(s32 sample, s32 rate, s32 volume, s32 pan, s32 priority, s32 unused
     }
     i = 0;
     critical_enter();
-    m1 = -1;
-    /* The empty asm statements hold m1, id and t5 in registers of their own, as the original allocated them. */
-    __asm__ __volatile__("" : "+r"(m1));
+    freeMark = -1; /* the `prev` of a free pool entry */
+    /* The empty asm statements hold freeMark, handle and prio in registers of their own, as the original allocated
+       them. */
+    __asm__ __volatile__("" : "+r"(freeMark));
     slot = sSfxSoundPool;
     for (i = 0; i < SFX_NUM_SOUNDS; i++) {
-        if (slot->prev == (SfxSound *)m1) {
+        if (slot->prev == (SfxSound *)freeMark) {
             slot->prev = NULL;
             break;
         }
@@ -173,24 +174,24 @@ s32 sfx_play(s32 sample, s32 rate, s32 volume, s32 pan, s32 priority, s32 unused
         return -1;
     }
     mem_fill((u8 *)snd, 0, sizeof(SfxSound));
-    id = sSfxNextHandle;
-    __asm__ __volatile__("" : "+r"(id));
+    handle = sSfxNextHandle;
+    __asm__ __volatile__("" : "+r"(handle));
     snd->sample = sample;
     snd->rate = rate;
     snd->volume = volume;
     snd->fadeVolume = volume << SFX_FADE_SHIFT;
     snd->pan = pan;
-    t5 = priority;
-    __asm__ __volatile__("" : "+r"(t5));
+    prio = priority;
+    __asm__ __volatile__("" : "+r"(prio));
     snd->voiceFlags = 0;
     snd->fadeStep = 0;
-    __asm__ __volatile__("" : "+r"(t5));
-    snd->priority = t5;
+    __asm__ __volatile__("" : "+r"(prio));
+    snd->priority = prio;
     driver = gSfxDriver;
     snd->voice = -1;
-    snd->handle = id;
+    snd->handle = handle;
     getClock = *(MethodFn *)&driver->getSampleClock;
-    sSfxNextHandle = id + 1;
+    sSfxNextHandle = handle + 1;
     clock = getClock(driver);
     step = (rate << SFX_POS_SHIFT) / sSfxOutputRate;
     numPlaying = 0;
