@@ -40,7 +40,13 @@ u32 sSfxSounds = 0;
 u32 sSfxVoiceChangeCount = 0;
 u32 sSfxInitialized = 0;
 u32 sSfxFrameCallback = 0;
+#if VERSION == VERSION_LODGENET || VERSION == VERSION_US_REV1
 u32 gSfxActiveCount[0x2] = { 0 };
+#elif VERSION == VERSION_EU
+u32 gSfxActiveCount[0x2] = {
+    0, 0x6F746F20,
+};
+#endif
 u32 sSoftmixMasterVolume = 0x100;
 u16 sSoftmixExpandTable[0x100] = {
     /* 0x000 */ 0, 0xE, 0x1C, 0x2A, 0x39, 0x48, 0x58, 0x68,
@@ -596,7 +602,7 @@ u32 sSoftmixDecompressFn = 0;
 u32 sSoftmixDecompressBuf = 0;
 #if VERSION == VERSION_LODGENET
 u32 sSoftmixDecompressBufSize[0x3] = { 0 };
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 sSoftmixDecompressBufSize[0x3] = {
     0, 0x59595959, 0x59595959,
 };
@@ -627,7 +633,7 @@ u32 sDecDigitDivisors[0x8] = {
     /* 0x000 */ 0x2710, 0x3E8, 0x64, 0xA,
     /* 0x010 */ 0x1, 0x6D696E65, 0x20527573, 0x68000000,
 };
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 sDecDigitDivisors[0x8] = {
     /* 0x000 */ 0x2710, 0x3E8, 0x64, 0xA,
     /* 0x010 */ 0x1, 0x5E5E5E5E, 0x5E5E5E5E, 0x5E5E5E5E,
@@ -635,13 +641,13 @@ u32 sDecDigitDivisors[0x8] = {
 #endif
 #if VERSION == VERSION_LODGENET
 u32 sFilePageCount[0x4] = { 0x8, 0, 0, 0x2 };
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 sFilePageCount[0x4] = { 0x8, 0x5E5E5E5F, 0x5F5F5F5F, 0x5F5F5F5F };
 #endif
 u32 gDmaIdleCallback = 0;
 #if VERSION == VERSION_LODGENET
 u32 sDmaCopyFunc[0x3] = { 0, 0x3F7851EC, 0x1 };
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 sDmaCopyFunc[0x3] = { 0, 0x5F5F5F5F, 0x5F5F5F5F };
 #endif
 u32 sCartRomInitFirst[0x4] = { 0x1 };
@@ -649,7 +655,7 @@ u32 gResLoadCallback = 0;
 u32 sResSwapBytes = 0;
 #if VERSION == VERSION_LODGENET
 u32 sResTypesInit[0x2] = { 0, 0x4B444F47 };
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 sResTypesInit[0x2] = { 0, 0x60606060 };
 #endif
 u8 sFontDefaultPalette[0x18] = {
@@ -684,13 +690,13 @@ u32 sFontAllocBits[0x20] = {
 };
 #if VERSION == VERSION_LODGENET
 u32 gFontLoadBuffer[0x4] = { 0, 0x44554B4A, 0x494D444F, 0x4744554B };
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 gFontLoadBuffer[0x4] = { 0, 0x66666666, 0x66666666, 0x66666666 };
 #endif
 /* 0x800d5880-0x800d5b38 (696 bytes): libultra data (build_libultra.py) */
 #if VERSION == VERSION_LODGENET
 u32 D_800D5B38[0x2] = { 0xFFFF0000 };
-#elif VERSION == VERSION_US_REV1
+#elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
 u32 D_800D5B38[0x2] = { 0x4197D784 };
 #endif
 /* 0x800d5b40-0x800d5c90 (336 bytes): libultra data (build_libultra.py) */
@@ -721,11 +727,17 @@ char D_800D5DA8[0xc] = "Debug Mode";
 char D_800D5DB4[0xc] = "YADAYADA";
 char D_800D5DC0[0xc] = "Mirror Mode";
 char D_800D5DCC[0xc] = "BLAHBLAH";
+#if VERSION == VERSION_LODGENET || VERSION == VERSION_US_REV1
 char D_800D5DD8[0x14] = "Big Head Mode";
+#elif VERSION == VERSION_EU
+char D_800D5DD8[0x14] = "Big Head Mode\000wwwwww";
+#endif
 #if VERSION == VERSION_LODGENET
 u32 D_800D5DEC = 0x1;
 #elif VERSION == VERSION_US_REV1
 u32 D_800D5DEC = 0;
+#elif VERSION == VERSION_EU
+u32 D_800D5DEC = 0x77777777;
 #endif
 char D_800D5DF0[0x8] = "BikeVol";
 char D_800D5DF8[0xc] = "RiderCount";

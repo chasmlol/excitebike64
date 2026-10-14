@@ -2,6 +2,7 @@
 #ifndef DATA_H
 #define DATA_H
 #include "version.h"
+#include "constants.h"
 typedef signed char s8;
 typedef unsigned char u8;
 typedef short s16;

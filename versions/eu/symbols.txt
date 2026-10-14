@@ -1516,7 +1516,6 @@ gContMask                             game  0x800C31AC  data      0x1
 gContMask_2                           game  0x800C31AC  data        -  gContMask
 gContCount                            game  0x800C31AD  data      0x1
 gContFirst                            game  0x800C31AE  data      0x2
-gDebugPadFreeze                       game  0x800C31B0  data      0x4
 sDebugLagEnable                       game  0x800C31B0  data      0x4
 sDebugLagLoops                        game  0x800C31B4  data      0x4
 sScreenshotCounter                    game  0x800C31B8  data      0x4
@@ -1966,7 +1965,7 @@ sNesInstrCount                        game  0x800CF4BC  data      0x4
 sNesInstrPerFrame                     game  0x800CF4C0  data     0x10
 sNesMnemonics                         game  0x800CF4D0  data     0xe4
 sNesOpcodeTable                       game  0x800CF5B4  data   0x12ec
-sNesOpcodeTableTail                   game  0x800D0000  data    0x514
+sNesOpcodeTableTail                   game  0x800D08A0  data    0x514
 sNesRgbPalette                        game  0x800D0DB4  data     0xc0
 sNesCorruptRam                        game  0x800D0E74  data      0x4
 sNesDutyTable                         game  0x800D0E78  data      0x8
@@ -2013,12 +2012,12 @@ sPodium1stPose2ResId                  game  0x800D1070  data      0x4
 sUserTrackStandTexResId               game  0x800D1074  data      0x8
 sPodium3rdPose1ResId                  game  0x800D107C  data      0x4
 sPodium2ndPose2ResId                  game  0x800D1080  data      0x4
-sAnimNoHanderBodyResId                game  0x800D1084  data      0xc
+sAnimNoHanderBodyResId                game  0x800D1084  data      0x8
 sPodium3rdPose2ResId                  game  0x800D108C  data      0xc
 sDesertScenery1ResId                  game  0x800D1098  data      0x8
-sNigelPodiumModelResId                game  0x800D10A0  data      0xc
+sNigelPodiumModelResId                game  0x800D10A0  data      0x8
 sAnimFinish2ndBodyResId               game  0x800D10A8  data      0x4
-sAnimBarHopBodyResId                  game  0x800D10AC  data     0x34
+sAnimBarHopBodyResId                  game  0x800D10AC  data     0x28
 sRiderColorsResId                     game  0x800D10D4  data     0x14
 sLapArrowsResId                       game  0x800D10E8  data     0x20
 sBikeForkSliderHiResId                game  0x800D1108  data     0x10
@@ -2026,7 +2025,7 @@ sIntroImagesResId                     game  0x800D1118  data     0x1c
 sDesertCampfireResId                  game  0x800D1134  data     0x38
 sSoccerBallTexResId                   game  0x800D116C  data     0x28
 sBobbyPodiumTexResId                  game  0x800D1194  data     0x10
-sAnimNoFooterBodyResId                game  0x800D11A4  data      0x8
+sAnimNoFooterBodyResId                game  0x800D11A4  data      0x4
 sBikeSkelResId                        game  0x800D11A8  data      0x4
 sSplashTexResId                       game  0x800D11AC  data      0x8
 sAnimFinish4th5thBodyResId            game  0x800D11B4  data      0x4
@@ -2050,18 +2049,18 @@ sConstructionYardThumbResId           game  0x800D1218  data      0x8
 sSeattleThumbResId                    game  0x800D1220  data     0x14
 sNigelPodiumTexResId                  game  0x800D1234  data      0x4
 sIntroPicResId                        game  0x800D1238  data      0x8
-sAnimSkiJumpBodyResId                 game  0x800D1240  data     0x1c
+sAnimSkiJumpBodyResId                 game  0x800D1240  data     0x14
 sTutorialTitleResId                   game  0x800D1254  data      0xc
 sAnimCrashBack1BodyResId              game  0x800D1260  data      0x4
-sAnimCrashBack2BodyResId              game  0x800D1264  data      0x8
+sAnimCrashBack2BodyResId              game  0x800D1264  data      0x4
 sOrlandoResMapResId                   game  0x800D1268  data      0x4
 sAnimCrashBack3BodyResId              game  0x800D126C  data      0x4
 sAnimAirTurn2RootResId                game  0x800D1270  data      0x4
 gHudGlyphsResId                       game  0x800D1274  data      0x4
-sPodiumCamClip3ResId                  game  0x800D1278  data      0x8
+sPodiumCamClip3ResId                  game  0x800D1278  data      0x4
 sLongIslandResMapResId                game  0x800D127C  data      0x4
 sBobbyModelHiResId                    game  0x800D1280  data      0x4
-sPodiumCamClip5ResId                  game  0x800D1284  data      0x8
+sPodiumCamClip5ResId                  game  0x800D1284  data      0x4
 sLasVegasResMapResId                  game  0x800D1288  data      0x4
 sAnimCrashFront1BodyResId             game  0x800D128C  data      0x4
 sAnimFenderKissRootResId              game  0x800D1290  data      0x4
@@ -2123,7 +2122,7 @@ sSarahSkin5ResId                      game  0x800D1438  data      0x4
 D_800D0BC8                            game  0x800D143C  data     0x10
 sVickySkin5ResId                      game  0x800D144C  data      0x4
 sSarahSkin6ResId                      game  0x800D1450  data      0xc
-sPodium1stPose3ResId                  game  0x800D145C  data      0x8
+sPodium1stPose3ResId                  game  0x800D145C  data      0x4
 sVickySkin6ResId                      game  0x800D1460  data      0x4
 sRickySkin1ResId                      game  0x800D1464  data      0x4
 sAnimKobeRootResId                    game  0x800D1468  data      0xc
@@ -2217,11 +2216,11 @@ sGravelPitItem2ResId                  game  0x800D1804  data      0xc
 sGravelPitItem3ResId                  game  0x800D1810  data      0xc
 sGravelPitItem4ResId                  game  0x800D181C  data      0x4
 sFinishPropModelResId                 game  0x800D1820  data     0x14
-sBikeForkHiResId                      game  0x800D1834  data     0x1c
-sStuntCourseResMapResId               game  0x800D1848  data     0x20
+sBikeForkHiResId                      game  0x800D1834  data     0x14
+sStuntCourseResMapResId               game  0x800D1848  data     0x1c
 sSnowTexResId                         game  0x800D1864  data      0x4
 sBikeFrontWheelHiResId                game  0x800D1868  data     0x10
-sDesObjTexResId                       game  0x800D1878  data     0x68
+sDesObjTexResId                       game  0x800D1878  data     0x60
 sAnimSaranWrapBodyResId               game  0x800D18D8  data      0x4
 D_800D1080                            game  0x800D18DC  data      0x4
 sSoccerMapResId                       game  0x800D18E0  data      0x8
@@ -2735,22 +2734,22 @@ D_800D747C                            game  0x800D7C3C  data     0x18
 D_800D7494                            game  0x800D7C54  data     0x30
 D_800D74C4                            game  0x800D7C84  data     0x10
 D_800D74D4                            game  0x800D7C94  data     0x2c
-D_800D7500                            game  0x800D7C3C  data     0x28
-D_800D7528                            game  0x800D7C54  data     0x2c
+D_800D7500                            game  0x800D7CC0  data     0x28
+D_800D7528                            game  0x800D7CE8  data     0x2c
 D_800D7554                            game  0x800D7D14  data     0x20
 D_800D7574                            game  0x800D7D34  data     0x30
 D_800D75A4                            game  0x800D7D64  data     0x2c
-D_800D75D0                            game  0x800D7D14  data     0x20
-D_800D75F0                            game  0x800D7D34  data     0x2c
-D_800D761C                            game  0x800D7D64  data     0x2c
-D_800D7648                            game  0x800D7E58  data     0x28
-D_800D7670                            game  0x800D7E7C  data     0x28
-D_800D7698                            game  0x800D7EA4  data     0x24
-D_800D76BC                            game  0x800D7ECC  data     0x28
-D_800D76E4                            game  0x800D7CC0  data     0x28
-D_800D770C                            game  0x800D7CE8  data     0x2c
-D_800D7738                            game  0x800D7E08  data     0x20
-D_800D7758                            game  0x800D7E30  data     0x24
+D_800D75D0                            game  0x800D7D90  data     0x20
+D_800D75F0                            game  0x800D7DB0  data     0x2c
+D_800D761C                            game  0x800D7DDC  data     0x2c
+D_800D7648                            game  0x800D7E08  data     0x28
+D_800D7670                            game  0x800D7E30  data     0x28
+D_800D7698                            game  0x800D7E58  data     0x24
+D_800D76BC                            game  0x800D7E7C  data     0x28
+D_800D76E4                            game  0x800D7EA4  data     0x28
+D_800D770C                            game  0x800D7ECC  data     0x2c
+D_800D7738                            game  0x800D7EF8  data     0x20
+D_800D7758                            game  0x800D7F18  data     0x24
 D_800D777C                            game  0x800D7F3C  data     0x1c
 D_800D7798                            game  0x800D7F58  data     0x2c
 D_800D77C4                            game  0x800D7F84  data     0x30
@@ -3229,7 +3228,7 @@ sStrSwitchBikeColor                   game  0x800DA950  data     0x14
 sStrSwitchRiderColor                  game  0x800DA964  data     0x14
 D_800DA204                            game  0x800DA9E4  data      0x4
 D_800DA21C                            game  0x800DA9FC  data      0x4
-D_800DA254                            game  0x800DAA3C  data      0xc
+D_800DA254                            game  0x800DAA34  data      0xc
 D_800DA260                            game  0x800DAA40  data      0x8
 D_800DA268                            game  0x800DAA48  data     0x20
 D_800DA288                            game  0x800DAA68  data     0x28
@@ -3357,9 +3356,9 @@ D_800DAEC5                            game  0x800DB6A5  data      0x3
 D_800DAECC                            game  0x800DB6AC  data      0x4
 D_800DAEE4                            game  0x800DB6C4  data      0x4
 D_800DAF2C                            game  0x800DB70C  data      0x4
-sStrNesres                            game  0x800DB710  data      0x8
+sStrNesres                            game  0x800DB71C  data      0x8
 sStrNesn64C                           game  0x800DB710  data      0xc
-D_800DAF48                            game  0x800DB720  data      0x8
+D_800DAF48                            game  0x800DB728  data      0x8
 D_800DAF50                            game  0x800DB730  data      0x4
 D_800DAF54                            game  0x800DB734  data      0x4
 D_800DAF58                            game  0x800DB738  data      0x4
@@ -3628,9 +3627,8 @@ sAudioTickEnd                         game  0x800E28C4  data        -
 gFbAllocWidth                         game  0x800E28C8  data        -
 gFbAllocHeight                        game  0x800E28CC  data        -
 sSchedEventMsgs                       game  0x800E28D0  data        -
+sRspBoot                              game  0x800E2910  data    0x100
 sAudioTickTime                        game  0x800E2A14  data        -
-sDevPiHandle                          game  0x800E2A18  data        -
-sDevPiHandle_2                        game  0x800E2A18  data        -  sDevPiHandle
 gPadInputPrev                         game  0x800E2E18  data        -
 gPadInputPrev_2                       game  0x800E2E18  data        -  gPadInputPrev
 gPadInputPrev_3                       game  0x800E2E18  data        -  gPadInputPrev
@@ -4275,6 +4273,7 @@ sNesAudioFrameSamples                 game  0x800F62D8  data        -
 sNesAudioBufs                         game  0x800F62E0  data        -
 sNesViewport                          game  0x800F62E8  data        -
 sNesClearFrames                       game  0x800F62F8  data        -
+sNesBlock                             game  0x800F6300  data      0x4
 sNesFrameCount                        game  0x800F6304  data        -
 sNesEffAddr                           game  0x800F6410  data        -
 sNesCurOpcode                         game  0x800F6414  data        -
