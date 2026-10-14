@@ -111,7 +111,6 @@ typedef struct Scr Scr;
 typedef struct Ctl_21 Ctl_21;
 typedef struct Obj_67 Obj_67;
 typedef struct Menu_5 Menu_5;
-typedef struct Game_36 Game_36;
 typedef struct Set Set;
 typedef struct Mesh_8 Mesh_8;
 typedef struct Chan_6 Chan_6;

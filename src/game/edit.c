@@ -1,172 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    s32 x, y;
-    u32 z;
-} V3_3;
-
-typedef struct { s16 f0; u8 pad[0x22]; } Ent24_2;
-typedef struct { u8 pad0[6]; s16 f6; u8 pad8[8]; s16 f10; } Cfg_12;
-typedef struct { u8 pad[0xC]; u32 flags; } Obj_2;
-
-typedef struct {
-    u8 pad0[6];
-    s16 f6;
-    u8 pad8[4];
-    s32 fC;
-    s16 f10;
-} Menu_6;
-
-typedef struct Node_24 {
-    s32 f0;
-    struct Node_24 *prev;
-    struct Node_24 *next;
-    s32 fC;
-    u16 f10;
-} Node_24;
-
-typedef struct {
-    s16 w, h;
-} Dim;
-
-struct Game_36 {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 f170;
-    s32 f174;
-    s32 f178;
-    Node_24 *f17C;
-    Node_24 *f180;
-    Node_24 *f184;
-    u8 pad188[8];
-    s32 f190;
-    Ent24_2 slots[150];
-    Dim *f16AC;
-    u8 pad16B0[6];
-    s16 f16B6;
-    s16 f16B8;
-    char name[11];
-    u8 f16C5[0xB];
-    s32 f16D0, f16D4, f16D8, f16DC;
-    Menu_6 *f16E0;
-    Menu_6 *f16E4;
-    u32 f16E8;
-    u8 pad16EC[8];
-    s32 f16F4;
-    u8 pad16F8[0x2C];
-    s32 f1724;
-    s32 f1728;
-    u8 pad172C[0xCC];
-    s32 f17F8;
-    s16 f17FC;
-    s16 f17FE;
-    s16 f1800;
-};
-
-typedef struct Ctl_23 {
-    u8 pad0[0xC];
-    u32 fC;
-    s16 h10;
-} Ctl_23;
-
-typedef struct Ent_4 {
-    s16 dim[2];
-    s16 dir[2];
-    s16 off[2];
-    union {
-        u32 w;
-        struct {
-            u16 hi;
-            u16 lo;
-        } h;
-    } fC;
-    u8 pad10[0x40 - 0x10];
-} Ent_4;
-
-typedef struct Node_25 {
-    s16 used;
-    s16 pad2;
-    struct Node_25 *next;
-    struct Node_25 *prev;
-    s16 x;
-    s16 y;
-    u16 st;
-    s16 idx;
-    Ent_4 *pt;
-    u8 pad18[8];
-    s16 w;
-    s16 h;
-} Node_25;
-
-typedef struct Edit {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 mode;
-    u32 flags;
-    u32 pad178;
-    Node_25 *head;
-    Node_25 *tail;
-    Node_25 *cur;
-    Node_25 *f188;
-    Node_25 *f18C;
-    Node_25 *f190;
-    u8 pad194[0x16AC - 0x194];
-    s16 *size;
-    s16 f16B0;
-    s16 f16B2;
-    u8 pad16B4[0x16E0 - 0x16B4];
-    Ctl_23 *f16E0;
-    Ctl_23 *f16E4;
-    u32 f16E8;
-    u8 pad16EC[0x17B0 - 0x16EC];
-    Ent_4 *f17B0;
-} Edit;
-
-typedef struct { s32 pad[4]; s32 x, y, w, h; } Scis;
-
-typedef struct Sub_2 {
-    u8 pad0[0x8];
-    s32 f8;
-    s16 c;
-    s16 e;
-    u8 pad1[0x2];
-    s16 cur;
-    u8 pad2[0x4];
-    s16 arr[2];
-} Sub_2;
-
-typedef struct {
-    u8 pad0[0x8];
-    s32 f8;
-    s16 x;
-    s16 y;
-    s16 pad10;
-    s16 f12;
-    u8 pad14[4];
-    s16 sel[2];
-} Pl;
-
-typedef struct {
-    u8 pad0[0x184];
-    Pl *pl;
-    u8 pad188[0x16F8 - 0x188];
-    s32 f16F8;
-    s32 idx;
-    u8 pad1700[0x1738 - 0x1700];
-    s32 f1738;
-    u8 pad173C[0x1758 - 0x173C];
-    s32 f1758;
-    s32 f175C;
-} Game_3;
-
-typedef struct {
-    s16 d[2];
-    u8 pad4[0x2C];
-    s32 f30;
-    s32 f34;
-    u8 pad38[8];
-} Rec_5;
-
 extern EditCamPos sEditCamDelta;
 extern EditCamPos sEditCamPosFixed; /* 1/1024 */
 extern EditCamPos sEditCamPos;
@@ -175,8 +8,6 @@ extern GuiMenu sEditMainMenu;
 extern GuiMenu sEditTrackMenu;
 extern GuiMenuItem sEditMainMenuItems[];
 extern GuiMenuItem sEditTrackMenuItems[];
-extern Scis sEditViewRects_2;
-extern s32 *gEditor_33;
 
 /* Makes the first piece that can start the track the start piece, if there is none. */
 static inline void edit_pick_start_piece(void) {
@@ -2227,8 +2058,8 @@ Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl)
     gSPMatrix(gdl++, m, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
     gSPViewport(gdl++, &gScreenViewport);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects_2.x, sEditViewRects_2.y,
-                  sEditViewRects_2.x + sEditViewRects_2.w - 1, sEditViewRects_2.y + sEditViewRects_2.h - 1);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[1].x, sEditViewRects[1].y,
+                  sEditViewRects[1].x + sEditViewRects[1].w - 1, sEditViewRects[1].y + sEditViewRects[1].h - 1);
     gSPClearGeometryMode(gdl++, 0x3F0604);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gSPSetGeometryMode(gdl++, G_SHADE);
@@ -2325,15 +2156,15 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
     gDPPipeSync(gdl++);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects_2.x, sEditViewRects_2.y, sEditViewRects_2.x + sEditViewRects_2.w - 1,
-                  sEditViewRects_2.y + sEditViewRects_2.h - 1);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].x + sEditViewRects[1].w - 1,
+                  sEditViewRects[1].y + sEditViewRects[1].h - 1);
     gSPViewport(gdl++, &gEditor->views[1]);
     gSPClearGeometryMode(gdl, G_ZBUFFER);
     gDPRaw(gdl++, 0xE200001C, 0x0C084000);
     gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
     gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 1);
-    gDPFillRectangle(gdl++, sEditViewRects_2.x, sEditViewRects_2.y, sEditViewRects_2.x + sEditViewRects_2.w - 1,
-                     sEditViewRects_2.y + sEditViewRects_2.h - 1);
+    gDPFillRectangle(gdl++, sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].x + sEditViewRects[1].w - 1,
+                     sEditViewRects[1].y + sEditViewRects[1].h - 1);
     gDPPipeSync(gdl++);
     gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
     gDPRaw(gdl++, 0xE200001C, 0x004041C8);
