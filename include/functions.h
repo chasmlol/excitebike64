@@ -1471,8 +1471,8 @@ void softmix_mix_voices_mono(void);
 void softmix_mix_voices_stereo(void);
 void softmix_output_8bit(void);
 void softmix_output_16bit(void);
-void func_800DBE94(u8 *src, u16 *dst, s32 count);
-void func_800DBF94(u8 *a, u16 *b, s32 c, u8 *d);
+void decoder_decode_ima_block(u8 *src, u16 *dst, s32 count);
+void decoder_decode_msadpcm_block(u8 *a, u16 *b, s32 c, u8 *d);
 int abs(int);
 char *strcpy(char *, const char *);
 

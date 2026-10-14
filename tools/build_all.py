@@ -6,7 +6,8 @@
    function -- C, libultra, hand-written asm, linker padding alike --, all initialized data, the gaps between
    objects.
 2. build_code.py      decompiled C (game, boot loader, boot copies of game functions), the compilers' literals
-   build_asm.py       hand-written asm (entry stubs, SN exception handler, SwdExpand from SWDN64.ASM, its data)
+   build_asm.py       hand-written asm (entry stubs, SN exception handler, SwdExpand from SWDN64.ASM, its data,
+                      the sound mixers and ADPCM decoders among the game's data)
    build_libultra.py  libultra 2.0K libgultra_rom (ultralib, KMC GCC 2.7.2) + libgcc, and their data
    build_data.py      the game's and boot loader's initialized data from src/data/*.c, and the data that is ROM
                       content (build_data.FROM_ROM), copied from the extracted images

@@ -239,7 +239,8 @@ their names say what they hold or where they start.
   ".BIG" data and ".gid" names. `res_load` relocates a resource, loads what it depends on and calls the handler
   registered for its three-letter type (`res_register_type`).
 - **decoder.c** (DECODER.C): decompresses "SAM" samples to companded 8-bit (`decoder_decode_adpcm`,
-  `decoder_decode_sample`); the block decoders it calls are hand-written code among the data (below).
+  `decoder_decode_sample`); the block decoders it calls are hand-written code among the data (asm/game_decoder.s,
+  below).
 - **fontcode.c** (FONTCODE.C): fonts packed into 40 IA8 pages of 64x64 glyphs. Text objects come from
   `font_text_create` / `font_text_add` {font, colour, flags and alignment, x, y, w, h, text}; `font_draw_text`
   queues glyph sprites per page and `font_render` emits them as texture rectangles.
@@ -468,7 +469,7 @@ The layers, top to bottom:
    `osAiSetNextBuffer`. Mode bits: 1 stereo, 2 16-bit; at most 22050 Hz.
 4. **softmix.c** (../softmix.c): a software mixer of up to 8 voices at 22050 Hz (voices of 0x30 bytes, 256 sample
    slots of 0x1C bytes, an echo unit), with samples loaded by name from the "SAM" resources of the "SFX" set
-   (`gSfxResSet`). The inner loops are hand-written code (below).
+   (`gSfxResSet`). The inner loops are hand-written code (asm/game_softmix.s, below).
 
 **tunes.c** streams music, the announcer and the crowd from "BIG.RAW" in IMA ADPCM. Four channels of 0x4C bytes
 (`sStreamChannels`): 0-1 music, 2 announcer, 3 ambience and crowd. Each loads 8 blocks (0x44 bytes, 128 samples
@@ -486,10 +487,20 @@ ring, into a 2048-sample ring (`sStreamMixBuf`) that `tunes_mix_callback` adds t
 - Volumes: `gStreamVolumes[4]` (music, music, `gSpeechVolume`, `gAmbientVolume`) times the master volume.
 
 **Code among the data**: some sound routines are hand-written MIPS code that the linker placed in the data
-section. `func_800DB628` (the ADPCM block decoder tunes.c calls) is emitted from src/data as words; the range
-0x800DB8E0-0x800DC098 holds softmix.c's voice mixers and output converters (`softmix_mix_voices_mono`,
-`softmix_mix_voices_stereo`, `softmix_output_8bit`, `softmix_output_16bit`) and decoder.c's block decoders
-(`func_800DBE94`, `func_800DBF94`), and the build copies it from the ROM.
+section. `func_800DB628` (the ADPCM block decoder tunes.c calls) is emitted from src/data as words. The last bytes
+of the game image, 0x800DB8E0-0x800DC098, are two asm modules:
+
+- asm/game_softmix.s: softmix.c's voice mixers (`softmix_mix_voices_mono`, `softmix_mix_voices_stereo`) and output
+  converters (`softmix_output_8bit`, `softmix_output_16bit`). They take no arguments: softmix.c fills the mixer
+  state just before them in the data (`sMixVoices`, `sMixNumVoices`, `sMixCount`, `sMixSrc` the s32 mix buffer,
+  `sMixDst`, `sMixVolumeTable`, `sMixBias`, `sMixClampMin` / `sMixClampMax`, `sMixShift`, `sMixOverwrite`). A voice
+  steps through 8-bit sample data at a 32.32 fixed-point rate and loops or stops at its end; each sample byte
+  indexes the voice's volume row of `sMixVolumeTable` (32 rows of 256 s32) and is added to the mix buffer (the
+  first voice stores instead, and the buffer is cleared when none plays). The converters shift the mix down
+  (and clamp it for 16-bit output).
+- asm/game_decoder.s: decoder.c's block decoders, IMA ADPCM (`decoder_decode_ima_block`, for sample type 3) and
+  Microsoft ADPCM (`decoder_decode_msadpcm_block`, types 4 and 5, with 2-byte block headers), and their standard
+  tables (`sDecoderImaIndexTable`, `sDecoderImaStepTable`, `sDecoderMsAdpcmCoefs`, `sDecoderMsAdpcmAdaptTable`).
 
 ## Saves
 

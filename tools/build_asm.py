@@ -5,9 +5,10 @@ usage: python tools/build_asm.py [OUT]      (default: build/out)
 Each asm/*.s names its image and range in its header (`# image: boot`, `# vram: 0x80002CB0-0x80003660`).
 Every file is assembled with GNU as for MIPS (MIPS_PREFIX, default mips-linux-gnu-; -march=vr4300 -mabi=32 -G0
 -EB) and linked with ld at its range's start (through WSL on Windows); the symbols of its image (symbols.txt) it
-uses but doesn't define are given to ld with --defsym. Then, in OUT/boot.bin and OUT/game.bin,
-every asm block (BLOCKS below) and every file's range is zeroed and the assembled bytes are written there, and
-each image is compared with the original. Nothing is written if a file fails to assemble.
+uses but doesn't define are given to as and ld with --defsym (as needs them as numbers for what a relocation can't
+express, like the halves of a lui/ori pair: `(sym >> 16)`, `(sym & 0xFFFF)`). Then, in OUT/boot.bin and
+OUT/game.bin, every asm block (BLOCKS below) and every file's range is zeroed and the assembled bytes are written
+there, and each image is compared with the original. Nothing is written if a file fails to assemble.
 """
 import re
 import shlex
@@ -22,9 +23,9 @@ ROOT = common.ROOT
 ASM = ROOT / "asm"
 VRAM = common.VRAM
 # The ranges of the original images that are hand-written asm (functions.csv kind `asm`; the SN stub and SwdExpand
-# ranges include the bytes around their functions, SwdExpand's starts at its module's variables). Every byte of
-# these must come from some asm/*.s.
-BLOCKS = {"game": [(0x80000400, 0x80000450)],
+# ranges include the bytes around their functions, SwdExpand's starts at its module's variables, the sound
+# routines among the game's data include the decoder's tables). Every byte of these must come from some asm/*.s.
+BLOCKS = {"game": [(0x80000400, 0x80000450), (0x800DB8E0, 0x800DC098)],
           "boot": [(0x80000400, 0x80000450), (0x80002CB0, 0x80003660), (0x800113B0, 0x80011600)]}
 
 
@@ -61,7 +62,8 @@ def main():
             stem = shlex.quote(common.posix_path(tdir / f.stem))
             defs = " ".join(f"--defsym {n}=0x{a:08X}" for n, a in ext)
             script += [f"echo '== {f.name}'",
-                       f"{x}as -march=vr4300 -mabi=32 -G0 -EB -o {stem}.o {shlex.quote(common.posix_path(f))}",
+                       f"{x}as -march=vr4300 -mabi=32 -G0 -EB {defs} -o {stem}.o "
+                       f"{shlex.quote(common.posix_path(f))}",
                        # as gives .text 16-byte alignment; ld would pad a start like 0x80011584 up to 0x80011590
                        f"{x}objcopy --set-section-alignment .text=4 {stem}.o",
                        f"{x}ld -EB -Ttext=0x{lo:08X} -e 0x{lo:08X} {defs} -o {stem}.elf {stem}.o",

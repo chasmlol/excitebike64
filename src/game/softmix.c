@@ -365,7 +365,7 @@ void softmix_mix(s32 *param_1, s32 param_2)
 
     sMixCount = param_2;
     sMixSrc = param_1;
-    D_800DB8DD = 1;
+    sMixOverwrite = 1;
     for (i = 0; i < sSoftmixNumVoices; i++) {
         sSoftmixSavedLevels[i * 2] = sSoftmixVoices_3[i].a;
         sSoftmixSavedLevels[i * 2 + 1] = sSoftmixVoices_3[i].b;
@@ -599,14 +599,14 @@ void softmix_convert_output(s32 a, s32 b, s32 c) {
         sMixCount = c << 1;
     }
     if (flags & 2) {
-        D_800DB8D0 = 0;
-        D_800DB8DC = 0;
+        sMixBias = 0;
+        sMixShift = 0;
         sMixClampMin = (s32)0xFFFF8001;
         sMixClampMax = 0x7FFF;
         softmix_output_16bit();
     } else {
-        D_800DB8DC = 0;
-        D_800DB8D0 = 0;
+        sMixShift = 0;
+        sMixBias = 0;
         sMixClampMin = 0;
         sMixClampMax = 0xFF;
         softmix_output_8bit();

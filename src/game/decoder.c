@@ -49,7 +49,7 @@ Hdr_14 *decoder_decode_adpcm(Src_4 *s)
         if (gDmaIdleCallback != NULL) {
             gDmaIdleCallback();
         }
-        func_800DBF94(in, buf, n, st);
+        decoder_decode_msadpcm_block(in, buf, n, st);
         in += s->stride;
         bp = buf;
         while (--n != -1) {
@@ -125,7 +125,7 @@ Out_6 *func_800C055C(Src_5 *p)
             cnt = left;
         }
         left -= cnt;
-        func_800DBE94(src, bp, cnt);
+        decoder_decode_ima_block(src, bp, cnt);
         src += p->stride;
         pb = bp;
         while (--cnt != -1) {
