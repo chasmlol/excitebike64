@@ -3309,6 +3309,7 @@ s32 edit_update_fitting_pieces(EditPiece *end)
     return anyFit;
 }
 
+/* Makes the 8 user pieces: 4 segments long, flat, their meshes cloned from the template with room for 8. */
 void edit_init_user_pieces(void)
 {
     s32 i, j;
@@ -3317,110 +3318,117 @@ void edit_init_user_pieces(void)
 
     gEditor->heightSel = 1;
     gEditor->userPiece = 0;
-    gEditor->maxSegments = 8;
-    for (i = 0; i < 8; i++) {
-        gPieceTypes[i + 0x12].dim[1] = 4;
-        gPieceTypes[i + 0x12].meshA = mem_alloc_dbg((tmplA->count << 8) | 4, 0, sStrEditFile, 0x1D73);
-        gPieceTypes[i + 0x12].meshB = mem_alloc_dbg((tmplB->count << 8) | 4, 0, sStrEditFile, 0x1D74);
-        usrtrk_clone_piece_meshes(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, 8);
-        for (j = 0; j < 15; j++) {
+    gEditor->maxSegments = USER_PIECE_MAX_SEGMENTS;
+    for (i = 0; i < USER_PIECE_COUNT; i++) {
+        /* 4 segments, with room for the most */
+        gPieceTypes[i + PIECE_TYPE_USER].dim[1] = 4;
+        gPieceTypes[i + PIECE_TYPE_USER].meshA = mem_alloc_dbg((tmplA->count << 8) | 4, 0, sStrEditFile, 0x1D73);
+        gPieceTypes[i + PIECE_TYPE_USER].meshB = mem_alloc_dbg((tmplB->count << 8) | 4, 0, sStrEditFile, 0x1D74);
+        usrtrk_clone_piece_meshes(gPieceTypes[i + PIECE_TYPE_USER].meshA, gPieceTypes[i + PIECE_TYPE_USER].meshB, USER_PIECE_MAX_SEGMENTS);
+        for (j = 0; j < USER_PIECE_HEIGHTS; j++) {
             gUserPieceHeights[i][j] = 0;
         }
-        usrtrk_apply_heights(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, gUserPieceHeights[i], 8);
+        usrtrk_apply_heights(gPieceTypes[i + PIECE_TYPE_USER].meshA, gPieceTypes[i + PIECE_TYPE_USER].meshB, gUserPieceHeights[i], USER_PIECE_MAX_SEGMENTS);
     }
+    /* clears the selected piece's heights again; the tests of heights and type and the read of dim[1] do nothing (as
+       in the original) */
     {
-        Editor *ea;
-        u8 *rb;
-        PieceType *r;
-        u8 *tb;
+        Editor *ed;
+        u8 *types;
+        PieceType *type;
+        u8 *heights;
         i = 0;
-        tb = (u8 *)gUserPieceHeights;
-        if (tb) j = 3; else j = 4;
-        ea = gEditor;
-        rb = (u8 *)gPieceTypes;
-        r = (PieceType *)(rb + ((ea->userPiece + 0x12) << 6));
-        *(volatile u16 *)&r->dim[1];
-        if (r) j = 1; else j = 2;
-        for (; i < 15; i++) {
-            *(u16 *)(tb + (ea->userPiece * 15 + i) * 2) = 0;
+        heights = (u8 *)gUserPieceHeights;
+        if (heights) j = 3; else j = 4;
+        ed = gEditor;
+        types = (u8 *)gPieceTypes;
+        type = (PieceType *)(types + ((ed->userPiece + PIECE_TYPE_USER) << 6));
+        *(volatile u16 *)&type->dim[1];
+        if (type) j = 1; else j = 2;
+        for (; i < USER_PIECE_HEIGHTS; i++) {
+            *(u16 *)(heights + (ed->userPiece * USER_PIECE_HEIGHTS + i) * 2) = 0;
         }
     }
 }
 
+/* Takes the first segment off the user piece being edited. */
 void edit_user_piece_remove_first_segment(void)
 {
-    PieceType *t;
+    PieceType *type;
     s32 x;
     s32 y;
     s32 i;
-    s16 sv;
-    EditPiece *sub;
-    Editor *g;
+    s16 side;
+    EditPiece *cur;
+    Editor *ed;
 
-    t = &gPieceTypes[gEditor->userPiece + 18];
-    for (y = 0; y < t->dim[(gEditor->cur->rot + 1) & 1]; y++) {
-        for (x = 0; x < t->dim[gEditor->cur->rot & 1]; x++) {
+    type = &gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER];
+    for (y = 0; y < type->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < type->dim[gEditor->cur->rot & 1]; x++) {
             arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 
-    for (i = 0; i < gPieceTypes[gEditor->userPiece + 18].dim[1]; i++) {
+    /* the heights move down a segment (2 heights of 2 bytes; 30 bytes a piece) */
+    for (i = 0; i < gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1]; i++) {
         __builtin_memcpy((u8 *)gUserPieceHeights + gEditor->userPiece * 30 + i * 4, (u8 *)gUserPieceHeights + gEditor->userPiece * 30 + i * 4 + 4, 4);
     }
-    g = gEditor;
-    gPieceTypes[g->userPiece + 18].dim[1]--;
+    ed = gEditor;
+    gPieceTypes[ed->userPiece + PIECE_TYPE_USER].dim[1]--;
     {
-        s32 k = gPieceTypes[g->userPiece + 18].dim[1] * 4 - 2;
-        k += g->userPiece * 30;
+        s32 k = gPieceTypes[ed->userPiece + PIECE_TYPE_USER].dim[1] * 4 - 2;
+        k += ed->userPiece * 30;
         *(s16 *)((u8 *)gUserPieceHeights + k) = 0;
     }
-    usrtrk_apply_heights(gPieceTypes[g->userPiece + 18].meshA, gPieceTypes[g->userPiece + 18].meshB,
-                  (u8 *)gUserPieceHeights + g->userPiece * 30, gPieceTypes[g->userPiece + 18].dim[1]);
+    usrtrk_apply_heights(gPieceTypes[ed->userPiece + PIECE_TYPE_USER].meshA, gPieceTypes[ed->userPiece + PIECE_TYPE_USER].meshB,
+                  (u8 *)gUserPieceHeights + ed->userPiece * 30, gPieceTypes[ed->userPiece + PIECE_TYPE_USER].dim[1]);
 
-    sub = gEditor->cur;
-    sv = sub->dir[sub->prev == 0];
-    if (sv != 0) {
-        if (sv == 1) {
-            sub->x++;
+    cur = gEditor->cur;
+    side = cur->dir[cur->prev == 0];
+    if (side != SIDE_POS_Y) {
+        if (side == SIDE_POS_X) {
+            cur->x++;
         }
     } else {
-        sub->y++;
+        cur->y++;
     }
+    /* the camera zooms back in over 50 frames */
     if (gEditor->cam[1].dist > 45000) {
         gEditor->camZoomStep = -10000;
         gEditor->camZoomFrames = 50;
     }
 }
 
+/* Takes the last segment off the user piece being edited. */
 void edit_user_piece_remove_last_segment(void)
 {
     s32 x, y, i, j;
-    PieceType *tb;
-    EditPiece *pl;
-    s16 s;
+    PieceType *type;
+    EditPiece *cur;
+    s16 side;
 
-    tb = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
-    for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
-        for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
+    type = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
+    for (y = 0; y < type->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < type->dim[gEditor->cur->rot & 1]; x++) {
             arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
-    gPieceTypes[gEditor->userPiece + 18].dim[1]--;
+    gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1]--;
     for (i = 0; i < 2; i++) {
         j = i - 1;
-        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 + j] = 0;
+        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2 + j] = 0;
     }
-    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + 18].meshA, gPieceTypes[gEditor->userPiece + 18].meshB,
-                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + 18].dim[1]);
+    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].meshA, gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].meshB,
+                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1]);
     gEditor->heightSel -= 2;
-    pl = gEditor->cur;
-    s = pl->dir[pl->prev == 0];
-    if (s != 0) {
-        if (s == 1) {
-            pl->x++;
+    cur = gEditor->cur;
+    side = cur->dir[cur->prev == 0];
+    if (side != SIDE_POS_Y) {
+        if (side == SIDE_POS_X) {
+            cur->x++;
         }
     } else {
-        pl->y++;
+        cur->y++;
     }
     if (gEditor->cam[1].dist > 45000) {
         gEditor->camZoomStep = -10000;
@@ -3428,222 +3436,230 @@ void edit_user_piece_remove_last_segment(void)
     }
 }
 
-typedef struct U4 {
+/* A word at any alignment (copied with lwl/lwr) */
+typedef struct UnalignedWord {
     u32 w;
-} __attribute__((packed)) U4;
+} __attribute__((packed)) UnalignedWord;
 
+/* Adds a segment at the start of the user piece being edited. */
 void edit_user_piece_prepend_segment(void) {
-    PieceType *t1;
-    PieceType *t2;
-    PieceType *b2;
-    PieceType *bp;
-    PieceType *bq;
-    PieceType *tq;
-    PieceType *tr;
-    PieceType *ts;
-    Editor *g;
-    u8 *hb;
-    Editor *gt;
-    u8 *ub;
-    u8 *sb;
-    EditPiece *sub;
+    PieceType *type;
+    PieceType *types;
+    PieceType *types2;
+    PieceType *typeA;
+    PieceType *typeB;
+    PieceType *typeC;
+    Editor *ed;
+    u8 *dst;
+    u8 *src;
+    EditPiece *cur;
     s32 x;
     s32 y;
     s32 i;
-    s32 off;
-    s16 sv;
+    s32 ofs;
+    s16 side;
 
-    t1 = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
-    for (y = 0; y < t1->dim[(gEditor->cur->rot + 1) & 1]; y++) {
-        for (x = 0; x < t1->dim[gEditor->cur->rot & 1]; x++) {
+    type = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
+    for (y = 0; y < type->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < type->dim[gEditor->cur->rot & 1]; x++) {
             arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 
-    bp = gPieceTypes;
-    tq = (PieceType *)((u8 *)bp + ((gEditor->userPiece + 0x12) << 6));
-    i = tq->dim[1] - 1;
+    types = gPieceTypes;
+    typeA = (PieceType *)((u8 *)types + ((gEditor->userPiece + PIECE_TYPE_USER) << 6));
+    /* the heights move up a segment; the first two become 0 */
+    i = typeA->dim[1] - 1;
     if (i >= 0) {
         do {
-            off = gEditor->userPiece * 30 + i * 4;
-            ub = D_800F55BC; /* gUserPieceHeights + 4 */
-            sb = ub - 4;
-            *(U4 *)(ub + off) = *(U4 *)(sb + off);
+            ofs = gEditor->userPiece * 30 + i * 4;
+            dst = D_800F55BC; /* gUserPieceHeights + 4 */
+            src = dst - 4;
+            *(UnalignedWord *)(dst + ofs) = *(UnalignedWord *)(src + ofs);
             i--;
         } while (i >= 0);
     }
 
     mem_fill((u8 *)gUserPieceHeights + gEditor->userPiece * 30, 0, 4);
 
-    g = gEditor;
-    bq = gPieceTypes;
-    tr = (PieceType *)((u8 *)bq + ((g->userPiece + 0x12) << 6));
-    tr->dim[1] = tr->dim[1] + 1;
-    bq = gPieceTypes;
-    ts = (PieceType *)((u8 *)bq + ((g->userPiece + 0x12) << 6));
-    usrtrk_apply_heights(ts->meshA, ts->meshB, (u8 *)gUserPieceHeights + g->userPiece * 30, ts->dim[1]);
+    ed = gEditor;
+    types2 = gPieceTypes;
+    typeB = (PieceType *)((u8 *)types2 + ((ed->userPiece + PIECE_TYPE_USER) << 6));
+    typeB->dim[1] = typeB->dim[1] + 1;
+    types2 = gPieceTypes;
+    typeC = (PieceType *)((u8 *)types2 + ((ed->userPiece + PIECE_TYPE_USER) << 6));
+    usrtrk_apply_heights(typeC->meshA, typeC->meshB, (u8 *)gUserPieceHeights + ed->userPiece * 30, typeC->dim[1]);
 
     gEditor->heightSel = gEditor->heightSel + 1;
-    sub = gEditor->cur;
-    sv = sub->dir[sub->prev == 0];
-    if (sv != 0) {
-        if (sv == 1) {
-            sub->x = sub->x - 1;
+    cur = gEditor->cur;
+    side = cur->dir[cur->prev == 0];
+    if (side != SIDE_POS_Y) {
+        if (side == SIDE_POS_X) {
+            cur->x = cur->x - 1;
         }
     } else {
-        sub->y = sub->y - 1;
+        cur->y = cur->y - 1;
     }
+    /* the camera zooms out over 50 frames */
     gEditor->camZoomStep = 10000;
     gEditor->camZoomFrames = 50;
 }
 
+/* Adds a segment at the end of the user piece being edited. */
 void edit_user_piece_append_segment(void)
 {
     s32 x, y, i;
-    PieceType *tb;
-    EditPiece *pl;
-    s16 s;
+    PieceType *type;
+    EditPiece *cur;
+    s16 side;
 
-    tb = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
-    for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
-        for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
+    type = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
+    for (y = 0; y < type->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < type->dim[gEditor->cur->rot & 1]; x++) {
             arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
     for (i = 0; i < 2; i++) {
-        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 + i] = 0;
+        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2 + i] = 0;
     }
-    gPieceTypes[gEditor->userPiece + 18].dim[1]++;
-    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + 18].meshA, gPieceTypes[gEditor->userPiece + 18].meshB,
-                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + 18].dim[1]);
+    gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1]++;
+    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].meshA, gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].meshB,
+                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1]);
     gEditor->heightSel += 1;
-    pl = gEditor->cur;
-    s = pl->dir[pl->prev == 0];
-    if (s != 0) {
-        if (s == 1) {
-            pl->x--;
+    cur = gEditor->cur;
+    side = cur->dir[cur->prev == 0];
+    if (side != SIDE_POS_Y) {
+        if (side == SIDE_POS_X) {
+            cur->x--;
         }
     } else {
-        pl->y--;
+        cur->y--;
     }
     gEditor->camZoomStep = 10000;
     gEditor->camZoomFrames = 50;
 }
 
+/* The height limit functions use the user piece being edited, its point count (2 * segments), the height at a
+   point and the slope angles (1/65536 turns) next to it, each macro spelled as its function's code needs. None of
+   them is called in this build. */
 #define CEA_IDX (gEditor->userPiece)
-#define LIM ((s32)gPieceTypes[CEA_IDX + 0x12].dim[1] << 1)
+#define LIM ((s32)gPieceTypes[CEA_IDX + PIECE_TYPE_USER].dim[1] << 1)
 
-int edit_user_piece_height_max_prev(int param_1, u16 *param_2)
+/* The highest a point may go from the one before: half a cell above it, and the slope from it at most 30 degrees
+   steeper than the one before (tan * 250). */
+int edit_user_piece_height_max_prev(int point, u16 *slopes)
 {
-    int t0;
-    int q;
-    int quo;
+    int limit;
+    int ofs;
+    int rise;
     int res;
-    int n;
-    u8 *tb;
-    u8 *tb2;
-    s16 sv;
-    u16 uv;
+    u8 *table;
+    u8 *table2;
+    s16 cosS;
+    u16 cosU;
 
-    if (param_1 - 1 > 0 && param_1 - 1 < LIM) {
-        s16 *gb = gUserPieceHeights;
-        s32 k = param_1 - 2;
-        t0 = gb[CEA_IDX * 15 + k] + 0xFA;
+    if (point - 1 > 0 && point - 1 < LIM) {
+        s16 *heights = gUserPieceHeights;
+        s32 prevPoint = point - 2;
+        limit = heights[CEA_IDX * 15 + prevPoint] + 0xFA;
     } else {
-        t0 = 0xFA;
+        limit = 0xFA;
     }
-    tb = gCosTable;
-    if (param_1 - 1 > 0) {
-        q = (((u32)param_2[param_1 - 2] + 0x1555) >> 3) & 0x1ffe;
+    table = gCosTable;
+    if (point - 1 > 0) {
+        ofs = (((u32)slopes[point - 2] + 0x1555) >> 3) & 0x1ffe;
     } else {
-        q = 0x2AA;
+        ofs = 0x2AA;
     }
-    sv = *(s16 *)(tb + q);
-    uv = *(u16 *)(tb + q);
-    if (sv == 0) {
-        uv = 1;
+    cosS = *(s16 *)(table + ofs);
+    cosU = *(u16 *)(table + ofs);
+    if (cosS == 0) {
+        cosU = 1;
     }
-    tb2 = gCosTable;
-    if (param_1 - 1 > 0) {
-        q = ((((param_2[param_1 - 2] + 0x1555) >> 4) - 0x400) & 0xfff) << 1;
+    table2 = gCosTable;
+    if (point - 1 > 0) {
+        ofs = ((((slopes[point - 2] + 0x1555) >> 4) - 0x400) & 0xfff) << 1;
     } else {
-        q = 0x1AAA;
+        ofs = 0x1AAA;
     }
-    quo = (*(s16 *)(tb2 + q) * 0xFA) / (s16)uv;
-    if (param_1 - 1 > 0 && param_1 - 1 < LIM) {
-        s16 *gb = gUserPieceHeights;
-        s32 k = param_1 - 2;
-        quo += gb[CEA_IDX * 15 + k];
+    rise = (*(s16 *)(table2 + ofs) * 0xFA) / (s16)cosU;
+    if (point - 1 > 0 && point - 1 < LIM) {
+        s16 *heights = gUserPieceHeights;
+        s32 prevPoint = point - 2;
+        rise += heights[CEA_IDX * 15 + prevPoint];
     }
-    res = quo;
-    if (t0 < res) {
-        res = t0;
+    res = rise;
+    if (limit < res) {
+        res = limit;
     }
     return res;
 }
 
 #define CE_ROW() (gEditor->userPiece)
-#define CE_LIM() ((gPieceTypes[CE_ROW() + 0x12].dim[1]) << 1)
+#define CE_LIM() ((gPieceTypes[CE_ROW() + PIECE_TYPE_USER].dim[1]) << 1)
 #define GETA(i) (((i) + 1 > 0 && (i) + 1 < CE_LIM()) ? gUserPieceHeights[CE_ROW()][i] : 0)
 #define ANG(p, i) (((i) + 1 < CE_LIM()) ? 0x2000 - (p)[(i) + 1] : 0x2000)
-#define SINS(x) gCosTable[((x) >> 4) & 0xFFF]
-#define COSS(x) gCosTable[(((x) >> 4) - 0x400) & 0xFFF]
+#define COS16(x) gCosTable[((x) >> 4) & 0xFFF]
+#define SIN16(x) gCosTable[(((x) >> 4) - 0x400) & 0xFFF]
 
-s32 edit_user_piece_height_max_next(s32 p1, s16 *p2)
+/* ... and from the one after. */
+s32 edit_user_piece_height_max_next(s32 point, s16 *slopes)
 {
-    s32 t0;
-    s32 q;
-    s16 s;
+    s32 limit;
+    s32 rise;
+    s16 cosA;
 
-    t0 = GETA(p1) + 500;
-    s = SINS(ANG(p2, p1));
-    if (s == 0) {
-        s = 1;
+    limit = GETA(point) + 500;
+    cosA = COS16(ANG(slopes, point));
+    if (cosA == 0) {
+        cosA = 1;
     }
-    q = COSS(ANG(p2, p1)) * 250 / s;
-    q += GETA(p1);
-    return (t0 < q) ? t0 : q;
+    rise = SIN16(ANG(slopes, point)) * 250 / cosA;
+    rise += GETA(point);
+    return (limit < rise) ? limit : rise;
 }
 
-#define OFS(n) (((n) - 1 > 0 && (n) - 1 < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(n) - 2] : 0)
+#define OFS(n) (((n) - 1 > 0 && (n) - 1 < gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(n) - 2] : 0)
 #define ANG_2(n, p) ((n) - 1 > 0 ? (p)[(n) - 2] : 0)
 
-int edit_user_piece_height_min_prev(int n, u16 *p)
+/* The lowest a point may go from the one before. */
+int edit_user_piece_height_min_prev(int point, u16 *slopes)
 {
-    s32 lo;
-    s16 sv;
+    s32 limit;
+    s16 cosA;
     s32 res;
 
-    lo = OFS(n) - 500;
-    sv = gCosTable[((ANG_2(n, p) - 0x2000) >> 4) & 0xFFF];
-    if (sv == 0) {
-        sv = 1;
+    limit = OFS(point) - 500;
+    cosA = gCosTable[((ANG_2(point, slopes) - 0x2000) >> 4) & 0xFFF];
+    if (cosA == 0) {
+        cosA = 1;
     }
-    res = gCosTable[(((ANG_2(n, p) - 0x2000) >> 4) - 0x400) & 0xFFF] * 250 / sv;
-    res += OFS(n);
-    return res < lo ? lo : res;
+    res = gCosTable[(((ANG_2(point, slopes) - 0x2000) >> 4) - 0x400) & 0xFFF] * 250 / cosA;
+    res += OFS(point);
+    return res < limit ? limit : res;
 }
 
-#define OFS_2(i) (((i) > 0 && (i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(i) - 1] : 0)
-#define ANG_3(i, p) ((i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2 ? (p)[i] : 0)
+#define OFS_2(i) (((i) > 0 && (i) < gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(i) - 1] : 0)
+#define ANG_3(i, p) ((i) < gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2 ? (p)[i] : 0)
 
-int edit_user_piece_height_min_next(int n, s16 *p)
+/* ... and from the one after. */
+int edit_user_piece_height_min_next(int point, s16 *slopes)
 {
-    s32 lo;
-    s16 sv;
+    s32 limit;
+    s16 cosA;
     s32 res;
 
-    lo = OFS_2(n + 1) - 250;
-    sv = gCosTable[((-0x2000 - ANG_3(n + 1, p)) >> 4) & 0xFFF];
-    if (sv == 0) {
-        sv = 1;
+    limit = OFS_2(point + 1) - 250;
+    cosA = gCosTable[((-0x2000 - ANG_3(point + 1, slopes)) >> 4) & 0xFFF];
+    if (cosA == 0) {
+        cosA = 1;
     }
-    res = gCosTable[(((-0x2000 - ANG_3(n + 1, p)) >> 4) - 0x400) & 0xFFF] * 250 / sv;
-    res += OFS_2(n + 1);
-    return res < lo ? lo : res;
+    res = gCosTable[(((-0x2000 - ANG_3(point + 1, slopes)) >> 4) - 0x400) & 0xFFF] * 250 / cosA;
+    res += OFS_2(point + 1);
+    return res < limit ? limit : res;
 }
 
-#define LIM_2 (gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2)
+#define LIM_2 (gPieceTypes[gEditor->userPiece + PIECE_TYPE_USER].dim[1] * 2)
 #define T1_2 ((s16 *)gUserPieceHeights)
 
 static inline s16 *At(s16 *b, s32 c, s32 i)
@@ -3651,176 +3667,182 @@ static inline s16 *At(s16 *b, s32 c, s32 i)
     return &b[c * 15 + i];
 }
 
-s32 edit_user_piece_find_height_max(s32 n)
+/* The highest a point can be raised before the slope turns by more than 45 degrees over it (the point's height is
+   put back). */
+s32 edit_user_piece_find_height_max(s32 point)
 {
-    u16 r1;
-    s32 dummy;
-    u16 r2;
-    s32 a, cnt, v;
+    u16 angleIn;
+    s32 ratio;
+    u16 angleOut;
+    s32 saved, height, rise;
 
-    if (n > 0 && n < LIM_2)
-        a = *At(T1_2, gEditor->userPiece, n - 1);
+    if (point > 0 && point < LIM_2)
+        saved = *At(T1_2, gEditor->userPiece, point - 1);
     else
-        a = 0;
-    cnt = a;
+        saved = 0;
+    height = saved;
     for (;;) {
-        gUserPieceHeights[gEditor->userPiece][n - 1]++;
-        if (n > 0 && n < LIM_2)
-            v = gUserPieceHeights[gEditor->userPiece][n - 1];
+        gUserPieceHeights[gEditor->userPiece][point - 1]++;
+        if (point > 0 && point < LIM_2)
+            rise = gUserPieceHeights[gEditor->userPiece][point - 1];
         else
-            v = 0;
-        if (n - 1 > 0 && n - 1 < LIM_2)
-            v -= gUserPieceHeights[gEditor->userPiece][n - 2];
-        math_to_polar(4000, v << 4, &r1, &dummy);
-        r1 = 0x4000 - r1;
-        if (n + 1 > 0 && n + 1 < LIM_2)
-            v = T1_2[gEditor->userPiece * 15 + n];
+            rise = 0;
+        if (point - 1 > 0 && point - 1 < LIM_2)
+            rise -= gUserPieceHeights[gEditor->userPiece][point - 2];
+        math_to_polar(4000, rise << 4, &angleIn, &ratio);
+        angleIn = 0x4000 - angleIn;
+        if (point + 1 > 0 && point + 1 < LIM_2)
+            rise = T1_2[gEditor->userPiece * 15 + point];
         else
-            v = 0;
-        if (n > 0 && n < LIM_2)
-            v -= gUserPieceHeights[gEditor->userPiece][n - 1];
-        math_to_polar(4000, v << 4, &r2, &dummy);
-        r2 = 0x4000 - r2;
-        if ((s16)(r2 - r1) < -0x2000)
+            rise = 0;
+        if (point > 0 && point < LIM_2)
+            rise -= gUserPieceHeights[gEditor->userPiece][point - 1];
+        math_to_polar(4000, rise << 4, &angleOut, &ratio);
+        angleOut = 0x4000 - angleOut;
+        if ((s16)(angleOut - angleIn) < -0x2000)
             break;
-        cnt++;
+        height++;
     }
     {
         s16 *b = T1_2;
-        *At(b, gEditor->userPiece, n - 1) = a;
+        *At(b, gEditor->userPiece, point - 1) = saved;
     }
-    return cnt;
+    return height;
 }
 
 #define LV() (gEditor->userPiece)
-#define CE2() (gPieceTypes[LV() + 0x12].dim[1] << 1)
+#define CE2() (gPieceTypes[LV() + PIECE_TYPE_USER].dim[1] << 1)
 
-s32 edit_user_piece_find_height_min(s32 param_1)
+/* The lowest, before the slope turns by more than 30 degrees the other way. */
+s32 edit_user_piece_find_height_min(s32 point)
 {
-    s32 iVar2;
-    s32 iVar3;
-    s32 iVar4;
-    s32 iVar5;
-    s32 w38;
-    s32 iStack_34;
-    s32 w30;
-    u32 uVar1;
+    s32 rise;
+    s32 idx;
+    s32 height;
+    s32 saved;
+    s32 angleIn;
+    s32 ratio;
+    s32 angleOut;
+    u32 angle;
 
-    if (param_1 > 0 && param_1 < CE2()) {
-        iVar5 = gUserPieceHeights[LV()][param_1 - 1];
+    if (point > 0 && point < CE2()) {
+        saved = gUserPieceHeights[LV()][point - 1];
     } else {
-        iVar5 = 0;
+        saved = 0;
     }
-    iVar4 = iVar5;
-    iVar3 = param_1 - 1;
+    height = saved;
+    idx = point - 1;
     while (1) {
-        gUserPieceHeights[LV()][iVar3] = (s16)((u16)gUserPieceHeights[LV()][iVar3] - 1);
-        if (param_1 > 0 && param_1 < CE2()) {
-            iVar2 = gUserPieceHeights[LV()][iVar3];
+        gUserPieceHeights[LV()][idx] = (s16)((u16)gUserPieceHeights[LV()][idx] - 1);
+        if (point > 0 && point < CE2()) {
+            rise = gUserPieceHeights[LV()][idx];
         } else {
-            iVar2 = 0;
+            rise = 0;
         }
-        if (iVar3 > 0 && iVar3 < CE2()) {
-            iVar2 = iVar2 - gUserPieceHeights[LV()][param_1 - 2];
+        if (idx > 0 && idx < CE2()) {
+            rise = rise - gUserPieceHeights[LV()][point - 2];
         }
-        math_to_polar(4000, iVar2 << 4, (u16 *)&w38, &iStack_34);
-        ((u16 *)&w38)[0] = 0x4000 - ((u16 *)&w38)[0];
-        if (param_1 + 1 > 0 && param_1 + 1 < CE2()) {
-            iVar2 = gUserPieceHeights[LV()][param_1];
+        math_to_polar(4000, rise << 4, (u16 *)&angleIn, &ratio);
+        ((u16 *)&angleIn)[0] = 0x4000 - ((u16 *)&angleIn)[0];
+        if (point + 1 > 0 && point + 1 < CE2()) {
+            rise = gUserPieceHeights[LV()][point];
         } else {
-            iVar2 = 0;
+            rise = 0;
         }
-        if (param_1 > 0 && param_1 < CE2()) {
-            iVar2 = iVar2 - gUserPieceHeights[LV()][iVar3];
+        if (point > 0 && point < CE2()) {
+            rise = rise - gUserPieceHeights[LV()][idx];
         }
-        math_to_polar(4000, iVar2 << 4, (u16 *)&w30, &iStack_34);
-        uVar1 = ((u16 *)&w30)[0];
-        ((u16 *)&w30)[0] = 0x4000 - uVar1;
-        if (0x1555 < (s16)((0x4000 - uVar1) - ((u16 *)&w38)[0])) {
+        math_to_polar(4000, rise << 4, (u16 *)&angleOut, &ratio);
+        angle = ((u16 *)&angleOut)[0];
+        ((u16 *)&angleOut)[0] = 0x4000 - angle;
+        if (0x1555 < (s16)((0x4000 - angle) - ((u16 *)&angleIn)[0])) {
             break;
         }
-        iVar4 = iVar4 - 1;
+        height = height - 1;
     }
-    gUserPieceHeights[LV()][param_1 - 1] = (s16)iVar5;
-    return iVar4;
+    gUserPieceHeights[LV()][point - 1] = (s16)saved;
+    return height;
 }
 
-#define A_2 (gEditor->heightSel)
-#define B_2 (gEditor->userPiece)
-#define LIM_3 (gPieceTypes[B_2 + 0x12].dim[1] * 2)
-#define H_2(c) ((c) > 0 && (c) < LIM_3 ? gUserPieceHeights[B_2][(c) - 1] : 0)
+/* The selected point, its piece, the piece's point count, the height at point c and the selected height */
+#define SEL_POINT (gEditor->heightSel)
+#define SEL_PIECE (gEditor->userPiece)
+#define SEL_NUM_POINTS (gPieceTypes[SEL_PIECE + PIECE_TYPE_USER].dim[1] * 2)
+#define HEIGHT_AT(c) ((c) > 0 && (c) < SEL_NUM_POINTS ? gUserPieceHeights[SEL_PIECE][(c) - 1] : 0)
 #define MIN_2(x, y) ((x) < (y) ? (x) : (y))
 #define MAX_2(x, y) ((x) > (y) ? (x) : (y))
-#define CELL (({ s16 *_tb = (s16 *)gUserPieceHeights; _tb; })[({ s32 _c = A_2 - 1; B_2 * 15 + _c; })])
+#define SEL_HEIGHT (({ s16 *_tb = (s16 *)gUserPieceHeights; _tb; })[({ s32 _c = SEL_POINT - 1; SEL_PIECE * 15 + _c; })])
 
+/* Moves the selected height point up or down, held between its neighbours' heights +-140 and +-450. */
 void edit_user_piece_adjust_height(void)
 {
     volatile s32 pad[8];
-    s32 t1;
+    s32 zHeld;
     s32 hi, lo;
-    s32 flag;
-    s32 v, x;
-    u32 F;
+    s32 nearLimit;
+    s32 height, newHeight;
 
-    t1 = gPadInput >> 17;
-    t1 &= 1;
-    hi = MIN_2(H_2(A_2 + 1) + 0x8C, H_2(A_2 - 1) + 0x8C);
-    lo = MAX_2(H_2(A_2 - 1) - 0x8C, H_2(A_2 + 1) - 0x8C);
+    zHeld = gPadInput >> 17; /* PAD_Z */
+    zHeld &= 1;
+    /* at most 140 from the neighbouring points, 450 from the ground */
+    hi = MIN_2(HEIGHT_AT(SEL_POINT + 1) + 0x8C, HEIGHT_AT(SEL_POINT - 1) + 0x8C);
+    lo = MAX_2(HEIGHT_AT(SEL_POINT - 1) - 0x8C, HEIGHT_AT(SEL_POINT + 1) - 0x8C);
     if (hi > 0x1C2) {
         hi = 0x1C2;
     }
     if (lo < -0x1C2) {
         lo = -0x1C2;
     }
-    *(volatile s16 *)&gEditor->heightState = 2;
-    if (gPadInput & 1) {
+    *(volatile s16 *)&gEditor->heightState = EDIT_HEIGHT_FREE;
+    /* the D-pad moves the point 20 a press, the stick by how far it is pushed */
+    if (gPadInput & PAD_STICK_UP) {
         goto body;
     }
-    if (gPadInput & 2) {
+    if (gPadInput & PAD_STICK_DOWN) {
         goto body;
     }
-    if ((gPadInput & 0x800) && !(gPadInputPrev & 0x800)) {
+    if ((gPadInput & PAD_D_UP) && !(gPadInputPrev & PAD_D_UP)) {
         goto body;
     }
-    if ((gPadInput & 0x1000) && !(gPadInputPrev & 0x1000)) {
+    if ((gPadInput & PAD_D_DOWN) && !(gPadInputPrev & PAD_D_DOWN)) {
     body:
-        if ((gPadInput & 0x800) && !(gPadInputPrev & 0x800)) {
-            *(u16 *)&CELL += 0x14;
-        } else if ((gPadInput & 0x1000) && !(gPadInputPrev & 0x1000)) {
-            *(u16 *)&CELL -= 0x14;
+        if ((gPadInput & PAD_D_UP) && !(gPadInputPrev & PAD_D_UP)) {
+            *(u16 *)&SEL_HEIGHT += 0x14;
+        } else if ((gPadInput & PAD_D_DOWN) && !(gPadInputPrev & PAD_D_DOWN)) {
+            *(u16 *)&SEL_HEIGHT -= 0x14;
         } else {
-            s16 *p = &CELL;
+            s16 *p = &SEL_HEIGHT;
             s32 w = *p;
-            if (gPadInput & 3) {
-                if (gPadInput & 1) {
-                    x = w + (gPadInput >> 28);
+            if (gPadInput & (PAD_STICK_UP | PAD_STICK_DOWN)) {
+                if (gPadInput & PAD_STICK_UP) {
+                    newHeight = w + (gPadInput >> 28);
                 } else {
-                    x = w - (gPadInput >> 28);
+                    newHeight = w - (gPadInput >> 28);
                 }
             } else {
-                x = w;
+                newHeight = w;
             }
-            *p = x;
+            *p = newHeight;
         }
-        if (t1 != 0) {
-            v = CELL;
-            if (hi < v) {
-                if (flag != 0) {
-                    gEditor->heightState = 1;
+        if (zHeld != 0) {
+            height = SEL_HEIGHT;
+            if (hi < height) {
+                if (nearLimit != 0) { /* never set: read uninitialised, as in the original */
+                    gEditor->heightState = EDIT_HEIGHT_NEAR_LIMIT;
                 }
-                CELL = hi;
-            } else if (v < lo) {
-                CELL = lo;
-                gEditor->heightState = 1;
+                SEL_HEIGHT = hi;
+            } else if (height < lo) {
+                SEL_HEIGHT = lo;
+                gEditor->heightState = EDIT_HEIGHT_NEAR_LIMIT;
             }
         } else {
-            v = CELL;
-            if (hi < v) {
-                gEditor->heightState = 0;
-                CELL = hi;
-            } else if (v < lo) {
-                CELL = lo;
-                gEditor->heightState = 0;
+            height = SEL_HEIGHT;
+            if (hi < height) {
+                gEditor->heightState = EDIT_HEIGHT_AT_LIMIT;
+                SEL_HEIGHT = hi;
+            } else if (height < lo) {
+                SEL_HEIGHT = lo;
+                gEditor->heightState = EDIT_HEIGHT_AT_LIMIT;
             }
         }
     }
@@ -3828,28 +3850,30 @@ void edit_user_piece_adjust_height(void)
 
 #define PRESSED_4(b) ((gPadInput & (b)) && !(gPadInputPrev_3[0] & (b)))
 
+/* The height editor (EDIT_MODE_USER_PIECE): its OK/Cancel boxes, A to finish, R to delete a segment, left and right
+   along the points (adding a segment past the ends), up and down on the selected point; then the meshes follow. */
 void edit_update_user_piece(void)
 {
     s32 i;
 
     if (gEditor->flags & EDIT_DIALOG) {
-        if (PRESSED_4(0x20)) {
-            gPadInputPrev_3[0] |= 0x20;
+        if (PRESSED_4(PAD_B)) {
+            gPadInputPrev_3[0] |= PAD_B;
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
             gEditor->flags &= ~EDIT_DIALOG;
-        } else if (PRESSED_4(0x10)) {
-            gPadInputPrev_3[0] |= 0x10;
+        } else if (PRESSED_4(PAD_A)) {
+            gPadInputPrev_3[0] |= PAD_A;
             if (gEditor->dialogChoice != 0) {
                 switch (gEditor->dialog) {
-                case 0:
+                case EDIT_ASK_ADD_SEGMENT:
                     if (gEditor->heightSel == 1) {
                         edit_user_piece_prepend_segment();
                     } else {
                         edit_user_piece_append_segment();
                     }
                     break;
-                case 1:
-                    for (i = 0; i < 15; i++) {
+                case EDIT_ASK_DELETE_SEGMENT:
+                    for (i = 0; i < USER_PIECE_HEIGHTS; i++) {
                         gUserPieceHeights[gEditor->userPiece][i] = 0;
                     }
                     if (gEditor->heightSel == 1) {
@@ -3862,26 +3886,28 @@ void edit_update_user_piece(void)
             }
             gEditor->menu->flags |= GUI_MENU_ACTIVE;
             gEditor->flags &= ~EDIT_DIALOG;
-        } else if (PRESSED_4(0x800) || PRESSED_4(0x1000)) {
+        } else if (PRESSED_4(PAD_D_UP) || PRESSED_4(PAD_D_DOWN)) {
             gEditor->dialogChoice ^= 1;
-            snd_play_menu_sound(0);
+            snd_play_menu_sound(MENU_SFX_MOVE);
         }
-    } else if (PRESSED_4(0x10)) {
+    } else if (PRESSED_4(PAD_A)) {
+        /* A: done, back to placing pieces */
         gEditor->mode = EDIT_MODE_PLACE;
         gEditor->menu->flags |= GUI_MENU_ACTIVE;
-        sEditTrackMenu.choice = 3;
-        sEditTrackMenu.cursor = 3;
-        sEditTrackMenu.items[3].flags |= GUI_ITEM_ENABLED;
-        sEditTrackMenu.items[3].valueMask |= 1 << (gEditor->userPieceCount - 1);
+        sEditTrackMenu.choice = EDIT_ITEM_USER;
+        sEditTrackMenu.cursor = EDIT_ITEM_USER;
+        sEditTrackMenu.items[EDIT_ITEM_USER].flags |= GUI_ITEM_ENABLED;
+        sEditTrackMenu.items[EDIT_ITEM_USER].valueMask |= 1 << (gEditor->userPieceCount - 1);
     } else {
-        if (PRESSED_4(0x10000)) {
-            PieceType *b = gPieceTypes;
-            s32 k = gEditor->userPiece + 0x12;
-            PieceType *t;
-            t = &b[k];
-            if (t->dim[1] >= 5 && !(t->flags & 0x200)) {
-                if (gEditor->heightSel == 1 || gEditor->heightSel == t->dim[1] * 2 - 1) {
-                    gEditor->dialog = 1;
+        /* R at either end deletes a segment (down to 4, not when the size is locked) */
+        if (PRESSED_4(PAD_R)) {
+            PieceType *types = gPieceTypes;
+            s32 typeIdx = gEditor->userPiece + PIECE_TYPE_USER;
+            PieceType *type;
+            type = &types[typeIdx];
+            if (type->dim[1] >= 5 && !(type->flags & PIECE_SIZE_LOCKED)) {
+                if (gEditor->heightSel == 1 || gEditor->heightSel == type->dim[1] * 2 - 1) {
+                    gEditor->dialog = EDIT_ASK_DELETE_SEGMENT;
                     gEditor->flags |= EDIT_DIALOG;
                     gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                     gEditor->dialogChoice = 0;
@@ -3889,33 +3915,34 @@ void edit_update_user_piece(void)
                 }
             }
         }
-        if ((PRESSED_4(0x4000) && (gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(0x2000) && !(gEditor->flags & EDIT_REVERSED))) {
+        /* left and right move along the points; past either end, a segment can be added */
+        if ((PRESSED_4(PAD_D_RIGHT) && (gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(PAD_D_LEFT) && !(gEditor->flags & EDIT_REVERSED))) {
             if (gEditor->heightSel >= 2) {
                 gEditor->heightSel--;
-                snd_play_menu_sound(0);
+                snd_play_menu_sound(MENU_SFX_MOVE);
             } else {
-                PieceType *b = gPieceTypes;
-            s32 k = gEditor->userPiece + 0x12;
-                PieceType *t;
-            t = &b[k];
-                if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
-                    gEditor->dialog = 0;
+                PieceType *types = gPieceTypes;
+                s32 typeIdx = gEditor->userPiece + PIECE_TYPE_USER;
+                PieceType *type;
+                type = &types[typeIdx];
+                if (type->dim[1] < gEditor->maxSegments && !(type->flags & PIECE_SIZE_LOCKED)) {
+                    gEditor->dialog = EDIT_ASK_ADD_SEGMENT;
                     gEditor->flags |= EDIT_DIALOG;
                     gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                     gEditor->dialogChoice = 0;
                 }
             }
         }
-        if ((PRESSED_4(0x4000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(0x2000) && (gEditor->flags & EDIT_REVERSED))) {
-            PieceType *b = gPieceTypes;
-            s32 k = gEditor->userPiece + 0x12;
-            PieceType *t;
-            t = &b[k];
-            if (gEditor->heightSel < t->dim[1] * 2 - 1) {
+        if ((PRESSED_4(PAD_D_RIGHT) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(PAD_D_LEFT) && (gEditor->flags & EDIT_REVERSED))) {
+            PieceType *types = gPieceTypes;
+            s32 typeIdx = gEditor->userPiece + PIECE_TYPE_USER;
+            PieceType *type;
+            type = &types[typeIdx];
+            if (gEditor->heightSel < type->dim[1] * 2 - 1) {
                 gEditor->heightSel++;
-                snd_play_menu_sound(0);
-            } else if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
-                gEditor->dialog = 0;
+                snd_play_menu_sound(MENU_SFX_MOVE);
+            } else if (type->dim[1] < gEditor->maxSegments && !(type->flags & PIECE_SIZE_LOCKED)) {
+                gEditor->dialog = EDIT_ASK_ADD_SEGMENT;
                 gEditor->flags |= EDIT_DIALOG;
                 gEditor->menu->flags &= ~GUI_MENU_ACTIVE;
                 gEditor->dialogChoice = 0;
@@ -3925,204 +3952,214 @@ void edit_update_user_piece(void)
     }
 end:
     {
-        PieceType *b = gPieceTypes;
-            s32 k = gEditor->userPiece + 0x12;
-        PieceType *t;
-            t = &b[k];
-        usrtrk_apply_heights(t->meshA, t->meshB, gUserPieceHeights[gEditor->userPiece], t->dim[1]);
+        PieceType *types = gPieceTypes;
+        s32 typeIdx = gEditor->userPiece + PIECE_TYPE_USER;
+        PieceType *type;
+        type = &types[typeIdx];
+        usrtrk_apply_heights(type->meshA, type->meshB, gUserPieceHeights[gEditor->userPiece], type->dim[1]);
     }
 }
 
+/* Returns its second argument. Not called. */
 s32 func_8009EB00(s32 a, s32 b)
 {
     return b;
 }
 
-/* Unused: whether c's prev can be reached from its next (1 also when either is missing). */
-s32 edit_can_unlink_piece(EditPiece *c)
+/* Not called: whether piece's prev can be reached from its next (1 also when either is missing). */
+s32 edit_can_unlink_piece(EditPiece *piece)
 {
-    EditPiece *n = c->next;
-    if (n != NULL && c->prev != NULL) {
+    EditPiece *p = piece->next;
+    if (p != NULL && piece->prev != NULL) {
         do {
-            if (n == c->prev) {
+            if (p == piece->prev) {
                 return 1;
             }
-            n = n->next;
-        } while (n != NULL);
+            p = p->next;
+        } while (p != NULL);
         return 0;
     }
     return 1;
 }
 
+/* Makes the first piece that can start the track the start piece, if there is none. */
 void edit_find_start_piece(void) {
-    Editor *p = gEditor;
-    EditPiece *n;
-    if (p->start != NULL) {
+    Editor *ed = gEditor;
+    EditPiece *piece;
+    if (ed->start != NULL) {
         return;
     }
-    n = p->first;
-    if (n == NULL) {
+    piece = ed->first;
+    if (piece == NULL) {
         return;
     }
     do {
-        if (n->type->flags & PIECE_START) {
-            p->start = n;
+        if (piece->type->flags & PIECE_START) {
+            ed->start = piece;
             return;
         }
-        n = n->next;
-        if (n == p->first) {
+        piece = piece->next;
+        if (piece == ed->first) {
             return;
         }
-    } while (n != NULL);
+    } while (piece != NULL);
 }
 
 /* Puts the height cursor at the user piece's first point, or its last when the view is reversed. */
-void edit_user_piece_reset_cursor(s32 arg0)
+void edit_user_piece_reset_cursor(s32 unused)
 {
-    Editor *p = gEditor;
-    if (p->flags & EDIT_REVERSED) {
-        s32 idx = p->userPiece;
-        p->heightSel = gPieceTypes[idx + 0x12].dim[1] * 2 - 1;
+    Editor *ed = gEditor;
+    if (ed->flags & EDIT_REVERSED) {
+        s32 piece = ed->userPiece;
+        ed->heightSel = gPieceTypes[piece + PIECE_TYPE_USER].dim[1] * 2 - 1;
         return;
     }
-    p->heightSel = 1;
+    ed->heightSel = 1;
 }
 
+/* The track view camera's height and pitch from its distance (as CAM_CALC_HEIGHT and CAM_CALC_PITCH). */
 void edit_calc_track_cam_elevation(void)
 {
-    f32 x, y;
-    s32 d;
+    f32 dist, height;
+    s32 len;
 
-    x = gEditor->cam[0].dist;
-    gEditor->cam[0].height = ((x - 20000.0f) * 38000.0f) / 165000.0f + 40000.0f;
-    y = gEditor->cam[0].height;
-    d = __builtin_sqrtf(y * y + x * x);
-    gEditor->cam[0].pitch = math_asini((gEditor->cam[0].height << 14) / d & 0x3FFF) & 0xFFFF;
+    dist = gEditor->cam[0].dist;
+    gEditor->cam[0].height = ((dist - 20000.0f) * 38000.0f) / 165000.0f + 40000.0f;
+    height = gEditor->cam[0].height;
+    len = __builtin_sqrtf(height * height + dist * dist);
+    gEditor->cam[0].pitch = math_asini((gEditor->cam[0].height << 14) / len & 0x3FFF) & 0xFFFF;
 }
 
+/* The same for the user piece camera. */
 void edit_calc_piece_cam_elevation(void) {
-    Editor *g;
-    f32 x;
-    s32 n;
-    f32 hyp;
+    Editor *ed;
+    f32 dist;
+    s32 height;
+    f32 len;
 
-    g = gEditor;
-    x = (f32)g->cam[1].dist;
-    n = (s32)((x - 20000.0f) * 32000.0f / 100000.0f + 8000.0f);
-    g->cam[1].height = n;
-    hyp = __builtin_sqrtf((f32)n * (f32)n + x * x);
-    gEditor->cam[1].pitch = math_asini((gEditor->cam[1].height << 14) / (s32)hyp & 0x3FFF) & 0xFFFF;
+    ed = gEditor;
+    dist = (f32)ed->cam[1].dist;
+    height = (s32)((dist - 20000.0f) * 32000.0f / 100000.0f + 8000.0f);
+    ed->cam[1].height = height;
+    len = __builtin_sqrtf((f32)height * (f32)height + dist * dist);
+    gEditor->cam[1].pitch = math_asini((gEditor->cam[1].height << 14) / (s32)len & 0x3FFF) & 0xFFFF;
 }
 
-s32 edit_ease_delta(s32 mode, s32 v, s32 d, s32 f)
+/* The part of a move of delta (in 1/1024) to make at step `step` of `steps`, along a sine curve over `arc` from
+   `start`: mode 0 easing in, 1 easing out, 2 both, 3 linear. */
+s32 edit_ease_delta(s32 mode, s32 delta, s32 steps, s32 step)
 {
-    s32 iv1;
-    s32 iv2;
-    s32 q;
+    s32 arc;
+    s32 start;
+    s32 perStep;
     s32 num;
-    s32 r;
+    s32 diff;
     s32 res;
-    s32 ta;
-    s32 tb;
+    s32 sinA;
+    s32 sinB;
     volatile s32 pad[2];
 
     res = 0;
-    if (v != 0) {
+    if (delta != 0) {
         if (mode == 1) {
-            goto m1;
+            goto ease_out;
         }
         if (mode == 0) {
-            goto m0;
+            goto ease_in;
         }
         if (mode == 2) {
-            goto m2;
+            goto ease_both;
         }
         if (mode == 3) {
-            goto m3;
+            goto linear;
         }
-        iv1 = 0;
-        iv2 = 0;
-        goto dv;
-    m0:
-        iv1 = 0x4000;
-        iv2 = 0x4000;
-        v = v << 1;
-        goto common;
-    m1:
-        iv1 = 0x4000;
-        iv2 = 0x8000;
-        v = v << 1;
-        goto common;
-    m2:
-        iv1 = 0x8000;
-        iv2 = 0x4000;
-        goto common;
-    m3:
-        num = v << 10;
-        q = num / d;
-        r = num % d;
-        if (f == 0) {
-            q = q + r;
+        arc = 0;
+        start = 0;
+        goto none;
+    ease_in:
+        arc = 0x4000;
+        start = 0x4000;
+        delta = delta << 1;
+        goto curve;
+    ease_out:
+        arc = 0x4000;
+        start = 0x8000;
+        delta = delta << 1;
+        goto curve;
+    ease_both:
+        arc = 0x8000;
+        start = 0x4000;
+        goto curve;
+    linear:
+        num = delta << 10;
+        perStep = num / steps;
+        diff = num % steps;
+        if (step == 0) {
+            perStep = perStep + diff;
         }
-        return q;
-    dv:
-        v = iv1;
-    common:
-        q = (iv1 << 10) / d;
-        ta = (s32)gCosTable[(((q * f) >> 10) + iv2 >> 4) - 0x400 & 0xFFF];
-        f = f + 1;
-        tb = (s32)gCosTable[(((q * f) >> 10) + iv2 >> 4) - 0x400 & 0xFFF];
-        r = ta - tb;
-        res = (r * v) >> 5;
+        return perStep;
+    none:
+        delta = arc;
+    curve:
+        perStep = (arc << 10) / steps;
+        sinA = (s32)gCosTable[(((perStep * step) >> 10) + start >> 4) - 0x400 & 0xFFF];
+        step = step + 1;
+        sinB = (s32)gCosTable[(((perStep * step) >> 10) + start >> 4) - 0x400 & 0xFFF];
+        diff = sinA - sinB;
+        res = (diff * delta) >> 5;
     }
     return res;
 }
 
-void edit_set_menu(GuiMenu *a0)
+/* Shows menu on the panel, after the slide when one is under way. Not called: the editor has it written out where
+   it changes menus. */
+void edit_set_menu(GuiMenu *menu)
 {
-    Editor *st = gEditor;
-    if (st->menu != a0) {
-        s32 s = st->slideState;
-        if (s == 1) {
-            st->menu = a0;
+    Editor *ed = gEditor;
+    if (ed->menu != menu) {
+        s32 state = ed->slideState;
+        if (state == EDIT_SLIDE_SHOWN) {
+            ed->menu = menu;
             goto tail;
         }
-        if (s == 0) goto c0;
-        if (s == 2) goto c2;
-        if (s == 3) goto c3;
+        if (state == EDIT_SLIDE_IN) goto slide_in;
+        if (state == EDIT_SLIDE_OUT) goto slide_out;
+        if (state == EDIT_SLIDE_SWAP) goto swap;
         goto tail;
-c0:
-        st->slideState = 1;
-        st->nextMenu = a0;
+slide_in:
+        ed->slideState = EDIT_SLIDE_SHOWN;
+        ed->nextMenu = menu;
         goto tail;
-c2:
-        st->slideState = 3;
-        st->nextMenu = a0;
+slide_out:
+        ed->slideState = EDIT_SLIDE_SWAP;
+        ed->nextMenu = menu;
         goto tail;
-c3:
-        st->slideState = 1;
-        st->menu = a0;
+swap:
+        ed->slideState = EDIT_SLIDE_SHOWN;
+        ed->menu = menu;
 tail:
         gEditor->flags &= 0xFFFEFFFF; /* ~EDIT_A_HELD */
     }
 }
 
+/* Puts the camera on its target at once, the yaw rounded to an eighth turn. Not called. */
 void edit_cam_snap(void)
 {
     EditCamPos *dst = &sEditCamPos;
     EditCamPos *src = &sEditCamTarget;
-    u32 a, b, c;
+    u32 x, z, yaw;
 
-    a = src->x;
-    b = src->z;
-    c = dst->yaw;
+    x = src->x;
+    z = src->z;
+    yaw = dst->yaw;
     sEditCamMoving = 0;
-    dst->x = a;
-    dst->z = b;
-    dst->yaw = ((c + 0x800) >> 13) << 13;
+    dst->x = x;
+    dst->z = z;
+    dst->yaw = ((yaw + 0x800) >> 13) << 13;
 }
 
-void edit_clear_track(s32 a0) {
+/* Empties the track. Not called. */
+void edit_clear_track(s32 resetUserPieces) {
     s32 i;
 
     gEditor->first = NULL;
@@ -4131,117 +4168,124 @@ void edit_clear_track(s32 a0) {
     gEditor->start = NULL;
     gEditor->scrollX = 0;
     gEditor->scrollY = 0;
-    for (i = 149; i >= 0; i--) {
+    for (i = EDIT_MAX_PIECES - 1; i >= 0; i--) {
         gEditor->pieces[i].used = 0;
     }
-    if (a0 != 0) {
-        gEditor->userPieceCount = 8;
+    if (resetUserPieces != 0) {
+        gEditor->userPieceCount = USER_PIECE_COUNT;
     }
     strcpy(gEditor->name, "<NONE>");
 }
 
-typedef struct { u8 b[0x310]; } Blk_24;
+/* A packed user track, copied as one block */
+typedef struct { u8 b[USER_TRACK_MAX_SIZE]; } UserTrackBlock;
 
+/* Packs the track into the save data. Not called (edit_update_main_menu has it written out). */
 void edit_save_track_to_game_pak(void)
 {
-    gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x6FE);
+    gGame.userTrack = mem_alloc_dbg(USER_TRACK_BUF_SIZE, 0, sStrEditFile, 0x6FE);
     usrtrk_pack_track(gGame.userTrack);
-    *(Blk_24 *)gSaveData.userTrack = *(Blk_24 *)gGame.userTrack;
-    save_write(4, 0);
+    *(UserTrackBlock *)gSaveData.userTrack = *(UserTrackBlock *)gGame.userTrack;
+    save_write(4, 0); /* the user track's section */
     mem_free(gGame.userTrack);
     gGame.userTrack = 0;
 }
 
+/* Whether the current piece may be deleted (as can_delete). Not called. */
 s32 edit_can_delete_piece(void) {
-    Editor *o = gEditor;
-    EditPiece *a = o->cur;
-    EditPiece *n;
-    s32 r;
-    if (a == NULL || a != o->start || (a->prev == 0 && a->next == NULL)) {
+    Editor *ed = gEditor;
+    EditPiece *cur = ed->cur;
+    EditPiece *other;
+    s32 ok;
+    if (cur == NULL || cur != ed->start || (cur->prev == 0 && cur->next == NULL)) {
         goto ret1;
     }
-    n = o->first;
-    r = 0;
-    while (n != NULL) {
-        if (n != a && (n->type->flags & PIECE_START) != 0) {
-            r = 1;
+    other = ed->first;
+    ok = 0;
+    while (other != NULL) {
+        if (other != cur && (other->type->flags & PIECE_START) != 0) {
+            ok = 1;
             break;
         }
-        n = n->next;
-        if (n == o->first) {
+        other = other->next;
+        if (other == ed->first) {
             break;
         }
     }
-    return r;
+    return ok;
 ret1:
     return 1;
 }
 
-void edit_reset_overlay_lines(s32 param_1) {
-    s32 p = param_1;
+/* Empties the frame's lines and takes its camera matrix for edit_project_to_screen. Not called. */
+void edit_reset_overlay_lines(s32 frame) {
+    s32 f = frame;
     gEditor->lineCount = 0;
-    guMtxL2F(gEditor->camMtx, gArnedCamMtx_3 + (p << 6));
-    mem_fill((u8 *)gEditor->lineVtx[p], 0, 0xF00);
+    guMtxL2F(gEditor->camMtx, gArnedCamMtx_3 + (f << 6)); /* gArnedCamMtx[f] */
+    mem_fill((u8 *)gEditor->lineVtx[f], 0, EDIT_MAX_LINES * 4 * sizeof(Vtx));
 }
 
+/* Sets each user piece's PIECE_SIZE_LOCKED (placed between two pieces) and PIECE_USED_TWICE (placed more than once,
+   which locks the size too). */
 void edit_update_user_piece_usage(void)
 {
-    Editor *obj;
-    PieceType *blk;
-    EditPiece *n;
+    Editor *ed;
+    PieceType *type;
+    EditPiece *piece;
     s32 i;
-    s32 cnt, flag;
-    s32 m;
+    s32 uses, between;
+    s32 clearMask;
     i = 0;
-    obj = gEditor;
-    m = -0x601;
-    for (; i < 8; i++) {
-        u32 c;
-        blk = &gPieceTypes[PIECE_TYPE_USER + i];
-        c = (u16)blk->flags; /* read unsigned here */
-        n = obj->first;
-        blk->flags = c & m;
-        cnt = 0;
-        flag = cnt;
-        if (n != 0) {
+    ed = gEditor;
+    clearMask = ~(PIECE_SIZE_LOCKED | PIECE_USED_TWICE);
+    for (; i < USER_PIECE_COUNT; i++) {
+        u32 flags;
+        type = &gPieceTypes[PIECE_TYPE_USER + i];
+        flags = (u16)type->flags; /* read unsigned here */
+        piece = ed->first;
+        type->flags = flags & clearMask;
+        uses = 0;
+        between = uses;
+        if (piece != 0) {
             do {
-                if (n->type == blk) {
-                    cnt++;
-                    if (n->prev != 0 && n->next != 0) {
-                        flag = 1;
+                if (piece->type == type) {
+                    uses++;
+                    if (piece->prev != 0 && piece->next != 0) {
+                        between = 1;
                     }
                 }
-                n = n->next;
-            } while (n != obj->first && n != 0);
+                piece = piece->next;
+            } while (piece != ed->first && piece != 0);
         }
-        if (flag) {
-            blk->flags = blk->flags | 0x200;
+        if (between) {
+            type->flags = type->flags | PIECE_SIZE_LOCKED;
         }
-        if (cnt >= 2) {
-            blk->flags = blk->flags | 0x600;
+        if (uses >= 2) {
+            type->flags = type->flags | (PIECE_SIZE_LOCKED | PIECE_USED_TWICE);
         }
     }
 }
 
+/* Frees the first n user pieces' cloned meshes. Not called. */
 void edit_free_user_piece_meshes(s32 n)
 {
-    u32 *wp;
+    u32 *cellsPerSeg;
     s32 i, j;
     u32 k;
-    PieceMeshSet *a;
-    PieceMeshSet *b;
+    PieceMeshSet *meshA;
+    PieceMeshSet *meshB;
 
-    wp = &gPieceTypes[PIECE_TYPE_TEMPLATE].meshA->count;
+    cellsPerSeg = &gPieceTypes[PIECE_TYPE_TEMPLATE].meshA->count;
     for (i = 0; i < n; i++) {
-        a = gPieceTypes[i + 18].meshA;
-        b = gPieceTypes[i + 18].meshB;
-        for (j = 0; j < gPieceTypes[i + 18].dim[1]; j++) {
-            for (k = 0; k < *wp; k++) {
-                mem_free(a->cells[j * *wp + k].mesh);
-                mem_free(b->cells[j * *wp + k].mesh);
+        meshA = gPieceTypes[i + PIECE_TYPE_USER].meshA;
+        meshB = gPieceTypes[i + PIECE_TYPE_USER].meshB;
+        for (j = 0; j < gPieceTypes[i + PIECE_TYPE_USER].dim[1]; j++) {
+            for (k = 0; k < *cellsPerSeg; k++) {
+                mem_free(meshA->cells[j * *cellsPerSeg + k].mesh);
+                mem_free(meshB->cells[j * *cellsPerSeg + k].mesh);
             }
         }
-        mem_free(a);
-        mem_free(b);
+        mem_free(meshA);
+        mem_free(meshB);
     }
 }
