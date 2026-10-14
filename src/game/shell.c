@@ -3587,6 +3587,10 @@ void shell_draw_rider_bio(s32 player, s32 y)
 
 #define SAVE gSaveData_13
 #define VIEWS gViewRects
+/* The last record tracks (gGame.recordTracks): no laps; the hill climb and the desert keep no best lap */
+#define RECORD_HILL_CLIMB   21
+#define RECORD_STUNT_COURSE 22
+#define RECORD_DESERT       23
 /* In a season of the custom round, of the challenge */
 #define IN_CUSTOM_ROUND (gGame.mode == GAME_MODE_SEASON && gSeason != NULL && gSeason->cup - gCups == CUP_CUSTOM)
 #define IN_CHALLENGE (gGame.mode == GAME_MODE_SEASON && gSeason != NULL && gSeason->cup - gCups == CUP_CHALLENGE)
@@ -4024,9 +4028,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         break;
     case SCREEN_TYPE_ROUND_SELECT:
     case SCREEN_TYPE_RECORDS: {
+        /* The season screen (a cup and its rounds, the custom round's editing) and the records (a page of 5 record
+           tracks, the selected one's records over its picture) share a layout. */
         s32 xoff;
         s32 yoff;
-        s32 u4;
+        s32 uninit4;
 
         if (screen->type == SCREEN_TYPE_RECORDS) {
             xoff = 0;
@@ -4039,19 +4045,21 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         font_reset_queue();
         gDPLoadTLUT_pal256(gdl++, gGame.screenArrows->addr);
         {
-        if (gGame.blinkTimer < 0x20 && (screen->type == SCREEN_TYPE_RECORDS || gGame.seasonMenuState == 0)) {
-            if ((screen->type == SCREEN_TYPE_RECORDS && *screen->cursor / 5 < (gGame.numRecordTracks + 4) / 5 - 1) ||
+        /* the blinking arrows to the next and previous page or cup */
+        if (gGame.blinkTimer < 0x20 && (screen->type == SCREEN_TYPE_RECORDS || gGame.seasonMenuState == SEASON_MENU_CUPS)) {
+            if ((screen->type == SCREEN_TYPE_RECORDS && *screen->cursor / TRACKS_PER_PAGE < (gGame.numRecordTracks + 4) / TRACKS_PER_PAGE - 1) ||
                 (screen->type == SCREEN_TYPE_ROUND_SELECT &&
-                 ((gGame.difficulty == 1 && *screen->cursor < 1) || (gGame.difficulty == 2 && *screen->cursor < 2) || (gGame.difficulty == 3 && *screen->cursor < 5)))) {
+                 ((gGame.difficulty == 1 && *screen->cursor < CUP_SILVER) || (gGame.difficulty == 2 && *screen->cursor < CUP_GOLD) || (gGame.difficulty == 3 && *screen->cursor < CUP_CUSTOM)))) {
                 DRAW(xoff + 0x128, yoff + 0x22, &gGame.screenArrows[2], 3);
             }
-            if (((screen->type != SCREEN_TYPE_RECORDS) ? *screen->cursor : *screen->cursor / 5) > 0) {
+            if (((screen->type != SCREEN_TYPE_RECORDS) ? *screen->cursor : *screen->cursor / TRACKS_PER_PAGE) > 0) {
                 DRAW(xoff + 0x1C, yoff + 0x22, &gGame.screenArrows[1], 3);
             }
         }
         }
         DRAW_PAL_SYNC(gGame.titleBar, xoff + 0x49, yoff + 0x2A, 3);
         {
+        /* the picture of the track: the record track, or the round's track shown, picked or previewed */
         if (gCups[*screen->cursor / 5].numRounds != 0) {
             s32 unusedA;
             void *unusedP2;
@@ -4060,10 +4068,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 trackIdx = *screen->cursor;
             } else {
                 switch (gGame.seasonMenuState) {
-                case 2:
+                case SEASON_MENU_CUSTOM_TRACKS:
                     trackIdx = gGame.customTrackSel;
                     break;
-                case 1:
+                case SEASON_MENU_CUSTOM_SLOTS:
                     trackIdx = gCups[gGame.cupSel].tracks[gGame.roundSel];
                     break;
                 default:
@@ -4072,20 +4080,22 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 }
             }
             if (screen->type == SCREEN_TYPE_RECORDS) {
+                /* the picture fades to grey over 59 frames */
                 if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                     shell_blend_palette_to_gray(0, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
                 } else {
-                    shell_blend_palette_to_gray((0x3B - gGame.screenTimer) * 0xFF / 0x3B, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
+                    shell_blend_palette_to_gray((59 - gGame.screenTimer) * 0xFF / 59, gGame.itemPics[sTrackPicIndex[trackIdx]]->addr);
                 }
             } else {
                 shell_blend_palette_to_gray(0xFF, NULL);
             }
             img = &gGame.itemPics[sTrackPicIndex[trackIdx]][1];
             if (screen->type != SCREEN_TYPE_RECORDS &&
-                !((IN_CUSTOM_ROUND || ((gGame.seasonMenuState != 0 || CUP_OPEN(*screen->cursor)) && gGame.seasonMenuState != 3 &&
-                              (gGame.seasonMenuState != 2 || (gUnlockedTracks & (1 << gGame.customTrackSel))))) &&
+                !((IN_CUSTOM_ROUND || ((gGame.seasonMenuState != SEASON_MENU_CUPS || CUP_OPEN(*screen->cursor)) && gGame.seasonMenuState != 3 &&
+                              (gGame.seasonMenuState != SEASON_MENU_CUSTOM_TRACKS || (gUnlockedTracks & (1 << gGame.customTrackSel))))) &&
                  (!IN_CUSTOM_ROUND || PLATINUM_WON))) {
-                if (gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3 || screen->type == SCREEN_TYPE_RECORDS) {
+                /* locked: greyed, "Locked", or for a track not unlocked yet how to unlock it */
+                if (gGame.seasonMenuState == SEASON_MENU_CUPS || gGame.seasonMenuState == 3 || screen->type == SCREEN_TYPE_RECORDS) {
                     font_text_create(gGame.texts[20], 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
                     font_text_add(gGame.texts[20], sStrLocked);
                     font_draw_text(gGame.texts[20], xoff + 0x16F, yoff + 0x82);
@@ -4108,8 +4118,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                         gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
                     } else {
-                        gDPSetPrimColor(gdl++, 0, 0, 0xFF - (0x3B - gGame.screenTimer) * 0x82 / 0x3B, 0xFF - (0x3B - gGame.screenTimer) * 0x82 / 0x3B,
-                                        0xFF - (0x3B - gGame.screenTimer) * 0x82 / 0x3B, 0xFF);
+                        gDPSetPrimColor(gdl++, 0, 0, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF - (59 - gGame.screenTimer) * 0x82 / 59,
+                                        0xFF - (59 - gGame.screenTimer) * 0x82 / 59, 0xFF);
                     }
                     gDPLoadTLUT_pal256(gdl++, gGame.greyPalette);
                     gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
@@ -4125,15 +4135,17 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
         img = &gGame.frames[(screen->type == SCREEN_TYPE_RECORDS) ? 6 : 7];
-        DRAW(((0x200 - img->w * 8) >> 1) + 4, (0xF0 - img->h) / 2, img, 6);
+        DRAW(((512 - img->w * 8) >> 1) + 4, (240 - img->h) / 2, img, 6);
+        /* the 5 rows: the tracks with their laps, the cursor, a padlock or a won flag; empty slots of the custom
+           round */
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_NOOP2);
         gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
         for (i = 0; i < 5; i++) {
-            if (screen->type == SCREEN_TYPE_RECORDS || ((gGame.seasonMenuState == 0 || gGame.seasonMenuState == 3) && i < gCups[*screen->cursor].numRounds) ||
-                (gGame.seasonMenuState != 0 && i <= gCups[*screen->cursor].numRounds)) {
+            if (screen->type == SCREEN_TYPE_RECORDS || ((gGame.seasonMenuState == SEASON_MENU_CUPS || gGame.seasonMenuState == 3) && i < gCups[*screen->cursor].numRounds) ||
+                (gGame.seasonMenuState != SEASON_MENU_CUPS && i <= gCups[*screen->cursor].numRounds)) {
                 if (screen->type == SCREEN_TYPE_RECORDS) {
-                    if (i == *screen->cursor % 5) {
+                    if (i == *screen->cursor % TRACKS_PER_PAGE) {
                         gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 4);
                         DRAW(0x48 - i * 7 + xoff, 0x49 + i * 25 + yoff, img = &gGame.cursorImg[(gGame.menuAnimTimer / 2 + i * 4) % 30 + 1], 3);
                         font_text_create(gGame.texts[i], 0x20, FONT_MAIN, TEXT_COLOR_YELLOW, TEXT_LEFT);
@@ -4142,9 +4154,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         font_text_create(gGame.texts[i], 0x20, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
                         font_text_create(gGame.texts[i + 5], 0x20, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_RIGHT);
                     }
-                } else if (gGame.seasonMenuState != 0 && gGame.seasonMenuState != 3) {
+                } else if (gGame.seasonMenuState != SEASON_MENU_CUPS && gGame.seasonMenuState != 3) {
                     if (i == gGame.roundSel) {
-                        if (gGame.seasonMenuState == 1) {
+                        /* the cursor's second palette while a track is picked */
+                        if (gGame.seasonMenuState == SEASON_MENU_CUSTOM_SLOTS) {
                             gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 4);
                         } else {
                             gDPLoadTLUT_pal256(gdl++, gGame.cursorPal + 0x204);
@@ -4183,21 +4196,22 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     }
                 }
                 if (screen->type == SCREEN_TYPE_RECORDS || i < gCups[*screen->cursor].numRounds) {
-                    if ((screen->type != SCREEN_TYPE_RECORDS && gGame.seasonMenuState != 2) || (screen->type == SCREEN_TYPE_RECORDS && (*screen->cursor / 5) * 5 + i < gGame.numRecordTracks)) {
+                    if ((screen->type != SCREEN_TYPE_RECORDS && gGame.seasonMenuState != SEASON_MENU_CUSTOM_TRACKS) || (screen->type == SCREEN_TYPE_RECORDS && (*screen->cursor / TRACKS_PER_PAGE) * TRACKS_PER_PAGE + i < gGame.numRecordTracks)) {
+                        /* the laps: none for the hill climb, the stunt course and the desert; the challenge 1 */
                         if (screen->type == SCREEN_TYPE_RECORDS) {
-                            switch ((*screen->cursor / 5) * 5 + i) {
-                            case 0x15:
-                            case 0x16:
-                            case 0x17:
+                            switch ((*screen->cursor / TRACKS_PER_PAGE) * TRACKS_PER_PAGE + i) {
+                            case RECORD_HILL_CLIMB:
+                            case RECORD_STUNT_COURSE:
+                            case RECORD_DESERT:
                                 strcpy(lapsBuf, "-");
                                 break;
                             default:
-                                int_to_str(gTracks_16[gGame.recordTracks[(*screen->cursor / 5) * 5 + i]].laps, lapsBuf);
+                                int_to_str(gTracks_16[gGame.recordTracks[(*screen->cursor / TRACKS_PER_PAGE) * TRACKS_PER_PAGE + i]].laps, lapsBuf);
                                 break;
                             }
-                        } else if (*screen->cursor == 5) {
+                        } else if (*screen->cursor == CUP_CUSTOM) {
                             int_to_str(gCups[CUP_CUSTOM].laps[i], lapsBuf);
-                        } else if (*screen->cursor == 4) {
+                        } else if (*screen->cursor == CUP_CHALLENGE) {
                             int_to_str(1, lapsBuf);
                         } else {
                             int_to_str(gTracks_16[gCups[*screen->cursor].tracks[i]].laps, lapsBuf);
@@ -4206,8 +4220,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                         font_draw_text(gGame.texts[i + 5], 0x11A - i * 7 + xoff, 0x52 + i * 25 + yoff);
                     }
                     if (screen->type == SCREEN_TYPE_RECORDS) {
-                        if ((*screen->cursor / 5) * 5 + i < gGame.numRecordTracks) {
-                            font_text_add(gGame.texts[i], gTracks_16[gGame.recordTracks[(*screen->cursor / 5) * 5 + i]].name);
+                        if ((*screen->cursor / TRACKS_PER_PAGE) * TRACKS_PER_PAGE + i < gGame.numRecordTracks) {
+                            font_text_add(gGame.texts[i], gTracks_16[gGame.recordTracks[(*screen->cursor / TRACKS_PER_PAGE) * TRACKS_PER_PAGE + i]].name);
                         }
                     } else {
                         font_text_add(gGame.texts[i], gTracks_16[gCups[*screen->cursor].tracks[i]].name);
@@ -4216,12 +4230,12 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 } else {
                     gDPSetTextureLUT(gdl++, G_TT_NONE);
                     gDPSetCombineMode(gdl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-                    if (*screen->cursor == 5) {
+                    if (*screen->cursor == CUP_CUSTOM) {
                         img = &gGame.frames[5];
                     }
                     gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
                     DRAW(0x63 - i * 7 + xoff, 0x45 + i * 25 + yoff, img, 6);
-                    if (gGame.seasonMenuState != 1) {
+                    if (gGame.seasonMenuState != SEASON_MENU_CUSTOM_SLOTS) {
                         img = &gGame.frames[4];
                         DRAW(0x47 - i * 7 + xoff, 0x46 + i * 25 + yoff, img, 6);
                     }
@@ -4232,18 +4246,19 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 img = &gGame.frames[4];
                 gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0xF0);
                 DRAW(0x47 - i * 7 + xoff, 0x46 + i * 25 + yoff, img, 6);
-                if (*screen->cursor == 5) {
+                if (*screen->cursor == CUP_CUSTOM) {
                     img = &gGame.frames[5];
                 }
                 DRAW(0x63 - i * 7 + xoff, 0x45 + i * 25 + yoff, img, 6);
             }
         }
+        /* the title, and the custom round's prompts */
         if (screen->type == SCREEN_TYPE_RECORDS) {
             strcpy(buf, "Records");
-        } else if (*screen->cursor == 4) {
+        } else if (*screen->cursor == CUP_CHALLENGE) {
             strcpy(buf, "Challenge");
-        } else if (*screen->cursor == 5) {
-            if (gGame.seasonMenuState == 2 && (gFrameCounter & 0x20)) {
+        } else if (*screen->cursor == CUP_CUSTOM) {
+            if (gGame.seasonMenuState == SEASON_MENU_CUSTOM_TRACKS && (gFrameCounter & 0x20)) {
                 gDPSetTextureLUT(gdl++, G_TT_RGBA16);
                 gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA);
                 gDPLoadTLUT_pal256(gdl++, gGame.customRoundArrows->addr);
@@ -4253,7 +4268,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 DRAW(xoff + 0x1C1, yoff + 0x79, &gGame.customRoundArrows[1], 3);
             }
             switch (gGame.seasonMenuState) {
-            case 0:
+            case SEASON_MENU_CUPS:
                 strcpy(buf, "Custom");
                 if (PLATINUM_WON) {
                     for (i = 0; i < 3; i++) {
@@ -4270,7 +4285,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     }
                 }
                 break;
-            case 1:
+            case SEASON_MENU_CUSTOM_SLOTS:
                 strcpy(buf, "Select Slot");
                 font_text_create(gGame.texts[12], 0x40, FONT_MENU, TEXT_COLOR_YELLOW, TEXT_LEFT);
                 if (gGame.roundSel == gCups[*screen->cursor].numRounds) {
@@ -4280,10 +4295,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 }
                 font_draw_text(gGame.texts[12], 0x2D, yoff + 0xCF);
                 break;
-            case 2:
+            case SEASON_MENU_CUSTOM_TRACKS:
                 strcpy(buf, "Choose Track");
                 font_text_create(gGame.texts[12], 0x40, FONT_MAIN, TEXT_COLOR_YELLOW, TEXT_LEFT);
-                switch ((s16)(gGame.customTrackSel / 5)) {
+                switch ((s16)(gGame.customTrackSel / TRACKS_PER_PAGE)) {
                 case 0:
                     font_text_add(gGame.texts[12], sStrBronzeRoundTracks);
                     break;
@@ -4302,16 +4317,16 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             }
         } else {
             switch (*screen->cursor) {
-            case 0:
+            case CUP_BRONZE:
                 strcpy(buf, "Bronze Round");
                 break;
-            case 1:
+            case CUP_SILVER:
                 strcpy(buf, "Silver Round");
                 break;
-            case 2:
+            case CUP_GOLD:
                 strcpy(buf, "Gold Round");
                 break;
-            case 3:
+            case CUP_PLATINUM:
                 strcpy(buf, "Platinum Round");
                 break;
             }
@@ -4319,38 +4334,40 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         font_text_create(gGame.texts[11], 0x40, FONT_TITLE, TEXT_COLOR_LIGHT_GREY, TEXT_CENTER);
         font_text_add(gGame.texts[11], buf);
         font_draw_text(gGame.texts[11], xoff + 0xBD, yoff + 0x34);
-        if (screen->type != SCREEN_TYPE_RECORDS && gGame.seasonMenuState == 0) {
+        if (screen->type != SCREEN_TYPE_RECORDS && gGame.seasonMenuState == SEASON_MENU_CUPS) {
+            /* the hint at the bottom: the cup done, what winning it opens, or how to open it */
             font_text_create(gGame.texts[10], 0x40, FONT_MAIN, TEXT_COLOR_LIGHT_GREY, TEXT_LEFT);
             if (gGame.difficulty < SAVE.topDifficulty || (SAVE.topDifficulty == gGame.difficulty && ((SAVE.roundsWon >> *screen->cursor) & 1))) {
                 font_text_add(gGame.texts[10], sStrRoundComplete);
-            } else if ((SAVE.topDifficulty > gGame.difficulty || (SAVE.topDifficulty == gGame.difficulty && (*screen->cursor == 0 || ((SAVE.roundsWon >> (*screen->cursor - 1)) & 1)))) || (IN_CUSTOM_ROUND && SAVE.topDifficulty == gGame.difficulty && (SAVE.roundsWon & 8))) {
-                s32 fl;
+            } else if ((SAVE.topDifficulty > gGame.difficulty || (SAVE.topDifficulty == gGame.difficulty && (*screen->cursor == 0 || ((SAVE.roundsWon >> (*screen->cursor - 1)) & 1)))) || (IN_CUSTOM_ROUND && SAVE.topDifficulty == gGame.difficulty && (SAVE.roundsWon & (1 << CUP_PLATINUM)))) {
+                s32 lastCup;
 
-                fl = 0;
+                /* the difficulty's last cup */
+                lastCup = 0;
                 switch (gGame.difficulty) {
                 case 1:
-                    if (*screen->cursor == 1) {
-                        fl = 1;
+                    if (*screen->cursor == CUP_SILVER) {
+                        lastCup = 1;
                     }
                     break;
                 case 2:
-                    if (*screen->cursor == 2) {
-                        fl = 1;
+                    if (*screen->cursor == CUP_GOLD) {
+                        lastCup = 1;
                     }
                     break;
                 case 3:
-                    if (*screen->cursor == 4) {
-                        fl = 1;
+                    if (*screen->cursor == CUP_CHALLENGE) {
+                        lastCup = 1;
                     }
                     break;
                 }
-                if (fl) {
+                if (lastCup) {
                     if (gGame.difficulty == 3) {
                         font_text_add(gGame.texts[10], sStrFinishFirstEveryRace);
                     } else {
                         font_text_add(gGame.texts[10], sStrFinishFirstNewDifficulty);
                     }
-                } else if (*screen->cursor == 5) {
+                } else if (*screen->cursor == CUP_CUSTOM) {
                     if (gCups[CUP_CUSTOM].numRounds != 0) {
                         if (gGame.roundSel == 0) {
                             font_text_add(gGame.texts[10], sStrPressAToStart);
@@ -4371,8 +4388,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             font_draw_text(gGame.texts[10], xoff + 0x2D, yoff + 0xCF);
         }
         gdl = font_render(gdl);
-        PIPE_SYNC_K(u4);
+        PIPE_SYNC_K(uninit4);
         if (screen->type == SCREEN_TYPE_RECORDS) {
+            /* the records of the selected track, fading in with the picture's fade (TEXT_COLOR_WHITE's alpha):
+               the three best scores or times with their initials, and the best lap */
             s32 dx, dy;
 
             track = &gTracks_16[gGame.recordTracks[gGame.recordsSel]];
@@ -4380,10 +4399,10 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             if (gGame.screenState == SCREEN_STATE_RECORDS_PICTURE) {
                 FONT_FADE_ALPHA = 0;
             } else {
-                FONT_FADE_ALPHA = (0x3B - gGame.screenTimer) * 0xFF / 0x3B;
+                FONT_FADE_ALPHA = (59 - gGame.screenTimer) * 0xFF / 59;
             }
             font_reset_queue();
-            if (track->flags & 0x400) {
+            if (track->flags & TRACK_FLAG_SCORES) {
                 font_text_create(gGame.texts[0], 0x20, FONT_MAIN, TEXT_COLOR_WHITE, TEXT_CENTER);
                 font_text_add(gGame.texts[0], sStrBestScores);
                 font_draw_text(gGame.texts[0], 0x175, 0x6D);
@@ -4399,7 +4418,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     font_draw_text(gGame.texts[0], 0x1AC - j * 4, 0x7E + j * 13);
                 }
             } else {
-                if (gGame.recordsSel == 0x15 || gGame.recordsSel == 0x17) {
+                if (gGame.recordsSel == RECORD_HILL_CLIMB || gGame.recordsSel == RECORD_DESERT) { /* no best lap */
                     dx = -4;
                     dy = 0x14;
                 } else {
@@ -4420,7 +4439,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                     font_text_add(gGame.texts[0], buf);
                     font_draw_text(gGame.texts[0], dx + (0x175 - j * 4) + 0x3C, (0x6A + j * 13) + dy);
                 }
-                if (gGame.recordsSel != 0x15 && gGame.recordsSel != 0x17) {
+                if (gGame.recordsSel != RECORD_HILL_CLIMB && gGame.recordsSel != RECORD_DESERT) {
                     font_text_create(gGame.texts[0], 0x20, FONT_MAIN, TEXT_COLOR_WHITE, TEXT_CENTER);
                     font_text_add(gGame.texts[0], sStrBestLap);
                     font_draw_text(gGame.texts[0], 0x168, 0x9C);
@@ -4436,7 +4455,7 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
                 }
             }
             gdl = font_render(gdl);
-        } else if (gGame.flags & 0x200) {
+        } else if (gGame.flags & GAME_FLAG_PLAYERS_POPUP) {
             gdl = shell_draw_players_difficulty_popup(gdl, fb, 1);
         }
         break;
