@@ -378,7 +378,8 @@ f32 cam_calc_air_pitch(Rider *rider)
     return pitch;
 }
 
-/* The rider select screen's camera: on the turning rider, slid aside as the menu animates. */
+/* The rider select screen's camera: on the turning rider, slid aside as the menu animates; closer once the
+   player has chosen. */
 void cam_update_rider_select(Rider *rider, CamOut *out, s32 changed)
 {
     s32 mtx[10];
@@ -389,7 +390,7 @@ void cam_update_rider_select(Rider *rider, CamOut *out, s32 changed)
     s32 *rot;
     Game *game = &gGame;
 
-    if (game->flags & (0x400 << gCamView)) {
+    if (game->flags & GAME_FLAG_PLAYER_READY(gCamView)) {
         radius = 4000;
         height = 0x672;
     } else {
@@ -438,7 +439,7 @@ void cam_update_rider_select(Rider *rider, CamOut *out, s32 changed)
         break;
     }
     slide = (slide * -0x564) / 0x3E;
-    if (gGame.flags & (0x400 << gCamView)) {
+    if (gGame.flags & GAME_FLAG_PLAYER_READY(gCamView)) {
         ofs[0] = 0;
         ofs[1] = 0;
         ofs[2] = 0;

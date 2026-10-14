@@ -19,7 +19,7 @@ void arn_init(void)
     }
     res_register_type(sStrArnArn, (s32)arn_relocate);
     res_register_type(sStrArnWal, (s32)height_init_walls_reloc);
-    if ((*(u32 *)(gCurTrack + 0x50) & TRACK_FLAG_USER_TRACK) != 0) {
+    if ((*(u32 *)(gCurTrack + 0x50) & TRACK_FLAG_USER) != 0) {
         usrtrk_load_pieces();
         usrtrk_build_track();
         if (gUserTrackData.collision != 0) {
@@ -462,7 +462,7 @@ void arn_free(void)
     }
     mem_free((s32)gSectionDLs);
     mem_free((s32)gObjectDLs);
-    if ((gCurTrack_3[20] & TRACK_FLAG_USER_TRACK) != 0) { /* gTracks +0x50 */
+    if ((gCurTrack_3[20] & TRACK_FLAG_USER) != 0) { /* gTracks +0x50 */
         usrtrk_unload();
     }
     height_free();

@@ -13,23 +13,23 @@
 #define TRACK_ENV_DESERT  2 /* desgfx.c and fractal.c */
 
 /* The flags of a track (gTracks +0x50). */
-#define TRACK_FLAG_USER_TRACK  0x002 /* built from the editor's pieces (UsrTrk.c); gets the finish line props */
-#define TRACK_FLAG_STARS       0x020 /* a night sky: sun.c draws stars */
-#define TRACK_FLAG_RECORDS     0x200 /* keeps records */
+#define TRACK_FLAG_USER         0x002   /* the user track, built from the editor's pieces (UsrTrk.c) */
+#define TRACK_FLAG_STARS        0x020   /* a night sky: sun.c draws stars */
+#define TRACK_FLAG_RECORDS      0x200   /* keeps records */
 
 /* gDrawFlags: bit n is item n of the debug menu, all set in a normal race. */
-#define DRAW_BIKES        0x001
-#define DRAW_SKY          0x002
-#define DRAW_HI_ARN       0x004 /* the near track */
-#define DRAW_LO_ARN       0x008 /* the far track */
-#define DRAW_STAND        0x010
-#define DRAW_BALES        0x020
-#define DRAW_SHADOWS      0x040
-#define DRAW_MUD          0x080
-#define DRAW_CLEAR_SCREEN 0x100
-#define DRAW_COLLISION    0x200
-#define DRAW_VTX_WIND     0x400
-#define DRAW_HUD          0x800
+#define DRAW_BIKES          0x0001
+#define DRAW_SKY            0x0002
+#define DRAW_HI_ARN         0x0004  /* the near track */
+#define DRAW_LO_ARN         0x0008  /* the far track */
+#define DRAW_STAND          0x0010
+#define DRAW_BALES          0x0020  /* the objects */
+#define DRAW_SHADOWS        0x0040
+#define DRAW_MUD            0x0080  /* the particles */
+#define DRAW_CLEAR_SCREEN   0x0100
+#define DRAW_COLLISION      0x0200
+#define DRAW_VTX_WIND       0x0400
+#define DRAW_HUD            0x0800
 
 /* Values of the game's setup that the track and rendering code tests. */
 
@@ -52,7 +52,30 @@
 #define GAME_FLAG_RIDER_SELECT      0x00000010
 #define GAME_FLAG_TRACK_CHOSEN      0x00000080
 #define GAME_FLAG_REPLAY            0x00008000 /* replay playback */
+#define GAME_FLAG_PLAYER_READY(n)   (0x400 << (n)) /* rider select: player n has chosen */
 #define GAME_FLAG_PODIUM            0x00040000 /* the podium ceremony (gPodiumMode) */
+
+/* gRacePhase: the track intro (track preview) and the race, each faded in and out by render_draw_race. */
+#define RACE_PHASE_INTRO_FADE_IN    0
+#define RACE_PHASE_INTRO            1   /* B goes back, A or START races */
+#define RACE_PHASE_INTRO_FADE_OUT   2
+#define RACE_PHASE_INTRO_DONE       3   /* a cleared frame, then the race is set up */
+#define RACE_PHASE_FADE_IN          4
+#define RACE_PHASE_RACING           5
+#define RACE_PHASE_FADE_OUT         6   /* event_request_exit */
+#define RACE_PHASE_DONE             7   /* a cleared frame, then leave or restart */
+
+/* gRacePhaseTimer during a fade: -1 to start one (render_draw_race sets 20 frames), counts down to 0; a fade out
+   then goes to -2, and to -3 once render_draw_race has drawn the black frame. */
+#define PHASE_TIMER_START   (-1)
+#define PHASE_TIMER_OVER    (-2)
+#define PHASE_TIMER_FADED   (-3)
+
+/* gPauseMenu: the menu shown over the race. */
+#define PAUSE_NONE          0
+#define PAUSE_MAIN          1   /* PAUSE_ITEM_* */
+#define PAUSE_CONTROLLER    2   /* the controller setup screen */
+#define PAUSE_OPTIONS       3   /* the sound options screen */
 
 /* gCheatFlags: bit n is cheat n of sCheatTable */
 #define CHEAT_BIG_HEAD              0x0001

@@ -660,7 +660,7 @@ Gfx **tube_build_dlists(TrackModelList *list, TexSet **sets, u32 flags, s32 anim
     s32 delta;
 
     spare = gFramebuffers[1 - gGfxFrameIndex];
-    if (!(*(s32 *)(gCurTrack + 0x50) & TRACK_FLAG_USER_TRACK)) {
+    if (!(*(s32 *)(gCurTrack + 0x50) & TRACK_FLAG_USER)) {
         i = (s32)list->e[0].model->cmds - (s32)list;
         size = mem_get_size(list);
         memcpy(spare, (u8 *)list + i, size - i);
