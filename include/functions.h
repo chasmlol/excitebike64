@@ -1400,21 +1400,21 @@ int sram_read(u32 param_1);
 s32 sram_write(s32 p);
 
 /* src/game/resman.c */
-s32 res_open_set(char *path, Obj_82 **out);
-u32 res_load(u32 *pa0, s32 pa1);
-void res_register_type(u8 *name, s32 val);
-void res_set_clear(s32 *p);
-void res_close_set(s32 *param_1);
-void res_unload(u32 *p);
+s32 res_open_set(char *path, ResSet **out);
+void *res_load(ResSet *set, s32 id);
+void res_register_type(char *ext, void (*relocate)(u32 *handle));
+void res_set_clear(ResSet *set);
+void res_close_set(ResSet *set);
+void res_unload(u32 *handle);
 s32 res_unload_2(u32 *p);
-void res_unload_all(ListHdr *h);
-void res_load_by_name(u32 *param_1, u8 *param_2, u32 *param_3);
+void res_unload_all(ResSet *set);
+void *res_load_by_name(ResSet *set, char *name, u32 *id);
 void *res_load_by_name_2(void *a0, void *a1, void *a2);
-s32 res_find_gid(u8 *a0, u8 *a1);
-s32 res_get_size(ResFile_2 *r, s32 idx);
-void res_set_load_buffer(s32 a0);
-void func_800C0264(s32 *param_1, u32 param_2);
-u32 res_hash_name(u8 *p);
+s32 res_find_gid(ResSet *set, char *name);
+s32 res_get_size(ResSet *set, s32 id);
+void res_set_load_buffer(void *buf);
+void func_800C0264(ResSet *set, u32 data);
+u32 res_hash_name(char *name);
 
 /* src/game/decoder.c */
 Hdr_14 *decoder_decode_adpcm(Src_4 *s);

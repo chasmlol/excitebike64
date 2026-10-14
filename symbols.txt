@@ -2800,7 +2800,6 @@ gDmaIdleCallback                      game  0x800D5710  data      0x4
 sDmaCopyFunc                          game  0x800D5714  data      0xc
 sCartRomInitFirst                     game  0x800D5720  data     0x10
 gResLoadCallback                      game  0x800D5730  data      0x4
-gResLoadCallback_2                    game  0x800D5730  data        -  gResLoadCallback
 sResSwapBytes                         game  0x800D5734  data      0x4
 sResTypesInit                         game  0x800D5738  data      0x8
 sFontDefaultPalette                   game  0x800D5740  data     0x18
@@ -5140,7 +5139,6 @@ sCartRomHandleData                    game  0x801009B0  data        -
 sSramPiHandle                         game  0x80100A30  data        -
 sResLoadBuffer                        game  0x80100AB0  data        -
 sResTypeHandlers                      game  0x80100AB8  data        -
-sResTypeHandlers_2                    game  0x80100AB8  data        -  sResTypeHandlers
 sFontAllocX                           game  0x80101350  data        -
 sFontAllocY                           game  0x80101354  data        -
 sFontAllocW                           game  0x80101358  data        -
