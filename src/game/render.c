@@ -274,12 +274,6 @@ typedef struct {
     void *p[2];
 } Pair_5;
 
-typedef struct {
-    s32 f0;
-    u16 *f4;
-    s32 f8;
-    u8 *fC;
-} Img_4;
 
 typedef struct {
     s32 f0;
@@ -291,7 +285,6 @@ extern Track_3 *gCurTrack_9;
 extern Track_3 gTracks_4[];
 extern Ent28_2 D_800C26C8[];
 extern Res *sMarkerImage;
-extern Img_4 *gSkyImage_2;
 extern PalEnt gRiderGfx_3[8];
 extern Pair_5 D_800E1900[6];
 extern Ent80 *gRiderSkelTemplate_2;
@@ -498,28 +491,28 @@ void render_init(void) {
         }
     }
     sSkyModel = (ColList *)track_res_get(D_800D152C);
-    gSkyImage_2 = (Img_4 *)track_res_get(D_800D150C);
+    gSkyImage = (TexSet *)track_res_get(D_800D150C);
     if (sSkyModel != NULL) {
-        if (gSkyImage_2 != NULL) {
+        if (gSkyImage != NULL) {
             gSkyMode = 3;
         } else {
             gSkyMode = 2;
         }
-    } else if (gSkyImage_2 != NULL) {
+    } else if (gSkyImage != NULL) {
         gSkyMode = 1;
-        prim_flip_image_rows(gSkyImage_2->fC, 0x100, 0x100);
+        prim_flip_image_rows(gSkyImage->tex[0].data, 0x100, 0x100);
     } else {
         gSkyMode = 0;
     }
-    if (gSkyImage_2 != NULL) {
-        palmod_register(gSkyImage_2, 0);
+    if (gSkyImage != NULL) {
+        palmod_register(gSkyImage, 0);
     }
     sun_init();
     func_80035630();
-    if (gSkyImage_2 != NULL) {
-        gFogColor[0] = (*gSkyImage_2->f4 >> 11) << 3;
-        gFogColor[1] = ((*gSkyImage_2->f4 >> 6) & 0x1F) << 3;
-        gFogColor[2] = ((*gSkyImage_2->f4 >> 1) & 0x1F) << 3;
+    if (gSkyImage != NULL) {
+        gFogColor[0] = (*gSkyImage->pal >> 11) << 3;
+        gFogColor[1] = ((*gSkyImage->pal >> 6) & 0x1F) << 3;
+        gFogColor[2] = ((*gSkyImage->pal >> 1) & 0x1F) << 3;
         if (gCreditsMode != 0) {
             a = (gFogColor[0] + gFogColor[1] + gFogColor[2]) / 3;
             palmod_sepia(a, &a, &b, &c);
@@ -553,11 +546,11 @@ void render_init(void) {
     }
     idx = gCurTrack_9 - gTracks_4;
     if (idx == 3 || idx == 20) {
-        gSkyImage_2 = NULL;
+        gSkyImage = NULL;
         gSkyMode = 0;
     }
     if (gCheatFlags & 0x40) {
-        gSkyImage_2 = NULL;
+        gSkyImage = NULL;
         gSkyMode = 0;
         mem_fill(gFogColor, 0, 3);
     }
@@ -1367,7 +1360,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gDPSetTextureLUT(gdl++, G_TT_RGBA16);
             gDPSetRenderMode(gdl++, 0x0C084000, 0);
             gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
-            gdl = sky_draw(gdl, dyn, gSkyImage_3);
+            gdl = sky_draw(gdl, dyn, gSkyImage);
         } else {
             gdl = render_clear_viewports(gdl);
         }
@@ -1378,7 +1371,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gDPSetRenderMode(gdl++, 0x0C084000, 0);
         gSPClipRatio(gdl++, FRUSTRATIO_3);
         if (n == 3) {
-            gDPLoadTLUT_pal256(gdl++, gSkyImage_3->f4);
+            gDPLoadTLUT_pal256(gdl++, gSkyImage->pal);
             gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
             gDPSetTextureLUT(gdl++, G_TT_RGBA16);
             gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
@@ -1394,7 +1387,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             gdl = render_set_viewport(gdl, dyn, gCurView, 1);
             gSPMatrix(gdl++, &dyn->m2[gCurView], G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
             if (gDrawFlags & 2) {
-                gdl = prim_build_dl(0, sSkyModel, &gSkyImage_3, gdl);
+                gdl = prim_build_dl(0, sSkyModel, &gSkyImage, gdl);
             }
             gDPPipeSync(gdl++);
             gSPPopMatrix(gdl++, G_MTX_MODELVIEW);
@@ -1522,7 +1515,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             if (gCurTrack_12->type == 0) {
                 gdl = arn_draw(gdl, dyn, fb, gCurView);
             } else if (gCurTrack_12->type == 1) {
-                gdl = tube_draw_2(gdl, dyn, fb, gCurView);
+                gdl = tube_draw(gdl, dyn, fb, gCurView);
             } else if (gCurTrack_12->type == 2) {
                 gdl = des_draw_near_terrain(gdl, dyn, fb, gCurView);
             }
@@ -2417,7 +2410,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     if (lvl > 255) {
         lvl = 255;
     }
-    pal = sGaugePalettes_2 + a2 * 256;
+    pal = sGaugePalettes + a2 * 256;
     k = lvl * 87 / 256;
     k += 148;
     for (i = 148; i < 192; i++) {
@@ -2494,15 +2487,15 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
         y += sGaugeY + sGaugeNeedleY;
         x -= gScreenWidth / 2;
         y = gScreenHeight / 2 - y;
-        sGaugeNeedleVtx_2[a2 * 8 + i].v.ob[0] = x;
-        sGaugeNeedleVtx_2[a2 * 8 + i].v.ob[1] = y;
-        sGaugeNeedleVtx_2[a2 * 8 + i].v.ob[2] = 0x200;
-        sGaugeNeedleVtx_2[a2 * 8 + i + 4].v.ob[0] = x + 4;
-        sGaugeNeedleVtx_2[a2 * 8 + i + 4].v.ob[1] = y - 2;
-        sGaugeNeedleVtx_2[a2 * 8 + i + 4].v.ob[2] = 0x200;
+        sGaugeNeedleVtx[a2 * 8 + i].v.ob[0] = x;
+        sGaugeNeedleVtx[a2 * 8 + i].v.ob[1] = y;
+        sGaugeNeedleVtx[a2 * 8 + i].v.ob[2] = 0x200;
+        sGaugeNeedleVtx[a2 * 8 + i + 4].v.ob[0] = x + 4;
+        sGaugeNeedleVtx[a2 * 8 + i + 4].v.ob[1] = y - 2;
+        sGaugeNeedleVtx[a2 * 8 + i + 4].v.ob[2] = 0x200;
     }
     gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
-    gSPVertex(gdl++, &sGaugeNeedleVtx_2[a2 * 8], 8, 0);
+    gSPVertex(gdl++, &sGaugeNeedleVtx[a2 * 8], 8, 0);
     gSP2Triangles(gdl++, 7, 4, 5, 0, 4, 5, 6, 0);
     gDPPipeSync(gdl++);
     gDPSetRenderMode(gdl++, 0x0C084000, 0);

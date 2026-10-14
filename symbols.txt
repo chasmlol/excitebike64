@@ -259,7 +259,6 @@ tube_init_tex_groups                  game  0x80027AB4  func     0xc8
 tube_load_pvs                         game  0x80027B7C  func    0x264
 tube_calc_fog_range                   game  0x80027DE0  func    0x25c
 tube_draw                             game  0x8002803C  func     0xe0
-tube_draw_2                           game  0x8002803C  func        -  tube_draw
 tube_alloc_mtx                        game  0x8002811C  func     0xd8
 tube_set_anim_tex_segs                game  0x800281F4  func     0x84
 tube_free_tex_segs                    game  0x80028278  func     0x50
@@ -3785,9 +3784,7 @@ decoder_decode_ima_block              game  0x800DBE94  func    0x100
 decoder_decode_msadpcm_block          game  0x800DBF94  func    0x104
 sGaugeTextures                        game  0x800DC0A0  data        -
 sGaugePalettes                        game  0x800DC0A4  data        -
-sGaugePalettes_2                      game  0x800DC0A4  data        -  sGaugePalettes
 sGaugeNeedleVtx                       game  0x800DC0A8  data        -
-sGaugeNeedleVtx_2                     game  0x800DC0A8  data        -  sGaugeNeedleVtx
 D_800DC0AC                            game  0x800DC0AC  data        -
 sCreditsLineCount                     game  0x800DC0B0  data        -
 D_800DC0B4                            game  0x800DC0B4  data        -
@@ -3803,8 +3800,6 @@ D_800DC110_3                          game  0x800DC110  data        -  D_800DC11
 sMarkerImage                          game  0x800DC140  data        -
 sMarkerImage_2                        game  0x800DC140  data        -  sMarkerImage
 gSkyImage                             game  0x800DC144  data        -
-gSkyImage_2                           game  0x800DC144  data        -  gSkyImage
-gSkyImage_3                           game  0x800DC144  data        -  gSkyImage
 sClearFrames                          game  0x800DC148  data        -
 gRiderGfx                             game  0x800DC150  data        -
 gRiderGfx_10                          game  0x800DC150  data        -  gRiderGfx

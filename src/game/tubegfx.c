@@ -901,7 +901,7 @@ void tube_calc_fog_range(s32 a, s32 *b, s32 *c)
 }
 
 /* G_MOVEWORD 0xDB, index 6 (segment table), offset seg*4 */
-void tube_draw(Gfx *gdl, s32 a, s32 b, s32 c) {
+Gfx *tube_draw(Gfx *gdl, s32 a, s32 b, s32 c) {
     Gfx *q;
 
     gSPSegment(gdl++, 1, gObjectTexSet->pal);
@@ -912,7 +912,7 @@ void tube_draw(Gfx *gdl, s32 a, s32 b, s32 c) {
         gSPSegment(gdl++, 3, gAnimTexSet->pal);
     }
     q = tube_draw_layer(gdl, a, b, c, 0);
-    tube_draw_layer(q, a, b, c, 1);
+    return tube_draw_layer(q, a, b, c, 1);
 }
 
 short *tube_alloc_mtx(s32 p1, s32 p2, s32 p3, s32 p4)

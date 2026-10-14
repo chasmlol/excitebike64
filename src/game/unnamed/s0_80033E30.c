@@ -60,7 +60,7 @@ void sky_update_scroll(void)
     s32 n;
 
     if (gSkyImage != 0) {
-        t = ((TexSet *)gSkyImage)->tex[0].height;
+        t = gSkyImage->tex[0].height;
         if (t == 0) {
             t = 0x100;
         }
