@@ -5,6 +5,11 @@
 
 #include "common.h"
 
+#define PODIUM_NUM_PLACES       3
+#define PODIUM_HEAD_BONE        2       /* the helmet sits on this bone during the first pose clip */
+#define PODIUM_POSE_HEADER      0x14    /* a pose clip's frames follow this much header */
+#define PODIUM_CLIP_HEADER      0x1C    /* ... a camera or prop clip's */
+
 /* A clip resource. podium_init points frames past the header. */
 typedef struct PodiumClip {
     /* 0x00 */ s32 unk_00;
@@ -19,7 +24,8 @@ typedef struct PodiumCameraClip {
     /* 0x04 */ PodiumClip *clip;
 } PodiumCameraClip; /* size 0x8 */
 
-/* sPodiumRiderClips[place]: the pose clips one after the other; the prop clips follow the first pose clip. */
+/* sPodiumRiderClips[place]: the pose clips one after the other; the prop clips (the helmet, taken off) follow the
+   first pose clip. Rider n stands on place n. */
 typedef struct PodiumRiderClip {
     /* 0x00 */ s32 *poseResId;
     /* 0x04 */ s32 *propResId;

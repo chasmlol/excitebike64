@@ -1805,7 +1805,6 @@ sHackLeftysMill                       game  0x800CCB3C  data     0x24
 sHackGravelPit                        game  0x800CCB60  data     0x24
 sTrackHacks                           game  0x800CCB84  data      0xc
 sGravelPitMovers                      game  0x800CCB90  data     0x80
-sGravelPitMovers_2                    game  0x800CCB90  data        -  sGravelPitMovers
 sGravelPitItemResIds                  game  0x800CCC10  data     0x10
 sFaultHexFont                         game  0x800CCC20  data     0x80
 sViBlackFrames                        game  0x800CCCA0  data      0x4
@@ -3956,8 +3955,6 @@ gCurTrack_11                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_12                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_13                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_14                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_15                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_16                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_17                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_18                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_19                          game  0x800EFD64  data        -  gCurTrack
@@ -3970,10 +3967,7 @@ gCurTrack_24                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_25                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_26                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_27                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_28                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_29                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_3                           game  0x800EFD64  data        -  gCurTrack
-gCurTrack_30                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_31                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_32                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_33                          game  0x800EFD64  data        -  gCurTrack
@@ -4181,7 +4175,6 @@ gSaveData_14                          game  0x800F1900  data        -  gSaveData
 gSaveData_15                          game  0x800F1900  data        -  gSaveData
 gSaveData_16                          game  0x800F1900  data        -  gSaveData
 gSaveData_2                           game  0x800F1900  data        -  gSaveData
-gSaveData_3                           game  0x800F1900  data        -  gSaveData
 gSaveData_4                           game  0x800F1900  data        -  gSaveData
 gSaveData_5                           game  0x800F1900  data        -  gSaveData
 gSaveData_6                           game  0x800F1900  data        -  gSaveData
