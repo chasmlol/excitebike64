@@ -17,10 +17,11 @@ All code and data are decompiled and matching: the build reproduces the original
 - 1278 functions of C: 1234 in the game image, 44 in the boot loader. The boot loader's 16 copies of game functions
   are built from the same C.
 - Hand-written asm (asm/): the two entry stubs, SN Systems' debug/exception stub, SwdExpand, the stub that
-  starts the game, and the sound code the linker placed among the game's data (softmix.c's voice mixers and output
-  converters, DECODER.C's ADPCM block decoders and their tables: asm/game_softmix.s, asm/game_decoder.s).
-- Names: 1218 of the 1278 functions of C (1178 of 1234 in the game, 40 of 44 in the boot loader) and 1069 of the
-  2946 data symbols are named; the rest are still `func_XXXXXXXX` / `D_XXXXXXXX`. The game's C is split into its
+  starts the game, and the sound code the linker placed among the game's data (tunes.c's ADPCM block decoder,
+  softmix.c's voice mixers and output converters, DECODER.C's ADPCM block decoders, and the decoders' tables:
+  asm/game_tunes.s, asm/game_softmix.s, asm/game_decoder.s).
+- Names: 1218 of the 1278 functions of C (1178 of 1234 in the game, 40 of 44 in the boot loader) and 1071 of the
+  2947 data symbols are named; the rest are still `func_XXXXXXXX` / `D_XXXXXXXX`. The game's C is split into its
   original source files where the game's strings name them.
 - [docs/overview.md](docs/overview.md) describes how the game works: threads and game states, the main structures
   (the rider struct field by field), each source file, the NES emulator, sound, saves, the track editor and what is

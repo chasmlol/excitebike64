@@ -203,7 +203,7 @@ s32 tunes_mix_streams(void)
                 b = s->f8;
                 q1 = s->pcm;
                 for (j = 0; j < 8; j++) {
-                    func_800DB628(b, q1, 0x80);
+                    tunes_decode_adpcm_block(b, q1, 0x80);
                     b += 0x44;
                     q1 += 0x80;
                 }

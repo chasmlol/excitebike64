@@ -471,10 +471,12 @@ The layers, top to bottom:
    slots of 0x1C bytes, an echo unit), with samples loaded by name from the "SAM" resources of the "SFX" set
    (`gSfxResSet`). The inner loops are hand-written code (asm/game_softmix.s, below).
 
-**tunes.c** streams music, the announcer and the crowd from "BIG.RAW" in IMA ADPCM. Four channels of 0x4C bytes
-(`sStreamChannels`): 0-1 music, 2 announcer, 3 ambience and crowd. Each loads 8 blocks (0x44 bytes, 128 samples
-each) per 0x220-byte PI DMA; `tunes_mix_streams` mixes them, optionally at half rate with interpolation and an echo
-ring, into a 2048-sample ring (`sStreamMixBuf`) that `tunes_mix_callback` adds to the n64snd output.
+**tunes.c** streams music, the announcer and the crowd from "BIG.RAW" in a 4-bit ADPCM (IMA ADPCM's step sizes,
+four predictors). Four channels of 0x4C bytes (`sStreamChannels`): 0-1 music, 2 announcer, 3 ambience and crowd.
+Each loads 8 blocks (0x44 bytes, 128 samples each) per 0x220-byte PI DMA and decodes them with
+`tunes_decode_adpcm_block` (hand-written code, below); `tunes_mix_streams` mixes them, optionally at half rate
+with interpolation and an echo ring, into a 2048-sample ring (`sStreamMixBuf`) that `tunes_mix_callback` adds to
+the n64snd output.
 
 - Music: a song is a table from keys to samples plus events {u16 time, u8 note (0xFF stop, 0xFE loop), u8 channel}
   that start whole sampled phrases on channels 0 and 1 (`tunes_play_song`, `tunes_update_song`).
@@ -487,9 +489,15 @@ ring, into a 2048-sample ring (`sStreamMixBuf`) that `tunes_mix_callback` adds t
 - Volumes: `gStreamVolumes[4]` (music, music, `gSpeechVolume`, `gAmbientVolume`) times the master volume.
 
 **Code among the data**: some sound routines are hand-written MIPS code that the linker placed in the data
-section. `func_800DB628` (the ADPCM block decoder tunes.c calls) is emitted from src/data as words. The last bytes
-of the game image, 0x800DB8E0-0x800DC098, are two asm modules:
+section, three asm modules at the end of the game image (0x800DB550-0x800DB8B8 and, after the mixer state,
+0x800DB8E0-0x800DC098):
 
+- asm/game_tunes.s: tunes.c's block decoder (`tunes_decode_adpcm_block`) and its tables (`sTunesAdpcmIndexTable`,
+  `sTunesAdpcmStepTable`). A block has a 5-byte header (two s16 samples, the first one's low 2 bits the predictor,
+  and the step index), then 126 signed 4-bit codes, high nibble first. A sample is the prediction from the last
+  two samples (0, s1, (3 * s1 - s2) >> 1 or 2 * s1 - s2) plus code times IMA ADPCM's step size, clamped; the code's
+  magnitude moves the step index (down 1 for 0-3, up 2 to 10 for 4-8), which has no upper bound: the step table
+  repeats 32767 past IMA's 89 entries.
 - asm/game_softmix.s: softmix.c's voice mixers (`softmix_mix_voices_mono`, `softmix_mix_voices_stereo`) and output
   converters (`softmix_output_8bit`, `softmix_output_16bit`). They take no arguments: softmix.c fills the mixer
   state just before them in the data (`sMixVoices`, `sMixNumVoices`, `sMixCount`, `sMixSrc` the s32 mix buffer,

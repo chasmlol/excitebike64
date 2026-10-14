@@ -24,8 +24,8 @@ ASM = ROOT / "asm"
 VRAM = common.VRAM
 # The ranges of the original images that are hand-written asm (functions.csv kind `asm`; the SN stub and SwdExpand
 # ranges include the bytes around their functions, SwdExpand's starts at its module's variables, the sound
-# routines among the game's data include the decoder's tables). Every byte of these must come from some asm/*.s.
-BLOCKS = {"game": [(0x80000400, 0x80000450), (0x800DB8E0, 0x800DC098)],
+# routines among the game's data include the decoders' tables). Every byte of these must come from some asm/*.s.
+BLOCKS = {"game": [(0x80000400, 0x80000450), (0x800DB550, 0x800DB8B8), (0x800DB8E0, 0x800DC098)],
           "boot": [(0x80000400, 0x80000450), (0x80002CB0, 0x80003660), (0x800113B0, 0x80011600)]}
 
 

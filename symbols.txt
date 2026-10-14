@@ -3800,9 +3800,10 @@ D_800DB4D0                            game  0x800DB4D0  data      0xc
 D_800DB4DC                            game  0x800DB4DC  data     0x28
 D_800DB504                            game  0x800DB504  data     0x1c
 D_800DB520                            game  0x800DB520  data     0x24
-D_800DB544                            game  0x800DB544  data     0xe4
-D_800DB628                            game  0x800DB628  data    0x290
-func_800DB628                         game  0x800DB628  func        -
+D_800DB544                            game  0x800DB544  data      0xc
+sTunesAdpcmIndexTable                 game  0x800DB550  data     0x18
+sTunesAdpcmStepTable                  game  0x800DB568  data     0xc0
+tunes_decode_adpcm_block              game  0x800DB628  func    0x28c
 sMixVoices                            game  0x800DB8B8  data      0x4
 sMixNumVoices                         game  0x800DB8BC  data      0x4
 sMixCount                             game  0x800DB8C0  data      0x4

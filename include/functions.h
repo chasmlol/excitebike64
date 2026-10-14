@@ -1466,7 +1466,7 @@ void __osMotorAccess(void *a, s32 c);
 void __osInitialize_autodetect(void);
 
 /* other code */
-void func_800DB628(s32, s16 *, s32);
+void tunes_decode_adpcm_block(s32 src, s16 *dst, s32 count);
 void softmix_mix_voices_mono(void);
 void softmix_mix_voices_stereo(void);
 void softmix_output_8bit(void);
