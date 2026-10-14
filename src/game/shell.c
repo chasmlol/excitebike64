@@ -3618,7 +3618,7 @@ void shell_draw_rider_bio(s32 player, s32 y)
     gDPSetCombineMode(gdl++, G_CC_DECALRGBA, G_CC_DECALRGBA)
 
 /* render_draw_image at screen coordinates (the 512x240 layout); mode 3: a palette texture, 6: shaded by the
-   primitive colour. The _K forms pass an uninitialised local's high bits (always 0), as the original does. */
+   primitive colour. The _K forms give it an uninitialised local's high bits (always 0), as the original does. */
 #define DRAW(x, y, img, f) gdl = render_draw_image((x), (y), (img), gdl, fb, 1, 1, (f), 0)
 #define PIPE_SYNC_K(k) { Gfx *_g = gdl++; _g->words.w0 = 0xE7000000; _g->words.w1 = (u16)(k) >> 16; }
 #define DRAW_K(x, y, img, f, k) gdl = render_draw_image((x), (y), (img), gdl, fb, 1, 1, (f), (u16)(k) >> 16)

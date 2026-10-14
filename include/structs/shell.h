@@ -6,7 +6,7 @@
 
 #include "common.h"
 
-/* The game's input word (main_convert_pad_input): gPadInput, Rider.input, and the buttons shell_update passes to
+/* The game's input word (main_convert_pad_input): gPadInput, Rider.input, and the buttons shell_update gives
    the screens. It is not libultra's button layout. In the screens' buttons (pressed this frame) the stick bits
    also hold the D-pad, and shell_update drops stick directions under 6. */
 #define INPUT_STICK_UP      0x00000001
