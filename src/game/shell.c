@@ -956,7 +956,8 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
 #if VERSION == VERSION_LODGENET
 #define REPLAY_UNSAVABLE (gReplayWritePtr - gReplayBuf >= gReplayBufSize || gGame.mode == GAME_MODE_TIME_TRIAL)
 #else
-#define REPLAY_UNSAVABLE (gReplayWritePtr - gReplayBuf >= gReplayBufSize                           || (gGame.mode == GAME_MODE_TIME_TRIAL && gReplayWritePtr - gReplayBuf >= REPLAY_GHOST_SIZE))
+#define REPLAY_UNSAVABLE (gReplayWritePtr - gReplayBuf >= gReplayBufSize \
+                          || (gGame.mode == GAME_MODE_TIME_TRIAL && gReplayWritePtr - gReplayBuf >= REPLAY_GHOST_SIZE))
 #endif
     if (pressed & (INPUT_D_UP | INPUT_STICK_UP)) {
         if (REPLAY_UNSAVABLE) {
@@ -968,15 +969,17 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
                 gGame.menuSel = oldSel + 2;
             }
 #else
-            sel = gGame.menuSel;
-            gGame.menuSel = sel - 1;
-            if (sel - 1 < 0) {
-                gGame.menuSel = sel + 2;
+            s32 cur = gGame.menuSel;
+
+            gGame.menuSel = cur - 1;
+            if (cur - 1 < 0) {
+                gGame.menuSel = cur + 2;
             }
 #endif
         }
     }
     if (*buttons & (INPUT_D_DOWN | INPUT_STICK_DOWN)) {
+#if VERSION == VERSION_LODGENET
         if (REPLAY_UNSAVABLE) {
             gGame.menuSel ^= 2;
         } else {
@@ -986,6 +989,17 @@ void shell_race_results_input(Screen *screen, ScreenItem *item, u32 *buttons, Pa
                 gGame.menuSel = sel - 2;
             }
         }
+#else
+        if (REPLAY_UNSAVABLE) {
+            gGame.menuSel ^= 2;
+        } else {
+            i = gGame.menuSel;
+            gGame.menuSel = i + 1;
+            if (i + 1 >= 3) {
+                gGame.menuSel = i - 2;
+            }
+        }
+#endif
     }
     if (gGame.menuSel != oldSel) {
         snd_play_menu_sound(MENU_SOUND_MOVE);
@@ -4703,10 +4717,11 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
         for (j = 0; j < OPTION_COUNT; j++) {
             if (j < OPTION_SOUND) {
                 x = 0x52 - j * 7;
+                y = sOptionsRowY[j];
             } else {
                 x = 0x52 - ((j - OPTION_SOUND) / 2 + 3) * 7 + ((j - OPTION_SOUND) & 1) * 194;
+                y = sOptionsRowY[j];
             }
-            y = sOptionsRowY[j];
 #if VERSION == VERSION_LODGENET
             if (j == OPTION_RESET_SAVED_DATA || j == OPTION_CONTROLLER_PAK) {
                 font_text_create(gGame.texts[0], 0x40, FONT_MAIN, (j == gGame.optionsSel) ? TEXT_COLOR_YELLOW : TEXT_COLOR_LIGHT_GREY, TEXT_GREYED | TEXT_LEFT);

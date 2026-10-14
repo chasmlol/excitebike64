@@ -918,6 +918,7 @@ extern s32 sAudioTickEnd;
 extern s32 gFbAllocWidth;
 extern s32 gFbAllocHeight;
 extern OSMesg sSchedEventMsgs[];
+extern u32 sRspBoot[0x40];      /* retail: the RSP boot code, read from the IPL3 (game_main) */
 extern s32 sAudioTickTime;
 extern u8 sDevPiHandle[];
 extern u32 gPadInputPrev;
@@ -1474,6 +1475,7 @@ extern s32 sNesAudioBufs[];
 extern Vp sNesViewport;
 extern s32 sNesClearFrames;
 extern s32 sNesFrameCount;
+extern Nes *sNesBlock;          /* retail: NES, when nes_init had to allocate it */
 extern s32 sNesEffAddr;
 extern s32 sNesOperand;
 extern u16 sNesOperand16;

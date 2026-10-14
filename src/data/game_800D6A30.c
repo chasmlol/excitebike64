@@ -31,7 +31,13 @@ char sStrSunC[0x8] = "sun.c";
 /* 0x800d6c88-0x800d6ca4 (28 bytes): literals of the C (build_code.py) */
 u32 D_800D6CA4[0x3] = { 0 };
 /* 0x800d6cb0-0x800d6cf4 (68 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D6CF4[0x3] = { 0 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800D6CF4[0x3] = {
+    0x46629000, 0x41E00000, 0x44014000,
+};
+#endif
 char sStrMud2C[0x8] = "mud2.c";
 /* 0x800d6d08-0x800d6df4 (236 bytes): literals of the C (build_code.py) */
 char sStrShadowC[0xc] = "shadow.c";
@@ -350,27 +356,71 @@ char sStrCollideC[0xc] = "collide.c";
 /* 0x800d8bac-0x800d8bf8 (76 bytes): literals of the C (build_code.py) */
 u32 D_800D8BF8[0x2] = { 0 };
 /* 0x800d8c00-0x800d8c08 (8 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8C08[0x2] = { 0, (u32)&sCanyonChasmDronesResId };
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8C08[0x2] = { 0, 0 };
+#endif
 /* 0x800d8c10-0x800d8c1c (12 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8C1C = 0x30002;
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8C1C = 0;
+#endif
 /* 0x800d8c20-0x800d8d34 (276 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8D34[0x3] = { 0x800A3DD8, 0x800A3084, 0x50002 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8D34[0x3] = { 0x41800000, 0x3F4CCCCD, 0x3C23D70A };
+#endif
 /* 0x800d8d40-0x800d8d44 (4 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8D44[0x3] = { 0 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8D44[0x3] = {
+    0x3DCCCCCD, 0x3C23D70A, 0x3E99999A,
+};
+#endif
+#if VERSION == VERSION_LODGENET
 char sStrInstanceC[0x10] = "instance.c";
+#elif VERSION == VERSION_US_REV1
+char sStrInstanceC[0x10] = "instance.c\000\0009Q\267\027";
+#endif
 char sStrShatterC[0xc] = "shatter.c";
 /* 0x800d8d6c-0x800d8d74 (8 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8D74[0x3] = { 0 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8D74[0x3] = {
+    0xBF800000, 0x3F800000, 0xC1200000,
+};
+#endif
 /* 0x800d8d80-0x800d8dcc (76 bytes): literals of the C (build_code.py) */
 char sStrMapC[0x8] = "map.c";
 /* 0x800d8dd4-0x800d8e0c (56 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8E0C = 0;
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8E0C = 0x47000000;
+#endif
+#if VERSION == VERSION_LODGENET
 char sStrPalmodC[0x10] = "palmod.c";
+#elif VERSION == VERSION_US_REV1
+char sStrPalmodC[0x10] = "palmod.c\000\000\000\000@I\017\333";
+#endif
 char sStrFlashC[0x8] = "flash.c";
 /* 0x800d8e28-0x800d8eb8 (144 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8EB8[0x2] = { 0x800A34C8, 0x60002 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8EB8[0x2] = { 0x427A0000, 0x3F800000 };
+#endif
 /* 0x800d8ec0-0x800d8f1c (92 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D8F1C = 0x30002;
+#elif VERSION == VERSION_US_REV1
+u32 D_800D8F1C = 0x41000000;
+#endif
 /* 0x800d8f20-0x800d8f57 (55 bytes): literals of the C (build_code.py) */
 u8 D_800D8F57 = 0;
 char sStrBeatOpponentFinal[0x2c] = "Beat your opponent to complete the game!";
@@ -391,18 +441,48 @@ char sStrSoccerUnlocked[0x14] = "Soccer unlocked!";
 char sStrHillClimbUnlocked[0x18] = "Hill Climb unlocked!";
 char sStrExcite3DUnlocked[0x14] = "Excite 3D unlocked!";
 /* 0x800d9108-0x800d911c (20 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D911C = 0;
+#elif VERSION == VERSION_US_REV1
+u32 D_800D911C = 0x7420616E;
+#endif
 /* 0x800d9120-0x800d913c (28 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D913C = 0;
+#elif VERSION == VERSION_US_REV1
+u32 D_800D913C = 0x6F726520;
+#endif
 /* 0x800d9140-0x800d9178 (56 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 char sStrPonytailC[0x14] = "ponytail.c";
+#elif VERSION == VERSION_US_REV1
+char sStrPonytailC[0x14] = "ponytail.c\000\000to perfo";
+#endif
+#if VERSION == VERSION_LODGENET
 u32 D_800D918C = 0xFFFFFFFF;
+#elif VERSION == VERSION_US_REV1
+u32 D_800D918C = 0x726D2061;
+#endif
+#if VERSION == VERSION_LODGENET
 u8 sStrSnowC[0x10] = {
     0x73, 0x6E, 0x6F, 0x77, 0x2E, 0x63, 0, 0x5C, 0x80, 0xA, 0x3A, 0x84, 0x80, 0xA, 0x3A, 0x8C,
 };
+#elif VERSION == VERSION_US_REV1
+u8 sStrSnowC[0x10] = {
+    0x73, 0x6E, 0x6F, 0x77, 0x2E, 0x63, 0, 0x54, 0x75, 0x72, 0x6E, 0x2E, 0x20, 0x53, 0x6C, 0x69,
+};
+#endif
+#if VERSION == VERSION_LODGENET
 u32 sStrRemoveC[0x4] = { 0x72656D6F, 0x76652E63, 0, (u32)&sRickyPodiumModelResId };
+#elif VERSION == VERSION_US_REV1
+u32 sStrRemoveC[0x4] = { 0x72656D6F, 0x76652E63, 0x617265, 0x20746865 };
+#endif
 /* 0x800d91b0-0x800d91b4 (4 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800D91B4[0x3] = { 0x800A3D3C, 0x800A3024, 0x60002 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800D91B4[0x3] = { 0x50726573, 0x7320616E, 0x6420686F };
+#endif
 char D_800D91C0[0x4] = "OK";
 char D_800D91C4[0x4] = "Del";
 char sStrKeyDot[0x4] = ".";
@@ -682,7 +762,11 @@ u32 D_800DA204 = 0;
 /* 0x800da208-0x800da21c (20 bytes): literals of the C (build_code.py) */
 u32 D_800DA21C = 0;
 /* 0x800da220-0x800da254 (52 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800DA254[0x3] = { 0x5, 0x6, 0x7 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800DA254[0x3] = { 0x6E652053, 0x6F636365, 0x723A2046 };
+#endif
 char D_800DA260[0x8] = "EB64";
 char D_800DA268[0x20] = "(Saved game data may be lost).";
 char D_800DA288[0x28] = "Would you like to attempt to repair it?";
@@ -771,11 +855,19 @@ u16 D_800DA766 = 0;
 /* 0x800da768-0x800da7c4 (92 bytes): literals of the C (build_code.py) */
 u32 D_800DA7C4 = 0;
 /* 0x800da7c8-0x800da828 (96 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800DA828[0x2] = { 0x17A, 0x17B };
+#elif VERSION == VERSION_US_REV1
+u32 D_800DA828[0x2] = { 0x447A0000, 0 };
+#endif
 char sStrArnedgfxC[0xc] = "arnedgfx.c";
 /* 0x800da83c-0x800da880 (68 bytes): literals of the C (build_code.py) */
 char sStrGuiFile[0x8] = "gui.c";
+#if VERSION == VERSION_LODGENET
 u8 sStrGuiResSet[0x8] = { 0x47, 0x75, 0x69, 0x52, 0x65, 0x73, 0, 0x93 };
+#elif VERSION == VERSION_US_REV1
+u8 sStrGuiResSet[0x8] = { 0x47, 0x75, 0x69, 0x52, 0x65, 0x73, 0, 0xCD };
+#endif
 char D_800DA890[0x10] = "New User Piece";
 char D_800DA8A0[0x10] = "User Piece 8";
 char D_800DA8B0[0x10] = "User Piece 7";
@@ -875,11 +967,19 @@ u32 D_800DAECC = 0;
 /* 0x800daed0-0x800daee4 (20 bytes): literals of the C (build_code.py) */
 u32 D_800DAEE4 = 0;
 /* 0x800daee8-0x800daf2c (68 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800DAF2C = 0xE;
+#elif VERSION == VERSION_US_REV1
+u32 D_800DAF2C = 0x566F6C75;
+#endif
 char sStrNesres[0x8] = "nesres";
 char sStrNesn64C[0xc] = "nesn64.c";
 /* 0x800daf44-0x800daf48 (4 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800DAF48[0x2] = { 0x15, 0x16 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800DAF48[0x2] = { 0x74652033, 0x44000000 };
+#endif
 char D_800DAF50[0x4] = "ADC";
 char D_800DAF54[0x4] = "AND";
 char D_800DAF58[0x4] = "ASL";
@@ -937,13 +1037,25 @@ char D_800DB024[0x4] = "TSX";
 char D_800DB028[0x4] = "TXA";
 char D_800DB02C[0x4] = "TXS";
 char D_800DB030[0x4] = "TYA";
+#if VERSION == VERSION_LODGENET
 u32 D_800DB034[0x3] = { 0x50, 0x51, 0x52 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800DB034[0x3] = { 0x5468726F, 0x74746C65, 0 };
+#endif
 char sStrUsrTrkFile[0xc] = "UsrTrk.c";
 char sStrUsrTrkArn[0x4] = "ARN";
 char sStrUsrTrkWal[0x4] = "WAL";
+#if VERSION == VERSION_LODGENET
 char sStrUsrTrkPieces[0xc] = "Pieces";
+#elif VERSION == VERSION_US_REV1
+char sStrUsrTrkPieces[0xc] = "Pieces\000ol\000\000\000";
+#endif
 /* 0x800db060-0x800db160 (256 bytes): libultra data (build_libultra.py) */
+#if VERSION == VERSION_LODGENET
 u32 sStrSfxFile[0x4] = { 0x2E2E2F53, 0x46582E43, 0x1FFF, 0xB };
+#elif VERSION == VERSION_US_REV1
+u32 sStrSfxFile[0x4] = { 0x2E2E2F53, 0x46582E43, 0x787E0, 0x80078958 };
+#endif
 char sStrSoftmixFile[0x10] = "../softmix.c";
 char sStrSfxResSet[0x4] = "SFX";
 char sStrNoSfxResSet[0x20] = "Warning: no SFX resource set\n";
@@ -953,8 +1065,16 @@ char sStrSampleFile16[0x8] = "%s.16";
 char sStrSampleFile08[0x8] = "%s.08";
 char sStrModeRb[0x4] = "rb";
 char sStrSamName16[0xc] = "SAM-%s.16";
+#if VERSION == VERSION_LODGENET
 char sStrSamName08[0x10] = "SAM-%s.08";
+#elif VERSION == VERSION_US_REV1
+char sStrSamName08[0x10] = "SAM-%s.08\000\241\320\200\007\233\264";
+#endif
+#if VERSION == VERSION_LODGENET
 char sStrN64sndC[0x10] = "n64snd.c";
+#elif VERSION == VERSION_US_REV1
+char sStrN64sndC[0x10] = "n64snd.c\000\007\230\210\200\007\230\200";
+#endif
 /* 0x800db200-0x800db247 (71 bytes): literals of the C (build_code.py) */
 u8 D_800DB247 = 0;
 char sStrMemFreeInvalid[0x40] = "WARNING - Attempt to free an invalid or corrupt memory block\n";
@@ -974,8 +1094,18 @@ u8 D_800DB3F1[0x3] = { 0 };
 /* 0x800db3f4-0x800db3fb (7 bytes): literals of the C (build_code.py) */
 u8 D_800DB3FB = 0;
 /* 0x800db3fc-0x800db403 (7 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u8 D_800DB403[0xd] = { 0 };
+#elif VERSION == VERSION_US_REV1
+u8 D_800DB403[0xd] = {
+    0, 0x31, 0x39, 0, 0, 0x56, 0x69, 0x63, 0x6B, 0x79, 0x20, 0x27, 0x54,
+};
+#endif
+#if VERSION == VERSION_LODGENET
 char sStrFileC[0x10] = "FILE.C";
+#elif VERSION == VERSION_US_REV1
+char sStrFileC[0x10] = "FILE.C\000n' Steele";
+#endif
 char sStrResConfused[0x14] = "I'm so confused\n";
 char sStrDirExt[0x8] = ".dir";
 /* 0x800db43c-0x800db43f (3 bytes): literals of the C (build_code.py) */
@@ -985,15 +1115,27 @@ char sStrBigFmt[0x8] = "%s.BIG";
 char sStrNoResource[0x10] = "NO RESOURCE %s\n";
 char sStrUnalignedMalloc[0x18] = "Unaligned malloc: %p\n";
 char sStrTooManyResTypes[0x18] = "too many constructors\n";
+#if VERSION == VERSION_LODGENET
 u8 sStrGidExt[0xc] = { 0x2E, 0x67, 0x69, 0x64, 0, 0x20, 0x1, 0xD8, 0, 0xDA, 0x11, 0x90 };
+#elif VERSION == VERSION_US_REV1
+u8 sStrGidExt[0xc] = { 0x2E, 0x67, 0x69, 0x64, 0, 0x6F, 0x6E, 0x64, 0x6F, 0x6E, 0x2C, 0x20 };
+#endif
 char sStrDecoderC[0x10] = "DECODER.C";
 /* 0x800db4b0-0x800db4c4 (20 bytes): literals of the C (build_code.py) */
+#if VERSION == VERSION_LODGENET
 u32 D_800DB4C4[0x3] = { 0x113C102C, 0x102C1214, 0x12141214 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800DB4C4[0x3] = { 0x6C20596F, 0x726B0000, 0x74616C6B };
+#endif
 char sStrFontcodeFile[0xc] = "FONTCODE.C";
 char sStrFontAllocFailed[0x28] = "Can't allocate memory for font data !";
 char sStrFontLoadFailed[0x1c] = "Can't load font resource !";
 char sStrFontShrinkFailed[0x24] = "Can't shrink memory for font data !";
+#if VERSION == VERSION_LODGENET
 u32 D_800DB544[0x3] = { 0x8300858, 0x88008A8, 0x8D008F8 };
+#elif VERSION == VERSION_US_REV1
+u32 D_800DB544[0x3] = { 0x79202742, 0x69672044, 0x6F672720 };
+#endif
 /* 0x800db550-0x800db8b8 (872 bytes): tunes.c's ADPCM block decoder and its tables (build_asm.py: asm/game_tunes.s) */
 u32 sMixVoices = 0x1;
 u32 sMixNumVoices = 0x1;

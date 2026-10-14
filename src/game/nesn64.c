@@ -53,6 +53,19 @@ void nes_init(void)
     u16 *pal;
 
     sNesFrameCount = 0;
+#if VERSION != VERSION_LODGENET
+    /* NES's memory is the allocator's unless the Z-buffer is there (the memory layout without the Expansion Pak):
+       allocate it, or leave if that fails */
+    sNesBlock = NULL;
+    if (gZBuffer != 0x80300000) {
+        sNesBlock = mem_alloc_at_dbg(NES, sizeof(Nes), (s32)sStrNesn64C, 0x8F);
+        if (sNesBlock == NULL) {
+            gRaceExitCode = RACE_EXIT_FINISHED;
+            gCurGameState->mode = STATE_EXIT;
+            return;
+        }
+    }
+#endif
     if (res_open_set(sStrNesres, &set) != 0) {
         fatal_halt(1);
     }
@@ -63,11 +76,11 @@ void nes_init(void)
     __builtin_memcpy(&sNesMemory->mem[NES_PRG_ROM_MIRROR], rom, NES_PRG_SIZE);
     __builtin_memcpy(sNesMemory->vram, rom + NES_PRG_SIZE, NES_CHR_SIZE);
     nes_cpu_reset(sNesMemory, nes_draw_bg_row);
-    sNesSnapshot = mem_alloc_dbg(sizeof(NesSnapshot), 0, sStrNesn64C, 0x9C);
+    sNesSnapshot = mem_alloc_dbg(sizeof(NesSnapshot), 0, sStrNesn64C, SRC_LINE(0x9C, 0xAB));
     __builtin_memcpy(sNesSnapshot, rom + 0x6000, sizeof(NesSnapshot)); /* after the PRG and CHR ROM */
     res_close_set(set);
     /* Each 16-byte CHR tile (two bit planes of 8 rows) becomes a 16x8 CI4 tile of 64 bytes, the right half unused. */
-    sNesChrTiles = mem_alloc_dbg(0x8000, 0, sStrNesn64C, 0xA4);
+    sNesChrTiles = mem_alloc_dbg(0x8000, 0, sStrNesn64C, SRC_LINE(0xA4, 0xB3));
     nesAddr = (s32)NES;
     vramOfs = 0x10000; /* nesAddr + vramOfs: NES->vram, the CHR ROM */
     for (i = 0; i < NES_CHR_SIZE; i += 0x10) {
@@ -98,7 +111,7 @@ void nes_init(void)
     }
     /* The RGB palette to RGBA5551 (j, n, k: red, green, blue), opaque except one colour. The table has the NES's 64
        colours; the other 192 entries are converted from the data after it. */
-    sNesPalette = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xBF);
+    sNesPalette = mem_alloc_dbg(0x200, 0, sStrNesn64C, SRC_LINE(0xBF, 0xCE));
     pal = sNesPalette;
     for (i = 0; i < 0x100; i++) {
         j = sNesRgbPalette[i * 3] >> 3;
@@ -113,8 +126,8 @@ void nes_init(void)
         }
     }
     for (i = 0; i < 2; i++) {
-        sNesBgTluts[i] = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xCC);
-        sNesSpriteTluts[i] = mem_alloc_dbg(0x200, 0, sStrNesn64C, 0xCD);
+        sNesBgTluts[i] = mem_alloc_dbg(0x200, 0, sStrNesn64C, SRC_LINE(0xCC, 0xDB));
+        sNesSpriteTluts[i] = mem_alloc_dbg(0x200, 0, sStrNesn64C, SRC_LINE(0xCD, 0xDC));
     }
     sNesRowCallback = 0;
     for (i = 0; i < 3; i++) {
@@ -700,6 +713,12 @@ void nes_exit(void)
 {
     s32 i;
 
+#if VERSION != VERSION_LODGENET
+    if (sNesBlock != NULL) {
+        mem_free(sNesBlock);
+        sNesBlock = NULL;
+    }
+#endif
     nes_audio_free();
     for (i = 0; i < 2; i++) {
         mem_free(sNesBgTluts[i]);
