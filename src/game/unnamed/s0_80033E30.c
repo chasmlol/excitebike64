@@ -1,6 +1,7 @@
 #include "game.h"
 
-typedef struct { s32 v; } S1;
+/* The clip height written through a one-field struct: as a plain s32 the store is scheduled differently. */
+typedef struct { s32 v; } ClipStore;
 typedef struct { u8 pad[0x2C]; s32 f2c; } Obj_26;
 
 extern Obj_26 *gCurTrack_24;
@@ -10,7 +11,7 @@ void sky_scan_zbuffer(s32 arg0)
     s32 i, x, y, m;
     Rect *r;
     Rect *q;
-    S1 *p;
+    ClipStore *p;
 
     if ((gGame.flags & 0x10000) == 0) {
         return;
@@ -18,14 +19,15 @@ void sky_scan_zbuffer(s32 arg0)
     m = gNumViews - 1;
     for (i = 0; i < gNumViews; i++) {
         if (gCurTrack_24->f2c == 0) {
-            sSkyClipHeight[i] = ((Rect *)(gViewRects_3 + (m * 64 + i * 16)))->h;
+            sSkyClipHeight[i] = gViewRects[m][i].h;
         } else {
             sSkyClipHeight[i] = 0;
-            y = ((Rect *)(gViewRects_3 + (m * 64 + i * 16)))->y;
-            r = (Rect *)(gViewRects_3 + (m * 64 + i * 16));
+            y = gViewRects[m][i].y;
+            /* r and q add the row and column offsets to the base in one go (&gViewRects[m][i] does not match) */
+            r = (Rect *)((u8 *)gViewRects + (m * 64 + i * 16));
             if (y < r->y + r->h) {
             yl:
-                p = (S1 *)&sSkyClipHeight[i];
+                p = (ClipStore *)&sSkyClipHeight[i];
                 for (x = r->x; x < r->x + r->w; x += 8) {
                     if (*(u16 *)((u32)gZBuffer + ((y * gScreenWidth + x) << 1)) > 0xFFEF) {
                         p->v = y - r->y;
@@ -38,7 +40,7 @@ void sky_scan_zbuffer(s32 arg0)
             if (sSkyPrevClipHeight[i] > 16 && sSkyClipHeight[i] < sSkyPrevClipHeight[i] - 16) {
                 sSkyClipHeight[i] = sSkyPrevClipHeight[i] - 16;
             }
-            q = (Rect *)(gViewRects_3 + (m * 64 + i * 16));
+            q = (Rect *)((u8 *)gViewRects + (m * 64 + i * 16));
             if (sSkyClipHeight[i] > q->h) {
                 sSkyClipHeight[i] = q->h;
             }
@@ -57,8 +59,8 @@ void sky_update_scroll(void)
     s32 v;
     s32 n;
 
-    if (gSkyImage_4 != 0) {
-        t = gSkyImage_4[9];
+    if (gSkyImage != 0) {
+        t = gSkyImage->tex[0].height;
         if (t == 0) {
             t = 0x100;
         }
@@ -219,18 +221,18 @@ Gfx *sky_draw_strip(s32 a, s32 b, s32 *tex, Gfx *gdl)
     return gdl;
 }
 
-Gfx *sky_draw(Gfx *gdl, s32 unused, u8 *s)
+Gfx *sky_draw(Gfx *gdl, s32 unused, TexSet *sky)
 {
     Gfx *g0, *g1, *g2, *g3, *g4, *g5, *g6, *g7, *g8, *q0, *q1, *q2;
     s32 n;
     s32 i, j;
     s32 local;
 
-    n = s[9];
+    n = sky->tex[0].height;
     if (n == 0) {
         n = 0x100;
     }
-    g0 = gdl++; ((u32 *)g0)[0] = 0xFD100000; ((u32 *)g0)[1] = *(u32 *)(s + 4);
+    g0 = gdl++; ((u32 *)g0)[0] = 0xFD100000; ((u32 *)g0)[1] = (u32)sky->pal;
     g1 = gdl++; ((u32 *)g1)[0] = 0xE8000000; ((u32 *)g1)[1] = 0;
     g2 = gdl++; ((u32 *)g2)[0] = 0xF5000100; ((u32 *)g2)[1] = 0x07000000;
     g3 = gdl++; ((u32 *)g3)[0] = 0xE6000000; ((u32 *)g3)[1] = 0;
@@ -242,16 +244,16 @@ Gfx *sky_draw(Gfx *gdl, s32 unused, u8 *s)
 
     if (gInsetViewActive == 0) {
         for (i = 0; i < n; i += 8) {
-            local = *(s32 *)(s + 0xC) + i * 0x100;
+            local = (s32)sky->tex[0].data + i * 0x100;
             for (j = 0; j < gNumViews; j++) {
                 gdl = sky_draw_strip(i, j, &local, gdl);
             }
         }
     } else {
-        D_800E8EE4 = D_800E1774;
+        sSkyClipHeight[1] = gViewRects[1][1].h;
         for (j = 0; j < gNumViews; j++) {
             for (i = 0; i < n; i += 8) {
-                local = *(s32 *)(s + 0xC) + i * 0x100;
+                local = (s32)sky->tex[0].data + i * 0x100;
                 gdl = sky_draw_strip(i, j, &local, gdl);
             }
         }
@@ -263,32 +265,28 @@ Gfx *sky_draw(Gfx *gdl, s32 unused, u8 *s)
     return gdl;
 }
 
-typedef struct { s32 f0, f4, f8, fc; } G1718;
-
-extern G1718 gViewRects_9;
-
-s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 p3, s32 p4)
+s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view)
 {
     s32 x, y, z, w;
     s32 t;
     s32 m;
 
     if (gSkyMode == 1) {
-        t = (gViewRects_9.f8 << 7) / sSkyScaleX[p4];
-        x = (s16)(D_800E8002 - 0x7AEC);
+        t = (gViewRects[0][0].w << 7) / sSkyScaleX[view];
+        x = (s16)((u16)gCamYaw[0] - 0x7AEC);
         m = x * t;
-        t = (gViewRects_9.fc << 2) / sSkyScaleY[p4];
+        t = (gViewRects[0][0].h << 2) / sSkyScaleY[view];
         x = m / 8192;
-        y = gCamPitch[p4];
+        y = gCamPitch[view];
         y = 45 - y * t / 1024;
-        y = 0xB9 - sSkyScrollY[p4];
+        y = 0xB9 - sSkyScrollY[view];
     } else {
         if (gCurTrack_7 - gTracks_3 == 1) {
-            if (project_to_screen(300, 0x14, 50, &x, &y, &z, &w, p3, p4)) {
+            if (project_to_screen(300, 0x14, 50, &x, &y, &z, &w, mtx, view)) {
                 return 1;
             }
         } else {
-            if (project_to_screen(0, 0x14, -300, &x, &y, &z, &w, p3, p4)) {
+            if (project_to_screen(0, 0x14, -300, &x, &y, &z, &w, mtx, view)) {
                 return 1;
             }
         }

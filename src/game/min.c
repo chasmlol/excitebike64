@@ -82,7 +82,7 @@ void race_finish_replay(s32 param_1)
     if (gGhostRace == 0) {
         if (gDemoPlayback != 0) {
             gActiveReplay = 0;
-            res_unload((u32 *)((s32 *)D_800E7728_2[1] + gTutorialLessons[gSeason->round].demo[0]));
+            res_unload(&D_800E7728->handles[gTutorialLessons[gSeason->round].demo[0]]);
             goto T;
         }
         if (gRaceExitCode == 3 || g->mode == 9) goto T;
@@ -300,7 +300,7 @@ void race_init(s32 arg)
     func_800358C0();
     mem_fill(gPlayerInputsPrev_2, 0, 0x18);
     palmod_init((gGame.flags >> 18) & 1);
-    gTrackSections_5 = 0;
+    gTrackSections = 0;
     gTrackObjects = 0;
     gWaterModels = 0;
     gTerrainTexSet = 0;
@@ -614,13 +614,6 @@ void race_intro_load(void)
     gRaceTextObjs[0x51] = r;
 }
 
-typedef struct {
-    s32 unk0;
-    s32 *unk4;
-} Unk7728;
-
-extern Unk7728 *D_800E7728_3;
-
 void race_intro_unload(void) {
     s32 i;
     s32 off;
@@ -630,12 +623,12 @@ void race_intro_unload(void) {
         func_800C204C(*(void **)((s32)gRaceTextObjs + off));
         mem_free(*(void **)((s32)gRaceTextObjs + off));
     }
-    res_unload(&D_800E7728_3->unk4[D_800D088C]);
-    res_unload(&D_800E7728_3->unk4[D_800D09B0]);
-    res_unload(&D_800E7728_3->unk4[D_800D085C]);
+    res_unload(&D_800E7728->handles[D_800D088C]);
+    res_unload(&D_800E7728->handles[D_800D09B0]);
+    res_unload(&D_800E7728->handles[D_800D085C]);
     if (gGame.mode == 1) {
         for (i = 0; i < 5; i++) {
-            res_unload(&D_800E7728_3->unk4[*D_800C8D68_2[gSeason->cup->tracks[i]]]);
+            res_unload(&D_800E7728->handles[*D_800C8D68_2[gSeason->cup->tracks[i]]]);
         }
     }
     mem_free(gRaceTextObjs);
@@ -643,7 +636,7 @@ void race_intro_unload(void) {
     if (gRaceExitCode != 3) {
         gGame.flags &= ~0x80;
     }
-    font_load_race_set(D_800E7728_3);
+    font_load_race_set(D_800E7728);
 }
 
 #define PAD (gGame.playerPad[gPausePlayer])
@@ -929,11 +922,6 @@ typedef struct {
 } Opt_2;
 
 typedef struct {
-    u8 pad0[4];
-    s32 *f4;
-} Res_2;
-
-typedef struct {
     s32 *a;
     s32 *b;
     s32 *w;
@@ -948,7 +936,6 @@ extern Pad24 gPlayerInputsPrev_4;
 extern Pad24 D_800E3750;
 extern Pad24 D_800E3718;
 extern Player_7 gRiders_15[8];
-extern Res_2 *D_800E7728_4;
 extern Opt_2 gSaveData_3;
 
 void race_update(u32 *arg)
@@ -1026,16 +1013,16 @@ void race_update(u32 *arg)
             mem_free(gZBuffer);
             gPauseScreen.loaded = 1;
             if (gPauseMenu == 2) {
-                font_load_menu_set(D_800E7728_4);
+                font_load_menu_set(D_800E7728);
             }
             res_open_set("guires", &gGuiRes);
             for (j = 0; j < 0x30; j++) {
                 gGame.texts[j] = font_text_create(0, 0x40, 4, 2, 0x20);
             }
             if (gPauseMenu == 2) {
-                gPauseScreen.background = res_load((s32)D_800E7728_4, D_800D0C24);
+                gPauseScreen.background = res_load(D_800E7728, D_800D0C24);
             } else {
-                gPauseScreen.volumeBar = res_load((s32)D_800E7728_4, D_800D108C);
+                gPauseScreen.volumeBar = res_load(D_800E7728, D_800D108C);
                 gPauseScreen.background = res_load(gGuiRes, D_800D1488);
                 gPauseScreen.cursorImg = res_load(gGuiRes, D_800D1428);
                 gPauseScreen.cursorPal = res_load(gGuiRes, D_800D1424);
@@ -1057,10 +1044,10 @@ void race_update(u32 *arg)
             mem_free(gGame.texts[j]);
         }
         res_close_set(gGuiRes);
-        res_unload(&D_800E7728_4->f4[D_800D0C24]);
-        res_unload(&D_800E7728_4->f4[D_800D1080]);
-        res_unload(&D_800E7728_4->f4[D_800D0724]);
-        res_unload(&D_800E7728_4->f4[D_800D108C]);
+        res_unload(&D_800E7728->handles[D_800D0C24]);
+        res_unload(&D_800E7728->handles[D_800D1080]);
+        res_unload(&D_800E7728->handles[D_800D0724]);
+        res_unload(&D_800E7728->handles[D_800D108C]);
         font_unload_set();
         gZBuffer = mem_alloc_at_dbg(gZBuffer, gFbAllocWidth * gFbAllocHeight * 2, "min.c", 0x799);
         if (gZBuffer == 0) {
@@ -1078,7 +1065,7 @@ void race_update(u32 *arg)
         while (gViMode != gViModeRequest) {
         }
         render_update_screen_layout();
-        font_load_race_set(D_800E7728_4);
+        font_load_race_set(D_800E7728);
         gPauseScreen.timer = -1;
     }
     if (gGame.mode != 9 && !(gGame.flags & 0x8010) && (gPadInput_3[0] & 0x400) &&

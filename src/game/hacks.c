@@ -162,13 +162,6 @@ typedef struct {
     Mtx *base;
 } Cell_6;
 
-typedef struct {
-    u8 pad[0x20];
-    Obj e[1];
-} Hdr_8;
-
-extern Hdr_8 *gTrackSections_8;
-
 Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
 {
     s32 i, k;
@@ -194,7 +187,7 @@ Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
     v = tab + (sh + p4);
     for (; i < 2; i++) {
         c = &D_800CCB90[i];
-        if ((gTrackSections_8->e[c->idx].mask >> sh) & 1) {
+        if ((gTrackSections->e[c->idx].mask >> sh) & 1) {
             k = 0;
             if (c->cnt > 0) {
                 tbl = sGravelPitModels;
@@ -232,10 +225,7 @@ typedef struct {
     u8 pad7A6[0x7E0 - 0x7A6];
 } Bike_37;
 
-typedef struct { u8 pad[0x1A]; s16 h; u8 pad2[0x40 - 0x1C]; } Obj_44;
-
 extern Bike_37 gRiders_78[];
-extern Obj_44 *gInstanceMtx;
 
 void hack_mill_update(void)
 {
@@ -245,11 +235,10 @@ void hack_mill_update(void)
     Bike_37 *b, *bb, *base;
     V4 *p;
     Vec3i *e;
-    Obj_44 *o;
     s32 dx, dz, a, v, t, r, w;
     s32 ang;
 
-    k = ((u8 *)gInstanceItems)[0xE] >> 4;
+    k = gInstanceItems[0].rot >> 4;
     c = gCosTable[k | 0xC00];
     s = gCosTable[k];
     for (m = 0; m < sMillObjCount; m++) {
@@ -308,7 +297,7 @@ store:
             } else {
                 e->y = w;
             }
-            gInstanceMtx[i].h = (e->x + e->y) >> 4;
+            ((MtxS *)gInstanceMtx)[i].i[3][1] = (e->x + e->y) >> 4; /* the y translation */
             i++;
         } while (i < sMillObjCount);
     }
@@ -361,9 +350,9 @@ void hack_mill_init(void)
     s32 n;
     s32 cnt;
     Rec_34 *out;
-    s32 *e;
+    Instance *e;
 
-    sMillObjCount = gInstanceHeader[1];
+    sMillObjCount = gInstanceHeader->numItems;
     sMillObjState = (s32 *)mem_alloc_dbg(sMillObjCount * 12, 0, D_800D8C10, 0x1B1);
     i = 0;
     n = sMillObjCount;
@@ -372,8 +361,8 @@ void hack_mill_init(void)
         out = (Rec_34 *)sMillObjState;
         e = gInstanceItems;
         do {
-            s32 v = e[1];
-            e += 4;
+            s32 v = e->y;
+            e++;
             i++;
             out->zero = 0;
             out->val = v;

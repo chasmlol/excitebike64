@@ -12,8 +12,8 @@ void ambient_update(void)
 
     if (sAmbientZones != 0 && sAmbientZones->n != 0 && gNumScreens == 1) {
         for (i = 0; i < sAmbientZones->n; i++) {
-            dx = sAmbientZones->r[i].x - (gCamPos_2.x >> 4);
-            dy = sAmbientZones->r[i].y - (gCamPos_2.z >> 4);
+            dx = sAmbientZones->r[i].x - (gCamPos[0].x >> 4);
+            dy = sAmbientZones->r[i].y - (gCamPos[0].z >> 4);
             r = isqrt_u32_2(dx * dx + dy * dy);
             t = 0x200 - (s32)(r << 9) / sAmbientZones->r[i].d;
             if (best < t || i == 0) {

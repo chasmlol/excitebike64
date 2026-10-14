@@ -21,9 +21,9 @@ void desert_export_checkpoints(void) {
     s32 i;
     gDesertFireCount = 10;
     for (i = 0; i < 10; i++) {
-        gDesertFires_2[i].x = sDesertCheckpoints[i].x * 1000.0f;
-        gDesertFires_2[i].z = sDesertCheckpoints[i].y * 1000.0f;
-        gDesertFires_2[i].y = sDesertCheckpoints[i].z * 1000.0f;
+        gDesertFires[i].x = sDesertCheckpoints[i].x * 1000.0f;
+        gDesertFires[i].y = sDesertCheckpoints[i].y * 1000.0f;
+        gDesertFires[i].z = sDesertCheckpoints[i].z * 1000.0f;
     }
 }
 
@@ -79,7 +79,7 @@ void desert_update_race(void)
         if (b == gRiders_50) {
             dx = sDesertCheckpoints[b->wp].x - b->x;
             ang = math_atan2f(sDesertCheckpoints[b->wp].z - b->z, -dx);
-            des_set_arrow_angle((s32)(ang * 32768.0f / 3.1415927f) - gCamYaw_2 & 0xFFFF);
+            des_set_arrow_angle((s32)(ang * 32768.0f / 3.1415927f) - gCamYaw[0] & 0xFFFF);
         }
         {
             gx = b->x - gRiders_50[0].x;

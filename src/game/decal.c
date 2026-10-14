@@ -1,15 +1,6 @@
 #include "game.h"
 
 typedef struct {
-    u8 pad[8];
-    s16 a;
-    s16 b;
-    u8 pad2[4];
-} E16;
-
-extern E16 *sTireTrackVtx;
-
-typedef struct {
     u8 pad0[0x44C];
     f32 f44C;
     f32 f450;
@@ -224,25 +215,25 @@ f32 debug_round_sig3(f32 x)
     return -a;
 }
 
-void debug_print_float(char *param_1, f32 param_2)
+void debug_print_float(char *label, f32 value)
 {
     char buf[40];
     s32 len;
-    str_copy(buf, param_1);
+    str_copy(buf, label);
     len = strlen(buf);
-    debug_ftoa(buf + len, param_2, 3);
+    debug_ftoa(buf + len, value, 3);
 }
 
-void debug_print_float2(char *param_1, f32 param_2, f32 param_3)
+void debug_print_float2(char *label, f32 a, f32 b)
 {
     char buf[40];
     s32 n;
     s32 i;
 
     mem_fill((u8 *)buf, 0x20, 0x1E);
-    str_copy(buf, param_1);
+    str_copy(buf, label);
     n = strlen(buf);
-    debug_ftoa(buf + n, param_2, 3);
+    debug_ftoa(buf + n, a, 3);
     i = 0;
     if (0 < n + 6) {
         do {
@@ -252,7 +243,7 @@ void debug_print_float2(char *param_1, f32 param_2, f32 param_3)
             i++;
         } while (i < n + 6);
     }
-    debug_ftoa(buf + 6 + n, param_3, 3);
+    debug_ftoa(buf + 6 + n, b, 3);
 }
 
 void debug_print_vec3(s32 arg0, f32 *v)
@@ -269,21 +260,21 @@ void debug_print_vec3(s32 arg0, f32 *v)
     debug_ftoa(bz + strlen(bz), v[2], 6);
 }
 
-void debug_print_int(char *param_1, s32 param_2) {
+void debug_print_int(char *label, s32 value) {
     char pad[16];
     char buf[40];
     char *b;
 
     b = buf;
-    str_copy(b, param_1);
-    int_to_str(param_2, b + strlen(b));
+    str_copy(b, label);
+    int_to_str(value, b + strlen(b));
 }
 
-void debug_print_hex(char *param_1, u32 param_2) {
+void debug_print_hex(char *label, u32 value) {
     char buf[56];
     char *s = buf + 16;
-    str_copy(s, param_1);
-    u32_to_hex_str(param_2, s + strlen(s));
+    str_copy(s, label);
+    u32_to_hex_str(value, s + strlen(s));
 }
 
 void decal_init(void)
@@ -293,25 +284,25 @@ void decal_init(void)
     sTireTracks = mem_alloc_dbg(0xC00, 0, (s32)D_800D8B90, 0x67);
     sTireTrackVtx = mem_alloc_dbg(0x2000, 0, (s32)D_800D8B90, 0x68);
     sTireTrackNext = 0;
-    mem_fill(sTireTrackCur, 0, 0x20);
-    mem_fill(gTireTrackTimers, 0, 0x20);
-    mem_fill(sTireTrackLastY, 0, 0x20);
-    mem_fill(sTireTrackMudTimer, 0, 0x20);
-    mem_fill(sTireTracks, 0, 0xC00);
-    mem_fill(sTireTrackSurface, 0, 0x20);
-    mem_fill(sTireTrackMudSurface, 0, 0x20);
+    mem_fill((u8 *)sTireTrackCur, 0, 0x20);
+    mem_fill((u8 *)gTireTrackTimers, 0, 0x20);
+    mem_fill((u8 *)sTireTrackLastY, 0, 0x20);
+    mem_fill((u8 *)sTireTrackMudTimer, 0, 0x20);
+    mem_fill((u8 *)sTireTracks, 0, 0xC00);
+    mem_fill((u8 *)sTireTrackSurface, 0, 0x20);
+    mem_fill((u8 *)sTireTrackMudSurface, 0, 0x20);
     for (i = 0; i < 0x80; i++) {
-        sTireTracks[i * 0x18] = 0;
+        sTireTracks[i].active = 0;
     }
     for (i = 0; i < 0x200; i += 4) {
-        sTireTrackVtx[i].a = 0;
-        sTireTrackVtx[i].b = 0;
-        sTireTrackVtx[i + 1].a = 0x200;
-        sTireTrackVtx[i + 1].b = 0;
-        sTireTrackVtx[i + 2].a = 0;
-        sTireTrackVtx[i + 2].b = 0;
-        sTireTrackVtx[i + 3].a = 0x200;
-        sTireTrackVtx[i + 3].b = 0;
+        sTireTrackVtx[i].v.tc[0] = 0;
+        sTireTrackVtx[i].v.tc[1] = 0;
+        sTireTrackVtx[i + 1].v.tc[0] = 0x200;
+        sTireTrackVtx[i + 1].v.tc[1] = 0;
+        sTireTrackVtx[i + 2].v.tc[0] = 0;
+        sTireTrackVtx[i + 2].v.tc[1] = 0;
+        sTireTrackVtx[i + 3].v.tc[0] = 0x200;
+        sTireTrackVtx[i + 3].v.tc[1] = 0;
     }
     sTireTrackTexture = mem_alloc_dbg(8, 0, (s32)D_800D8B90, 0x85);
     sTireTrackTexture[0] = 0xFF;
@@ -324,32 +315,11 @@ void decal_init(void)
     sTireTrackTexture[7] = 0x1F;
 }
 
-typedef struct Rec_32 {
-    s32 f0;
-    s32 key;
-    s32 x, z;
-    s32 nx, nz;
-} Rec_32;
-
 typedef struct Seg_14 {
     u8 pad[0x28];
     s32 flags;
     u8 pad2[0x40 - 0x2C];
 } Seg_14;
-
-typedef struct Gate_2 {
-    u8 pad[0x20];
-    s16 a[3];
-    u8 pad26[0x30 - 0x26];
-    s16 b[3];
-    u8 pad36[0x40 - 0x36];
-} Gate_2;
-
-typedef struct Cell_4 {
-    s32 f0, f4;
-    s32 x0, z0, x1, z1;
-    u8 pad[0x20 - 0x18];
-} Cell_4;
 
 typedef struct Bike_35 {
     u8 pad0[0x44];
@@ -374,13 +344,7 @@ typedef struct Bike_35 {
 } Bike_35;
 
 extern Bike_35 gRiders_74[];
-extern Cell_4 *sHeightAreas_5;
 extern Seg_14 *gSurfaceTablePtr_2;
-extern Rec_32 *sTireTracks_2;
-extern Rec_32 *sTireTrackCur_2[];
-extern Seg_14 *sTireTrackSurface_2[];
-extern Gate_2 *sTireTrackVtx_2;
-extern Seg_14 *sTireTrackMudSurface_2[];
 
 void decal_update_tire_tracks(void)
 {
@@ -392,40 +356,39 @@ void decal_update_tire_tracks(void)
     s32 c[3];
     s32 e[3];
     s32 qr[4];
-    s32 i, chg, key, idx, ox, oz, dx, dz, nx, nz, len, k;
+    s32 i, changed, area, surface, ox, oz, dx, dz, nx, nz, len, curArea;
     Bike_35 *p;
-    Seg_14 *t;
-    Rec_32 *r;
+    Seg_14 *prev;
+    TireTrack *r;
     s32 n;
     s32 l2;
-    Cell_4 *ce;
 
     for (i = 0; i < 8; i++) {
         if (gRiders_74[i].f7A5 != 0) continue;
         p = &gRiders_74[i];
-        if (sTireTrackMudTimer_2[i] != 0) sTireTrackMudTimer_2[i]--;
+        if (sTireTrackMudTimer[i] != 0) sTireTrackMudTimer[i]--;
         if (gRiders_74[i].f4F0 != 0.0f) {
             gTireTrackTimers[i] = 1;
         } else if (gTireTrackTimers[i] != 0) {
             gTireTrackTimers[i]--;
         }
         if (!(p->seg->flags & 1)) gTireTrackTimers[i] = 0;
-        t = sTireTrackSurface_2[i];
-        if (p->seg != t) {
-            chg = 1;
-            if (t != NULL && (t->flags & 0x40) && p->f458 <= 0) {
-                sTireTrackMudSurface_2[i] = t;
+        prev = sTireTrackSurface[i];
+        if (p->seg != prev) {
+            changed = 1;
+            if (prev != NULL && (prev->flags & 0x40) && p->f458 <= 0) {
+                sTireTrackMudSurface[i] = prev;
                 gTireTrackTimers[i] = 45;
-                sTireTrackMudTimer_2[i] = 45;
+                sTireTrackMudTimer[i] = 45;
             }
         } else {
-            chg = 0;
+            changed = 0;
         }
-        sTireTrackSurface_2[i] = p->seg;
+        sTireTrackSurface[i] = p->seg;
         if (p->f44 != 0) gTireTrackTimers[i] = 0;
         if (D_800EE140 != 0) gTireTrackTimers[i] = 0;
         if (gTireTrackTimers[i] == 0) {
-            sTireTrackCur_2[i] = NULL;
+            sTireTrackCur[i] = NULL;
             continue;
         }
         pos[0] = p->x * 1000.0f;
@@ -452,51 +415,50 @@ void decal_update_tire_tracks(void)
         a[1] = height_get_ground(a[0], pos[1], a[2]);
         b[1] = height_get_ground(b[0], pos[1], b[2]);
         if (gGroundFound == 0) continue;
-        key = gGroundArea;
+        area = gGroundArea;
         if (gCurTrack_5->mode == 2) {
             divmod_floor(pos[0], 128000, &qr[0], &qr[1]);
             divmod_floor(pos[2], 128000, &qr[2], &qr[3]);
-            key = (qr[0] << 16) | (u16)qr[2];
+            area = (qr[0] << 16) | (u16)qr[2];
         }
-        if (sTireTrackCur_2[i] != NULL && (u32)(a[1] - sTireTrackLastY_2[i] + 500) > 1000) {
-            sTireTrackCur_2[i] = NULL;
+        if (sTireTrackCur[i] != NULL && (u32)(a[1] - sTireTrackLastY[i] + 500) > 1000) {
+            sTireTrackCur[i] = NULL;
             gTireTrackTimers[i] = 0;
             continue;
         }
-        idx = p->seg - gSurfaceTablePtr_2;
-        if (sTireTrackMudTimer_2[i] != 0) idx = sTireTrackMudSurface_2[i] - gSurfaceTablePtr_2;
-        if (sTireTrackCur_2[i] != NULL) {
-            k = sTireTrackCur_2[i]->key;
+        surface = p->seg - gSurfaceTablePtr_2;
+        if (sTireTrackMudTimer[i] != 0) surface = (Seg_14 *)sTireTrackMudSurface[i] - gSurfaceTablePtr_2;
+        if (sTireTrackCur[i] != NULL) {
+            curArea = sTireTrackCur[i]->area;
             if (gCurTrack_5->mode == 1) {
-                ce = &sHeightAreas_5[k];
-                ox = (ce->x0 + ce->x1) / 2;
-                oz = (ce->z0 + ce->z1) / 2;
+                ox = (sHeightAreas->e[curArea].x0 + sHeightAreas->e[curArea].x1) / 2;
+                oz = (sHeightAreas->e[curArea].z0 + sHeightAreas->e[curArea].z1) / 2;
             } else if (gCurTrack_5->mode == 2) {
-                ox = (k >> 16) * 8000 + 4000;
-                oz = (s16)k * 8000 + 4000;
+                ox = (curArea >> 16) * 8000 + 4000;
+                oz = (s16)curArea * 8000 + 4000;
             } else {
                 ox = oz = 0;
             }
-            r = sTireTrackCur_2[i];
+            r = sTireTrackCur[i];
             dx = pos[0] - r->x;
             dz = pos[2] - r->z;
-            nx = r->nx;
-            nz = r->nz;
+            nx = r->dirX;
+            nz = r->dirZ;
             l2 = isqrt_u32_2(dx * dx + dz * dz);
             if (l2 != 0) {
                 dx = (dx << 14) / l2;
                 dz = (dz << 14) / l2;
             }
-            if ((nx * dx + nz * dz) >> 14 < 0x3F07 || key != sTireTrackCur_2[i]->key || chg) {
-                Gate_2 *g;
+            if ((nx * dx + nz * dz) >> 14 < 0x3F07 || area != sTireTrackCur[i]->area || changed) {
+                Vtx *v;
                 s16 *q, *q2;
-                len = sTireTrackCur_2[i] - sTireTracks_2;
-                g = (Gate_2 *)((len << 6) + (u32)sTireTrackVtx_2);
-                q = g->a;
+                len = sTireTrackCur[i] - sTireTracks;
+                v = (Vtx *)((len << 6) + (u32)sTireTrackVtx);
+                q = v[2].v.ob;
                 c[0] = q[0] + ox;
                 c[1] = q[1];
                 c[2] = q[2] + oz;
-                q2 = g->b;
+                q2 = v[3].v.ob;
                 e[0] = q2[0] + ox;
                 e[1] = q2[1];
                 e[2] = q2[2] + oz;
@@ -506,128 +468,110 @@ void decal_update_tire_tracks(void)
                 e[0] *= 16;
                 e[1] *= 16;
                 e[2] *= 16;
-                sTireTrackCur_2[i] = decal_add_quad(key, c, e, a, b, idx);
-                sTireTrackLastY_2[i] = a[1];
+                sTireTrackCur[i] = decal_add_quad(area, c, e, a, b, surface);
+                sTireTrackLastY[i] = a[1];
             } else {
-                sTireTrackCur_2[i]->x = pos[0];
-                sTireTrackCur_2[i]->z = pos[2];
+                sTireTrackCur[i]->x = pos[0];
+                sTireTrackCur[i]->z = pos[2];
                 {
-                Gate_2 *g;
-                len = sTireTrackCur_2[i] - sTireTracks_2;
-                g = &sTireTrackVtx_2[len];
-                g->a[0] = a[0] / 16 - ox;
-                g->a[1] = a[1] / 16;
-                g->a[2] = a[2] / 16 - oz;
-                g->b[0] = b[0] / 16 - ox;
-                g->b[1] = b[1] / 16;
-                g->b[2] = b[2] / 16 - oz;
+                Vtx *v;
+                len = sTireTrackCur[i] - sTireTracks;
+                v = &sTireTrackVtx[len * 4];
+                v[2].v.ob[0] = a[0] / 16 - ox;
+                v[2].v.ob[1] = a[1] / 16;
+                v[2].v.ob[2] = a[2] / 16 - oz;
+                v[3].v.ob[0] = b[0] / 16 - ox;
+                v[3].v.ob[1] = b[1] / 16;
+                v[3].v.ob[2] = b[2] / 16 - oz;
                 }
-                sTireTrackLastY_2[i] = a[1];
+                sTireTrackLastY[i] = a[1];
             }
         } else {
-            sTireTrackCur_2[i] = decal_add_quad(key, a, b, a, b, idx);
-            sTireTrackLastY_2[i] = a[1];
+            sTireTrackCur[i] = decal_add_quad(area, a, b, a, b, surface);
+            sTireTrackLastY[i] = a[1];
         }
     }
 }
 
-struct Rec_33 {
-    u8 flag;
-    u8 p6;
-    u16 pad;
-    s32 p1;
-    s32 cx;
-    s32 cz;
-    s32 dx;
-    s32 dz;
-};
-
-typedef struct { s32 f0, f4, a, b, c, d; s32 pad[2]; } Box_2;
 typedef struct { s32 pad[11]; s32 mode; } Ctl_17;
 
 extern Ctl_17 *gCurTrack_32;
-extern Box_2 *sHeightAreas_6;
 
-Rec_33 *decal_add_quad(s32 p1, s32 *p2, s32 *p3, s32 *p4, s32 *p5, s32 p6)
+/* Starts a quad from the near edge a0-a1 to the far edge b0-b1 (mm) and returns it. */
+TireTrack *decal_add_quad(s32 area, s32 *a0, s32 *a1, s32 *b0, s32 *b1, s32 surface)
 {
     s32 i, j, mode;
     s32 sx, sy;
     s32 cz, dx, dz;
     u32 r;
-    Box_2 *b;
-    Vtx16 *pt;
-    Vtx16 *q;
-    Rec_33 *rec;
-    Rec_33 *r2;
-    Rec_33 *rb;
+    Vtx *pt;
+    Vtx *q;
+    TireTrack *rec;
+    TireTrack *r2;
+    TireTrack *rb;
 
     for (i = 0; i < 4; i++) {
-        if (&sTireTracks_3[sTireTrackNext] == sTireTrackCur[i]) sTireTrackCur[i] = 0;
+        if (&sTireTracks[sTireTrackNext] == sTireTrackCur[i]) sTireTrackCur[i] = 0;
     }
 
     mode = gCurTrack_32->mode;
     if (mode == 1) {
-        b = &sHeightAreas_6[p1];
-        sx = (b->a + b->c) / 2;
-        sy = (b->b + b->d) / 2;
+        sx = (sHeightAreas->e[area].x0 + sHeightAreas->e[area].x1) / 2;
+        sy = (sHeightAreas->e[area].z0 + sHeightAreas->e[area].z1) / 2;
     } else if (mode == 2) {
-        sx = (s16)(p1 >> 16) * 8000 + 4000;
-        sy = (s16)p1 * 8000 + 4000;
+        sx = (s16)(area >> 16) * 8000 + 4000;
+        sy = (s16)area * 8000 + 4000;
     } else {
         sx = sy = 0;
     }
 
     j = sTireTrackNext * 4;
-    pt = (Vtx16 *)((u32)(j * 16) + (u32)sTireTrackVtx);
-    pt[0].x = (p2[0] >> 4) - sx;
-    pt[0].y = p2[1] >> 4;
-    pt[0].z = (p2[2] >> 4) - sy;
-    pt[1].x = (p3[0] >> 4) - sx;
+    pt = (Vtx *)((u32)(j * 16) + (u32)sTireTrackVtx);
+    pt[0].v.ob[0] = (a0[0] >> 4) - sx;
+    pt[0].v.ob[1] = a0[1] >> 4;
+    pt[0].v.ob[2] = (a0[2] >> 4) - sy;
+    pt[1].v.ob[0] = (a1[0] >> 4) - sx;
     q = &pt[1];
-    q->y = p3[1] >> 4;
-    q->z = (p3[2] >> 4) - sy;
-    pt[2].x = (p4[0] >> 4) - sx;
+    q->v.ob[1] = a1[1] >> 4;
+    q->v.ob[2] = (a1[2] >> 4) - sy;
+    pt[2].v.ob[0] = (b0[0] >> 4) - sx;
     q = &pt[2];
-    q->y = p4[1] >> 4;
-    q->z = (p4[2] >> 4) - sy;
-    pt[3].x = (p5[0] >> 4) - sx;
+    q->v.ob[1] = b0[1] >> 4;
+    q->v.ob[2] = (b0[2] >> 4) - sy;
+    pt[3].v.ob[0] = (b1[0] >> 4) - sx;
     pt = &pt[3];
-    pt->y = p5[1] >> 4;
-    pt->z = (p5[2] >> 4) - sy;
+    pt->v.ob[1] = b1[1] >> 4;
+    pt->v.ob[2] = (b1[2] >> 4) - sy;
 
     j = j / 4;
-    rb = sTireTracks_3;
-    rec = (Rec_33 *)((s32)(j * 24) + (s32)rb);
-    rec->cx = (p4[0] + p5[0]) / 2;
-    rec->cz = cz = (p4[2] + p5[2]) / 2;
-    dx = rec->cx - (p2[0] + p3[0]) / 2;
-    dz = cz - (p2[2] + p3[2]) / 2;
+    rb = sTireTracks;
+    rec = (TireTrack *)((s32)(j * 24) + (s32)rb);
+    rec->x = (b0[0] + b1[0]) / 2;
+    rec->z = cz = (b0[2] + b1[2]) / 2;
+    dx = rec->x - (a0[0] + a1[0]) / 2;
+    dz = cz - (a0[2] + a1[2]) / 2;
     r = isqrt_u32_3(dx * dx + dz * dz);
     if (r != 0) {
         dx = (dx * 0x4000) / (s32)r;
         dz = (dz * 0x4000) / (s32)r;
     }
 
-    r2 = (Rec_33 *)((u32)(j * 24) + (u32)sTireTracks_3);
-    r2->flag = 1;
-    r2->dx = dx;
-    r2->dz = dz;
-    r2->p1 = p1;
-    sTireTracks_3[j].p6 = p6;
+    r2 = (TireTrack *)((u32)(j * 24) + (u32)sTireTracks);
+    r2->active = 1;
+    r2->dirX = dx;
+    r2->dirZ = dz;
+    r2->area = area;
+    sTireTracks[j].surface = surface;
 
     sTireTrackNext = (sTireTrackNext + 1) % 128;
-    return &sTireTracks_3[j];
+    return &sTireTracks[j];
 }
 
 #define RAW(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-typedef struct { u8 active; u8 col; u8 pad[2]; s32 id; u8 rest[0x10]; } Ent_59;
 typedef struct { u8 pad[0x34]; u8 r, g, b; u8 pad2[9]; } Col_2;
-typedef struct { u32 count; u8 pad[0x1C]; Obj obj[1]; } ObjList;
 
-extern Ent_59 *sTireTracks_4;
 extern Col_2 *gSurfaceTablePtr_3;
-extern ObjList *sHeightAreas_7;
 
 Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
     s32 i, j, k, m, a, idx, started, v, hi, lo;
@@ -650,8 +594,8 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
         for (i = 0; i < sDesBlockCount; i++) {
             started = 0;
             for (j = 0; j < 128; j++) {
-                if (!sTireTracks_4[j].active) continue;
-                v = sTireTracks_4[j].id;
+                if (!sTireTracks[j].active) continue;
+                v = sTireTracks[j].area;
                 hi = v >> 16;
                 lo = (s16)v;
                 if (hi == D_800ED6A8[i] && lo == D_800ED728[i]) {
@@ -662,8 +606,8 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                     }
                     for (; k < 128; k++) {
                         if (k >= j + 8) break;
-                        if (!sTireTracks_4[k].active) break;
-                        v = sTireTracks_4[k].id;
+                        if (!sTireTracks[k].active) break;
+                        v = sTireTracks[k].area;
                         hi = v >> 16;
                         lo = (s16)v;
                         if (hi != D_800ED6A8[i] || lo != D_800ED728[i]) break;
@@ -675,7 +619,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                         a = idx - sTireTrackNext;
                         if (a < 0) a += 128;
                         if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks_4[idx].col].r, gSurfaceTablePtr_3[sTireTracks_4[idx].col].g, gSurfaceTablePtr_3[sTireTracks_4[idx].col].b, a);
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks[idx].surface].r, gSurfaceTablePtr_3[sTireTracks[idx].surface].g, gSurfaceTablePtr_3[sTireTracks[idx].surface].b, a);
                             gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                         }
                     }
@@ -684,14 +628,14 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
             }
         }
     } else if (gCurTrack_5->mode == 1) {
-        ObjList *l = sHeightAreas_7;
+        TrackModelList *l = sHeightAreas;
         u32 bit;
         {
-            for (i = 0; i < sHeightAreas_7->count; i++) {
-                if (l->obj[i].mask & (1 << (arg3 * 2))) {
+            for (i = 0; i < sHeightAreas->count; i++) {
+                if (l->e[i].mask & (1 << (arg3 * 2))) {
                 started = 0;
                 for (j = 0; j < 128; j++) {
-                    if (sTireTracks_4[j].active && sTireTracks_4[j].id == i) {
+                    if (sTireTracks[j].active && sTireTracks[j].area == i) {
                         k = j + 1;
                         if (!started) {
                             gSPMatrix(gdl++, gSectionMtxs[i * 4 + arg3], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
@@ -699,8 +643,8 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                         }
                         for (; k < 128; k++) {
                             if (k >= j + 8) break;
-                            if (!sTireTracks_4[k].active) break;
-                            if (sTireTracks_4[k].id != i) break;
+                            if (!sTireTracks[k].active) break;
+                            if (sTireTracks[k].area != i) break;
                         }
                         k -= j;
                         gSPVertex(gdl++, &sTireTrackVtx[j * 4], k * 4, 0);
@@ -709,7 +653,7 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                             a = idx - sTireTrackNext;
                             if (a < 0) a += 128;
                             if (a >= 16) {
-                                gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks_4[idx].col].r, gSurfaceTablePtr_3[sTireTracks_4[idx].col].g, gSurfaceTablePtr_3[sTireTracks_4[idx].col].b, a);
+                                gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks[idx].surface].r, gSurfaceTablePtr_3[sTireTracks[idx].surface].g, gSurfaceTablePtr_3[sTireTracks[idx].surface].b, a);
                                 gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                             }
                         }
@@ -724,12 +668,12 @@ Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
             gSPVertex(gdl++, &sTireTrackVtx[i * 4], 32, 0);
             for (j = 0; j < 8; j++) {
                 idx = i + j;
-                if (sTireTracks_4[idx].active) {
-                    if (sHeightAreas_7->obj[sTireTracks_4[idx].id].mask & (1 << (arg3 * 2))) {
+                if (sTireTracks[idx].active) {
+                    if (sHeightAreas->e[sTireTracks[idx].area].mask & (1 << (arg3 * 2))) {
                         a = idx - sTireTrackNext;
                         if (a < 0) a += 128;
                         if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks_4[idx].col].r, gSurfaceTablePtr_3[sTireTracks_4[idx].col].g, gSurfaceTablePtr_3[sTireTracks_4[idx].col].b, a);
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks[idx].surface].r, gSurfaceTablePtr_3[sTireTracks[idx].surface].g, gSurfaceTablePtr_3[sTireTracks[idx].surface].b, a);
                             gSP2Triangles(gdl++, j * 4, j * 4 + 1, j * 4 + 2, 0, j * 4 + 2, j * 4 + 1, j * 4 + 3, 0);
                         }
                     }
@@ -749,9 +693,9 @@ void decal_free(void)
     mem_free(sTireTracks);
 }
 
-void decal_end_track(s32 a0)
+void decal_end_track(s32 rider)
 {
-    sTireTrackCur[a0] = 0;
+    sTireTrackCur[rider] = 0;
 }
 
 void decal_clear_all(void) {
@@ -761,6 +705,6 @@ void decal_clear_all(void) {
         gTireTrackTimers[i] = 0;
     }
     for (i = 0; i < 0x80; i++) {
-        sTireTracks[i * 0x18] = 0;
+        sTireTracks[i].active = 0;
     }
 }

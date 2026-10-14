@@ -2427,12 +2427,7 @@ void shell_exit(void)
     font_unload_set();
 }
 
-#define LOAD(id) res_unload(&gGuiRes_2->tab[id])
-
-typedef struct {
-    s32 f0;
-    u32 *tab;
-} AssetMgr;
+#define LOAD(id) res_unload(&gGuiRes->handles[id])
 
 typedef struct {
     u8 pad0[0x34];
@@ -2454,8 +2449,6 @@ struct Scr {
     void *f1C;
 };
 
-extern AssetMgr *gGuiRes_2;
-extern AssetMgr *D_800E7728_5;
 extern Bike_41 *gCurTrack_40;
 extern Bike_41 *D_800F0634;
 extern Bike_41 gTracks_15[];
@@ -2529,7 +2522,7 @@ void shell_unload_screen(Scr *s)
             break;
         }
         i = 0;
-        res_unload(&D_800E7728_5->tab[D_800D09F8]);
+        res_unload(&D_800E7728->handles[D_800D09F8]);
         LOAD(D_800D149C);
         LOAD(D_800D1388);
         LOAD(D_800D144C);
@@ -5488,7 +5481,7 @@ done:
 }
 
 void shell_load_gui_res(void) {
-    res_open_set("guires", gGuiRes_3);
+    res_open_set("guires", &gGuiRes);
 }
 
 void shell_free_gui_res(void)

@@ -205,7 +205,7 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
         gDPSetAlphaCompare(gdl++, G_AC_NONE);
         gDPSetRenderMode(gdl++, 0xC8004030, 0);
         gDPSetCombine(gdl++, 0x127E24, 0xFFFFF3F9);
-        gDPSetFogColor(gdl++, gFogColor_2.r, gFogColor_2.g, gFogColor_2.b, 255);
+        gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
         gSPFogPosition(gdl++, gCurTrack_36->f58, gCurTrack_36->f60);
         gPrimIATextures = 0;
         gSPDisplayList(gdl++, sTexCutoutFogDL);

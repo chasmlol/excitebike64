@@ -1,19 +1,9 @@
 #include "game.h"
 
-struct Hdr {
-    u32 n;
-    u32 p;
-    Entry e[1];
-};
-
 #define CMS(b) (((b) & 8) ? G_TX_MIRROR : ((b) & 1) ? G_TX_CLAMP : G_TX_WRAP)
 #define CMT(b) (((b) & 2) ? G_TX_CLAMP : G_TX_WRAP)
 
-typedef struct { u8 w8, h, flags, pad; u32 addr; } Tex_2;
-struct Seg_3 { u32 f0; u16 *pal; Tex_2 tex[1]; };
-struct Model { u32 f0; Vtx *vtx; u32 f8; u8 *cmd; };
-
-Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
+Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **segs, Gfx *gdl) {
     u32 addr;
     Vtx *vtx;
     s32 blk, done;
@@ -26,7 +16,7 @@ Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
     s32 pl;
 
     mtx = 0;
-    cmd = mdl->cmd;
+    cmd = mdl->cmds;
     vtx = mdl->vtx;
     if (flags & 8) D_800E36D0 = -1;
     done = 0;
@@ -60,8 +50,8 @@ Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
             cmd += 4;
             break;
         case 6:
-            if (gPrimBoneMtx_2 != 0) {
-                gSPMatrix(gdl++, &gPrimBoneMtx_2[cmd[1]], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+            if (gPrimBoneMtx != 0) {
+                gSPMatrix(gdl++, &gPrimBoneMtx[cmd[1]], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 mtx = 1;
             }
             cmd += 4;
@@ -71,10 +61,10 @@ Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
                 t4 = c & 0xF;
                 seg = b >> 6;
                 fp = c >> 4;
-                addr = segs[seg]->tex[a].addr;
+                addr = (u32)segs[seg]->tex[a].data;
                 blk = (b >> 2) & 1;
-                w = segs[seg]->tex[a].w8 * 8;
-                h = segs[seg]->tex[a].h;
+                w = segs[seg]->tex[a].width * 8;
+                h = segs[seg]->tex[a].height;
                 if (segs[seg]->tex[a].flags & 2) {
                     if (gPrimTexAlphaMode != 1) {
                         if (sPrimTexModeCallback != NULL) gdl = sPrimTexModeCallback(gdl, 1, c);
@@ -84,7 +74,7 @@ Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
                     if (sPrimTexModeCallback != NULL) gdl = sPrimTexModeCallback(gdl, ((u32)&cmd[1] & 1) >> 1, c);
                     gPrimTexAlphaMode = 0;
                 }
-                addr = segs[seg]->tex[a].addr;
+                addr = (u32)segs[seg]->tex[a].data;
                 if (rel) addr = ((addr - (u32)segs[seg]) & 0xFFFFFF) | ((seg + 2) << 24);
                 if (sPrimTexAddrCallback != NULL) sPrimTexAddrCallback(&addr);
                 t4 -= D_800C8C78;
@@ -129,73 +119,57 @@ Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
     return gdl;
 }
 
-void prim_animate_textures(u32 *param_1, s32 param_2)
+/* Rotates each animated group of textures (consecutive entries with rate bits, ended by the first without) by one
+   frame when `frame` is a multiple of the group's rate; with IA textures the palette entries rotate with them. */
+void prim_animate_textures(TexSet *set, s32 frame)
 {
     u32 i;
-    s32 a2;
-    s32 a3;
-    s32 j;
-    u32 *dst;
-    s32 jn;
-
+    s32 k;
+    s32 end;
     u32 idx;
-    s32 g;
-    s32 *tab;
-    u16 t1;
-    u32 t0;
+    s32 ia;
+    s32 *rates;
+    u16 col;
+    u8 *data;
 
-    if (param_1[0] == 0) {
+    if (set->count == 0) {
         return;
     }
     i = 0;
-    tab = sTexAnimRates;
-    g = gPrimIATextures;
+    rates = sTexAnimRates;
+    ia = gPrimIATextures;
     do {
-        a2 = *(u8 *)((s32)param_1 + (i << 3) + 0xA) & 0x34;
-        if (a2 != 0) {
-            idx = ((u32)a2 >> 5) << 2;
-            if (a2 & 0x10) {
+        k = set->tex[i].flags & 0x34;
+        if (k != 0) {
+            idx = ((u32)k >> 5) << 2;
+            if (k & 0x10) {
                 idx = idx | 2;
             }
-            a2 = (((u32)a2 >> 2) & 1) | idx;
-            a2 = tab[a2];
-            if (param_2 % a2 == 0) {
-                a3 = i + 1;
-                while (*(u8 *)((s32)param_1 + (a3 << 3) + 0xA) & 0x34) {
-                    a3++;
+            k = (((u32)k >> 2) & 1) | idx;
+            k = rates[k];
+            if (frame % k == 0) {
+                end = i + 1;
+                while (set->tex[end].flags & 0x34) {
+                    end++;
                 }
-                if (g != 0) {
-                    t1 = ((u16 *)param_1[1])[i];
-                    for (a2 = i; a2 < a3; a2++) {
-                        ((u16 *)param_1[1])[a2] = ((u16 *)param_1[1])[a2 + 1];
+                if (ia != 0) {
+                    col = set->pal[i];
+                    for (k = i; k < end; k++) {
+                        set->pal[k] = set->pal[k + 1];
                     }
-                    ((u16 *)param_1[1])[a3] = t1;
+                    set->pal[end] = col;
                 }
-                t0 = *(u32 *)((s32)param_1 + (i << 3) + 0xC);
-                for (a2 = i; a2 < a3; a2++) {
-                    *(u32 *)((s32)param_1 + (a2 << 3) + 0xC) = *(u32 *)((s32)param_1 + ((a2 + 1) << 3) + 0xC);
+                data = set->tex[i].data;
+                for (k = i; k < end; k++) {
+                    set->tex[k].data = set->tex[k + 1].data;
                 }
-                *(u32 *)((s32)param_1 + (a3 << 3) + 0xC) = t0;
-                i = a3;
+                set->tex[end].data = data;
+                i = end;
             }
         }
         i = i + 1;
-    } while (i < param_1[0]);
+    } while (i < set->count);
 }
-
-typedef struct {
-    u8 w;
-    u8 h;
-    u8 flags;
-    u8 pad;
-    u8 *data;
-} Img_5;
-
-struct ImgSet {
-    u32 count;
-    u32 pad;
-    Img_5 img[1];
-};
 
 static inline void flip(u8 *pa, s32 row, s32 h)
 {
@@ -214,15 +188,15 @@ static inline void flip(u8 *pa, s32 row, s32 h)
     }
 }
 
-void prim_flip_images(ImgSet *s)
+void prim_flip_images(TexSet *set)
 {
     u32 i;
 
-    for (i = 0; i < s->count; i++) {
-        if (!(s->img[i].flags & 1)) {
-            flip(s->img[i].data, s->img[i].w * 4, s->img[i].h);
+    for (i = 0; i < set->count; i++) {
+        if (!(set->tex[i].flags & 1)) {
+            flip(set->tex[i].data, set->tex[i].width * 4, set->tex[i].height);
         } else {
-            flip(s->img[i].data, s->img[i].w * 8, s->img[i].h);
+            flip(set->tex[i].data, set->tex[i].width * 8, set->tex[i].height);
         }
     }
 }
@@ -254,27 +228,30 @@ void func_80014AD8(s32 x)
     D_800C8C78 = x;
 }
 
-void prim_alloc_seg_dl(void **param_1, u32 *param_2, s32 param_3, u32 param_4)
+/* Builds a model's display list into a buffer of its size, with texture addresses relative to the sets' segments
+   and the vertices in segment 1. */
+void prim_alloc_seg_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags)
 {
     u32 r;
-    u32 saved;
+    Vtx *vtx;
 
-    r = prim_build_dl(param_4 | 0x21, param_2, param_3, gZBuffer);
-    *param_1 = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x323);
-    saved = param_2[1];
-    param_2[1] = 0x01000000;
-    prim_build_dl(param_4 | 0x21, param_2, param_3, (u32)*param_1);
-    param_2[1] = saved;
+    r = (u32)prim_build_dl(flags | 0x21, mdl, sets, (Gfx *)gZBuffer);
+    *out = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x323);
+    vtx = mdl->vtx;
+    mdl->vtx = (Vtx *)0x01000000;
+    prim_build_dl(flags | 0x21, mdl, sets, *out);
+    mdl->vtx = vtx;
 }
 
-void prim_alloc_dl(u32 *p1, u32 a1, u32 a2, u32 a3)
+/* Builds a model's display list into a buffer of its size. */
+void prim_alloc_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags)
 {
     u32 r;
 
-    r = prim_build_dl(a3 | 1, a1, a2, gZBuffer);
+    r = (u32)prim_build_dl(flags | 1, mdl, sets, (Gfx *)gZBuffer);
     r = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x33B);
-    *p1 = r;
-    prim_build_dl(a3 | 1, a1, a2, r);
+    *out = (Gfx *)r;
+    prim_build_dl(flags | 1, mdl, sets, (Gfx *)r);
 }
 
 void prim_flip_image_rows(u8 *p, s32 stride, s32 rows) {
@@ -293,38 +270,39 @@ void prim_flip_image_rows(u8 *p, s32 stride, s32 rows) {
     }
 }
 
-void prim_pkg_unrelocate(Hdr **pp)
+void prim_pkg_unrelocate(TexSet **pp)
 {
-    Hdr *h = *pp;
+    TexSet *set = *pp;
     u32 i;
 
-    if (h->p != 0) {
-        h->p -= (u32)h;
+    if (set->pal != NULL) {
+        set->pal = (u16 *)((u32)set->pal - (u32)set);
     }
-    for (i = 0; i < h->n; i++) {
-        h->e[i].b -= (u32)h;
+    for (i = 0; i < set->count; i++) {
+        set->tex[i].data = (u8 *)((u32)set->tex[i].data - (u32)set);
     }
 }
 
-void prim_pkg_relocate(Hdr **pp)
+void prim_pkg_relocate(TexSet **pp)
 {
-    Hdr *h = *pp;
+    TexSet *set = *pp;
     u32 i;
 
-    h = (Hdr *)((u32)h & ~2);
-    if (h->p != 0) {
-        h->p += (u32)h;
+    set = (TexSet *)((u32)set & ~2);
+    if (set->pal != NULL) {
+        set->pal = (u16 *)((u32)set->pal + (u32)set);
     }
-    for (i = 0; i < h->n; i++) {
-        h->e[i].b += (u32)h;
+    for (i = 0; i < set->count; i++) {
+        set->tex[i].data = (u8 *)((u32)set->tex[i].data + (u32)set);
     }
 }
 
-void prim_n64_relocate(u32 *p)
+void prim_n64_relocate(PrimModel **pp)
 {
-    u32 b = *p & 0xFFFFFFFC;
-    *(u32 *)(b + 4) = *(u32 *)(b + 4) + b;
-    *(u32 *)(b + 12) = *(u32 *)(b + 12) + b;
+    PrimModel *mdl = (PrimModel *)((u32)*pp & 0xFFFFFFFC);
+
+    mdl->vtx = (Vtx *)((u32)mdl->vtx + (u32)mdl);
+    mdl->cmds = (u8 *)((u32)mdl->cmds + (u32)mdl);
 }
 
 s32 prim_find_nearest_color(u16 *p, s32 r, s32 g, s32 b, s32 flag, s32 n)

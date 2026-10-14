@@ -1,20 +1,9 @@
 #include "game.h"
 
-typedef struct Part {
-    s16 life;
-    s16 w2;
-    u8 typ;
-    u8 pad5[7];
-    f32 px, py, pz;
-    f32 vx, vy, vz;
-} Part;
-
-extern Part *sParticles;
-
 void particles_update(void)
 {
-    Part *p;
-    Part *base;
+    Particle *p;
+    Particle *base;
     s32 i;
     s32 t;
     s32 *q;
@@ -24,20 +13,20 @@ void particles_update(void)
         i = 0;
         base = sParticles;
         do {
-            p = (Part *)((s32)base + i * 0x24);
+            p = (Particle *)((s32)base + i * 0x24);
             if (p->life >= 0) {
                 p->life = p->life - 1;
-                t = p->typ;
-                p->px = p->px + p->vx;
-                p->py = p->py + p->vy;
-                p->pz = p->pz + p->vz;
-                if (t == 1) {
-                    p->vy = p->vy - 0.008166667f;
-                } else if (t == 3) {
-                    p->vx = p->vx * 0.99f;
-                    p->vz = p->vz * 0.99f;
-                } else if (t == 2) {
-                    p->vy = p->vy - 0.0020416668f;
+                t = p->type;
+                p->pos.x = p->pos.x + p->vel.x;
+                p->pos.y = p->pos.y + p->vel.y;
+                p->pos.z = p->pos.z + p->vel.z;
+                if (t == PARTICLE_MUD) {
+                    p->vel.y = p->vel.y - 0.008166667f;
+                } else if (t == PARTICLE_SPLASH) {
+                    p->vel.x = p->vel.x * 0.99f;
+                    p->vel.z = p->vel.z * 0.99f;
+                } else if (t == PARTICLE_SPARK) {
+                    p->vel.y = p->vel.y - 0.0020416668f;
                 }
             }
             i = i + 1;
@@ -54,51 +43,38 @@ void particles_update(void)
     }
 }
 
-typedef struct {
-    s16 life;
-    s16 life0;
-    u8 type;
-    u8 b;
-    u8 col[3];
-    u8 pad;
-    V3 pos;
-    V3 vel;
-} Part_2;
-
-extern Part_2 *sParticles_2;
-
-void particle_spawn(s32 type, u8 b, V3 *pos, V3 *vel, u8 *col)
+void particle_spawn(s32 type, s32 surface, Vec3f *pos, Vec3f *vel, u8 *color)
 {
     s32 i;
-    Part_2 *p;
+    Particle *p;
 
     for (i = sParticleLast + 1; ; i++) {
         if (i >= 0x60) i = 0;
-        if (sParticles_2[i].life <= 0) {
-            sParticles_2[i].pos = *pos;
-            sParticles_2[i].vel = *vel;
-            sParticles_2[i].b = b;
-            if (type == 1) {
-                sParticles_2[i].life = (s16)(vel->y * 122.448975f + 1.0f) * 2;
-            } else if (type == 2) {
-                sParticles_2[i].life = 15;
-            } else if (type == 5) {
-                sParticles_2[i].life = 10;
-            } else if (type == 3) {
-                sParticles_2[i].life = 20;
+        if (sParticles[i].life <= 0) {
+            sParticles[i].pos = *pos;
+            sParticles[i].vel = *vel;
+            sParticles[i].surface = surface;
+            if (type == PARTICLE_MUD) {
+                sParticles[i].life = (s16)(vel->y * 122.448975f + 1.0f) * 2;
+            } else if (type == PARTICLE_SPARK) {
+                sParticles[i].life = 15;
+            } else if (type == PARTICLE_SPARKLE) {
+                sParticles[i].life = 10;
+            } else if (type == PARTICLE_SPLASH) {
+                sParticles[i].life = 20;
             } else if (type == 4) {
-                sParticles_2[i].life = 2;
-            } else if (type == 6) {
-                sParticles_2[i].life = 120;
+                sParticles[i].life = 2;
+            } else if (type == PARTICLE_SMOKE) {
+                sParticles[i].life = 120;
             } else {
-                sParticles_2[i].life = 15;
+                sParticles[i].life = 15;
             }
-            p = (Part_2 *)(i * sizeof(Part_2) + (u32)sParticles_2);
+            p = (Particle *)(i * sizeof(Particle) + (u32)sParticles);
             p->type = type;
-            p->life0 = p->life;
-            sParticles_2[i].col[0] = col[0];
-            sParticles_2[i].col[1] = col[1];
-            sParticles_2[i].col[2] = col[2];
+            p->maxLife = p->life;
+            sParticles[i].r = color[0];
+            sParticles[i].g = color[1];
+            sParticles[i].b = color[2];
             sParticleLast = i;
             return;
         }
@@ -117,99 +93,93 @@ struct Obj_29 {
     f32 v354[3];
 };
 
-void particles_emit_sparks(Obj_29 *param_1)
+void particles_emit_sparks(Obj_29 *rider)
 {
     f32 o[3];
     f32 t[3];
     u32 r;
     s32 iv;
 
-    if (gNumScreens == 1 && param_1->cnt350 != 0) {
-        param_1->cnt350 = param_1->cnt350 - 1;
-        if ((void *)param_1 == (void *)gRiders) {
-            vec3_mul_mtx3f(param_1->v354, param_1->vA0, o);
-            o[0] = param_1->v48[0] + o[0];
-            o[1] = param_1->v48[1] + o[1];
-            o[2] = param_1->v48[2] + o[2];
-            t[0] = param_1->v54[0] * 0.016666668f;
-            t[1] = param_1->v54[1] * 0.016666668f;
-            t[2] = param_1->v54[2] * 0.016666668f;
+    if (gNumScreens == 1 && rider->cnt350 != 0) {
+        rider->cnt350 = rider->cnt350 - 1;
+        if ((void *)rider == (void *)gRiders) {
+            vec3_mul_mtx3f(rider->v354, rider->vA0, o);
+            o[0] = rider->v48[0] + o[0];
+            o[1] = rider->v48[1] + o[1];
+            o[2] = rider->v48[2] + o[2];
+            t[0] = rider->v54[0] * 0.016666668f;
+            t[1] = rider->v54[1] * 0.016666668f;
+            t[2] = rider->v54[2] * 0.016666668f;
             r = random_byte();
-            if (0.0f < param_1->v354[0]) {
+            if (0.0f < rider->v354[0]) {
                 iv = r + 0x80;
             } else {
                 iv = r - 0x80;
             }
-            t[0] = t[0] + param_1->vA0[0] * ((f32)iv * 0.00012207031f);
-            t[2] = t[2] + param_1->vA0[2] * ((f32)iv * 0.00012207031f);
+            t[0] = t[0] + rider->vA0[0] * ((f32)iv * 0.00012207031f);
+            t[2] = t[2] + rider->vA0[2] * ((f32)iv * 0.00012207031f);
             r = random_byte();
             t[1] = t[1] + (f32)(s32)(r - 0x40) * 0.02f * 0.0078125f;
-            particle_spawn(2, 0, o, t, gParticleWhite);
+            particle_spawn(PARTICLE_SPARK, 0, (Vec3f *)o, (Vec3f *)t, gParticleWhite);
         }
     }
     return;
 }
 
-typedef struct { u8 a; u8 b; u16 z; u8 *p; } Rec_19;
-typedef struct { u32 n; u32 pad; Rec_19 r[1]; } Tab_3;
-
-extern Tab_3 *sPuffTextures;
-extern Tab_3 *sSparkleTextures;
-
-void particles_load_textures(void *param_1)
+void particles_load_textures(void *file)
 {
-    s32 iVar4;
+    s32 n;
     s32 j;
     s32 i;
     u8 *pb;
 
-    sPuffTextures = (Tab_3 *)res_load(param_1, D_800D0E0C);
-    iVar4 = sPuffTextures->r[0].a * (sPuffTextures->r[0].b << 3);
-    if (sPuffTextures->n != 0) {
+    sPuffTextures = (TexSet *)res_load(file, D_800D0E0C);
+    n = sPuffTextures->tex[0].width * (sPuffTextures->tex[0].height << 3);
+    if (sPuffTextures->count != 0) {
         i = 0;
         do {
             j = 0;
-            if (iVar4 != 0) {
-                                do {
-                    pb = sPuffTextures->r[i].p;
+            if (n != 0) {
+                do {
+                    pb = sPuffTextures->tex[i].data;
                     pb = pb + j;
                     *pb = *pb >> 4;
-                    pb = sPuffTextures->r[i].p;
+                    pb = sPuffTextures->tex[i].data;
                     pb = pb + j;
                     *pb = *pb & 0xf;
-                    pb = sPuffTextures->r[i].p;
+                    pb = sPuffTextures->tex[i].data;
                     pb = pb + j;
                     j++;
                     *pb = *pb | 0xf0;
-                } while (j < iVar4);
+                } while (j < n);
             }
             i++;
-        } while (i < sPuffTextures->n);
+        } while (i < sPuffTextures->count);
     }
-    sClodTextures = res_load(param_1, D_800D0DB4);
-    sSparkleTextures = (Tab_3 *)res_load(param_1, D_800D0D20);
+    sClodTextures = (TexSet *)res_load(file, D_800D0DB4);
+    sSparkleTextures = (TexSet *)res_load(file, D_800D0D20);
     i = 0;
-    if (sSparkleTextures->n != 0) {
+    if (sSparkleTextures->count != 0) {
         do {
-            iVar4 = sSparkleTextures->r[i].a * (sSparkleTextures->r[i].b << 3);
+            n = sSparkleTextures->tex[i].width * (sSparkleTextures->tex[i].height << 3);
             j = 0;
-            if (iVar4 != 0) {
+            if (n != 0) {
                 do {
-                    pb = sSparkleTextures->r[i].p;
+                    pb = sSparkleTextures->tex[i].data;
                     pb = pb + j;
                     j++;
                     *pb = *pb | 0xf0;
-                } while (j < iVar4);
+                } while (j < n);
             }
             i++;
-        } while (i < sSparkleTextures->n);
+        } while (i < sSparkleTextures->count);
     }
-    sSplashTextures = res_load(param_1, D_800D0924);
+    sSplashTextures = (TexSet *)res_load(file, D_800D0924);
     prim_flip_images(sSplashTextures);
-    sExhaustTextures = res_load(param_1, D_800D0DAC);
+    sExhaustTextures = (TexSet *)res_load(file, D_800D0DAC);
     prim_flip_images(sExhaustTextures);
-    D_800E92C8_2 = res_load(param_1, D_800D10B4);
-    prim_flip_images(D_800E92C8_2);
+    D_800E92C8 = (TexSet *)res_load(file, D_800D10B4);
+    prim_flip_images(D_800E92C8);
 }
 
 typedef struct {
@@ -254,7 +224,6 @@ typedef struct {
     u8 b[4];
 } Col;
 
-extern Col sRiderLightColor_2[];
 extern Bike_20 gRiders_35[];
 extern Col D_800E1B50_2[];
 
@@ -307,7 +276,7 @@ void particles_emit_bike_dirt(void)
             } else if (b->f5CF == 2) {
                 bC = 1;
             }
-            if (bB && (gCamZoneState & 1)) {
+            if (bB && (gCamZoneState[0].flags & 1)) {
                 bC = 1;
             }
             if (bC) {
@@ -321,10 +290,10 @@ void particles_emit_bike_dirt(void)
                     d = b->vel.x * c - b->vel.z * s;
                     A.x -= c * d / 250.0f;
                     A.z += s * d / 250.0f;
-                    particle_spawn_2(0, bA, &B, &A, sRiderLightColor_2[i].b);
+                    particle_spawn(PARTICLE_DUST, bA, (Vec3f *)&B, (Vec3f *)&A, sRiderLightColor[i]);
                 }
             } else if (bB) {
-                particle_spawn_2(0, bA, &B, &A, sRiderLightColor_2[i].b);
+                particle_spawn(PARTICLE_DUST, bA, (Vec3f *)&B, (Vec3f *)&A, sRiderLightColor[i]);
             }
         }
         if (((b->f5B0 & 0x20000) || gRaceFrame - b->f774 < 10) && (b->model->flags & 4)) {
@@ -336,7 +305,7 @@ void particles_emit_bike_dirt(void)
                     A.y = ((s32)random_byte() / 50.0f + 5.0f) / 100.0f;
                     A.z = A.z / 80.0f + (((s32)random_byte() - 128.0f) * 0.01f) * 0.0078125f;
                     sp = &gRiders_35[i].sub;
-                    particle_spawn_2(1, bA, &sp->pos, &A, sRiderLightColor_2[i].b);
+                    particle_spawn(PARTICLE_MUD, bA, (Vec3f *)&sp->pos, (Vec3f *)&A, sRiderLightColor[i]);
                 }
             }
         }
@@ -402,11 +371,11 @@ void particles_emit_water_splash(u8 *p)
         A[0] = (f32)*(s16 *)((u8 *)gCosTable + ((*(s32 *)(p + 0x20) >> 3) & 0x1FFE)) / 655360.0f;
         A[1] = 0.0f;
         A[2] = (f32)*(s16 *)((u8 *)gCosTable + ((((*(s32 *)(p + 0x20) >> 4) - 0x400) & 0xFFF) << 1)) / 655360.0f;
-        particle_spawn_3(3, mv, pt, A, gParticleWhite);
+        particle_spawn(PARTICLE_SPLASH, mv, (Vec3f *)pt, (Vec3f *)A, gParticleWhite);
         A[0] = -(f32)*(s16 *)((u8 *)gCosTable + ((*(s32 *)(p + 0x20) >> 3) & 0x1FFE)) / 655360.0f;
         A[1] = 0.0f;
         A[2] = -(f32)*(s16 *)((u8 *)gCosTable + ((((*(s32 *)(p + 0x20) >> 4) - 0x400) & 0xFFF) << 1)) / 655360.0f;
-        particle_spawn_3(3, mv, pt, A, gParticleWhite);
+        particle_spawn(PARTICLE_SPLASH, mv, (Vec3f *)pt, (Vec3f *)A, gParticleWhite);
     }
 
     if ((gSurfaceTable_2[mv].flags & 0x180) != 0) {
@@ -433,8 +402,8 @@ void particles_emit_dust_cloud(void)
     s32 i;
     s32 z;
     s32 v;
-    f32 lf[3];
-    s32 li[3];
+    Vec3f pos;
+    Vec3f vel;
 
     if (gNumScreens < 4) {
         if (gRaceFrame < sDustCloudStart) {
@@ -443,40 +412,23 @@ void particles_emit_dust_cloud(void)
         if (gRaceFrame - sDustCloudStart < 0x1F) {
             z = 0;
             i = z;
-            li[0] = 0;
-            li[1] = 0;
-            li[2] = 0;
+            vel.x = 0.0f;
+            vel.y = 0.0f;
+            vel.z = 0.0f;
             do {
                 i = i + 1;
                 v = random_byte();
-                lf[0] = sDustCloudPos[0] + ((f32)v - 128.0f) * 0.00390625f;
+                pos.x = sDustCloudPos.x + ((f32)v - 128.0f) * 0.00390625f;
                 v = random_byte();
-                lf[1] = sDustCloudPos[1] + ((f32)v - 128.0f) * 0.0009765625f;
+                pos.y = sDustCloudPos.y + ((f32)v - 128.0f) * 0.0009765625f;
                 v = random_byte();
-                lf[2] = sDustCloudPos[2] + ((f32)v - 128.0f) * 0.00390625f;
-                particle_spawn_4(0, z, lf, li, &sRiderLightColor[sDustCloudBike]);
-                *(u16 *)(sParticles_3 + sParticleLast * 0x24 + 2) = 0x1E;
+                pos.z = sDustCloudPos.z + ((f32)v - 128.0f) * 0.00390625f;
+                particle_spawn(PARTICLE_DUST, z, &pos, &vel, sRiderLightColor[sDustCloudBike]);
+                sParticles[sParticleLast].maxLife = 30;
             } while (i <= 0);
         }
     }
 }
-
-typedef struct {
-    s16 life;   /* 0x00 */
-    s16 max;    /* 0x02 */
-    u8 type;    /* 0x04 */
-    u8 color;   /* 0x05 */
-    u8 r, g, b; /* 0x06 */
-    u8 pad9[3];
-    Vec3f pos;  /* 0x0C */
-    Vec3f vel;  /* 0x18 */
-} Part_3;
-
-typedef struct {
-    u32 n;
-    u32 pad;
-    TexInfo e[1];
-} TexTab_2;
 
 typedef struct {
     u8 pad[0x2C];
@@ -496,12 +448,6 @@ typedef struct {
     u8 pad655[0x7E0 - 0x655];
 } Bike_21;
 
-extern Part_3 *sParticles_4;
-extern TexTab_2 *sPuffTextures_2;
-extern TexTab_2 *sSplashTextures_2;
-extern TexTab_2 *sExhaustTextures_2;
-extern TexTab_2 *sClodTextures_2;
-extern TexTab_2 *sSparkleTextures_2;
 extern Bike_21 gRiders_36[];
 extern ColDef gSurfaceTable_6[];
 
@@ -537,18 +483,18 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
     gDPSetRenderMode(gdl++, 0x404A50, 0);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gDPSetDepthSource(gdl++, G_ZS_PRIM);
-    gDPLoadTextureBlock(gdl++, sPuffTextures_2->e[0].img, G_IM_FMT_IA, G_IM_SIZ_8b, sPuffTextures_2->e[0].w * 8,
-                        sPuffTextures_2->e[0].h, 0, G_TX_CLAMP, G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
+    gDPLoadTextureBlock(gdl++, sPuffTextures->tex[0].data, G_IM_FMT_IA, G_IM_SIZ_8b, sPuffTextures->tex[0].width * 8,
+                        sPuffTextures->tex[0].height, 0, G_TX_CLAMP, G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
 
     for (i = 0; i < 96; i++) {
-        if (sParticles_4[i].life >= 0 && sParticles_4[i].type == 0) {
-            if (project(&sParticles_4[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
+        if (sParticles[i].life >= 0 && sParticles[i].type == PARTICLE_DUST) {
+            if (project(&sParticles[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (sx < 0 || gScreenWidth < sx || sy < 0 || gScreenHeight < sy) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (w < 5001 && w != 0) {
                 size = 15000 / w;
@@ -560,16 +506,16 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 if (size > 48) {
                     size = 48;
                 }
-                if (sParticles_4[i].vel.y > 0.0f) {
-                    k = ((sParticles_4[i].max - sParticles_4[i].life) << 10) / sParticles_4[i].max + 0x80;
+                if (sParticles[i].vel.y > 0.0f) {
+                    k = ((sParticles[i].maxLife - sParticles[i].life) << 10) / sParticles[i].maxLife + 0x80;
                     if (k > 0x400) {
                         k = 0x400;
                     }
                     if (gPauseMenu == 0) {
-                        sParticles_4[i].vel.y -= 0.005f;
+                        sParticles[i].vel.y -= 0.005f;
                     }
                 } else {
-                    k = ((sParticles_4[i].max - sParticles_4[i].life) << 9) / sParticles_4[i].max + 0x100;
+                    k = ((sParticles[i].maxLife - sParticles[i].life) << 9) / sParticles[i].maxLife + 0x100;
                     if (k > 0x200) {
                         k = 0x200;
                     }
@@ -578,15 +524,15 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 if (size < 3) {
                     size = 3;
                 }
-                dsdx = (sPuffTextures_2->e[0].w << 13) / size;
-                a = sParticles_4[i].color;
+                dsdx = (sPuffTextures->tex[0].width << 13) / size;
+                a = sParticles[i].surface;
                 hh = size * 2 / 3;
                 alpha = 0xFF - gSurfaceTable_6[a].a1;
-                alpha = (((sParticles_4[i].life << 7) / sParticles_4[i].max + 0x7F) * alpha) >> 8;
-                dtdy = (sPuffTextures_2->e[0].h << 10) / hh;
+                alpha = (((sParticles[i].life << 7) / sParticles[i].maxLife + 0x7F) * alpha) >> 8;
+                dtdy = (sPuffTextures->tex[0].height << 10) / hh;
                 if (alpha != 0) {
-                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r1 * sParticles_4[i].r) >> 8,
-                                    (gSurfaceTable_6[a].g1 * sParticles_4[i].g) >> 8, (gSurfaceTable_6[a].b1 * sParticles_4[i].b) >> 8,
+                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r1 * sParticles[i].r) >> 8,
+                                    (gSurfaceTable_6[a].g1 * sParticles[i].g) >> 8, (gSurfaceTable_6[a].b1 * sParticles[i].b) >> 8,
                                     alpha);
                     gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                     gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
@@ -597,17 +543,17 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
     }
 
     for (i = 0; i < 96; i++) {
-        if (sParticles_4[i].life >= 0 && sParticles_4[i].type == 6) {
-            if (project(&sParticles_4[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
+        if (sParticles[i].life >= 0 && sParticles[i].type == PARTICLE_SMOKE) {
+            if (project(&sParticles[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (sx < 0 || gScreenWidth < sx || sy < 0 || gScreenHeight < sy) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (w != 0) {
-                k = ((sParticles_4[i].max - sParticles_4[i].life) * 0x2800) / sParticles_4[i].max + 0x500;
+                k = ((sParticles[i].maxLife - sParticles[i].life) * 0x2800) / sParticles[i].maxLife + 0x500;
                 size = 15000 / w;
                 if (k > 0x400) {
                     k = 0x400;
@@ -619,11 +565,11 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 if (size > 100) {
                     size = 100;
                 }
-                dsdx = (sPuffTextures_2->e[0].w << 13) / size;
-                alpha = (sParticles_4[i].life * 0xC0) / sParticles_4[i].max + 0x3F;
+                dsdx = (sPuffTextures->tex[0].width << 13) / size;
+                alpha = (sParticles[i].life * 0xC0) / sParticles[i].maxLife + 0x3F;
                 hh = size * 2 / 3;
                 a = 0xFF - (w * 0xFF) / 15000;
-                dtdy = (sPuffTextures_2->e[0].h << 10) / hh;
+                dtdy = (sPuffTextures->tex[0].height << 10) / hh;
                 if (a < 0) {
                     a = 0;
                 }
@@ -642,14 +588,14 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
     }
 
     for (i = 0; i < 96; i++) {
-        if (sParticles_4[i].life >= 0 && sParticles_4[i].type == 3) {
-            if (project(&sParticles_4[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
+        if (sParticles[i].life >= 0 && sParticles[i].type == PARTICLE_SPLASH) {
+            if (project(&sParticles[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (sx < 0 || gScreenWidth < sx || sy < 0 || gScreenHeight < sy) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (w != 0) {
                 size = 7500 / w;
@@ -659,7 +605,7 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 if (size > 48) {
                     size = 48;
                 }
-                k = ((sParticles_4[i].max - sParticles_4[i].life) << 10) / sParticles_4[i].max + 0x100;
+                k = ((sParticles[i].maxLife - sParticles[i].life) << 10) / sParticles[i].maxLife + 0x100;
                 if (k > 0x400) {
                     k = 0x400;
                 }
@@ -667,13 +613,13 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                 if (size < 3) {
                     size = 3;
                 }
-                dsdx = (sSplashTextures_2->e[0].w << 13) / size;
+                dsdx = (sSplashTextures->tex[0].width << 13) / size;
                 hh = size * 2 / 3;
-                dtdy = (sSplashTextures_2->e[0].h << 10) / hh;
-                gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, (sParticles_4[i].life * 245) / sParticles_4[i].max + 20);
-                k = (u32)(i * 123 + sParticles_4[i].max - sParticles_4[i].life) % sSplashTextures_2->n;
-                gDPLoadTextureBlock(gdl++, sSplashTextures_2->e[k].img, G_IM_FMT_IA, G_IM_SIZ_8b, sSplashTextures_2->e[k].w * 8,
-                                    sSplashTextures_2->e[k].h, 0, G_TX_CLAMP, G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
+                dtdy = (sSplashTextures->tex[0].height << 10) / hh;
+                gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, (sParticles[i].life * 245) / sParticles[i].maxLife + 20);
+                k = (u32)(i * 123 + sParticles[i].maxLife - sParticles[i].life) % sSplashTextures->count;
+                gDPLoadTextureBlock(gdl++, sSplashTextures->tex[k].data, G_IM_FMT_IA, G_IM_SIZ_8b, sSplashTextures->tex[k].width * 8,
+                                    sSplashTextures->tex[k].height, 0, G_TX_CLAMP, G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
                 gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                 gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
                                     (sy + hh / 2) << 2, G_TX_RENDERTILE, 0, 0, dsdx, dtdy);
@@ -683,15 +629,15 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
 
     for (i = 0; i < 16; i++) {
         if (sExhaustPuffTimers[i] != 0) {
-            k = ((15 - sExhaustPuffTimers[i]) * sExhaustTextures_2->n) / 15;
+            k = ((15 - sExhaustPuffTimers[i]) * sExhaustTextures->count) / 15;
             if (k < 0) {
                 k = 0;
             }
-            if (k >= sExhaustTextures_2->n) {
-                k = sExhaustTextures_2->n - 1;
+            if (k >= sExhaustTextures->count) {
+                k = sExhaustTextures->count - 1;
             }
-            gDPLoadTextureBlock(gdl++, sExhaustTextures_2->e[k].img, G_IM_FMT_IA, G_IM_SIZ_8b, sExhaustTextures_2->e[k].w * 8,
-                                sExhaustTextures_2->e[k].h, 0, G_TX_CLAMP, G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
+            gDPLoadTextureBlock(gdl++, sExhaustTextures->tex[k].data, G_IM_FMT_IA, G_IM_SIZ_8b, sExhaustTextures->tex[k].width * 8,
+                                sExhaustTextures->tex[k].height, 0, G_TX_CLAMP, G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
             b = &gRiders_36[i / 2];
             mtx3i_from_angles(mtx, b->rx, b->ry, b->rz);
             v[0] = 100;
@@ -703,11 +649,11 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
             pos.z = (f32)(out[2] + b->z) / 1000.0f;
             if (project(&pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (sx < 0 || gScreenWidth < sx || sy < 0 || gScreenHeight < sy) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (w != 0) {
                 size = 10000 / w;
@@ -734,9 +680,9 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                     k = (sExhaustPuffTimers[i] * 127) / 15 + 0x80;
                     gDPSetPrimColor(gdl++, 0, 0, 0x60, 0x60, 0x80, k);
                 }
-                dsdx = (sExhaustTextures_2->e[0].w << 13) / size;
+                dsdx = (sExhaustTextures->tex[0].width << 13) / size;
                 hh = size * 2 / 3;
-                dtdy = (sExhaustTextures_2->e[0].h << 10) / hh;
+                dtdy = (sExhaustTextures->tex[0].height << 10) / hh;
                 gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                 gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
                                     (sy + hh / 2) << 2, G_TX_RENDERTILE, 0, 0, dsdx, dtdy);
@@ -745,18 +691,18 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
     }
 
     for (i = 0; i < 96; i++) {
-        if (sParticles_4[i].life >= 0 && sParticles_4[i].type == 1) {
-            if (project(&sParticles_4[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
+        if (sParticles[i].life >= 0 && sParticles[i].type == PARTICLE_MUD) {
+            if (project(&sParticles[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (sx < 0 || gScreenWidth < sx || sy < 0 || gScreenHeight < sy) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else {
-                gDPLoadTextureBlock(gdl++, sClodTextures_2->e[i & 3].img, G_IM_FMT_IA, G_IM_SIZ_8b,
-                                    sClodTextures_2->e[i & 3].w * 8, sClodTextures_2->e[i & 3].h, 0, G_TX_CLAMP, G_TX_CLAMP, 5,
+                gDPLoadTextureBlock(gdl++, sClodTextures->tex[i & 3].data, G_IM_FMT_IA, G_IM_SIZ_8b,
+                                    sClodTextures->tex[i & 3].width * 8, sClodTextures->tex[i & 3].height, 0, G_TX_CLAMP, G_TX_CLAMP, 5,
                                     5, G_TX_NOLOD, G_TX_NOLOD);
                 if (w != 0) {
                     size = 15000 / w;
@@ -767,7 +713,7 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                     if (size > 24) {
                         size = 24;
                     }
-                    k = ((sParticles_4[i].max - sParticles_4[i].life) << 9) / sParticles_4[i].max + 0x100;
+                    k = ((sParticles[i].maxLife - sParticles[i].life) << 9) / sParticles[i].maxLife + 0x100;
                     if (k > 400) {
                         k = 400;
                     }
@@ -775,13 +721,13 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                     if (size < 3) {
                         size = 3;
                     }
-                    dsdx = (sClodTextures_2->e[0].w << 13) / size;
+                    dsdx = (sClodTextures->tex[0].width << 13) / size;
                     hh = size * 2 / 3;
-                    dtdy = (sClodTextures_2->e[0].h << 10) / hh;
-                    a = sParticles_4[i].color;
-                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r2 * sParticles_4[i].r) >> 8,
-                                    (gSurfaceTable_6[a].g2 * sParticles_4[i].g) >> 8, (gSurfaceTable_6[a].b2 * sParticles_4[i].b) >> 8,
-                                    (sParticles_4[i].life << 7) / sParticles_4[i].max + 0x40);
+                    dtdy = (sClodTextures->tex[0].height << 10) / hh;
+                    a = sParticles[i].surface;
+                    gDPSetPrimColor(gdl++, 0, 0, (gSurfaceTable_6[a].r2 * sParticles[i].r) >> 8,
+                                    (gSurfaceTable_6[a].g2 * sParticles[i].g) >> 8, (gSurfaceTable_6[a].b2 * sParticles[i].b) >> 8,
+                                    (sParticles[i].life << 7) / sParticles[i].maxLife + 0x40);
                     gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                     gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
                                         (sy + hh / 2) << 2, G_TX_RENDERTILE, 0, 0, dsdx, dtdy);
@@ -794,25 +740,25 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
     if (gNumViews == 1) {
         gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, 255);
         for (i = 0; i < 96; i++) {
-            if (sParticles_4[i].life >= 0 && sParticles_4[i].type == 5) {
-                if (project(&sParticles_4[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
+            if (sParticles[i].life >= 0 && sParticles[i].type == PARTICLE_SPARKLE) {
+                if (project(&sParticles[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                     if (gNumViews == 1) {
-                        sParticles_4[i].life = -1;
+                        sParticles[i].life = -1;
                     }
                 } else if (sx < 0 || gScreenWidth < sx || sy < 0 || gScreenHeight < sy) {
                     if (gNumViews == 1) {
-                        sParticles_4[i].life = -1;
+                        sParticles[i].life = -1;
                     }
                 } else {
-                    alpha = (sParticles_4[i].max - sParticles_4[i].life) / 2;
+                    alpha = (sParticles[i].maxLife - sParticles[i].life) / 2;
                     if (alpha >= 3) {
                         alpha = 5 - alpha;
                     }
                     if (alpha >= 0) {
                         if (last != alpha) {
                             last = alpha;
-                            gDPLoadTextureBlock(gdl++, sSparkleTextures_2->e[alpha].img, G_IM_FMT_IA, G_IM_SIZ_8b,
-                                                sSparkleTextures_2->e[alpha].w * 8, sSparkleTextures_2->e[alpha].h, 0, G_TX_CLAMP, G_TX_CLAMP,
+                            gDPLoadTextureBlock(gdl++, sSparkleTextures->tex[alpha].data, G_IM_FMT_IA, G_IM_SIZ_8b,
+                                                sSparkleTextures->tex[alpha].width * 8, sSparkleTextures->tex[alpha].height, 0, G_TX_CLAMP, G_TX_CLAMP,
                                                 5, 5, G_TX_NOLOD, G_TX_NOLOD);
                         }
                         if (w != 0) {
@@ -827,9 +773,9 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
                             if (size < 15) {
                                 size = 15;
                             }
-                            dsdx = (sSparkleTextures_2->e[alpha].w << 13) / size;
+                            dsdx = (sSparkleTextures->tex[alpha].width << 13) / size;
                             hh = size * 2 / 3;
-                            dtdy = (sSparkleTextures_2->e[alpha].h << 10) / hh;
+                            dtdy = (sSparkleTextures->tex[alpha].height << 10) / hh;
                             gDPSetPrimDepth(gdl++, sz - 0x40, 0);
                             gSPTextureRectangle(gdl++, (sx - size / 2) << 2, (sy - hh / 2) << 2, (sx + size / 2) << 2,
                                                 (sy + hh / 2) << 2, G_TX_RENDERTILE, 0, 0, dsdx, dtdy);
@@ -844,14 +790,14 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2) {
     gDPSetRenderMode(gdl++, 0x442230, 0);
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
     for (i = 0; i < 96; i++) {
-        if (sParticles_4[i].life >= 0 && sParticles_4[i].type == 2) {
-            if (project(&sParticles_4[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
+        if (sParticles[i].life >= 0 && sParticles[i].type == PARTICLE_SPARK) {
+            if (project(&sParticles[i].pos, view, arg2, &sx, &sy, &sz, &w) != 0) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else if (sx < 0 || gScreenWidth < sx || sy < 0 || gScreenHeight < sy) {
                 if (gNumViews == 1) {
-                    sParticles_4[i].life = -1;
+                    sParticles[i].life = -1;
                 }
             } else {
                 w = 0x7F - (w << 7) / 2000;
@@ -891,13 +837,13 @@ Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf) {
     Vec3i vel;
     volatile s32 vv;
 
-    if (sRainEnabled == 0 || (!(gCamZoneState & 1) && (gCamSegFlags & 0x40))) {
+    if (sRainEnabled == 0 || (!(gCamZoneState[0].flags & 1) && (gCamSegFlags[0] & 0x40))) {
         return gdl;
     }
     gdl = render_set_viewport_2(gdl, mtx, 0);
 
-    t = gCamPos_2.x - sRainLastCamPos.x;
-    r = gCamPos_2.z - sRainLastCamPos.z;
+    t = gCamPos[0].x - sRainLastCamPos.x;
+    r = gCamPos[0].z - sRainLastCamPos.z;
     fwd = (((t) * SIN(gCamYaw[0])) >> 14) + (((r) * COS(gCamYaw[0])) >> 14);
     fwd = -fwd;
     side = (((r) * SIN(gCamYaw[0])) >> 14) - (((t) * COS(gCamYaw[0])) >> 14);
@@ -981,15 +927,15 @@ Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf) {
         g->words.w0 = 0xDA380007;
         g->words.w1 = mtx;
     }
-    sRainLastCamPos = gCamPos_2;
+    sRainLastCamPos = gCamPos[0];
     sRainLastCamYaw = gCamYaw[0];
     if (gPauseMenu == 0) {
         w = (random_byte_2() << 7) + 8000;
         x = random_byte_2() * w / 256 - w / 2;
         t = ((x * SIN(gCamYaw[0])) >> 14) - ((w * COS(gCamYaw[0])) >> 14);
         r = ((w * SIN(gCamYaw[0])) >> 14) + ((x * COS(gCamYaw[0])) >> 14);
-        x = t + gCamPos_2.x;
-        w = r + gCamPos_2.z;
+        x = t + gCamPos[0].x;
+        w = r + gCamPos[0].z;
         y = height_get_ground(x, 0x8000, w);
         r = (gGroundSurface >> 4) & 0xF;
         if (gGroundFound != 0 && (gCurTrack_2 - gTracks != 11 || r != 6)) {
@@ -1006,14 +952,14 @@ Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf) {
     return gdl;
 }
 
-void particles_init(s32 p)
+void particles_init(s32 surfaces)
 {
     sParticles = mem_alloc_dbg(0xD80, 0, D_800D6D00, 0x60);
     mem_fill((u8 *)sParticles, 0, 0xD80);
     sParticleLast = 0;
     mem_fill(sExhaustPuffTimers, 0, 0x40);
     mem_fill(sSplashSoundTime, 0, 0x20);
-    gSurfaceTablePtr = p;
+    gSurfaceTablePtr = surfaces;
     particles_update();
 }
 
@@ -1021,11 +967,11 @@ void particles_free(void) {
     mem_free(sParticles);
 }
 
-void particles_start_dust_cloud(Vec3f *src, s32 val)
+void particles_start_dust_cloud(Vec3f *pos, s32 rider)
 {
     Vec3f *dst = &sDustCloudPos;
-    *dst = *src;
-    sDustCloudBike = val;
+    *dst = *pos;
+    sDustCloudBike = rider;
     sDustCloudStart = gRaceFrame;
 }
 
@@ -1091,8 +1037,8 @@ void particles_project_point(f32 *v, s32 *a1, s32 *a2, s32 *a3, s32 *a4, s32 a5,
     }
 }
 
-void particles_start_exhaust_puff(s32 param_1)
+void particles_start_exhaust_puff(s32 rider)
 {
     u32 r = random_byte();
-    sExhaustPuffTimers[param_1 * 2 + (r & 1)] = 0xF;
+    sExhaustPuffTimers[rider * 2 + (r & 1)] = 0xF;
 }

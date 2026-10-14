@@ -7,6 +7,9 @@ extern Obj_3 *D_800E1B78;
 
 extern PodiumCameraClip sPodiumCameraClips[];
 
+/* view 0's camera; every store is kept */
+#define CAM0 (*(volatile Vec3i *)&gCamPos[0])
+
 void podium_update_camera(void)
 {
     s32 t = sPodiumFrame;
@@ -30,10 +33,10 @@ void podium_update_camera(void)
     o = t * 12;
     p = (PodiumCamFrame *)((u8 *)sPodiumCameraClips[n].clip->frames + o);
     A = p->x;
-    gCamPos_5.x = A;
+    CAM0.x = A;
     B = p->z;
     B = (s16)B;
-    gCamPos_5.z = B;
+    CAM0.z = B;
     tp = gCosTable;
     ang = (s16)sPodiumYaw >> 4;
     s = tp[ang & 0xFFF];
@@ -42,16 +45,16 @@ void podium_update_camera(void)
     bs = B * s;
     Y = (bs + A * c) >> 14;
     X = (as - B * c) >> 14;
-    gCamPos_5.z = Y;
+    CAM0.z = Y;
     x2 = sPodiumPos_2.x;
     y2 = Y + ((volatile Vec *)&sPodiumPos_2)->z;
-    gCamPos_5.x = X;
-    gCamPos_5.x = X + x2;
-    gCamPos_5.z = y2;
-    gCamPos_5.y = p->y + sPodiumPos_2.y;
-    gCamPitch_2 = p->pitch;
-    gCamRoll_2 = p->roll;
-    gCamYaw_2 = p->yaw + sPodiumYaw;
+    CAM0.x = X;
+    CAM0.x = X + x2;
+    CAM0.z = y2;
+    CAM0.y = p->y + sPodiumPos_2.y;
+    gCamPitch[0] = p->pitch;
+    gCamRoll[0] = p->roll;
+    gCamYaw[0] = p->yaw + sPodiumYaw;
 }
 
 extern PodiumRiderClip *sPodiumRiderClips[];

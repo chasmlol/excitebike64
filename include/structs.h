@@ -9,10 +9,6 @@ typedef struct Dyn Dyn;
 typedef struct Slot_2 Slot_2;
 typedef struct MtxS_2 MtxS_2;
 typedef struct Obj_5 Obj_5;
-typedef struct Seg_3 Seg_3;
-typedef struct Model Model;
-typedef struct ImgSet ImgSet;
-typedef struct Hdr Hdr;
 typedef struct Res_3 Res_3;
 typedef struct Obj_7 Obj_7;
 typedef struct Bike_4 Bike_4;
@@ -31,33 +27,20 @@ typedef struct Bike_12 Bike_12;
 typedef struct Ent_12 Ent_12;
 typedef struct Obj_10 Obj_10;
 typedef struct Obj_11 Obj_11;
-typedef struct Model_2 Model_2;
-typedef struct List_4 List_4;
-typedef struct Lst Lst;
-typedef struct Ent_19 Ent_19;
-typedef struct Ent_22 Ent_22;
 typedef struct Player_10 Player_10;
 typedef struct Obj_13 Obj_13;
 typedef struct Obj_14 Obj_14;
 typedef struct Bike_16 Bike_16;
-typedef struct Rec6 Rec6;
 typedef struct Obj_15 Obj_15;
 typedef struct Bike_17 Bike_17;
-typedef struct Rec_4 Rec_4;
 typedef struct Ent_23 Ent_23;
 typedef struct Bike_18 Bike_18;
-typedef struct Ent_2 Ent_2;
-typedef struct S S;
 typedef struct Obj_17 Obj_17;
 typedef struct Obj_18 Obj_18;
 typedef struct Actor Actor;
 typedef struct Obj_20 Obj_20;
 typedef struct Obj_21 Obj_21;
-typedef struct Out_2 Out_2;
 typedef struct Obj_22 Obj_22;
-typedef struct Area_2 Area_2;
-typedef struct Hdr_5 Hdr_5;
-typedef struct Poly_2 Poly_2;
 typedef struct Obj_27 Obj_27;
 typedef struct Obj_29 Obj_29;
 typedef struct Node_6 Node_6;
@@ -70,8 +53,6 @@ typedef struct Obj_30 Obj_30;
 typedef struct Joint_2 Joint_2;
 typedef struct Obj_31 Obj_31;
 typedef struct Row_4 Row_4;
-typedef struct Gen Gen;
-typedef struct Elem_2 Elem_2;
 typedef struct Pt_4 Pt_4;
 typedef struct Body_4 Body_4;
 typedef struct Obj_35 Obj_35;
@@ -80,16 +61,12 @@ typedef struct Ent_47 Ent_47;
 typedef struct Bike_33 Bike_33;
 typedef struct Bike_34 Bike_34;
 typedef struct Obj_40 Obj_40;
-typedef struct Rec_33 Rec_33;
 typedef struct Obj_42 Obj_42;
 typedef struct Obj_43 Obj_43;
 typedef struct Spawn Spawn;
 typedef struct Player_22 Player_22;
 typedef struct Ent_65 Ent_65;
 typedef struct Obj_47 Obj_47;
-typedef struct Box_4 Box_4;
-typedef struct Tri3_2 Tri3_2;
-typedef struct Mdl_2 Mdl_2;
 typedef struct Obj_53 Obj_53;
 typedef struct Obj_55 Obj_55;
 typedef struct Ent_78 Ent_78;
@@ -98,8 +75,6 @@ typedef struct Ent_79 Ent_79;
 typedef struct Obj_58 Obj_58;
 typedef struct Obj_59 Obj_59;
 typedef struct Obj_60 Obj_60;
-typedef struct Mdl2 Mdl2;
-typedef struct Obj2 Obj2;
 typedef struct Item_8 Item_8;
 typedef struct Obj_61 Obj_61;
 typedef struct Obj_62 Obj_62;
@@ -126,9 +101,6 @@ typedef struct Hdr_13 Hdr_13;
 typedef struct Slot_17 Slot_17;
 typedef struct Stream_2 Stream_2;
 typedef struct Blk_29 Blk_29;
-typedef struct Obj_82 Obj_82;
-typedef struct ListHdr ListHdr;
-typedef struct ResFile_2 ResFile_2;
 typedef struct Hdr_14 Hdr_14;
 typedef struct Src_4 Src_4;
 typedef struct Src_5 Src_5;
@@ -204,11 +176,6 @@ typedef struct MtxS {
     s16 i[4][4];
     u16 f[4][4];
 } MtxS;
-
-typedef struct {
-    u32 a;
-    u32 b;
-} Entry;
 
 typedef struct {
     u8 pad[0x1C];
@@ -490,11 +457,6 @@ typedef struct {
     u32 w0, w1;
 } Blk_2;
 
-typedef struct Facet_2 {
-    u8 p00[8];
-    Vec v[3];
-} Facet_2;
-
 typedef struct Model_4 {
     s32 f0;
     Vec3i pos;    /* 0x04 */
@@ -538,39 +500,6 @@ typedef struct Ent_39 {
     u16 f6E;
     u8 p4[0x10];
 } Ent_39;
-
-typedef struct Field {
-    s32 x;
-    s32 z;
-    s32 f8;
-    s32 seed;           /* 0x0C */
-    s32 sp;             /* 0x10 */
-    u32 stack[64];      /* 0x14 */
-    u8 rowE[129];       /* 0x114 */
-    u8 colE[129];       /* 0x195 */
-    u8 buf[2][128];     /* 0x216 */
-    s32 toggle;         /* 0x318 */
-    u8 *map;            /* 0x31C */
-} Field;
-
-typedef struct Obj_34 {
-    s32 x;      /* 0x324 */
-    s32 val;    /* 0x328 */
-    s32 z;      /* 0x32C */
-    s32 f330;
-    s32 f334;
-    s32 type;   /* 0x338 */
-    s32 idx;    /* 0x33C */
-} Obj_34;
-
-typedef struct Field_2 {
-    s32 x;
-    s32 z;
-    u8 pad[0x314];
-    s8 *map;    /* 0x31C */
-    s32 count;  /* 0x320 */
-    Obj_34 obj[8]; /* 0x324 */
-} Field_2;
 
 typedef struct Node_53 Node_53;
 
@@ -981,11 +910,6 @@ typedef struct {
 
 typedef struct { u16 a, b; } Pal_2;
 
-typedef struct Obj_51 {
-    s32 pad0;
-    u16 *src;
-} Obj_51;
-
 typedef struct Obj_52 {
     u8 pad0[0x48];
     f32 f48;
@@ -1312,6 +1236,23 @@ typedef struct Spr {
     u8 r, g, b, a;
 } Spr;
 
+/* The structures of the track, its models and the effects drawn on it. */
+#include "structs/model.h"
+#include "structs/track.h"
+#include "structs/camera.h"
+#include "structs/particle.h"
+#include "structs/snow.h"
+#include "structs/decal.h"
+#include "structs/sun.h"
+#include "structs/desert.h"
+#include "structs/shatter.h"
+#include "structs/palmod.h"
+#include "structs/map.h"
+#include "structs/flash.h"
+#include "structs/arned.h"
+#include "structs/resman.h"
+
+/* The game's setup, the race, the season and the podium. */
 #include "structs/race.h"
 #include "structs/game.h"
 #include "structs/hacks.h"

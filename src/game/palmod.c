@@ -1,58 +1,39 @@
 #include "game.h"
 
-typedef struct Rec_40 {
-    u8 *buf;
-    s32 val;
-    Obj_51 *obj;
-    u16 *src;
-    u8 *dst;
-} Rec_40;
-
-extern Rec_40 *sPalModEntries;
-
-void palmod_register(Obj_51 *a, s32 b)
+void palmod_register(TexSet *set, s32 kind)
 {
     s32 i;
     s32 k;
     s32 save;
 
-    if (a != NULL && a->src != NULL) {
+    if (set != NULL && set->pal != NULL) {
         if (sPalModCount >= sPalModMax) fatal_halt(1);
-        sPalModEntries[sPalModCount].val = b;
-        sPalModEntries[sPalModCount].obj = a;
-        sPalModEntries[sPalModCount].buf = mem_alloc_dbg(0x500, 0, D_800D8E10, 0x8C);
-        sPalModEntries[sPalModCount].src = a->src;
-        sPalModEntries[sPalModCount].dst = sPalModEntries[sPalModCount].buf + 0x300;
-        __builtin_memcpy(sPalModEntries[sPalModCount].dst, sPalModEntries[sPalModCount].src, 0x200);
+        sPalModEntries[sPalModCount].kind = kind;
+        sPalModEntries[sPalModCount].set = set;
+        sPalModEntries[sPalModCount].rgb = mem_alloc_dbg(0x500, 0, D_800D8E10, 0x8C);
+        sPalModEntries[sPalModCount].pal[0] = set->pal;
+        sPalModEntries[sPalModCount].pal[1] = (u16 *)(sPalModEntries[sPalModCount].rgb + 0x300);
+        __builtin_memcpy(sPalModEntries[sPalModCount].pal[1], sPalModEntries[sPalModCount].pal[0], 0x200);
         k = 0;
         for (i = 0; i < 0x100; i++) {
             if (gCheatFlags & 0x80) {
-                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 6) & 0x1F;
-                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 1) & 0x1F;
-                sPalModEntries[sPalModCount].buf[k++] = a->src[i] >> 11;
+                sPalModEntries[sPalModCount].rgb[k++] = (set->pal[i] >> 6) & 0x1F;
+                sPalModEntries[sPalModCount].rgb[k++] = (set->pal[i] >> 1) & 0x1F;
+                sPalModEntries[sPalModCount].rgb[k++] = set->pal[i] >> 11;
             } else {
-                sPalModEntries[sPalModCount].buf[k++] = a->src[i] >> 11;
-                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 6) & 0x1F;
-                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 1) & 0x1F;
+                sPalModEntries[sPalModCount].rgb[k++] = set->pal[i] >> 11;
+                sPalModEntries[sPalModCount].rgb[k++] = (set->pal[i] >> 6) & 0x1F;
+                sPalModEntries[sPalModCount].rgb[k++] = (set->pal[i] >> 1) & 0x1F;
             }
         }
         i = gDesaturation;
         gDesaturation = 0;
-        palmod_desaturate_rgb(a->src, sPalModEntries[sPalModCount].buf);
+        palmod_desaturate_rgb(set->pal, sPalModEntries[sPalModCount].rgb);
         gDesaturation = i;
-        __builtin_memcpy(sPalModEntries[sPalModCount].dst, a->src, 0x200);
+        __builtin_memcpy(sPalModEntries[sPalModCount].pal[1], set->pal, 0x200);
         sPalModCount++;
     }
 }
-
-typedef struct {
-    u8 *src;
-    s32 f4;
-    Trk_2 *f8;
-    u16 *dst[2];
-} PalEnt_2;
-
-extern PalEnt_2 *sPalModEntries_2;
 
 static inline void put(u16 *d, s32 *r, s32 *g, s32 *b) {
     *d = (*r << 11) | (*g << 6) | (*b << 1) | (*d & 1);
@@ -80,7 +61,7 @@ void palmod_update(void) {
     s32 v;
 
     for (i = 0; i < sPalModCount; i++) {
-        sPalModEntries_2[i].f8->f4 = (s32)sPalModEntries_2[i].dst[gGfxFrameIndex];
+        sPalModEntries[i].set->pal = sPalModEntries[i].pal[gGfxFrameIndex];
     }
     if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) == 11 && gNumScreens == 1 && gPauseMenu == 0) {
         if (gLightningFlash != 0) {
@@ -108,8 +89,8 @@ void palmod_update(void) {
         if (v != sPalModState[gGfxFrameIndex]) {
             sPalModState[gGfxFrameIndex] = v;
             for (i = 0; i < sPalModCount; i++) {
-                dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
-                src = sPalModEntries_2[i].src;
+                dst = sPalModEntries[i].pal[gGfxFrameIndex];
+                src = sPalModEntries[i].rgb;
                 for (k = 0; k < 256; k++) {
                     r0 = *src++;
                     g0 = *src++;
@@ -134,8 +115,8 @@ void palmod_update(void) {
         if (gDesaturation != 0) {
             for (i = 0; i < sPalModCount; i++) {
                 s32 r, g, b, a, dr, dg, db;
-                u16 *dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
-                u8 *src = sPalModEntries_2[i].src;
+                u16 *dst = sPalModEntries[i].pal[gGfxFrameIndex];
+                u8 *src = sPalModEntries[i].rgb;
                 for (j1 = 0; j1 < 256; j1++) {
                     r = *src++;
                     g = *src++;
@@ -157,8 +138,8 @@ void palmod_update(void) {
             if (sPalModState[gGfxFrameIndex] != k) {
                 sPalModState[gGfxFrameIndex] = k;
                 for (i = 0; i < sPalModCount; i++) {
-                    dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
-                    src = sPalModEntries_2[i].src;
+                    dst = sPalModEntries[i].pal[gGfxFrameIndex];
+                    src = sPalModEntries[i].rgb;
                     for (j = 0; j < 256; j++) {
                         r0 = *src++;
                         g0 = *src++;
@@ -182,8 +163,8 @@ void palmod_update(void) {
             if (k != sPalModState[gGfxFrameIndex]) {
                 sPalModState[gGfxFrameIndex] = k;
                 for (i = 0; i < sPalModCount; i++) {
-                    dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
-                    src = sPalModEntries_2[i].src;
+                    dst = sPalModEntries[i].pal[gGfxFrameIndex];
+                    src = sPalModEntries[i].rgb;
                     for (j = 0; j < 256; j++) {
                         r0 = *src++;
                         g0 = *src++;
@@ -212,26 +193,20 @@ void palmod_init(s32 p)
     } else {
         sPalModMax = 8;
     }
-    sPalModEntries = (s32)mem_alloc_dbg(sPalModMax * 0x14, 0, D_800D8E10, 0x74);
+    sPalModEntries = mem_alloc_dbg(sPalModMax * sizeof(PalMod), 0, D_800D8E10, 0x74);
 }
-
-typedef struct {
-    s32 w0, w1, w2, w3, w4;
-} Ent_70;
-
-extern Ent_70 *sPalModEntries_3;
 
 void palmod_free(void)
 {
     s32 i;
 
     for (i = 0; i < sPalModCount; i++) {
-        mem_free(sPalModEntries_3[i].w0);
+        mem_free(sPalModEntries[i].rgb);
     }
     D_800F14D4 = 0;
     D_800F14E4 = 0;
     sPalModCount = 0;
-    mem_free((s32)sPalModEntries_3);
+    mem_free(sPalModEntries);
 }
 
 void palmod_sepia(s32 a0, s32 *a1, s32 *a2, s32 *a3)
