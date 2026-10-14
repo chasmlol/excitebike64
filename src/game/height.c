@@ -89,7 +89,8 @@ void height_init(TrackModelList *sections, TrackModelList *objects, WallMesh *wa
             }
         }
         sHeightGridData = mem_alloc_dbg((total + 0x100) * 2, 0, (s32)sStrHeightC, 0xDA);
-        sHeightGrid = mem_alloc_dbg(HEIGHT_GRID_SIZE * HEIGHT_GRID_SIZE * sizeof(HeightCell *), 0, (s32)sStrHeightC, 0xDB);
+        sHeightGrid = mem_alloc_dbg(HEIGHT_GRID_SIZE * HEIGHT_GRID_SIZE * sizeof(HeightCell *), 0, (s32)sStrHeightC,
+                                    0xDB);
         n = 0;
         list = gZBuffer_2 + 0x100;
         for (i = 0; (s32)i < HEIGHT_GRID_SIZE * HEIGHT_GRID_SIZE; i++) {
@@ -603,8 +604,8 @@ void height_get_ground_normal(f32 *out)
     out[2] = out[2] / len;
 }
 
-/* Collects into gGroundTris (at most GROUND_MAX_TRIS) the ground triangles in the box (x0, z0)-(x1, z1) (mm), leaving out
-   bridge triangles not just below hy. */
+/* Collects into gGroundTris (at most GROUND_MAX_TRIS) the ground triangles in the box (x0, z0)-(x1, z1) (mm),
+   leaving out bridge triangles not just below hy. */
 void height_collect_ground_tris(s32 x0, s32 z0, s32 x1, s32 z1, s32 hy) {
 
     s32 box[4];
@@ -1008,9 +1009,9 @@ u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag)
 }
 
 
-/* Gathers the wall edges and triangles of the grid cells around the box (x0, z0)-(x1, z1) (mm) into sWallEdges
-   and sWallTris (at most WALL_MAX_GATHERED each; bit 0 of nz marks the ones already taken); on the desert, the objects of the
-   tiles there into sDesertObjs (at most 8). */
+/* Gathers the wall edges and triangles of the grid cells around the box (x0, z0)-(x1, z1) (mm) into sWallEdges and
+   sWallTris (at most WALL_MAX_GATHERED each; bit 0 of nz marks the ones already taken); on the desert, the objects
+   of the tiles there into sDesertObjs (at most 8). */
 void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1)
 {
     s32 px[3];

@@ -135,9 +135,9 @@ void cam_update(void) {
             if (n != gCamLastModes[kk]) changed = 1;
             gCamLastModes[kk] = n;
         }
-        if (gGame.mode == GAME_MODE_TUTORIAL && (gEvent.flags & 0x80)) {
+        if (gGame.mode == GAME_MODE_TUTORIAL && (gEvent.flags & EVENT_CAM_RESET)) {
             changed = 1;
-            gEvent.flags &= ~0x80;
+            gEvent.flags &= ~EVENT_CAM_RESET;
         }
         if (cam_find_zone() != 0) {
             gCamZoneState[gCamView].flags |= CAM_ZONE_STATE_IN;
@@ -147,7 +147,8 @@ void cam_update(void) {
         if (gDebugFreeze != 0) {
             func_8002D888(&gRiders[sCamTarget], &out); /* empty */
         } else {
-            if ((gReplayPlayback != 0 || gCreditsMode != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN))) &&
+            if ((gReplayPlayback != 0 || gCreditsMode != 0 ||
+                 (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN))) &&
                 (gCamZoneState[gCamView].flags & CAM_ZONE_STATE_IN)) {
                 if (!(gCamZoneState[gCamView].flags & CAM_ZONE_STATE_ON)) {
                     gCamZoneState[gCamView].flags |= CAM_ZONE_STATE_ON;
@@ -179,7 +180,8 @@ void cam_update(void) {
                         pad = 1;
                     }
                     /* the Camera button: the next mode the button cycles through */
-                    if ((gPlayerInputs[pad] & INPUT_C_UP) && !(gPlayerInputsPrev_3[pad] & INPUT_C_UP) && !(gEvent.flags & 0x800) &&
+                    if ((gPlayerInputs[pad] & INPUT_C_UP) && !(gPlayerInputsPrev_3[pad] & INPUT_C_UP) &&
+                        !(gEvent.flags & EVENT_MESSAGE) &&
                         gEvent.state != 0 && gEvent.allFinished == 0) {
                         s32 md = gRiders[sCamTarget].camMode;
                         if (md != CAM_MODE_FALL_VIEW && gGame.mode != GAME_MODE_HILL_CLIMB) {
@@ -497,7 +499,7 @@ done:
 #define SIN16(i) gCosTable[(((i) >> 4) - 0x400) & 0xFFF]
 #define COS16(i) gCosTable[((i) >> 4) & 0xFFF]
 
-/* Soccer: after a goal (gEvent.flags & 0xF: the scoring side) a sweep around the ball or the scorer, else the
+/* Soccer: after a goal (EVENT_SCORED: the scoring side) a sweep around the ball or the scorer, else the
    chase camera. Returns what its callees leave in v0: cam_snap_to_2 and cam_update_chase_2 are declared to return
    s32. */
 s32 cam_mode_soccer(Rider *rider, CamOut *out) {
@@ -511,7 +513,7 @@ s32 cam_mode_soccer(Rider *rider, CamOut *out) {
     s32 scorer;
     s32 ang, q, ang3, q3;
 
-    goal = gEvent.flags & 0xF;
+    goal = gEvent.flags & EVENT_SCORED;
     if (goal != 0) {
     scorer = goal - 1;
     if (scorer == ((rider - gRiders) >> ((gGame.numPlayers - 1) >> 1))) {
@@ -732,7 +734,8 @@ first:
     d *= damp;
     spring->pos += vel;
     do { spring->vel = d; } while (0);
-    if ((mode = gGame.mode, yaw = (u16)rider->heading, mode != GAME_MODE_TUTORIAL) && !(gGame.flags & GAME_FLAG_REPLAY)) {
+    if ((mode = gGame.mode, yaw = (u16)rider->heading, mode != GAME_MODE_TUTORIAL) &&
+        !(gGame.flags & GAME_FLAG_REPLAY)) {
         if ((rider->input & INPUT_C_LEFT) && gEvent.state != 0) {
             yaw += -0x8000;
         }
@@ -774,7 +777,8 @@ first:
     out->yaw = (s16)yaw;
     out->roll = 0;
     if (gGame.mode != GAME_MODE_TUTORIAL) {
-        if ((rider->input & INPUT_C_LEFT) || ((gPlayerInputs_2 & INPUT_A) && gEvent.state == 0 && !(gGame.flags & GAME_FLAG_REPLAY))) {
+        if ((rider->input & INPUT_C_LEFT) ||
+            ((gPlayerInputs_2 & INPUT_A) && gEvent.state == 0 && !(gGame.flags & GAME_FLAG_REPLAY))) {
             cam_snap_to(out);
         } else if (rider->prevInput & INPUT_C_LEFT) {
             cam_snap_to_moving(out, &rider->bike.vel.x);
@@ -786,7 +790,7 @@ other:
         cam_smooth_to(out);
     }
     sCamShakeY[gCamView] = 0;
-    if (rider->rearWheel.surface != NULL && rider->airFrames < 6 && (rider->rearWheel.surface->flags & 0x10)) { /* bumpy */
+    if (rider->rearWheel.surface != NULL && rider->airFrames < 6 && (rider->rearWheel.surface->flags & SURFACE_SHAKE)) {
         sCamShakeY[gCamView] = -(s32)(rider->rearWheel.bumpNoise * 1000.0f) * 2;
     }
     if (rider->roughLanding != 0) {

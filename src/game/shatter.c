@@ -240,7 +240,8 @@ void shatter_check_riders(void)
         if (rider->inactive != 0) continue;
         for (j = 0; j < sShatterCount; j++) {
             obj = &sShatterObjects[j];
-            if (obj->timer < 0 && (addr = (s32)obj->obj - 4, !(gObjectFlags[(addr - (s32)gTrackObjects) >> 5] & OBJ_WALL_GROUP))) {
+            if (obj->timer < 0 &&
+                (addr = (s32)obj->obj - 4, !(gObjectFlags[(addr - (s32)gTrackObjects) >> 5] & OBJ_WALL_GROUP))) {
                 /* the bike in 16 mm units, and its distance d from the diagonal */
                 x = (s32)(rider->bike.pos.x * 1000.0f) >> 4;
                 y = (s32)(rider->bike.pos.z * 1000.0f) >> 4;

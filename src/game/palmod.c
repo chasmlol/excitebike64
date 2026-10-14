@@ -72,7 +72,8 @@ void palmod_update(void) {
         sPalModEntries[i].set->pal = sPalModEntries[i].pal[gGfxFrameIndex];
     }
     /* (gCurTrack_6 - gTracks) / 0xA0, the track index, as a multiplication */
-    if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) == TRACK_RAINFOREST_RUN && gNumScreens == 1 && gPauseMenu == 0) {
+    if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) == TRACK_RAINFOREST_RUN && gNumScreens == 1 &&
+        gPauseMenu == 0) {
         if (gLightningFlash != 0) {
             gLightningFlash--;
         }

@@ -41,6 +41,15 @@ typedef struct PrimModel {
 #define RIDER_LOD_MID    2
 #define RIDER_LOD_HIGH   3
 
+/* render_draw_image's flags */
+#define IMG_HALF_BAND 0x001 /* bands of half as many rows */
+#define IMG_8BIT      0x002 /* 8-bit texels, else 4-bit CI */
+#define IMG_IA        0x004 /* 8-bit IA, else CI */
+#define IMG_UPRIGHT   0x020 /* rows top first (images are kept upside down, prim_flip_images) */
+#define IMG_TURNED    0x040 /* turned 180 degrees */
+#define IMG_WIDTH     0x080 /* drawn `width` texels wide */
+#define IMG_HALF_SIZE 0x100
+
 /* TexEntry.flags */
 #define TEX_8BIT      0x01 /* 8-bit texels, else 4-bit */
 #define TEX_CUTOUT    0x02 /* alpha-tested: the model switches the render mode (prim_build_dl's callback) */

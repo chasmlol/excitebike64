@@ -233,6 +233,7 @@ void prim_init(void)
     sPrimTexSizeShift = 0;
 }
 
+/* Nothing to free. */
 void prim_exit(void)
 {
 }

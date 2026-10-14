@@ -92,6 +92,11 @@
 #define SURFACE_CRASH_ON_TOUCH      0x0080 /* a wheel on it crashes the rider */
 #define SURFACE_OUT_OF_BOUNDS       0x0100 /* both wheels on it for 10 frames: respawn */
 
+/* gEvent.flags */
+#define EVENT_SCORED            0x0000F /* soccer: the team that scored (1 or 2), while goalTimer runs */
+#define EVENT_CAM_RESET         0x00080 /* tutorial: the riders were reset, cut the camera */
+#define EVENT_MESSAGE           0x00800 /* tutorial: a message holds the game (tutorialTimeout) */
+
 /* gCheatFlags: bit n is cheat n of sCheatTable */
 #define CHEAT_BIG_HEAD              0x0001
 #define CHEAT_MIRROR                0x0002

@@ -434,7 +434,7 @@ void tube_cull_sections(TrackModelList *sections, s32 view)
     if (gNumScreens == 2) {
         sCullSlope = 0x9C;
     }
-    if (gCurTrack_2 - gTracks == TRACK_EXCITE_3D && gRiders[0].camMode == 4) {
+    if (gCurTrack_2 - gTracks == TRACK_EXCITE_3D && gRiders[0].camMode == CAM_MODE_SIDE_VIEW) {
         numFar = gRiderSection[0]; /* here the player's section */
         if (numFar >= 0 && numFar < sections->count) {
             s32 refMid = sections->e[numFar].z0 + sections->e[numFar].z1;
@@ -443,7 +443,7 @@ void tube_cull_sections(TrackModelList *sections, s32 view)
                 s32 mid = sections->e[i].z0 + sections->e[i].z1;
                 sections->e[i].mask = bitsKept;
                 if (mid >= refMid - 7500 && mid <= refMid + 2500) {
-                    sections->e[i].mask = bitsKept | (1 << (view * 2));
+                    sections->e[i].mask = bitsKept | TRACK_MODEL_VISIBLE(view);
                 }
             }
         }
@@ -456,7 +456,7 @@ void tube_cull_sections(TrackModelList *sections, s32 view)
         camY = gCamPos[view].y;
         camZ = gCamPos[view].z;
         count = 0;
-        if (gRiders[view].camMode == 9) { /* the fall view */
+        if (gRiders[view].camMode == CAM_MODE_FALL_VIEW) {
             sCamSection = gRiderSection[target];
         } else {
             gGroundFound = 0;

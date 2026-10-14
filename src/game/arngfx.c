@@ -39,7 +39,8 @@ void arn_init(void)
         gTrackSections = (TrackModelList *)gUserTrackData.meshA;
         gSectionDLs = tube_build_dlists((TrackModelList *)gUserTrackData.meshA, &gTerrainTexSet, 0, 0);
         gTrackObjects = (TrackModelList *)gUserTrackData.meshB;
-        gObjectDLs = tube_build_dlists((TrackModelList *)gUserTrackData.meshB, sObjectSegs, PRIM_LOAD_TLUT | PRIM_RESET_TLUT, 1);
+        gObjectDLs = tube_build_dlists((TrackModelList *)gUserTrackData.meshB, sObjectSegs,
+                                       PRIM_LOAD_TLUT | PRIM_RESET_TLUT, 1);
         arn_apply_noise_shading(gTrackSections);
     } else {
         gTrackWallMesh = track_res_get(gGidWalCol);
@@ -262,7 +263,8 @@ Gfx *arn_draw_far(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     gSPSegment(gdl++, 7, sTexCutoutFogDL);
 
     for (i = 0; i < gTrackObjects->count; i++) {
-        if ((gTrackObjects->e[i].mask & TRACK_MODEL_VISIBLE(view)) && (gTrackObjects->e[i].mask & TRACK_MODEL_FAR(view))) {
+        if ((gTrackObjects->e[i].mask & TRACK_MODEL_VISIBLE(view)) &&
+            (gTrackObjects->e[i].mask & TRACK_MODEL_FAR(view))) {
             gdl = tube_set_anim_tex_segs(gdl, i);
             gSPDisplayList(gdl++, gObjectDLs[i]);
         }

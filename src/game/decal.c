@@ -177,6 +177,7 @@ void debug_ftoa(char *out, f32 value, s32 digits)
     *out = '\0';
 }
 
+/* |x| / 200; not called. */
 f32 func_8005CEFC(f32 x)
 {
     if (!(0.0f < x)) {
@@ -346,7 +347,7 @@ void decal_update_tire_tracks(void)
         } else if (gTireTrackTimers[i] != 0) {
             gTireTrackTimers[i]--;
         }
-        if (!(rider->rearWheel.surface->flags & 1)) gTireTrackTimers[i] = 0; /* a surface that takes tracks */
+        if (!(rider->rearWheel.surface->flags & SURFACE_TIRE_TRACKS)) gTireTrackTimers[i] = 0;
         prevSurface = sTireTrackSurface[i];
         if (rider->rearWheel.surface != prevSurface) {
             changed = 1;

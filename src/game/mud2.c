@@ -183,10 +183,10 @@ typedef struct {
     u8 b[4];
 } Col;
 
-/* Every fourth frame: dust behind each bike on a dusty surface (bursts on landing, turbo or a spray), and mud clods
-   thrown up by the turbo or a landing on mud. */
 extern Col gRiderGroundSurface_2[];
 
+/* Every fourth frame: dust behind each bike on a dusty surface (bursts on landing, turbo or a spray), and mud clods
+   thrown up by the turbo or a landing on mud. */
 void particles_emit_bike_dirt(void)
 {
     V3 pad0;
@@ -214,7 +214,7 @@ void particles_emit_bike_dirt(void)
         if (gRiderViewLod[i] == 0) continue;
         surface = gRiderGroundSurface_2[i].b[3] >> 4;
         if (rider->crashState != 0) continue;
-        if (rider->rearWheel.airTicks <= 0 && (rider->rearWheel.surface->flags & 2)) { /* dusty */
+        if (rider->rearWheel.airTicks <= 0 && (rider->rearWheel.surface->flags & SURFACE_DUST)) {
             vel.x = 0.0f;
             vel.y = 0.0f;
             vel.z = 0.0f;
@@ -256,7 +256,7 @@ void particles_emit_bike_dirt(void)
                 particle_spawn(PARTICLE_DUST, surface, (Vec3f *)&pos, (Vec3f *)&vel, sRiderLightColor[i]);
             }
         }
-        if (((rider->input & INPUT_Z) || gRaceFrame - rider->landingFrame < 10) && (rider->rearWheel.surface->flags & 4)) { /* mud */
+        if (((rider->input & INPUT_Z) || gRaceFrame - rider->landingFrame < 10) && (rider->rearWheel.surface->flags & SURFACE_CLODS)) {
             if (rider->isCpu == 0 || (random_byte() & 1)) {
                 for (j = 0; j < 2; j++) {
                     Wheel *wheel;
@@ -272,8 +272,8 @@ void particles_emit_bike_dirt(void)
     }
 }
 
-/* A bike in water: splashes either side where its body meets the water line, and on deep water the big splash and
-   a crash, else a splash sound at most every two seconds. */
+/* A bike in water: splashes either side where its body meets the water line, and on water it cannot ride through
+   the big splash and a crash, else a splash sound at most every two seconds. */
 void particles_emit_water_splash(Rider *rider)
 {
     volatile s32 pad[4];
@@ -291,7 +291,7 @@ void particles_emit_water_splash(Rider *rider)
     idx = rider - gRiders;
     surface = rider->surfaceIdx;
     if (!(1.0f < rider->speed)) goto done;
-    if (!(gSurfaceTable[surface].flags & 8)) goto done; /* water */
+    if (!(gSurfaceTable[surface].flags & SURFACE_WATER)) goto done;
 
     *(Vec3f *)point = rider->bike.pos;
     if (!tube_get_water_level((s32)(point[0] * 1000.0f), (s32)(point[2] * 1000.0f), water)) goto done;
@@ -340,7 +340,8 @@ void particles_emit_water_splash(Rider *rider)
         particle_spawn(PARTICLE_SPLASH, surface, (Vec3f *)point, (Vec3f *)dir, gParticleWhite);
     }
 
-    if ((gSurfaceTable[surface].flags & 0x180) != 0) { /* deep water */
+    /* water the rider cannot ride through: the big splash and a crash */
+    if ((gSurfaceTable[surface].flags & (SURFACE_CRASH_ON_TOUCH | SURFACE_OUT_OF_BOUNDS)) != 0) {
         if (gRiderViewLod[idx] != 0) {
             tube_spawn_splash(idx, (s32)(point[0] * 1000.0f), water[0], (s32)(point[2] * 1000.0f));
         }

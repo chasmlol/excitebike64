@@ -171,7 +171,8 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
             gPrimBoneMtx = (Mtx *)0x06000000; /* the bone matrices in segment 6 */
             texSets[1] = (s32)gRiderGfx_2[index].podiumTex;
             if (gPodiumMode != 0) {
-                prim_alloc_seg_dl(&sRiderModelCache[riderType].dl[k], model, (s32)texSets, PRIM_LOAD_TLUT | PRIM_RESET_TLUT);
+                prim_alloc_seg_dl(&sRiderModelCache[riderType].dl[k], model, (s32)texSets,
+                                  PRIM_LOAD_TLUT | PRIM_RESET_TLUT);
                 palmod_register((s32)gRiderGfx_2[index].podiumTex, 0);
                 palmod_register((s32)gRiderGfx_2[index].riderTex, 0);
             } else {
@@ -184,7 +185,8 @@ void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s
                 /* the untextured low body, for the shadows */
                 model[1] = 0x01000000;
                 gPrimBoneMtx = (Mtx *)0x06000000;
-                len = (u32)prim_build_dl(PRIM_SEGMENTED | PRIM_NO_TEXTURES | PRIM_END_DL, model, 0, gZBuffer) - (u32)gZBuffer;
+                len = (u32)prim_build_dl(PRIM_SEGMENTED | PRIM_NO_TEXTURES | PRIM_END_DL, model, 0, gZBuffer) -
+                      (u32)gZBuffer;
                 copy = mem_alloc_dbg(len, 0, sStrRenderC, 0x2A0);
                 gRiderGfx_2[0].shadowDL = copy;
                 memcpy(copy, gZBuffer, len);
@@ -476,7 +478,8 @@ void render_init(void) {
                 prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].model[j], &gRiderGfx_2[0].bikeTex, 0);
             }
             /* the untextured bike parts, for the shadows */
-            size = (s32)prim_build_dl(PRIM_NO_TEXTURES | PRIM_END_DL, sBikePartModels[i].model[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
+            size = (s32)prim_build_dl(PRIM_NO_TEXTURES | PRIM_END_DL, sBikePartModels[i].model[1], NULL,
+                                      (Gfx *)gZBuffer) - gZBuffer;
             gBikeShadowDLs[i] = mem_alloc_dbg(size, 0, sStrRenderC, 0x434);
             memcpy(gBikeShadowDLs[i], gZBuffer, size);
         }
@@ -803,7 +806,8 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
         G(gdl++, 0xF0000000, 0x073FC000);
         G(gdl++, 0xE7000000, 0);
         G(gdl++, 0xE7000000, 0);
-        gdl = render_draw_image(0, 0, &gPauseScreen.background[1], gdl, fb, 1, 1, 3, 0);
+        gdl = render_draw_image(0, 0, &gPauseScreen.background[1], gdl, fb, 1, 1, IMG_HALF_BAND | IMG_8BIT,
+                                0);
         G(gdl++, 0xFA000000, 0xE6E6E6FF);
         G(gdl++, 0xE3000C00, 0);
         G(gdl++, 0xE200001C, 0x00404240);
@@ -816,7 +820,7 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
         G(gdl++, 0xF0000000, 0x073FC000);
         G(gdl++, 0xE7000000, 0);
         G(gdl++, 0xE7000000, 0);
-        gdl = render_draw_image(0x45, 0x3D, img, gdl, fb, 1, 1, 3, 0);
+        gdl = render_draw_image(0x45, 0x3D, img, gdl, fb, 1, 1, IMG_HALF_BAND | IMG_8BIT, 0);
         G(gdl++, 0xE3001001, 0);
         G(gdl++, 0xD7000002, 0x80008000);
         G(gdl++, 0xE200001C, 0x00404240);
@@ -836,12 +840,14 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
                 } else {
                     G(gdl++, 0xFA000000, 0x4B4B4BFF);
                 }
-                gdl = render_draw_image(x, y, &gPauseScreen.volumeBar[5], gdl, fb, 1, 1, 6, 0);
+                gdl = render_draw_image(x, y, &gPauseScreen.volumeBar[5], gdl, fb, 1, 1, IMG_8BIT | IMG_IA, 0);
             }
         }
         G(gdl++, 0xFA000000, 0xD2D2D2FF);
         img = &gPauseScreen.volumeBar[6];
-        gdl = render_draw_image(0x100 - ((u8 *)img)[0] * 4, 0x78 - (((u8 *)img)[1] >> 1), img, gdl, fb, 1, 1, 6, ((u32)img & 1) >> 1);
+        /* centred; the width passes 0, written as an expression of the address in the original */
+        gdl = render_draw_image(0x100 - ((u8 *)img)[0] * 4, 0x78 - (((u8 *)img)[1] >> 1), img, gdl, fb, 1, 1,
+                                IMG_8BIT | IMG_IA, ((u32)img & 1) >> 1);
         G(gdl++, 0xE3001001, 0x00008000);
         G(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         G(gdl++, 0xFD100000, gPauseScreen.cursorPal + 4);
@@ -864,7 +870,7 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn)
             font_text_add(gGame.texts[0], gOptionsLabels[row]);
             font_draw_text(gGame.texts[0], x + 0x24, y + 8);
             if (row == gOptionsCursor) {
-                gdl = render_draw_image(x - 2, y, img, gdl, fb, 1, 1, 3, 0);
+                gdl = render_draw_image(x - 2, y, img, gdl, fb, 1, 1, IMG_HALF_BAND | IMG_8BIT, 0);
             }
             font_text_create(gGame.texts[0], 0x40, 1, (row == gOptionsCursor) ? 6 : 2, 0x22);
             if (row == 3) {
@@ -904,7 +910,8 @@ Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx)
     G(gdl++, 0xF0000000, 0x073FC000);
     G(gdl++, 0xE7000000, 0);
     G(gdl++, 0xE7000000, 0);
-    gdl = render_draw_image(gViewRects_6[0], gViewRects_6[1], &gPauseScreen.background[1], gdl, fb, 1, 1, 3, 0);
+    gdl = render_draw_image(gViewRects_6[0], gViewRects_6[1], &gPauseScreen.background[1], gdl, fb, 1, 1,
+                            IMG_HALF_BAND | IMG_8BIT, 0);
     font_reset_queue();
     font_text_create(gGame.texts[0], 0x40, 4, 2, 0x21);
     strcpy(buf, "Controller ");
@@ -1346,7 +1353,8 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gDPSetCycleType(gdl++, G_CYC_1CYCLE);
         gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
     }
-    if (gNumScreens == 1 && (gReplayPlayback != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)))) {
+    if (gNumScreens == 1 &&
+        (gReplayPlayback != 0 || (gGame.flags & (GAME_FLAG_FRONT_END_RACE | GAME_FLAG_TRACK_CHOSEN)))) {
         gdl = sun_draw_stars(render_set_viewport(gdl, dyn, 0, 1), dyn);
     }
     /* skeletons and matrices of the riders seen in any view */
@@ -1367,7 +1375,8 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             if (gRiderViewLod[i] & 0xF0F0F0F0) { /* the body in any view */
                 /* far CPU riders' poses every other frame */
                 if (gRiders[i].isCpu == 0 || !((sRenderFrame / 2 + i) & 1) || gNumScreens != 1 ||
-                    ((gRiderViewLod[i] >> 4) & 0xF) == RIDER_LOD_HIGH || gRiders[i].crashState != 0 || (gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
+                    ((gRiderViewLod[i] >> 4) & 0xF) == RIDER_LOD_HIGH || gRiders[i].crashState != 0 ||
+                    (gGame.flags & GAME_FLAG_FRONT_END_RACE)) {
                     rider_update_pose(gRiders[i].riderSkel, i);
                 }
                 mtx_from_bones(gRiders[i].riderSkel->bones, gRiderGfx_5[i].boneMtx[fb], 0xF);
@@ -2412,17 +2421,15 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 view, s32 player) {
 }
 
 /* Draws an image (a texture set entry) at (x, y) in bands of rows that fit the texture memory. alignX and alignY: 0
-   pixels, else 512x240 units from the left/top (1), the centre (2) or the right/bottom (3). flags: 1 halves the
-   band, 2 8-bit (else 4-bit CI), 4 IA, 0x20 not flipped, 0x40 turned 180 degrees, 0x80 drawn `width` wide, 0x100 at half
-   size. */
+   pixels, else 512x240 units from the left/top (1), the centre (2) or the right/bottom (3). flags: IMG_*. */
 Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32 alignY, s32 flags, s32 width) {
     s32 rows, row, n, scale, screenRow, screenRows, clip, drawW;
     s32 texScale;
     u8 *addr;
 
     texScale = 2;
-    if (flags & 2) texScale = 1;
-    rows = ((flags & 1) ? texScale << 11 : texScale << 12) / (img->w * 8);
+    if (flags & IMG_8BIT) texScale = 1;
+    rows = ((flags & IMG_HALF_BAND) ? texScale << 11 : texScale << 12) / (img->w * 8);
     if (img->h < rows) rows = img->h;
 
     switch (alignX) {
@@ -2460,7 +2467,7 @@ Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32
     for (row = 0; row < img->h; row += rows) {
         n = rows;
         if (img->h - row < rows) n = img->h - row;
-        if (flags & 0x100) {
+        if (flags & IMG_HALF_SIZE) {
             scale = 2;
             screenRow = row / 2;
             screenRows = n / 2;
@@ -2470,20 +2477,20 @@ Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32
             screenRows = n;
         }
         gDPPipeSync(gdl++);
-        if (flags & 2) {
-            if (flags & 0x20) addr = img->addr + row * img->w * 8;
+        if (flags & IMG_8BIT) {
+            if (flags & IMG_UPRIGHT) addr = img->addr + row * img->w * 8;
             else addr = img->addr + (img->h - row - n) * img->w * 8;
         } else {
             addr = img->addr + (img->h - row - n) * img->w * 4;
         }
-        if (flags & 4) {
-            if (flags & 2) {
+        if (flags & IMG_IA) {
+            if (flags & IMG_8BIT) {
                 gDPLoadTextureTile(gdl++, addr, G_IM_FMT_IA, G_IM_SIZ_8b, img->w * 8, 0, clip, 0, img->w * 8 - 1, n - 1,
                                    0, 0, 0, 0, 0, 0, 0);
             } else {
                 while (1); /* 4-bit IA: not supported */
             }
-        } else if (flags & 2) {
+        } else if (flags & IMG_8BIT) {
             gDPLoadTextureTile(gdl++, addr, G_IM_FMT_CI, G_IM_SIZ_8b, img->w * 8, 0, clip, 0, img->w * 8 - 1, n - 1,
                                0, 0, 0, 0, 0, 0, 0);
         } else {
@@ -2491,14 +2498,14 @@ Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32
                                   img->pal & 0xF, 0, 0, 0, 0, 0, 0);
         }
         gDPPipeSync(gdl++);
-        if (flags & 0x20) {
+        if (flags & IMG_UPRIGHT) {
             gSPTextureRectangle(gdl++, x * 4, (y + screenRow) * 4, (x + img->w * 8 - clip) * 4, (y + screenRow + screenRows) * 4,
                                 0, clip << 5, 0, scale << 10, scale << 10);
-        } else if (flags & 0x40) {
+        } else if (flags & IMG_TURNED) {
             gSPTextureRectangle(gdl++, x * 4, (y + screenRow) * 4, (x + img->w * 8) * 4, (y + screenRow + screenRows) * 4,
                                 0, (img->w << 8) - 0x20, (n - 1) << 5, -(scale << 10), -(scale << 10));
         } else {
-            if (flags & 0x80) drawW = width;
+            if (flags & IMG_WIDTH) drawW = width;
             else drawW = img->w * 8;
             if (gScreenWidth == 640) { /* stretched to 640x480: 5/4 wide, rows doubled */
                 gSPTextureRectangle(gdl++, x * 4, (y + screenRow * 2) * 4, x * 4 + (drawW - clip) * 5, (y + screenRow * 2 + screenRows * 2) * 4,
