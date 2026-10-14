@@ -980,7 +980,7 @@ void race_update(u32 *pads)
         if (gReplayPlayback != 0) j = 0;
         if (gGame.fadeState != 3) j = 0;
         if (gGame.flags & GAME_FRONTEND_RACE) j = 0;
-        if (gGame.mode == MODE_TUTORIAL && gEvent.state == EVENT_STATE_DEMO) j = 0;
+        if (gGame.mode == MODE_TUTORIAL && gEvent.state == EVENT_STATE_FREE_RIDE) j = 0;
         t = gGame.playerPad[i];
         if (j) rumble_start(t, 1);
     }
@@ -1462,8 +1462,8 @@ void race_update(u32 *pads)
                 case TUTORIAL_DEMO:
                     break;
                 default:
-                    /* the demo ended: show it again */
-                    gEvent.state = EVENT_STATE_DEMO;
+                    /* anything else: the lesson again, from its demo */
+                    gEvent.state = EVENT_STATE_FREE_RIDE;
                     gEvent.countdown = 0x3F;
                     gEvent.tutorialTimer = 0x3C;
                     gEvent.tutorialAction = TUTORIAL_SHOW;

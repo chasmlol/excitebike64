@@ -202,8 +202,8 @@ typedef struct HudGlyphs {
 #define EVENT_STATE_OVERTIME    11
 #define EVENT_STATE_FINAL       12
 #define EVENT_STATE_TITLE       13  /* tutorial: the lesson's title */
-#define EVENT_STATE_DEMO        14  /* ... the demo replay */
-#define EVENT_STATE_LESSON      15  /* ... the player's turn */
+#define EVENT_STATE_FREE_RIDE   14  /* ... the demo, or a lesson without the countdown */
+#define EVENT_STATE_TIMED       15  /* ... a lesson after its countdown: against the clock, or tricks */
 
 /* Event.flags */
 #define EVENT_SCORED            0x0000F /* soccer: the team that scored (1 or 2), while goalTimer runs */
