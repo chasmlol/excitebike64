@@ -20,12 +20,34 @@ typedef struct CamOut {
     /* 0x14 */ s32 yaw;
 } CamOut; /* size 0x18 */
 
+/* Camera modes: Rider.camMode, the index into gCamModes. */
+#define CAM_MODE_SOCCER        0  /* sweeps around the ball after a goal, else the chase camera */
+#define CAM_MODE_CHASE_NEAR    1  /* 1-3: the modes the Camera button cycles through */
+#define CAM_MODE_CHASE_MID     2
+#define CAM_MODE_CHASE_FAR     3
+#define CAM_MODE_SIDE_VIEW     4  /* Excite 3D */
+#define CAM_MODE_HIGH_SIDE     5
+#define CAM_MODE_HILL_CLIMB    6
+#define CAM_MODE_STUNT_PIP     7  /* the stunt replay in the inset view */
+#define CAM_MODE_CHASE_FAR_ALT 8
+#define CAM_MODE_FALL_VIEW     9  /* watching the rider fall off a cliff */
+#define CAM_MODE_CELEBRATION   10 /* circling the rider after the finish */
+#define CAM_MODE_FIRST_PERSON  11
+#define CAM_NUM_MODES          12
+
+/* CamMode.flags */
+#define CAM_FLAG_SNAP_IN  1 /* snap to the new mode's camera when entering it */
+#define CAM_FLAG_SNAP_OUT 2 /* snap when leaving the mode */
+#define CAM_FLAG_NO_CYCLE 8 /* the Camera button skips it */
+
+#define CAM_HISTORY 16 /* samples of the camera history that cam_smooth_to averages */
+
 /* An entry of gCamModes, indexed by the rider's camera mode (Rider.camMode). */
 typedef struct CamMode {
     /* 0x00 */ void (*init)(void);
     /* 0x04 */ void (*update)(struct Rider *rider, CamOut *out);
     /* 0x08 */ void (*exit)(void);
-    /* 0x0C */ u16 flags;   /* 1 snap when entering, 2 snap when leaving, 8 skipped by the Camera button */
+    /* 0x0C */ u16 flags;   /* CAM_FLAG_* */
     /* 0x0E */ u16 unk_0E;
 } CamMode; /* size 0x10 */
 
@@ -69,9 +91,25 @@ typedef struct CamDollyZone {
     /* 0x20 */ s32 endNode;
 } CamDollyZone; /* size 0x24 */
 
+/* Flags of both kinds of zone */
+#define CAM_ZONE_DEMO_ONLY 0x02 /* used only while gEvent.noPlayers is set */
+#define CAM_ZONE_EARLY     0x40 /* also found from the alternative node (cam_find_zone's second pass) */
+/* Dolly zone flags */
+#define CAM_DOLLY_MOVE     0x01 /* moves to (x1, y1, z1) across the zone */
+#define CAM_DOLLY_RELATIVE 0x04 /* the point is relative to the rider */
+#define CAM_DOLLY_FROM_CAM 0x08 /* the point is taken from the camera on entry */
+#define CAM_DOLLY_FIXED    0x10 /* fixed angles: x1 the pitch, z1 the yaw */
+#define CAM_DOLLY_BACKWARD 0x20 /* the offset runs backwards */
+
+/* CamZoneState.flags */
+#define CAM_ZONE_STATE_ON    1 /* the zone camera is on */
+#define CAM_ZONE_STATE_IN    2 /* in a zone */
+#define CAM_ZONE_STATE_NEW   4 /* entered a new zone */
+#define CAM_ZONE_STATE_EARLY 8 /* found from the alternative node */
+
 /* The camera zone of a view (gCamZoneState). */
 typedef struct CamZoneState {
-    /* 0x00 */ u16 flags;   /* 1 the zone camera is on, 2 in a zone, 4 entered a new zone, 8 found a node early */
+    /* 0x00 */ u16 flags;   /* CAM_ZONE_STATE_* */
     /* 0x02 */ s16 type;    /* 0 dolly, 1 follow */
     /* 0x04 */ union {
                    CamDollyZone *dolly;
