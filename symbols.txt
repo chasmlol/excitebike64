@@ -1979,7 +1979,6 @@ sSnowSplatX                           game  0x800CCFF0  data      0x4
 sSnowSplatY                           game  0x800CCFF4  data      0x4
 sSnowSplatTimer                       game  0x800CCFF8  data      0x4
 sSnowflakes                           game  0x800CCFFC  data      0x4
-sSnowflakes_2                         game  0x800CCFFC  data        -  sSnowflakes
 sSnowflakeTexScale                    game  0x800CD000  data     0x18
 sSnowSplatVtx                         game  0x800CD018  data     0x78
 D_800CD090                            game  0x800CD090  data     0x28
@@ -4930,7 +4929,6 @@ D_800F2160                            game  0x800F2160  data        -
 D_800F2178                            game  0x800F2178  data        -
 sSnowLastCamPos                       game  0x800F2190  data        -
 sSnowTextures                         game  0x800F219C  data        -
-sSnowTextures_2                       game  0x800F219C  data        -  sSnowTextures
 sSnowLastCamYaw                       game  0x800F21A0  data        -
 sRemoveGroupCount                     game  0x800F21B0  data        -
 sRemoveGroups                         game  0x800F21B8  data        -

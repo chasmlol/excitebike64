@@ -858,7 +858,7 @@ void ambient_clear(void);
 void snow_init(void);
 Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2);
 void snow_update(void);
-void snow_respawn_flake(s32 *param_1);
+void snow_respawn_flake(Snowflake *flake);
 void snow_free(void);
 
 /* src/game/remove.c */
