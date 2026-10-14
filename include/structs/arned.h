@@ -7,6 +7,17 @@
 #include "common.h"
 #include "structs/model.h"
 
+#define ARNED_VTX_BUFS     450      /* sArnedVtxBufs, sArnedSlotOwner */
+#define ARNED_BUF_VTX      117      /* vertices of a buffer: a cell's pieces with more are not drawn */
+#define ARNED_SLOT_FREE    -1       /* sArnedSlotOwner: else the cell that owns the buffer */
+#define ARNED_SLOT_RELEASED -2      /* given up by a cell this frame: free again at the next arned_draw */
+#define ARNED_OBJ_VIEWS    8
+#define ARNED_VIEW_OBJS    12
+
+/* ArnedCell.flags */
+#define ARNED_CELL_SELECTED 1       /* drawn pulsing; piece2 hidden while a user piece is edited */
+#define ARNED_CELL_REBUILD  2       /* arned_set_cell: rebuild even if unchanged (not kept) */
+
 /* A cell of the grid (arned_set_cell). The pieces' vertices are rebuilt into sArnedVtxBufs[slot] when dirty. */
 typedef struct ArnedCell {
     /* 0x00 */ PrimModel *piece;
@@ -14,7 +25,7 @@ typedef struct ArnedCell {
     /* 0x08 */ s16 slot;          /* vertex buffer, -1 none */
     /* 0x0A */ u8 rot;            /* quarter turns of piece */
     /* 0x0B */ u8 rot2;
-    /* 0x0C */ u8 flags;          /* 1 selected: drawn pulsing, piece2 hidden in mode 6; 2 rebuild even if unchanged */
+    /* 0x0C */ u8 flags;          /* ARNED_CELL_* */
     /* 0x0D */ u8 dirty;
     /* 0x0E */ s16 dx;
     /* 0x10 */ s16 dz;
@@ -39,7 +50,7 @@ typedef struct ArnedObjView {
     /* 0x0AC */ u16 perspNorm;
     /* 0x0AE */ u8 unk_AE;
     /* 0x0AF */ u8 padAF;
-    /* 0x0B0 */ ArnedObject objs[12];
+    /* 0x0B0 */ ArnedObject objs[ARNED_VIEW_OBJS];
 } ArnedObjView; /* size 0x710 */
 
 #endif

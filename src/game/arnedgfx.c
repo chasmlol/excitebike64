@@ -1,5 +1,8 @@
 #include "game.h"
 
+#define HALF_CELL (CELL_VTX_UNITS / 2)
+
+/* Adds a quad of the arena wall from (x, z) along (w, h), one cell high, its top edge half a cell further out. */
 void arned_add_wall_quad(s32 x, s32 z, s32 w, s32 h)
 {
     sArnedWallVtx[sArnedWallVtxCount].ob[0] = x;
@@ -23,41 +26,42 @@ void arned_add_wall_quad(s32 x, s32 z, s32 w, s32 h)
         z = (z * sArnedGridH + 1) / sArnedGridH;
     }
     sArnedWallVtx[sArnedWallVtxCount].ob[0] = x;
-    sArnedWallVtx[sArnedWallVtxCount].ob[1] = 500;
+    sArnedWallVtx[sArnedWallVtxCount].ob[1] = CELL_VTX_UNITS;
     sArnedWallVtx[sArnedWallVtxCount].ob[2] = z;
     sArnedWallVtx[sArnedWallVtxCount].tc[0] = 0;
     sArnedWallVtx[sArnedWallVtxCount].tc[1] = 0x1000;
     sArnedWallVtxCount++;
     sArnedWallVtx[sArnedWallVtxCount].ob[0] = x + w;
-    sArnedWallVtx[sArnedWallVtxCount].ob[1] = 500;
+    sArnedWallVtx[sArnedWallVtxCount].ob[1] = CELL_VTX_UNITS;
     sArnedWallVtx[sArnedWallVtxCount].ob[2] = z + h;
     sArnedWallVtx[sArnedWallVtxCount].tc[0] = 0x800;
     sArnedWallVtx[sArnedWallVtxCount].tc[1] = 0x1000;
     sArnedWallVtxCount++;
 }
 
+/* Draws the arena walls with their texture, 32 vertices (8 quads) at a time; not while a user piece is edited. */
 Gfx *arned_draw_walls(Gfx *gdl)
 {
-    s32 i, j, n;
-    TexSet *s;
-    TexEntry *t;
+    s32 i, j, count;
+    TexSet *texSet;
+    TexEntry *tex;
 
     if (gEditor->mode == EDIT_MODE_USER_PIECE) {
         return gdl;
     }
     {
-        s = sArnedWallTex;
-        gDPLoadTLUT_pal256(gdl++, s->pal);
-        t = &s->tex[0];
-        gDPLoadTextureBlock(gdl++, t->data, G_IM_FMT_IA, G_IM_SIZ_8b,
-                            t->width * 8, t->height, 0,
+        texSet = sArnedWallTex;
+        gDPLoadTLUT_pal256(gdl++, texSet->pal);
+        tex = &texSet->tex[0];
+        gDPLoadTextureBlock(gdl++, tex->data, G_IM_FMT_IA, G_IM_SIZ_8b,
+                            tex->width * 8, tex->height, 0,
                             G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_CLAMP,
                             5, 6, G_TX_NOLOD, G_TX_NOLOD);
         for (i = 0; i < sArnedWallVtxCount; i += 32) {
-            n = sArnedWallVtxCount - i;
-            if (n > 32) n = 32;
-            gSPVertex(gdl++, &sArnedWallVtx[i], n, 0);
-            for (j = 0; j < n / 4; j++) {
+            count = sArnedWallVtxCount - i;
+            if (count > 32) count = 32;
+            gSPVertex(gdl++, &sArnedWallVtx[i], count, 0);
+            for (j = 0; j < count / 4; j++) {
                 gSP2Triangles(gdl++, j * 4, j * 4 + 1, j * 4 + 3, 0, j * 4, j * 4 + 3, j * 4 + 2, 0);
             }
         }
@@ -65,83 +69,88 @@ Gfx *arned_draw_walls(Gfx *gdl)
     return gdl;
 }
 
+/* Allocates the w x h grid of cells, the vertex buffers, the floor's vertices, the object views and the walls round
+   the grid. */
 void arned_init_grid(s32 w, s32 h)
 {
-    s32 size;
-    s32 n;
+    s32 cellsSize;
+    s32 count;
     s32 i;
     s32 j;
     s32 k;
-    s32 nx;
-    s32 ny;
-    s32 hh;
-    u8 *p;
+    s32 cols;
+    s32 rows;
+    s32 h2;
+    u8 *mem;
 
     if (sArnedCells != NULL) {
         arned_free_grid();
     }
-    sArnedObjViews = mem_alloc_dbg(8 * sizeof(ArnedObjView), 0, (s32)sStrArnedgfxC, 0xD4);
-    size = w * ((h << 2) + h << 2);
-    sArnedCells = (ArnedCell *)(p = mem_alloc_dbg(size, 0, (s32)sStrArnedgfxC, 0xD7));
-    if (p == NULL) {
-        p = fatal_halt_2(1);
+    sArnedObjViews = mem_alloc_dbg(ARNED_OBJ_VIEWS * sizeof(ArnedObjView), 0, (s32)sStrArnedgfxC, 0xD4);
+    cellsSize = w * ((h << 2) + h << 2); /* w * h * sizeof(ArnedCell) */
+    sArnedCells = (ArnedCell *)(mem = mem_alloc_dbg(cellsSize, 0, (s32)sStrArnedgfxC, 0xD7));
+    if (mem == NULL) {
+        mem = fatal_halt_2(1);
     }
     sArnedGridW = w;
     sArnedGridH = h;
-    mem_fill(p, 0, size);
-    n = sArnedGridW * sArnedGridH;
-    for (i = 0; i < n; i++) {
+    mem_fill(mem, 0, cellsSize);
+    count = sArnedGridW * sArnedGridH;
+    for (i = 0; i < count; i++) {
         sArnedCells[i].slot = -1;
     }
-    n = -1;
-    for (i = 0x1C1; i >= 0; i--) {
-        sArnedSlotOwner[i] = n;
+    count = ARNED_SLOT_FREE;
+    for (i = ARNED_VTX_BUFS - 1; i >= 0; i--) {
+        sArnedSlotOwner[i] = count;
     }
-    sArnedVtxBufs = mem_alloc_dbg(0x708, 0, (s32)sStrArnedgfxC, 0xE4);
-    for (i = 0; i < 0x1C2; i++) {
-        p = mem_alloc_dbg(0x750, 0, (s32)sStrArnedgfxC, 0xE7);
-        sArnedVtxBufs[i] = (Vtx_t *)p;
-        mem_fill(p, 0, 0x750);
+    sArnedVtxBufs = mem_alloc_dbg(ARNED_VTX_BUFS * sizeof(Vtx_t *), 0, (s32)sStrArnedgfxC, 0xE4);
+    for (i = 0; i < ARNED_VTX_BUFS; i++) {
+        mem = mem_alloc_dbg(ARNED_BUF_VTX * sizeof(Vtx_t), 0, (s32)sStrArnedgfxC, 0xE7);
+        sArnedVtxBufs[i] = (Vtx_t *)mem;
+        mem_fill(mem, 0, ARNED_BUF_VTX * sizeof(Vtx_t));
     }
-    hh = h;
+    /* the floor: a vertex at each grid corner */
+    h2 = h;
     do {
-        Vtx_t **pp = &sArnedFloorVtx;
-        nx = w + 1;
-        ny = hh + 1;
-        *pp = mem_alloc_dbg(nx * (ny << 4), 0, (s32)sStrArnedgfxC, 0xEF);
+        Vtx_t **floorVtx = &sArnedFloorVtx;
+        cols = w + 1;
+        rows = h2 + 1;
+        *floorVtx = mem_alloc_dbg(cols * (rows << 4), 0, (s32)sStrArnedgfxC, 0xEF);
         i = 0;
     } while (0);
     k = 0;
-    if (ny > 0) {
+    if (rows > 0) {
         do {
             for (j = 0; j < w + 1; j++) {
-                sArnedFloorVtx[k].ob[0] = j * 500 - w * 250;
+                sArnedFloorVtx[k].ob[0] = j * CELL_VTX_UNITS - w * HALF_CELL;
                 sArnedFloorVtx[k].ob[1] = 0;
-                sArnedFloorVtx[k].ob[2] = i * 500 - hh * 250;
+                sArnedFloorVtx[k].ob[2] = i * CELL_VTX_UNITS - h2 * HALF_CELL;
                 k++;
             }
-        } while (++i < hh + 1);
+        } while (++i < h2 + 1);
     }
     i = 0;
-    mem_fill((u8 *)sArnedObjViews, 0, 8 * sizeof(ArnedObjView));
+    mem_fill((u8 *)sArnedObjViews, 0, ARNED_OBJ_VIEWS * sizeof(ArnedObjView));
+    /* a quad per cell on each side */
     sArnedWallVtx = mem_alloc_dbg((sArnedGridW + sArnedGridH) * 0x80, 0, (s32)sStrArnedgfxC, 0x100);
     sArnedWallVtxCount = 0;
     for (i = 0; i < sArnedGridW; i++) {
-        arned_add_wall_quad(i * 500 - sArnedGridW * 250, sArnedGridH * 250, 500, 0);
-        arned_add_wall_quad(sArnedGridW * 250 - i * 500, -(sArnedGridH * 250), -500, 0);
+        arned_add_wall_quad(i * CELL_VTX_UNITS - sArnedGridW * HALF_CELL, sArnedGridH * HALF_CELL, CELL_VTX_UNITS, 0);
+        arned_add_wall_quad(sArnedGridW * HALF_CELL - i * CELL_VTX_UNITS, -(sArnedGridH * HALF_CELL), -CELL_VTX_UNITS, 0);
     }
     for (i = 0; i < sArnedGridH; i++) {
-        arned_add_wall_quad(-(sArnedGridW * 250), i * 500 - sArnedGridH * 250, 0, 500);
-        arned_add_wall_quad(sArnedGridW * 250, sArnedGridH * 250 - i * 500, 0, -500);
+        arned_add_wall_quad(-(sArnedGridW * HALF_CELL), i * CELL_VTX_UNITS - sArnedGridH * HALF_CELL, 0, CELL_VTX_UNITS);
+        arned_add_wall_quad(sArnedGridW * HALF_CELL, sArnedGridH * HALF_CELL - i * CELL_VTX_UNITS, 0, -CELL_VTX_UNITS);
     }
     sArnedTexSetIdx = -1;
 }
 
+/* Sets what cell (x, y) shows; it is rebuilt at the next arned_draw if anything changed (or ARNED_CELL_REBUILD). */
 void arned_set_cell(s32 x, s32 y, PrimModel *piece, s32 rot, PrimModel *piece2, s32 rot2, s32 flags, s32 dx, s32 dz)
 {
     s32 idx = sArnedGridW * y + x;
 
-    if ((flags & 2) || sArnedCells[idx].piece != piece || sArnedCells[idx].piece2 != piece2 ||
+    if ((flags & ARNED_CELL_REBUILD) || sArnedCells[idx].piece != piece || sArnedCells[idx].piece2 != piece2 ||
         sArnedCells[idx].rot != rot || sArnedCells[idx].rot2 != rot2 || sArnedCells[idx].flags != flags ||
         sArnedCells[idx].dx != dx || sArnedCells[idx].dz != dz) {
         sArnedCells[idx].dirty = 1;
@@ -150,124 +159,132 @@ void arned_set_cell(s32 x, s32 y, PrimModel *piece, s32 rot, PrimModel *piece2, 
     sArnedCells[idx].piece2 = piece2;
     sArnedCells[idx].rot = rot;
     sArnedCells[idx].rot2 = rot2;
-    sArnedCells[idx].flags = flags & ~2;
+    sArnedCells[idx].flags = flags & ~ARNED_CELL_REBUILD;
     sArnedCells[idx].dx = dx;
     sArnedCells[idx].dz = dz;
 }
 
-void arned_set_camera(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry)
+/* The camera of frame buffer `frame`: at (x, y, z), turned by yaw and pitch (1/65536 turns), into gArnedCamMtx. */
+void arned_set_camera(s32 frame, s32 x, s32 y, s32 z, s16 yaw, s16 pitch)
 {
     Mtx persp;
     Mtx rot;
-    Mtx a;
-    Mtx b;
-    Mtx c;
-    f32 q;
-    s32 f1, f2, f3;
+    Mtx tmp1;
+    Mtx tmp2;
+    Mtx res;
+    f32 projScale;
+    s32 screenH1, screenH2, screenH3;
 
     sArnedCamX = x;
     gFarClip = 0x7FBC;
     sArnedCamY = y;
     sArnedCamZ = z;
-    sArnedCamYaw = rx;
-    sArnedCamPitch = ry;
-    f1 = gScreenHeight;
-    f2 = gScreenHeight;
-    f3 = gScreenHeight;
-    q = (f32)f1 * 0.5f * gCosTable[0] / gCosTable[0xC00];
-    *(volatile f32 *)&gProjScale = q;
-    gProjScale = q * f2 * 0.00390625f;
-    guPerspective(&persp, &gPerspNorm, 33.0f, 320.0f / f3, 50.0f, gFarClip, 1.0f);
+    sArnedCamYaw = yaw;
+    sArnedCamPitch = pitch;
+    screenH1 = gScreenHeight;
+    screenH2 = gScreenHeight;
+    screenH3 = gScreenHeight;
+    /* gCosTable[0xC00] is 0: the scale comes out infinite, as in the original */
+    projScale = (f32)screenH1 * 0.5f * gCosTable[0] / gCosTable[0xC00];
+    *(volatile f32 *)&gProjScale = projScale;
+    gProjScale = projScale * screenH2 * 0.00390625f;
+    guPerspective(&persp, &gPerspNorm, 33.0f, 320.0f / screenH3, 50.0f, gFarClip, 1.0f);
     guRotateRPY(&rot, sArnedCamPitch * 360.0f * 1.5258789e-05f, -(f32)sArnedCamYaw * 360.0f * 1.5258789e-05f, 0.0f);
     mtx_transpose_rot((u8 *)&rot);
-    mtx_from_angles_pos_scale(&a, 0, 0, 0, -sArnedCamX, -sArnedCamY, -sArnedCamZ, 0x100);
-    mtx_mul(&a, &rot, &b);
-    mtx_mul(&b, &gViewAxisMtx, &a);
-    mtx_mul(&a, &persp, &c);
-    gArnedCamMtx[idx] = c;
+    mtx_from_angles_pos_scale(&tmp1, 0, 0, 0, -sArnedCamX, -sArnedCamY, -sArnedCamZ, 0x100);
+    mtx_mul(&tmp1, &rot, &tmp2);
+    mtx_mul(&tmp2, &gViewAxisMtx, &tmp1);
+    mtx_mul(&tmp1, &persp, &res);
+    gArnedCamMtx[frame] = res;
 }
 
-#define SINS(a) gCosTable[((a) >> 4) & 0xFFF]
+/* cos(a / 0x10000 turns), 1.0 = 0x4000 */
+#define COS16(a) gCosTable[((a) >> 4) & 0xFFF]
 
-Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 cursorX, s32 cursorZ, s32 cursorRot,
+/* Draws the editor's 3D view for frame buffer `frame`: rebuilds the vertex buffers of the changed cells, then draws
+   the floor (drawGrid), the walls' outsides, the cells' pieces (selected ones pulsing), the start cursor (cursorRot
+   -1: none), the walls' insides and the object views. */
+Gfx *arned_draw(s32 frame, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 cursorX, s32 cursorZ, s32 cursorRot,
                  s32 drawGrid) {
-    s32 total;
-    s32 x0, z0;
+    s32 numCells;
+    s32 originX, originZ;
     s32 i, j, x, y, n;
-    s32 dx, dz, a;
+    s32 lightX, lightZ;
     s32 r, g, b;
     ArnedCell *cell;
-    Vtx_t *out;
-    ArnedObjView *os;
-    Mtx *m;
+    Vtx_t *vtx;
+    ArnedObjView *view;
+    Mtx *mtx;
 
-    total = sArnedGridW * sArnedGridH;
-    for (i = 0; i < 450; i++) {
-        if (sArnedSlotOwner[i] == -2) {
-            sArnedSlotOwner[i] = -1;
+    numCells = sArnedGridW * sArnedGridH;
+    for (i = 0; i < ARNED_VTX_BUFS; i++) {
+        if (sArnedSlotOwner[i] == ARNED_SLOT_RELEASED) {
+            sArnedSlotOwner[i] = ARNED_SLOT_FREE;
         }
     }
     i = 0;
-    x0 = -(sArnedGridW * 250);
-    z0 = -(sArnedGridH * 250);
+    originX = -(sArnedGridW * HALF_CELL);
+    originZ = -(sArnedGridH * HALF_CELL);
     for (y = 0; y < sArnedGridH; y++) {
         for (x = 0; x < sArnedGridW; x++, i++) {
             cell = &sArnedCells[i];
             if (cell->dirty != 0) {
                 if (cell->slot != -1) {
-                    sArnedSlotOwner[cell->slot] = -2;
+                    sArnedSlotOwner[cell->slot] = ARNED_SLOT_RELEASED;
                 }
-                for (n = 0; n < 450; n++) {
-                    if (sArnedSlotOwner[n] == -1) {
+                for (n = 0; n < ARNED_VTX_BUFS; n++) {
+                    if (sArnedSlotOwner[n] == ARNED_SLOT_FREE) {
                         break;
                     }
                 }
                 if (cell->piece == NULL && cell->piece2 == NULL) {
-                    n = 450;
+                    n = ARNED_VTX_BUFS;
                 }
-                if (n == 450) {
+                if (n == ARNED_VTX_BUFS) {
                     cell->slot = -1;
                 } else {
                     sArnedSlotOwner[n] = i;
                     cell->slot = n;
-                    out = sArnedVtxBufs[n];
+                    vtx = sArnedVtxBufs[n];
                     cell->dirty = 0;
                     n = 0;
-                    if (cell->piece != NULL && cell->piece->numVtx < 0x76) {
-                        arned_transform_piece_verts(cell->piece->vtx, cell->piece->numVtx, cell->rot, out, x0 + x * 500, z0 + y * 500, 1);
+                    if (cell->piece != NULL && cell->piece->numVtx < ARNED_BUF_VTX + 1) {
+                        arned_transform_piece_verts(cell->piece->vtx, cell->piece->numVtx, cell->rot, vtx, originX + x * CELL_VTX_UNITS, originZ + y * CELL_VTX_UNITS, 1);
                         n = cell->piece->numVtx;
                     }
-                    if (cell->piece2 != NULL && cell->piece2->numVtx + n < 0x76) {
-                        arned_transform_piece_verts(cell->piece2->vtx, cell->piece2->numVtx, cell->rot2, &out[n], x0 + x * 500 + cell->dx, z0 + y * 500 + cell->dz, 0);
+                    if (cell->piece2 != NULL && cell->piece2->numVtx + n < ARNED_BUF_VTX + 1) {
+                        arned_transform_piece_verts(cell->piece2->vtx, cell->piece2->numVtx, cell->rot2, &vtx[n], originX + x * CELL_VTX_UNITS + cell->dx, originZ + y * CELL_VTX_UNITS + cell->dz, 0);
                         n += cell->piece2->numVtx;
                     }
-                    for (; n < 0x75; n++) {
-                        out[n].flag = 2;
+                    for (; n < ARNED_BUF_VTX; n++) {
+                        vtx[n].flag = 2;
                     }
                 }
             }
         }
     }
-    dx = gCosTable[(((gFrameCounter << 8) >> 4) - 0x400) & 0xFFF] * 80 / 0x4000;
-    dz = gCosTable[((gFrameCounter << 8) >> 4) & 0xFFF] * 80 / 0x4000;
+    /* the light circles overhead */
+    lightX = gCosTable[(((gFrameCounter << 8) >> 4) - 0x400) & 0xFFF] * 80 / 0x4000;
+    lightZ = gCosTable[((gFrameCounter << 8) >> 4) & 0xFFF] * 80 / 0x4000;
     {
-    Lights1 light = gdSPDefLights1(0x28, 0x28, 0x28, 0xFF, 0xFF, 0xFF, dx, 0x7F, dz);
-    sArnedLights[idx] = light;
+    Lights1 light = gdSPDefLights1(0x28, 0x28, 0x28, 0xFF, 0xFF, 0xFF, lightX, 0x7F, lightZ);
+    sArnedLights[frame] = light;
     }
-    gSPSetLights1(gdl++, sArnedLights[idx]);
+    gSPSetLights1(gdl++, sArnedLights[frame]);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sArnedViewX, sArnedViewY, sArnedViewX + sArnedViewW, sArnedViewY + sArnedViewH);
     gSPViewport(gdl++, &gArnedViewport);
     gSPPerspNormalize(gdl++, gPerspNorm);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
     gSPSetGeometryMode(gdl++, G_CULL_BACK);
     gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPMatrix(gdl++, &gArnedCamMtx[idx], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, &gArnedCamMtx[frame], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     if (drawGrid != 0) {
+        /* the floor: a checkerboard of dark cells and cells shaded blue across the grid */
         gDPSetRenderMode(gdl++, 0x0F0A4000, 0);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
         gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
         gSPClearGeometryMode(gdl++, G_ZBUFFER);
-        for (i = 0; i < total; i++) {
+        for (i = 0; i < numCells; i++) {
             x = i % sArnedGridW;
             y = i / sArnedGridW;
             n = (x + y) & 1;
@@ -299,44 +316,45 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 c
     gDPPipeSync(gdl++);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gDPSetEnvColor(gdl++, 0xFF, 0x82, 0x82, 0xFF);
-    for (i = 0; i < total; i++) {
+    for (i = 0; i < numCells; i++) {
         cell = &sArnedCells[i];
         if (cell->slot != -1) {
             n = 0;
-            if (cell->piece != NULL && cell->piece->numVtx < 0x76) {
+            if (cell->piece != NULL && cell->piece->numVtx < ARNED_BUF_VTX + 1) {
                 gDPPipeSync(gdl++);
-                if (cell->flags & 1) {
-                    s32 s;
-                    s = gFrameCounter << 10;
-                    gDPSetPrimColor(gdl++, 0, 0, (SINS(s) * 25 >> 13) + 128, (SINS(s) * 25 >> 13) + 128, (SINS(s) * 127 >> 14) + 128, 0xFF);
+                if (cell->flags & ARNED_CELL_SELECTED) {
+                    s32 phase;
+                    phase = gFrameCounter << 10;
+                    gDPSetPrimColor(gdl++, 0, 0, (COS16(phase) * 25 >> 13) + 128, (COS16(phase) * 25 >> 13) + 128, (COS16(phase) * 127 >> 14) + 128, 0xFF);
                     gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-                    gSPClearGeometryMode(gdl++, 0x220004);
+                    gSPClearGeometryMode(gdl++, G_SHADE | G_LIGHTING | G_SHADING_SMOOTH);
                 } else {
                     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
-                    gSPSetGeometryMode(gdl++, 0x220004);
+                    gSPSetGeometryMode(gdl++, G_SHADE | G_LIGHTING | G_SHADING_SMOOTH);
                 }
-                out = cell->piece->vtx;
+                /* drawn from the cell's vertex buffer in place of the model's own vertices */
+                vtx = cell->piece->vtx;
                 cell->piece->vtx = sArnedVtxBufs[cell->slot];
                 gdl = prim_build_dl(12, cell->piece, &sArnedPieceTex, gdl);
-                cell->piece->vtx = out;
+                cell->piece->vtx = vtx;
                 n = cell->piece->numVtx;
             }
-            if (cell->piece2 != NULL && (gEditor->mode != 6 || !(cell->flags & 1)) && cell->piece2->numVtx + n < 0x76) {
+            if (cell->piece2 != NULL && (gEditor->mode != EDIT_MODE_USER_PIECE || !(cell->flags & ARNED_CELL_SELECTED)) && cell->piece2->numVtx + n < ARNED_BUF_VTX + 1) {
                 gDPPipeSync(gdl++);
                 gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
-                gSPClearGeometryMode(gdl++, 0x220004);
-                out = cell->piece2->vtx;
+                gSPClearGeometryMode(gdl++, G_SHADE | G_LIGHTING | G_SHADING_SMOOTH);
+                vtx = cell->piece2->vtx;
                 cell->piece2->vtx = sArnedVtxBufs[cell->slot] + n;
                 gdl = prim_build_dl(12, cell->piece2, &sArnedPieceTex2, gdl);
-                cell->piece2->vtx = out;
+                cell->piece2->vtx = vtx;
             }
         }
     }
-    if (cursorRot != -1 && gEditor->mode != 6) {
+    if (cursorRot != -1 && gEditor->mode != EDIT_MODE_USER_PIECE) {
         gDPPipeSync(gdl++);
-        m = &sArnedCursorMtx[idx];
-        mtx_from_angles_pos_scale(m, 0, 0, cursorRot + 0x4000, cursorX, 2500, cursorZ, 0x100);
-        gSPMatrix(gdl++, m, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        mtx = &sArnedCursorMtx[frame];
+        mtx_from_angles_pos_scale(mtx, 0, 0, cursorRot + 0x4000, cursorX, 2500, cursorZ, 0x100);
+        gSPMatrix(gdl++, mtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         gDPSetRenderMode(gdl++, 0x504A50, 0);
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0x80);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF67B);
@@ -346,7 +364,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 c
         gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     }
     for (i = 0; i < 8; i++) {
-        n = i & 1;
+        n = i & 1; /* does nothing, as in the original */
     }
     if (drawGrid != 0) {
         gDPPipeSync(gdl++);
@@ -361,108 +379,114 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 c
         gSPSetGeometryMode(gdl++, G_CULL_BACK);
     }
     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
-    gSPSetGeometryMode(gdl++, 0x220004);
-    for (i = 0; i < 8; i++) {
-        os = sArnedObjViews + i;
-        if (os->count != 0) {
-            gSPMatrix(gdl++, &os->proj[idx], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-            gSPPerspNormalize(gdl++, os->perspNorm);
+    gSPSetGeometryMode(gdl++, G_SHADE | G_LIGHTING | G_SHADING_SMOOTH);
+    for (i = 0; i < ARNED_OBJ_VIEWS; i++) {
+        view = sArnedObjViews + i;
+        if (view->count != 0) {
+            gSPMatrix(gdl++, &view->proj[frame], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+            gSPPerspNormalize(gdl++, view->perspNorm);
             gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sArnedScissorX0, sArnedScissorY0, sArnedScissorX1, sArnedScissorY1);
-            gSPViewport(gdl++, &os->vp[idx]);
-            for (j = 0; j < os->count; j++) {
-                gSPMatrix(gdl++, &os->objs[j].mtx[idx], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-                gdl = prim_build_dl(12, os->objs[j].model, &sArnedPieceTex, gdl);
+            gSPViewport(gdl++, &view->vp[frame]);
+            for (j = 0; j < view->count; j++) {
+                gSPMatrix(gdl++, &view->objs[j].mtx[frame], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+                gdl = prim_build_dl(12, view->objs[j].model, &sArnedPieceTex, gdl);
             }
             sArnedObjViews[i].count = 0;
         }
     }
-    gSPClearGeometryMode(gdl++, 0x220004);
+    gSPClearGeometryMode(gdl++, G_SHADE | G_LIGHTING | G_SHADING_SMOOTH);
     return gdl;
 }
 
+/* Loads the pieces' texture set of dirt type texSet from the "Pieces" resources (over the previous set's memory) and
+   takes the other two sets the view draws with. */
 void arned_load_piece_textures(s32 texSet, TexSet *pieceTex2, TexSet *wallTex)
 {
-    s32 cur;
-    s32 *w;
-    ResSet *q;
+    s32 curSet;
+    s32 *idPtr;
+    ResSet *res;
     u32 *slot;
-    Editor *p;
+    Editor *ed;
 
-    cur = sArnedTexSetIdx;
+    curSet = sArnedTexSetIdx;
     sArnedPieceTex2 = pieceTex2;
     sArnedWallTex = wallTex;
-    if (cur != texSet) {
-        if (cur == -1) {
+    if (curSet != texSet) {
+        if (curSet == -1) {
             sArnedPieceTex = res_load(gEditor->pieceRes, *sArnedTexResIds[texSet]);
         } else {
             /* load into the previous set's memory, which the new handle then owns */
             res_set_load_buffer(sArnedPieceTex);
             res_load(gEditor->pieceRes, *sArnedTexResIds[texSet]);
             res_set_load_buffer(0);
-            p = gEditor;
-            p->pieceRes->handles[*sArnedTexResIds[sArnedTexSetIdx]] = 0;
-            w = sArnedTexResIds[texSet];
-            q = p->pieceRes;
-            slot = (u32 *)(*w * 4 + (u32)q->handles);
+            ed = gEditor;
+            ed->pieceRes->handles[*sArnedTexResIds[sArnedTexSetIdx]] = 0;
+            idPtr = sArnedTexResIds[texSet];
+            res = ed->pieceRes;
+            slot = (u32 *)(*idPtr * 4 + (u32)res->handles);
             *slot = *slot & 0xFFFFFFFC;
         }
         sArnedTexSetIdx = texSet;
     }
 }
 
+/* Sets up object view `view` for frame buffer `frame`: its viewport at (x, y, w, h) and a camera at camX, camY, camZ
+   turned by yaw and pitch; emptied of objects. */
 void arned_set_object_view(s32 frame, s32 view, s32 x, s32 y, s32 w, s32 h, s32 camX, s32 camY, s32 camZ,
-                           s32 ry, s32 rx, s32 unk)
+                           s32 pitch, s32 yaw, s32 unk)
 {
     Mtx persp;
     Mtx rot;
-    Mtx m1;
-    Mtx m2;
+    Mtx tmp1;
+    Mtx tmp2;
     Mtx res;
-    ArnedObjView *c; ArnedObjView *base;
-    f32 t, t2, asp;
+    ArnedObjView *ov; ArnedObjView *views;
+    f32 projScale, projScale2, aspect;
 
-    base = sArnedObjViews;
-    c = (ArnedObjView *)(view * sizeof(ArnedObjView) + (u32)base);
-    c->count = 0;
-    c->x = x;
-    c->y = y;
-    c->vp[frame].vp.vscale[0] = w * 2;
-    c->vp[frame].vp.vscale[1] = h * 2;
-    c->vp[frame].vp.vscale[2] = 0x1FF;
-    c->vp[frame].vp.vtrans[0] = (x + w / 2) * 4;
-    c->vp[frame].vp.vtrans[1] = (y + h / 2) * 4;
-    c->vp[frame].vp.vtrans[2] = 0x1FF;
-    c->unk_AE = unk;
-    t = (f32)gScreenHeight * 0.5f * (f32)gCosTable[0] / (f32)gCosTable[0xC00];
-    t2 = t * (f32)gScreenHeight * 0.00390625f;
-    asp = 320.0f / (f32)gScreenHeight;
-    *(volatile f32 *)&gProjScale = t;
-    gProjScale = t2;
-    guPerspective(&persp, &sArnedObjViews[view].perspNorm, 33.0f, asp, 50.0f, 16384.0f, 1.0f);
-    guRotateRPY(&rot, (f32)ry * 360.0f * 1.5258789e-05f, -(f32)rx * 360.0f * 1.5258789e-05f, 0.0f);
+    views = sArnedObjViews;
+    ov = (ArnedObjView *)(view * sizeof(ArnedObjView) + (u32)views);
+    ov->count = 0;
+    ov->x = x;
+    ov->y = y;
+    ov->vp[frame].vp.vscale[0] = w * 2;
+    ov->vp[frame].vp.vscale[1] = h * 2;
+    ov->vp[frame].vp.vscale[2] = G_MAXZ / 2;
+    ov->vp[frame].vp.vtrans[0] = (x + w / 2) * 4;
+    ov->vp[frame].vp.vtrans[1] = (y + h / 2) * 4;
+    ov->vp[frame].vp.vtrans[2] = G_MAXZ / 2;
+    ov->unk_AE = unk;
+    /* infinite, as in arned_set_camera */
+    projScale = (f32)gScreenHeight * 0.5f * (f32)gCosTable[0] / (f32)gCosTable[0xC00];
+    projScale2 = projScale * (f32)gScreenHeight * 0.00390625f;
+    aspect = 320.0f / (f32)gScreenHeight;
+    *(volatile f32 *)&gProjScale = projScale;
+    gProjScale = projScale2;
+    guPerspective(&persp, &sArnedObjViews[view].perspNorm, 33.0f, aspect, 50.0f, 16384.0f, 1.0f);
+    guRotateRPY(&rot, (f32)pitch * 360.0f * 1.5258789e-05f, -(f32)yaw * 360.0f * 1.5258789e-05f, 0.0f);
     mtx_transpose_rot(&rot);
-    mtx_from_angles_pos_scale(&m1, 0, 0, 0, -camX, -camY, -camZ, 0x100);
-    mtx_mul(&m1, &rot, &m2);
-    mtx_mul(&m2, &gViewAxisMtx, &m1);
-    mtx_mul(&m1, &persp, &res);
+    mtx_from_angles_pos_scale(&tmp1, 0, 0, 0, -camX, -camY, -camZ, 0x100);
+    mtx_mul(&tmp1, &rot, &tmp2);
+    mtx_mul(&tmp2, &gViewAxisMtx, &tmp1);
+    mtx_mul(&tmp1, &persp, &res);
     sArnedObjViews[view].proj[frame] = res;
 }
 
+/* Adds model at (x, z) to object view `view` (at most ARNED_VIEW_OBJS). */
 void arned_add_object(s32 frame, s32 view, PrimModel *model, s32 x, s32 z)
 {
-    s32 off;
-    ArnedObjView *v;
-    s32 n;
-    ArnedObjView *base;
+    s32 offset;
+    ArnedObjView *ov;
+    s32 count;
+    ArnedObjView *views;
 
-    base = sArnedObjViews;
-    off = view * sizeof(ArnedObjView);
-    v = (ArnedObjView *)(off + (s32)base);
-    n = v->count;
-    if (n < 12) {
-        v->objs[n].model = model;
-        mtx_from_angles_pos_scale(&v->objs[v->count].mtx[frame], 0, 0, 0, x, 0, z, 0x100);
-        ((ArnedObjView *)(off + (s32)sArnedObjViews))->count += 1;
+    views = sArnedObjViews;
+    offset = view * sizeof(ArnedObjView);
+    ov = (ArnedObjView *)(offset + (s32)views);
+    count = ov->count;
+    if (count < ARNED_VIEW_OBJS) {
+        ov->objs[count].model = model;
+        mtx_from_angles_pos_scale(&ov->objs[ov->count].mtx[frame], 0, 0, 0, x, 0, z, 0x100);
+        ((ArnedObjView *)(offset + (s32)sArnedObjViews))->count += 1;
     }
 }
 
@@ -476,8 +500,8 @@ Vtx_t *arned_find_vertex(s32 x, s32 z)
     ArnedCell *cell;
     PrimModel *piece;
     Vtx_t *v;
-    Vtx_t *base;
-    u32 cnt;
+    Vtx_t *buf;
+    u32 count;
     s32 slot;
     s32 row;
     s32 col;
@@ -485,22 +509,22 @@ Vtx_t *arned_find_vertex(s32 x, s32 z)
     u32 i;
 
     w = sArnedGridW;
-    cx = x - w * 250;
+    cx = x - w * HALF_CELL;
     h = sArnedGridH;
-    cz = z - h * 250;
-    row = cz / 500;
-    col = cx / 500;
+    cz = z - h * HALF_CELL;
+    row = cz / CELL_VTX_UNITS;
+    col = cx / CELL_VTX_UNITS;
     cell = &sArnedCells[row * w + col];
     piece = cell->piece;
     if (piece == NULL || (slot = cell->slot) < 0) {
         return NULL;
     }
-    cnt = piece->numVtx;
-    base = sArnedVtxBufs[slot];
+    count = piece->numVtx;
+    buf = sArnedVtxBufs[slot];
     i = 0;
-    if (cnt != 0) {
-        n = cnt;
-        v = base;
+    if (count != 0) {
+        n = count;
+        v = buf;
         do {
             i = i + 1;
             if (v->ob[0] == cx && v->ob[2] == cz) {
@@ -512,17 +536,18 @@ Vtx_t *arned_find_vertex(s32 x, s32 z)
     return NULL;
 }
 
+/* Frees what arned_init_grid allocated. */
 void arned_free_grid(void)
 {
     s32 i;
-    void **tbl;
+    void **bufs;
 
     i = 0;
     do {
-        tbl = (void **)sArnedVtxBufs;
-        mem_free(tbl[i]);
+        bufs = (void **)sArnedVtxBufs;
+        mem_free(bufs[i]);
         i++;
-    } while (i < 0x1c2);
+    } while (i < ARNED_VTX_BUFS);
     mem_free(sArnedVtxBufs);
     mem_free(sArnedCells);
     mem_free(sArnedFloorVtx);
@@ -531,7 +556,9 @@ void arned_free_grid(void)
     sArnedCells = 0;
 }
 
-void arned_transform_piece_verts(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, s32 dz, s32 flag)
+/* Copies n vertices of a piece turned by rot quarter turns (their normals too) and moved to the cell at (dx, dz).
+   The vertices' flag is 1 for the cell's first piece, 0 for the second; cn[3] is 2 on the cell's edge, else 1. */
+void arned_transform_piece_verts(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, s32 dz, s32 first)
 {
     s32 x, z, nx, nz;
 
@@ -562,20 +589,20 @@ void arned_transform_piece_verts(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, 
             nx = -in->cn[2];
             break;
         }
-        out->ob[0] = dx + x + 0xfa;
+        out->ob[0] = dx + x + HALF_CELL;
         out->ob[1] = in->ob[1];
-        out->ob[2] = dz + z + 0xfa;
+        out->ob[2] = dz + z + HALF_CELL;
         out->tc[0] = in->tc[0];
         out->tc[1] = in->tc[1];
         out->cn[0] = nx;
         out->cn[1] = in->cn[1];
         out->cn[2] = nz;
-        if (flag != 0) {
+        if (first != 0) {
             out->flag = 1;
         } else {
             out->flag = 0;
         }
-        if (x == -0xfa || x == 0xfa || z == -0xfa || z == 0xfa) {
+        if (x == -HALF_CELL || x == HALF_CELL || z == -HALF_CELL || z == HALF_CELL) {
             out->cn[3] = 2;
         } else {
             out->cn[3] = 1;
@@ -585,42 +612,45 @@ void arned_transform_piece_verts(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, 
     }
 }
 
+/* The 3D view's viewport and scissor box. */
 void arned_set_viewport(s32 x, s32 y, s32 w, s32 h) {
-    Vp_t *q = &gArnedViewport.vp;
-    s32 k = 0x1FF;
+    Vp_t *vp = &gArnedViewport.vp;
+    s32 halfZ = G_MAXZ / 2;
 
-    q->vscale[0] = w << 1;
-    q->vscale[1] = h << 1;
-    q->vscale[2] = k;
-    q->vtrans[0] = (x + w / 2) * 4;
-    q->vtrans[1] = (y + h / 2) * 4;
+    vp->vscale[0] = w << 1;
+    vp->vscale[1] = h << 1;
+    vp->vscale[2] = halfZ;
+    vp->vtrans[0] = (x + w / 2) * 4;
+    vp->vtrans[1] = (y + h / 2) * 4;
     sArnedViewX = x;
     sArnedViewY = y;
     sArnedViewW = w;
-    q->vtrans[2] = k;
+    vp->vtrans[2] = halfZ;
     sArnedViewH = h;
 }
 
+/* The same with the viewport's height scaled up by extraH (the menu panel sliding). */
 void arned_set_viewport_stretch(s32 x, s32 y, s32 w, s32 h, s32 extraH)
 {
-    Vp_t *b = &gArnedViewport.vp;
+    Vp_t *vp = &gArnedViewport.vp;
 
-    b->vscale[0] = w * 2;
-    b->vscale[2] = 0x1FF;
-    b->vtrans[0] = (x + w / 2) * 4;
-    b->vtrans[1] = (y + h / 2) * 4;
+    vp->vscale[0] = w * 2;
+    vp->vscale[2] = G_MAXZ / 2;
+    vp->vtrans[0] = (x + w / 2) * 4;
+    vp->vtrans[1] = (y + h / 2) * 4;
     sArnedViewX = x;
     sArnedViewY = y;
     sArnedViewW = w;
-    b->vtrans[2] = 0x1FF;
+    vp->vtrans[2] = G_MAXZ / 2;
     sArnedViewH = h;
-    b->vscale[1] = (h + extraH) * 2;
+    vp->vscale[1] = (h + extraH) * 2;
 }
 
-void arned_set_scissor(s32 a0, s32 a1, s32 a2, s32 a3)
+/* The object views' scissor box. */
+void arned_set_scissor(s32 x, s32 y, s32 w, s32 h)
 {
-    sArnedScissorX0 = a0;
-    sArnedScissorY0 = a1;
-    sArnedScissorX1 = a0 + a2;
-    sArnedScissorY1 = a1 + a3;
+    sArnedScissorX0 = x;
+    sArnedScissorY0 = y;
+    sArnedScissorX1 = x + w;
+    sArnedScissorY1 = y + h;
 }
