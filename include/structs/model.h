@@ -9,6 +9,22 @@
    0 end; 1 load vertices {op, count, u16 first}; 4 the same, appended after the previous load (5 restarts at 0);
    3 triangle {op, a, b, c} (two in a row become one gSP2Triangles); 2 texture {op | palette, index,
    set << 6 | 8-bit << 2 | wrap bits, mask t << 4 | mask s}; 6 bone matrix {op, bone}. */
+#define PRIM_CMD_END        0
+#define PRIM_CMD_VTX        1 /* load count vertices at 0 */
+#define PRIM_CMD_TEX        2
+#define PRIM_CMD_TRI        3
+#define PRIM_CMD_VTX_APPEND 4 /* load count vertices after the previous load */
+#define PRIM_CMD_VTX_RESET  5 /* the next appended load starts at 0 again */
+#define PRIM_CMD_BONE       6 /* load the bone's matrix (gPrimBoneMtx) */
+
+/* prim_build_dl's flags */
+#define PRIM_END_DL       0x01 /* end the display list */
+#define PRIM_NO_TEXTURES  0x02 /* skip the texture commands (shadows) */
+#define PRIM_LOAD_TLUT    0x04 /* load the set's TLUT with its first texture */
+#define PRIM_RESET_TLUT   0x08 /* forget which set's TLUT is loaded */
+#define PRIM_SEGMENTED    0x20 /* texture and TLUT addresses in segment 2 + set, relative to the set */
+#define PRIM_TLUT_SEGMENT 0x40 /* the TLUT at the start of segment 1 + set */
+
 typedef struct PrimModel {
     /* 0x00 */ u32 numVtx;
     /* 0x04 */ Vtx *vtx;
@@ -18,11 +34,17 @@ typedef struct PrimModel {
     /* 0x14 */ void *unk_14; /* relocated when not 0 (track models) */
 } PrimModel; /* size >= 0x18; the vertices and commands follow */
 
+/* TexEntry.flags */
+#define TEX_8BIT      0x01 /* 8-bit texels, else 4-bit */
+#define TEX_CUTOUT    0x02 /* alpha-tested: the model switches the render mode (prim_build_dl's callback) */
+#define TEX_SCROLL    0x08 /* scrolls with the frame counter */
+#define TEX_ANIM_RATE 0x34 /* the rate of an animated group (prim_animate_textures), 0 not animated */
+
 /* One texture of a set. */
 typedef struct TexEntry {
     /* 0x00 */ u8 width;  /* in units of 8 texels */
     /* 0x01 */ u8 height;
-    /* 0x02 */ u8 flags;  /* 1 8-bit (else 4-bit), 2 cut-out, 8 scrolls, 0x34 animation rate (prim_animate_textures) */
+    /* 0x02 */ u8 flags;  /* TEX_* */
     /* 0x03 */ u8 unk_03;
     /* 0x04 */ u8 *data;
 } TexEntry; /* size 0x8 */

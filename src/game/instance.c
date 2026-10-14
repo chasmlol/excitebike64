@@ -65,7 +65,7 @@ s32 instances_load(ResSet *resSet, s32 resIndex, s32 flags, TrackModelList *sect
             sInstanceDLs = mem_alloc_dbg(gInstanceHeader->numModels * 4, 0, (s32)sStrInstanceC, 0x8E);
             for (i = 0; i < gInstanceHeader->numModels; i++) {
                 model = (PrimModel *)res_load(resSet, gInstanceHeader->modelIds[i]);
-                prim_alloc_dl(&sInstanceDLs[i], model, &texSet, 0xC);
+                prim_alloc_dl(&sInstanceDLs[i], model, &texSet, PRIM_LOAD_TLUT | PRIM_RESET_TLUT);
                 /* keep the vertices, drop the commands */
                 mem_realloc_dbg(model, (s32)model->cmds - (s32)model, 0, (s32)sStrInstanceC, 0x94);
             }
