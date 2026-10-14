@@ -1,10 +1,10 @@
 #include "game.h"
 
-Node_16 *collide_build_sphere_tree(Param *p)
+CollideNode *collide_build_sphere_tree(CollideSphereDesc *p)
 {
-    Node_16 *n = sCollideNodeNext;
-    Node_16 *a;
-    Node_16 *b;
+    CollideNode *n = sCollideNodeNext;
+    CollideNode *a;
+    CollideNode *b;
     f32 pa[3];
     f32 pb[3];
     f32 d[3];
@@ -12,86 +12,86 @@ Node_16 *collide_build_sphere_tree(Param *p)
 
     sCollideNodeNext = n + 1;
     sCollideNodeCount = sCollideNodeCount + 1;
-    if (p->kid == 0) {
-        n->x = p->x;
-        n->y = p->y - 0.5f;
-        n->z = p->z;
-        n->r = p->r;
+    if (p->child == 0) {
+        n->pos.x = p->x;
+        n->pos.y = p->y - 0.5f;
+        n->pos.z = p->z;
+        n->radius = p->radius;
     } else {
-        a = collide_build_sphere_tree(p + p->kid);
-        n->c2 = a;
-        b = a->c1;
-        d[0] = b->x - a->x;
-        d[1] = b->y - a->y;
-        d[2] = b->z - a->z;
+        a = collide_build_sphere_tree(p + p->child);
+        n->child = a;
+        b = a->next;
+        d[0] = b->pos.x - a->pos.x;
+        d[1] = b->pos.y - a->pos.y;
+        d[2] = b->pos.z - a->pos.z;
         len = __builtin_sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
         if (len != 0.0f) {
             d[0] = d[0] / len;
             d[1] = d[1] / len;
             d[2] = d[2] / len;
         }
-        pa[0] = d[0] * -a->r;
-        pa[1] = d[1] * -a->r;
-        pa[2] = d[2] * -a->r;
-        pa[0] = pa[0] + a->x;
-        pa[1] = pa[1] + a->y;
-        pa[2] = pa[2] + a->z;
-        pb[0] = d[0] * b->r;
-        pb[1] = d[1] * b->r;
-        pb[2] = d[2] * b->r;
-        pb[0] = pb[0] + b->x;
-        pb[1] = pb[1] + b->y;
-        pb[2] = pb[2] + b->z;
-        n->x = (pa[0] + pb[0]) * 0.5f;
-        n->y = (pa[1] + pb[1]) * 0.5f;
-        n->z = (pa[2] + pb[2]) * 0.5f;
+        pa[0] = d[0] * -a->radius;
+        pa[1] = d[1] * -a->radius;
+        pa[2] = d[2] * -a->radius;
+        pa[0] = pa[0] + a->pos.x;
+        pa[1] = pa[1] + a->pos.y;
+        pa[2] = pa[2] + a->pos.z;
+        pb[0] = d[0] * b->radius;
+        pb[1] = d[1] * b->radius;
+        pb[2] = d[2] * b->radius;
+        pb[0] = pb[0] + b->pos.x;
+        pb[1] = pb[1] + b->pos.y;
+        pb[2] = pb[2] + b->pos.z;
+        n->pos.x = (pa[0] + pb[0]) * 0.5f;
+        n->pos.y = (pa[1] + pb[1]) * 0.5f;
+        n->pos.z = (pa[2] + pb[2]) * 0.5f;
         pa[0] = pa[0] - pb[0];
         pa[1] = pa[1] - pb[1];
         pa[2] = pa[2] - pb[2];
-        n->r = __builtin_sqrtf(pa[0] * pa[0] + pa[1] * pa[1] + pa[2] * pa[2]) * 0.5f;
+        n->radius = __builtin_sqrtf(pa[0] * pa[0] + pa[1] * pa[1] + pa[2] * pa[2]) * 0.5f;
     }
-    if (p->kid2 != 0) {
-        n->c1 = collide_build_sphere_tree(p + p->kid2);
+    if (p->next != 0) {
+        n->next = collide_build_sphere_tree(p + p->next);
     }
-    p->r = n->r;
+    p->radius = n->radius;
     return n;
 }
 
-s32 collide_spheres_overlap(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2)
+s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *x1, Vec3f *x2, Vec3f *o1, Vec3f *o2)
 {
     f32 r;
     f32 d;
     f32 t1, t2, t3;
     volatile s32 pad[4];
 
-    if (a->flag == 0) {
-        a->f10 = a->f8 * x1->m0 + a->fc * x1->m3 + o1->x;
-        a->f14 = a->f8 * x1->m1 + a->fc * x1->m4 + o1->y;
-        t1 = x1->m2;
-        t2 = x1->m5;
+    if (a->cached == 0) {
+        a->worldPos.x = a->pos.y * x1[1].x + a->pos.z * x1[2].x + o1->x;
+        a->worldPos.y = a->pos.y * x1[1].y + a->pos.z * x1[2].y + o1->y;
+        t1 = x1[1].z;
+        t2 = x1[2].z;
         t3 = o1->z;
-        a->flag = 1;
-        a->f18 = a->f8 * t1 + a->fc * t2 + t3;
+        a->cached = 1;
+        a->worldPos.z = a->pos.y * t1 + a->pos.z * t2 + t3;
     }
-    if (b->flag == 0) {
-        b->f10 = b->f8 * x2->m0 + b->fc * x2->m3 + o2->x;
-        b->f14 = b->f8 * x2->m1 + b->fc * x2->m4 + o2->y;
-        t1 = x2->m2;
-        t2 = x2->m5;
+    if (b->cached == 0) {
+        b->worldPos.x = b->pos.y * x2[1].x + b->pos.z * x2[2].x + o2->x;
+        b->worldPos.y = b->pos.y * x2[1].y + b->pos.z * x2[2].y + o2->y;
+        t1 = x2[1].z;
+        t2 = x2[2].z;
         t3 = o2->z;
-        b->flag = 1;
-        b->f18 = b->f8 * t1 + b->fc * t2 + t3;
+        b->cached = 1;
+        b->worldPos.z = b->pos.y * t1 + b->pos.z * t2 + t3;
     }
-    r = a->f1c + b->f1c;
-    d = (a->f10 - b->f10) * (a->f10 - b->f10)
-      + (a->f14 - b->f14) * (a->f14 - b->f14)
-      + (a->f18 - b->f18) * (a->f18 - b->f18);
+    r = a->radius + b->radius;
+    d = (a->worldPos.x - b->worldPos.x) * (a->worldPos.x - b->worldPos.x)
+      + (a->worldPos.y - b->worldPos.y) * (a->worldPos.y - b->worldPos.y)
+      + (a->worldPos.z - b->worldPos.z) * (a->worldPos.z - b->worldPos.z);
     if (d < r * r) {
         if (a->child == 0) {
             if (b->child == 0) {
                 return 1;
             }
-        } else if (b->child == 0 || b->f1c < a->f1c) {
+        } else if (b->child == 0 || b->radius < a->radius) {
             a = a->child;
             do {
                 if (collide_spheres_overlap(a, b, x1, x2, o1, o2) & 0xff) {
@@ -110,7 +110,7 @@ s32 collide_spheres_overlap(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2)
     return 0;
 }
 
-s32 collide_find_deepest_overlap(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2)
+s32 collide_find_deepest_overlap(CollideNode *p1, CollideNode *p2, Vec3f *m1, Vec3f *m2, Vec3f *v1, Vec3f *v2)
 {
     f32 fVar3;
     f32 fVar4;
@@ -121,32 +121,32 @@ s32 collide_find_deepest_overlap(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f
     s32 uVar1;
     Vec3f tmp;
 
-    if (p1->flag == 0) {
-        p1->x = p1->f08 * m1->f0c + p1->f0c * m1->f18 + v1->x;
-        p1->y = p1->f08 * m1->f10 + p1->f0c * m1->f1c + v1->y;
-        fVar3 = m1->f14;
-        fVar5 = m1->f20;
+    if (p1->cached == 0) {
+        p1->worldPos.x = p1->pos.y * m1[1].x + p1->pos.z * m1[2].x + v1->x;
+        p1->worldPos.y = p1->pos.y * m1[1].y + p1->pos.z * m1[2].y + v1->y;
+        fVar3 = m1[1].z;
+        fVar5 = m1[2].z;
         fz = v1->z;
-        p1->flag = 1;
-        p1->z = p1->f08 * fVar3 + p1->f0c * fVar5 + fz;
+        p1->cached = 1;
+        p1->worldPos.z = p1->pos.y * fVar3 + p1->pos.z * fVar5 + fz;
     }
-    if (p2->flag == 0) {
-        p2->x = p2->f08 * m2->f0c + p2->f0c * m2->f18 + v2->x;
-        p2->y = p2->f08 * m2->f10 + p2->f0c * m2->f1c + v2->y;
-        fVar3 = m2->f14;
-        fVar5 = m2->f20;
+    if (p2->cached == 0) {
+        p2->worldPos.x = p2->pos.y * m2[1].x + p2->pos.z * m2[2].x + v2->x;
+        p2->worldPos.y = p2->pos.y * m2[1].y + p2->pos.z * m2[2].y + v2->y;
+        fVar3 = m2[1].z;
+        fVar5 = m2[2].z;
         fz = v2->z;
-        p2->flag = 1;
-        p2->z = p2->f08 * fVar3 + p2->f0c * fVar5 + fz;
+        p2->cached = 1;
+        p2->worldPos.z = p2->pos.y * fVar3 + p2->pos.z * fVar5 + fz;
     }
-    fVar4 = p1->r + p2->r;
-    d = (p1->x - p2->x) * (p1->x - p2->x) +
-        (p1->y - p2->y) * (p1->y - p2->y) +
-        (p1->z - p2->z) * (p1->z - p2->z);
+    fVar4 = p1->radius + p2->radius;
+    d = (p1->worldPos.x - p2->worldPos.x) * (p1->worldPos.x - p2->worldPos.x) +
+        (p1->worldPos.y - p2->worldPos.y) * (p1->worldPos.y - p2->worldPos.y) +
+        (p1->worldPos.z - p2->worldPos.z) * (p1->worldPos.z - p2->worldPos.z);
     if (d < fVar4 * fVar4) {
         if (p1->child == 0) {
             if (p2->child == 0) {
-                d = (p1->r + p2->r) - __builtin_sqrtf(d);
+                d = (p1->radius + p2->radius) - __builtin_sqrtf(d);
                 if (sCollideDepth < d) {
                     sCollideDepth = d;
                     sCollideHitA = p1;
@@ -154,7 +154,7 @@ s32 collide_find_deepest_overlap(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f
                 }
                 return 0;
             }
-        } else if (p2->child == 0 || p2->r < p1->r) {
+        } else if (p2->child == 0 || p2->radius < p1->radius) {
             p1 = p1->child;
             do {
                 uVar1 = collide_find_deepest_overlap(p1, p2, m1, m2, v1, v2);
@@ -244,16 +244,16 @@ L1d8:
     if (gRaceFrame - p1->contactFrame[p2 - gRiders] < 0x3c) return 0;
 
     pa = &p1->bike.pos.x;
-    vec[0] = gCollidePoint_2[0] - pa[0];
-    vec[1] = gCollidePoint_2[1] - pa[1];
-    vec[2] = gCollidePoint_2[2] - pa[2];
+    vec[0] = gCollidePoint.x - pa[0];
+    vec[1] = gCollidePoint.y - pa[1];
+    vec[2] = gCollidePoint.z - pa[2];
     q = &p2->bike;
     mtx3f_mul_vec3(vec, &p1->bike.right.x, o1);
     if (-0.2f < o1[2] && o1[2] < 0.2f) return 0;
 
-    vec[0] = gCollidePoint_2[0] - q->pos.x;
-    vec[1] = gCollidePoint_2[1] - q->pos.y;
-    vec[2] = gCollidePoint_2[2] - q->pos.z;
+    vec[0] = gCollidePoint.x - q->pos.x;
+    vec[1] = gCollidePoint.y - q->pos.y;
+    vec[2] = gCollidePoint.z - q->pos.z;
     mtx3f_mul_vec3(vec, &q->right.x, o2);
     if (-0.2f < o2[2] && o2[2] < 0.2f) return 0;
 
@@ -298,14 +298,6 @@ L1d8:
 
 #define NORM(v) { f32 len = __builtin_sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); if (len != 0.0f) { v.x /= len; v.y /= len; v.z /= len; } }
 
-typedef struct {
-    u8 pad0[0x10];
-    Vec3f pos;
-    f32 r;
-} Ball;
-
-extern Ball *sCollideHitA_2;
-extern Ball *sCollideHitB_2;
 
 s32 collide_apply_impulse(RigidBody *a, RigidBody *b) {
     Vec3f n;
@@ -321,9 +313,9 @@ s32 collide_apply_impulse(RigidBody *a, RigidBody *b) {
     Rider *ba, *bb, *pa, *pb;
     s32 r, vol, ia, ib;
 
-    n.x = sCollideHitA_2->pos.x - sCollideHitB_2->pos.x;
-    n.y = sCollideHitA_2->pos.y - sCollideHitB_2->pos.y;
-    n.z = sCollideHitA_2->pos.z - sCollideHitB_2->pos.z;
+    n.x = sCollideHitA->worldPos.x - sCollideHitB->worldPos.x;
+    n.y = sCollideHitA->worldPos.y - sCollideHitB->worldPos.y;
+    n.z = sCollideHitA->worldPos.z - sCollideHitB->worldPos.z;
     NORM(n);
     if (n.y > 0.25f) {
         n.y = 0.25f;
@@ -333,12 +325,12 @@ s32 collide_apply_impulse(RigidBody *a, RigidBody *b) {
         NORM(n);
     }
     h = sCollideDepth * 0.5f;
-    gCollidePoint.x = n.x * (sCollideHitB_2->r - h);
-    gCollidePoint.y = n.y * (sCollideHitB_2->r - h);
-    gCollidePoint.z = n.z * (sCollideHitB_2->r - h);
-    gCollidePoint.x = sCollideHitB_2->pos.x + gCollidePoint.x;
-    gCollidePoint.y = sCollideHitB_2->pos.y + gCollidePoint.y;
-    gCollidePoint.z = sCollideHitB_2->pos.z + gCollidePoint.z;
+    gCollidePoint.x = n.x * (sCollideHitB->radius - h);
+    gCollidePoint.y = n.y * (sCollideHitB->radius - h);
+    gCollidePoint.z = n.z * (sCollideHitB->radius - h);
+    gCollidePoint.x = sCollideHitB->worldPos.x + gCollidePoint.x;
+    gCollidePoint.y = sCollideHitB->worldPos.y + gCollidePoint.y;
+    gCollidePoint.z = sCollideHitB->worldPos.z + gCollidePoint.z;
     gCollidePoint.y = (a->pos.y + b->pos.y) * 0.5f;
     ra.x = gCollidePoint.x - a->pos.x;
     ra.y = gCollidePoint.y - a->pos.y;
@@ -485,8 +477,8 @@ s32 collide_apply_impulse(RigidBody *a, RigidBody *b) {
 
 s32 collide_bodies(RigidBody *p1, RigidBody *p2)
 {
-    u8 *s0;
-    u8 *v;
+    CollideNode *s0;
+    CollideNode *v;
     RigidBody *tb;
     s32 a, b;
 
@@ -496,22 +488,22 @@ s32 collide_bodies(RigidBody *p1, RigidBody *p2)
     v = p1->tree;
     sCollideDepth = 0.0f;
     s0 = v;
-    if (s0 != 0 && *s0 != 0) {
-        *s0 = 0;
-        s0 = *(u8 **)(s0 + 0x24);
+    if (s0 != 0 && s0->cached != 0) {
+        s0->cached = 0;
+        s0 = s0->child;
         while (s0 != 0) {
             collide_tree_clear_cache(s0);
-            s0 = *(u8 **)(s0 + 0x20);
+            s0 = s0->next;
         }
     }
     if (p1->owner == p2->owner &&
         p1->owner->crashState != 2) {
-        if (collide_spheres_overlap(p1->tree, p2->tree, (Xf *)&p1->right, (Xf *)&p2->right, &p1->pos, &p2->pos) & 0xff) {
+        if (collide_spheres_overlap(p1->tree, p2->tree, &p1->right, &p2->right, &p1->pos, &p2->pos) & 0xff) {
             return 0;
         }
         p1->owner->crashState = 2;
     }
-    collide_find_deepest_overlap(p1->tree, p2->tree, (Xf_2 *)&p1->right, (Xf_2 *)&p2->right, &p1->pos, &p2->pos);
+    collide_find_deepest_overlap(p1->tree, p2->tree, &p1->right, &p2->right, &p1->pos, &p2->pos);
     if (0.0f < sCollideDepth) {
         if (collide_apply_impulse(p1, p2) != 0) {
             p2->flags = p2->flags | 1;
@@ -540,9 +532,9 @@ s32 collide_bodies(RigidBody *p1, RigidBody *p2)
     return 0;
 }
 
-void collide_tree_clear_cache(Node_17 *p) {
-    if (p != NULL && p->flag != 0) {
-        p->flag = 0;
+void collide_tree_clear_cache(CollideNode *p) {
+    if (p != NULL && p->cached != 0) {
+        p->cached = 0;
         p = p->child;
         while (p != NULL) {
             collide_tree_clear_cache(p);
@@ -603,13 +595,13 @@ void collide_update_bike_speeds(Rider *p)
     p->speed = r;
 }
 
-void collide_reset_tree(Node_18 *p) {
-    Node_18 *q;
+void collide_reset_tree(CollideNode *p) {
+    CollideNode *q;
     sCollideDepth = 0;
     q = p;
-    if (q != NULL && q->flag != 0) {
-        q->flag = 0;
-        for (q = q->first; q != NULL; q = q->sib) {
+    if (q != NULL && q->cached != 0) {
+        q->cached = 0;
+        for (q = q->child; q != NULL; q = q->next) {
             collide_tree_clear_cache(q);
         }
     }

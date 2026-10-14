@@ -29,6 +29,29 @@ typedef struct RiderSkeleton {
     /* 0x000 */ Bone bones[15];     /* gRiderSkelTemplate */
 } RiderSkeleton; /* size 0x780 */
 
+/* A sphere of a body's bounding-sphere tree (collide.c), built from CollideSphereDesc entries into a 16000-byte
+   pool. The tests use the body's up and forward rows only. */
+typedef struct CollideNode {
+    /* 0x00 */ u8 cached;           /* worldPos is up to date */
+    /* 0x01 */ u8 unk_01[3];
+    /* 0x04 */ Vec3f pos;           /* in the body's frame */
+    /* 0x10 */ Vec3f worldPos;
+    /* 0x1C */ f32 radius;
+    /* 0x20 */ struct CollideNode *next;
+    /* 0x24 */ struct CollideNode *child;
+} CollideNode; /* size 0x28 */
+
+/* A sphere tree description (sBikeSphereTreeDesc, sRiderSphereDesc): offsets to the first child and the next
+   sibling in entries, 0 for none. */
+typedef struct CollideSphereDesc {
+    /* 0x00 */ s32 child;
+    /* 0x04 */ s32 next;
+    /* 0x08 */ f32 x;
+    /* 0x0C */ f32 y;
+    /* 0x10 */ f32 z;
+    /* 0x14 */ f32 radius;
+} CollideSphereDesc; /* size 0x18 */
+
 /* A node of a ponytail's spring chain (ponytail.c): four per rider, anchored on the rider's head bone. */
 typedef struct PonytailNode {
     /* 0x00 */ Vec3f pos;
@@ -55,7 +78,7 @@ typedef struct RigidBody {
     /* 0x058 */ Vec3f right;        /* rotation matrix rows (quat_to_mtx3f) */
     /* 0x064 */ Vec3f up;
     /* 0x070 */ Vec3f fwd;
-    /* 0x07C */ void *tree;         /* bounding-sphere tree (collide.c) */
+    /* 0x07C */ CollideNode *tree;  /* bounding-sphere tree */
     /* 0x080 */ Vec3f contacts[20]; /* contact points: 11 for the bike, 8 for the rider */
     /* 0x170 */ f32 unk_170;
     /* 0x174 */ f32 mass;

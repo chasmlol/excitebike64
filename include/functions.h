@@ -679,18 +679,18 @@ s32 replay_read_bit(void);
 s32 replay_read_bits(s32 n);
 
 /* src/game/collide.c */
-Node_16 *collide_build_sphere_tree(Param *p);
-s32 collide_spheres_overlap(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2);
-s32 collide_find_deepest_overlap(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2);
+CollideNode *collide_build_sphere_tree(CollideSphereDesc *p);
+s32 collide_spheres_overlap(CollideNode *a, CollideNode *b, Vec3f *x1, Vec3f *x2, Vec3f *o1, Vec3f *o2);
+s32 collide_find_deepest_overlap(CollideNode *p1, CollideNode *p2, Vec3f *m1, Vec3f *m2, Vec3f *v1, Vec3f *v2);
 s32 collide_resolve_rider_hit(Rider *p1, Rider *p2);
 s32 collide_apply_impulse(RigidBody *a, RigidBody *b);
 s32 collide_bodies(RigidBody *p1, RigidBody *p2);
-void collide_tree_clear_cache(Node_17 *p);
+void collide_tree_clear_cache(CollideNode *p);
 void collide_free_node_pool(void);
 void collide_init_node_pool(void);
 void collide_reset_body(RigidBody *p);
 void collide_update_bike_speeds(Rider *p);
-void collide_reset_tree(Node_18 *p);
+void collide_reset_tree(CollideNode *p);
 
 /* src/game/unnamed/s0_80061F80.c */
 s32 ai_route_lap_ge(s8 *p, s16 v);

@@ -4766,12 +4766,9 @@ sCollideNodePool                      game  0x800F0B00  data        -
 sCollideNodeNext                      game  0x800F0B04  data        -
 sCollideNodeCount                     game  0x800F0B08  data        -
 sCollideHitA                          game  0x800F0B10  data        -
-sCollideHitA_2                        game  0x800F0B10  data        -  sCollideHitA
 sCollideHitB                          game  0x800F0B14  data        -
-sCollideHitB_2                        game  0x800F0B14  data        -  sCollideHitB
 sCollideDepth                         game  0x800F0B18  data        -
 gCollidePoint                         game  0x800F0B20  data        -
-gCollidePoint_2                       game  0x800F0B20  data        -  gCollidePoint
 gAiRouteToggle                        game  0x800F0B30  data        -
 D_800F0B40                            game  0x800F0B40  data        -
 sGravelPitModels                      game  0x800F0B48  data        -
