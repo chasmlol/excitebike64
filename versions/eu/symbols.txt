@@ -1810,6 +1810,8 @@ gViMode                               game  0x800CD528  data      0x4
 gViMode_2                             game  0x800CD528  data        -  gViMode
 sViModeWidths                         game  0x800CD52C  data      0xc
 sViModeHeights                        game  0x800CD538  data      0xc
+sViModeVStart                         game  0x800CD544  data      0xc
+sViModeYScale                         game  0x800CD550  data      0xc
 sSchedRetraceCount                    game  0x800CD55C  data      0x4
 sSchedSwapDeferred                    game  0x800CD560  data      0x4
 gSchedFrameLimit                      game  0x800CD564  data      0x4
@@ -3923,7 +3925,7 @@ sStreamDataBase                       game  0x800EF534  data        -
 sLastLeader                           game  0x800EF538  data        -
 sLastLeader_2                         game  0x800EF538  data        -  sLastLeader
 sSpeechUseSfxVolume                   game  0x800EF53C  data        -
-sStreamEchoBuf                        game  0x800EF680  data        -
+sStreamEchoBuf                        game  0x800EF540  data        -
 sCrowdQueue                           game  0x800F0540  data        -
 sLastLeadCollisionTime                game  0x800F0550  data        -
 sSongTick                             game  0x800F0554  data        -
