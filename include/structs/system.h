@@ -75,7 +75,7 @@
 #define RUMBLE_OFF              (-1)    /* a rumble_start duration that stops the motor */
 
 /* Maths (unnamed/s0_80011490.c). Angles are 0x10000 per turn (s16 or s32) and the tables take an angle >> 4:
-   gCosTable (0x1000 entries) is the cosine with 1.0 = 0x4000, and 0x400 entries (a quarter turn) back the sine.
+   gCosTable (0x1000 entries) is the cosine with 1.0 = 0x4000; the entry a quarter turn (0x400) earlier is the sine.
    mtx3i_* matrices are s32[9], row by row, in 2.14 fixed point (1.0 = 0x4000); mtx3f_* the same in f32; mtx_* work
    on the N64 Mtx (16.16: the s16 integer halves, then the u16 fractions). Quaternions are f32 (w, x, y, z). */
 #define ANGLE_90                0x4000
