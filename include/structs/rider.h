@@ -26,8 +26,16 @@
 /* gGame.flags */
 #define GAME_FLAG_FRONT_END_RACE    0x00000001 /* a race the front end runs behind the title or rider select */
 #define GAME_FLAG_RIDER_SELECT      0x00000010
-#define GAME_FLAG_TRACK_CHOSEN      0x00000080
 #define GAME_FLAG_REPLAY            0x00008000 /* replay playback */
+
+/* gEvent.flags */
+#define EVENT_TIMER_PAUSED          0x0010 /* the start countdown */
+#define EVENT_MESSAGE               0x0800
+#define EVENT_TAKEDOWN_REQUIRED     0x1000
+#define EVENT_LESSON_DONE           0x2000
+
+/* gSaveData.options */
+#define OPTION_DRONES_OFF           0x10    /* no extra riders (6 and 7) */
 
 /* gCheatFlags: bit n is cheat n of sCheatTable */
 #define CHEAT_BIG_HEAD              0x0001
@@ -68,6 +76,27 @@
 #define INPUT_STICK_X_SHIFT         24
 #define INPUT_STICK_Y_SHIFT         28
 
+/* Rider.camMode, savedCamMode: the entries of gCamModes (camera.c) */
+#define CAM_MODE_SOCCER             0
+#define CAM_MODE_CHASE_NEAR         1   /* 1-3: the modes the Camera button cycles through */
+#define CAM_MODE_CHASE_MID          2
+#define CAM_MODE_CHASE_FAR          3
+#define CAM_MODE_SIDE_VIEW          4   /* Excite 3D */
+#define CAM_MODE_HIGH_SIDE          5
+#define CAM_MODE_HILL_CLIMB         6
+#define CAM_MODE_STUNT_PIP          7   /* stunt replay in an inset view */
+#define CAM_MODE_CHASE_FAR_ALT      8
+#define CAM_MODE_FALL_VIEW          9
+#define CAM_MODE_CELEBRATION        10  /* after the finish */
+#define CAM_MODE_FIRST_PERSON       11
+#define CAM_MODE_NO_CYCLE           8   /* gCamModes flag: not one of the Camera button's modes */
+
+#define RIDER_COUNT                 8   /* gRiders */
+
+/* RigidBody.contacts: the bike's contact points (the rider's body has 8) */
+#define BIKE_CONTACT_COUNT          11
+#define RIDER_CONTACT_COUNT         8   /* the thrown rider's, per crash direction */
+
 /* Rider.flags */
 #define RIDER_OUT                   0x08 /* out of the race */
 #define RIDER_FINISHED              0x10 /* finished: brakes automatically */
@@ -79,10 +108,24 @@
 #define BODY_RIDER                  3   /* the rider, thrown off */
 #define BODY_BALL                   4   /* the soccer ball */
 
+/* RigidBody.flags */
+#define BODY_MOVING                 0x01 /* simulated; cleared when it comes to rest (phys_check_resting) */
+
 /* Rider.crashState */
 #define CRASH_STATE_RIDING          0
 #define CRASH_STATE_CRASHED         1
 #define CRASH_STATE_CLEAR           2   /* the rider is clear of the bike */
+
+/* Rider.crashPhase: which of the crash's three animations (CB1-CB3, CF, CL, CR) the thrown rider plays */
+#define CRASH_PHASE_NONE            0
+#define CRASH_PHASE_START           1
+#define CRASH_PHASE_FALL            2   /* more than half a second above the ground */
+#define CRASH_PHASE_LAND            3
+
+/* Rider.powerSlide */
+#define POWER_SLIDE_NONE            0
+#define POWER_SLIDE_ON              1
+#define POWER_SLIDE_END             2   /* ended this frame */
 
 /* Animations and tricks: indices of gRiderAnims (Rider.anim, trick, pendingCrash) */
 #define ANIM_NONE                   (-1)
@@ -118,6 +161,43 @@
 #define ANIM_CRASH_RIGHT            34
 #define ANIM_COUNT                  37
 
+/* RiderAnim.flags (stunt_start, stunt_update; rider_update_pose blends by them) */
+#define ANIM_FLAG_REVERSE           0x01 /* played back to the start after the last frame (the tricks) */
+#define ANIM_FLAG_LOOP              0x02
+#define ANIM_FLAG_HOLD              0x08 /* held on its last frames while the trick is held */
+#define ANIM_FLAG_ON_GROUND         0x10 /* can start on the ground */
+
+/* Bones of the rider's skeleton (RiderSkeleton; the order of sRiderBoneNames) */
+#define RIDER_BONE_HIPS             0   /* the root */
+#define RIDER_BONE_CHEST            1
+#define RIDER_BONE_HEAD             2
+#define RIDER_BONE_L_BICEP          3   /* each arm and leg: three bones in a chain */
+#define RIDER_BONE_L_FOREARM        4
+#define RIDER_BONE_L_HAND           5
+#define RIDER_BONE_R_BICEP          6
+#define RIDER_BONE_R_FOREARM        7
+#define RIDER_BONE_R_HAND           8
+#define RIDER_BONE_L_THIGH          9
+#define RIDER_BONE_L_SHIN           10
+#define RIDER_BONE_L_FOOT           11
+#define RIDER_BONE_R_THIGH          12
+#define RIDER_BONE_R_SHIN           13
+#define RIDER_BONE_R_FOOT           14
+#define RIDER_BONE_COUNT            15
+
+/* Bones of the bike's skeleton (BikeSkeleton), from what bike_skel_update and rider_update_pose do with them */
+#define BIKE_BONE_FRAME             0   /* the root */
+#define BIKE_BONE_STEER             1   /* handlebars and fork: turned by drawSteer */
+#define BIKE_BONE_FRONT_SUSP        2   /* moved by the front suspension */
+#define BIKE_BONE_FRONT_WHEEL       3
+#define BIKE_BONE_L_GRIP            4
+#define BIKE_BONE_R_GRIP            5
+#define BIKE_BONE_L_PEG             6
+#define BIKE_BONE_SWINGARM          7   /* turned by the rear suspension */
+#define BIKE_BONE_REAR_WHEEL        8
+#define BIKE_BONE_R_PEG             9
+#define BIKE_BONE_COUNT             10
+
 struct Rider;
 
 /* A bone of a skeleton (skel.c): resources of 0x38-byte entries become these. */
@@ -127,8 +207,8 @@ typedef struct Bone {
     /* 0x10 */ Mtx3 rot;            /* local rotation, 1.0 = 0x4000 */
     /* 0x34 */ Vec3i worldPos;
     /* 0x40 */ Mtx3 worldRot;
-    /* 0x64 */ u16 angles[3];
-    /* 0x6A */ s16 baseAngles[3];
+    /* 0x64 */ u16 angles[3];       /* rot as angles (rider_pose_snapshot): the pose an animation blends from */
+    /* 0x6A */ s16 savedPos[3];     /* the root bone's pos, saved with them */
     /* 0x70 */ u8 unk_70[0x10];
 } Bone; /* size 0x80 */
 
@@ -140,7 +220,7 @@ typedef struct RiderSkeleton {
     /* 0x000 */ Bone bones[15];     /* gRiderSkelTemplate */
 } RiderSkeleton; /* size 0x780 */
 
-/* Where the rider's hands and feet go (the bike's grips and pegs) and how the hips turn (rider_update_pose,
+/* Where the rider's hands and feet go (the bike's grips and pegs) and how the head turns (rider_update_pose,
    rider_apply_ik). */
 typedef struct RiderIkTarget {
     /* 0x00 */ Vec3i pos;
@@ -149,7 +229,7 @@ typedef struct RiderIkTarget {
 
 typedef struct RiderIkTargets {
     /* 0x00 */ RiderIkTarget limb[4]; /* left and right hand, left and right foot */
-    /* 0xC0 */ Mtx3 hips;
+    /* 0xC0 */ Mtx3 head;           /* the head bone's world rotation */
     /* 0xE4 */ s32 armTwist;        /* 0x100 = full */
 } RiderIkTargets; /* size 0xE8 */
 
@@ -165,7 +245,7 @@ typedef struct AnimClip {
 
 /* A rider animation or trick (gRiderAnims, indexed by Rider.anim). */
 typedef struct RiderAnim {
-    /* 0x00 */ u32 flags;
+    /* 0x00 */ u32 flags;           /* ANIM_FLAG_* */
     /* 0x04 */ s32 *bodyRes;        /* resource of the body clip */
     /* 0x08 */ s32 *rootRes;        /* resource of the root clip (bike offset and rotation), or NULL */
     /* 0x0C */ AnimClip *body;      /* 26 halfwords per frame */
@@ -176,9 +256,9 @@ typedef struct RiderAnim {
     /* 0x20 */ s32 points;
     /* 0x24 */ s32 unk_24;
     /* 0x28 */ s32 holdFrames;
-    /* 0x2C */ s32 unk_2C;
-    /* 0x30 */ s32 unk_30;
-    /* 0x34 */ s32 speed;
+    /* 0x2C */ s32 playSpeed;       /* animSpeed (frames, 8.8) at the start */
+    /* 0x30 */ s32 holdSpeed;       /* twice the animSpeed while held */
+    /* 0x34 */ s32 speed;           /* the animSpeed it plays back at (negated) */
     /* 0x38 */ s32 announce;        /* announcer clip, -1 none */
 } RiderAnim; /* size 0x3C */
 
@@ -233,7 +313,7 @@ typedef struct RigidBody {
     /* 0x070 */ Vec3f fwd;
     /* 0x07C */ CollideNode *tree;  /* bounding-sphere tree */
     /* 0x080 */ Vec3f contacts[20]; /* contact points: 11 for the bike, 8 for the rider */
-    /* 0x170 */ f32 unk_170;
+    /* 0x170 */ f32 restThreshold; /* vel^2 + angVel^2 under which it may come to rest */
     /* 0x174 */ f32 mass;
     /* 0x178 */ f32 inertia;
     /* 0x17C */ u8 type;            /* 0 human bike, 1 CPU bike, 2 crashed bike, 3 rider, 4 ball */
@@ -251,7 +331,7 @@ typedef struct Wheel {
     /* 0x14 */ f32 latForce;
     /* 0x18 */ f32 lonForce;        /* drive force minus brake torque */
     /* 0x1C */ f32 springForce;
-    /* 0x20 */ f32 unk_20;
+    /* 0x20 */ f32 airGap;          /* in the air: groundDist - suspLength on the last tick */
     /* 0x24 */ f32 suspLength;
     /* 0x28 */ f32 groundDist;      /* along the bike's up axis */
     /* 0x2C */ f32 suspDelta;
@@ -335,29 +415,30 @@ typedef struct Rider {
     /* 0x3AC */ s32 animFrame;      /* 8.8 fixed point */
     /* 0x3B0 */ s32 animSpeed;
     /* 0x3B4 */ s32 animHold;
-    /* 0x3B8 */ s16 trickCount;
-    /* 0x3BA */ s16 unk_3BA;
+    /* 0x3B8 */ s16 holdTime;       /* 8.8 frames a held trick has been held (stunt_animate), 0 otherwise */
+    /* 0x3BA */ s16 heldFrames;     /* frames the trick was held: 2 points each */
     /* 0x3BC */ s16 headYaw;
     /* 0x3BE */ s16 unk_3BE;
     /* 0x3C0 */ s16 headTimer;
     /* 0x3C2 */ s16 unk_3C2;
-    /* 0x3C4 */ s32 stuntScore;
-    /* 0x3C8 */ s32 raceKey;        /* race order key */
+    /* 0x3C4 */ s32 stuntScore;     /* points of the trick being done */
+    /* 0x3C8 */ s32 stuntTotal;     /* stunt points banked (the HUD's Total) */
     /* 0x3CC */ s32 prevAnimFrame;
     /* 0x3D0 */ s8 anim;            /* current trick or animation, -1 none */
     /* 0x3D1 */ s8 prevAnim;
-    /* 0x3D2 */ s8 trick;
+    /* 0x3D2 */ s8 trick;           /* the last trick done */
     /* 0x3D3 */ s8 queuedTrick;     /* stunt_read_input */
-    /* 0x3D4 */ s8 stickHist[8];
+    /* 0x3D4 */ s8 stickHist[8];    /* stick directions, newest at stickHistIdx: 1 trick button released, 2 centred,
+                                       3-6 pushed */
     /* 0x3DC */ u8 unk_3DC[8];
-    /* 0x3E4 */ u8 trickHist[6];
+    /* 0x3E4 */ u8 trickHist[6];    /* the last tricks, newest first (repeats score less) */
     /* 0x3EA */ u8 trickListLen;
-    /* 0x3EB */ s8 trickList[16];
-    /* 0x3FB */ u8 unk_3FB;
+    /* 0x3EB */ s8 trickList[16];   /* each different trick done */
+    /* 0x3FB */ u8 trickDoneTimer;  /* counts down from 32 after a trick; then stuntScore goes to stuntTotal */
     /* 0x3FC */ u8 stickHistIdx;
-    /* 0x3FD */ u8 stickHistCount;
+    /* 0x3FD */ u8 stickHistCount;  /* frames the newest direction has been held, up to 0xF0 */
     /* 0x3FE */ s8 pipTimer;        /* stunt replay inset view */
-    /* 0x3FF */ u8 finishState;
+    /* 0x3FF */ u8 finishState;     /* 1 finished, 2 in the finish pose, 3 done */
     /* 0x400 */ u16 celebrationTimer; /* cam_mode_celebration */
     /* 0x402 */ u8 checkpoint;      /* desert */
     /* 0x403 */ u8 unk_403;
@@ -365,9 +446,9 @@ typedef struct Rider {
     /* 0x408 */ s32 trickFrame;
     /* 0x40C */ u8 unk_40C[4];
     /* 0x410 */ s16 crestCrouch;    /* grows while a crest is ahead */
-    /* 0x412 */ s16 unk_412;
-    /* 0x414 */ s16 wheelieBalance;
-    /* 0x416 */ s16 wheelieTimer;
+    /* 0x412 */ s16 walkPhase;      /* angle of the planted feet's stepping cycle, below 1 m/s with B held */
+    /* 0x414 */ s16 wheelieBalance; /* > 0x400 tips over backwards, < -0x400 comes down */
+    /* 0x416 */ s16 wheelieTimer;   /* 16 and up: frames into a wheelie (+16); 15 down to 1: ending */
     /* 0x418 */ s8 crestAhead;      /* path_find_crest_ahead */
     /* 0x419 */ u8 leftFootOut;
     /* 0x41A */ u8 rightFootOut;
@@ -399,11 +480,11 @@ typedef struct Rider {
     /* 0x5BC */ s32 turboReleaseFrame;
     /* 0x5C0 */ s32 rHeld;          /* frames R held (> 0) or released (< 0) */
     /* 0x5C4 */ s32 aiFrame;
-    /* 0x5C8 */ s32 hardLandFrame;
-    /* 0x5CC */ u8 landingAssist;
-    /* 0x5CD */ u8 roughLanding;
+    /* 0x5C8 */ s32 hardLandFrame;  /* gRaceFrame while the springs are not overloaded */
+    /* 0x5CC */ u8 landingAssist;   /* the bike will land straight: pitched to the ground (bike_align_to_ground) */
+    /* 0x5CD */ u8 roughLanding;    /* frames since a rough landing (more drag), 0 none */
     /* 0x5CE */ u8 unk_5CE;
-    /* 0x5CF */ u8 dirtSpray;
+    /* 0x5CF */ u8 dirtSpray;       /* 0 none, 1 light, 2 heavy */
     /* 0x5D0 */ s8 stickX;
     /* 0x5D1 */ u8 unk_5D1;
     /* 0x5D2 */ s8 stickY;
@@ -420,13 +501,13 @@ typedef struct Rider {
     /* 0x61F */ u8 unk_61F;
     /* 0x620 */ u8 blinkCount;
     /* 0x621 */ u8 blinkTimer;
-    /* 0x622 */ s16 unk_622;
+    /* 0x622 */ s16 airTurnYaw;     /* the air turns' yaw offset: stickX << 9 */
     /* 0x624 */ s16 crashTimer;
     /* 0x626 */ s16 prevSegment;
     /* 0x628 */ s16 segment;        /* gPathNodes */
     /* 0x62A */ s16 unk_62A;
-    /* 0x62C */ f32 segmentDist;
-    /* 0x630 */ f32 distToGo;
+    /* 0x62C */ f32 lapDistLeft;    /* metres to the finish line, along the racing line */
+    /* 0x630 */ f32 raceDist;       /* metres covered in the race: laps + 1 lap lengths less lapDistLeft */
     /* 0x634 */ f32 progressSpeed;
     /* 0x638 */ f32 lateral;        /* offset from the racing line */
     /* 0x63C */ f32 segmentT;
@@ -441,7 +522,7 @@ typedef struct Rider {
     /* 0x6A0 */ u8 unk_6A0[0x12];
     /* 0x6B2 */ s16 bestSegment;
     /* 0x6B4 */ u8 unk_6B4[0x34];
-    /* 0x6E8 */ u8 isCpu;           /* humans become CPU riders after the finish */
+    /* 0x6E8 */ u8 isCpu;           /* 0 human, 1 CPU (humans too after the finish), 2 extra rider (6, 7) */
     /* 0x6E9 */ u8 reversing;
     /* 0x6EA */ u8 unk_6EA;
     /* 0x6EB */ u8 pathSearch;
@@ -463,10 +544,10 @@ typedef struct Rider {
     /* 0x736 */ s16 unk_736;
     /* 0x738 */ f32 airPitch;
     /* 0x73C */ s32 airPitchInput;
-    /* 0x740 */ s16 unk_740;
+    /* 0x740 */ s16 cpuAirPitch;    /* a CPU rider's airPitchInput */
     /* 0x742 */ s16 unk_742;
     /* 0x744 */ s32 airFrames;      /* frames in the air, negative on the ground */
-    /* 0x748 */ s32 jumpState;
+    /* 0x748 */ s32 jumpState;      /* 1 in a jump, -1 a jump that does not count (crash, trick), 0 on the ground */
     /* 0x74C */ Vec3f takeoffPos;
     /* 0x758 */ f32 jumpDist;
     /* 0x75C */ f32 prevJumpDist;
@@ -500,7 +581,7 @@ typedef struct Rider {
     /* 0x7C8 */ f32 airFloat;
     /* 0x7CC */ f32 unk_7CC;
     /* 0x7D0 */ f32 turnRadius;
-    /* 0x7D4 */ f32 unk_7D4;
+    /* 0x7D4 */ f32 wallFriction; /* friction against walls at 10 m/s and more */
     /* 0x7D8 */ f32 power;
     /* 0x7DC */ u8 unk_7DC;
     /* 0x7DD */ u8 unk_7DD[3];

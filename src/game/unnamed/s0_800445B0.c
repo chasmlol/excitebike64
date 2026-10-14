@@ -22,7 +22,7 @@ void bike_crash_begin(Rider *b, s32 n)
     if (b == &gRiders[1]) {
         gEvent.flags &= ~0x1000;
     }
-    b->unk_3FB = 0;
+    b->trickDoneTimer = 0;
     b->fistPump = 0;
     b->savedCamMode = (u16)b->camMode;
     if (b->isCpu == 0) {
@@ -106,8 +106,8 @@ void bike_crash_begin(Rider *b, s32 n)
         b->body.contacts[i].y = w.y + b->body.pos.y;
         b->body.contacts[i].z = w.z + b->body.pos.z;
     }
-    b->bike.unk_170 = 1.0f;
-    b->body.unk_170 = 1.0f;
+    b->bike.restThreshold = 1.0f;
+    b->body.restThreshold = 1.0f;
     stunt_start(b, n);
     collide_tree_clear_cache(b->body.tree);
 }
@@ -335,7 +335,7 @@ s32 phys_body_step(RigidBody *b, Pt_4 *t, s32 n, u8 m)
                     }
                 }
                 if (x > 0.0f) {
-                    if (phys_check_resting(&b->vel.x, &b->angVel.x, depth, rot, n, b->unk_170) < 0.0f) {
+                    if (phys_check_resting(&b->vel.x, &b->angVel.x, depth, rot, n, b->restThreshold) < 0.0f) {
                         b->flags &= ~1;
                         return 0;
                     }
@@ -417,7 +417,7 @@ s32 phys_body_step(RigidBody *b, Pt_4 *t, s32 n, u8 m)
                 if (o->speed < 10.0f) {
                     x = 0.2f;
                 } else {
-                    x = o->unk_7D4;
+                    x = o->wallFriction;
                 }
             }
             phys_contact_impulse(b, &gContactNormal_2, &rot[k], x, &dv, 0.05f);
@@ -695,7 +695,7 @@ void bike_respawn(Rider *b) {
     b->engine.overheated = 0;
     b->prevAnim = -1;
     b->queuedTrick = -1;
-    b->unk_3FB = 0;
+    b->trickDoneTimer = 0;
     b->unk_7DC = 0;
     if (b->finishState == 0) {
         b->blinkCount = 40;
@@ -860,7 +860,7 @@ void bike_respawn(Rider *b) {
     b->localAngVel.x = z;
     b->localAngVel.y = z;
     b->localAngVel.z = z;
-    b->bike.unk_170 = 1.0f;
+    b->bike.restThreshold = 1.0f;
     if (b == gRiders) {
         b->flags &= ~0x10;
     }

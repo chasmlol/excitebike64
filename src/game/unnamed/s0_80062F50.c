@@ -98,7 +98,7 @@ void race_spawn_extra_rider(Spawn *sp)
     b->localAngVel.x = 0.0f;
     b->localAngVel.y = 0.0f;
     b->localAngVel.z = 0.0f;
-    b->bike.unk_170 = 1.0f;
+    b->bike.restThreshold = 1.0f;
     b->anim = -1;
     *(Blk *)b->drawQuat = *(Blk *)b->bike.quat;
     b->bike.pos.y = bike_get_ground_height(&b->bike.pos) + 0.0f + 0.5f
@@ -142,7 +142,7 @@ ok:
     if (dt >= 0x385) {
         q->power = 0.2f;
     }
-    dy = q->segmentDist - p->segmentDist;
+    dy = q->lapDistLeft - p->lapDistLeft;
     if (dy < 20.0f && -50.0f < dy) {
         goto fail;
     }
@@ -224,7 +224,7 @@ void race_sort_positions(void)
     do {
         swapped = 0;
         for (i = 0; i < 7; i++) {
-            if (sRidersByLapPos[i]->segmentDist > sRidersByLapPos[i + 1]->segmentDist) {
+            if (sRidersByLapPos[i]->lapDistLeft > sRidersByLapPos[i + 1]->lapDistLeft) {
                 swapped = 1;
                 t = sRidersByLapPos[i];
                 sRidersByLapPos[i] = sRidersByLapPos[i + 1];
@@ -236,7 +236,7 @@ void race_sort_positions(void)
     do {
         swapped = 0;
         for (i = 0; i < gEvent.numRiders - 1; i++) {
-            if (gRiderStandings[i]->distToGo < gRiderStandings[i + 1]->distToGo
+            if (gRiderStandings[i]->raceDist < gRiderStandings[i + 1]->raceDist
                 && (gRiderStandings[i]->inactive | gRiderStandings[i + 1]->inactive) == 0
                 && gRiderStandings[i]->race.finishPlace < 0) {
                 swapped = 1;
@@ -265,13 +265,13 @@ void race_queue_rider_behind(Rider *p, Rider *p2, s32 p3)
     }
     if (gRiderStandings[p3 - 1]->isCpu == 1 && gRiderStandings[p3 - 1]->inactive == 0) {
         p->inactive = 1;
-        p->distToGo = -1000000.0f;
+        p->raceDist = -1000000.0f;
         for (i = sRiderQueueBehindCount; i > 0; i--) {
             sRiderQueueBehind[i] = sRiderQueueBehind[i - 1];
         }
         sRiderQueueBehind[0].idx = p - gRiders;
         sRiderQueueBehind[0].e = gRiderStandings[p3 - 1];
-        sRiderQueueBehind[0].d = p2->distToGo - gRiderStandings[p3 - 1]->distToGo - 20.0f;
+        sRiderQueueBehind[0].d = p2->raceDist - gRiderStandings[p3 - 1]->raceDist - 20.0f;
         sRiderQueueBehindCount++;
     }
 }
@@ -289,14 +289,14 @@ void race_queue_rider_ahead(Rider *a, Rider *b, s32 n)
     if (p->isCpu == 1 && p->inactive == 0) {
         a->inactive = 1;
         i = sRiderQueueAheadCount;
-        a->distToGo = 1000000.0f;
+        a->raceDist = 1000000.0f;
         while (i > 0) {
             sRiderQueueAhead[i] = sRiderQueueAhead[i - 1];
             i = i - 1;
         }
         *(s16 *)&sRiderQueueAhead[0] = (s16)(((s32)a - (s32)gRiders) * -0x41041041 >> 5);
         sRiderQueueAhead[0].w1 = (s32)gRiderStandings[n + 1];
-        sRiderQueueAhead[0].f2 = (gRiderStandings[n + 1]->distToGo - b->distToGo) - 20.0f;
+        sRiderQueueAhead[0].f2 = (gRiderStandings[n + 1]->raceDist - b->raceDist) - 20.0f;
         sRiderQueueAheadCount = sRiderQueueAheadCount + 1;
     }
 }
@@ -387,11 +387,11 @@ void race_update_riders(void)
             case 0:
                 list[n0] = &gRiders[i];
                 n0++;
-                sum0 += gRiders[i].distToGo;
+                sum0 += gRiders[i].raceDist;
                 break;
             case 1:
                 n1++;
-                sum1 += gRiders[i].distToGo;
+                sum1 += gRiders[i].raceDist;
                 break;
             }
         }
@@ -409,13 +409,13 @@ void race_update_riders(void)
                     }
                 }
                 if (idx >= 0) {
-                    if (gRiders[idx].segmentDist > 150.0f || (gRiders[idx].race.place != 0 && gRiders[idx].race.lap != gEvent.numLaps - 1)) {
+                    if (gRiders[idx].lapDistLeft > 150.0f || (gRiders[idx].race.place != 0 && gRiders[idx].race.lap != gEvent.numLaps - 1)) {
                         announce_place(idx, gRiders[idx].race.place + 1);
                     }
                 }
             } else {
                 pl = gRiders;
-                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->segmentDist > 150.0f || (pl->race.place != 0 && pl->race.lap != gEvent.numLaps - 1)))) {
+                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->lapDistLeft > 150.0f || (pl->race.place != 0 && pl->race.lap != gEvent.numLaps - 1)))) {
                     if (pl->race.place != 0) {
                         pl = gRiderStandings[pl->race.place - 1];
                     } else {
@@ -445,7 +445,7 @@ void race_update_riders(void)
         for (i = 0; i < gEvent.numRiders; i++) {
             pl = gRiderStandings[i];
             if (pl->isCpu == 1) {
-                e = pl->distToGo - sum1;
+                e = pl->raceDist - sum1;
                 e += (gPathLapLength / n1) * (k - (n1 - 1) * 0.5f);
                 f = 1.0f - e / 100.0f;
                 if (f < 0.9f) {
@@ -468,7 +468,7 @@ void race_update_riders(void)
         for (i = 0; i < gEvent.numRiders; i++) {
             pl = gRiderStandings[i];
             if (pl->isCpu == 1) {
-                e = pl->distToGo - sum1;
+                e = pl->raceDist - sum1;
                 e -= (k - (n1 - 1) * 0.5f) * 0.01f;
                 f = 1.0f - e * 0.00390625f;
                 if (f < 0.9f) {
@@ -500,7 +500,7 @@ void race_update_riders(void)
                 if (n1 >= 2) {
                     f = pl->aiSkill;
                 }
-                e = pl->distToGo - sum1;
+                e = pl->raceDist - sum1;
                 if (e > 64.0f) {
                     f -= 0.1f;
                 }
@@ -522,7 +522,7 @@ void race_update_riders(void)
                     pl->timeScale = pl->timeScale + 0.0002f;
                 }
             } else {
-                e = sum0 - pl->distToGo;
+                e = sum0 - pl->raceDist;
                 if (e > 2.0f) {
                     e += 16.0f;
                 } else if (e < -2.0f) {
@@ -619,7 +619,7 @@ void ai_update_lanes(void)
             if (q->inactive != 0) {
                 continue;
             }
-            d = p->segmentDist - q->segmentDist + 1.0f;
+            d = p->lapDistLeft - q->lapDistLeft + 1.0f;
             if (d < 0.0f) {
                 d += gPathLapLength;
             }
@@ -880,16 +880,16 @@ void race_update_rider_queues(Rider *p)
 {
     f32 a, b, d;
     if (sRiderQueueAheadCount > 0) {
-        b = sRiderQueueAhead_2.obj->distToGo;
-        a = p->distToGo;
+        b = sRiderQueueAhead_2.obj->raceDist;
+        a = p->raceDist;
         d = b - a;
         if (d < sRiderQueueAhead_2.thr) {
             race_reinsert_queued_rider(p, &sRiderQueueAhead_2, 70.0f, &sRiderQueueAheadCount);
         }
     }
     if (sRiderQueueBehindCount > 0) {
-        b = p->distToGo;
-        a = sRiderQueueBehind_2.obj->distToGo;
+        b = p->raceDist;
+        a = sRiderQueueBehind_2.obj->raceDist;
         d = b - a;
         if (d < sRiderQueueBehind_2.thr) {
             race_reinsert_queued_rider(p, &sRiderQueueBehind_2, -30.0f, &sRiderQueueBehindCount);

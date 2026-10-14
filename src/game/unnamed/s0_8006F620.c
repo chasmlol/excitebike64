@@ -162,13 +162,13 @@ void stunt_update(Rider *o)
     s8 s;
 
     stunt_read_input(o);
-    if (o->unk_3FB != 0) {
-        if (--o->unk_3FB == 0) {
+    if (o->trickDoneTimer != 0) {
+        if (--o->trickDoneTimer == 0) {
             if ((o->airFrames < 0 || 30.0f < o->landingTime) && gEvent.allFinished == 0) {
                 found = 0;
                 t = o->stuntScore;
                 o->stuntScore = 0;
-                o->raceKey += t;
+                o->stuntTotal += t;
                 d2 = o->trick;
                 if (d2 < 16) {
                     for (k = 0; k < o->trickListLen; k++) {
@@ -188,7 +188,7 @@ void stunt_update(Rider *o)
                     o->engine.heat = 0.0f;
                 }
             } else {
-                o->unk_3FB = 1;
+                o->trickDoneTimer = 1;
             }
         }
     }
@@ -241,7 +241,7 @@ void stunt_update(Rider *o)
     }
     if (stunt_animate(o, (o->input >> 8) & 1) != 0) {
         u8 pv = o->anim;
-        o->unk_3FB = 0x20;
+        o->trickDoneTimer = 0x20;
         o->anim = -1;
         o->trick = pv;
     }
@@ -283,13 +283,13 @@ void stunt_start(Rider *o, s32 n)
     }
     o->anim = n;
     o->animFrame = 0;
-    u = gRiderAnims[n].unk_2C;
+    u = gRiderAnims[n].playSpeed;
     o->queuedTrick = -1;
     o->animHold = 0;
     o->fistPump = 0;
-    o->trickCount = 0;
-    o->unk_3BA = 0;
-    o->unk_622 = 0;
+    o->holdTime = 0;
+    o->heldFrames = 0;
+    o->airTurnYaw = 0;
     o->animSpeed = u;
     if (n >= 0x10) {
         return;
@@ -297,9 +297,9 @@ void stunt_start(Rider *o, s32 n)
     if (gRiderAnims[n].announce == -1) {
         return;
     }
-    if (o->unk_3FB != 0) {
+    if (o->trickDoneTimer != 0) {
         d = o->trick;
-        o->unk_3FB = 0;
+        o->trickDoneTimer = 0;
         if (d < 0x10) {
             cnt = o->trickListLen;
             for (k = 0; k < cnt; k++) {
@@ -324,7 +324,7 @@ void stunt_start(Rider *o, s32 n)
     } else {
         a2 = (s8)c;
         v = gRiderAnims[a2].points;
-        v += o->unk_3BA * 2;
+        v += o->heldFrames * 2;
         for (; d < 4; d++) {
             if (a2 == o->trickHist[d]) {
                 break;
@@ -400,14 +400,14 @@ s32 stunt_animate(Rider *p, s32 k)
         return 1;
     }
 
-    if (p->trickCount != 0) {
-        if (p->trickCount < e->holdFrames || k != 0) {
-            u16 o = p->trickCount;
+    if (p->holdTime != 0) {
+        if (p->holdTime < e->holdFrames || k != 0) {
+            u16 o = p->holdTime;
             s32 x;
             s32 y;
-            p->trickCount = o + (u16)p->animSpeed;
-            p->unk_3BA = p->unk_3BA + 1;
-            x = ((u16)p->trickCount >> 8) & 7;
+            p->holdTime = o + (u16)p->animSpeed;
+            p->heldFrames = p->heldFrames + 1;
+            x = ((u16)p->holdTime >> 8) & 7;
             if (x & 4) {
                 x = 8 - x;
             }
@@ -416,7 +416,7 @@ s32 stunt_animate(Rider *p, s32 k)
             goto ret0;
         }
         p->animSpeed = -e->speed;
-        p->trickCount = 0;
+        p->holdTime = 0;
         goto ret0;
     } else {
         s32 b = p->animSpeed;
@@ -431,9 +431,9 @@ s32 stunt_animate(Rider *p, s32 k)
                 return 1;
             }
             if ((fl & 8) && k != 0) {
-                s32 q = e->unk_30;
-                p->trickCount = 1;
-                p->unk_3BA = 1;
+                s32 q = e->holdSpeed;
+                p->holdTime = 1;
+                p->heldFrames = 1;
                 p->animHold = 1;
                 p->animSpeed = q / 2;
                 goto ret0;
@@ -441,7 +441,7 @@ s32 stunt_animate(Rider *p, s32 k)
             if (!(fl & 1)) {
                 goto ret0;
             }
-            p->trickCount = 0;
+            p->holdTime = 0;
             p->animSpeed = -e->speed;
             goto ret0;
         }

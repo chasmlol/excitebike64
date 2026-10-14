@@ -286,12 +286,12 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
                 y -= sRiderIkTargets.limb[3].pos.y;
                 y += 100;
                 if (B.rightFootOut != 0) {
-                    if (B.unk_412 > 0) {
-                        p = (0x4000 - B.unk_412) / 64;
+                    if (B.walkPhase > 0) {
+                        p = (0x4000 - B.walkPhase) / 64;
                         q = 0;
                     } else {
-                        p = SINS(B.unk_412) / 64;
-                        q = -COSS(B.unk_412) / 256;
+                        p = SINS(B.walkPhase) / 64;
+                        q = -COSS(B.walkPhase) / 256;
                     }
                     {
                         f32 f;
@@ -332,12 +332,12 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
                 y -= sRiderIkTargets.limb[2].pos.y;
                 y += 100;
                 if (B.leftFootOut != 0) {
-                    if (B.unk_412 < 0) {
-                        p = -(B.unk_412 + 0x4000) / 64;
+                    if (B.walkPhase < 0) {
+                        p = -(B.walkPhase + 0x4000) / 64;
                         q = 0;
                     } else {
-                        p = -SINS(B.unk_412) / 64;
-                        q = COSS(B.unk_412) / 256;
+                        p = -SINS(B.walkPhase) / 64;
+                        q = COSS(B.walkPhase) / 256;
                     }
                     {
                         f32 f;
@@ -372,7 +372,7 @@ void rider_update_pose(RiderSkeleton *m, s32 i) {
         st = h;
         if (st < 0) st = -st;
         h = (h * 12000) >> 14;
-        mtx3i_from_angles(sRiderIkTargets.hips.m, (0x4000 - SINS(st * 4)) >> 4, 0, B.drawRot[2] + h);
+        mtx3i_from_angles(sRiderIkTargets.head.m, (0x4000 - SINS(st * 4)) >> 4, 0, B.drawRot[2] + h);
         rider_apply_ik(m->bones);
         st = B.fistPump;
         if (st != 0) {
@@ -490,7 +490,7 @@ void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3)
     s4 = gRiders[param_2].animFrame >> 8;
     if ((t->flags & 8) != 0 && !(s4 < keys->count)) {
         s4 -= 5;
-        s4 += (s16)(gRiders[param_2].trickCount % 5);
+        s4 += (s16)(gRiders[param_2].holdTime % 5);
     }
     if (s4 < 0) {
         s4 = 0;
@@ -554,7 +554,7 @@ void rider_anim_apply(Bone *bones, s32 param_2, s32 param_3)
 
     if (param_3 != 0x100 && gRiders[param_2].crashPhase != 1) {
         for (i = 0; i < 3; i++) {
-            (&bones->pos.x)[i] = (v0[i] * param_3 + bones->baseAngles[i] * (0x100 - param_3)) / 256;
+            (&bones->pos.x)[i] = (v0[i] * param_3 + bones->savedPos[i] * (0x100 - param_3)) / 256;
         }
         mtx3i_to_angles(&bones->rot.m, &rx, &ry, &rz);
         w = param_3;
@@ -861,9 +861,9 @@ void rider_anim_overlay_limb(Bone *p1, s32 param_2, s32 p3, s32 p4, s32 arg4)
         p1[k].angles[2] = c;
     }
     k = 0x100;
-    p1[0].baseAngles[0] = (u16)p1[0].pos.x;
-    p1[0].baseAngles[1] = (u16)p1[0].pos.y;
-    p1[0].baseAngles[2] = (u16)p1[0].pos.z;
+    p1[0].savedPos[0] = (u16)p1[0].pos.x;
+    p1[0].savedPos[1] = (u16)p1[0].pos.y;
+    p1[0].savedPos[2] = (u16)p1[0].pos.z;
     save = p1[p3].pos;
     for (j = 0; j < 3; j++) {
 
@@ -911,9 +911,9 @@ void rider_pose_snapshot(Bone *p, s32 n)
         p[i].angles[1] = y;
         p[i].angles[2] = z;
     }
-    p->baseAngles[0] = (u16)p->pos.x;
-    p->baseAngles[1] = (u16)p->pos.y;
-    p->baseAngles[2] = (u16)p->pos.z;
+    p->savedPos[0] = (u16)p->pos.x;
+    p->savedPos[1] = (u16)p->pos.y;
+    p->savedPos[2] = (u16)p->pos.z;
 }
 
 s32 rider_ik_split_len(s32 a, s32 b, s32 c) {

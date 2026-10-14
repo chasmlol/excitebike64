@@ -93,7 +93,7 @@ void desert_update_race(void)
                 des_set_waypoint(b->checkpoint);
             }
         }
-        b->distToGo = sDesertCheckpointDist[b->checkpoint] - b->checkpointDist;
+        b->raceDist = sDesertCheckpointDist[b->checkpoint] - b->checkpointDist;
     }
     if (gRiders[0].isCpu == 0) {
         do {

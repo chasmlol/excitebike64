@@ -135,7 +135,7 @@ void excite3d_update(void)
         for (i = 0; i < gEvent.numRiders - 1; i++) {
             a = gRiderStandings[i];
             b = gRiderStandings[i + 1];
-            if (a->distToGo < b->distToGo && (a->inactive | b->inactive) == 0) {
+            if (a->raceDist < b->raceDist && (a->inactive | b->inactive) == 0) {
                 sw = 1;
                 gRiderStandings[i] = b;
                 gRiderStandings[i + 1] = a;
@@ -350,7 +350,7 @@ void excite3d_update_progress(Rider *o)
     f = (f32)o->race.lap * -997.15717f;
     o->segment = count;
     o->lateral = -o->bike.pos.x;
-    o->distToGo = -f - o->bike.pos.z;
+    o->raceDist = -f - o->bike.pos.z;
 }
 
 struct Obj_55 {

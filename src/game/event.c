@@ -240,7 +240,7 @@ void tutorial_update(void)
             if (gEvent.time >= 3 && sTutorialStep == 0) {
                 sTutorialStep = 2;
             }
-            if (gRiders[0].unk_3FB == 0 && gRiders[0].trick == TB.steps[sTutorialStep].value) {
+            if (gRiders[0].trickDoneTimer == 0 && gRiders[0].trick == TB.steps[sTutorialStep].value) {
                 sTutorialStep++;
             }
             if (sTutorialStep >= 10) {
@@ -755,9 +755,9 @@ void event_update_stunt(void)
         if (e->isCpu) continue;
         if (gReplayPlayback) continue;
         if (gGame.mode == 1 && gSeason != NULL && gSeason->cup - gCups == 5) continue;
-        if (e->raceKey > gEvent.record.times[2]) {
+        if (e->stuntTotal > gEvent.record.times[2]) {
             for (j = 0; j < 3; j++) {
-                if (e->raceKey >= gEvent.record.times[j]) {
+                if (e->stuntTotal >= gEvent.record.times[j]) {
                     for (k = 1; k >= j; k--) {
                         gEvent.record.times[k + 1] = gEvent.record.times[k];
                         gEvent.record.initials[k + 1][0] = gEvent.record.initials[k][0];
@@ -767,7 +767,7 @@ void event_update_stunt(void)
                     break;
                 }
             }
-            gEvent.record.times[j] = e->raceKey;
+            gEvent.record.times[j] = e->stuntTotal;
             gEvent.record.initials[j][2] = e - gRiders;
             gEvent.record.initials[j][0] = 0xFF;
             gEvent.record.initials[j][1] = 0xFF;
@@ -781,10 +781,10 @@ void event_update_stunt(void)
     gRiders[0].finishState = 1;
     *(volatile s16 *)&gRiders[0].race.finishPlace = 1;
     if (gGame.numPlayers == 2) {
-        if (gRiders[0].raceKey > gRiders[1].raceKey) {
+        if (gRiders[0].stuntTotal > gRiders[1].stuntTotal) {
             gRiders[0].race.finishPlace = 0;
             gRiders[1].race.finishPlace = 5;
-        } else if (gRiders[0].raceKey == gRiders[1].raceKey) {
+        } else if (gRiders[0].stuntTotal == gRiders[1].stuntTotal) {
             gRiders[0].race.finishPlace = 1;
             gRiders[1].race.finishPlace = 1;
         } else {
@@ -996,7 +996,7 @@ void event_update_race(void) {
         }
         for (k = 0; k < gEvent.numRiders; k++) {
             if (gRiders[k].race.finishPlace == -1) {
-                f = gRiders[k].distToGo / (gPathLapLength * gEvent.numLaps);
+                f = gRiders[k].raceDist / (gPathLapLength * gEvent.numLaps);
                 if (f <= 0.1f) {
                     f = 0.1f;
                 } else if (f > 1.0f) {
@@ -1053,7 +1053,7 @@ end:
             if (q->finishPlace == s) {
                 gEvent.finishOrder[gEvent.numFinished] = i;
                 q->finishPlace = gEvent.numFinished++;
-                q->finishTime = (gEvent.time * gRiderStandings[0]->distToGo) / gRiders[i].distToGo;
+                q->finishTime = (gEvent.time * gRiderStandings[0]->raceDist) / gRiders[i].raceDist;
                 if (gGame.mode == 1 + (((u32)&gRiders & 1) >> 1)) {
                     gSeason->places[gRiderStandings[i] - gRiders][gSeason->round] = q->finishPlace;
                     gSeason->racePoints[gRiderStandings[i] - gRiders] = ((Pts *)((u32)gRacePoints | (((u32)gRacePoints & 1) >> 1)))[q->finishPlace].b3;
@@ -1468,13 +1468,13 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         ty = yy + 8;
         font_draw_text(gHudTextObjs[4], xa, ty);
         font_text_create(gHudTextObjs[5], 0x40, 2, 4, 0x22);
-        int_to_str(p->raceKey, buf);
+        int_to_str(p->stuntTotal, buf);
         font_text_add(gHudTextObjs[5], buf);
         font_draw_text(gHudTextObjs[5], xa, yy + 16);
         c = (u8)p->anim;
         if (c < 16) {
             idx = (s8)c;
-        } else if (p->unk_3FB != 0) {
+        } else if (p->trickDoneTimer != 0) {
             d = p->trick;
             if (d < 16) {
                 idx = d;
@@ -1490,8 +1490,8 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             font_text_add(gHudTextObjs[3], buf);
             ax = 0x100;
             ay = ty;
-            if (p->unk_3FB >= 2) {
-                k = p->unk_3FB * 8;
+            if (p->trickDoneTimer >= 2) {
+                k = p->trickDoneTimer * 8;
                 x3 = (x3 * k + (xa - (gHudTextObjs[3]->w >> 1)) * (256 - k)) >> 8;
                 for (i = 0; i < p->trickListLen; i++) {
                     if (idx == p->trickList[i]) {
@@ -1544,7 +1544,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             y += 0xC;
         }
         font_text_create(gHudTextObjs[5], 0x40, 1, 4, 0x22);
-        int_to_str(p->raceKey, buf);
+        int_to_str(p->stuntTotal, buf);
         font_text_add(gHudTextObjs[5], buf);
         font_draw_text(gHudTextObjs[5], x, y);
         if (gViMode == 2) {
@@ -1558,7 +1558,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         idx = -1;
         if (c < 16) {
             idx = (s8)c;
-        } else if (p->unk_3FB != 0) {
+        } else if (p->trickDoneTimer != 0) {
             d = p->trick;
             if (d < 16) {
                 idx = d;
@@ -1574,8 +1574,8 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             y3 = gViewRects[0][0].y + 0x28;
             ax = gScreenWidth / 2;
             ay = gViewRects[0][0].y + 0x14;
-            if (p->unk_3FB >= 2) {
-                k = p->unk_3FB * 8;
+            if (p->trickDoneTimer >= 2) {
+                k = p->trickDoneTimer * 8;
                 x3 = (x3 * k + (x - (gHudTextObjs[3]->w >> 1)) * (256 - k)) >> 8;
                 y3 = (y3 * k + y * (256 - k)) / 256;
                 for (i = 0; i < p->trickListLen; i++) {
