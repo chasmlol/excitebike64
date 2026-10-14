@@ -3,17 +3,20 @@
 #define G(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
 typedef struct { u16 c[256]; } Pal_3;
+/* A texture set, as far as its palette */
 typedef struct { s32 pad0; Pal_3 *pal; } Img_3;
-typedef struct { void *a[2]; void *b[2]; } Rec16;
+/* sRiderModelCache: per rider type, the body's display lists and vertices, low and high detail */
+typedef struct { void *dl[2]; void *vtx[2]; } Rec16;
 
+/* The sky model (a PrimModel) as far as its vertex colours: the fog colour is their average */
 typedef struct {
     u8 pad0[0xC];
     u8 r, g, b, a;
 } Col16;
 
 typedef struct {
-    u32 count;
-    Col16 *items;
+    u32 numVtx;
+    Col16 *vtx;
 } ColList;
 
 struct Dyn {
@@ -144,7 +147,7 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
         gRiderGfx_2[n].bikePalSrc->c[0] &= 0xFFFE;
         gRiderGfx_2[n].bikeTex->pal->c[0] &= 0xFFFE;
     }
-    if (sRiderModelCache[arg5].a[0] == 0) {
+    if (sRiderModelCache[arg5].dl[0] == 0) {
         for (k = 0; k < 2; k++) {
             if (gPodiumMode != 0) {
                 if (k == 0) {
@@ -163,14 +166,14 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
             gPrimBoneMtx = (Mtx *)0x06000000;
             buf[1] = (s32)gRiderGfx_2[n].podiumTex;
             if (gPodiumMode != 0) {
-                prim_alloc_seg_dl(&sRiderModelCache[arg5].a[k], m, (s32)buf, 0xC);
+                prim_alloc_seg_dl(&sRiderModelCache[arg5].dl[k], m, (s32)buf, 0xC);
                 palmod_register((s32)gRiderGfx_2[n].podiumTex, 0);
                 palmod_register((s32)gRiderGfx_2[n].riderTex, 0);
             } else {
-                prim_alloc_seg_dl(&sRiderModelCache[arg5].a[k], m, (s32)buf, 0);
+                prim_alloc_seg_dl(&sRiderModelCache[arg5].dl[k], m, (s32)buf, 0);
             }
             x = mem_alloc_dbg(m[0] << 4, 0, sStrRenderC, 0x294);
-            sRiderModelCache[arg5].b[k] = x;
+            sRiderModelCache[arg5].vtx[k] = x;
             memcpy(x, (void *)m[1], m[0] << 4);
             if (k == 0 && n == 0) {
                 m[1] = 0x01000000;
@@ -184,10 +187,10 @@ void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg
             res_set_load_buffer(0);
         }
     }
-    gRiderGfx_2[n].riderVtx[0] = sRiderModelCache[arg5].b[0];
-    gRiderGfx_2[n].riderVtx[1] = sRiderModelCache[arg5].b[1];
-    gRiderGfx_2[n].riderDL[0] = sRiderModelCache[arg5].a[0];
-    gRiderGfx_2[n].riderDL[1] = sRiderModelCache[arg5].a[1];
+    gRiderGfx_2[n].riderVtx[0] = sRiderModelCache[arg5].vtx[0];
+    gRiderGfx_2[n].riderVtx[1] = sRiderModelCache[arg5].vtx[1];
+    gRiderGfx_2[n].riderDL[0] = sRiderModelCache[arg5].dl[0];
+    gRiderGfx_2[n].riderDL[1] = sRiderModelCache[arg5].dl[1];
     for (k = 0; k < 2; k++) {
         gRiderGfx_2[n].boneMtx[k] = mem_alloc_dbg(0x3C0, 0, sStrRenderC, 0x2B3);
         if (gPodiumMode == 0) {
@@ -230,12 +233,13 @@ void render_update_screen_layout(void)
     }
 }
 
+/* gTracks as render_init sees it */
 typedef struct {
     u8 pad0[0x2C];
-    s32 f2C;
+    s32 envType;      /* TRACK_ENV_* */
     u8 pad30[0x20];
-    s32 f50;
-    u8 c54, c55, c56;
+    s32 flags;        /* TRACK_FLAG_* */
+    u8 fogR, fogG, fogB; /* outdoor tracks without a sky: the fog colour */
     u8 pad57[0xA0 - 0x57];
 } Track_3;
 
@@ -247,14 +251,15 @@ typedef struct {
     u16 markerPal[16];
 } PalEnt;
 
+/* sBikePartModels: the six bike parts' models, low and high detail */
 typedef struct {
-    void *p[2];
+    void *model[2];
 } Pair_5;
 
-
+/* A texture set's header */
 typedef struct {
-    s32 f0;
-    u16 *f4;
+    s32 count;
+    u16 *pal;
 } Res;
 
 extern Track_3 *gCurTrack_9;
@@ -307,7 +312,7 @@ void render_init(void) {
     render_update_screen_layout();
     sMarkerImage = res_load(gResourceSet, sMarkerImageResId);
     prim_flip_images(sMarkerImage);
-    *sMarkerImage->f4 = 0;
+    *sMarkerImage->pal = 0;
     gFontDirectDrawFunc = render_blit_place_glyph;
     sPlaceTextures = mem_alloc_dbg(0xC00, 0, sStrRenderC, 0x349);
     mem_fill(sPlaceTextures, 0, 0xC00);
@@ -334,25 +339,25 @@ void render_init(void) {
     }
     gDebugRiderCount = 8;
     sRiderColors = res_load(gResourceSet, sRiderColorsResId);
-    if (gCurTrack_9->f2C != 2) {
+    if (gCurTrack_9->envType != 2) {
         if (gReplayPlayback != 0 || (gGame.flags & 0x80) || gGhostRace != 0) {
             gNumViews = 1;
         } else {
             gNumViews = gGame.numPlayers;
         }
     }
-    if (gCurTrack_9->f2C == 2) {
+    if (gCurTrack_9->envType == 2) {
         gNumViews = 1;
     }
     sClearFrames = 5;
     gNumScreens = gNumViews;
     mem_fill(gRiderSection, 0, 0x20);
     prim_init();
-    if (gCurTrack_9->f2C == 0) {
+    if (gCurTrack_9->envType == 0) {
         arn_init();
-    } else if (gCurTrack_9->f2C == 1) {
+    } else if (gCurTrack_9->envType == 1) {
         tube_init();
-    } else if (gCurTrack_9->f2C == 2) {
+    } else if (gCurTrack_9->envType == 2) {
         des_init();
     }
     sGaugeTextures = res_load(gResourceSet, sGaugeTexResId);
@@ -366,7 +371,7 @@ void render_init(void) {
     case 0:
     case 13:
     case 14:
-        if (!(gCurTrack_9->f50 & 2)) {
+        if (!(gCurTrack_9->flags & 2)) {
             break;
         }
     case 9:
@@ -380,9 +385,9 @@ void render_init(void) {
         mtx3i_from_angles(gRiderSkelTemplate->bones[i].worldRot.m, 0, 0, 0);
     }
     skel_update_world_transforms(gRiderSkelTemplate->bones, 15);
-    if (gCurTrack_9->f2C == 0) {
+    if (gCurTrack_9->envType == 0) {
         j = i;
-    } else if (gCurTrack_9->f2C == 1) {
+    } else if (gCurTrack_9->envType == 1) {
         j = n;
     }
     mem_fill(sRiderModelCache, 0, 0x70);
@@ -401,7 +406,7 @@ void render_init(void) {
         n = 1;
     }
     for (i = 0; i < 6; i++) {
-        sBikeAltPalettes[i] = (s32)((Res *)res_load(gResourceSet, *sBikeAltPalResIds[i]))->f4;
+        sBikeAltPalettes[i] = (s32)((Res *)res_load(gResourceSet, *sBikeAltPalResIds[i]))->pal;
     }
     for (j = 0; j < n; j++) {
         if (gGame.flags & 0x10) {
@@ -446,20 +451,20 @@ void render_init(void) {
     skel_reset_pose(gBikeSkelTemplate->bones, 10);
     if (gPodiumMode == 0) {
         for (i = 0; i < 6; i++) {
-            sBikePartModels[i].p[1] = res_load(gResourceSet, *sBikePartResIds[i]);
-            sBikePartModels[i].p[0] = res_load(gResourceSet, *sBikePartResIds[i + 6]);
+            sBikePartModels[i].model[1] = res_load(gResourceSet, *sBikePartResIds[i]);
+            sBikePartModels[i].model[0] = res_load(gResourceSet, *sBikePartResIds[i + 6]);
         }
         sBikeLowModel = res_load(gResourceSet, sBikeLowModelResId);
         prim_alloc_dl(&sBikeLowDL, sBikeLowModel, &gRiderGfx_2[0].bikeTex, 0x20);
         for (i = 0; i < 6; i++) {
-            skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].p[1]);
-            skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].p[0]);
+            skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].model[1]);
+            skel_make_verts_bone_local(&gBikeSkelTemplate->bones[sBikePartBones[i]], sBikePartModels[i].model[0]);
         }
         for (i = 0; i < 6; i++) {
             for (j = 0; j < 2; j++) {
-                prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].p[j], &gRiderGfx_2[0].bikeTex, 0);
+                prim_alloc_seg_dl(&sBikePartDLs[i][j], sBikePartModels[i].model[j], &gRiderGfx_2[0].bikeTex, 0);
             }
-            size = (s32)prim_build_dl(3, sBikePartModels[i].p[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
+            size = (s32)prim_build_dl(3, sBikePartModels[i].model[1], NULL, (Gfx *)gZBuffer) - gZBuffer;
             gBikeShadowDLs[i] = mem_alloc_dbg(size, 0, sStrRenderC, 0x434);
             memcpy(gBikeShadowDLs[i], gZBuffer, size);
         }
@@ -498,21 +503,21 @@ void render_init(void) {
         r = 0;
         g = 0;
         bl = 0;
-        for (i = 0; i < sSkyModel->count; i++) {
-            r += sSkyModel->items[i].r;
-            g += sSkyModel->items[i].g;
-            bl += sSkyModel->items[i].b;
+        for (i = 0; i < sSkyModel->numVtx; i++) {
+            r += sSkyModel->vtx[i].r;
+            g += sSkyModel->vtx[i].g;
+            bl += sSkyModel->vtx[i].b;
         }
-        r /= sSkyModel->count;
-        g /= sSkyModel->count;
-        bl /= sSkyModel->count;
+        r /= sSkyModel->numVtx;
+        g /= sSkyModel->numVtx;
+        bl /= sSkyModel->numVtx;
         gFogColor[0] = r;
         gFogColor[1] = g;
         gFogColor[2] = bl;
-    } else if (gCurTrack_9->f2C == 1) {
-        gFogColor[0] = gCurTrack_9->c54;
-        gFogColor[1] = gCurTrack_9->c55;
-        gFogColor[2] = gCurTrack_9->c56;
+    } else if (gCurTrack_9->envType == 1) {
+        gFogColor[0] = gCurTrack_9->fogR;
+        gFogColor[1] = gCurTrack_9->fogG;
+        gFogColor[2] = gCurTrack_9->fogB;
     } else {
         gFogColor[0] = 0;
         gFogColor[1] = 0;
@@ -539,7 +544,7 @@ void render_init(void) {
 
 /* gRiderGfx: what render_free frees */
 typedef struct { u8 pad0[0x14]; s32 riderPal; s32 selectPals; u8 pad1c[0x234 - 0x1C]; s32 boneMtx[2]; s32 partMtx[2]; u8 rest[0xA80 - 0x244]; } Plr_2;
-typedef struct { u8 pad[0x2C]; s32 m; u8 pad30[0x20]; u32 f50; } Cfg_4;
+typedef struct { u8 pad[0x2C]; s32 envType; u8 pad30[0x20]; u32 flags; } Cfg_4;
 
 extern Cfg_4 *gCurTrack_10;
 extern Plr_2 gRiderGfx_4[];
@@ -556,11 +561,11 @@ void render_free(void)
     }
     mem_free(sPlaceTextures);
     mem_free(sGaugeNeedleVtx);
-    if (gCurTrack_10->m == 0) {
+    if (gCurTrack_10->envType == 0) {
         arn_free();
-    } else if (gCurTrack_10->m == 1) {
+    } else if (gCurTrack_10->envType == 1) {
         tube_free();
-    } else if (gCurTrack_10->m == 2) {
+    } else if (gCurTrack_10->envType == 2) {
         des_free();
     }
     mem_free(gBikeSkelTemplate);
@@ -576,7 +581,7 @@ void render_free(void)
     case 0:
     case 13:
     case 14:
-        if ((gCurTrack_10->f50 & 2) == 0) {
+        if ((gCurTrack_10->flags & 2) == 0) {
             break;
         }
     case 9:
@@ -605,11 +610,11 @@ void render_free(void)
     mem_free(gRiderGfx_2[0].shadowDL);
     for (i = 0; i < 7; i++) {
         for (k = 0; k < 2; k++) {
-            if (sRiderModelCache[i].a[k] != 0) {
-                mem_free(sRiderModelCache[i].a[k]);
+            if (sRiderModelCache[i].dl[k] != 0) {
+                mem_free(sRiderModelCache[i].dl[k]);
             }
-            if (sRiderModelCache[i].b[k] != 0) {
-                mem_free(sRiderModelCache[i].b[k]);
+            if (sRiderModelCache[i].vtx[k] != 0) {
+                mem_free(sRiderModelCache[i].vtx[k]);
             }
         }
     }
@@ -643,7 +648,7 @@ Gfx *render_set_viewport(Gfx *dl, Mtx *m, s32 n, s32 flag)
     return dl;
 }
 
-typedef struct { u8 pad0[0x2C]; s32 mode; u8 pad1[0xA0 - 0x30]; } Trk_4;
+typedef struct { u8 pad0[0x2C]; s32 envType; u8 pad1[0xA0 - 0x30]; } Trk_4;
 
 extern Trk_4 *gCurTrack_11;
 extern Trk_4 gTracks_5[];
@@ -660,13 +665,13 @@ s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 k, s32 c, s32 q, s32 n)
         return 3;
     }
     if (!(gRiders[n].camMode == 9 && gCamTargets[k] == n)) {
-        if ((u32)gCurTrack_11->mode < 2 && c != -1) {
+        if ((u32)gCurTrack_11->envType < 2 && c != -1) {
             if (!((gTrackSections->e[c].mask >> (k * 2)) & 1)) {
                 return 0;
             }
         }
     }
-    if (gCurTrack_11->mode == 0) {
+    if (gCurTrack_11->envType == 0) {
         if (project_to_screen(x >> 4, y >> 4, z >> 4, &sx, &sy, &sz, &d, q, k) != 0) {
             return 0;
         }
@@ -679,7 +684,7 @@ s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 k, s32 c, s32 q, s32 n)
     if (d <= 0) {
         return 0;
     }
-    if (gCurTrack_11->mode == 2 && d > 8000) {
+    if (gCurTrack_11->envType == 2 && d > 8000) {
         return 0;
     }
     sRiderCamDist[n] = d;
@@ -743,9 +748,10 @@ Gfx *render_begin_menu_frame(Gfx *gdl, s32 fb, u8 *mtx) {
     return gdl;
 }
 
+/* gSaveData as far as the options */
 typedef struct {
     u8 pad0[0x2C4];
-    u8 flag;
+    u8 options;       /* bit 0 stereo */
 } Opts;
 
 extern Opts gSaveData_2;
@@ -839,7 +845,7 @@ Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2)
             }
             font_text_create(gGame.texts[0], 0x40, 1, (j == gOptionsCursor) ? 6 : 2, 0x22);
             if (j == 3) {
-                font_text_add(gGame.texts[0], gMonoStereoStrings[gSaveData_2.flag & 1]);
+                font_text_add(gGame.texts[0], gMonoStereoStrings[gSaveData_2.options & 1]);
                 font_draw_text(gGame.texts[0], x + 0xB4, y + 8);
             }
         }
@@ -982,9 +988,9 @@ typedef struct {
 
 typedef struct {
     u8 pad0[0x2C];
-    s32 type;  /* 0x2C */
+    s32 envType; /* 0x2C */
     u8 pad30[0x20];
-    s32 f50;   /* 0x50 */
+    s32 flags;   /* 0x50 */
     u8 pad54[0x4C];
 } Track_4; /* 0xA0 */
 
@@ -1020,7 +1026,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     }
     if (gGame.numPlayers == 1 && gRiders[0].pipTimer != 0 && !(gGame.flags & 0x81) && gReplayPlayback == 0 &&
         gGame.mode != 6 && gGame.mode != 7 && gGame.mode != 8 && gGame.mode != 9 &&
-        gGame.mode != 13 && gGame.mode != 14 && gCurTrack_12->type != 2) {
+        gGame.mode != 13 && gGame.mode != 14 && gCurTrack_12->envType != 2) {
         sInsetViewWanted = gGame.numPlayers;
     } else {
         sInsetViewWanted = 0;
@@ -1037,11 +1043,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     palmod_update();
 
     for (gCurView = 0; gCurView < gNumViews; gCurView++) {
-        if (gCurTrack_12->type == 0) {
+        if (gCurTrack_12->envType == 0) {
             arn_update_view(gCurView);
-        } else if (gCurTrack_12->type == 1) {
+        } else if (gCurTrack_12->envType == 1) {
             tube_update_view(gCurView);
-        } else if (gCurTrack_12->type == 2) {
+        } else if (gCurTrack_12->envType == 2) {
             des_update_view(gCurView);
         }
     }
@@ -1053,7 +1059,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             if (gGroundFound != 0) {
                 gRiderSection[i] = gGroundArea;
                 gRiderGroundSurface[i] = gGroundSurface;
-                if (gCurTrack_12->type != 2) {
+                if (gCurTrack_12->envType != 2) {
                     height_get_ground_color(gRiders[i].drawPos.x, gRiders[i].drawPos.z, &sRiderTint[i * 3]);
                 } else {
                     sRiderTint[i * 3] = 0xFF;
@@ -1107,7 +1113,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             guRotateRPY(&rotB, 0.0f, 0.0f, gCamRoll[gCurView] * 360.0f * (1.0f / 65536));
             guMtxCatL(&rotB, &rotA, &mf);
             mtx_transpose_rot(&mf);
-            if (gCurTrack_12->type == 0) {
+            if (gCurTrack_12->envType == 0) {
                 mtx_from_angles_pos_scale(&rotB, 0, 0, 0, -gCamPos[gCurView].x, -gCamPos[gCurView].y,
                               -gCamPos[gCurView].z, 0x100);
             } else {
@@ -1126,10 +1132,10 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
                 dyn->m1[gCurView] = out;
             }
         }
-        if (gCurTrack_12->type == 0) {
+        if (gCurTrack_12->envType == 0) {
             mtx_from_angles_pos_scale(&dyn->m2[gCurView], 0, 0, 0, gCamPos[gCurView].x,
                           gCamPos[gCurView].y - 500, gCamPos[gCurView].z, 0x10);
-        } else if (gCurTrack_12->type == 1) {
+        } else if (gCurTrack_12->envType == 1) {
             mtx_from_angles_pos_scale(&dyn->m2[gCurView], 0, 0, 0, 0, 0, 0, 0x10);
         } else {
             mtx_from_angles_pos_scale(&dyn->m2[gCurView], 0, 0, 0, 0, -2000, 0, 0x10);
@@ -1349,7 +1355,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
             }
             for (gCurView = 0; gCurView < gNumViews; gCurView++) {
                 if (gRiderViewLod[i] & (0xFF << (gCurView * 8))) {
-                    if (gCurTrack_12->type == 0) {
+                    if (gCurTrack_12->envType == 0) {
                         mtx_from_angles_pos_scale(&gRiderGfx_5[i].bikeMtx[fb * 4 + gCurView], 0, 0, 0, gRiders[i].drawPos.x,
                                       gRiders[i].drawPos.y, gRiders[i].drawPos.z, 0x10);
                         if (gRiders[i].crashState != 0) {
@@ -1393,11 +1399,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         CHECK(500);
         gdl = render_set_viewport(gdl, dyn, gCurView, 1);
         if (gDrawFlags & 8) {
-            if (gCurTrack_12->type == 0) {
+            if (gCurTrack_12->envType == 0) {
                 gdl = arn_draw_far(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->type == 1) {
+            } else if (gCurTrack_12->envType == 1) {
                 gdl = tube_draw_far(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->type == 2) {
+            } else if (gCurTrack_12->envType == 2) {
                 gdl = des_draw_terrain(gdl, dyn, fb, gCurView);
             }
         }
@@ -1410,11 +1416,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         for (gCurView = 0; gCurView < gNumViews; gCurView++) {
             CHECK(500);
             gdl = render_set_viewport(gdl, dyn, gCurView, 1);
-            if (gCurTrack_12->type == 0) {
+            if (gCurTrack_12->envType == 0) {
                 gdl = arn_draw(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->type == 1) {
+            } else if (gCurTrack_12->envType == 1) {
                 gdl = tube_draw(gdl, dyn, fb, gCurView);
-            } else if (gCurTrack_12->type == 2) {
+            } else if (gCurTrack_12->envType == 2) {
                 gdl = des_draw_near_terrain(gdl, dyn, fb, gCurView);
             }
             gdl = hacks_draw_pass2(gdl, dyn, fb, gCurView);
@@ -1436,7 +1442,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         case 0:
         case 13:
         case 14:
-            if (gCurTrack_12->f50 & 2) {
+            if (gCurTrack_12->flags & 2) {
                 CHECK(1000);
                 for (gCurView = 0; gCurView < gNumViews; gCurView++) {
                     gdl = finishline_draw_user_track(gdl, dyn, fb, gCurView);
@@ -1493,11 +1499,11 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
     CHECK(1000);
     for (gCurView = 0; gCurView < gNumViews; gCurView++) {
         gdl = render_set_viewport(gdl, dyn, gCurView, 1);
-        if (gCurTrack_12->type == 1) {
+        if (gCurTrack_12->envType == 1) {
             gdl = tube_draw_water(gdl, dyn, fb, gCurView);
-        } else if (gCurTrack_12->type == 0) {
+        } else if (gCurTrack_12->envType == 0) {
             gdl = arn_draw_water(gdl, dyn, fb, gCurView);
-        } else if (gCurTrack_12->type == 2) {
+        } else if (gCurTrack_12->envType == 2) {
             gdl = des_draw_waypoint_marker(gdl, dyn, fb, gCurView);
         }
     }
@@ -1544,7 +1550,7 @@ void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl) {
         gDPFillRectangle(gdl++, x - 2, b1, x + w + 1, b + 1);
         gDPFillRectangle(gdl++, x + w - 1, y, x + w + 1, b + 1);
     }
-    if (gCurTrack_12->type == 2) {
+    if (gCurTrack_12->envType == 2) {
         gdl = des_draw_arrow(gdl, dyn, fb, 0);
     }
     CHECK(1000);
@@ -1863,7 +1869,7 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
 
 typedef struct {
     u8 pad0[4];
-    u16 *f4;
+    u16 *pal;
 } Tex;
 
 /* gRiderGfx: the palettes */
@@ -1879,7 +1885,7 @@ typedef struct {
 
 typedef struct {
     u8 pad0[0x2C];
-    s32 f2C;
+    s32 envType;
     u8 pad30[0xA0 - 0x30];
 } Track_5;
 
@@ -1900,10 +1906,10 @@ void render_update_rider_palette(s32 pl, s32 k)
     }
     if (gGame.flags & 0x10) {
         if (gGame.numPlayers == 1) {
-            gRiderGfx_7[pl].riderPalSrc = sRiderSkinTextures_3[pl][(k + gGame.riderSkinSel) % 5]->f4;
+            gRiderGfx_7[pl].riderPalSrc = sRiderSkinTextures_3[pl][(k + gGame.riderSkinSel) % 5]->pal;
             gRiderGfx_7[pl].riderPal = gRiderGfx_7[pl].selectPals + ((k + gGame.riderSkinSel) % 5) * 0x100;
         } else {
-            gRiderGfx_7[pl].riderPalSrc = sRiderSkinTextures_3[pl][k]->f4;
+            gRiderGfx_7[pl].riderPalSrc = sRiderSkinTextures_3[pl][k]->pal;
             gRiderGfx_7[pl].riderPal = gRiderGfx_7[pl].selectPals + k * 0x100;
         }
     }
@@ -1986,7 +1992,7 @@ void render_update_rider_palette(s32 pl, s32 k)
         sRiderPalDirty[pl] = 1;
         return;
     }
-    if (gCurTrack_13->f2C == 2 && sRiderCamDist[pl] > 0xC48) {
+    if (gCurTrack_13->envType == 2 && sRiderCamDist[pl] > 0xC48) {
         fr = gFogColor[0] * 31 / 256;
         fg = gFogColor[1] * 31 / 256;
         fb = gFogColor[2] * 31 / 256;
