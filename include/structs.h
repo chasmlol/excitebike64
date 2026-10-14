@@ -117,23 +117,19 @@ typedef struct Spr_5 Spr_5;
 typedef struct Set Set;
 typedef struct Mesh_8 Mesh_8;
 #include "structs/nes.h"
+#include "structs/softmix.h"
 typedef struct Chan_6 Chan_6;
 typedef struct Ring_2 Ring_2;
 typedef struct Obj_80 Obj_80;
 typedef struct Handle Handle;
 typedef struct Ent_99 Ent_99;
 typedef struct Ring_3 Ring_3;
-typedef struct Hdr_13 Hdr_13;
 typedef struct Slot_17 Slot_17;
 typedef struct Stream_2 Stream_2;
 typedef struct Blk_29 Blk_29;
 typedef struct Obj_82 Obj_82;
 typedef struct ListHdr ListHdr;
 typedef struct ResFile_2 ResFile_2;
-typedef struct Hdr_14 Hdr_14;
-typedef struct Src_4 Src_4;
-typedef struct Src_5 Src_5;
-typedef struct Out_6 Out_6;
 typedef struct Obj_83 Obj_83;
 typedef struct Font_6 Font_6;
 typedef struct Text Text;

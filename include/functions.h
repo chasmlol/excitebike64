@@ -1273,7 +1273,7 @@ void softmix_voice_set_volume_2(s32 a);
 void softmix_voice_set_pan(s32 i, s32 val);
 void softmix_voice_set_pan_2(s32 a);
 void softmix_mix(s32 *param_1, s32 param_2);
-void softmix_sam_decompress(Hdr_13 **param_1);
+void softmix_sam_decompress(SamHeader **param_1);
 s32 softmix_get_caps(s32 *a, s32 *b, s32 *c);
 void softmix_shutdown(void);
 void softmix_free_sample(u32 p);
@@ -1297,7 +1297,7 @@ void softmix_echo_set_level(s32 k);
 void softmix_echo_free(s32 arg0);
 void softmix_write_sample(u32 idx, u8 *src, s32 n);
 void softmix_write_sample_2(s32 a);
-void softmix_set_decompressor(s32 a0);
+void softmix_set_decompressor(SamHeader *(*fn)(SamHeader *));
 void softmix_set_decompress_buf(s32 a, s32 b);
 void softmix_voice_update_levels(s32 i);
 s32 softmix_get_sample_data(s32 a0);
@@ -1422,9 +1422,9 @@ void func_800C0264(s32 *param_1, u32 param_2);
 u32 res_hash_name(u8 *p);
 
 /* src/game/decoder.c */
-Hdr_14 *decoder_decode_adpcm(Src_4 *s);
-u32 *decoder_decode_sample(u32 *param_1);
-Out_6 *func_800C055C(Src_5 *p);
+SamHeader *decoder_decode_adpcm(SamAdpcm *s);
+SamHeader *decoder_decode_sample(SamHeader *sam);
+SamHeader *func_800C055C(SamAdpcm *p);
 
 /* src/game/fontcode.c */
 s32 font_load(ResFile *arc, u32 **ids, char *name);

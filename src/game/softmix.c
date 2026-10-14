@@ -1,16 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    u8 pad[0x20];
-    u8 a;
-    u8 b;
-    s8 c;
-    s8 d;
-    u8 pad2[0x0C];
-} Ent;
-
-extern Ent *sSoftmixVoices_2;
-
 s32 softmix_init(s32 param_1, u32 param_2, s32 param_3, s32 arg3)
 {
     s32 *piVar1;
@@ -27,11 +16,11 @@ body:
         sSoftmixNumVoices = param_1;
         sSoftmixSampleCount = 0;
         sSoftmixEchoOn = 0;
-        sSoftmixVoices = mem_alloc_dbg(param_1 * 0x30, 0, &sStrSoftmixFile, 0x2c8);
+        sSoftmixVoices = mem_alloc_dbg(param_1 * sizeof(SoftmixVoice), 0, &sStrSoftmixFile, 0x2c8);
         if (sSoftmixVoices == 0) goto ret1;
         {
-            mem_fill((u8 *)sSoftmixVoices, 0, param_1 * 0x30);
-            mem_fill((u8 *)&sSoftmixSamples, 0, 0x1c00);
+            mem_fill((u8 *)sSoftmixVoices, 0, param_1 * sizeof(SoftmixVoice));
+            mem_fill((u8 *)sSoftmixSamples, 0, sizeof(sSoftmixSamples));
             sSoftmixVolumeTable = piVar1 = mem_alloc_dbg(0x8000, 0, &sStrSoftmixFile, 0x2d4);
             if (piVar1 == 0) {
                 mem_free(sSoftmixVoices);
@@ -79,31 +68,19 @@ body:
 }
 }
 
-typedef struct {
-    s32 *data;
-    s32 len;
-    s32 b;
-    s32 c;
-    s32 d;
-    s32 e;
-    s32 f;
-} Ent_102;
-
-extern Ent_102 sSoftmixSamples_2[];
-
 s32 softmix_load_sample_file(s32 param_1)
 {
     s32 i;
-    Ent_102 *e;
+    SoftmixSample *e;
     s32 *f;
     u8 buf[8];
     u8 *bp;
 
     for (i = 0; i < 0x100; i++) {
-        if (sSoftmixSamples_2[i].len == 0) break;
+        if (sSoftmixSamples[i].length == 0) break;
     }
     if (i == 0x100) return -1;
-    mem_fill((u8 *)&sSoftmixSamples_2[i], 0, 0x1c);
+    mem_fill((u8 *)&sSoftmixSamples[i], 0, sizeof(SoftmixSample));
     if (sSoftmixFlags & 2) {
         sprintf(sSoftmixNameBuf, sStrSampleFile16, param_1);
     } else {
@@ -113,141 +90,106 @@ s32 softmix_load_sample_file(s32 param_1)
     do { do { do { do { do { do { bp = buf; } while (0); } while (0); } while (0); } while (0); } while (0); } while (0);
     if (f == 0) return -2;
     file_read(bp, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples_2[i].len, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples_2[i].b, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples_2[i].c, 1, 4, f);
-    file_read((u8 *)&sSoftmixSamples_2[i].d, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples[i].length, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples[i].loopStart, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples[i].loopEnd, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples[i].unk_10, 1, 4, f);
     file_read(bp, 1, 4, f);
-    e = &sSoftmixSamples_2[i];
-    e->data = mem_alloc_dbg(e->len, 0, sStrSoftmixFile, 0x368);
+    e = &sSoftmixSamples[i];
+    e->data = mem_alloc_dbg(e->length, 0, sStrSoftmixFile, 0x368);
     if (e->data == 0) {
         file_close(f);
         return -4;
     }
-    file_read((u8 *)e->data, 1, e->len, f);
+    file_read(e->data, 1, e->length, f);
     file_close(f);
     return i;
 }
 
-typedef struct {
-    void *p0;
-    s32 f4;
-    s32 f8;
-    s32 fc;
-    s32 f10;
-    volatile s32 f14;
-    s32 f18;
-} SamEnt;
-
-extern SamEnt sSoftmixSamples_3[];
-
 s32 softmix_load_sample_name(s32 param_1, s32 arg1, s32 arg2, s32 arg3)
 {
     s32 i;
-    SamEnt *e;
+    SamHeader *e;
     char *pcVar6;
     s32 *q;
-    SamEnt *ent;
+    SoftmixSample *ent;
     s32 *pp;
 
     if (gSfxResSet == 0) {
         return -1;
     }
     for (i = 0; i < 0x100; i++) {
-        if (sSoftmixSamples_3[i].f4 == 0) {
+        if (sSoftmixSamples[i].length == 0) {
             break;
         }
     }
     if (i == 0x100) {
         return -1;
     }
-    mem_fill((u8 *)&sSoftmixSamples_3[i], 0, 0x1c);
+    mem_fill((u8 *)&sSoftmixSamples[i], 0, sizeof(SoftmixSample));
     if (sSoftmixFlags & 2) {
         sprintf(sSoftmixNameBuf, sStrSamName16, param_1);
     } else {
         sprintf(sSoftmixNameBuf, sStrSamName08, param_1);
     }
-    q = (s32 *)res_load_by_name_2(gSfxResSet, sSoftmixNameBuf, &sSoftmixSamples_3[i].f18);
-    ent = &sSoftmixSamples_3[i];
-    ent->f14 = (s32)q;
-    ent->f4 = ((volatile s32 *)q)[1];
-    e = (SamEnt *)ent->f14;
-    pp = (s32 *)ent->f14;
-    ent->f8 = ((s32 *)e)[2];
-    ent->fc = ((s32 *)e)[3];
+    q = (s32 *)res_load_by_name_2(gSfxResSet, sSoftmixNameBuf, &sSoftmixSamples[i].resId);
+    ent = &sSoftmixSamples[i];
+    /* `sam` stored and read back as volatile, each read a load of its own */
+    *(SamHeader *volatile *)&ent->sam = (SamHeader *)q;
+    ent->length = ((volatile SamHeader *)q)->length;
+    e = *(SamHeader *volatile *)&ent->sam;
+    pp = (s32 *)*(SamHeader *volatile *)&ent->sam;
+    ent->loopStart = e->loopStart;
+    ent->loopEnd = e->loopEnd;
     pcVar6 = (char *)pp;
-    pp = (s32 *)pp[4];
-    ent->p0 = pcVar6 + 0x18;
-    ent->f10 = (s32)pp;
+    pp = (s32 *)((SamHeader *)pp)->unk_10;
+    ent->data = (u8 *)pcVar6 + sizeof(SamHeader);
+    ent->unk_10 = (s32)pp;
     return i;
 }
-
-typedef struct {
-    s32 data;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    Gear *hdr;
-    s32 id;
-} Slot_16;
-
-extern Slot_16 sSoftmixSamples_4[];
 
 s32 softmix_load_sample_id(s32 param)
 {
     s32 i;
-    Slot_16 *e;
+    SoftmixSample *e;
 
     if (gSfxResSet == NULL) {
         return -1;
     }
     for (i = 0; i < 0x100; i++) {
-        if (sSoftmixSamples_4[i].f4 == 0) {
+        if (sSoftmixSamples[i].length == 0) {
             break;
         }
     }
     if (i == 0x100) {
         return -1;
     }
-    e = &sSoftmixSamples_4[i];
-    mem_fill((u8 *)e, 0, sizeof(Slot_16));
-    e->id = param;
-    e->hdr = res_load(gSfxResSet, param);
-    e->f4 = e->hdr->f4;
-    e->f8 = e->hdr->f8;
-    e->fC = e->hdr->fC;
-    e->f10 = e->hdr->f10;
-    e->data = (s32)(e->hdr + 1);
+    e = &sSoftmixSamples[i];
+    mem_fill((u8 *)e, 0, sizeof(SoftmixSample));
+    e->resId = param;
+    e->sam = res_load(gSfxResSet, param);
+    e->length = e->sam->length;
+    e->loopStart = e->sam->loopStart;
+    e->loopEnd = e->sam->loopEnd;
+    e->unk_10 = e->sam->unk_10;
+    e->data = (u8 *)(e->sam + 1);
     return i;
 }
-
-typedef struct {
-    void *ptr;
-    s32 size;
-    s32 f8;
-    s32 fc;
-    s32 f10;
-    s32 f14;
-    s32 f18;
-} Ent_103;
-
-extern Ent_103 sSoftmixSamples_5[];
 
 s32 softmix_create_sample(u8 *p1, s32 p2, s32 p3, s32 p4, s32 p5)
 {
     s32 n;
     s32 t;
-    Ent_103 *e;
-    Ent_103 *base;
-    Ent_103 *w;
+    SoftmixSample *e;
+    SoftmixSample *base;
+    SoftmixSample *w;
     void *q;
 
-    base = sSoftmixSamples_5;
+    base = sSoftmixSamples;
     n = 0;
     w = base;
 top:
-    if (w->size == 0) {
+    if (w->length == 0) {
         goto done;
     }
     n++;
@@ -260,51 +202,49 @@ done:
     if (n == 0x100) {
         return -1;
     }
-    e = (Ent_103 *)((s32)(n * 0x1C) + (s32)base);
-    mem_fill((u8 *)e, 0, 0x1c);
-    e->size = p2;
+    e = (SoftmixSample *)((s32)(n * sizeof(SoftmixSample)) + (s32)base);
+    mem_fill((u8 *)e, 0, sizeof(SoftmixSample));
+    e->length = p2;
     if (p2 == 0) {
         return -3;
     }
     q = mem_alloc_dbg(p2, 0, sStrSoftmixFile, 0x421);
-    e->ptr = q;
+    e->data = q;
     if (q == 0) {
         return -4;
     }
-    sfx_copy_bytes(q, p1, e->size);
-    e->f8 = p3;
-    e->fc = p4;
-    e->f10 = p5;
-    e->f18 = -1;
+    sfx_copy_bytes(q, p1, e->length);
+    e->loopStart = p3;
+    e->loopEnd = p4;
+    e->unk_10 = p5;
+    e->resId = -1;
     return n;
 }
 
-typedef struct { u32 w[12]; } RecA_3;
-
 void softmix_voice_set_sample(s32 param_1, s32 param_2)
 {
-    RecA_3 *a;
-    Rec_3 *b;
-    RecA_3 *ab;
-    Rec_3 *bb;
-    u32 t;
+    SoftmixVoice *a;
+    SoftmixSample *b;
+    SoftmixVoice *ab;
+    SoftmixSample *bb;
+    u8 *t;
     u32 fl;
     critical_enter();
     ab = sSoftmixVoices;
-    a = (RecA_3 *)((s32)(param_1 * 0x30) + (s32)ab);
-    bb = sSoftmixSamples_6;
-    b = (Rec_3 *)((s32)(param_2 * 0x1c) + (s32)bb);
-    a->w[2] = a->w[2] % b->w[1];
-    a->w[7] = b->w[2];
-    a->w[9] = b->w[3];
-    t = b->w[0];
-    fl = a->w[1];
-    a->w[10] = param_2;
-    a->w[0] = t;
+    a = (SoftmixVoice *)((s32)(param_1 * sizeof(SoftmixVoice)) + (s32)ab);
+    bb = sSoftmixSamples;
+    b = (SoftmixSample *)((s32)(param_2 * sizeof(SoftmixSample)) + (s32)bb);
+    a->position = (u32)a->position % (u32)b->length;
+    a->loopStart = b->loopStart;
+    a->loopEnd = b->loopEnd;
+    t = b->data;
+    fl = a->flags;
+    a->sample = param_2;
+    a->data = t;
     if (fl & 2) {
-        a->w[6] = b->w[3];
+        a->end = b->loopEnd;
     } else {
-        a->w[6] = b->w[1];
+        a->end = b->length;
     }
     critical_leave();
 }
@@ -313,18 +253,18 @@ void softmix_voice_set_volume(s32 i, s32 val)
 {
     s32 a, b, x, y;
 
-    sSoftmixVoices_2[i].a = val;
+    sSoftmixVoices[i].volume = val;
     if (sSoftmixFlags & 1) {
-        a = sSoftmixVoices_2[i].a;
-        b = sSoftmixVoices_2[i].b;
+        a = sSoftmixVoices[i].volume;
+        b = sSoftmixVoices[i].pan;
 
         x = 15 - b;
         x = x * a / 10;
         y = b * a / 10;
         if (x > a) x = a;
         if (y > a) y = a;
-        sSoftmixVoices_2[i].c = x;
-        sSoftmixVoices_2[i].d = y;
+        sSoftmixVoices[i].left = x;
+        sSoftmixVoices[i].right = y;
     }
 }
 
@@ -332,29 +272,20 @@ void softmix_voice_set_pan(s32 i, s32 val)
 {
     s32 a, b, x, y;
 
-    sSoftmixVoices_2[i].b = val;
+    sSoftmixVoices[i].pan = val;
     if (sSoftmixFlags & 1) {
-        a = sSoftmixVoices_2[i].a;
-        b = sSoftmixVoices_2[i].b;
+        a = sSoftmixVoices[i].volume;
+        b = sSoftmixVoices[i].pan;
 
         x = 15 - b;
         x = x * a / 10;
         y = b * a / 10;
         if (x > a) x = a;
         if (y > a) y = a;
-        sSoftmixVoices_2[i].c = x;
-        sSoftmixVoices_2[i].d = y;
+        sSoftmixVoices[i].left = x;
+        sSoftmixVoices[i].right = y;
     }
 }
-
-typedef struct {
-    u8 pad[0x22];
-    u8 a;
-    u8 b;
-    u8 pad2[0xC];
-} Ch_2;
-
-extern Ch_2 *sSoftmixVoices_3;
 
 void softmix_mix(s32 *param_1, s32 param_2)
 {
@@ -367,10 +298,10 @@ void softmix_mix(s32 *param_1, s32 param_2)
     sMixSrc = param_1;
     sMixOverwrite = 1;
     for (i = 0; i < sSoftmixNumVoices; i++) {
-        sSoftmixSavedLevels[i * 2] = sSoftmixVoices_3[i].a;
-        sSoftmixSavedLevels[i * 2 + 1] = sSoftmixVoices_3[i].b;
-        sSoftmixVoices_3[i].a = (sSoftmixVoices_3[i].a * sSoftmixMasterVolume) >> 8;
-        sSoftmixVoices_3[i].b = (sSoftmixVoices_3[i].a * sSoftmixMasterVolume) >> 8;
+        sSoftmixSavedLevels[i * 2] = sSoftmixVoices[i].left;
+        sSoftmixSavedLevels[i * 2 + 1] = sSoftmixVoices[i].right;
+        sSoftmixVoices[i].left = (sSoftmixVoices[i].left * sSoftmixMasterVolume) >> 8;
+        sSoftmixVoices[i].right = (sSoftmixVoices[i].left * sSoftmixMasterVolume) >> 8;
     }
     if (sSoftmixFlags & 1) {
         softmix_mix_voices_stereo();
@@ -422,29 +353,24 @@ void softmix_mix(s32 *param_1, s32 param_2)
     }
     sSoftmixSampleCount += param_2;
     for (i = 0; i < sSoftmixNumVoices; i++) {
-        sSoftmixVoices_3[i].a = sSoftmixSavedLevels[i * 2];
-        sSoftmixVoices_3[i].b = sSoftmixSavedLevels[i * 2 + 1];
+        sSoftmixVoices[i].left = sSoftmixSavedLevels[i * 2];
+        sSoftmixVoices[i].right = sSoftmixSavedLevels[i * 2 + 1];
     }
 }
 
-struct Hdr_13 {
-    u32 flags;
-    u32 size;
-};
-
-void softmix_sam_decompress(Hdr_13 **param_1)
+void softmix_sam_decompress(SamHeader **param_1)
 {
-    Hdr_13 *p;
-    Hdr_13 *q;
+    SamHeader *p;
+    SamHeader *q;
     u8 **bp;
 
     p = *param_1;
     if ((p->flags & 0xF) >= 2) {
         if (sSoftmixDecompressFn != 0) {
-            if (sSoftmixDecompressBufSize < p->size + 0x1c) goto spin;
-            memcpy(sSoftmixDecompressBuf, p, p->size + 0x1c);
+            if (sSoftmixDecompressBufSize < (u32)p->length + 0x1c) goto spin;
+            memcpy(sSoftmixDecompressBuf, p, (u32)p->length + 0x1c);
             mem_free(*param_1);
-            p = (Hdr_13 *)sSoftmixDecompressBuf;
+            p = (SamHeader *)sSoftmixDecompressBuf;
             goto join;
         spin:
             while (1) {}
@@ -454,12 +380,12 @@ void softmix_sam_decompress(Hdr_13 **param_1)
             if (q == 0) {
                 fatal_halt(1);
             }
-            if (p != (Hdr_13 *)*bp) {
+            if (p != (SamHeader *)*bp) {
                 mem_free(p);
             }
-            if (q == (Hdr_13 *)*bp) {
-                p = mem_alloc_dbg(p->size + 0x1c, 0, sStrSoftmixFile, 0x67b);
-                memcpy(p, q, p->size + 0x1c);
+            if (q == (SamHeader *)*bp) {
+                p = mem_alloc_dbg((u32)p->length + 0x1c, 0, sStrSoftmixFile, 0x67b);
+                memcpy(p, q, (u32)p->length + 0x1c);
                 q = p;
             }
             *param_1 = q;
@@ -489,53 +415,39 @@ void softmix_shutdown(void)
 
 void softmix_free_sample(u32 p)
 {
-    s32 *w;
-    s32 *e;
+    SoftmixSample *w;
+    SoftmixSample *e;
     if (p < 0x101) {
-        w = sSoftmixSamples_7;
-        e = &w[p * 7];
-        if (e[1] != 0) {
-            if (e[6] != -1) {
-                res_unload((u32 *)(gSfxResSet_2[1] + e[6] * 4));
+        w = sSoftmixSamples;
+        e = &w[p];
+        if (e->length != 0) {
+            if (e->resId != -1) {
+                res_unload((u32 *)(gSfxResSet_2[1] + e->resId * 4));
             } else {
-                mem_free(e[0]);
+                mem_free(e->data);
             }
-            mem_fill((u8 *)&sSoftmixSamples_7[p * 7], 0, 0x1c);
+            mem_fill((u8 *)&sSoftmixSamples[p], 0, sizeof(SoftmixSample));
         }
     }
 }
 
-typedef struct {
-    s32 f[7];
-} Rec_58;
-
-extern Rec_58 sSoftmixSamples_8[];
-
 void softmix_get_sample_info(s32 idx, s32 *out) {
-    Rec_58 *base = sSoftmixSamples_8;
-    Rec_58 *r = base + idx;
-    out[0] = r->f[1];
-    out[1] = r->f[2];
-    out[2] = r->f[3];
-    out[3] = r->f[4];
+    SoftmixSample *base = sSoftmixSamples;
+    SoftmixSample *r = base + idx;
+    out[0] = r->length;
+    out[1] = r->loopStart;
+    out[2] = r->loopEnd;
+    out[3] = r->unk_10;
 }
-
-typedef struct {
-    u32 pad;
-    u32 w[4];
-    u32 tail[2];
-} Ent_104;
-
-extern Ent_104 sSoftmixSamples_9[];
 
 void softmix_set_sample_info(s32 i, u32 *src)
 {
-    Ent_104 *base = sSoftmixSamples_9;
-    Ent_104 *e = &base[i];
-    e->w[0] = src[0];
-    e->w[1] = src[1];
-    e->w[2] = src[2];
-    e->w[3] = src[3];
+    SoftmixSample *base = sSoftmixSamples;
+    SoftmixSample *e = &base[i];
+    e->length = src[0];
+    e->loopStart = src[1];
+    e->loopEnd = src[2];
+    e->unk_10 = src[3];
 }
 
 void softmix_voice_set_rate(s32 param_1, s32 param_2)
@@ -546,42 +458,37 @@ void softmix_voice_set_rate(s32 param_1, s32 param_2)
     critical_enter();
     iVar1 = param_2 % sSoftmixOutputRate * 65536;
     iVar2 = iVar1 / sSoftmixOutputRate;
-    iVar1 = param_1 * 0x30 + sSoftmixVoices;
-    *(s32 *)(iVar1 + 0x10) = param_2 / sSoftmixOutputRate;
-    *(s32 *)(iVar1 + 0x14) = iVar2 * 65536;
+    iVar1 = param_1 * sizeof(SoftmixVoice) + (s32)sSoftmixVoices;
+    ((SoftmixVoice *)iVar1)->step = param_2 / sSoftmixOutputRate;
+    ((SoftmixVoice *)iVar1)->stepFrac = iVar2 * 65536;
     critical_leave();
 }
 
 void softmix_voice_set_position(s32 i, s32 v)
 {
-    *(s32 *)((u8 *)sSoftmixVoices + i * 48 + 8) = v;
+    sSoftmixVoices[i].position = v;
 }
 
 s32 softmix_voice_get_position(s32 a0)
 {
-    return *(s32 *)(sSoftmixVoices + a0 * 0x30 + 8);
+    return sSoftmixVoices[a0].position;
 }
-
-typedef struct { s32 f0; s32 f1; s32 f2; s32 f3; s32 f4; s32 f5; s32 f6; } Row_7;
-typedef struct { u8 pad0[4]; u32 flags; u8 pad8[0x10]; s32 val; u8 pad1c[0xC]; s32 idx; u8 pad2c[4]; } Ent_105;
-
-extern Row_7 sSoftmixSamples_10[];
 
 void softmix_voice_set_flags(s32 n, u32 flags)
 {
-    Ent_105 *base = sSoftmixVoices;
-    Ent_105 *e = (Ent_105 *)((u32)(n * 0x30) + (u32)base);
+    SoftmixVoice *base = sSoftmixVoices;
+    SoftmixVoice *e = (SoftmixVoice *)((u32)(n * sizeof(SoftmixVoice)) + (u32)base);
     e->flags = flags;
     if (flags & 2) {
-        e->val = sSoftmixSamples_10[e->idx].f3;
+        e->end = sSoftmixSamples[e->sample].loopEnd;
         return;
     }
-    e->val = sSoftmixSamples_10[e->idx].f1;
+    e->end = sSoftmixSamples[e->sample].length;
 }
 
 s32 softmix_voice_get_flags(s32 i)
 {
-    return *(s32 *)((u8 *)sSoftmixVoices + i * 48 + 4);
+    return sSoftmixVoices[i].flags;
 }
 
 s32 softmix_get_sample_count(s32 arg0) {
@@ -680,34 +587,26 @@ void softmix_echo_free(s32 arg0)
     }
 }
 
-typedef struct {
-    u8 *buf;
-    u32 len;
-    u8 unk8[0x1C - 0x8];
-} Chan_7;
-
-extern Chan_7 sSoftmixSamples_11[];
-
 void softmix_write_sample(u32 idx, u8 *src, s32 n) {
     s32 i;
 
     if (idx <= 0x100) {
-        if (sSoftmixSamples_11[idx].len < n) {
-            n = sSoftmixSamples_11[idx].len;
+        if ((u32)sSoftmixSamples[idx].length < n) {
+            n = (u32)sSoftmixSamples[idx].length;
         }
         if (sSoftmixFlags & 2) {
-            sfx_copy_bytes(sSoftmixSamples_11[idx].buf, src, n);
+            sfx_copy_bytes(sSoftmixSamples[idx].data, src, n);
         } else {
             for (i = 0; i < n; i++) {
-                sSoftmixSamples_11[idx].buf[i] = sSoftmixExpandTable[src[i]] >> 8;
+                sSoftmixSamples[idx].data[i] = sSoftmixExpandTable[src[i]] >> 8;
             }
         }
     }
 }
 
-void softmix_set_decompressor(s32 a0)
+void softmix_set_decompressor(SamHeader *(*fn)(SamHeader *))
 {
-    sSoftmixDecompressFn = a0;
+    sSoftmixDecompressFn = fn;
 }
 
 void softmix_set_decompress_buf(s32 a, s32 b)
@@ -720,22 +619,22 @@ void softmix_voice_update_levels(s32 i)
 {
     s32 a, b, x, y;
     if (sSoftmixFlags & 1) {
-        a = sSoftmixVoices_2[i].a;
-        b = sSoftmixVoices_2[i].b;
+        a = sSoftmixVoices[i].volume;
+        b = sSoftmixVoices[i].pan;
 
         x = 15 - b;
         x = x * a / 10;
         y = b * a / 10;
         if (x > a) x = a;
         if (y > a) y = a;
-        sSoftmixVoices_2[i].c = x;
-        sSoftmixVoices_2[i].d = y;
+        sSoftmixVoices[i].left = x;
+        sSoftmixVoices[i].right = y;
     }
 }
 
 s32 softmix_get_sample_data(s32 a0)
 {
-    return *(s32 *)(sSoftmixSamples_12 + a0 * 0x1C);
+    return (s32)sSoftmixSamples[a0].data;
 }
 
 void softmix_set_master_volume(s32 x)

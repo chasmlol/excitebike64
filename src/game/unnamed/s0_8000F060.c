@@ -18,7 +18,7 @@ void snd_init(void)
 
     gSfxResSet = 0;
     gSndMasterVolume = 0x100;
-    softmix_set_decompressor((s32)D_800C04EC);
+    softmix_set_decompressor(decoder_decode_sample);
     gSfxDriver = (u32)gN64SndDriver;
     sfx_get_driver_caps(&l[0], &l[1], &l[2], &l[3]);
     {

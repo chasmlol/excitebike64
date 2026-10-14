@@ -1469,7 +1469,6 @@ res_set_load_buffer                   game  0x800C0258  func      0xc
 func_800C0264                         game  0x800C0264  func     0x80
 res_hash_name                         game  0x800C02E4  func     0x6c
 decoder_decode_adpcm                  game  0x800C0350  func    0x19c
-D_800C04EC                            game  0x800C04EC  data        -
 decoder_decode_sample                 game  0x800C04EC  func     0x70
 func_800C055C                         game  0x800C055C  func    0x174
 font_load                             game  0x800C06D0  func    0x3fc
@@ -5217,23 +5216,10 @@ sSoftmixEchoSize                      game  0x800FE878  data        -
 sSoftmixNameBuf                       game  0x800FE880  data        -
 sSoftmixVolumeTable                   game  0x800FE8D0  data        -
 sSoftmixVoices                        game  0x800FE8D4  data        -
-sSoftmixVoices_2                      game  0x800FE8D4  data        -  sSoftmixVoices
-sSoftmixVoices_3                      game  0x800FE8D4  data        -  sSoftmixVoices
 sSoftmixOutputRate                    game  0x800FE8D8  data        -
 sSoftmixFlags                         game  0x800FE8DC  data        -
 sSoftmixNumVoices                     game  0x800FE8E0  data        -
 sSoftmixSamples                       game  0x800FE8F0  data        -
-sSoftmixSamples_10                    game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_11                    game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_12                    game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_2                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_3                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_4                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_5                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_6                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_7                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_8                     game  0x800FE8F0  data        -  sSoftmixSamples
-sSoftmixSamples_9                     game  0x800FE8F0  data        -  sSoftmixSamples
 sSoftmixSampleCount                   game  0x801004F0  data        -
 sSoftmixEchoTable                     game  0x80100500  data        -
 sSoftmixSavedLevels                   game  0x80100600  data        -
