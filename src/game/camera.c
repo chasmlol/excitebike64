@@ -46,17 +46,6 @@ void cam_init(s32 arg0)
     }
 }
 
-typedef struct {
-    u8 unk0[0x46];
-    s16 next;
-    s16 branch;
-    s16 unk4A;
-    s16 unk4C;
-    u8 unk4E[0x6C - 0x4E];
-} Seg_5;
-
-extern Seg_5 *gPathNodes_5;
-
 void cam_build_segment_order(void) {
     s32 j;
     s32 i;
@@ -66,29 +55,22 @@ void cam_build_segment_order(void) {
     n = 0;
     do {
         sCamSegOrder[i] = n;
-        if (gPathNodes_5[i].branch != -1) {
-            j = gPathNodes_5[i].branch;
+        if (gPathNodes[i].branch != -1) {
+            j = gPathNodes[i].branch;
             n++;
             do {
                 sCamSegOrder[j] = n;
-                j = gPathNodes_5[j].next;
+                j = gPathNodes[j].next;
                 n++;
-            } while (gPathNodes_5[j].unk4C == -1);
+            } while (gPathNodes[j].join == -1);
         } else {
             n++;
         }
-        i = gPathNodes_5[i].next;
+        i = gPathNodes[i].next;
     } while (i != 0);
 }
 
-typedef struct {
-    u8 pad[0x64];
-    u8 b64;
-    u8 pad2[0x6C - 0x65];
-} Area;
-
 extern Player_10 gRiders_25[];
-extern Area *gPathNodes_6;
 
 void cam_update(void) {
     CamOut out;
@@ -286,17 +268,8 @@ void cam_update(void) {
     pos.y = (f32)gCamPos[gCamView].y / 1000.0f;
     pos.z = (f32)gCamPos[gCamView].z / 1000.0f;
     path_get_segment_and_t(&pos, &area, &hh, gRiders_25[sCamTarget].f628);
-    gCamSegFlags[gCamView] = gPathNodes_6[area].b64;
+    gCamSegFlags[gCamView] = gPathNodes[area].flags;
 }
-
-typedef struct {
-    f32 x, y, z;
-    u8 pad0C[0x46 - 0x0C];
-    s16 next;
-    u8 pad48[0x64 - 0x48];
-    u8 flags;
-    u8 pad65[0x6C - 0x65];
-} Seg_6;
 
 struct Obj_13 {
     u8 pad0[0x54];
@@ -319,8 +292,6 @@ struct Obj_13 {
     s16 seg;
 };
 
-extern Seg_6 *gPathNodes_7;
-
 f32 cam_calc_ground_pitch(Obj_13 *self)
 {
     s32 i;
@@ -335,7 +306,7 @@ f32 cam_calc_ground_pitch(Obj_13 *self)
 
     i = self->seg;
     f3 = 0.0f;
-    if ((gPathNodes_7[i].flags & 1) == 0) {
+    if ((gPathNodes[i].flags & 1) == 0) {
         f0 = self->vx * self->dx + self->vz * self->dz;
         if (f0 < 2.0f) {
             f0 = 2.0f;
@@ -353,12 +324,12 @@ f32 cam_calc_ground_pitch(Obj_13 *self)
     } else {
         k = i;
         for (n = 5; n >= 0; n--) {
-            k = gPathNodes_7[k].next;
+            k = gPathNodes[k].next;
         }
-        dx = gPathNodes_7[k].x - self->px;
-        dz = gPathNodes_7[k].z - self->pz;
+        dx = gPathNodes[k].pos.x - self->px;
+        dz = gPathNodes[k].pos.z - self->pz;
         t = __builtin_sqrtf(dx * dx + dz * dz);
-        f3 = -(gPathNodes_7[k].y - self->py) * (8192.0f / t);
+        f3 = -(gPathNodes[k].pos.y - self->py) * (8192.0f / t);
     }
     if (f3 < -2048.0f) {
         f3 = -2048.0f;
@@ -399,8 +370,6 @@ f32 cam_calc_air_pitch(u8 *p)
     f32 B[3];
     s32 iVar1;
     f32 tt;
-
-
 
     if (*(s32 *)(p + 0x744) > 0 && 0.25f < FLD(0x6f4)) {
         fVar4 = 0.5f;
@@ -654,7 +623,7 @@ f32 cam_calc_hill_climb_pitch(u8 *param_1)
     u8 fl;
     s32 *gp = &sCamHillPitch;
 
-    fl = gPathNodes[*(s16 *)(param_1 + 0x628) * 0x6C + 0x64];
+    fl = gPathNodes[*(s16 *)(param_1 + 0x628)].flags;
     fs = (f32)*gp;
     if ((fl & 1) == 0) {
         s2 = *(f32 *)(param_1 + 0xB8) * *(f32 *)(param_1 + 0xB8) +
@@ -1116,13 +1085,6 @@ typedef struct Big {
     u8 pad1[0x7E0 - 0x62A];
 } Big;
 
-typedef struct Node_3 {
-    u8 pad0[0x4E];
-    s16 next;
-    u8 pad1[0x6C - 0x50];
-} Node_3;
-
-extern Node_3 *gPathNodes_8;
 extern Obj_16 *gCurTrack_20;
 extern Obj_16 *gCurTrack_43;
 extern Big gRiders_29[];
@@ -1237,7 +1199,7 @@ s32 cam_find_zone(void)
             if (k < gCurTrack_43->nB) goto loopB;
         }
         pass++;
-        node = gPathNodes_8[node].next;
+        node = gPathNodes[node].alt;
     } while (pass < 2);
 done:
     return 0;
@@ -1252,14 +1214,6 @@ struct Obj_17 {
     f32 frac;
 };
 
-typedef struct {
-    u8 pad0[0x4E];
-    s16 start;
-    u8 pad50[0x6C - 0x50];
-} Seg_7;
-
-extern Seg_7 *gPathNodes_9;
-
 f32 cam_zone_get_progress(Obj_17 *p, s32 a, s32 b)
 {
     s32 seg;
@@ -1269,7 +1223,7 @@ f32 cam_zone_get_progress(Obj_17 *p, s32 a, s32 b)
 
     if (gCamZoneState[gCamView].flags & 8) {
         len = sCamSegOrder[b] - sCamSegOrder[a];
-        seg = path_find_segment(&p->pos, gPathNodes_9[p->seg].start, 15, 1);
+        seg = path_find_segment(&p->pos, gPathNodes[p->seg].alt, 15, 1);
         path_get_lateral_offset(&p->pos, seg);
         frac = gPathSegmentT;
     } else {
@@ -1468,15 +1422,6 @@ void cam_zone_update_dolly(Actor *rider, CamOut *out)
     cam_snap_to(out);
 }
 
-typedef struct {
-    u8 pad0[0x14];
-    f32 fa;
-    f32 fb;
-    u8 pad1[0x50];
-} Rec_13;
-
-extern Rec_13 *gPathNodes_10;
-
 void cam_get_track_heading(s16 p1, f32 p2, u16 *p3)
 {
     s32 i1, i2;
@@ -1493,8 +1438,8 @@ void cam_get_track_heading(s16 p1, f32 p2, u16 *p3)
         if (i2 < 0) i2 += gPathNodeCount;
         p2 = p2 + 1.0f;
     }
-    xb = (gPathNodes_10[i2].fb * (1.0f - p2) + gPathNodes_10[i1].fb * p2) * 16384.0f;
-    xa = (gPathNodes_10[i2].fa * (1.0f - p2) + gPathNodes_10[i1].fa * p2) * 16384.0f;
+    xb = (gPathNodes[i2].lateralZ * (1.0f - p2) + gPathNodes[i1].lateralZ * p2) * 16384.0f;
+    xa = (gPathNodes[i2].lateralX * (1.0f - p2) + gPathNodes[i1].lateralX * p2) * 16384.0f;
     math_to_polar((s32)xb, (s32)xa, p3, aux);
 }
 
@@ -1518,9 +1463,9 @@ void cam_get_track_pos(s16 param_1, f32 param_2, f32 *param_3, f32 *param_4, f32
         }
         param_2 = param_2 + 1.0f;
     }
-    *param_3 = gPathNodes_2[i0].x + (gPathNodes_2[i1].x - gPathNodes_2[i0].x) * param_2;
-    *param_4 = gPathNodes_2[i0].y + (gPathNodes_2[i1].y - gPathNodes_2[i0].y) * param_2;
-    *param_5 = gPathNodes_2[i0].z + (gPathNodes_2[i1].z - gPathNodes_2[i0].z) * param_2;
+    *param_3 = gPathNodes[i0].pos.x + (gPathNodes[i1].pos.x - gPathNodes[i0].pos.x) * param_2;
+    *param_4 = gPathNodes[i0].pos.y + (gPathNodes[i1].pos.y - gPathNodes[i0].pos.y) * param_2;
+    *param_5 = gPathNodes[i0].pos.z + (gPathNodes[i1].pos.z - gPathNodes[i0].pos.z) * param_2;
 }
 
 typedef struct {
@@ -1621,24 +1566,6 @@ void cam_shift_xz(s32 p1, s32 p2, s32 p3, s32 p4)
     }
 }
 
-typedef struct Rec_14 {
-    f32 x;
-    f32 y;
-    f32 z;
-    u8 p0c[8];
-    f32 f14;
-    f32 f18;
-    u8 p1c[0x2a];
-    s16 s46;
-    u8 p48[10];
-    s16 s52;
-    s16 s54;
-    s16 s56;
-    u8 p58[12];
-    u8 b64;
-    u8 p65[7];
-} Rec_14;
-
 typedef struct Blk_8 {
     u8 p0[0x6c];
     f32 f6c;
@@ -1678,9 +1605,9 @@ void cam_clamp_to_track(s32 m, s32 n)
     s32 lim;
     Blk_8 *pb;
     Vec3i *q;
-    Rec_14 *pr, *pn;
+    PathNode *pr, *pn;
     s32 nx;
-    Rec_14 *tab;
+    PathNode *tab;
     f32 ax, az, bx, bz, qx, qz;
     s32 k, h, top, d, r, dz;
     f32 f, g, sx, sz;
@@ -1698,9 +1625,9 @@ void cam_clamp_to_track(s32 m, s32 n)
         v.z = (f32)gCamPos[n].z / 1000.0f;
         path_get_segment_and_t(&v, &idx, &t, gRiders_31[m].s628);
         tab = gPathNodes;
-        pr = (Rec_14 *)(idx * sizeof(Rec_14) + (u32)tab);
-        nx = pr->s46;
-        gCamSegFlags[n] = pr->b64;
+        pr = (PathNode *)(idx * sizeof(PathNode) + (u32)tab);
+        nx = pr->next;
+        gCamSegFlags[n] = pr->flags;
         if (gCurTrack_21->f2C == 0) {
             s32 id = gCurTrack_21 - gTracks_9;
             if (id == 0x18 || id == 0x15 || id == 0x16) {
@@ -1709,19 +1636,19 @@ void cam_clamp_to_track(s32 m, s32 n)
             return;
         }
         D_800E7F98 = 0;
-        if (pr->s56 < 0) {
+        if (pr->camCeiling < 0) {
             cam_collide_walls(m, n, 0);
             return;
         }
-        if (pr->s56 > 0) {
-            pn = (Rec_14 *)(nx * sizeof(Rec_14) + (u32)tab);
-            if (pn->s56 > 0) {
+        if (pr->camCeiling > 0) {
+            pn = (PathNode *)(nx * sizeof(PathNode) + (u32)tab);
+            if (pn->camCeiling > 0) {
                 f32 ya, yb;
                 D_800E7F98 = 1;
-                ya = pr->y * 1000.0f + (f32)pr->s56 * 16.0f;
-                yb = pn->y * 1000.0f + (f32)pn->s56 * 16.0f;
-                lim = (s32)(lerpi(pr->s52, pn->s52, t) * 16.0f);
-                top = (s32)(lerpi(pr->s54, pn->s54, t) * 16.0f);
+                ya = pr->pos.y * 1000.0f + (f32)pr->camCeiling * 16.0f;
+                yb = pn->pos.y * 1000.0f + (f32)pn->camCeiling * 16.0f;
+                lim = (s32)(lerpi(pr->camWidthNeg, pn->camWidthNeg, t) * 16.0f);
+                top = (s32)(lerpi(pr->camWidthPos, pn->camWidthPos, t) * 16.0f);
                 h = (s32)lerp(ya, yb, t);
                 if (h < gCamPos[n].y && gRiders_31[m].w744 < 0x1e) {
                     f32 ex, ez;
@@ -1744,19 +1671,19 @@ void cam_clamp_to_track(s32 m, s32 n)
                     gCamPos[n].y = h;
                 }
                 {
-                Rec_14 *pr2, *pn2;
-                Rec_14 *tab2;
+                PathNode *pr2, *pn2;
+                PathNode *tab2;
                 f32 ax, az;
                 tab2 = gPathNodes;
-                pr2 = (Rec_14 *)(idx * sizeof(Rec_14) + (u32)tab2);
-                nx = pr2->s46;
-                pn2 = (Rec_14 *)(nx * sizeof(Rec_14) + (u32)tab2);
-                g = lerp(pr2->f14, pn2->f14, t);
-                f = lerp(pr2->f18, pn2->f18, t);
-                ax = pr2->x * 1000.0f;
-                az = pr2->z * 1000.0f;
-                dz = (s32)(lerp((f32)gCamPos[n].x - ax, (f32)gCamPos[n].x - pn2->x * 1000.0f, t) * g +
-                           lerp((f32)gCamPos[n].z - az, (f32)gCamPos[n].z - pn2->z * 1000.0f, t) * f);
+                pr2 = (PathNode *)(idx * sizeof(PathNode) + (u32)tab2);
+                nx = pr2->next;
+                pn2 = (PathNode *)(nx * sizeof(PathNode) + (u32)tab2);
+                g = lerp(pr2->lateralX, pn2->lateralX, t);
+                f = lerp(pr2->lateralZ, pn2->lateralZ, t);
+                ax = pr2->pos.x * 1000.0f;
+                az = pr2->pos.z * 1000.0f;
+                dz = (s32)(lerp((f32)gCamPos[n].x - ax, (f32)gCamPos[n].x - pn2->pos.x * 1000.0f, t) * g +
+                           lerp((f32)gCamPos[n].z - az, (f32)gCamPos[n].z - pn2->pos.z * 1000.0f, t) * f);
                 }
                 if (top < dz) {
                     d = top - dz;
@@ -2008,7 +1935,7 @@ void cam_get_track_slope(s32 a0, f32 f, s16 *out)
     s16 i;
     s32 i1, i2;
     f32 r;
-    u8 *base;
+    PathNode *base;
     i = a0;
     if (0.0f <= f) {
         i2 = i;
@@ -2027,7 +1954,7 @@ void cam_get_track_slope(s32 a0, f32 f, s16 *out)
         f = f + 1.0f;
     }
     base = gPathNodes;
-    r = *(f32 *)(base + i2 * 0x6c + 0x24) * (1.0f - f) + *(f32 *)(base + i1 * 0x6c + 0x24) * f;
+    r = base[i2].slope * (1.0f - f) + base[i1].slope * f;
     *out = (s16)((r * 32768.0f) / 3.1415927f);
 }
 

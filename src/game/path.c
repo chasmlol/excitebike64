@@ -1,17 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    f32 x, y, z, w;
-    u8 p0[0x46 - 0x10];
-    s16 n46;
-    s16 n48;
-    s16 p1;
-    s16 n4c;
-    u8 p2[0x6c - 0x4e];
-} Node_8;
-
-extern Node_8 *gPathNodes_12;
-
 f32 path_get_distance(s32 a, s32 b)
 {
     f32 acc;
@@ -28,135 +16,94 @@ f32 path_get_distance(s32 a, s32 b)
         if (K <= acc) {
             return acc;
         }
-        w = gPathNodes_12[a].w;
-        if (gPathNodes_12[a].n48 >= 0) {
-            dx = gPathNodes_12[a].x - gPathNodes_12[gPathNodes_12[a].n48].x;
-            dz = gPathNodes_12[a].z - gPathNodes_12[gPathNodes_12[a].n48].z;
+        w = gPathNodes[a].length;
+        if (gPathNodes[a].branch >= 0) {
+            dx = gPathNodes[a].pos.x - gPathNodes[gPathNodes[a].branch].pos.x;
+            dz = gPathNodes[a].pos.z - gPathNodes[gPathNodes[a].branch].pos.z;
             d = __builtin_sqrtf(dx * dx + dz * dz);
             break;
         }
-        a = gPathNodes_12[a].n46;
+        a = gPathNodes[a].next;
         acc += w;
     }
-    i = gPathNodes_12[a].n46;
-    while (gPathNodes_12[i].n4c < 0) {
+    i = gPathNodes[a].next;
+    while (gPathNodes[i].join < 0) {
         if (i == b) {
-            return acc + w + path_get_distance(gPathNodes_12[a].n46, b);
+            return acc + w + path_get_distance(gPathNodes[a].next, b);
         }
-        i = gPathNodes_12[i].n46;
+        i = gPathNodes[i].next;
     }
-    i = gPathNodes_12[a].n48;
-    while (gPathNodes_12[i].n4c < 0) {
+    i = gPathNodes[a].branch;
+    while (gPathNodes[i].join < 0) {
         if (i == b) {
-            return acc + d + path_get_distance(gPathNodes_12[a].n48, b);
+            return acc + d + path_get_distance(gPathNodes[a].branch, b);
         }
-        i = gPathNodes_12[i].n46;
+        i = gPathNodes[i].next;
     }
-    d += path_get_distance(gPathNodes_12[a].n48, b);
-    w += path_get_distance(gPathNodes_12[a].n46, b);
+    d += path_get_distance(gPathNodes[a].branch, b);
+    w += path_get_distance(gPathNodes[a].next, b);
     if (d < w) {
         return d + acc;
     }
     return w + acc;
 }
 
-typedef struct Rec_24 {
-    f32 x, y, z, w;
-    s32 pad10;
-    f32 nx;
-    f32 ny;
-    u8 pad1[0x46 - 0x1C];
-    s16 a;
-    s16 b;
-    s16 c;
-    u8 pad2[0x6C - 0x4C];
-} Rec_24;
-
-extern Rec_24 *gPathNodes_13;
-
 void path_calc_normals(void)
 {
     s32 i;
-    Rec_24 *p;
-    Rec_24 *a;
-    Rec_24 *c;
+    PathNode *p;
+    PathNode *a;
+    PathNode *c;
     f32 sz;
     f32 sx;
     f32 len;
 
     for (i = 0; i < gPathNodeCount; i++) {
-        p = (Rec_24 *)(i * sizeof(Rec_24) + (u32)gPathNodes_13);
-        a = (Rec_24 *)(p->a * sizeof(Rec_24) + (u32)gPathNodes_13);
-        c = (Rec_24 *)(p->c * sizeof(Rec_24) + (u32)gPathNodes_13);
-        sz = (a->z - p->z) / p->w;
-        sz = sz * p->w + ((p->z - c->z) / c->w) * c->w;
-        sx = -(a->x - p->x) / p->w;
-        sx = sx * p->w + (-(p->x - c->x) / c->w) * c->w;
+        p = (PathNode *)(i * sizeof(PathNode) + (u32)gPathNodes);
+        a = (PathNode *)(p->next * sizeof(PathNode) + (u32)gPathNodes);
+        c = (PathNode *)(p->prev * sizeof(PathNode) + (u32)gPathNodes);
+        sz = (a->pos.z - p->pos.z) / p->length;
+        sz = sz * p->length + ((p->pos.z - c->pos.z) / c->length) * c->length;
+        sx = -(a->pos.x - p->pos.x) / p->length;
+        sx = sx * p->length + (-(p->pos.x - c->pos.x) / c->length) * c->length;
         len = __builtin_sqrtf(sz * sz + sx * sx);
         if (0.0f < len) {
-            gPathNodes_13[i].nx = sz / len;
-            gPathNodes_13[i].ny = sx / len;
+            gPathNodes[i].lateralX = sz / len;
+            gPathNodes[i].lateralZ = sx / len;
         }
     }
 }
 
-typedef struct Rec_25 {
-    f32 f00, f04, f08, f0c, f10, f14, f18, f1c, f20, f24, f28, f2c, f30, f34, f38, f3c, f40;
-    s16 pad44;
-    s16 parent;
-    s16 child;
-    u8 rest[0x6c - 0x4a];
-} Rec_25;
-
 void path_calc_spline_coeffs(s32 idx, s32 stop)
 {
-    Rec_25 *a, *b, *base;
+    PathNode *a, *b, *base;
     f32 inv, t, P, Q, R, S, nb, nq, f7, f8, f4, f5;
     s32 par;
 
     do {
     base = gPathNodes;
-    a = (Rec_25 *)(idx * 0x6c + (s32)base);
-    inv = a->f0c / 3.0f;
-    t = -a->f18;
-    S = a->f14;
-    par = a->parent;
-    b = (Rec_25 *)(par * 0x6c + (s32)base);
-    P = a->f00 + t * inv;
-    Q = a->f08 + S * inv;
-    nb = b->f00 - -b->f18 * inv;
-    nq = b->f08 - b->f14 * inv;
-    a->f34 = t * 3.0f * inv;
-    a->f30 = (nb - P) * 3.0f - a->f34;
-    a->f2c = b->f00 - a->f00 - a->f30 - a->f34;
-    a->f40 = S * 3.0f * inv;
-    a->f3c = (nq - Q) * 3.0f - a->f40;
-    a->f38 = b->f08 - a->f08 - a->f3c - a->f40;
-    if (a->child >= 0) {
-        path_calc_spline_coeffs(a->child, stop);
+    a = (PathNode *)(idx * 0x6c + (s32)base);
+    inv = a->length / 3.0f;
+    t = -a->lateralZ;
+    S = a->lateralX;
+    par = a->next;
+    b = (PathNode *)(par * 0x6c + (s32)base);
+    P = a->pos.x + t * inv;
+    Q = a->pos.z + S * inv;
+    nb = b->pos.x - -b->lateralZ * inv;
+    nq = b->pos.z - b->lateralX * inv;
+    a->splineX[2] = t * 3.0f * inv;
+    a->splineX[1] = (nb - P) * 3.0f - a->splineX[2];
+    a->splineX[0] = b->pos.x - a->pos.x - a->splineX[1] - a->splineX[2];
+    a->splineZ[2] = S * 3.0f * inv;
+    a->splineZ[1] = (nq - Q) * 3.0f - a->splineZ[2];
+    a->splineZ[0] = b->pos.z - a->pos.z - a->splineZ[1] - a->splineZ[2];
+    if (a->branch >= 0) {
+        path_calc_spline_coeffs(a->branch, stop);
     }
     idx = par;
     } while (idx != stop);
 }
-
-typedef struct Ent_44 {
-    f32 f00;
-    f32 f04;
-    f32 f08;
-    f32 f0c;
-    f32 f10;
-    f32 f14;
-    f32 f18;
-    f32 f1c;
-    f32 f20;
-    f32 f24;
-    u8 pad28[0x1E];
-    s16 next;
-    s16 child;
-    u8 pad4a[0x22];
-} Ent_44;
-
-extern Ent_44 *gPathNodes_14;
 
 void path_calc_slope_and_bank(s32 i, s32 end)
 {
@@ -169,65 +116,50 @@ void path_calc_slope_and_bank(s32 i, s32 end)
     s32 nx;
 
     do {
-        nx = gPathNodes_14[i].next;
-        gPathNodes_14[i].f24 = (gPathNodes_14[nx].f04 - gPathNodes_14[i].f04) / gPathNodes_14[i].f0c;
-        a = *(Vec3f *)&gPathNodes_14[i].f00;
+        nx = gPathNodes[i].next;
+        gPathNodes[i].slope = (gPathNodes[nx].pos.y - gPathNodes[i].pos.y) / gPathNodes[i].length;
+        a = gPathNodes[i].pos;
         b = a;
-        p = gPathNodes_14[i].f14 * 0.25f;
-        q = -gPathNodes_14[i].f18 * 0.25f;
+        p = gPathNodes[i].lateralX * 0.25f;
+        q = -gPathNodes[i].lateralZ * 0.25f;
         a.x = a.x + p;
         a.z = a.z - q;
         b.x = b.x - p;
         b.z = b.z + q;
         fa = bike_get_ground_height((f32 *)&a);
         fb = bike_get_ground_height((f32 *)&b);
-        gPathNodes_14[i].f20 = (fa - fb) * 2.0f;
-        if (gPathNodes_14[i].child >= 0) {
-            path_calc_slope_and_bank(gPathNodes_14[i].child, end);
+        gPathNodes[i].bank = (fa - fb) * 2.0f;
+        if (gPathNodes[i].branch >= 0) {
+            path_calc_slope_and_bank(gPathNodes[i].branch, end);
         }
         i = nx;
     } while (i != end);
 }
 
-typedef struct {
-    u8 pad[0x1C];
-    f32 k;
-    u8 pad2[0xC];
-    f32 a0, a1, a2;
-    f32 b0, b1, b2;
-    s16 pad3;
-    s16 next;
-    s16 pad4;
-    s16 link;
-    u8 pad5[0x20];
-} Node_9;
-
-extern Node_9 *gPathNodes_15;
-
 void path_calc_curvature(s32 start, s32 stop)
 {
     s32 p = start;
     f32 v, u, t, x, y, sq, n, n2, r, d, q1, q2, aq;
-    Node_9 *m;
+    PathNode *m;
 
     do {
-        x = gPathNodes_15[p].a2;
-        y = gPathNodes_15[p].b2;
+        x = gPathNodes[p].splineX[2];
+        y = gPathNodes[p].splineZ[2];
         sq = x * x + y * y;
-        t = 2.0f * gPathNodes_15[p].b1;
+        t = 2.0f * gPathNodes[p].splineZ[1];
         u = x * t;
-        t = 2.0f * gPathNodes_15[p].a1;
+        t = 2.0f * gPathNodes[p].splineX[1];
         n = u - y * t;
         r = __builtin_sqrtf(sq);
         d = sq * r;
-        m = (Node_9 *)(gPathNodes_15[p].link * sizeof(Node_9) + (u32)gPathNodes_15);
-        x = m->a0 * 3.0f + 2.0f * m->a1 + m->a2;
-        y = m->b0 * 3.0f + 2.0f * m->b1 + m->b2;
+        m = (PathNode *)(gPathNodes[p].prev * sizeof(PathNode) + (u32)gPathNodes);
+        x = m->splineX[0] * 3.0f + 2.0f * m->splineX[1] + m->splineX[2];
+        y = m->splineZ[0] * 3.0f + 2.0f * m->splineZ[1] + m->splineZ[2];
         sq = x * x + y * y;
         q1 = n / d;
-        t = 2.0f * m->b1 + m->b0 * 6.0f;
+        t = 2.0f * m->splineZ[1] + m->splineZ[0] * 6.0f;
         v = x * t;
-        t = 2.0f * m->a1 + m->a0 * 6.0f;
+        t = 2.0f * m->splineX[1] + m->splineX[0] * 6.0f;
         n2 = v - y * t;
         r = __builtin_sqrtf(sq);
         q2 = n2 / (sq * r);
@@ -236,27 +168,13 @@ void path_calc_curvature(s32 start, s32 stop)
             aq = -q2;
         }
         if (q1 > 0.0f ? q1 < aq : -q1 < aq) {
-            gPathNodes_15[p].k = q2;
+            gPathNodes[p].curvature = q2;
         } else {
-            gPathNodes_15[p].k = q1;
+            gPathNodes[p].curvature = q1;
         }
-        p = gPathNodes_15[p].next;
+        p = gPathNodes[p].next;
     } while (p != stop);
 }
-
-typedef struct Ent_45 {
-    u8 p0[4];
-    f32 f4;
-    u8 p8[4];
-    f32 fc;
-    u8 p10[0x36];
-    s16 s46;
-    u8 p48[2];
-    s16 s4a;
-    u8 p4c[0x6c - 0x4c];
-} Ent_45;
-
-extern Ent_45 *gPathNodes_16;
 
 u8 path_find_crest_ahead(f32 x, s32 idx)
 {
@@ -265,76 +183,43 @@ u8 path_find_crest_ahead(f32 x, s32 idx)
     f32 d1, d2, v;
     x = x * x;
     for (c = 0; c < 5; c++) {
-        A = gPathNodes_16[idx].s46;
-        B = gPathNodes_16[idx].s4a;
-        d1 = (gPathNodes_16[idx].f4 - gPathNodes_16[A].f4) / gPathNodes_16[A].fc;
-        d2 = (gPathNodes_16[B].f4 - gPathNodes_16[idx].f4) / gPathNodes_16[c].fc;
-        v = -(((d2 - d1) + (d2 - d1)) / (gPathNodes_16[A].fc + gPathNodes_16[c].fc)) * x;
+        A = gPathNodes[idx].next;
+        B = gPathNodes[idx].prev;
+        d1 = (gPathNodes[idx].pos.y - gPathNodes[A].pos.y) / gPathNodes[A].length;
+        d2 = (gPathNodes[B].pos.y - gPathNodes[idx].pos.y) / gPathNodes[c].length;
+        v = -(((d2 - d1) + (d2 - d1)) / (gPathNodes[A].length + gPathNodes[c].length)) * x;
         if (7.3500004f < v) return c & 0xFF;
         idx = A;
     }
     return 0xFF;
 }
 
-typedef struct Rec_26 {
-    u8 pad0[0x1C];
-    f32 f1c;
-    u8 pad20[0x25];
-    u8 c45;
-    s16 h46;
-    s16 h48;
-    u8 pad4a[0x6C - 0x4A];
-} Rec_26;
-
-extern Rec_26 *gPathNodes_17;
-
 void path_calc_curvatures(void)
 {
     s32 i, j, cnt;
     f32 rem;
-    Rec_26 *base;
+    PathNode *base;
 
     for (i = 0; i < gPathNodeCount; i++) {
-        path_calc_curvature(i, gPathNodes_17[i].h46);
+        path_calc_curvature(i, gPathNodes[i].next);
     }
     for (i = 0; i < gPathNodeCount; i++) {
         cnt = 0;
         j = i;
         rem = 0.06f;
-        base = gPathNodes_17;
+        base = gPathNodes;
         while (rem > 0.0f) {
-            if (base[j].h48 != -1) {
+            if (base[j].branch != -1) {
                 cnt++;
                 break;
             }
-            rem -= ((base[j].f1c > 0.0f) ? base[j].f1c : -base[j].f1c) + 0.006f;
-            j = base[j].h46;
+            rem -= ((base[j].curvature > 0.0f) ? base[j].curvature : -base[j].curvature) + 0.006f;
+            j = base[j].next;
             cnt++;
         }
-        gPathNodes_17[i].c45 = cnt - 1;
+        gPathNodes[i].lookahead = cnt - 1;
     }
 }
-
-typedef struct {
-    Vec3f pos;
-    f32 t;
-    f32 f10;
-    f32 f14;
-    u8 pad18[0x46 - 0x18];
-    s16 next;
-    s16 f48;
-    s16 prev;
-    s16 f4c;
-    s16 f4e;
-    u8 pad50[0x58 - 0x50];
-    f32 f58;
-    f32 f5c;
-    u8 pad60[0x65 - 0x60];
-    u8 bits;
-    u8 pad66[0x6C - 0x66];
-} Node_10;
-
-extern Node_10 *gPathNodes_18;
 
 void path_generate_straight(void)
 {
@@ -342,18 +227,18 @@ void path_generate_straight(void)
     f32 R, t;
     Vec3f v, w, m;
 
-    gPathNodes_18 = mem_alloc_dbg(540000, 0, sStrPathFile, 0x178);
-    mem_fill((u8 *)gPathNodes_18, 0, 540000);
+    gPathNodes = mem_alloc_dbg(540000, 0, sStrPathFile, 0x178);
+    mem_fill((u8 *)gPathNodes, 0, 540000);
     R = 30.0f;
     m.x = 0.0f;
     m.y = 0.0f;
     m.z = 0.0f;
     for (i = 0; i < 1000; i++) {
-        gPathNodes_18[i].prev = i - 1;
-        gPathNodes_18[i].next = i + 1;
-        gPathNodes_18[i].f4e = -1;
-        gPathNodes_18[i].f4c = -1;
-        gPathNodes_18[i].f48 = -1;
+        gPathNodes[i].prev = i - 1;
+        gPathNodes[i].next = i + 1;
+        gPathNodes[i].alt = -1;
+        gPathNodes[i].join = -1;
+        gPathNodes[i].branch = -1;
         t = 3.0f;
         do {
             t -= 1.0f;
@@ -367,9 +252,9 @@ void path_generate_straight(void)
             height_get_ground_normal((float *)&w);
         } while (w.z * m.z < -0.01f && 1.1f < t);
         m = w;
-        gPathNodes_18[i].pos = v;
-        gPathNodes_18[i].t = t;
-        gPathNodes_18[i].bits = 0;
+        gPathNodes[i].pos = v;
+        gPathNodes[i].length = t;
+        gPathNodes[i].speedTweak = 0;
         for (s = 3; s >= 0; s--) {
             v.x = s * 2.178f;
             bike_get_ground_height((float *)&v);
@@ -388,18 +273,18 @@ void path_generate_straight(void)
                 a1 = 0;
                 break;
             }
-            gPathNodes_18[i].bits |= a1 << (s * 2);
+            gPathNodes[i].speedTweak |= a1 << (s * 2);
         }
         R -= t;
-        gPathNodes_18[i].f10 = 50.0f;
-        gPathNodes_18[i].f58 = 7.284f;
-        gPathNodes_18[i].f5c = 0.75f;
+        gPathNodes[i].maxSpeed = 50.0f;
+        gPathNodes[i].widthNeg = 7.284f;
+        gPathNodes[i].widthPos = 0.75f;
         if (gGroundFound == 0) {
             break;
         }
     }
-    gPathNodes_18[0].prev = i;
-    gPathNodes_18[i].next = 0;
+    gPathNodes[0].prev = i;
+    gPathNodes[i].next = 0;
     gPathNodeCount = i + 1;
     gPathStartNode = 1;
     gPathFinishNode = 0;
@@ -408,58 +293,10 @@ void path_generate_straight(void)
     path_calc_slope_and_bank(0, 0);
     path_calc_curvatures();
     for (i = 0; i < gPathNodeCount; i++) {
-        gPathNodes_18[i].f10 = 50.0f;
-        gPathNodes_18[i].f14 = -1.0f;
+        gPathNodes[i].maxSpeed = 50.0f;
+        gPathNodes[i].lateralX = -1.0f;
     }
 }
-
-typedef struct {
-    f32 x, y, z;      /* 0x00 */
-    f32 dist;         /* 0x0C */
-    f32 f10;          /* 0x10 */
-    u8 pad14[0x30];
-    u8 f44;           /* 0x44 */
-    u8 pad45;
-    s16 next;         /* 0x46 */
-    s16 f48;
-    s16 f4A;
-    s16 f4C;
-    s16 f4E;
-    s16 pad50;
-    s16 f52;
-    s16 f54;
-    s16 f56;
-    f32 f58;
-    f32 f5C;
-    s32 f60;
-    u8 f64;
-    u8 f65;
-    u16 f66;
-    f32 f68;
-} Node_11;
-
-typedef struct {
-    s32 x;      /* 0x00 */
-    s32 z;      /* 0x04 */
-    u16 f10;    /* 0x08 */
-    u16 f68;    /* 0x0A */
-    s16 next;   /* 0x0C */
-    s16 f48;    /* 0x0E */
-    s16 f4A;    /* 0x10 */
-    s16 f4C;    /* 0x12 */
-    s16 f4E;    /* 0x14 */
-    s16 pad16;
-    u8 f44;     /* 0x18 */
-    u8 f65;     /* 0x19 */
-    s16 f52;    /* 0x1A */
-    s16 f54;    /* 0x1C */
-    s16 f56;    /* 0x1E */
-    s16 f58;    /* 0x20 */
-    s16 f5C;    /* 0x22 */
-    s32 f60;    /* 0x24 */
-} Rec_27;
-
-extern Node_11 *gPathNodes_19;
 
 void path_load(u32 *p)
 {
@@ -467,7 +304,7 @@ void path_load(u32 *p)
     u32 flags;
     s32 stride;
     s32 i;
-    Rec_27 *r;
+    PathResNode *r;
     u8 *e;
     f32 v;
     f32 dx, dz;
@@ -494,93 +331,79 @@ void path_load(u32 *p)
         gPathStartNode = 0;
     }
     i = 0;
-    gPathNodes_19 = mem_alloc_dbg(gPathNodeCount * sizeof(Node_11), 0, (s32)sStrPathFile, 0x20C);
-    mem_fill((u8 *)gPathNodes_19, 0, gPathNodeCount * sizeof(Node_11));
-    r = (Rec_27 *)(p + 1);
+    gPathNodes = mem_alloc_dbg(gPathNodeCount * sizeof(PathNode), 0, (s32)sStrPathFile, 0x20C);
+    mem_fill((u8 *)gPathNodes, 0, gPathNodeCount * sizeof(PathNode));
+    r = (PathResNode *)(p + 1);
     for (; i < gPathNodeCount; i++) {
-        mem_fill((u8 *)&gPathNodes_19[i], 0, sizeof(Node_11));
-        gPathNodes_19[i].f4E = r->f4E;
-        gPathNodes_19[i].f4A = r->f4A;
-        gPathNodes_19[i].f4C = r->f4C;
-        gPathNodes_19[i].next = r->next;
-        gPathNodes_19[i].f48 = r->f48;
-        gPathNodes_19[i].x = (f32)r->x / 1000.0f;
-        gPathNodes_19[i].z = (f32)r->z / 1000.0f;
-        if (gPathNodes_19[i].f4A < i) {
-            gPathNodes_19[i].y = gPathNodes_19[gPathNodes_19[i].f4A].y + 3.0f;
+        mem_fill((u8 *)&gPathNodes[i], 0, sizeof(PathNode));
+        gPathNodes[i].alt = r->alt;
+        gPathNodes[i].prev = r->prev;
+        gPathNodes[i].join = r->join;
+        gPathNodes[i].next = r->next;
+        gPathNodes[i].branch = r->branch;
+        gPathNodes[i].pos.x = (f32)r->x / 1000.0f;
+        gPathNodes[i].pos.z = (f32)r->z / 1000.0f;
+        if (gPathNodes[i].prev < i) {
+            gPathNodes[i].pos.y = gPathNodes[gPathNodes[i].prev].pos.y + 3.0f;
             if (gCurTrack == D_800CB3F0) {
-                gPathNodes_19[i].y = gPathNodes_19[i].y + 4.0f;
+                gPathNodes[i].pos.y = gPathNodes[i].pos.y + 4.0f;
             }
         } else {
-            gPathNodes_19[i].y = 0.0f;
+            gPathNodes[i].pos.y = 0.0f;
         }
-        gPathNodes_19[i].y = bike_get_ground_height((f32 *)&gPathNodes_19[i]);
-        gPathNodes_19[i].f10 = r->f10;
-        gPathNodes_19[i].f44 = r->f44;
-        gPathNodes_19[i].f65 = r->f65;
-        gPathNodes_19[i].f56 = r->f56;
-        gPathNodes_19[i].f52 = r->f52;
-        gPathNodes_19[i].f54 = r->f54;
-        gPathNodes_19[i].f68 = r->f68 / 1000.0f;
-        if (gPathNodes_19[i].f10 < gPathNodes_19[i].f68) {
-            gPathNodes_19[i].f68 = 0.0f;
+        gPathNodes[i].pos.y = bike_get_ground_height((f32 *)&gPathNodes[i]);
+        gPathNodes[i].maxSpeed = r->maxSpeed;
+        gPathNodes[i].respawnDir = r->respawnDir;
+        gPathNodes[i].speedTweak = r->speedTweak;
+        gPathNodes[i].camCeiling = r->camCeiling;
+        gPathNodes[i].camWidthNeg = r->camWidthNeg;
+        gPathNodes[i].camWidthPos = r->camWidthPos;
+        gPathNodes[i].unk_68 = r->unk_68 / 1000.0f;
+        if (gPathNodes[i].maxSpeed < gPathNodes[i].unk_68) {
+            gPathNodes[i].unk_68 = 0.0f;
         }
         e = (u8 *)r + 0x20;
         if (flags & 1) {
-            gPathNodes_19[i].f58 = (f32)r->f58 / 62.5f - 1.0f;
-            if (gPathNodes_19[i].f58 < 0.0f) gPathNodes_19[i].f58 = 0.0f;
-            gPathNodes_19[i].f5C = (f32)r->f5C / 62.5f - 1.0f;
-            if (gPathNodes_19[i].f5C < 0.0f) gPathNodes_19[i].f5C = 0.0f;
+            gPathNodes[i].widthNeg = (f32)r->widthNeg / 62.5f - 1.0f;
+            if (gPathNodes[i].widthNeg < 0.0f) gPathNodes[i].widthNeg = 0.0f;
+            gPathNodes[i].widthPos = (f32)r->widthPos / 62.5f - 1.0f;
+            if (gPathNodes[i].widthPos < 0.0f) gPathNodes[i].widthPos = 0.0f;
             e = (u8 *)r + 0x28;
-            gPathNodes_19[i].f60 = r->f60;
+            gPathNodes[i].fogRange = r->fogRange;
         }
         if (flags & 0x10) {
             if (flags & 4) {
-                gPathNodes_19[i].f66 = *e++ << 8;
-                gPathNodes_19[i].f66 |= *e++;
+                gPathNodes[i].lapProgress = *e++ << 8;
+                gPathNodes[i].lapProgress |= *e++;
             }
             if (flags & 8) e += 2;
-            if (flags & 2) gPathNodes_19[i].f64 = *e;
+            if (flags & 2) gPathNodes[i].flags = *e;
         } else {
-            if (flags & 2) gPathNodes_19[i].f64 = *e++;
+            if (flags & 2) gPathNodes[i].flags = *e++;
             if (flags & 4) {
-                gPathNodes_19[i].f66 = *e++ << 8;
-                gPathNodes_19[i].f66 |= *e++;
+                gPathNodes[i].lapProgress = *e++ << 8;
+                gPathNodes[i].lapProgress |= *e++;
             }
         }
-        r = (Rec_27 *)((u8 *)r + stride);
+        r = (PathResNode *)((u8 *)r + stride);
     }
     for (i = 0; i < gPathNodeCount; i++) {
-        flags = gPathNodes_19[i].next;
-        dx = gPathNodes_19[flags].x - gPathNodes_19[i].x;
-        dz = gPathNodes_19[flags].z - gPathNodes_19[i].z;
-        gPathNodes_19[i].dist = __builtin_sqrtf(dx * dx + dz * dz);
+        flags = gPathNodes[i].next;
+        dx = gPathNodes[flags].pos.x - gPathNodes[i].pos.x;
+        dz = gPathNodes[flags].pos.z - gPathNodes[i].pos.z;
+        gPathNodes[i].length = __builtin_sqrtf(dx * dx + dz * dz);
     }
     path_calc_normals();
     path_calc_spline_coeffs(0, 0);
     path_calc_slope_and_bank(0, 0);
     path_calc_curvatures();
-    gPathLapLength = path_get_distance(gPathFinishNode, gPathNodes_19[gPathFinishNode].f4A)
-               + gPathNodes_19[gPathNodes_19[gPathFinishNode].f4A].dist;
+    gPathLapLength = path_get_distance(gPathFinishNode, gPathNodes[gPathFinishNode].prev)
+               + gPathNodes[gPathNodes[gPathFinishNode].prev].length;
     path_calc_corner_speeds(0, gPathNodeCount - 1);
-    path_apply_braking_limits(0, gPathNodes_19[0].f4A);
+    path_apply_braking_limits(0, gPathNodes[0].prev);
     for (i = 0; i < gPathNodeCount; i++) {
     }
 }
-
-typedef struct {
-    u8 pad0[0x10];
-    f32 f10;
-    u8 pad1[0x8];
-    f32 f1c;
-    f32 f20;
-    u8 pad2[0x40];
-    u8 b64;
-    s8 b65;
-    u8 rest[6];
-} Ent_46;
-
-extern Ent_46 *gPathNodes_20;
 
 void path_calc_corner_speed(s32 idx)
 {
@@ -588,48 +411,31 @@ void path_calc_corner_speed(s32 idx)
     f32 w;
     f32 v;
 
-    f = gPathNodes_20[idx].f1c;
+    f = gPathNodes[idx].curvature;
     if ((f > 0.0f) ? (f > 0.005f) : (-f > 0.005f)) {
-        w = gPathNodes_20[idx].f1c;
+        w = gPathNodes[idx].curvature;
         if (w > 0.0f) {
-            v = gPathNodes_20[idx].f20 * 14.700001f + 19.11f;
+            v = gPathNodes[idx].bank * 14.700001f + 19.11f;
             w = v / w;
         } else {
-            v = 19.11f - gPathNodes_20[idx].f20 * 14.700001f;
+            v = 19.11f - gPathNodes[idx].bank * 14.700001f;
             v = -v;
             w = v / w;
         }
         if (w < 1.0f) {
             w = 1.0f;
         }
-        gPathNodes_20[idx].f10 = __builtin_sqrtf(w);
+        gPathNodes[idx].maxSpeed = __builtin_sqrtf(w);
     } else {
-        gPathNodes_20[idx].f10 = 50.0f;
+        gPathNodes[idx].maxSpeed = 50.0f;
     }
-    if (gPathNodes_20[idx].b64 & 4) {
-        gPathNodes_20[idx].f10 += gPathNodes_20[idx].f10;
+    if (gPathNodes[idx].flags & 4) {
+        gPathNodes[idx].maxSpeed += gPathNodes[idx].maxSpeed;
     }
-    gPathNodes_20[idx].f10 *= gPathNodes_20[idx].b65 / 10.0f + 1.0f;
+    gPathNodes[idx].maxSpeed *= gPathNodes[idx].speedTweak / 10.0f + 1.0f;
 }
 
 #define sqrtf __builtin_sqrtf
-
-typedef struct Node_12 {
-    u8 pad0[0xc];
-    f32 f0c;
-    f32 f10;
-    u8 pad14[0x8];
-    f32 f1c;
-    f32 f20;
-    f32 f24;
-    u8 pad28[0x20];
-    s16 s48;
-    s16 s4a;
-    s16 s4c;
-    u8 pad4e[0x6c - 0x4e];
-} Node_12;
-
-extern Node_12 *gPathNodes_21;
 
 void path_apply_braking_limits(s32 end, s32 i)
 {
@@ -643,15 +449,15 @@ void path_apply_braking_limits(s32 end, s32 i)
     s32 c;
     s32 p;
 
-    for (; end != i; i = gPathNodes_21[i].s4a) {
+    for (; end != i; i = gPathNodes[i].prev) {
         if (i == 0) {
             return;
         }
-        v = gPathNodes_21[i].f10;
-        t = v * v * gPathNodes_21[i].f1c - gPathNodes_21[i].f20 * 14.700001f;
+        v = gPathNodes[i].maxSpeed;
+        t = v * v * gPathNodes[i].curvature - gPathNodes[i].bank * 14.700001f;
         t = t * t;
-        nx = gPathNodes_21[i].s4a;
-        a = gPathNodes_21[i].f0c;
+        nx = gPathNodes[i].prev;
+        a = gPathNodes[i].length;
         if (t > 365.39212f) {
             q = 0.0f;
         } else {
@@ -660,84 +466,61 @@ void path_apply_braking_limits(s32 end, s32 i)
         if (q > 10.29f) {
             q = 10.29f;
         }
-        q = q + gPathNodes_21[i].f24 * 14.700001f;
+        q = q + gPathNodes[i].slope * 14.700001f;
         sm = (q + q) * a + v * v;
         if (sm < 1.0f) {
             sm = 1.0f;
         }
         sm = sqrtf(sm);
-        if (sm < gPathNodes_21[nx].f10) {
-            gPathNodes_21[nx].f10 = sm;
+        if (sm < gPathNodes[nx].maxSpeed) {
+            gPathNodes[nx].maxSpeed = sm;
         }
-        p = gPathNodes_21[i].s4c;
+        p = gPathNodes[i].join;
         if (p >= 0) {
-            while (c = gPathNodes_21[p].s4a, gPathNodes_21[c].s48 == -1) {
+            while (c = gPathNodes[p].prev, gPathNodes[c].branch == -1) {
                 p = c;
             }
-            path_apply_braking_limits(p, gPathNodes_21[i].s4c);
+            path_apply_braking_limits(p, gPathNodes[i].join);
         }
     }
 }
 
-#define ND gPathNodes_22[0]
-#define ND2 (*(Node_13 **)(u32)gPathNodes_22)
-
-typedef struct {
-    Vec3f pos;      /* 0x00 */
-    f32 f0C;        /* 0x0C */
-    f32 f10;        /* 0x10 */
-    u8 pad14[0x18];
-    f32 c2C;        /* 0x2C */
-    f32 c30;
-    f32 c34;
-    f32 c38;
-    f32 c3C;
-    f32 c40;        /* 0x40 */
-    u8 pad44[2];
-    s16 prev;       /* 0x46 */
-    u8 pad48[2];
-    s16 next;       /* 0x4A */
-    u8 pad4C[0xC];
-    f32 f58;
-    f32 f5C;
-    u8 pad60[8];
-    f32 f68;
-} Node_13;
-
-extern Node_13 *gPathNodes_22[];
+/* gPathNodes read as a struct member: an aggregate access, so the load is not reused across the stores to pts[]
+   (the original reloads it there). */
+#define PATH_NODES_RELOAD (((struct { PathNode *p; } *)&gPathNodes)->p)
 
 void path_limit_jump_speeds(void)
 {
     Vec3f pts[20];
     Vec3f pos;
-    s32 cur, prv, nx, j, idx, i;
+    s32 cur, following, nx, j, idx, i;
     u8 flag;
     Vec3f *pa, *pb;
-    Node_13 *e;
+    PathNode *e;
     f32 w;
     f32 t, t2, d, s, x, h, v;
 
     cur = 0;
-    while (cur != ND[0].next) {
-        j = ND[cur].next;
-        prv = ND[cur].prev;
+    while (cur != gPathNodes[0].prev) {
+        j = gPathNodes[cur].prev;
+        following = gPathNodes[cur].next;
         {
-        f32 bq = (ND[cur].pos.y - ND[j].pos.y) / ND[j].f0C;
-        if (7.3500004f < -(((ND[prv].pos.y - ND[cur].pos.y) / ND[cur].f0C - bq) * 2.0f / (ND[j].f0C + ND[cur].f0C)) * (ND[cur].f68 * ND[cur].f68)) {
+        f32 bq = (gPathNodes[cur].pos.y - gPathNodes[j].pos.y) / gPathNodes[j].length;
+        if (7.3500004f < -(((gPathNodes[following].pos.y - gPathNodes[cur].pos.y) / gPathNodes[cur].length - bq) * 2.0f / (gPathNodes[j].length + gPathNodes[cur].length)) * (gPathNodes[cur].unk_68 * gPathNodes[cur].unk_68)) {
             for (i = 0; i < 10; i++) {
                 t = (f32)i / 10.0f;
-                pts[i] = ND[j].pos;
-                e = ND;
-                pts[i].x += e[j].c34 * t + e[j].c30 * (t * t) + e[j].c2C * (t * t * t);
-                pts[i].z += e[j].c40 * t + e[j].c3C * (t * t) + e[j].c38 * (t * t * t);
+                pts[i] = gPathNodes[j].pos;
+                e = PATH_NODES_RELOAD;
+                pts[i].x += e[j].splineX[2] * t + e[j].splineX[1] * (t * t) + e[j].splineX[0] * (t * t * t);
+                pts[i].z += e[j].splineZ[2] * t + e[j].splineZ[1] * (t * t) + e[j].splineZ[0] * (t * t * t);
                 pts[i].y = bike_get_ground_height(&pts[i]);
             }
             for (i = 0; i < 10; i++) {
                 t = (f32)i / 10.0f;
-                pts[i + 10] = ND[cur].pos;
-                e = ND;
-                pts[i + 10].x += e[cur].c34 * t + e[cur].c30 * (t * t) + e[cur].c2C * (t * t * t);
-                pts[i + 10].z += e[cur].c40 * t + e[cur].c3C * (t * t) + e[cur].c38 * (t * t * t);
+                pts[i + 10] = gPathNodes[cur].pos;
+                e = PATH_NODES_RELOAD;
+                pts[i + 10].x += e[cur].splineX[2] * t + e[cur].splineX[1] * (t * t) + e[cur].splineX[0] * (t * t * t);
+                pts[i + 10].z += e[cur].splineZ[2] * t + e[cur].splineZ[1] * (t * t) + e[cur].splineZ[0] * (t * t * t);
                 pts[i + 10].y = bike_get_ground_height(&pts[i + 10]);
             }
             for (i = 0; i < 18; i++) {
@@ -751,88 +534,70 @@ void path_limit_jump_speeds(void)
                     flag = 0;
                     pb = &pts[i + 1];
                     pa = &pts[i];
-                    while (!((x = ND2[cur].f10 * ND2[cur].f10 * 2.0f * s / 14.700001f) < 10.0f)) {
+                    while (!((x = gPathNodes[cur].maxSpeed * gPathNodes[cur].maxSpeed * 2.0f * s / 14.700001f) < 10.0f)) {
                         pos.x = pb->x + x * (pb->x - pa->x) / d;
                         pos.z = pb->z + x * (pb->z - pa->z) / d;
                         idx = path_find_segment(&pos, cur, 20, 2);
                         h = path_get_lateral_offset(&pos, idx) * 1000.0f;
-                        if (-h < ND2[idx].f5C && h < ND2[idx].f58 && ND2[cur].f10 <= ND2[idx].f10) {
+                        if (-h < gPathNodes[idx].widthPos && h < gPathNodes[idx].widthNeg && gPathNodes[cur].maxSpeed <= gPathNodes[idx].maxSpeed) {
                             break;
                         }
-                        w = ND2[cur].f10 * 0.95f;
-                        ND2[cur].f10 = w;
+                        w = gPathNodes[cur].maxSpeed * 0.95f;
+                        gPathNodes[cur].maxSpeed = w;
                         flag = 1;
                     }
                     if (flag) {
                         j = cur;
                         do {
-                            s = ND2[ND2[j].next].f10;
-                            path_apply_braking_limits(ND2[j].next, j);
-                            nx = ND2[j].next;
+                            s = gPathNodes[gPathNodes[j].prev].maxSpeed;
+                            path_apply_braking_limits(gPathNodes[j].prev, j);
+                            nx = gPathNodes[j].prev;
                             j = nx;
-                        } while (ND2[nx].f10 < s);
+                        } while (gPathNodes[nx].maxSpeed < s);
                     }
                 }
             }
         }
         }
-        cur = prv;
+        cur = following;
     }
 }
-
-typedef struct {
-    V3 pos;
-    f32 f0C;
-    u8 pad10[4];
-    f32 f14;
-    f32 f18;
-    u8 pad1C[0x46 - 0x1C];
-    s16 next;
-    u8 pad48[0x58 - 0x48];
-    f32 f58;
-    f32 f5C;
-    u8 pad60[0x66 - 0x60];
-    u16 h66;
-    u8 pad68[0x6C - 0x68];
-} Rec_28;
-
-extern Rec_28 *gPathNodes_23;
 
 void path_calc_widths_and_progress(void)
 {
     s32 i;
-    V3 v;
+    Vec3f v;
     f32 st[4];
     f32 l[2];
     f32 acc;
-    Rec_28 *r;
+    PathNode *r;
 
     for (i = 0; i < gPathNodeCount; i++) {
-        height_gather_walls((s32)((gPathNodes_23[i].pos.x - 8.0f) * 1000.0f),
-                      (s32)((gPathNodes_23[i].pos.z - 8.0f) * 1000.0f),
-                      (s32)((gPathNodes_23[i].pos.x + 8.0f) * 1000.0f),
-                      (s32)((gPathNodes_23[i].pos.z + 8.0f) * 1000.0f));
-        v = gPathNodes_23[i].pos;
-        v.x -= gPathNodes_23[i].f14 * 8.0f;
-        v.z -= gPathNodes_23[i].f18 * 8.0f;
+        height_gather_walls((s32)((gPathNodes[i].pos.x - 8.0f) * 1000.0f),
+                      (s32)((gPathNodes[i].pos.z - 8.0f) * 1000.0f),
+                      (s32)((gPathNodes[i].pos.x + 8.0f) * 1000.0f),
+                      (s32)((gPathNodes[i].pos.z + 8.0f) * 1000.0f));
+        v = gPathNodes[i].pos;
+        v.x -= gPathNodes[i].lateralX * 8.0f;
+        v.z -= gPathNodes[i].lateralZ * 8.0f;
         l[0] = 1.0f;
-        height_raycast_walls(&gPathNodes_23[i], &v, st, l, 0);
-        gPathNodes_23[i].f58 = l[0] * 8.0f;
-        v = gPathNodes_23[i].pos;
-        v.x += gPathNodes_23[i].f14 * 8.0f;
-        v.z += gPathNodes_23[i].f18 * 8.0f;
+        height_raycast_walls(&gPathNodes[i], &v, st, l, 0);
+        gPathNodes[i].widthNeg = l[0] * 8.0f;
+        v = gPathNodes[i].pos;
+        v.x += gPathNodes[i].lateralX * 8.0f;
+        v.z += gPathNodes[i].lateralZ * 8.0f;
         l[0] = 1.0f;
-        height_raycast_walls(&gPathNodes_23[i], &v, st, l, 0);
-        gPathNodes_23[i].f5C = l[0] * 8.0f;
+        height_raycast_walls(&gPathNodes[i], &v, st, l, 0);
+        gPathNodes[i].widthPos = l[0] * 8.0f;
     }
 
     acc = 0.0f;
     i = 1;
-    if (gPathNodes_23[i].next != 1) {
-        r = gPathNodes_23;
+    if (gPathNodes[i].next != 1) {
+        r = gPathNodes;
         do {
-            r[i].h66 = ((gPathLapLength - acc) * 32768.0f) / gPathLapLength;
-            acc += r[i].f0C;
+            r[i].lapProgress = ((gPathLapLength - acc) * 32768.0f) / gPathLapLength;
+            acc += r[i].length;
             i = r[i].next;
         } while (r[i].next != 1);
     }
@@ -848,8 +613,8 @@ void path_init(u32 *param_1)
         goto end;
     }
     if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0) {
-        sPathRawData = gUserTrackPath;
-        path_load(gUserTrackPath);
+        sPathRawData = gUserTrackData.path;
+        path_load(gUserTrackData.path);
         path_calc_widths_and_progress();
         path_limit_jump_speeds();
         gPathFinishNode = 1;
@@ -879,19 +644,6 @@ end:
     return;
 }
 
-typedef struct {
-    Vec3f pos;
-    u8 unkC[0x46 - 0xC];
-    s16 next;
-    s16 branch;
-    s16 prev;
-    s16 unk4C;
-    s16 alt;
-    u8 unk50[0x6C - 0x50];
-} Seg_9;
-
-extern Seg_9 *gPathNodes_24;
-
 s32 path_find_nearest_node(Vec3f *pos, s32 start, s32 count, u8 mode) {
     f32 best = 100000000.0f;
     s32 bestIdx;
@@ -903,35 +655,35 @@ s32 path_find_nearest_node(Vec3f *pos, s32 start, s32 count, u8 mode) {
 
     seg = start;
     for (i = 0; i < count; i++) {
-        dx = pos->x - gPathNodes_24[seg].pos.x;
-        dz = pos->z - gPathNodes_24[seg].pos.z;
+        dx = pos->x - gPathNodes[seg].pos.x;
+        dz = pos->z - gPathNodes[seg].pos.z;
         d = dx * dx + dz * dz;
         if (d < best) {
             best = d;
             bestIdx = seg;
         }
-        if (gPathNodes_24[seg].branch >= 0 && mode == 2) {
-            seg = gPathNodes_24[seg].branch;
+        if (gPathNodes[seg].branch >= 0 && mode == 2) {
+            seg = gPathNodes[seg].branch;
         } else {
-            seg = gPathNodes_24[seg].next;
+            seg = gPathNodes[seg].next;
         }
     }
     seg = start;
     for (i = 0; i < count; i++) {
-        dx = pos->x - gPathNodes_24[seg].pos.x;
-        dz = pos->z - gPathNodes_24[seg].pos.z;
+        dx = pos->x - gPathNodes[seg].pos.x;
+        dz = pos->z - gPathNodes[seg].pos.z;
         d = dx * dx + dz * dz;
         if (d < best) {
             best = d;
             bestIdx = seg;
         }
-        seg = gPathNodes_24[seg].prev;
+        seg = gPathNodes[seg].prev;
     }
     if (mode == 0) {
-        seg = gPathNodes_24[bestIdx].alt;
+        seg = gPathNodes[bestIdx].alt;
         if (seg >= 0) {
-            dx = pos->x - gPathNodes_24[seg].pos.x;
-            dz = pos->z - gPathNodes_24[seg].pos.z;
+            dx = pos->x - gPathNodes[seg].pos.x;
+            dz = pos->z - gPathNodes[seg].pos.z;
             d = dx * dx + dz * dz;
             if (d < best) {
                 bestIdx = seg;
@@ -941,47 +693,31 @@ s32 path_find_nearest_node(Vec3f *pos, s32 start, s32 count, u8 mode) {
     return bestIdx;
 }
 
-typedef struct {
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 pad0C;
-    f32 pad10;
-    f32 nz;
-    f32 nx;
-    u8 pad1C[0x10];
-    f32 cx[3];
-    f32 cz[3];
-    u8 pad44[2];
-    s16 link;
-    u8 pad48[0x24];
-} Node_14;
-
 f32 path_get_lateral_offset(Vec3f *pos, s32 idx)
 {
-    Node_14 *b;
-    Node_14 *a;
-    Node_14 *base;
+    PathNode *b;
+    PathNode *a;
+    PathNode *base;
     f32 dx, dz;
     f32 dA, dB, t, t2, t3;
     f32 sx, sz, r;
 
     base = gPathNodes;
-    b = (Node_14 *)(idx * sizeof(Node_14) + (u32)base);
-    a = (Node_14 *)(b->link * sizeof(Node_14) + (u32)base);
-    dz = a->z - pos->z;
-    dx = a->x - pos->x;
-    dA = dz * a->nz - dx * a->nx;
-    dz = b->z - pos->z;
-    dx = b->x - pos->x;
-    dB = dz * b->nz - dx * b->nx;
+    b = (PathNode *)(idx * sizeof(PathNode) + (u32)base);
+    a = (PathNode *)(b->next * sizeof(PathNode) + (u32)base);
+    dz = a->pos.z - pos->z;
+    dx = a->pos.x - pos->x;
+    dA = dz * a->lateralX - dx * a->lateralZ;
+    dz = b->pos.z - pos->z;
+    dx = b->pos.x - pos->x;
+    dB = dz * b->lateralX - dx * b->lateralZ;
     t = dB / (dB - dA);
     t2 = t * t;
     t3 = t2 * t;
-    dx += t3 * b->cx[0] + t2 * b->cx[1] + t * b->cx[2];
-    dz += t3 * b->cz[0] + t2 * b->cz[1] + t * b->cz[2];
-    sx = t2 * 3.0f * b->cx[0] + (t + t) * b->cx[1] + b->cx[2];
-    sz = t2 * 3.0f * b->cz[0] + (t + t) * b->cz[1] + b->cz[2];
+    dx += t3 * b->splineX[0] + t2 * b->splineX[1] + t * b->splineX[2];
+    dz += t3 * b->splineZ[0] + t2 * b->splineZ[1] + t * b->splineZ[2];
+    sx = t2 * 3.0f * b->splineX[0] + (t + t) * b->splineX[1] + b->splineX[2];
+    sz = t2 * 3.0f * b->splineZ[0] + (t + t) * b->splineZ[1] + b->splineZ[2];
     dB = __builtin_sqrtf(sx * sx + sz * sz);
     gPathSegmentT = t;
     gPathTangentX = sx / dB;
@@ -989,28 +725,13 @@ f32 path_get_lateral_offset(Vec3f *pos, s32 idx)
     return (sx * dz - sz * dx) / dB;
 }
 
-typedef struct Seg_10 {
-    f32 x;        /* 0x00 */
-    f32 y;        /* 0x04 */
-    f32 z;        /* 0x08 */
-    f32 f0c;
-    f32 f10;
-    f32 dx;       /* 0x14 */
-    f32 dz;       /* 0x18 */
-    u8 pad1c[0x46 - 0x1c];
-    s16 h46;      /* 0x46 */
-    s16 h48;
-    s16 h4a;      /* 0x4a */
-    u8 pad4c[0x6c - 0x4c];
-} Seg_10;
-
 void path_get_segment_and_t(Vec3f *pos, s32 *area, f32 *t, s32 p4)
 {
     s32 i;
-    Seg_10 *s;
-    Seg_10 *tab;
-    Seg_10 *a;
-    Seg_10 *b;
+    PathNode *s;
+    PathNode *tab;
+    PathNode *a;
+    PathNode *b;
     f32 fa;
     f32 fb;
     f32 r;
@@ -1018,21 +739,21 @@ void path_get_segment_and_t(Vec3f *pos, s32 *area, f32 *t, s32 p4)
 
     i = path_find_nearest_node(pos, p4, 4, 1);
     tab = gPathNodes;
-    s = (Seg_10 *)(i * sizeof(Seg_10) + (u32)tab);
-    if ((pos->z - s->z) * s->dx - (pos->x - s->x) * s->dz < 0.0f) {
-        i = s->h4a;
+    s = (PathNode *)(i * sizeof(PathNode) + (u32)tab);
+    if ((pos->z - s->pos.z) * s->lateralX - (pos->x - s->pos.x) * s->lateralZ < 0.0f) {
+        i = s->prev;
     }
     *area = i;
-    a = (Seg_10 *)(i * sizeof(Seg_10) + (u32)gPathNodes);
-    b = (Seg_10 *)(a->h46 * sizeof(Seg_10) + (u32)gPathNodes);
-    d = b->z - pos->z;
-    m1 = d * b->dx;
-    d = b->x - pos->x;
-    m2 = d * b->dz;
-    d = a->z - pos->z;
-    m3 = d * a->dx;
-    d = a->x - pos->x;
-    m4 = d * a->dz;
+    a = (PathNode *)(i * sizeof(PathNode) + (u32)gPathNodes);
+    b = (PathNode *)(a->next * sizeof(PathNode) + (u32)gPathNodes);
+    d = b->pos.z - pos->z;
+    m1 = d * b->lateralX;
+    d = b->pos.x - pos->x;
+    m2 = d * b->lateralZ;
+    d = a->pos.z - pos->z;
+    m3 = d * a->lateralX;
+    d = a->pos.x - pos->x;
+    m4 = d * a->lateralZ;
     fb = m1 - m2;
     fa = m3 - m4;
     r = fa / (fa - fb);
@@ -1049,25 +770,6 @@ typedef struct {
     u8 pad0[0x28];
     u32 flags;
 } Part_4;
-
-typedef struct {
-    f32 x, y, z;      /* 0x00 */
-    u8 pad0C[0x8];
-    f32 f14;          /* 0x14 */
-    f32 f18;          /* 0x18 */
-    u8 pad1C[0x28];
-    s8 f44;           /* 0x44 */
-    u8 pad45;
-    s16 f46;          /* 0x46 */
-    u8 pad48[2];
-    s16 f4A;          /* 0x4A */
-    u8 pad4C[0xC];
-    f32 f58;          /* 0x58 */
-    f32 f5C;          /* 0x5C */
-    u8 pad60[6];
-    u16 f66;          /* 0x66 */
-    u8 pad68[4];
-} Seg_11;
 
 struct Bike_28 {
     s32 x, y, z;      /* 0x000 */
@@ -1150,14 +852,13 @@ typedef struct {
 } Track_10;
 
 extern Track_10 *gCurTrack_26;
-extern Seg_11 *gPathNodes_25;
 
 void path_update_bike(Bike_28 *b)
 {
     s32 oldSeg;
     s32 n;
     s32 i;
-    Seg_11 *s;
+    PathNode *s;
     Trig *t;
     Ev *e;
     s32 w;
@@ -1197,8 +898,8 @@ void path_update_bike(Bike_28 *b)
     } else {
         Vec3f *pos = &b->pos;
         n = path_find_nearest_node(pos, oldSeg, 2, b->f6EB);
-        if ((pos->z - gPathNodes_25[n].z) * gPathNodes_25[n].f14 - (b->pos.x - gPathNodes_25[n].x) * gPathNodes_25[n].f18 < 0.0f) {
-            n = gPathNodes_25[n].f4A;
+        if ((pos->z - gPathNodes[n].pos.z) * gPathNodes[n].lateralX - (b->pos.x - gPathNodes[n].pos.x) * gPathNodes[n].lateralZ < 0.0f) {
+            n = gPathNodes[n].prev;
         }
         b->seg = n;
         if ((s16)n != oldSeg) {
@@ -1225,11 +926,11 @@ void path_update_bike(Bike_28 *b)
                 }
             }
             if (gGame.mode == 7) {
-                if (b->seg == gPathNodes_25->f4A) {
+                if (b->seg == gPathNodes->prev) {
                     b->seg = 0;
                 }
                 n = b->seg;
-                if (gPathNodes_25[n].f44 == 0 && b->f3FF == 0 && b->f44 == 0 && b->f6B2 < n) {
+                if (gPathNodes[n].respawnDir == 0 && b->f3FF == 0 && b->f44 == 0 && b->f6B2 < n) {
                     if (n < 0x78) {
                         b->f648 = 0;
                         b->f66A = 0x78;
@@ -1254,10 +955,10 @@ void path_update_bike(Bike_28 *b)
     if (b->f44 == 0) {
         k = b->seg;
         if (b->f63C > 0.5f) {
-            k = gPathNodes_25[k].f46;
+            k = gPathNodes[k].next;
         }
         if (gCurTrack_26->f2C == 0
-            && (gPathNodes_25[k].f5C < b->f638 - 3.5f || gPathNodes_25[k].f58 < -(b->f638 + 3.5f))) {
+            && (gPathNodes[k].widthPos < b->f638 - 3.5f || gPathNodes[k].widthNeg < -(b->f638 + 3.5f))) {
             if (++b->f7AC > 180 && b->f458 <= 0 && b->f4FC <= 0) {
                 bike_respawn(b);
             }
@@ -1268,9 +969,9 @@ void path_update_bike(Bike_28 *b)
     }
     {
         w = gPathSegmentT * 256.0f;
-        k = gPathNodes_25[b->seg].f46;
-        cur = gPathNodes_25[b->seg].f66;
-        nx = gPathNodes_25[k].f66;
+        k = gPathNodes[b->seg].next;
+        cur = gPathNodes[b->seg].lapProgress;
+        nx = gPathNodes[k].lapProgress;
     }
     if (nx == 0x8000) {
         nx = 0;
@@ -1292,21 +993,13 @@ void path_update_bike(Bike_28 *b)
         b->f630 = gPathLapLength * (f32)(b->f6ED + 1 + b->f660) - b->f62C;
     }
     if (b->f6E8 == 0 && b->seg >= 0x13A && b->seg < 0x140 && b->f744 > 30
-        && gCurTrack_26 == &D_800CB5D0 && b->f58 < 0.0f && b->pos.y < gPathNodes_25[0x140].y) {
+        && gCurTrack_26 == &D_800CB5D0 && b->f58 < 0.0f && b->pos.y < gPathNodes[0x140].pos.y) {
         bike_crash_begin(b, 0x1C);
         cam_start_fall_view(b);
     }
 }
 
-#define SEG(i) ((Seg_12 *)((s32)((i) * 0x6C) + (s32)gPathNodes))
-
-typedef struct {
-    u8 pad[0x46];
-    s16 f46;
-    u8 p2[2];
-    s16 f4A;
-    u8 p3[0x6C - 0x4C];
-} Seg_12;
+#define SEG(i) ((PathNode *)((s32)((i) * 0x6C) + (s32)gPathNodes))
 
 struct Ent_47 {
     u8 pad[0x628];
@@ -1326,15 +1019,15 @@ void path_check_lap(Ent_47 *p, s32 a1)
     s32 v;
 
     if (a1 == gPathFinishNode) {
-        if (p->f628 == SEG(a1)->f4A) {
+        if (p->f628 == SEG(a1)->prev) {
             p->f6ED--;
         }
     }
     h = p->f628;
     cur = gPathFinishNode;
-    if (h == cur || h == SEG(cur)->f46) {
-        iv = SEG(cur)->f4A;
-        if (a1 == iv || a1 == SEG(iv)->f4A) {
+    if (h == cur || h == SEG(cur)->next) {
+        iv = SEG(cur)->prev;
+        if (a1 == iv || a1 == SEG(iv)->prev) {
             if ((s8)p->f6ED == 0 && (gGame.flags & 1) == 0) {
                 v = p - gRiders_51;
                 if (v < gEvent.numRiders) {
@@ -1350,14 +1043,14 @@ void path_check_lap(Ent_47 *p, s32 a1)
 s32 path_find_segment(Vec3f *pos, s32 start, s32 count, u8 mode)
 {
     s32 idx;
-    f32 *e;
-    u8 *base;
+    PathNode *e;
+    PathNode *base;
 
     idx = path_find_nearest_node(pos, start, count, mode);
     base = gPathNodes;
-    e = (f32 *)((u32)(idx * 0x6c) + (u32)base);
-    if ((pos->z - e[2]) * e[5] - (pos->x - e[0]) * e[6] < 0.0f) {
-        idx = *(s16 *)((u8 *)e + 0x4a);
+    e = (PathNode *)((u32)(idx * 0x6c) + (u32)base);
+    if ((pos->z - e->pos.z) * e->lateralX - (pos->x - e->pos.x) * e->lateralZ < 0.0f) {
+        idx = e->prev;
     }
     return idx;
 }

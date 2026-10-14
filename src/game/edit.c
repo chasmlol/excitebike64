@@ -1,209 +1,27 @@
 #include "game.h"
 
-#define CUR (*(s32 *)(gEditor + 0x16FC))
+extern EditCamPos sEditCamDelta;
+extern EditCamPos sEditCamPosFixed; /* 1/1024 */
+extern EditCamPos sEditCamPos;
+extern EditCamPos sEditCamTarget;
+extern GuiMenu sEditMainMenu;
+extern GuiMenu sEditTrackMenu;
+extern GuiMenuItem sEditMainMenuItems[];
+extern GuiMenuItem sEditTrackMenuItems[];
 
-typedef struct {
-    s32 x, y;
-    u32 z;
-} V3_3;
+/* Makes the first piece that can start the track the start piece, if there is none. */
+static inline void edit_pick_start_piece(void) {
+    EditPiece *n;
 
-typedef struct { s16 f0; u8 pad[0x22]; } Ent24_2;
-typedef struct { u8 pad0[6]; s16 f6; u8 pad8[8]; s16 f10; } Cfg_12;
-typedef struct { u8 pad[0xC]; u32 flags; } Obj_2;
-
-typedef struct {
-    u8 pad0[6];
-    s16 f6;
-    u8 pad8[4];
-    s32 fC;
-    s16 f10;
-} Menu_6;
-
-typedef struct Node_24 {
-    s32 f0;
-    struct Node_24 *prev;
-    struct Node_24 *next;
-    s32 fC;
-    u16 f10;
-} Node_24;
-
-typedef struct {
-    s16 w, h;
-} Dim;
-
-struct Game_36 {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 f170;
-    s32 f174;
-    s32 f178;
-    Node_24 *f17C;
-    Node_24 *f180;
-    Node_24 *f184;
-    u8 pad188[8];
-    s32 f190;
-    Ent24_2 slots[150];
-    Dim *f16AC;
-    u8 pad16B0[6];
-    s16 f16B6;
-    s16 f16B8;
-    char name[11];
-    u8 f16C5[0xB];
-    s32 f16D0, f16D4, f16D8, f16DC;
-    Menu_6 *f16E0;
-    Menu_6 *f16E4;
-    u32 f16E8;
-    u8 pad16EC[8];
-    s32 f16F4;
-    u8 pad16F8[0x2C];
-    s32 f1724;
-    s32 f1728;
-    u8 pad172C[0xCC];
-    s32 f17F8;
-    s16 f17FC;
-    s16 f17FE;
-    s16 f1800;
-};
-
-typedef struct Ctl_23 {
-    u8 pad0[0xC];
-    u32 fC;
-    s16 h10;
-} Ctl_23;
-
-typedef struct Ent_4 {
-    s16 dim[2];
-    s16 dir[2];
-    s16 off[2];
-    union {
-        u32 w;
-        struct {
-            u16 hi;
-            u16 lo;
-        } h;
-    } fC;
-    u8 pad10[0x40 - 0x10];
-} Ent_4;
-
-typedef struct Node_25 {
-    s16 used;
-    s16 pad2;
-    struct Node_25 *next;
-    struct Node_25 *prev;
-    s16 x;
-    s16 y;
-    u16 st;
-    s16 idx;
-    Ent_4 *pt;
-    u8 pad18[8];
-    s16 w;
-    s16 h;
-} Node_25;
-
-typedef struct Edit {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 mode;
-    u32 flags;
-    u32 pad178;
-    Node_25 *head;
-    Node_25 *tail;
-    Node_25 *cur;
-    Node_25 *f188;
-    Node_25 *f18C;
-    Node_25 *f190;
-    u8 pad194[0x16AC - 0x194];
-    s16 *size;
-    s16 f16B0;
-    s16 f16B2;
-    u8 pad16B4[0x16E0 - 0x16B4];
-    Ctl_23 *f16E0;
-    Ctl_23 *f16E4;
-    u32 f16E8;
-    u8 pad16EC[0x17B0 - 0x16EC];
-    Ent_4 *f17B0;
-} Edit;
-
-typedef struct { s32 pad[4]; s32 x, y, w, h; } Scis;
-
-typedef struct Sub_2 {
-    u8 pad0[0x8];
-    s32 f8;
-    s16 c;
-    s16 e;
-    u8 pad1[0x2];
-    s16 cur;
-    u8 pad2[0x4];
-    s16 arr[2];
-} Sub_2;
-
-typedef struct {
-    u8 pad0[0x8];
-    s32 f8;
-    s16 x;
-    s16 y;
-    s16 pad10;
-    s16 f12;
-    u8 pad14[4];
-    s16 sel[2];
-} Pl;
-
-typedef struct {
-    u8 pad0[0x184];
-    Pl *pl;
-    u8 pad188[0x16F8 - 0x188];
-    s32 f16F8;
-    s32 idx;
-    u8 pad1700[0x1738 - 0x1700];
-    s32 f1738;
-    u8 pad173C[0x1758 - 0x173C];
-    s32 f1758;
-    s32 f175C;
-} Game_3;
-
-typedef struct {
-    s16 d[2];
-    u8 pad4[0x2C];
-    s32 f30;
-    s32 f34;
-    u8 pad38[8];
-} Rec_5;
-
-typedef struct { s16 f0; s16 f2; u8 rest[0x3C]; } Tab64;
-
-typedef struct {
-    s16 f0;
-    s16 cnt;
-    u8 pad[60];
-} Trk_3;
-
-extern V3_3 sEditCamDelta;
-extern V3_3 sEditCamPosFixed;
-extern V3_3 sEditCamPos;
-extern V3_3 sEditCamTarget;
-extern Cfg_12 sEditMainMenu;
-extern Edit *gEditor_11;
-extern Ent_4 gPieceTypesTurn[];
-extern Ent_4 gPieceTypesJump[];
-extern Rec_5 gPieceTypesUser[];
-extern Scis sEditViewRects_2;
-extern Game_3 *gEditor_2;
-extern Rec_5 gPieceTypes_2[];
-extern Tab64 gPieceTypes_3[];
-extern Trk_3 gPieceTypes_4[];
-
-static inline void sel(void) {
-    Node_25 *n;
-
-    if (gEditor_11->f190 == NULL) {
-        n = gEditor_11->head;
+    if (gEditor->start == NULL) {
+        n = gEditor->first;
         while (n != NULL) {
-            if (n->pt->fC.h.hi & 2) {
-                gEditor_11->f190 = n;
+            if (n->type->flags & PIECE_START) {
+                gEditor->start = n;
                 break;
             }
             n = n->next;
-            if (n == gEditor_11->head) {
+            if (n == gEditor->first) {
                 break;
             }
         }
@@ -213,215 +31,105 @@ static inline void sel(void) {
 s32 edit_cam_step(void)
 {
     sEditCamPosFixed.x += edit_ease_delta(1, sEditCamDelta.x, 0x23, sEditCamStep);
-    sEditCamPosFixed.y += edit_ease_delta(1, sEditCamDelta.y, 0x23, sEditCamStep);
-    sEditCamPosFixed.z += edit_ease_delta(2, sEditCamDelta.z, 0x23, sEditCamStep);
+    sEditCamPosFixed.z += edit_ease_delta(1, sEditCamDelta.z, 0x23, sEditCamStep);
+    sEditCamPosFixed.yaw += edit_ease_delta(2, sEditCamDelta.yaw, 0x23, sEditCamStep);
     sEditCamPos.x = sEditCamPosFixed.x >> 10;
-    sEditCamPos.y = sEditCamPosFixed.y >> 10;
-    sEditCamPos.z = (u16)(sEditCamPosFixed.z >> 10);
+    sEditCamPos.z = sEditCamPosFixed.z >> 10;
+    sEditCamPos.yaw = (u16)(sEditCamPosFixed.yaw >> 10);
     sEditCamStep++;
     if (sEditCamStep == 0x23) {
         sEditCamMoving = 0;
         sEditCamPos.x = sEditCamTarget.x;
-        sEditCamPos.y = sEditCamTarget.y;
-        sEditCamPos.z = ((u32)(sEditCamPos.z + 0x800) >> 13) << 13;
+        sEditCamPos.z = sEditCamTarget.z;
+        sEditCamPos.yaw = ((u32)(sEditCamPos.yaw + 0x800) >> 13) << 13;
     }
 }
-
-typedef struct Obj_68 {
-    s32 pad0;
-    struct Obj_68 *p4;
-    struct Obj_68 *p8;
-    s16 hC;
-    s16 hE;
-    u16 flags;
-    s16 h12;
-    s16 *p14;
-} Obj_68;
-
-typedef struct {
-    u8 pad0[0x170];
-    s32 mode;
-    s32 flags;
-    u8 pad178[0xC];
-    Obj_68 *obj;
-    u8 pad188[0x16AC - 0x188];
-    s16 *p16AC;
-} Ctx_3;
-
-extern Ctx_3 *gEditor_7;
 
 void edit_cam_update_target(void)
 {
-    Obj_68 *obj;
-    Obj_68 *o;
+    EditPiece *obj;
+    EditPiece *o;
     s32 a;
-    V3_3 *p;
+    EditCamPos *p;
     s32 fl;
 
-    obj = gEditor_7->obj;
-    if (obj != NULL && (obj->flags & 4) && (obj->p4 != NULL || obj->p8 != NULL) && gEditor_7->mode != 6) {
-        o = obj->p4;
+    obj = gEditor->cur;
+    if (obj != NULL && (obj->flags & EDIT_PIECE_PREVIEW) && (obj->next != NULL || obj->prev != NULL) && gEditor->mode != EDIT_MODE_USER_PIECE) {
+        o = obj->next;
         if (o == NULL) {
-            o = obj->p8;
+            o = obj->prev;
         }
     } else {
-        o = gEditor_7->obj;
+        o = gEditor->cur;
     }
-    if (o != NULL && (gEditor_7->mode == 6 || !(o->flags & 4))) {
-        a = o->p14[7];
-        a -= o->h12 << 1;
+    if (o != NULL && (gEditor->mode == EDIT_MODE_USER_PIECE || !(o->flags & 4))) {
+        a = o->type->cursorAngle;
+        a -= o->rot << 1;
         if (fl = o->flags & 2, p = &sEditCamTarget, fl) {
             a += 4;
         }
-        if (gEditor_7->flags & 1) {
+        if (gEditor->flags & EDIT_REVERSED) {
             a += 4;
         }
-        p->z = a & 7;
+        p->yaw = a & 7;
     } else {
-        sEditCamTarget.z = (gEditor_7->flags & 1) << 2;
+        sEditCamTarget.yaw = (gEditor->flags & EDIT_REVERSED) << 2;
     }
-    sEditCamTarget.z = (sEditCamTarget.z - (sEditCamPos.z >> 13)) & 7;
-    switch (sEditCamTarget.z) {
+    sEditCamTarget.yaw = (sEditCamTarget.yaw - (sEditCamPos.yaw >> 13)) & 7;
+    switch (sEditCamTarget.yaw) {
     case 5:
-        sEditCamTarget.z = -3;
+        sEditCamTarget.yaw = -3;
         break;
     case 6:
-        sEditCamTarget.z = -2;
+        sEditCamTarget.yaw = -2;
         break;
     case 7:
-        sEditCamTarget.z = -1;
+        sEditCamTarget.yaw = -1;
         break;
     }
-    if (gEditor_7->flags & 2) {
-        sEditCamTarget.z -= 4;
-        gEditor_7->flags ^= 3;
+    if (gEditor->flags & EDIT_TURN_LEFT) {
+        sEditCamTarget.yaw -= 4;
+        gEditor->flags ^= 3;
     }
-    if (gEditor_7->flags & 4) {
-        sEditCamTarget.z += 4;
-        gEditor_7->flags ^= 5;
+    if (gEditor->flags & EDIT_TURN_RIGHT) {
+        sEditCamTarget.yaw += 4;
+        gEditor->flags ^= 5;
     }
-    if (gEditor_7->obj != NULL) {
-        sEditCamTarget.x = o->hC * 8000 + *(s16 *)((u8 *)o->p14 + ((o->h12 & 1) << 1)) * 4000 - gEditor_7->p16AC[0] * 4000;
-        sEditCamTarget.y = o->hE * 8000 + *(s16 *)((u8 *)o->p14 + (((o->h12 + 1) & 1) << 1)) * 4000 - gEditor_7->p16AC[1] * 4000;
+    if (gEditor->cur != NULL) {
+        sEditCamTarget.x = o->x * 8000 + o->type->dim[o->rot & 1] * 4000 - gEditor->gridSize[0] * 4000;
+        sEditCamTarget.z = o->y * 8000 + o->type->dim[(o->rot + 1) & 1] * 4000 - gEditor->gridSize[1] * 4000;
     } else {
         sEditCamTarget.x = -4000;
-        sEditCamTarget.y = -4000;
+        sEditCamTarget.z = -4000;
     }
-    if (sEditCamTarget.x != sEditCamPos.x || sEditCamTarget.y != sEditCamPos.y || sEditCamTarget.z != 0) {
+    if (sEditCamTarget.x != sEditCamPos.x || sEditCamTarget.z != sEditCamPos.z || sEditCamTarget.yaw != 0) {
         sEditCamMoving = 1;
         sEditCamStep = 0;
         sEditCamDelta.x = sEditCamTarget.x - sEditCamPos.x;
-        sEditCamDelta.y = sEditCamTarget.y - sEditCamPos.y;
-        sEditCamDelta.z = sEditCamTarget.z << 13;
+        sEditCamDelta.z = sEditCamTarget.z - sEditCamPos.z;
+        sEditCamDelta.yaw = sEditCamTarget.yaw << 13;
         sEditCamPosFixed.x = sEditCamPos.x << 10;
-        sEditCamPosFixed.y = sEditCamPos.y << 10;
         sEditCamPosFixed.z = sEditCamPos.z << 10;
+        sEditCamPosFixed.yaw = sEditCamPos.yaw << 10;
     }
 }
-
-typedef struct { s16 a, b; s16 pad4[2]; s16 c, d; s16 padC[2]; } Vw;
-
-typedef struct State_11 {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 f170;
-    s32 f174;
-    s32 f178;
-    s32 f17C;
-    s32 f180;
-    s32 f184;
-    s32 f188;
-    s32 f18C;
-    s32 f190;
-    Ent24_2 e[150];
-    s16 * f16AC;
-    u8 pad16B0[0x6];
-    s16 f16B6;
-    s16 f16B8;
-    char name[7];
-    u8 pad16C1[0x1F];
-    void * f16E0;
-    u8 pad16E4[0x4];
-    s32 f16E8;
-    s32 f16EC;
-    u8 pad16F0[0x4];
-    s32 f16F4;
-    u8 pad16F8[0x4];
-    s32 f16FC;
-    u8 pad1700[0xC];
-    s32 f170C;
-    s32 f1710;
-    s32 f1714;
-    s32 f1718;
-    s32 f171C;
-    s32 f1720;
-    s32 f1724;
-    s32 f1728;
-    s32 f172C;
-    u8 pad1730[0x8];
-    s32 f1738;
-    u8 pad173C[0x10];
-    void * f174C;
-    void * f1750;
-    u8 pad1754[0x4C];
-    s16 f17A0;
-    s16 f17A2;
-    s16 f17A4;
-    u8 pad17A6[0x2];
-    s16 f17A8;
-    s16 f17AA;
-    s16 f17AC;
-    u8 pad17AE[0x2];
-    void * f17B0;
-    u8 pad17B4[0x4];
-    Vw vw[4];
-    s32 f17F8;
-    u8 pad17FC[0x8];
-    s32 f1804;
-    s32 f1808;
-    u8 pad180C[0x4];
-} State_11;
-
-typedef struct { s16 c[8]; } Row_5;
-typedef struct { u32 n; Row_5 *v; } VtxList;
-typedef struct { VtxList *vl; u8 pad[0x1C]; } MEnt_2;
-typedef struct { u32 n; MEnt_2 e[1]; } Model_8;
-
-typedef struct {
-    u8 pad0[0xC];
-    u16 flags;
-    u8 padE[0x12];
-    s32 *f20;
-    s32 *f24;
-    u8 pad28[8];
-    Model_8 *f30;
-    Model_8 *f34;
-    u8 pad38[8];
-} Obj_69;
-
-typedef struct { s32 f0, f4, f8; } Tri3_4;
-
-extern State_11 *gEditor_8;
-extern Obj_69 gPieceTypes_5[];
-extern Tri3_4 sEditCamTarget_2;
-extern Tri3_4 sEditCamPos_2;
 
 void edit_init(void)
 {
     s32 i, j;
     u32 k, n;
-    Obj_69 *o;
-    VtxList *vl;
+    PieceType *o;
+    PieceMesh *vl;
     s32 v;
     s32 c, q, x, y, w, f, d;
 
     gCurTrack = D_800CBF30;
-    if (gEditor_8 == NULL || !(gEditor_8->f174 & 0x6000)) {
-        gEditor_8 = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
-        mem_fill((u8 *)gEditor_8, 0, 0x1810);
+    if (gEditor == NULL || !(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
+        gEditor = mem_alloc_dbg(0x1810, 0, sStrEditFile, 0x50A);
+        mem_fill((u8 *)gEditor, 0, 0x1810);
     } else {
         gGame.flags &= ~2;
-        gEditor_8->f174 &= ~0x10;
+        gEditor->flags &= ~EDIT_EXIT;
     }
     shell_load_gui_res();
     prim_init();
@@ -429,140 +137,140 @@ void edit_init(void)
         fatal_halt(1);
     }
     font_load_menu_set(D_800E7728);
-    gEditor_8->f17C = 0;
-    gEditor_8->f180 = 0;
-    gEditor_8->f184 = 0;
-    gEditor_8->f190 = 0;
-    gEditor_8->f16B6 = 0;
-    gEditor_8->f16B8 = 0;
+    gEditor->first = 0;
+    gEditor->last = 0;
+    gEditor->cur = 0;
+    gEditor->start = 0;
+    gEditor->scrollX = 0;
+    gEditor->scrollY = 0;
     for (c = 149; c >= 0; c--) {
-        gEditor_8->e[c].f0 = 0;
+        gEditor->pieces[c].used = 0;
     }
-    strcpy(gEditor_8->name, "<NONE>");
+    strcpy(gEditor->name, "<NONE>");
     res_register_type(sStrEditArn, D_800248EC);
     res_register_type(sStrEditN64, D_80014D20);
-    res_open_set(sStrEditPieces, &gEditor_8->f1720);
-    gEditor_8->f1710 = res_load(gEditor_8->f1720, D_800D125C);
-    gEditor_8->f1714 = res_load(gEditor_8->f1720, D_800D1368);
-    gEditor_8->f1724 = res_load(gEditor_8->f1720, D_800D1370);
-    gEditor_8->f1728 = res_load(gEditor_8->f1720, *D_800CE270[0]);
-    gEditor_8->f170C = res_load(gEditor_8->f1720, D_800D1274);
-    if (!(gEditor_8->f174 & 0x6000)) {
+    res_open_set(sStrEditPieces, &gEditor->pieceRes);
+    gEditor->cursorTex = res_load(gEditor->pieceRes, D_800D125C);
+    gEditor->cursorModel = res_load(gEditor->pieceRes, D_800D1368);
+    gEditor->objectTex = res_load(gEditor->pieceRes, D_800D1370);
+    gEditor->wallTex = res_load(gEditor->pieceRes, *gEditArena.wallTexId);
+    gEditor->res170C = res_load(gEditor->pieceRes, D_800D1274);
+    if (!(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
         if (gUserTrackLayout != NULL) {
             mem_free(gUserTrackLayout);
             gUserTrackLayout = NULL;
         }
     }
     for (q = 0; q < 4; q++) {
-        gEditor_8->vw[q].a = sEditViewRects[q].w * 2;
-        gEditor_8->vw[q].b = sEditViewRects[q].h * 2;
-        gEditor_8->vw[q].c = (sEditViewRects[q].x + sEditViewRects[q].w / 2) * 4;
-        gEditor_8->vw[q].d = (sEditViewRects[q].y + sEditViewRects[q].h / 2) * 4;
+        gEditor->views[q].vp.vscale[0] = sEditViewRects[q].w * 2;
+        gEditor->views[q].vp.vscale[1] = sEditViewRects[q].h * 2;
+        gEditor->views[q].vp.vtrans[0] = (sEditViewRects[q].x + sEditViewRects[q].w / 2) * 4;
+        gEditor->views[q].vp.vtrans[1] = (sEditViewRects[q].y + sEditViewRects[q].h / 2) * 4;
     }
-    gEditor_8->f17A0 = 1000;
-    gEditor_8->f17A2 = 320;
-    gEditor_8->f17A4 = 0x1FF;
-    gEditor_8->f17A8 = (gScreenWidth / 2) * 4;
-    gEditor_8->f17AA = (gScreenHeight / 2) * 4;
-    gEditor_8->f17AC = 0x1FF;
-    if (!(gEditor_8->f174 & 0x6000)) {
-        gEditor_8->f16E8 = 1;
-        gEditor_8->f16EC = 0;
-        gEditor_8->f16E0 = &sEditMainMenu;
-        gEditor_8->f170 = 0;
+    gEditor->screenVp.vp.vscale[0] = 1000;
+    gEditor->screenVp.vp.vscale[1] = 320;
+    gEditor->screenVp.vp.vscale[2] = 0x1FF;
+    gEditor->screenVp.vp.vtrans[0] = (gScreenWidth / 2) * 4;
+    gEditor->screenVp.vp.vtrans[1] = (gScreenHeight / 2) * 4;
+    gEditor->screenVp.vp.vtrans[2] = 0x1FF;
+    if (!(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
+        gEditor->slideState = 1;
+        gEditor->slideTimer = 0;
+        gEditor->menu = &sEditMainMenu;
+        gEditor->mode = EDIT_MODE_IDLE;
     }
-    gEditor_8->f16AC = gEditArena;
-    gEditor_8->f184 = 0;
-    gEditor_8->f17B0 = gPieceTypes_5;
-    gEditor_8->f188 = 0;
-    gEditor_8->f18C = 0;
-    gEditor_8->f190 = 0;
-    gEditor_8->f17C = gEditor_8->f184;
-    gEditor_8->f180 = gEditor_8->f184;
-    gEditor_8->f1718 = font_text_create(0, 0x40, 2, 2, 0x21);
-    gEditor_8->f171C = font_text_create(0, 0x20, 2, 2, 0x21);
-    edit_update_piece_ports(gEditor_8->f184);
-    gEditor_8->f16C = 0;
+    gEditor->gridSize = &gEditArena.w;
+    gEditor->cur = 0;
+    gEditor->selType = gPieceTypes;
+    gEditor->markStart = 0;
+    gEditor->markEnd = 0;
+    gEditor->start = 0;
+    gEditor->first = gEditor->cur;
+    gEditor->last = gEditor->cur;
+    gEditor->bigText = font_text_create(0, 0x40, 2, 2, 0x21);
+    gEditor->text = font_text_create(0, 0x20, 2, 2, 0x21);
+    edit_update_piece_ports(gEditor->cur);
+    gEditor->page = 0;
     for (i = 0; i < 29; i++) {
-        gPieceTypes_5[i].flags |= 0x10;
-        if (gPieceTypes_5[i].flags & 0x100) {
-            gPieceTypes_5[i].flags |= 0x20;
+        gPieceTypes[i].flags |= 0x10;
+        if (gPieceTypes[i].flags & 0x100) {
+            gPieceTypes[i].flags |= 0x20;
         } else {
-            gPieceTypes_5[i].flags &= ~0x20;
+            gPieceTypes[i].flags &= ~0x20;
         }
-        if (gPieceTypes_5[i].f20 == NULL) continue;
-        gPieceTypes_5[i].f30 = (Model_8 *)res_load(gEditor_8->f1720, *gPieceTypes_5[i].f20);
-        if (gPieceTypes_5[i].f24 != NULL) {
-            gPieceTypes_5[i].f34 = (Model_8 *)res_load(gEditor_8->f1720, *gPieceTypes_5[i].f24);
+        if (gPieceTypes[i].meshAId == NULL) continue;
+        gPieceTypes[i].meshA = (PieceMeshSet *)res_load(gEditor->pieceRes, *gPieceTypes[i].meshAId);
+        if (gPieceTypes[i].meshBId != NULL) {
+            gPieceTypes[i].meshB = (PieceMeshSet *)res_load(gEditor->pieceRes, *gPieceTypes[i].meshBId);
         } else {
-            gPieceTypes_5[i].f34 = NULL;
+            gPieceTypes[i].meshB = NULL;
         }
-        for (k = 0; k < gPieceTypes_5[i].f30->n; k++) {
-            vl = gPieceTypes_5[i].f30->e[k].vl;
-            for (n = 0; n < vl->n; n++) {
+        for (k = 0; k < gPieceTypes[i].meshA->count; k++) {
+            vl = gPieceTypes[i].meshA->cells[k].mesh;
+            for (n = 0; n < vl->vtxCount; n++) {
                 for (j = 0; j < 3; j += 2) {
-                    v = (s16)vl->v[n].c[j];
+                    v = (s16)vl->vtx[n].v.ob[j];
                     if (v < 0) { s32 w2 = -v; s32 d2 = w2 / 50; s32 f2 = w2 - d2 * 50 >= 15; v = d2 + f2; v = -(v * 50); }
                     else { d = v / 50; f = v - d * 50 >= 15; v = d + f; v = v * 50; }
-                    vl->v[n].c[j] = v;
+                    vl->vtx[n].v.ob[j] = v;
                 }
             }
         }
     }
-    arned_init_grid(gEditor_8->f16AC[0], gEditor_8->f16AC[1]);
-    for (y = 0; y < gEditor_8->f16AC[1]; y++) {
-        for (x = 0; x < gEditor_8->f16AC[0]; x++) {
+    arned_init_grid(gEditor->gridSize[0], gEditor->gridSize[1]);
+    for (y = 0; y < gEditor->gridSize[1]; y++) {
+        for (x = 0; x < gEditor->gridSize[0]; x++) {
             arned_set_cell(x, y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
     arned_set_viewport(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1);
-    gEditor_8->f172C = 90000;
-    gEditor_8->f1738 = 45000;
-    sEditCamTarget_2.f8 = 0;
-    sEditCamPos_2.f8 = 0;
+    gEditor->cam[0].dist = 90000;
+    gEditor->cam[1].dist = 45000;
+    sEditCamTarget.yaw = 0;
+    sEditCamPos.yaw = 0;
     {
-        s32 fl = gEditor_8->f174;
+        s32 fl = gEditor->flags;
         s32 m6 = fl & 0x6000;
         if (m6 != 0) {
-            gEditor_8->f174 = m6;
+            gEditor->flags = m6;
             if (fl & 0x2000) {
-                sEditMainMenu.f10 = 2;
-                sEditMainMenu.f6 = 2;
+                sEditMainMenu.sel = 2;
+                sEditMainMenu.cursor = 2;
             } else {
-                sEditMainMenu.f10 = 3;
-                sEditMainMenu.f6 = 3;
+                sEditMainMenu.sel = 3;
+                sEditMainMenu.cursor = 3;
             }
         } else {
-            sEditMainMenu.f10 = 1;
-            sEditMainMenu.f6 = 1;
-            gEditor_8->f174 = 0;
+            sEditMainMenu.sel = 1;
+            sEditMainMenu.cursor = 1;
+            gEditor->flags = 0;
         }
     }
     edit_calc_track_cam_elevation();
     edit_calc_piece_cam_elevation();
-    gEditor_8->f16F4 = 8;
-    gEditor_8->f174C = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E1);
-    gEditor_8->f1750 = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E2);
-    gEditor_8->f16FC = 0;
+    gEditor->userPieceCount = 8;
+    gEditor->lineVtx[0] = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E1);
+    gEditor->lineVtx[1] = mem_alloc_dbg(0xF00, 0, sStrEditFile, 0x5E2);
+    gEditor->userPiece = 0;
     edit_init_user_pieces();
     edit_user_piece_reset_cursor(0);
-    gEditor_8->f16F4 = 8;
+    gEditor->userPieceCount = 8;
     gui_init();
-    gEditor_8->f1804 = res_load(gGuiRes, D_800D13E0);
-    gEditor_8->f1808 = res_load(gGuiRes, D_800D142C);
+    gEditor->warnFrame = res_load(gGuiRes, D_800D13E0);
+    gEditor->warnIcon = res_load(gGuiRes, D_800D142C);
     if (gGame.userTrack != NULL) {
-        gEditor_8->f174 &= ~0x6000;
+        gEditor->flags &= ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE);
         usrtrk_load_into_editor((u8 *)gGame.userTrack + 4);
         mem_free(gGame.userTrack);
         gGame.userTrack = NULL;
-        edit_try_close_loop(gEditor_8->f180);
+        edit_try_close_loop(gEditor->last);
     }
     edit_cam_update_target();
-    sEditCamPos_2.f0 = sEditCamTarget_2.f0;
-    sEditCamPos_2.f4 = sEditCamTarget_2.f4;
-    sEditCamPos_2.f8 = ((u32)(sEditCamPos_2.f8 + 0x800) >> 13) << 13;
+    sEditCamPos.x = sEditCamTarget.x;
+    sEditCamPos.z = sEditCamTarget.z;
+    sEditCamPos.yaw = ((u32)(sEditCamPos.yaw + 0x800) >> 13) << 13;
     sEditCamMoving = 0;
-    arned_load_piece_textures(gEditor_8->f17F8, gEditor_8->f1724, gEditor_8->f1728);
+    arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
     osViSetSpecialFeatures(0xAA);
 }
 
@@ -571,21 +279,21 @@ void edit_exit(void)
     s32 iVar7;
     s32 n;
 
-    if ((*(s32 *)(gEditor + 0x174) & 0x400) != 0) {
-        iVar7 = *gUserTrackLayout_2;
+    if (gEditor->flags & EDIT_TEST_TRACK) {
+        iVar7 = gUserTrackLayout->pieceCount;
     } else {
         iVar7 = -1;
     }
     res_close_set(D_800E7728);
     prim_exit();
     arned_free_grid();
-    mem_free((void *)*(s32 *)(gEditor + 0x174C));
-    mem_free((void *)*(s32 *)(gEditor + 0x1750));
-    res_close_set(*(s32 **)(gEditor + 0x1720));
-    mem_free((void *)*(s32 *)(gEditor + 0x171C));
-    mem_free((void *)*(s32 *)(gEditor + 0x1718));
+    mem_free(gEditor->lineVtx[0]);
+    mem_free(gEditor->lineVtx[1]);
+    res_close_set(gEditor->pieceRes);
+    mem_free(gEditor->text);
+    mem_free(gEditor->bigText);
     usrtrk_free_user_piece_meshes(1);
-    if ((*(s32 *)(gEditor + 0x174) & 0x6000) == 0) {
+    if (!(gEditor->flags & (EDIT_PAK_LOAD | EDIT_PAK_SAVE))) {
         gRaceExitCode = 6;
         mem_free(gEditor);
         gEditor = 0;
@@ -596,12 +304,12 @@ void edit_exit(void)
     if (iVar7 >= 0) {
         __builtin_memcpy(gZBuffer, gGame.userTrack, 0x400);
         n = (iVar7 - 1) * 0xc + 0x110;
-        memcpy(gZBuffer + 0x400, gUserTrackLayout_2, n);
-        mem_free(gUserTrackLayout_2);
+        memcpy(gZBuffer + 0x400, gUserTrackLayout, n);
+        mem_free(gUserTrackLayout);
         mem_free(gGame.userTrack);
-        gUserTrackLayout_2 = mem_alloc_dbg(n, 0, sStrEditFile, 0x651);
+        gUserTrackLayout = mem_alloc_dbg(n, 0, sStrEditFile, 0x651);
         gGame.userTrack = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x652);
-        memcpy(gUserTrackLayout_2, gZBuffer + 0x400, n);
+        memcpy(gUserTrackLayout, gZBuffer + 0x400, n);
         __builtin_memcpy(gGame.userTrack, gZBuffer, 0x400);
     }
     font_unload_set();
@@ -611,22 +319,7 @@ void edit_exit(void)
 
 typedef struct { u8 c[11]; } Name11;
 
-typedef struct {
-    u8 pad0[0x170];
-    s32 f170;
-    u8 pad174[0x16BA - 0x174];
-    Name11 name;
-    u8 buf[11];
-    s32 sel;
-    s32 x;
-    s32 y;
-    s32 len;
-    Obj_2 *obj;
-} Game_35;
-
-extern Game_35 *gEditor_9;
-
-void edit_update_name_entry(Game_36 *arg0, s32 arg1)
+void edit_update_name_entry(Editor *arg0, s32 arg1)
 {
     s32 i;
     s32 old;
@@ -642,65 +335,65 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
     }
 
     if (PRESSED(0x10)) {
-        if (gEditor_9->sel == 0x26 && gEditor_9->len == 0) {
+        if (gEditor->nameKey == 0x26 && gEditor->nameLen == 0) {
             snd_play_menu_sound(3);
         } else {
             snd_play_menu_sound(1);
         }
         {
-            Game_35 *g = gEditor_9;
-            if (g->sel == 0x26) {
-                s32 n = g->len;
+            Editor *g = gEditor;
+            if (g->nameKey == 0x26) {
+                s32 n = g->nameLen;
                 if (n != 0) {
-                    g->buf[n] = 0;
-                    g->len = n - 1;
+                    g->nameBuf[n] = 0;
+                    g->nameLen = n - 1;
                 }
-            } else if (g->sel == 0x27) {
-                g->name = *(Name11 *)g->buf;
-                gEditor_9->f170 = 0;
-                gEditor_9->obj->flags |= 1;
+            } else if (g->nameKey == 0x27) {
+                *(Name11 *)g->name = *(Name11 *)g->nameBuf;
+                gEditor->mode = EDIT_MODE_IDLE;
+                gEditor->menu->flags |= 1;
             } else {
-                g->len++;
-                if (g->len >= 10) {
-                    g->x = 799;
-                    g->y = 799;
-                    g->sel = 0x27;
+                g->nameLen++;
+                if (g->nameLen >= 10) {
+                    g->nameCursorX = 799;
+                    g->nameCursorY = 799;
+                    g->nameKey = 0x27;
                 }
             }
         }
         return;
     }
     if (PRESSED(0x20)) {
-        if (gEditor_9->len == 0) {
+        if (gEditor->nameLen == 0) {
             snd_play_menu_sound(3);
             return;
         }
         snd_play_menu_sound(1);
-        gEditor_9->buf[gEditor_9->len - 1] = gEditor_9->buf[gEditor_9->len];
+        gEditor->nameBuf[gEditor->nameLen - 1] = gEditor->nameBuf[gEditor->nameLen];
         {
-            Game_35 *g = gEditor_9;
-            s32 n = g->len;
-            g->buf[n--] = 0;
-            g->len = n;
+            Editor *g = gEditor;
+            s32 n = g->nameLen;
+            g->nameBuf[n--] = 0;
+            g->nameLen = n;
         }
         return;
     }
 
     {
         s32 y;
-        y = (s32)gEditor_9;
-        old = ((Game_35 *)y)->sel;
-        if (((Game_35 *)y)->len < 10) {
-            Game_35 *g;
+        y = (s32)gEditor;
+        old = ((Editor *)y)->nameKey;
+        if (((Editor *)y)->nameLen < 10) {
+            Editor *g;
             u32 v;
             s32 x, nx;
             lo = 0;
             lo2 = lo;
             hi = 800;
             v = gPadInput_3[0];
-            g = (Game_35 *)y;
+            g = (Editor *)y;
             hi2 = hi;
-            x = g->x;
+            x = g->nameCursorX;
             if (v & 0xC) {
                 if (v & 8) {
                     nx = x + (((s32)v >> 24) & 0xF);
@@ -710,27 +403,27 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
             } else {
                 nx = x;
             }
-            g->x = nx;
+            g->nameCursorX = nx;
             if (PRESSED(0x2000)) {
-                gEditor_9->x -= 100;
+                gEditor->nameCursorX -= 100;
             }
             if (PRESSED(0x4000)) {
-                gEditor_9->x += 100;
+                gEditor->nameCursorX += 100;
             }
             {
-                Game_35 *h = gEditor_9;
-                s32 c = h->x;
+                Editor *h = gEditor;
+                s32 c = h->nameCursorX;
                 if (c >= hi) {
-                    h->x = lo;
+                    h->nameCursorX = lo;
                 } else if (c < lo) {
-                    h->x = hi - 1;
+                    h->nameCursorX = hi - 1;
                 }
             }
             {
-                Game_35 *h = gEditor_9;
+                Editor *h = gEditor;
                 u32 v2 = gPadInput_3[0];
                 s32 ny;
-                y = h->y;
+                y = h->nameCursorY;
                 if (v2 & 3) {
                     if (v2 & 1) {
                         ny = y - ((s32)((v2 >> 28) * 3) >> 1);
@@ -740,47 +433,47 @@ void edit_update_name_entry(Game_36 *arg0, s32 arg1)
                 } else {
                     ny = y;
                 }
-                h->y = ny;
+                h->nameCursorY = ny;
             }
             if (PRESSED(0x800)) {
-                gEditor_9->y -= 0xA0;
+                gEditor->nameCursorY -= 0xA0;
             }
             if (PRESSED(0x1000)) {
-                gEditor_9->y += 0xA0;
+                gEditor->nameCursorY += 0xA0;
             }
             {
-                Game_35 *h = gEditor_9;
-                s32 c = h->y;
+                Editor *h = gEditor;
+                s32 c = h->nameCursorY;
                 if (c >= hi2) {
-                    h->y = lo2;
+                    h->nameCursorY = lo2;
                 } else if (c < lo2) {
-                    h->y = hi2 - 1;
+                    h->nameCursorY = hi2 - 1;
                 }
             }
-            gEditor_9->sel = gEditor_9->x / 100 + (gEditor_9->y / 0xA0) * 8;
+            gEditor->nameKey = gEditor->nameCursorX / 100 + (gEditor->nameCursorY / 0xA0) * 8;
         } else if (PRESSED(4) || PRESSED(0x2000) || PRESSED(8) || PRESSED(0x4000)) {
-            Game_35 *h = gEditor_9;
-            if (h->sel == 0x27) {
-                h->x = 600;
-                h->y = 799;
-                h->sel = 0x26;
+            Editor *h = gEditor;
+            if (h->nameKey == 0x27) {
+                h->nameCursorX = 600;
+                h->nameCursorY = 799;
+                h->nameKey = 0x26;
             } else {
-                h->x = 799;
-                h->y = 799;
-                h->sel = 0x27;
+                h->nameCursorX = 799;
+                h->nameCursorY = 799;
+                h->nameKey = 0x27;
             }
         }
     }
 
-    if (gEditor_9->sel < 0x26) {
-        if (strlen(gEditor_9->buf) == 0) {
-            gEditor_9->buf[1] = 0;
+    if (gEditor->nameKey < 0x26) {
+        if (strlen(gEditor->nameBuf) == 0) {
+            gEditor->nameBuf[1] = 0;
         }
-        gEditor_9->buf[gEditor_9->len] = *gKeyboardKeys[gEditor_9->sel];
+        gEditor->nameBuf[gEditor->nameLen] = *gKeyboardKeys[gEditor->nameKey];
     } else {
-        gEditor_9->buf[gEditor_9->len] = 0;
+        gEditor->nameBuf[gEditor->nameLen] = 0;
     }
-    if (old != gEditor_9->sel) {
+    if (old != gEditor->nameKey) {
         snd_play_menu_sound(0);
     }
 }
@@ -792,67 +485,59 @@ typedef struct {
     u8 f4F4[0x310];
 } Save_7;
 
-typedef struct {
-    Pair p;
-    u32 f8;
-} Cam_6;
-
 extern Save_7 gSaveData_16;
-extern Menu_6 sEditTrackMenu;
-extern Cam_6 sEditCamPos_3;
-extern Cam_6 sEditCamTarget_3;
 
 void edit_update_main_menu(void)
 {
-    Game_36 *p = gEditor_10;
-    s32 flags = p->f174;
+    Editor *p = gEditor;
+    s32 flags = p->flags;
     s32 i, j, k, n;
 
     if (flags & 0x800) {
         if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
-            gEditor_10->f174 &= ~0x800;
-            gEditor_10->f16E0->fC |= 1;
+            gEditor->flags &= ~EDIT_MESSAGE;
+            gEditor->menu->flags |= 1;
             snd_play_menu_sound(1);
         }
     } else if (flags & 0x1000) {
         if ((gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) {
             gPadInputPrev_2[0] |= 0x20;
-            gEditor_10->f174 &= ~0x1000;
-            gEditor_10->f16E0->fC |= 1;
+            gEditor->flags &= ~EDIT_DIALOG;
+            gEditor->menu->flags |= 1;
             snd_play_menu_sound(2);
         } else if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) {
             gPadInputPrev_2[0] |= 0x10;
             snd_play_menu_sound(1);
-            if (gEditor_10->f17FE) {
-                switch (gEditor_10->f17FC) {
+            if (gEditor->dialogChoice) {
+                switch (gEditor->dialog) {
                 case 7:
-                    gEditor_10->f17FC = 6;
+                    gEditor->dialog = 6;
                     if (gSaveData_16.f2C4 & 8) {
-                        gEditor_10->f17FE = 1;
+                        gEditor->dialogChoice = 1;
                     } else {
-                        gEditor_10->f17FE = 0;
+                        gEditor->dialogChoice = 0;
                     }
                     break;
                 case 6:
                     if (gSaveData_16.f2C4 & 8) {
-                        for (j = 0; j < gEditor_10->f16AC->h; j++) {
-                            for (i = 0; i < gEditor_10->f16AC->w; i++) {
+                        for (j = 0; j < gEditor->gridSize[1]; j++) {
+                            for (i = 0; i < gEditor->gridSize[0]; i++) {
                                 arned_set_cell(i, j, 0, 0, 0, 0, 0, 0, 0);
                             }
                         }
-                        gEditor_10->f16F4 = 8;
+                        gEditor->userPieceCount = 8;
                         usrtrk_load_into_editor(D_800F1DF4);
-                        edit_try_close_loop(gEditor_10->f180);
-                        gEditor_10->f170 = 0;
-                        gEditor_10->f16E0->fC |= 1;
+                        edit_try_close_loop(gEditor->last);
+                        gEditor->mode = EDIT_MODE_IDLE;
+                        gEditor->menu->flags |= 1;
                         edit_find_start_piece();
-                        arned_load_piece_textures(gEditor_10->f17F8, gEditor_10->f1724, gEditor_10->f1728);
-                        gEditor_10->f16E0->fC |= 1;
-                        gEditor_10->f174 &= ~0x1000;
+                        arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
+                        gEditor->menu->flags |= 1;
+                        gEditor->flags &= ~EDIT_DIALOG;
                     } else {
-                        gEditor_10->f1800 = 0;
-                        gEditor_10->f174 |= 0x800;
+                        gEditor->message = 0;
+                        gEditor->flags |= EDIT_MESSAGE;
                     }
                     break;
                 case 8:
@@ -862,13 +547,13 @@ void edit_update_main_menu(void)
                     save_write(4, 0);
                     mem_free(gGame.userTrack);
                     gGame.userTrack = 0;
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 case 5:
                     if (gSaveData_16.f2C4 & 8) {
-                        gEditor_10->f17FC = 8;
-                        gEditor_10->f17FE = 0;
+                        gEditor->dialog = 8;
+                        gEditor->dialogChoice = 0;
                     } else {
                         gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x6FE);
                         usrtrk_pack_track_2(gGame.userTrack);
@@ -876,200 +561,200 @@ void edit_update_main_menu(void)
                         save_write(4, 0);
                         mem_free(gGame.userTrack);
                         gGame.userTrack = 0;
-                        gEditor_10->f16E0->fC |= 1;
-                        gEditor_10->f174 &= ~0x1000;
+                        gEditor->menu->flags |= 1;
+                        gEditor->flags &= ~EDIT_DIALOG;
                     }
                     break;
                 case 3:
                     gGame.flags |= 2;
-                    gEditor_10->f178 = 0;
-                    gEditor_10->f174 |= 0x10;
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->exitTimer = 0;
+                    gEditor->flags |= EDIT_EXIT;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 case 4:
-                    gEditor_10->f17C = 0;
-                    gEditor_10->f180 = 0;
-                    gEditor_10->f184 = 0;
-                    gEditor_10->f190 = 0;
-                    gEditor_10->f16B6 = 0;
-                    gEditor_10->f16B8 = 0;
+                    gEditor->first = 0;
+                    gEditor->last = 0;
+                    gEditor->cur = 0;
+                    gEditor->start = 0;
+                    gEditor->scrollX = 0;
+                    gEditor->scrollY = 0;
                     for (k = 0; k < 150; k++) {
-                        gEditor_10->slots[k].f0 = 0;
+                        gEditor->pieces[k].used = 0;
                     }
-                    gEditor_10->f16F4 = 8;
-                    __builtin_strcpy(gEditor_10->name, "<NONE>");
-                    for (j = 0; j < gEditor_10->f16AC->h; j++) {
-                        for (i = 0; i < gEditor_10->f16AC->w; i++) {
+                    gEditor->userPieceCount = 8;
+                    __builtin_strcpy(gEditor->name, "<NONE>");
+                    for (j = 0; j < gEditor->gridSize[1]; j++) {
+                        for (i = 0; i < gEditor->gridSize[0]; i++) {
                             arned_set_cell(i, j, 0, 0, 0, 0, 0, 0, 0);
                         }
                     }
-                    gEditor_10->f184 = 0;
-                    gEditor_10->f17C = 0;
-                    gEditor_10->f180 = gEditor_10->f184;
-                    edit_update_piece_ports(gEditor_10->f184);
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f17F8 = 0;
-                    gEditor_10->f174 &= ~0x1000;
-                    arned_load_piece_textures(0, gEditor_10->f1724, gEditor_10->f1728);
+                    gEditor->cur = 0;
+                    gEditor->first = 0;
+                    gEditor->last = gEditor->cur;
+                    edit_update_piece_ports(gEditor->cur);
+                    gEditor->menu->flags |= 1;
+                    gEditor->dirtType = 0;
+                    gEditor->flags &= ~EDIT_DIALOG;
+                    arned_load_piece_textures(0, gEditor->objectTex, gEditor->wallTex);
                     edit_cam_update_target();
                     sEditCamMoving = 0;
-                    sEditCamPos_3.p.a = sEditCamTarget_3.p.a;
-                    sEditCamPos_3.p.b = sEditCamTarget_3.p.b;
-                    sEditCamPos_3.f8 = ((sEditCamPos_3.f8 + 0x800) >> 13) << 13;
+                    sEditCamPos.x = sEditCamTarget.x;
+                    sEditCamPos.z = sEditCamTarget.z;
+                    sEditCamPos.yaw = ((sEditCamPos.yaw + 0x800) >> 13) << 13;
                     break;
                 }
             } else {
-                switch (gEditor_10->f17FC) {
+                switch (gEditor->dialog) {
                 case 8:
-                    gEditor_10->f1800 = 1;
-                    gEditor_10->f174 = (gEditor_10->f174 & ~0x1000) | 0x800;
+                    gEditor->message = 1;
+                    gEditor->flags = (gEditor->flags & ~EDIT_DIALOG) | 0x800;
                     break;
                 case 6:
                     gGame.flags |= 2;
-                    gEditor_10->f178 = 0;
-                    gEditor_10->f174 = (gEditor_10->f174 | 0x2010) & ~0x4000;
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->exitTimer = 0;
+                    gEditor->flags = (gEditor->flags | 0x2010) & ~0x4000;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 case 5:
                     gGame.flags |= 2;
-                    gEditor_10->f178 = 0;
-                    gEditor_10->f174 = (gEditor_10->f174 | 0x4010) & ~0x2000;
+                    gEditor->exitTimer = 0;
+                    gEditor->flags = (gEditor->flags | 0x4010) & ~0x2000;
                     gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x7B3);
                     for (n = usrtrk_pack_track_2(gGame.userTrack + 4) + 4; n < 0x400; n++) {
                         gGame.userTrack[n] = 0;
                     }
                     *(u32 *)gGame.userTrack = calc_checksum24(gGame.userTrack + 4, 0x3FC);
                 default:
-                    gEditor_10->f16E0->fC |= 1;
-                    gEditor_10->f174 &= ~0x1000;
+                    gEditor->menu->flags |= 1;
+                    gEditor->flags &= ~EDIT_DIALOG;
                     break;
                 }
             }
         } else if (((gPadInput_2[0] & 0x800) && !(gPadInputPrev_2[0] & 0x800)) ||
                    ((gPadInput_2[0] & 0x1000) && !(gPadInputPrev_2[0] & 0x1000))) {
-            if ((gEditor_10->f17FC != 6 || (gSaveData_16.f2C4 & 8)) && gEditor_10->f17FC != 5) {
-                gEditor_10->f17FE ^= 1;
+            if ((gEditor->dialog != 6 || (gSaveData_16.f2C4 & 8)) && gEditor->dialog != 5) {
+                gEditor->dialogChoice ^= 1;
                 snd_play_menu_sound(0);
             }
         }
     } else {
-        if (p->f184 != NULL && p->f170 != 7) {
-            if (((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && !(gEditor_10->f174 & 1)) ||
-                ((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && (gEditor_10->f174 & 1))) {
-                if (gEditor_10->f184->next) {
-                    gEditor_10->f184 = gEditor_10->f184->next;
+        if (p->cur != NULL && p->mode != 7) {
+            if (((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && !(gEditor->flags & EDIT_REVERSED)) ||
+                ((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && (gEditor->flags & EDIT_REVERSED))) {
+                if (gEditor->cur->prev) {
+                    gEditor->cur = gEditor->cur->prev;
                 }
-            } else if (((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && !(gEditor_10->f174 & 1)) ||
-                       ((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && (gEditor_10->f174 & 1))) {
-                if (gEditor_10->f184->prev) {
-                    gEditor_10->f184 = gEditor_10->f184->prev;
+            } else if (((gPadInput_2[0] & 0x4000) && !(gPadInputPrev_2[0] & 0x4000) && !(gEditor->flags & EDIT_REVERSED)) ||
+                       ((gPadInput_2[0] & 0x2000) && !(gPadInputPrev_2[0] & 0x2000) && (gEditor->flags & EDIT_REVERSED))) {
+                if (gEditor->cur->next) {
+                    gEditor->cur = gEditor->cur->next;
                 }
             }
         }
-        if (gEditor_10->f170 == 7 || gEditor_10->f170 == 8) {
+        if (gEditor->mode == EDIT_MODE_NAME || gEditor->mode == EDIT_MODE_NAME_8) {
             edit_update_name_entry(p, flags);
-        } else if (gui_menu_input(gEditor_10->f16E0, flags)) {
-            switch (sEditMainMenuChoice) {
+        } else if (gui_menu_input(gEditor->menu, flags)) {
+            switch (sEditMainMenu.sel) {
             case 1:
-                gEditor_10->f170 = 0;
-                if (gEditor_10->f16E0 != &sEditTrackMenu) {
-                    switch (gEditor_10->f16E8) {
+                gEditor->mode = EDIT_MODE_IDLE;
+                if (gEditor->menu != &sEditTrackMenu) {
+                    switch (gEditor->slideState) {
                     case 1:
-                        gEditor_10->f16E0 = &sEditTrackMenu;
+                        gEditor->menu = &sEditTrackMenu;
                         break;
                     case 0:
-                        gEditor_10->f16E8 = 1;
-                        gEditor_10->f16E4 = &sEditTrackMenu;
+                        gEditor->slideState = 1;
+                        gEditor->nextMenu = &sEditTrackMenu;
                         break;
                     case 2:
-                        gEditor_10->f16E8 = 3;
-                        gEditor_10->f16E4 = &sEditTrackMenu;
+                        gEditor->slideState = 3;
+                        gEditor->nextMenu = &sEditTrackMenu;
                         break;
                     case 3:
-                        gEditor_10->f16E8 = 1;
-                        gEditor_10->f16E0 = &sEditTrackMenu;
+                        gEditor->slideState = 1;
+                        gEditor->menu = &sEditTrackMenu;
                         break;
                     }
-                    gEditor_10->f174 &= ~0x10000;
+                    gEditor->flags &= ~EDIT_A_HELD;
                 }
-                sEditTrackMenu.f10 = 0;
-                sEditTrackMenu.f6 = 0;
-                gEditor_10->f16C = 1;
+                sEditTrackMenu.sel = 0;
+                sEditTrackMenu.cursor = 0;
+                gEditor->page = 1;
                 break;
             case 0:
-                gEditor_10->f17FC = 4;
-                gEditor_10->f174 |= 0x1000;
-                gEditor_10->f16E0->fC &= ~1;
-                gEditor_10->f17FE = 0;
+                gEditor->dialog = 4;
+                gEditor->flags |= EDIT_DIALOG;
+                gEditor->menu->flags &= ~1;
+                gEditor->dialogChoice = 0;
                 break;
             case 2:
-                gEditor_10->f174 |= 0x1000;
-                if (gEditor_10->f184 != NULL) {
-                    gEditor_10->f17FC = 7;
-                    gEditor_10->f17FE = 0;
+                gEditor->flags |= EDIT_DIALOG;
+                if (gEditor->cur != NULL) {
+                    gEditor->dialog = 7;
+                    gEditor->dialogChoice = 0;
                 } else {
-                    gEditor_10->f17FC = 6;
+                    gEditor->dialog = 6;
                     if (gSaveData_16.f2C4 & 8) {
-                        gEditor_10->f17FE = 1;
+                        gEditor->dialogChoice = 1;
                     } else {
-                        gEditor_10->f17FE = 0;
+                        gEditor->dialogChoice = 0;
                     }
                 }
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor->menu->flags &= ~1;
                 break;
             case 3:
-                if (gEditor_10->name[0] == '<') {
-                    gEditor_10->f174 |= 0x800;
-                    gEditor_10->f16E0->fC &= ~1;
-                    gEditor_10->f1800 = 4;
-                    sEditMainMenu.f10 = 6;
-                    sEditMainMenu.f6 = 6;
+                if (gEditor->name[0] == '<') {
+                    gEditor->flags |= EDIT_MESSAGE;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->message = 4;
+                    sEditMainMenu.sel = 6;
+                    sEditMainMenu.cursor = 6;
                 } else {
-                    gEditor_10->f17FC = 5;
-                    gEditor_10->f174 |= 0x1000;
-                    gEditor_10->f16E0->fC &= ~1;
-                    gEditor_10->f17FE = 0;
+                    gEditor->dialog = 5;
+                    gEditor->flags |= EDIT_DIALOG;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->dialogChoice = 0;
                 }
                 break;
             case 5:
-                if (++gEditor_10->f17F8 == 3) {
-                    gEditor_10->f17F8 = 0;
+                if (++gEditor->dirtType == 3) {
+                    gEditor->dirtType = 0;
                 }
-                arned_load_piece_textures(gEditor_10->f17F8, gEditor_10->f1724, gEditor_10->f1728);
+                arned_load_piece_textures(gEditor->dirtType, gEditor->objectTex, gEditor->wallTex);
                 break;
             case 7:
-                gEditor_10->f17FC = 3;
-                gEditor_10->f17FE = 0;
-                gEditor_10->f174 = (gEditor_10->f174 & ~0x6000) | 0x1000;
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor->dialog = 3;
+                gEditor->dialogChoice = 0;
+                gEditor->flags = (gEditor->flags & ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE)) | 0x1000;
+                gEditor->menu->flags &= ~1;
                 break;
             case 6:
-                gEditor_10->f16DC = 0;
-                gEditor_10->f16D0 = 0;
-                gEditor_10->f16D4 = 0;
-                gEditor_10->f16D8 = 0;
-                mem_fill(gEditor_10->f16C5, 0, 0xB);
-                gEditor_10->f170 = 7;
-                gEditor_10->f16E0->fC &= ~1;
+                gEditor->nameLen = 0;
+                gEditor->nameKey = 0;
+                gEditor->nameCursorX = 0;
+                gEditor->nameCursorY = 0;
+                mem_fill(gEditor->nameBuf, 0, 0xB);
+                gEditor->mode = EDIT_MODE_NAME;
+                gEditor->menu->flags &= ~1;
                 break;
             case 4:
                 if (gGame.difficulty == 0) {
                     gGame.difficulty = 1;
                 }
-                if (gEditor_10->f17C->next == gEditor_10->f180) {
+                if (gEditor->first->prev == gEditor->last) {
                     gGame.mode = 0xD;
                 } else {
                     gGame.mode = 0xE;
                 }
                 gGame.numPlayers = 1;
                 gGame.flags &= ~2;
-                gEditor_10->f174 &= ~0x6000;
+                gEditor->flags &= ~(EDIT_PAK_LOAD | EDIT_PAK_SAVE);
                 gGame.flags |= 0x4000000;
-                gEditor_10->f174 |= 0x410;
-                gEditor_10->f178 = 0;
-                gEditor_10->f174 &= ~0x1000;
+                gEditor->flags |= 0x410;
+                gEditor->exitTimer = 0;
+                gEditor->flags &= ~EDIT_DIALOG;
                 if (gGame.userTrack == NULL) {
                     gGame.userTrack = mem_alloc_dbg(0x400, 0, (s32)sStrEditFile, 0x88C);
                     for (n = usrtrk_pack_track_2(gGame.userTrack + 4) + 4; n < 0x400; n++) {
@@ -1080,45 +765,36 @@ void edit_update_main_menu(void)
             }
         }
     }
-    if (gEditor_10->f184 != NULL) {
-        if (gEditor_10->f184->f10 & 2) {
-            gEditor_10->f174 |= 8;
+    if (gEditor->cur != NULL) {
+        if (gEditor->cur->flags & EDIT_PIECE_FLIPPED) {
+            gEditor->flags |= EDIT_FLIP;
         } else {
-            gEditor_10->f174 &= ~8;
+            gEditor->flags &= ~EDIT_FLIP;
         }
     }
 }
 
 #define PRESSED_2(m) ((gPadInput & (m)) && !(gPadInputPrev_3[0] & (m)))
-#define DEL()                                                                          if (gEditor_11->cur != NULL) {                                                         if (gEditor_11->cur->prev == NULL) {                                                   n = gEditor_11->cur;                                                               gEditor_11->cur = n->next;                                                         edit_delete_piece(n);                                                                  sel();                                                                         } else if (gEditor_11->cur->next == NULL || gEditor_11->head->prev == gEditor_11->tail) {             n = gEditor_11->cur;                                                               gEditor_11->cur = n->prev;                                                         edit_delete_piece(n);                                                                  sel();                                                                         }                                                                              }
+#define DEL()                                                                          if (gEditor->cur != NULL) {                                                         if (gEditor->cur->prev == NULL) {                                                   n = gEditor->cur;                                                               gEditor->cur = n->next;                                                         edit_delete_piece(n);                                                                  edit_pick_start_piece();                                                                         } else if (gEditor->cur->next == NULL || gEditor->first->prev == gEditor->last) {             n = gEditor->cur;                                                               gEditor->cur = n->prev;                                                         edit_delete_piece(n);                                                                  edit_pick_start_piece();                                                                         }                                                                              }
 
-typedef struct Item_15 {
-    s32 f0;
-    u32 flags;
-    u8 pad8[8];
-} Item_15;
+s32 gui_menu_input_2(GuiMenu *c);
 
-extern Item_15 sEditTrackMenuItems[];
-extern Ctl_23 sEditTrackMenu_2;
-
-s32 gui_menu_input_2(Ctl_23 *c);
-
-static inline s32 chk(Edit *e, Node_25 *c) {
-    Node_25 *n;
+static inline s32 chk(Editor *e, EditPiece *c) {
+    EditPiece *n;
     s32 r;
 
-    if (c == NULL || c != e->f190 || (c->prev == NULL && c->next == NULL)) {
+    if (c == NULL || c != e->start || (c->prev == NULL && c->next == NULL)) {
         return 1;
     }
     r = 0;
-    n = e->head;
+    n = e->first;
     while (n != NULL) {
-        if (n != c && (n->pt->fC.h.hi & 2)) {
+        if (n != c && (n->type->flags & PIECE_START)) {
             r = 1;
             break;
         }
         n = n->next;
-        if (n == e->head) {
+        if (n == e->first) {
             break;
         }
     }
@@ -1126,22 +802,22 @@ static inline s32 chk(Edit *e, Node_25 *c) {
 }
 
 static inline s32 chkg(void) {
-    Node_25 *n;
+    EditPiece *n;
     s32 r;
 
-    if (gEditor_11->cur == NULL || gEditor_11->cur != gEditor_11->f190) {
+    if (gEditor->cur == NULL || gEditor->cur != gEditor->start) {
         return 1;
     }
-    if (gEditor_11->cur->prev != NULL || gEditor_11->cur->next != NULL) {
+    if (gEditor->cur->prev != NULL || gEditor->cur->next != NULL) {
         r = 0;
-        n = gEditor_11->head;
+        n = gEditor->first;
         while (n != NULL) {
-            if (n != gEditor_11->cur && (n->pt->fC.h.hi & 2)) {
+            if (n != gEditor->cur && (n->type->flags & PIECE_START)) {
                 r = 1;
                 break;
             }
             n = n->next;
-            if (n == gEditor_11->head) {
+            if (n == gEditor->first) {
                 break;
             }
         }
@@ -1153,20 +829,20 @@ static inline s32 chkg(void) {
 void edit_update_track_menu(void) {
     s16 minx, miny, maxx, maxy;
     s16 d[2];
-    Node_25 *n;
+    EditPiece *n;
     s32 ok;
     s32 i, j;
-    Edit *e;
-    Node_25 *c;
-    Node_25 *s;
+    Editor *e;
+    EditPiece *c;
+    EditPiece *s;
 
     minx = 1000;
     maxx = -1000;
     miny = 1000;
     maxy = -1000;
-    gEditor_11->flags &= ~0x1E0;
-    if (gEditor_11->cur != NULL) {
-        n = gEditor_11->head;
+    gEditor->flags &= ~0x1E0;
+    if (gEditor->cur != NULL) {
+        n = gEditor->first;
         do {
             if (n->x < minx) {
                 minx = n->x;
@@ -1181,224 +857,224 @@ void edit_update_track_menu(void) {
                 maxy = n->y + n->h;
             }
             n = n->next;
-        } while (n != NULL && n != gEditor_11->head);
+        } while (n != NULL && n != gEditor->first);
         if (minx > 0) {
-            gEditor_11->flags |= 0x20;
+            gEditor->flags |= EDIT_ROOM_X_NEG;
         }
         if (miny > 0) {
-            gEditor_11->flags |= 0x100;
+            gEditor->flags |= EDIT_ROOM_Y_NEG;
         }
-        if (maxx < gEditor_11->size[0]) {
-            gEditor_11->flags |= 0x40;
+        if (maxx < gEditor->gridSize[0]) {
+            gEditor->flags |= EDIT_ROOM_X_POS;
         }
-        if (maxy < gEditor_11->size[1]) {
-            gEditor_11->flags |= 0x80;
+        if (maxy < gEditor->gridSize[1]) {
+            gEditor->flags |= EDIT_ROOM_Y_POS;
         }
     }
-    if (gEditor_11->cur != NULL && (gEditor_11->cur->st & 4)) {
+    if (gEditor->cur != NULL && (gEditor->cur->flags & 4)) {
         sEditTrackMenuItems[6].flags &= ~0x10;
         sEditTrackMenuItems[4].flags &= ~0x10;
         sEditTrackMenuItems[7].flags &= ~0x10;
         sEditTrackMenuItems[5].flags &= ~0x10;
-        gEditor_11->flags &= ~0x8000;
+        gEditor->flags &= ~EDIT_CAN_DELETE;
     } else {
         sEditTrackMenuItems[7].flags |= 0x10;
-        if (gEditor_11->cur == NULL ||
-            (gEditor_11->cur->next != NULL && gEditor_11->cur->prev != NULL && gEditor_11->head->prev == NULL) ||
-            (e = gEditor_11, c = e->cur, !chk(e, c))) {
+        if (gEditor->cur == NULL ||
+            (gEditor->cur->next != NULL && gEditor->cur->prev != NULL && gEditor->first->prev == NULL) ||
+            (e = gEditor, c = e->cur, !chk(e, c))) {
             sEditTrackMenuItems[6].flags &= ~0x10;
-            gEditor_11->flags &= ~0x8000;
+            gEditor->flags &= ~EDIT_CAN_DELETE;
         } else {
-            gEditor_11->flags |= 0x8000;
+            gEditor->flags |= EDIT_CAN_DELETE;
             sEditTrackMenuItems[6].flags |= 0x10;
         }
-        if (gEditor_11->flags & 0x1E0) {
+        if (gEditor->flags & 0x1E0) {
             sEditTrackMenuItems[4].flags |= 0x10;
         } else {
             sEditTrackMenuItems[4].flags &= ~0x10;
         }
     }
-    if (gEditor_11->f16E0 != NULL) {
-        gui_menu_fix_cursor(gEditor_11->f16E0);
+    if (gEditor->menu != NULL) {
+        gui_menu_fix_cursor(gEditor->menu);
     }
-    if (gEditor_11->flags & 0x800) {
+    if (gEditor->flags & EDIT_MESSAGE) {
         if (PRESSED_2(0x10)) {
             gPadInputPrev_3[0] |= 0x10;
-            gEditor_11->flags &= ~0x800;
-            gEditor_11->f16E0->fC |= 1;
+            gEditor->flags &= ~EDIT_MESSAGE;
+            gEditor->menu->flags |= 1;
         }
     } else {
-        if (gEditor_11->mode == 10 || gEditor_11->mode == 11) {
+        if (gEditor->mode == EDIT_MODE_WARN_MULTI || gEditor->mode == EDIT_MODE_WARN_LOCKED) {
             if (PRESSED_2(0x10)) {
-                gEditor_11->mode = 6;
+                gEditor->mode = EDIT_MODE_USER_PIECE;
             } else if (PRESSED_2(0x20)) {
-                gEditor_11->f16E0->fC |= 1;
-                gEditor_11->mode = 9;
-                gEditor_11->flags &= ~0x1000;
+                gEditor->menu->flags |= 1;
+                gEditor->mode = EDIT_MODE_PLACE;
+                gEditor->flags &= ~EDIT_DIALOG;
             }
-        } else if (gEditor_11->mode == 9 || gEditor_11->mode == 6) {
+        } else if (gEditor->mode == EDIT_MODE_PLACE || gEditor->mode == EDIT_MODE_USER_PIECE) {
             if (PRESSED_2(0x20)) {
-                if (gEditor_11->mode == 9) {
-                    edit_remove_preview_pieces(gEditor_11->cur);
-                    gEditor_11->mode = 0;
-                    gEditor_11->flags &= ~0x200;
+                if (gEditor->mode == EDIT_MODE_PLACE) {
+                    edit_remove_preview_pieces(gEditor->cur);
+                    gEditor->mode = EDIT_MODE_IDLE;
+                    gEditor->flags &= ~EDIT_OPEN_END;
                 }
             } else {
                 edit_update_place_piece();
             }
-        } else if (gEditor_11->mode == 4) {
+        } else if (gEditor->mode == EDIT_MODE_MOVE_TRACK) {
             ok = 0;
             if (PRESSED_2(0x20)) {
-                d[0] = gEditor_11->head->x - gEditor_11->f16B0;
-                d[1] = gEditor_11->head->y - gEditor_11->f16B2;
-                n = gEditor_11->head;
+                d[0] = gEditor->first->x - gEditor->moveFromX;
+                d[1] = gEditor->first->y - gEditor->moveFromY;
+                n = gEditor->first;
                 do {
                     n->x -= d[0];
                     n->y -= d[1];
                     n = n->next;
-                } while (n != NULL && n != gEditor_11->head);
-                gEditor_11->mode = 0;
-                gEditor_11->f16E0->fC |= 1;
+                } while (n != NULL && n != gEditor->first);
+                gEditor->mode = EDIT_MODE_IDLE;
+                gEditor->menu->flags |= 1;
                 ok = 1;
                 snd_play_menu_sound(2);
             } else if (PRESSED_2(0x10)) {
-                gEditor_11->mode = 0;
-                gEditor_11->f16E0->fC |= 1;
+                gEditor->mode = EDIT_MODE_IDLE;
+                gEditor->menu->flags |= 1;
                 snd_play_menu_sound(1);
-            } else if ((gEditor_11->flags & 0x20) && PRESSED_2(0x2000)) {
-                n = gEditor_11->head;
+            } else if ((gEditor->flags & EDIT_ROOM_X_NEG) && PRESSED_2(0x2000)) {
+                n = gEditor->first;
                 do {
                     n->x--;
                     n = n->next;
-                } while (n != NULL && n != gEditor_11->head);
+                } while (n != NULL && n != gEditor->first);
                 snd_play_menu_sound(0);
                 ok = 1;
-            } else if ((gEditor_11->flags & 0x40) && PRESSED_2(0x4000)) {
-                n = gEditor_11->head;
+            } else if ((gEditor->flags & EDIT_ROOM_X_POS) && PRESSED_2(0x4000)) {
+                n = gEditor->first;
                 do {
                     n->x++;
                     n = n->next;
-                } while (n != NULL && n != gEditor_11->head);
+                } while (n != NULL && n != gEditor->first);
                 snd_play_menu_sound(0);
                 ok = 1;
-            } else if ((gEditor_11->flags & 0x80) && PRESSED_2(0x800)) {
-                n = gEditor_11->head;
+            } else if ((gEditor->flags & EDIT_ROOM_Y_POS) && PRESSED_2(0x800)) {
+                n = gEditor->first;
                 do {
                     n->y++;
                     n = n->next;
-                } while (n != NULL && n != gEditor_11->head);
+                } while (n != NULL && n != gEditor->first);
                 snd_play_menu_sound(0);
                 ok = 1;
-            } else if ((gEditor_11->flags & 0x100) && PRESSED_2(0x1000)) {
-                n = gEditor_11->head;
+            } else if ((gEditor->flags & EDIT_ROOM_Y_NEG) && PRESSED_2(0x1000)) {
+                n = gEditor->first;
                 do {
                     n->y--;
                     n = n->next;
-                } while (n != NULL && n != gEditor_11->head);
+                } while (n != NULL && n != gEditor->first);
                 snd_play_menu_sound(0);
                 ok = 1;
             }
             if (ok) {
-                n = gEditor_11->head;
+                n = gEditor->first;
                 do {
-                    edit_update_piece_ports(gEditor_11->head);
+                    edit_update_piece_ports(gEditor->first);
                     n = n->next;
-                } while (n != NULL && n != gEditor_11->head);
-                for (i = 0; i < gEditor_11->size[1]; i++) {
-                    for (j = 0; j < gEditor_11->size[0]; j++) {
+                } while (n != NULL && n != gEditor->first);
+                for (i = 0; i < gEditor->gridSize[1]; i++) {
+                    for (j = 0; j < gEditor->gridSize[0]; j++) {
                         arned_set_cell(j, i, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
             }
-        } else if (gui_menu_input_2(gEditor_11->f16E0)) {
-            switch (sEditTrackMenu_2.h10) {
+        } else if (gui_menu_input_2(gEditor->menu)) {
+            switch (sEditTrackMenu.sel) {
             case 0:
             case 1:
             case 2:
             case 3:
-                if (gEditor_11->cur == NULL) {
-                    gEditor_11->cur = edit_insert_piece(NULL, NULL, gEditor_11->f17B0);
-                    gEditor_11->cur->st |= 4;
-                    gEditor_11->mode = 9;
-                    gEditor_11->head = gEditor_11->cur;
-                    gEditor_11->tail = gEditor_11->cur;
-                } else if (gEditor_11->cur->next == NULL) {
-                    if (gEditor_11->cur->prev == NULL) {
-                        gEditor_11->cur = edit_insert_piece(gEditor_11->cur, NULL, gEditor_11->f17B0);
-                        gEditor_11->cur->st |= 4;
-                        gEditor_11->mode = 0;
-                        gEditor_11->tail = gEditor_11->cur;
-                        gEditor_11->f16E0->fC |= 1;
-                        gEditor_11->mode = 9;
-                        gEditor_11->flags |= 0x200;
+                if (gEditor->cur == NULL) {
+                    gEditor->cur = edit_insert_piece(NULL, NULL, gEditor->selType);
+                    gEditor->cur->flags |= 4;
+                    gEditor->mode = EDIT_MODE_PLACE;
+                    gEditor->first = gEditor->cur;
+                    gEditor->last = gEditor->cur;
+                } else if (gEditor->cur->next == NULL) {
+                    if (gEditor->cur->prev == NULL) {
+                        gEditor->cur = edit_insert_piece(gEditor->cur, NULL, gEditor->selType);
+                        gEditor->cur->flags |= 4;
+                        gEditor->mode = EDIT_MODE_IDLE;
+                        gEditor->last = gEditor->cur;
+                        gEditor->menu->flags |= 1;
+                        gEditor->mode = EDIT_MODE_PLACE;
+                        gEditor->flags |= EDIT_OPEN_END;
                     } else {
-                        gEditor_11->cur = edit_insert_piece(gEditor_11->cur, NULL, gEditor_11->f17B0);
-                        gEditor_11->cur->st |= 4;
-                        gEditor_11->mode = 9;
-                        gEditor_11->tail = gEditor_11->cur;
+                        gEditor->cur = edit_insert_piece(gEditor->cur, NULL, gEditor->selType);
+                        gEditor->cur->flags |= 4;
+                        gEditor->mode = EDIT_MODE_PLACE;
+                        gEditor->last = gEditor->cur;
                     }
-                } else if (gEditor_11->cur->prev == NULL) {
-                    gEditor_11->cur = edit_insert_piece(NULL, gEditor_11->cur, gEditor_11->f17B0);
-                    gEditor_11->cur->st |= 4;
-                    gEditor_11->mode = 9;
-                    gEditor_11->head = gEditor_11->cur;
+                } else if (gEditor->cur->prev == NULL) {
+                    gEditor->cur = edit_insert_piece(NULL, gEditor->cur, gEditor->selType);
+                    gEditor->cur->flags |= 4;
+                    gEditor->mode = EDIT_MODE_PLACE;
+                    gEditor->first = gEditor->cur;
                 }
                 break;
             case 5:
-                if (gEditor_11->cur != NULL) {
-                    gEditor_11->f190 = gEditor_11->cur;
+                if (gEditor->cur != NULL) {
+                    gEditor->start = gEditor->cur;
                 }
                 break;
             case 4:
-                if (gEditor_11->cur != NULL) {
-                    gEditor_11->f16B0 = gEditor_11->head->x;
-                    gEditor_11->f16B2 = gEditor_11->head->y;
-                    gEditor_11->mode = 4;
-                    gEditor_11->f16E0->fC &= ~1;
+                if (gEditor->cur != NULL) {
+                    gEditor->moveFromX = gEditor->first->x;
+                    gEditor->moveFromY = gEditor->first->y;
+                    gEditor->mode = EDIT_MODE_MOVE_TRACK;
+                    gEditor->menu->flags &= ~1;
                 }
                 break;
             case 7:
                 snd_play_menu_sound(2);
-                if (gEditor_11->f16E0 != &sEditMainMenu) {
-                    switch (gEditor_11->f16E8) {
+                if (gEditor->menu != &sEditMainMenu) {
+                    switch (gEditor->slideState) {
                     case 0:
-                        gEditor_11->f16E8 = 1;
-                        gEditor_11->f16E4 = &sEditMainMenu;
+                        gEditor->slideState = 1;
+                        gEditor->nextMenu = &sEditMainMenu;
                         break;
                     case 1:
-                        gEditor_11->f16E0 = &sEditMainMenu;
+                        gEditor->menu = &sEditMainMenu;
                         break;
                     case 2:
-                        gEditor_11->f16E8 = 3;
-                        gEditor_11->f16E4 = &sEditMainMenu;
+                        gEditor->slideState = 3;
+                        gEditor->nextMenu = &sEditMainMenu;
                         break;
                     case 3:
-                        gEditor_11->f16E8 = 1;
-                        gEditor_11->f16E0 = &sEditMainMenu;
+                        gEditor->slideState = 1;
+                        gEditor->menu = &sEditMainMenu;
                         break;
                     }
-                    gEditor_11->flags &= ~0x10000;
+                    gEditor->flags &= ~EDIT_A_HELD;
                 }
-                gEditor_11->f16C = 0;
+                gEditor->page = 0;
                 break;
             case 6:
-                if (gEditor_11->cur != NULL && chkg()) {
+                if (gEditor->cur != NULL && chkg()) {
                     DEL();
                 }
                 break;
             }
         } else if (PRESSED_2(0x20)) {
-            e = gEditor_11;
-            if (e->flags & 0x8000) {
+            e = gEditor;
+            if (e->flags & EDIT_CAN_DELETE) {
                 c = e->cur;
                 if (chk(e, c)) {
                     DEL();
                 }
             }
         }
-        if (gEditor_11->cur != NULL) {
-            s = gEditor_11->cur;
-            if (s->st & 4) {
+        if (gEditor->cur != NULL) {
+            s = gEditor->cur;
+            if (s->flags & 4) {
                 if (s->next == NULL) {
                     s = s->prev;
                 } else {
@@ -1411,188 +1087,128 @@ void edit_update_track_menu(void) {
                 edit_set_start_piece_choices();
             }
         }
-        if (gEditor_11->mode == 0 && gEditor_11->cur != NULL) {
-            if ((PRESSED_2(0x2000) && !(gEditor_11->flags & 1)) || (PRESSED_2(0x4000) && (gEditor_11->flags & 1))) {
-                if (gEditor_11->cur->prev != NULL) {
-                    gEditor_11->cur = gEditor_11->cur->prev;
+        if (gEditor->mode == EDIT_MODE_IDLE && gEditor->cur != NULL) {
+            if ((PRESSED_2(0x2000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_2(0x4000) && (gEditor->flags & EDIT_REVERSED))) {
+                if (gEditor->cur->prev != NULL) {
+                    gEditor->cur = gEditor->cur->prev;
                 }
-            } else if ((PRESSED_2(0x4000) && !(gEditor_11->flags & 1)) ||
-                       (PRESSED_2(0x2000) && (gEditor_11->flags & 1))) {
-                if (gEditor_11->cur->next != NULL) {
-                    gEditor_11->cur = gEditor_11->cur->next;
+            } else if ((PRESSED_2(0x4000) && !(gEditor->flags & EDIT_REVERSED)) ||
+                       (PRESSED_2(0x2000) && (gEditor->flags & EDIT_REVERSED))) {
+                if (gEditor->cur->next != NULL) {
+                    gEditor->cur = gEditor->cur->next;
                 }
             }
         }
     }
-    if (gEditor_11->cur != NULL) {
-        if (gEditor_11->cur->st & 2) {
-            gEditor_11->flags |= 8;
+    if (gEditor->cur != NULL) {
+        if (gEditor->cur->flags & 2) {
+            gEditor->flags |= EDIT_FLIP;
         } else {
-            gEditor_11->flags &= ~8;
+            gEditor->flags &= ~EDIT_FLIP;
         }
     }
 }
 
 #define PRESSED_3(m) ((gPadInput & (m)) && !(gPadInputPrev & (m)))
-#define IDX (sEditTrackMenu_3.p8[sEditTrackMenu_3.h10].hA)
+#define IDX (sEditTrackMenu.items[sEditTrackMenu.sel].value)
 
-#define INSERT(T)                                                                          \
-    if (gEditor_12->cur == NULL) {                                                         \
-        gEditor_12->cur = edit_insert_piece(NULL, NULL, &T[IDX]);                              \
-        gEditor_12->head = gEditor_12->cur;                                                \
-        gEditor_12->tail = gEditor_12->cur;                                                \
-        gEditor_12->f190 = gEditor_12->cur;                                                \
-    } else if (gEditor_12->cur->prev != NULL ||                                            \
-               ((gEditor_12->flags & 0x200) && gEditor_12->cur->next == NULL)) {          \
-        gEditor_12->cur = edit_insert_piece(gEditor_12->cur, gEditor_12->cur->next, &T[IDX]);  \
-        gEditor_12->tail = gEditor_12->cur;                                                \
+#define INSERT(B)                                                                          \
+    if (gEditor->cur == NULL) {                                                         \
+        gEditor->cur = edit_insert_piece(NULL, NULL, &gPieceTypes[(B) + IDX]);                              \
+        gEditor->first = gEditor->cur;                                                \
+        gEditor->last = gEditor->cur;                                                \
+        gEditor->start = gEditor->cur;                                                \
+    } else if (gEditor->cur->prev != NULL ||                                            \
+               ((gEditor->flags & EDIT_OPEN_END) && gEditor->cur->next == NULL)) {          \
+        gEditor->cur = edit_insert_piece(gEditor->cur, gEditor->cur->next, &gPieceTypes[(B) + IDX]);  \
+        gEditor->last = gEditor->cur;                                                \
     } else {                                                                               \
-        gEditor_12->cur = edit_insert_piece(NULL, gEditor_12->cur, &T[IDX]);                   \
-        gEditor_12->head = gEditor_12->cur;                                                \
+        gEditor->cur = edit_insert_piece(NULL, gEditor->cur, &gPieceTypes[(B) + IDX]);                   \
+        gEditor->first = gEditor->cur;                                                \
     }
 
-typedef struct Ctl_24 {
-    u8 pad0[0xC];
-    u32 fC;
-} Ctl_24;
-
-typedef struct Node_26 {
-    s16 used;
-    s16 pad2;
-    struct Node_26 *next;
-    struct Node_26 *prev;
-    s16 x;
-    s16 y;
-    u16 st;
-    s16 idx;
-    Ent_4 *pt;
-} Node_26;
-
-typedef struct Edit_2 {
-    u8 pad0[0x170];
-    s32 mode;
-    u32 flags;
-    u32 pad178;
-    Node_26 *head;
-    Node_26 *tail;
-    Node_26 *cur;
-    Node_26 *f188;
-    Node_26 *f18C;
-    Node_26 *f190;
-    u8 pad194[0x16AC - 0x194];
-    s16 *size;
-    u8 pad16B0[6];
-    s16 scrollx;
-    s16 scrolly;
-    u8 pad16BA[0x16E0 - 0x16BA];
-    Ctl_24 *f16E0;
-    u8 pad16E4[0x16FC - 0x16E4];
-    s32 f16FC;
-    u8 pad1700[0x17B0 - 0x1700];
-    Ent_4 *f17B0;
-    u8 pad17B4[0x1800 - 0x17B4];
-    s16 f1800;
-} Edit_2;
-
-typedef struct Sel_4 {
-    u8 pad0[0xA];
-    s16 hA;
-    u8 padC[4];
-} Sel_4;
-
-typedef struct Menu_7 {
-    u8 pad0[6];
-    s16 h6;
-    Sel_4 *p8;
-    u8 padC[4];
-    s16 h10;
-} Menu_7;
-
-extern Edit_2 *gEditor_12;
-extern Menu_7 sEditTrackMenu_3;
-
-s32 gui_menu_input_3(Ctl_24 *c);
+s32 gui_menu_input_3(GuiMenu *c);
 
 void edit_update_place_piece(void) {
-    Node_26 *cur;
-    Node_26 *c;
-    Node_26 *p;
-    Node_26 *n;
+    EditPiece *cur;
+    EditPiece *c;
+    EditPiece *p;
+    EditPiece *n;
     s32 i;
     s32 j;
     s32 ok;
 
-    c = gEditor_12->cur;
-    p = gEditor_12->f188;
+    c = gEditor->cur;
+    p = gEditor->markStart;
     if (c != NULL && c->prev == NULL && c->next == NULL) {
-        if ((PRESSED_3(0x2000) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x4000) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrollx >= -30) {
-                gEditor_12->scrollx--;
+        if ((PRESSED_3(0x2000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x4000) && (gEditor->flags & EDIT_REVERSED))) {
+            if (gEditor->scrollX >= -30) {
+                gEditor->scrollX--;
             }
         }
-        if ((PRESSED_3(0x4000) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x2000) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrollx < 31) {
-                gEditor_12->scrollx++;
+        if ((PRESSED_3(0x4000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x2000) && (gEditor->flags & EDIT_REVERSED))) {
+            if (gEditor->scrollX < 31) {
+                gEditor->scrollX++;
             }
         }
-        if ((PRESSED_3(0x1000) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x800) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrolly >= -30) {
-                gEditor_12->scrolly--;
+        if ((PRESSED_3(0x1000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x800) && (gEditor->flags & EDIT_REVERSED))) {
+            if (gEditor->scrollY >= -30) {
+                gEditor->scrollY--;
             }
         }
-        if ((PRESSED_3(0x800) && !(gEditor_12->flags & 1)) || (PRESSED_3(0x1000) && (gEditor_12->flags & 1))) {
-            if (gEditor_12->scrolly < 31) {
-                gEditor_12->scrolly++;
+        if ((PRESSED_3(0x800) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_3(0x1000) && (gEditor->flags & EDIT_REVERSED))) {
+            if (gEditor->scrollY < 31) {
+                gEditor->scrollY++;
             }
         }
     }
     if (p != NULL) {
         do {
             p = p->next;
-        } while (p->prev != gEditor_12->f18C);
+        } while (p->prev != gEditor->markEnd);
     }
     if (PRESSED_3(0x10000)) {
-        if ((gEditor_12->cur->pt->fC.w & 0x300000) == 0x300000) {
+        if ((*(u32 *)&gEditor->cur->type->flags & 0x300000) == 0x300000 /* flags 0x30 tested as a word */) {
             gPadInput &= 0x10000;
             snd_play_menu_sound(0);
-            for (i = 0; i < gEditor_12->cur->pt->dim[(gEditor_12->cur->idx + 1) & 1]; i++) {
-                for (j = 0; j < gEditor_12->cur->pt->dim[gEditor_12->cur->idx & 1]; j++) {
-                    if (gEditor_12->cur->x + j >= 0 && gEditor_12->cur->x + j < gEditor_12->size[0] &&
-                        gEditor_12->cur->y + i >= 0 && gEditor_12->cur->y + i < gEditor_12->size[1]) {
-                        arned_set_cell(gEditor_12->cur->x + j, gEditor_12->cur->y + i, 0, 0, 0, 0, 0, 0, 0);
+            for (i = 0; i < gEditor->cur->type->dim[(gEditor->cur->rot + 1) & 1]; i++) {
+                for (j = 0; j < gEditor->cur->type->dim[gEditor->cur->rot & 1]; j++) {
+                    if (gEditor->cur->x + j >= 0 && gEditor->cur->x + j < gEditor->gridSize[0] &&
+                        gEditor->cur->y + i >= 0 && gEditor->cur->y + i < gEditor->gridSize[1]) {
+                        arned_set_cell(gEditor->cur->x + j, gEditor->cur->y + i, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
             }
-            gEditor_12->flags ^= 8;
-            if (gEditor_12->flags & 8) {
-                gEditor_12->cur->st |= 2;
+            gEditor->flags ^= 8;
+            if (gEditor->flags & EDIT_FLIP) {
+                gEditor->cur->flags |= 2;
             } else {
-                gEditor_12->cur->st &= ~2;
+                gEditor->cur->flags &= ~2;
             }
         }
-        p = gEditor_12->head;
+        p = gEditor->first;
         if (p != NULL) {
             do {
                 edit_update_piece_ports(p);
                 p = p->next;
-            } while (p != NULL && p != gEditor_12->head);
+            } while (p != NULL && p != gEditor->first);
         }
     } else if (PRESSED_3(0x20000)) {
-        if (gEditor_12->cur != NULL && (gEditor_12->cur->pt->fC.h.hi & 0x40)) {
-            gEditor_12->f16E0->fC &= ~1;
+        if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_USER)) {
+            gEditor->menu->flags &= ~1;
             edit_update_user_piece_usage();
             edit_user_piece_reset_cursor(0);
-            if (gEditor_12->cur->pt->fC.h.hi & 0x400) {
-                gEditor_12->mode = 10;
-            } else if (gEditor_12->cur->pt->fC.h.hi & 0x200) {
-                gEditor_12->mode = 11;
+            if (gEditor->cur->type->flags & PIECE_USED_TWICE) {
+                gEditor->mode = EDIT_MODE_WARN_MULTI;
+            } else if (gEditor->cur->type->flags & PIECE_SIZE_LOCKED) {
+                gEditor->mode = EDIT_MODE_WARN_LOCKED;
             } else {
-                gEditor_12->mode = 6;
+                gEditor->mode = EDIT_MODE_USER_PIECE;
             }
         }
     }
-    n = gEditor_12->cur;
-    if (n->st & 4) {
+    n = gEditor->cur;
+    if (n->flags & 4) {
         if (n->next == NULL) {
             n = n->prev;
         } else {
@@ -1604,151 +1220,134 @@ void edit_update_place_piece(void) {
     } else {
         edit_set_start_piece_choices();
     }
-    if (gEditor_12->mode == 6) {
+    if (gEditor->mode == EDIT_MODE_USER_PIECE) {
         edit_update_user_piece();
-        gEditor_12->flags |= 0x200;
-    } else if (gui_menu_input_3(gEditor_12->f16E0)) {
+        gEditor->flags |= EDIT_OPEN_END;
+    } else if (gui_menu_input_3(gEditor->menu)) {
         ok = 0;
-        switch (sEditTrackMenu_3.h10) {
+        switch (sEditTrackMenu.sel) {
         case 3:
             edit_remove_preview_pieces_2();
-            gEditor_12->f16FC = IDX;
-            INSERT(gPieceTypesUser);
+            gEditor->userPiece = IDX;
+            INSERT(PIECE_TYPE_USER);
             ok = 1;
             break;
         case 0:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypes);
+            INSERT(PIECE_TYPE_STRAIGHT);
             ok = 1;
             break;
         case 1:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesTurn);
+            INSERT(PIECE_TYPE_TURN);
             ok = 1;
             break;
         case 2:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesJump);
+            INSERT(PIECE_TYPE_JUMP);
             ok = 1;
             break;
         }
-        gEditor_12->flags &= ~0x200;
+        gEditor->flags &= ~EDIT_OPEN_END;
         if (ok) {
-            gEditor_12->cur->st &= ~4;
-            if (edit_update_fitting_pieces(gEditor_12->cur)) {
-                cur = gEditor_12->cur;
+            gEditor->cur->flags &= ~4;
+            if (edit_update_fitting_pieces(gEditor->cur)) {
+                cur = gEditor->cur;
                 if (cur->prev == NULL) {
                     if (cur->next == NULL) {
-                        gEditor_12->cur = edit_insert_piece(cur, NULL, gEditor_12->f17B0);
-                        gEditor_12->cur->st |= 4;
-                        gEditor_12->tail = gEditor_12->cur;
-                        gEditor_12->flags |= 0x200;
+                        gEditor->cur = edit_insert_piece(cur, NULL, gEditor->selType);
+                        gEditor->cur->flags |= 4;
+                        gEditor->last = gEditor->cur;
+                        gEditor->flags |= EDIT_OPEN_END;
                     } else {
-                        gEditor_12->cur = edit_insert_piece(NULL, cur, gEditor_12->f17B0);
-                        gEditor_12->cur->st |= 4;
-                        gEditor_12->head = gEditor_12->cur;
+                        gEditor->cur = edit_insert_piece(NULL, cur, gEditor->selType);
+                        gEditor->cur->flags |= 4;
+                        gEditor->first = gEditor->cur;
                     }
                 } else {
-                    gEditor_12->cur = edit_insert_piece(cur, NULL, gEditor_12->f17B0);
-                    gEditor_12->cur->st |= 4;
-                    gEditor_12->tail = gEditor_12->cur;
+                    gEditor->cur = edit_insert_piece(cur, NULL, gEditor->selType);
+                    gEditor->cur->flags |= 4;
+                    gEditor->last = gEditor->cur;
                 }
             } else {
-                edit_try_close_loop(gEditor_12->cur);
-                gEditor_12->mode = 0;
-                gEditor_12->flags |= 0x800;
-                if (gEditor_12->head->prev != NULL) {
-                    gEditor_12->f1800 = 2;
-                    sEditTrackMenu_3.h10 = 7;
-                    sEditTrackMenu_3.h6 = 7;
+                edit_try_close_loop(gEditor->cur);
+                gEditor->mode = EDIT_MODE_IDLE;
+                gEditor->flags |= EDIT_MESSAGE;
+                if (gEditor->first->prev != NULL) {
+                    gEditor->message = 2;
+                    sEditTrackMenu.sel = 7;
+                    sEditTrackMenu.cursor = 7;
                 } else {
-                    gEditor_12->f1800 = 3;
+                    gEditor->message = 3;
                 }
-                gEditor_12->f16E0->fC &= ~1;
+                gEditor->menu->flags &= ~1;
             }
         }
     } else {
-        switch (sEditTrackMenu_3.h10) {
+        switch (sEditTrackMenu.sel) {
         case 3:
             edit_remove_preview_pieces_2();
-            gEditor_12->f16FC = IDX;
-            INSERT(gPieceTypesUser);
-            gEditor_12->cur->st |= 4;
+            gEditor->userPiece = IDX;
+            INSERT(PIECE_TYPE_USER);
+            gEditor->cur->flags |= 4;
             break;
         case 0:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypes);
-            gEditor_12->cur->st |= 4;
+            INSERT(PIECE_TYPE_STRAIGHT);
+            gEditor->cur->flags |= 4;
             break;
         case 1:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesTurn);
-            gEditor_12->cur->st |= 4;
+            INSERT(PIECE_TYPE_TURN);
+            gEditor->cur->flags |= 4;
             break;
         case 2:
             edit_remove_preview_pieces_2();
-            INSERT(gPieceTypesJump);
-            gEditor_12->cur->st |= 4;
+            INSERT(PIECE_TYPE_JUMP);
+            gEditor->cur->flags |= 4;
             break;
         }
     }
-    edit_update_piece_ports(gEditor_12->cur);
+    edit_update_piece_ports(gEditor->cur);
 }
 
-typedef struct Node_27 {
-    s32 f0;
-    struct Node_27 *n4;
-    struct Node_27 *n8;
-    s32 f0c;
-    u16 flags;
-} Node_27;
-
-typedef struct Gs_2 {
-    u8 pad[0x17C];
-    Node_27 *f17c;
-    Node_27 *f180;
-    Node_27 *f184;
-} Gs_2;
-
-extern Gs_2 *gEditor_13;
-
-void edit_remove_preview_pieces(s32 arg0) {
-    Node_27 *n;
-    Node_27 *cur;
+void edit_remove_preview_pieces(EditPiece *piece) {
+    EditPiece *n;
+    EditPiece *cur;
     s32 f;
 
-    n = gEditor_13->f184;
+    n = gEditor->cur;
     while (n != 0 && (n->flags & 4) != 0) {
-        n = n->n8;
+        n = n->prev;
     }
     f = 1;
     if (n == 0) {
-        n = gEditor_13->f184;
+        n = gEditor->cur;
         while (n != 0) {
             if ((n->flags & 4) == 0) {
                 break;
             }
-            n = n->n4;
+            n = n->next;
         }
         f = 0;
     }
-    gEditor_13->f184 = n;
+    gEditor->cur = n;
     if (n == 0) {
-        n = gEditor_13->f17c;
+        n = gEditor->first;
         f = 1;
-        gEditor_13->f17c = 0;
-        gEditor_13->f180 = 0;
+        gEditor->first = 0;
+        gEditor->last = 0;
     } else if (f != 0) {
-        gEditor_13->f180 = n;
+        gEditor->last = n;
     } else {
-        gEditor_13->f17c = n;
+        gEditor->first = n;
     }
     while (n != 0) {
         cur = n;
         if (f != 0) {
-            n = cur->n4;
+            n = cur->next;
         } else {
-            n = cur->n8;
+            n = cur->prev;
         }
         if ((cur->flags & 4) != 0) {
             edit_delete_piece(cur);
@@ -1756,89 +1355,81 @@ void edit_remove_preview_pieces(s32 arg0) {
     }
 }
 
-typedef struct Game_37 {
-    u8 pad0[0x17C];
-    Node_28 *first;        /* 0x17C */
-    Node_28 *last;         /* 0x180 */
-} Game_37;
-
-extern Game_37 *gEditor_14;
-
-void edit_try_close_loop(Node_28 *n)
+void edit_try_close_loop(EditPiece *n)
 {
-    Node_28 *c;
+    EditPiece *c;
 
-    for (c = gEditor_14->first; c != NULL; c = c->a) {
-        if (c->b == gEditor_14->last) {
+    for (c = gEditor->first; c != NULL; c = c->next) {
+        if (c->prev == gEditor->last) {
             return;
         }
-        if (c->a != NULL && c->b != NULL) {
+        if (c->next != NULL && c->prev != NULL) {
             continue;
         }
         if (c == n) {
             continue;
         }
-        if (c->b == NULL) {
-            if (n->a == NULL && ((n->dirB - c->dirA) & 3) == 2) {
-                switch (n->dirB) {
+        if (c->prev == NULL) {
+            if (n->next == NULL && ((n->dir[1] - c->dir[0]) & 3) == 2) {
+                switch (n->dir[1]) {
                 case 0:
-                    if (n->y + n->h == c->y && n->x + n->f1E == c->x + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (n->y + n->h == c->y && n->x + n->off[1] == c->x + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 case 2:
-                    if (c->y + c->h == n->y && n->x + n->f1E == c->x + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (c->y + c->h == n->y && n->x + n->off[1] == c->x + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 case 1:
-                    if (n->x + n->w == c->x && n->y + n->f1E == c->y + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (n->x + n->w == c->x && n->y + n->off[1] == c->y + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 case 3:
-                    if (n->x == c->x + c->w && n->y + n->f1E == c->y + c->f1C) {
-                        n->a = c;
-                        c->b = n;
+                    if (n->x == c->x + c->w && n->y + n->off[1] == c->y + c->off[0]) {
+                        n->next = c;
+                        c->prev = n;
                         return;
                     }
                     break;
                 }
             }
         } else {
-            if (n->b == NULL && ((n->dirA - c->dirB) & 3) == 2) {
-                switch (n->dirA) {
+            if (n->prev == NULL && ((n->dir[0] - c->dir[1]) & 3) == 2) {
+                switch (n->dir[0]) {
                 case 0:
-                    if (n->y + n->h == c->y && n->x + n->f1C == c->x + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (n->y + n->h == c->y && n->x + n->off[0] == c->x + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
                 case 2:
-                    if (c->y + c->h == n->y && n->x + n->f1C == c->x + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (c->y + c->h == n->y && n->x + n->off[0] == c->x + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
                 case 1:
-                    if (n->x + n->w == c->x && n->y + n->f1C == c->y + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (n->x + n->w == c->x && n->y + n->off[0] == c->y + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
                 case 3:
-                    if (n->x == c->x + c->w && n->y + n->f1C == c->y + c->f1E) {
-                        n->b = c;
-                        c->a = n;
+                    if (n->x == c->x + c->w && n->y + n->off[0] == c->y + c->off[1]) {
+                        n->prev = c;
+                        c->next = n;
                         return;
                     }
                     break;
@@ -1854,104 +1445,23 @@ void edit_try_close_loop(Node_28 *n)
 
 #define CALC1(F, R, A, B, C, D)                                                          \
     {                                                                                    \
-        f32 x = gEditor_15->F;                                                           \
+        f32 x = gEditor->F;                                                           \
         s32 t = (s32)((x - A) * B / C + D);                                              \
-        gEditor_15->R = t;                                                               \
+        gEditor->R = t;                                                               \
         fs = (f32)t * (f32)t + x * x;                                                    \
     }
 
-#define CALC2(R, O)                                                                          {                                                                                            s32 s = (s32)__builtin_sqrtf(fs);                                                        gEditor_15->O = (u16)math_asini(((gEditor_15->R << 14) / s) & 0x3FFF);            }
-
-typedef struct Ctl_27 Ctl_27;
-
-typedef struct Rec_48 {
-    s32 f0;
-    struct Rec_48 *next;
-    struct Rec_48 *p8;
-} Rec_48;
-
-typedef struct {
-    u8 pad0[0xC];
-    u16 hC;
-} Info_4;
-
-typedef struct {
-    u8 pad0[0x14];
-    Info_4 *p14;
-} Track_18;
-
-typedef struct {
-    u8 pad0[0x16C];
-    s32 f16C;
-    s32 f170;
-    u32 f174;
-    s32 f178;
-    Rec_48 *f17C;
-    Rec_48 *f180;
-    Track_18 *f184;
-    u8 pad188[0x190 - 0x188];
-    s32 f190;
-    u8 pad194[0x16E0 - 0x194];
-    Ctl_27 *f16E0;
-    Ctl_27 *f16E4;
-    s32 f16E8;
-    u8 pad16EC[0x16F6 - 0x16EC];
-    u16 f16F6;
-    u8 pad16F8[0x172C - 0x16F8];
-    s32 f172C;
-    s32 f1730;
-    s32 f1734;
-    s32 f1738;
-    s32 f173C;
-    s32 f1740;
-    Track_18 *f1744;
-    Track_18 *f1748;
-    u8 pad174C[0x1758 - 0x174C];
-    s32 f1758;
-    s32 f175C;
-    u8 pad1760[0x17B0 - 0x1760];
-    void *f17B0;
-} Edit_3;
-
-typedef struct {
-    s32 f0;
-    u32 f4;
-    s32 f8;
-    s32 fC;
-} Btn;
-
-typedef struct {
-    u8 pad0[0x54];
-    u32 f54;
-} Lbl;
-
-typedef struct {
-    u8 pad0[0xA];
-    s16 hA;
-    u8 padC[4];
-} Sel_5;
-
-typedef struct {
-    u8 pad0[8];
-    Sel_5 *p8;
-    u8 padC[4];
-    s16 h10;
-} Menu_8;
-
-extern Edit_3 *gEditor_15;
-extern Btn sEditMainMenuItems[];
-extern Lbl sEditTrackMenuItems_2;
-extern Menu_8 sEditTrackMenu_4;
+#define CALC2(R, O)                                                                          {                                                                                            s32 s = (s32)__builtin_sqrtf(fs);                                                        gEditor->O = (u16)math_asini(((gEditor->R << 14) / s) & 0x3FFF);            }
 
 void edit_update(void) {
-    Edit_3 *g;
-    Rec_48 *p;
+    Editor *g;
+    EditPiece *p;
     f32 fs;
 
-    g = gEditor_15;
-    if (g->f1744 != g->f184) {
-        g->f1748 = g->f1744;
-        g->f1744 = g->f184;
+    g = gEditor;
+    if (g->lastCur != g->cur) {
+        g->prevCur = g->lastCur;
+        g->lastCur = g->cur;
     }
     if ((gPadInput & 4) && ABS(STKY(gPadInput)) >= 3) {
         gPadInput |= 0x2000;
@@ -1966,76 +1476,76 @@ void edit_update(void) {
         gPadInput |= 0x1000;
     }
     if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10)) {
-        gEditor_15->f174 |= 0x10000;
-    } else if (gEditor_15->f174 & 0x10000) {
+        gEditor->flags |= EDIT_A_HELD;
+    } else if (gEditor->flags & EDIT_A_HELD) {
         if (((gPadInput & 0x20) && !(gPadInputPrev & 0x20)) || !(gPadInput & 0x10)) {
-            gEditor_15->f174 &= ~0x10000;
+            gEditor->flags &= ~EDIT_A_HELD;
         }
     }
-    if (gEditor_15->f1758 != 0) {
-        gEditor_15->f1738 += gEditor_15->f175C / 50;
-        gEditor_15->f1758--;
-        CALC1(f1738, f1740, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
-        CALC2(f1740, f173C);
-    } else if (gEditor_15->f184 != 0) {
+    if (gEditor->camZoomFrames != 0) {
+        gEditor->cam[1].dist += gEditor->camZoomStep / 50;
+        gEditor->camZoomFrames--;
+        CALC1(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
+        CALC2(cam[1].height, cam[1].pitch);
+    } else if (gEditor->cur != 0) {
         if (gPadInput & 0x80) {
-            if (gEditor_15->f170 == 6) {
-                gEditor_15->f1738 -= 600;
-                if (gEditor_15->f1738 < 20000) {
-                    gEditor_15->f1738 = 20000;
+            if (gEditor->mode == EDIT_MODE_USER_PIECE) {
+                gEditor->cam[1].dist -= 600;
+                if (gEditor->cam[1].dist < 20000) {
+                    gEditor->cam[1].dist = 20000;
                 }
-                CALC1(f1738, f1740, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
-                CALC2(f1740, f173C);
+                CALC1(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
+                CALC2(cam[1].height, cam[1].pitch);
             } else {
-                gEditor_15->f172C -= 600;
-                if (gEditor_15->f172C < 20000) {
-                    gEditor_15->f172C = 20000;
+                gEditor->cam[0].dist -= 600;
+                if (gEditor->cam[0].dist < 20000) {
+                    gEditor->cam[0].dist = 20000;
                 }
-                CALC1(f172C, f1734, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
-                CALC2(f1734, f1730);
+                CALC1(cam[0].dist, cam[0].height, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
+                CALC2(cam[0].height, cam[0].pitch);
             }
         }
         if (gPadInput & 0x100) {
-            if (gEditor_15->f170 == 6) {
-                gEditor_15->f1738 += 600;
-                if (gEditor_15->f1738 > 120000) {
-                    gEditor_15->f1738 = 120000;
+            if (gEditor->mode == EDIT_MODE_USER_PIECE) {
+                gEditor->cam[1].dist += 600;
+                if (gEditor->cam[1].dist > 120000) {
+                    gEditor->cam[1].dist = 120000;
                 }
-                CALC1(f1738, f1740, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
-                CALC2(f1740, f173C);
+                CALC1(cam[1].dist, cam[1].height, 20000.0f, 32000.0f, 100000.0f, 8000.0f);
+                CALC2(cam[1].height, cam[1].pitch);
             } else {
-                gEditor_15->f172C += 600;
-                if (gEditor_15->f172C > 185000) {
-                    gEditor_15->f172C = 185000;
+                gEditor->cam[0].dist += 600;
+                if (gEditor->cam[0].dist > 185000) {
+                    gEditor->cam[0].dist = 185000;
                 }
-                CALC1(f172C, f1734, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
-                CALC2(f1734, f1730);
+                CALC1(cam[0].dist, cam[0].height, 20000.0f, 38000.0f, 165000.0f, 40000.0f);
+                CALC2(cam[0].height, cam[0].pitch);
             }
         }
     }
-    if (gEditor_15->f184 != 0) {
+    if (gEditor->cur != 0) {
         if ((gPadInput & 0x200) && !(gPadInputPrev & 0x200)) {
-            if (gEditor_15->f174 & 2) {
-                gEditor_15->f174 &= ~2;
-            } else if (gEditor_15->f174 & 4) {
-                gEditor_15->f174 &= ~4;
+            if (gEditor->flags & EDIT_TURN_LEFT) {
+                gEditor->flags &= ~EDIT_TURN_LEFT;
+            } else if (gEditor->flags & EDIT_TURN_RIGHT) {
+                gEditor->flags &= ~EDIT_TURN_RIGHT;
             } else {
-                gEditor_15->f174 |= 2;
+                gEditor->flags |= EDIT_TURN_LEFT;
             }
         }
         if ((gPadInput & 0x400) && !(gPadInputPrev & 0x400)) {
-            if (gEditor_15->f174 & 4) {
-                gEditor_15->f174 &= ~4;
-            } else if (gEditor_15->f174 & 2) {
-                gEditor_15->f174 &= ~2;
+            if (gEditor->flags & EDIT_TURN_RIGHT) {
+                gEditor->flags &= ~EDIT_TURN_RIGHT;
+            } else if (gEditor->flags & EDIT_TURN_LEFT) {
+                gEditor->flags &= ~EDIT_TURN_LEFT;
             } else {
-                gEditor_15->f174 |= 4;
+                gEditor->flags |= EDIT_TURN_RIGHT;
             }
         }
     }
-    sEditUserPieceItemCount[0] = gEditor_15->f16F6;
-    if (gEditor_15->f16E0 != NULL) {
-        gui_menu_fix_cursor(gEditor_15->f16E0);
+    sEditTrackMenuItems[3].count = gEditor->userPieceCount;
+    if (gEditor->menu != NULL) {
+        gui_menu_fix_cursor(gEditor->menu);
     }
     if (sEditCamMoving == 0) {
         edit_cam_update_target();
@@ -2043,64 +1553,64 @@ void edit_update(void) {
     if (sEditCamMoving != 0) {
         edit_cam_step();
     }
-    if (gEditor_15->f184 == NULL) {
+    if (gEditor->cur == NULL) {
         edit_set_start_piece_choices();
     }
-    if (gEditor_15->f184 == NULL) {
-        sEditMainMenuItems[0].f4 &= ~0x10;
-        sEditMainMenuItems[6].f4 &= ~0x10;
+    if (gEditor->cur == NULL) {
+        sEditMainMenuItems[0].flags &= ~0x10;
+        sEditMainMenuItems[6].flags &= ~0x10;
     } else {
-        sEditMainMenuItems[0].f4 |= 0x10;
-        sEditMainMenuItems[6].f4 |= 0x10;
+        sEditMainMenuItems[0].flags |= 0x10;
+        sEditMainMenuItems[6].flags |= 0x10;
     }
-    if (gEditor_15->f184 != NULL && (gEditor_15->f184->p14->hC & 2) && gEditor_15->f190 != 0) {
-        sEditTrackMenuItems_2.f54 |= 0x10;
+    if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_START) && gEditor->start != NULL) {
+        sEditTrackMenuItems[5].flags |= 0x10;
     } else {
-        sEditTrackMenuItems_2.f54 &= ~0x10;
+        sEditTrackMenuItems[5].flags &= ~0x10;
     }
-    if (gEditor_15->f190 != 0) {
-        sEditMainMenuItems[4].f4 |= 0x10;
-        sEditMainMenuItems[5].f4 |= 0x10;
+    if (gEditor->start != 0) {
+        sEditMainMenuItems[4].flags |= 0x10;
+        sEditMainMenuItems[5].flags |= 0x10;
     } else {
-        sEditMainMenuItems[4].f4 &= ~0x10;
-        sEditMainMenuItems[5].f4 &= ~0x10;
+        sEditMainMenuItems[4].flags &= ~0x10;
+        sEditMainMenuItems[5].flags &= ~0x10;
     }
-    if (gEditor_15->f190 != 0 && gEditor_15->f17C->p8 == gEditor_15->f180) {
-        sEditMainMenuItems[3].f4 |= 0x10;
+    if (gEditor->start != 0 && gEditor->first->prev == gEditor->last) {
+        sEditMainMenuItems[3].flags |= 0x10;
     } else {
-        sEditMainMenuItems[3].f4 &= ~0x10;
+        sEditMainMenuItems[3].flags &= ~0x10;
     }
-    if (gEditor_15->f16E0 != NULL) {
-        gui_menu_fix_cursor(gEditor_15->f16E0);
+    if (gEditor->menu != NULL) {
+        gui_menu_fix_cursor(gEditor->menu);
     }
-    if (gEditor_15->f16E8 == 3 && gEditor_15->f16E4 != NULL) {
-        gEditor_15->f16E8 = 1;
-        gEditor_15->f16E0 = gEditor_15->f16E4;
-        gEditor_15->f16E4 = NULL;
+    if (gEditor->slideState == 3 && gEditor->nextMenu != NULL) {
+        gEditor->slideState = 1;
+        gEditor->menu = gEditor->nextMenu;
+        gEditor->nextMenu = NULL;
     }
-    switch (sEditTrackMenu_4.h10) {
+    switch (sEditTrackMenu.sel) {
     case 0:
-        gEditor_15->f17B0 = &gPieceTypes[sEditTrackMenu_4.p8[0].hA];
+        gEditor->selType = &gPieceTypes[sEditTrackMenu.items[0].value];
         break;
     case 1:
-        gEditor_15->f17B0 = &gPieceTypesTurn[sEditTrackMenu_4.p8[1].hA];
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_TURN + sEditTrackMenu.items[1].value];
         break;
     case 2:
-        gEditor_15->f17B0 = &gPieceTypesJump[sEditTrackMenu_4.p8[2].hA];
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_JUMP + sEditTrackMenu.items[2].value];
         break;
     case 3:
-        gEditor_15->f17B0 = &gPieceTypesUser[sEditTrackMenu_4.p8[3].hA];
+        gEditor->selType = &gPieceTypes[PIECE_TYPE_USER + sEditTrackMenu.items[3].value];
         break;
     }
-    if (gEditor_15->f174 & 0x10) {
-        if (++gEditor_15->f178 >= 0) {
-            if (gEditor_15->f174 & 0x400) {
+    if (gEditor->flags & EDIT_EXIT) {
+        if (++gEditor->exitTimer >= 0) {
+            if (gEditor->flags & EDIT_TEST_TRACK) {
                 usrtrk_layout_from_editor();
             }
             gCurGameState->mode = 3;
         }
     } else {
-        switch (gEditor_15->f16C) {
+        switch (gEditor->page) {
         case 0:
             edit_update_main_menu();
             break;
@@ -2109,26 +1619,16 @@ void edit_update(void) {
             break;
         }
     }
-    p = gEditor_15->f17C;
+    p = gEditor->first;
     if (p != NULL) {
         do {
             edit_update_piece_ports(p);
             p = p->next;
-        } while (p != NULL && p != gEditor_15->f17C);
+        } while (p != NULL && p != gEditor->first);
     }
 }
 
 #define RAW(g, a, b) { Gfx *_g = (Gfx *)(g); _g->words.w0 = (a); _g->words.w1 = (b); }
-
-typedef struct {
-    char pad0[0x16C5];
-    u8 name[11];
-    s32 sel;
-    char pad1[0x8];
-    s32 mode;
-    char pad2[0x38];
-    s32 *font;
-} Menu_9;
 
 typedef struct {
     char pad0[4];
@@ -2136,13 +1636,12 @@ typedef struct {
 } Res_8;
 
 extern Res_8 *gGui_5;
-extern Menu_9 *gEditor_16;
 
 Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
 {
     s32 u, j, m, i, k, y0, xo, t, yoff, yy, idx, x, c, s, f;
     u8 *p;
-    Menu_9 *mp;
+    Editor *mp;
     u8 buf[8];
 
     RAW(gdl++, 0xE3000C00, 0);
@@ -2153,23 +1652,23 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
     RAW(gdl++, 0xD7000002, 0x80008000);
     p = gGui_5->img + 0x48;
     gdl = render_draw_image(0xBC, 0x78 - (p[1] >> 1), p, gdl, arg1, 1, 1, 6, 0);
-    font_text_create(gEditor_16->font, 0x40, 2, 2, 0x20);
-    font_text_add(gEditor_16->font, sStrTrackNameLabel);
-    font_draw_text(gEditor_16->font, 0xCC, 0xA7);
+    font_text_create(gEditor->bigText, 0x40, 2, 2, 0x20);
+    font_text_add(gEditor->bigText, sStrTrackNameLabel);
+    font_draw_text(gEditor->bigText, 0xCC, 0xA7);
     c = -0xF2;
     for (i = 0; i < 5; i++) {
         for (k = 0, idx = i << 3; k < 8; k++) {
-            mp = gEditor_16;
+            mp = gEditor;
             s = 1;
             if (idx >= 0x26) s = 2;
             f = 2;
-            if (idx == mp->sel) f = 7;
-            if (mp->mode == 10 && idx < 0x26) font_text_create(mp->font, 0x20, s, f, 0x20000021);
-            else font_text_create(mp->font, 0x20, s, f, 0x21);
-            font_text_add(gEditor_16->font, gKeyboardKeys[idx]);
+            if (idx == mp->nameKey) f = 7;
+            if (mp->nameLen == 10 && idx < 0x26) font_text_create(mp->bigText, 0x20, s, f, 0x20000021);
+            else font_text_create(mp->bigText, 0x20, s, f, 0x21);
+            font_text_add(gEditor->bigText, gKeyboardKeys[idx]);
             x = k * 26 - (i * 5 + c);
-            font_draw_text(gEditor_16->font, x, i * 17 + 0x48);
-            if (idx == gEditor_16->sel) {
+            font_draw_text(gEditor->bigText, x, i * 17 + 0x48);
+            if (idx == gEditor->nameKey) {
                 p = gGui_5->img + 0x50;
                 gdl = render_draw_image(x - p[0] * 4 + 4, i * 17 - (p[1] >> 1) + 0x49, p, gdl, arg1, 1, 1, 6, 0);
                 do { } while (0);
@@ -2180,21 +1679,21 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
         }
     }
     for (j = 0; j < 10; j++) {
-        if (gEditor_16->name[j] == 0) break;
+        if (gEditor->nameBuf[j] == 0) break;
         f = 2;
-        if (j == gEditor_16->mode) f = 7;
-        font_text_create(gEditor_16->font, 0x20, 2, f, 0x21);
-        buf[0] = gEditor_16->name[j];
+        if (j == gEditor->nameLen) f = 7;
+        font_text_create(gEditor->bigText, 0x20, 2, f, 0x21);
+        buf[0] = gEditor->nameBuf[j];
         buf[1] = 0;
-        font_text_add(gEditor_16->font, buf);
-        font_draw_text(gEditor_16->font, j * 13 + 0x121, 0xA5);
+        font_text_add(gEditor->bigText, buf);
+        font_draw_text(gEditor->bigText, j * 13 + 0x121, 0xA5);
     }
     for (j = 0; j < 10; j++) {
         f = 2;
-        if (j == gEditor_16->mode) f = 7;
-        font_text_create(gEditor_16->font, 0x20, 1, f, 0x21);
-        font_text_add(gEditor_16->font, sStrNameUnderline);
-        font_draw_text(gEditor_16->font, j * 13 + 0x120, 0xAB);
+        if (j == gEditor->nameLen) f = 7;
+        font_text_create(gEditor->bigText, 0x20, 1, f, 0x21);
+        font_text_add(gEditor->bigText, sStrNameUnderline);
+        font_draw_text(gEditor->bigText, j * 13 + 0x120, 0xAB);
     }
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gDPPipeSync(gdl++);
@@ -2202,61 +1701,11 @@ Gfx *edit_draw_name_entry(Gfx *gdl, s32 arg1)
 }
 
 typedef struct {
-    s16 f0;
-    s16 n;              /* 0x02 */
-    s32 f4;
-    s32 f8;
-    u16 fC;             /* 0x0C */
-    u16 fE;
-    u8 pad10[0xC];
-    char *name;         /* 0x1C */
-    u8 pad20[0x20];
-} Trk_15;
-
-typedef struct {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    Trk_15 *trk;           /* 0x14 */
-} Sel_6;
-
-typedef struct {
-    u8 pad0[0x170];
-    u32 mode;           /* 0x170 */
-    u8 pad174[0x10];
-    Sel_6 *sel;           /* 0x184 */
-    u8 pad188[0x16BA - 0x188];
-    char name[0x26];    /* 0x16BA */
-    s32 f16E0;
-    s32 f16E4;
-    u32 f16E8;
-    s32 f16EC;
-    s32 f16F0;
-    s32 f16F4;
-    s32 f16F8;
-    s32 f16FC;
-    u8 pad1700[0x18];
-    s32 *font2;         /* 0x1718 */
-    s32 *font;          /* 0x171C */
-    u8 pad1720[0x80];
-    Vp vp0;             /* 0x17A0 */
-    u8 pad17B0[0x18];
-    Vp vp[3];           /* 0x17C8 */
-    u8 pad17F8[0xC];
-    Pic *pic1804;       /* 0x1804 */
-    Pic *pic1808;       /* 0x1808 */
-} Menu_10;
-
-typedef struct {
     s32 f0;
     u8 *img;
 } Res_9;
 
-extern Menu_10 *gEditor_17;
 extern Res_9 *gGui_6;
-extern Trk_15 gPieceTypes_6[];
 
 void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
 {
@@ -2267,43 +1716,43 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     u8 *p;
     u8 *img;
     char *str;
-    Menu_10 *m;
-    Trk_15 *t;
-    Trk_15 *e;
+    Editor *m;
+    PieceType *t;
+    PieceType *e;
 
     D_800F55B0 = arg0;
-    switch (gEditor_17->f16E8) {
+    switch (gEditor->slideState) {
     case 1:
-        gEditor_17->f16F0 = 0;
+        gEditor->slideOffset = 0;
         break;
     case 2:
-        gEditor_17->f16F0 = 30 - gEditor_17->f16EC;
+        gEditor->slideOffset = 30 - gEditor->slideTimer;
         break;
     case 0:
-        gEditor_17->f16F0 = gEditor_17->f16EC;
+        gEditor->slideOffset = gEditor->slideTimer;
         break;
     case 3:
-        gEditor_17->f16F0 = 30;
+        gEditor->slideOffset = 30;
         break;
     }
-    gEditor_17->f16F0 *= 4;
-    sEditViewRects[1].x = sEditViewRectsBase[1].x - gEditor_17->f16F0;
-    sEditViewRects[1].w = sEditViewRectsBase[1].w + gEditor_17->f16F0;
-    sEditViewRects[2].x = sEditViewRectsBase[2].x - gEditor_17->f16F0;
-    sEditViewRects[3].x = sEditViewRectsBase[3].x - gEditor_17->f16F0;
-    func_8008EFFC(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1, gEditor_17->f16F0);
-    gEditor_17->vp[0].vp.vscale[0] = sEditViewRectsBase[1].w * 2;
-    gEditor_17->vp[0].vp.vscale[1] = sEditViewRectsBase[1].h * 2;
-    gEditor_17->vp[0].vp.vtrans[0] = (sEditViewRectsBase[1].x + sEditViewRectsBase[1].w / 2) * 4;
-    gEditor_17->vp[0].vp.vtrans[1] = (sEditViewRectsBase[1].y + sEditViewRectsBase[1].h / 2) * 4;
-    gEditor_17->vp[1].vp.vscale[0] = sEditViewRects[2].w * 2;
-    gEditor_17->vp[1].vp.vscale[1] = sEditViewRects[2].h * 2;
-    gEditor_17->vp[1].vp.vtrans[0] = (sEditViewRects[2].x + sEditViewRects[2].w / 2) * 4;
-    gEditor_17->vp[1].vp.vtrans[1] = (sEditViewRects[2].y + sEditViewRects[2].h / 2) * 4;
-    gEditor_17->vp[2].vp.vscale[0] = sEditViewRects[3].w * 2;
-    gEditor_17->vp[2].vp.vscale[1] = sEditViewRects[3].h * 2;
-    gEditor_17->vp[2].vp.vtrans[0] = (sEditViewRects[3].x + sEditViewRects[3].w / 2) * 4;
-    gEditor_17->vp[2].vp.vtrans[1] = (sEditViewRects[3].y + sEditViewRects[3].h / 2) * 4;
+    gEditor->slideOffset *= 4;
+    sEditViewRects[1].x = sEditViewRectsBase[1].x - gEditor->slideOffset;
+    sEditViewRects[1].w = sEditViewRectsBase[1].w + gEditor->slideOffset;
+    sEditViewRects[2].x = sEditViewRectsBase[2].x - gEditor->slideOffset;
+    sEditViewRects[3].x = sEditViewRectsBase[3].x - gEditor->slideOffset;
+    func_8008EFFC(sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].w - 1, sEditViewRects[1].h - 1, gEditor->slideOffset);
+    gEditor->views[1].vp.vscale[0] = sEditViewRectsBase[1].w * 2;
+    gEditor->views[1].vp.vscale[1] = sEditViewRectsBase[1].h * 2;
+    gEditor->views[1].vp.vtrans[0] = (sEditViewRectsBase[1].x + sEditViewRectsBase[1].w / 2) * 4;
+    gEditor->views[1].vp.vtrans[1] = (sEditViewRectsBase[1].y + sEditViewRectsBase[1].h / 2) * 4;
+    gEditor->views[2].vp.vscale[0] = sEditViewRects[2].w * 2;
+    gEditor->views[2].vp.vscale[1] = sEditViewRects[2].h * 2;
+    gEditor->views[2].vp.vtrans[0] = (sEditViewRects[2].x + sEditViewRects[2].w / 2) * 4;
+    gEditor->views[2].vp.vtrans[1] = (sEditViewRects[2].y + sEditViewRects[2].h / 2) * 4;
+    gEditor->views[3].vp.vscale[0] = sEditViewRects[3].w * 2;
+    gEditor->views[3].vp.vscale[1] = sEditViewRects[3].h * 2;
+    gEditor->views[3].vp.vtrans[0] = (sEditViewRects[3].x + sEditViewRects[3].w / 2) * 4;
+    gEditor->views[3].vp.vtrans[1] = (sEditViewRects[3].y + sEditViewRects[3].h / 2) * 4;
 
     gdl = *pgdl;
     gdl = render_load_ucode(gdl, arg1, arg0, D_800A9D00, D_800D15C0);
@@ -2313,7 +1762,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gSPTexture(gdl++, 0, 0, 0, G_TX_RENDERTILE, G_OFF);
     gSPClipRatio(gdl++, FRUSTRATIO_2);
-    gSPViewport(gdl++, &gEditor_17->vp0);
+    gSPViewport(gdl++, &gEditor->screenVp);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     gDPPipeSync(gdl++);
     gDPSetDepthImage(gdl++, gZBuffer);
@@ -2341,97 +1790,97 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
                      sEditViewRects[2].x + sEditViewRects[2].w - 1, sEditViewRects[2].y + sEditViewRects[2].h - 1);
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
-    gdl = gui_draw_menu(arg1, gdl, gEditor_17->f16E0, 0x1A, 0x11);
+    gdl = gui_draw_menu(arg1, gdl, gEditor->menu, 0x1A, 0x11);
     gdl = edit_draw_track_view(arg0, arg1, gdl);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetPrimColor(gdl++, 0, 0, 0xB4, 0xB4, 0xB4, 0xFF);
 
-    switch (gEditor_17->mode) {
+    switch ((u32)gEditor->mode) { /* compared unsigned here */
     case 10:
     case 11:
-        font_text_create(gEditor_17->font, 0x20, 4, 2, 0x21);
-        font_text_add(gEditor_17->font, "Warning");
-        font_draw_text(gEditor_17->font, 0x14C, 0x48);
+        font_text_create(gEditor->text, 0x20, 4, 2, 0x21);
+        font_text_add(gEditor->text, "Warning");
+        font_draw_text(gEditor->text, 0x14C, 0x48);
         for (i = 0;; i++) {
-            if (*(gEditor_17->mode == 10 ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]) == NULL) break;
-            font_text_create(gEditor_17->font, 0x20, 5, 2, 0x21);
-            font_text_add(gEditor_17->font, *(gEditor_17->mode == 10 ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]));
-            font_draw_text(gEditor_17->font, 0x144 - i * 4, i * 12 + 0x61);
+            if (*(gEditor->mode == EDIT_MODE_WARN_MULTI ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]) == NULL) break;
+            font_text_create(gEditor->text, 0x20, 5, 2, 0x21);
+            font_text_add(gEditor->text, *(gEditor->mode == EDIT_MODE_WARN_MULTI ? &sEditMultiUseWarning[i] : &sEditSizeLockWarning[i]));
+            font_draw_text(gEditor->text, 0x144 - i * 4, i * 12 + 0x61);
         }
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-        img = gEditor_17->pic1808->img;
-        gDPLoadTLUT_pal256(gdl++, gEditor_17->pic1808->pal);
+        img = gEditor->warnIcon->img;
+        gDPLoadTLUT_pal256(gdl++, gEditor->warnIcon->pal);
         gdl = render_draw_image(0xD0, 0x3D, img, gdl, arg1, 1, 1, 3, 0);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        gdl = render_draw_image(0xB6, 0x3A, gEditor_17->pic1804->img, gdl, arg1, 1, 1, 6, 0);
+        gdl = render_draw_image(0xB6, 0x3A, gEditor->warnFrame->img, gdl, arg1, 1, 1, 6, 0);
         break;
     }
 
-    if (gEditor_17->sel != NULL) {
+    if (gEditor->cur != NULL) {
         gDPPipeSync(gdl++);
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
         p = gGui_6->img + 0x58;
-        font_text_create(gEditor_17->font, 0x20, 5, 2, 0x21);
-        font_text_add(gEditor_17->font, sStrTrackNameLabel);
-        font_text_add(gEditor_17->font, gEditor_17->name);
-        font_draw_text(gEditor_17->font, 0x140, 0x19);
+        font_text_create(gEditor->text, 0x20, 5, 2, 0x21);
+        font_text_add(gEditor->text, sStrTrackNameLabel);
+        font_text_add(gEditor->text, gEditor->name);
+        font_draw_text(gEditor->text, 0x140, 0x19);
         for (i = 0; i < (0x207 - sEditViewRects[1].x) / (p[0] * 8); i++) {
             gdl = render_draw_image(sEditViewRects[1].x + p[0] * (i << 3), 0x11, p, gdl, arg1, 1, 1, 6, 0);
         }
-        if (gEditor_17->mode == 9 && (gFrameCounter & 0x20)) {
+        if (gEditor->mode == EDIT_MODE_PLACE && (gFrameCounter & 0x20)) {
             gDPSetPrimColor(gdl++, 0, 0, 0xB4, 0xB4, 0x50, 0xFF);
         }
         for (i = 0; i < (0x207 - sEditViewRects[1].x) / (p[0] * 8); i++) {
             gdl = render_draw_image(sEditViewRects[1].x + p[0] * (i << 3), 0xCD, p, gdl, arg1, 1, 1, 6, 0);
         }
         gDPPipeSync(gdl++);
-        font_text_create(gEditor_17->font2, 0x40, 5, 2, 0x21);
-        i = gEditor_17->sel->trk - gPieceTypes_6;
-        if (gEditor_17->mode == 9 && gEditor_17->sel != NULL &&
-            (gEditor_17->sel->f4 != 0 || gEditor_17->sel->f8 != 0)) {
-            font_text_add(gEditor_17->font2, "< ");
+        font_text_create(gEditor->bigText, 0x40, 5, 2, 0x21);
+        i = gEditor->cur->type - gPieceTypes;
+        if (gEditor->mode == EDIT_MODE_PLACE && gEditor->cur != NULL &&
+            (gEditor->cur->next != 0 || gEditor->cur->prev != 0)) {
+            font_text_add(gEditor->bigText, "< ");
         }
         if (i < 2) {
-            font_text_add(gEditor_17->font2, "Straight ");
+            font_text_add(gEditor->bigText, "Straight ");
             i += 1;
         } else if (i < 6) {
-            font_text_add(gEditor_17->font2, "Turn ");
+            font_text_add(gEditor->bigText, "Turn ");
             i -= 1;
         } else if (i < 18) {
-            font_text_add(gEditor_17->font2, "Jump ");
+            font_text_add(gEditor->bigText, "Jump ");
             i -= 5;
         } else {
             i -= 17;
         }
-        if (gEditor_17->sel->trk - gPieceTypes_6 < 18) {
+        if (gEditor->cur->type - gPieceTypes < 18) {
             s = buf + 0x48;
             int_to_str(i, s);
-            font_text_add(gEditor_17->font2, s);
-            font_text_add(gEditor_17->font2, " : ");
+            font_text_add(gEditor->bigText, s);
+            font_text_add(gEditor->bigText, " : ");
         }
-        font_text_add(gEditor_17->font2, gEditor_17->sel->trk->name);
-        if (gEditor_17->sel->trk - gPieceTypes_6 >= 18) {
-            if (gEditor_17->mode == 9) {
-                font_text_add(gEditor_17->font2, " - Press Z Button To Edit");
-            } else if (gEditor_17->mode == 6 && gPieceTypes_6[gEditor_17->f16FC + 18].n >= 5 &&
-                       !(gPieceTypes_6[gEditor_17->f16FC + 18].fC & 0x200) &&
-                       (gEditor_17->f16F8 == 1 || gEditor_17->f16F8 == gPieceTypes_6[gEditor_17->f16FC + 18].n * 2 - 1)) {
-                font_text_add(gEditor_17->font2, " - R Button Deletes Segment");
+        font_text_add(gEditor->bigText, gEditor->cur->type->name);
+        if (gEditor->cur->type - gPieceTypes >= 18) {
+            if (gEditor->mode == EDIT_MODE_PLACE) {
+                font_text_add(gEditor->bigText, " - Press Z Button To Edit");
+            } else if (gEditor->mode == EDIT_MODE_USER_PIECE && gPieceTypes[gEditor->userPiece + 18].dim[1] >= 5 &&
+                       !(gPieceTypes[gEditor->userPiece + 18].flags & PIECE_SIZE_LOCKED) &&
+                       (gEditor->heightSel == 1 || gEditor->heightSel == gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 - 1)) {
+                font_text_add(gEditor->bigText, " - R Button Deletes Segment");
             }
-        } else if (gEditor_17->mode == 9 && (*(u32 *)&gEditor_17->sel->trk->fC & 0x300000) == 0x300000) {
-            font_text_add(gEditor_17->font2, " - R Button Flips");
+        } else if (gEditor->mode == EDIT_MODE_PLACE && (*(u32 *)&gEditor->cur->type->flags & 0x300000) == 0x300000) {
+            font_text_add(gEditor->bigText, " - R Button Flips");
         }
-        if (gEditor_17->mode == 9 && gEditor_17->sel != NULL &&
-            (gEditor_17->sel->f4 != 0 || gEditor_17->sel->f8 != 0)) {
-            font_text_add(gEditor_17->font2, " >");
+        if (gEditor->mode == EDIT_MODE_PLACE && gEditor->cur != NULL &&
+            (gEditor->cur->next != 0 || gEditor->cur->prev != 0)) {
+            font_text_add(gEditor->bigText, " >");
         }
-        font_draw_text(gEditor_17->font2, 0x142, 0xD5);
+        font_draw_text(gEditor->bigText, 0x142, 0xD5);
     }
-    if (gEditor_17->mode == 7 || gEditor_17->mode == 8) {
+    if (gEditor->mode == EDIT_MODE_NAME || gEditor->mode == EDIT_MODE_NAME_8) {
         gdl = edit_draw_name_entry(gdl, arg1);
     }
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[0].x, sEditViewRects[0].y,
@@ -2441,22 +1890,7 @@ void edit_draw(s32 arg0, s32 arg1, Gfx **pgdl)
     *pgdl = gdl;
 }
 
-typedef struct { s16 p[2]; s16 d[2]; s16 l[2]; } Seg_18;
-
-struct Rec_49 {
-    u8 pad[0x10];
-    u16 flags;
-    s16 off;
-    Seg_18 *tab;
-    s16 n0;
-    s16 n1;
-    s16 o1c;
-    s16 o1e;
-    s16 o20;
-    s16 o22;
-};
-
-void edit_update_piece_ports(Rec_49 *r)
+void edit_update_piece_ports(EditPiece *r)
 {
     s32 a, b;
 
@@ -2468,84 +1902,79 @@ void edit_update_piece_ports(Rec_49 *r)
         a = 0;
         b = 1;
     }
-    r->n0 = (r->tab->d[a] + r->off) & 3;
-    r->n1 = (r->tab->d[b] + r->off) & 3;
+    r->dir[0] = (r->type->dir[a] + r->rot) & 3;
+    r->dir[1] = (r->type->dir[b] + r->rot) & 3;
 
-    switch (r->n0) {
+    switch (r->dir[0]) {
     case 0:
-        switch (r->tab->d[a]) {
-        case 0: case 3: r->o1c = r->tab->l[a]; break;
-        case 2: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 1: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 0: case 3: r->off[0] = r->type->off[a]; break;
+        case 2: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 1: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     case 2:
-        switch (r->tab->d[a]) {
-        case 1: case 2: r->o1c = r->tab->l[a]; break;
-        case 0: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 3: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 1: case 2: r->off[0] = r->type->off[a]; break;
+        case 0: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 3: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     case 3:
-        switch (r->tab->d[a]) {
-        case 0: case 3: r->o1c = r->tab->l[a]; break;
-        case 2: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 1: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 0: case 3: r->off[0] = r->type->off[a]; break;
+        case 2: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 1: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     case 1:
-        switch (r->tab->d[a]) {
-        case 1: case 2: r->o1c = r->tab->l[a]; break;
-        case 0: r->o1c = r->tab->p[0] - r->tab->l[a] - 2; break;
-        case 3: r->o1c = r->tab->p[1] - r->tab->l[a] - 2; break;
+        switch (r->type->dir[a]) {
+        case 1: case 2: r->off[0] = r->type->off[a]; break;
+        case 0: r->off[0] = r->type->dim[0] - r->type->off[a] - 2; break;
+        case 3: r->off[0] = r->type->dim[1] - r->type->off[a] - 2; break;
         }
         break;
     }
 
-    switch (r->n1) {
+    switch (r->dir[1]) {
     case 0:
-        switch (r->tab->d[b]) {
-        case 0: case 3: r->o1e = r->tab->l[b]; break;
-        case 2: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 1: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 0: case 3: r->off[1] = r->type->off[b]; break;
+        case 2: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 1: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     case 2:
-        switch (r->tab->d[b]) {
-        case 1: case 2: r->o1e = r->tab->l[b]; break;
-        case 0: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 3: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 1: case 2: r->off[1] = r->type->off[b]; break;
+        case 0: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 3: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     case 3:
-        switch (r->tab->d[b]) {
-        case 0: case 3: r->o1e = r->tab->l[b]; break;
-        case 2: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 1: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 0: case 3: r->off[1] = r->type->off[b]; break;
+        case 2: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 1: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     case 1:
-        switch (r->tab->d[b]) {
-        case 1: case 2: r->o1e = r->tab->l[b]; break;
-        case 0: r->o1e = r->tab->p[0] - r->tab->l[b] - 2; break;
-        case 3: r->o1e = r->tab->p[1] - r->tab->l[b] - 2; break;
+        switch (r->type->dir[b]) {
+        case 1: case 2: r->off[1] = r->type->off[b]; break;
+        case 0: r->off[1] = r->type->dim[0] - r->type->off[b] - 2; break;
+        case 3: r->off[1] = r->type->dim[1] - r->type->off[b] - 2; break;
         }
         break;
     }
 
-    if (r->off & 1) {
-        r->o20 = r->tab->p[1];
-        r->o22 = r->tab->p[0];
+    if (r->rot & 1) {
+        r->w = r->type->dim[1];
+        r->h = r->type->dim[0];
     } else {
-        r->o20 = r->tab->p[0];
-        r->o22 = r->tab->p[1];
+        r->w = r->type->dim[0];
+        r->h = r->type->dim[1];
     }
 }
-
-typedef struct { s16 x, y, z; u16 f; s16 s, t; u8 r, g, b, a; } V_3;
-typedef struct { u8 pad[0x174C]; V_3 *v[2]; s32 count; } G_5;
-
-extern G_5 *gEditor_18;
 
 void edit_add_overlay_line(s32 idx, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 z1, u8 r, u8 g, u8 b)
 {
@@ -2556,7 +1985,7 @@ void edit_add_overlay_line(s32 idx, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 
     y0 = gScreenHeight / 2 - y0;
     y1 = -y1;
     y1 += gScreenHeight / 2;
-    if (gEditor_18->count >= 0x3C) {
+    if (gEditor->lineCount >= 0x3C) {
         return;
     }
     ax = x1 - x0;
@@ -2569,36 +1998,32 @@ void edit_add_overlay_line(s32 idx, s32 x0, s32 y0, s16 z0, s32 x1, s32 y1, s32 
         ox = 3;
         oy = 0;
     }
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].x = x0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].y = y0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].z = z0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].x = x0 + ox;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].y = y0 + oy;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].z = z0;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].x = x1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].y = y1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].z = z1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].x = x1 + ox;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].y = y1 + oy;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].z = z1;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 0].b = b;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 1].b = b;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 2].b = b;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].r = r;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].g = g;
-    gEditor_18->v[idx][gEditor_18->count * 4 + 3].b = b;
-    gEditor_18->count++;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[0] = x0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[1] = y0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.ob[2] = z0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[0] = x0 + ox;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[1] = y0 + oy;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.ob[2] = z0;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[0] = x1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[1] = y1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.ob[2] = z1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[0] = x1 + ox;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[1] = y1 + oy;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.ob[2] = z1;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 0].v.cn[2] = b;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 1].v.cn[2] = b;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 2].v.cn[2] = b;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[0] = r;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[1] = g;
+    gEditor->lineVtx[idx][gEditor->lineCount * 4 + 3].v.cn[2] = b;
+    gEditor->lineCount++;
 }
-
-typedef struct { u8 pad[0x174C]; s32 vtx[2]; s32 n; } Obj_70;
-
-extern Obj_70 *gEditor_19;
 
 Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl)
 {
@@ -2612,29 +2037,22 @@ Gfx *edit_draw_overlay_lines(u8 *a0, s32 arg1, Gfx *gdl)
     gSPMatrix(gdl++, m, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     gDPPipeSync(gdl++);
     gSPViewport(gdl++, &gScreenViewport);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects_2.x, sEditViewRects_2.y,
-                  sEditViewRects_2.x + sEditViewRects_2.w - 1, sEditViewRects_2.y + sEditViewRects_2.h - 1);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[1].x, sEditViewRects[1].y,
+                  sEditViewRects[1].x + sEditViewRects[1].w - 1, sEditViewRects[1].y + sEditViewRects[1].h - 1);
     gSPClearGeometryMode(gdl++, 0x3F0604);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gSPSetGeometryMode(gdl++, G_SHADE);
     gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
     gDPSetCombineMode(gdl++, G_CC_SHADE, G_CC_SHADE);
     gDPSetRenderMode(gdl++, 0x00442078, 0);
-    for (i = 0; i < gEditor_19->n; i++) {
-        gSPVertex(gdl++, gEditor_19->vtx[arg1] + i * 0x40, 4, 0);
+    for (i = 0; i < gEditor->lineCount; i++) {
+        gSPVertex(gdl++, gEditor->lineVtx[arg1] + i * 4, 4, 0);
         gDPPipeSync(gdl++);
         gSP2Triangles(gdl++, 0, 1, 3, 0, 0, 3, 2, 0);
         gDPPipeSync(gdl++);
     }
     return gdl;
 }
-
-typedef struct {
-    u8 unk0[0x1760];
-    f32 mtx[4][4];
-} Camera;
-
-extern Camera *gEditor_20;
 
 s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *sw, s32 arg7, s32 arg8) {
     f32 hx;
@@ -2651,10 +2069,10 @@ s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *
     x *= 0.0625f;
     y *= 0.0625f;
     z *= 0.0625f;
-    px = gEditor_20->mtx[0][0] * x + gEditor_20->mtx[1][0] * y + gEditor_20->mtx[2][0] * z + gEditor_20->mtx[3][0];
-    py = gEditor_20->mtx[0][1] * x + gEditor_20->mtx[1][1] * y + gEditor_20->mtx[2][1] * z + gEditor_20->mtx[3][1];
-    pz = gEditor_20->mtx[0][2] * x + gEditor_20->mtx[1][2] * y + gEditor_20->mtx[2][2] * z + gEditor_20->mtx[3][2];
-    pw = gEditor_20->mtx[0][3] * x + gEditor_20->mtx[1][3] * y + gEditor_20->mtx[2][3] * z + gEditor_20->mtx[3][3];
+    px = gEditor->camMtx[0][0] * x + gEditor->camMtx[1][0] * y + gEditor->camMtx[2][0] * z + gEditor->camMtx[3][0];
+    py = gEditor->camMtx[0][1] * x + gEditor->camMtx[1][1] * y + gEditor->camMtx[2][1] * z + gEditor->camMtx[3][1];
+    pz = gEditor->camMtx[0][2] * x + gEditor->camMtx[1][2] * y + gEditor->camMtx[2][2] * z + gEditor->camMtx[3][2];
+    pw = gEditor->camMtx[0][3] * x + gEditor->camMtx[1][3] * y + gEditor->camMtx[2][3] * z + gEditor->camMtx[3][3];
     tx = gArnedViewport_2.vtrans[0] * 0.25f;
     ty = gArnedViewport_2.vtrans[1] * 0.25f;
     if (pw == 0.0f) {
@@ -2683,111 +2101,24 @@ s32 edit_project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *
 
 #define gDPRaw(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 #define SINT(i) ((s16)gCosTable[(i) & 0xFFF] >> 4)
-#define CellAt(d, k) ((Cell_9 *)((u8 *)(d)->cells + ((k) << 5)))
-#define EntAt(d, k) ((Ent_85 *)((u8 *)(d)->ents + ((k) << 5)))
-#define W (o->def->dim[0])
-#define H (o->def->dim[1])
+/* The mesh sets advanced by k cells: ->cells[0] is cells[k] */
+#define CellAt(d, k) ((PieceMeshSet *)((u8 *)(d)->meshA + ((k) << 5)))
+#define EntAt(d, k) ((PieceMeshSet *)((u8 *)(d)->meshB + ((k) << 5)))
+#define W (o->type->dim[0])
+#define H (o->type->dim[1])
 #define K0 (j * W + i)
 #define K1 (i * W + W - 1 - j)
 #define K2 ((H - 1 - j) * W + W - 1 - i)
 #define K3 ((H - 1 - i) * W + j)
-#define E gEditor_21
-#define XB(a, b) (E->sel->x * 8000 - E->map->a * 4000)
-#define ZB(a) (E->sel->y * 8000 - E->map->a * 4000)
-
-typedef struct Cell_9 {
-    s32 f0;
-    s32 f4;
-    s32 pad8[6];
-} Cell_9;
-
-typedef struct Ent_85 {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 f10;
-    s32 f14;
-    s32 pad18[2];
-} Ent_85;
-
-typedef struct Def {
-    s16 dim[2];
-    u8 pad4[8];
-    u16 flags;
-    s16 fE;
-    u8 pad10[0x20];
-    Cell_9 *cells;
-    Ent_85 *ents;
-} Def;
-
-typedef struct Obj_71 {
-    s32 f0;
-    struct Obj_71 *next;
-    struct Obj_71 *prev;
-    s16 x;
-    s16 y;
-    u16 flags;
-    s16 rot;
-    Def *def;
-    u8 pad18[8];
-    s16 w;
-    s16 h;
-} Obj_71;
-
-typedef struct {
-    s32 dist;
-    s32 ry;
-    s32 y;
-} Cam_7;
-
-typedef struct {
-    u8 pad0[0x170];
-    s32 mode;
-    s32 flags;
-    s32 pad178;
-    Obj_71 *head;
-    s32 pad180;
-    Obj_71 *sel;
-    Obj_71 *mark0;
-    Obj_71 *mark1;
-    Obj_71 *cur;
-    u8 pad194[0x16AC - 0x194];
-    Dim *map;
-    u8 pad16B0[0x16F8 - 0x16B0];
-    s32 f16F8;
-    s32 f16FC;
-    s16 f1700;
-    u8 pad1702[0x172C - 0x1702];
-    Cam_7 cam[2];
-    u8 pad1744[0x174C - 0x1744];
-    void *buf[2];
-    s32 n;
-    u8 pad1758[8];
-    f32 mtx[4][4];
-    u8 pad17A0[0x17C8 - 0x17A0];
-    Vp vp;
-    u8 pad17D8[0x17FC - 0x17D8];
-    s16 f17FC;
-    s16 pad17FE;
-    s16 f1800;
-} Edit_4;
-
-typedef struct {
-    s32 x;
-    s32 z;
-    u32 ang;
-} CamPos_2;
-
-extern Edit_4 *gEditor_21;
-extern CamPos_2 sEditCamPos_4;
+#define XB(a, b) (gEditor->cur->x * 8000 - gEditor->gridSize[a] * 4000)
+#define ZB(a) (gEditor->cur->y * 8000 - gEditor->gridSize[a] * 4000)
 
 Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     s32 p0[3];
     s32 p1[3];
     s32 p2[3];
     s32 p3[3];
-    Obj_71 *o;
+    EditPiece *o;
     s32 flag;
     s32 sel;
     s32 i;
@@ -2804,15 +2135,15 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
     gDPPipeSync(gdl++);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects_2.x, sEditViewRects_2.y, sEditViewRects_2.x + sEditViewRects_2.w - 1,
-                  sEditViewRects_2.y + sEditViewRects_2.h - 1);
-    gSPViewport(gdl++, &E->vp);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].x + sEditViewRects[1].w - 1,
+                  sEditViewRects[1].y + sEditViewRects[1].h - 1);
+    gSPViewport(gdl++, &gEditor->views[1]);
     gSPClearGeometryMode(gdl, G_ZBUFFER);
     gDPRaw(gdl++, 0xE200001C, 0x0C084000);
     gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
     gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 1);
-    gDPFillRectangle(gdl++, sEditViewRects_2.x, sEditViewRects_2.y, sEditViewRects_2.x + sEditViewRects_2.w - 1,
-                     sEditViewRects_2.y + sEditViewRects_2.h - 1);
+    gDPFillRectangle(gdl++, sEditViewRects[1].x, sEditViewRects[1].y, sEditViewRects[1].x + sEditViewRects[1].w - 1,
+                     sEditViewRects[1].y + sEditViewRects[1].h - 1);
     gDPPipeSync(gdl++);
     gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
     gDPRaw(gdl++, 0xE200001C, 0x004041C8);
@@ -2823,95 +2154,95 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     gDPPipeSync(gdl++);
     gDPSetTexturePersp(gdl++, G_TP_PERSP);
 
-    if (E->mode == 4) {
+    if (gEditor->mode == EDIT_MODE_MOVE_TRACK) {
         arned_set_camera_2(arg1, 0, 250000, 0, 0, 0x4000);
-    } else if (E->mode == 6) {
-        a = sEditCamPos_4.ang;
-        arned_set_camera_2(arg1, sEditCamPos_4.x + ((SINT((a >> 4) - 0x400) * E->cam[1].dist) >> 10), E->cam[1].y,
-                      sEditCamPos_4.z - ((SINT(a >> 4) * E->cam[1].dist) >> 10), a, E->cam[1].ry);
+    } else if (gEditor->mode == EDIT_MODE_USER_PIECE) {
+        a = sEditCamPos.yaw;
+        arned_set_camera_2(arg1, sEditCamPos.x + ((SINT((a >> 4) - 0x400) * gEditor->cam[1].dist) >> 10), gEditor->cam[1].height,
+                      sEditCamPos.z - ((SINT(a >> 4) * gEditor->cam[1].dist) >> 10), a, gEditor->cam[1].pitch);
     } else {
-        a = sEditCamPos_4.ang;
-        arned_set_camera_2(arg1, sEditCamPos_4.x + ((SINT((a >> 4) - 0x400) * E->cam[0].dist) >> 10), E->cam[0].y,
-                      sEditCamPos_4.z - ((SINT(a >> 4) * E->cam[0].dist) >> 10), a, E->cam[0].ry);
+        a = sEditCamPos.yaw;
+        arned_set_camera_2(arg1, sEditCamPos.x + ((SINT((a >> 4) - 0x400) * gEditor->cam[0].dist) >> 10), gEditor->cam[0].height,
+                      sEditCamPos.z - ((SINT(a >> 4) * gEditor->cam[0].dist) >> 10), a, gEditor->cam[0].pitch);
     }
 
-    o = E->head;
+    o = gEditor->first;
     if (o != NULL) {
         do {
-            if (E->sel != NULL && E->mode == 6 && (E->sel->def->flags & 0x40)) {
+            if (gEditor->cur != NULL && gEditor->mode == EDIT_MODE_USER_PIECE && (gEditor->cur->type->flags & PIECE_USER)) {
                 fl = o->flags & ~8;
             } else {
                 fl = o->flags | 8;
             }
             o->flags = fl;
             o = o->next;
-        } while (o != NULL && o != E->head);
+        } while (o != NULL && o != gEditor->first);
     }
-    if (E->sel != NULL && E->mode == 6 && (E->sel->def->flags & 0x40)) {
-        for (o = E->sel->next; o != NULL; o = o->next) {
+    if (gEditor->cur != NULL && gEditor->mode == EDIT_MODE_USER_PIECE && (gEditor->cur->type->flags & PIECE_USER)) {
+        for (o = gEditor->cur->next; o != NULL; o = o->next) {
             o->flags |= 8;
-            if (o->def->flags & 0x800) {
+            if (o->type->flags & PIECE_CORNER) {
                 break;
             }
         }
-        for (o = E->sel; o != NULL; o = o->prev) {
+        for (o = gEditor->cur; o != NULL; o = o->prev) {
             o->flags |= 8;
-            if (o->def->flags & 0x800) {
+            if (o->type->flags & PIECE_CORNER) {
                 break;
             }
         }
     }
 
-    o = E->head;
+    o = gEditor->first;
     flag = 0;
     if (o != NULL) {
         do {
-            if (E->mark0 != NULL && E->mark1 != NULL) {
-                if (flag != 0 && o->prev == E->mark1) {
+            if (gEditor->markStart != NULL && gEditor->markEnd != NULL) {
+                if (flag != 0 && o->prev == gEditor->markEnd) {
                     flag = 0;
                 }
-                if (o == E->mark0) {
+                if (o == gEditor->markStart) {
                     flag = 1;
                 }
             }
             sel = 0;
-            if ((o->flags & 4) || o == E->sel) {
+            if ((o->flags & 4) || o == gEditor->cur) {
                 sel = 1;
             }
             sel |= 2;
-            for (j = 0; j < o->def->dim[(o->rot + 1) & 1]; j++) {
-                for (i = 0; i < o->def->dim[(rot = o->rot) & 1]; i++) {
-                    if (o->x + i < 0 || o->x + i >= E->map->w) {
+            for (j = 0; j < o->type->dim[(o->rot + 1) & 1]; j++) {
+                for (i = 0; i < o->type->dim[(rot = o->rot) & 1]; i++) {
+                    if (o->x + i < 0 || o->x + i >= gEditor->gridSize[0]) {
                         continue;
                     }
-                    if (o->y + j < 0 || o->y + j >= E->map->h) {
+                    if (o->y + j < 0 || o->y + j >= gEditor->gridSize[1]) {
                         continue;
                     }
                     if (o->flags & 8) {
                         switch (rot) {
                         case 0:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K0)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K0)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (EntAt(o->def, K0)->f8 + EntAt(o->def, K0)->f10) / 2 - 250 - i * 500 : 0,
-                                          o->def->ents ? (EntAt(o->def, K0)->fC + EntAt(o->def, K0)->f14) / 2 - 250 - j * 500 : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K0)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K0)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (EntAt(o->type, K0)->cells[0].x0 + EntAt(o->type, K0)->cells[0].x1) / 2 - 250 - i * 500 : 0,
+                                          o->type->meshB ? (EntAt(o->type, K0)->cells[0].y0 + EntAt(o->type, K0)->cells[0].y1) / 2 - 250 - j * 500 : 0);
                             break;
                         case 1:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K1)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K1)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (EntAt(o->def, K1)->fC + EntAt(o->def, K1)->f14) / 2 - 250 - i * 500 : 0,
-                                          o->def->ents ? (o->h - j - 1) * 500 + (250 - (EntAt(o->def, K1)->f8 + EntAt(o->def, K1)->f10) / 2) : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K1)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K1)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (EntAt(o->type, K1)->cells[0].y0 + EntAt(o->type, K1)->cells[0].y1) / 2 - 250 - i * 500 : 0,
+                                          o->type->meshB ? (o->h - j - 1) * 500 + (250 - (EntAt(o->type, K1)->cells[0].x0 + EntAt(o->type, K1)->cells[0].x1) / 2) : 0);
                             break;
                         case 2:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K2)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K2)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (o->w - i - 1) * 500 + (250 - (EntAt(o->def, K2)->f8 + EntAt(o->def, K2)->f10) / 2) : 0,
-                                          o->def->ents ? (o->h - j - 1) * 500 + (250 - (EntAt(o->def, K2)->fC + EntAt(o->def, K2)->f14) / 2) : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K2)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K2)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (o->w - i - 1) * 500 + (250 - (EntAt(o->type, K2)->cells[0].x0 + EntAt(o->type, K2)->cells[0].x1) / 2) : 0,
+                                          o->type->meshB ? (o->h - j - 1) * 500 + (250 - (EntAt(o->type, K2)->cells[0].y0 + EntAt(o->type, K2)->cells[0].y1) / 2) : 0);
                             break;
                         case 3:
-                            arned_set_cell(o->x + i, o->y + j, CellAt(o->def, K3)->f4, rot,
-                                          o->def->ents ? EntAt(o->def, K3)->f4 : 0, o->rot, sel,
-                                          o->def->ents ? (o->w - i - 1) * 500 + (250 - (EntAt(o->def, K3)->fC + EntAt(o->def, K3)->f14) / 2) : 0,
-                                          o->def->ents ? (EntAt(o->def, K3)->f8 + EntAt(o->def, K3)->f10) / 2 - 250 - j * 500 : 0);
+                            arned_set_cell(o->x + i, o->y + j, CellAt(o->type, K3)->cells[0].mesh, rot,
+                                          o->type->meshB ? EntAt(o->type, K3)->cells[0].mesh : 0, o->rot, sel,
+                                          o->type->meshB ? (o->w - i - 1) * 500 + (250 - (EntAt(o->type, K3)->cells[0].y0 + EntAt(o->type, K3)->cells[0].y1) / 2) : 0,
+                                          o->type->meshB ? (EntAt(o->type, K3)->cells[0].x0 + EntAt(o->type, K3)->cells[0].x1) / 2 - 250 - j * 500 : 0);
                             break;
                         }
                     } else {
@@ -2920,29 +2251,29 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                 }
             }
             o = o->next;
-        } while (o != NULL && o != E->head);
+        } while (o != NULL && o != gEditor->first);
     }
 
     arned_set_scissor(0, 0, gScreenWidth, gScreenHeight);
-    if (E->cur != NULL) {
-        r = ((-E->cur->rot * 2 - E->cur->def->fE) & 7) << 13;
-        gdl = arned_draw(arg1, gdl, E->sel->x, E->sel->y, E->sel->w, E->sel->h,
-                            (E->cur->x * 2 + E->cur->w) * 4000 - 60000, (E->cur->y * 2 + E->cur->h) * 4000 - 60000,
-                            (E->cur->def->flags & 2) ? r : -1, 1);
-        if (E->mode == 6) {
-            E->n = 0;
-            guMtxL2F(E->mtx, &gArnedCamMtx[arg1]);
-            mem_fill(E->buf[arg1], 0, 0xF00);
-            if (E->sel != NULL && (E->sel->def->flags & 0x40)) {
-                switch (E->sel->rot) {
+    if (gEditor->start != NULL) {
+        r = ((-gEditor->start->rot * 2 - gEditor->start->type->cursorAngle) & 7) << 13;
+        gdl = arned_draw(arg1, gdl, gEditor->cur->x, gEditor->cur->y, gEditor->cur->w, gEditor->cur->h,
+                            (gEditor->start->x * 2 + gEditor->start->w) * 4000 - 60000, (gEditor->start->y * 2 + gEditor->start->h) * 4000 - 60000,
+                            (gEditor->start->type->flags & PIECE_START) ? r : -1, 1);
+        if (gEditor->mode == EDIT_MODE_USER_PIECE) {
+            gEditor->lineCount = 0;
+            guMtxL2F(gEditor->camMtx, &gArnedCamMtx[arg1]);
+            mem_fill(gEditor->lineVtx[arg1], 0, 0xF00);
+            if (gEditor->cur != NULL && (gEditor->cur->type->flags & PIECE_USER)) {
+                switch (gEditor->cur->rot) {
                 case 0:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        edit_project_to_screen(XB(w, 0) + 2000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(w, 0) + 14000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == k) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        edit_project_to_screen(XB(0, 0) + 2000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(0, 0) + 14000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == k) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -2957,16 +2288,16 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
                         if (k > 0) {
-                            edit_project_to_screen(XB(w, 0) + 2000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(h) + (k - 1) * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 2000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(h) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(h) + (k - 1) * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(h) + k * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == k || E->f16F8 == k - 1) {
-                                switch (E->f1700) {
+                            edit_project_to_screen(XB(0, 0) + 2000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(1) + (k - 1) * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 2000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(1) + (k - 1) * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(1) + k * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == k || gEditor->heightSel == k - 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -2988,13 +2319,13 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                     }
                     break;
                 case 1:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        edit_project_to_screen(XB(h, 0) + k * 4000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(h, 0) + k * 4000, k != 0 ? gUserPieceHeights[E->f16FC][k - 1] * 16 : 0,
-                                      ZB(w) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == k) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        edit_project_to_screen(XB(1, 0) + k * 4000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(1, 0) + k * 4000, k != 0 ? gUserPieceHeights[gEditor->userPiece][k - 1] * 16 : 0,
+                                      ZB(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == k) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -3009,16 +2340,16 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
                         if (k > 0) {
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + k * 4000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(w) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[E->f16FC][k - 2] * 16 : 0,
-                                          ZB(w) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + k * 4000, gUserPieceHeights[E->f16FC][k - 1] * 16,
-                                          ZB(w) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == k || E->f16F8 == k - 1) {
-                                switch (E->f1700) {
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + k * 4000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, k != 1 ? gUserPieceHeights[gEditor->userPiece][k - 2] * 16 : 0,
+                                          ZB(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + k * 4000, gUserPieceHeights[gEditor->userPiece][k - 1] * 16,
+                                          ZB(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == k || gEditor->heightSel == k - 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -3040,14 +2371,14 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                     }
                     break;
                 case 2:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        n = E->sel->def->dim[1] * 2 - k;
-                        edit_project_to_screen(XB(w, 0) + 2000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(w, 0) + 14000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(h) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == n) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        n = gEditor->cur->type->dim[1] * 2 - k;
+                        edit_project_to_screen(XB(0, 0) + 2000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(0, 0) + 14000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(1) + k * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == n) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -3061,17 +2392,17 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                         } else {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (n < E->sel->def->dim[1] * 2) {
-                            edit_project_to_screen(XB(w, 0) + 2000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(h) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 2000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(h) + (k - 1) * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(h) + k * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(w, 0) + 14000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(h) + (k - 1) * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == n || E->f16F8 == n + 1) {
-                                switch (E->f1700) {
+                        if (n < gEditor->cur->type->dim[1] * 2) {
+                            edit_project_to_screen(XB(0, 0) + 2000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(1) + k * 4000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 2000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(1) + (k - 1) * 4000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(1) + k * 4000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(0, 0) + 14000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(1) + (k - 1) * 4000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == n || gEditor->heightSel == n + 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -3093,14 +2424,14 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                     }
                     break;
                 case 3:
-                    for (k = 0; k < E->sel->def->dim[1] * 2 + 1; k++) {
-                        n = E->sel->def->dim[1] * 2 - k;
-                        edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                        edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                      ZB(w) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                        if (E->f16F8 == n) {
-                            switch (E->f1700) {
+                    for (k = 0; k < gEditor->cur->type->dim[1] * 2 + 1; k++) {
+                        n = gEditor->cur->type->dim[1] * 2 - k;
+                        edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                        edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                      ZB(0) + 14000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                        if (gEditor->heightSel == n) {
+                            switch (gEditor->heightState) {
                             case 0:
                                 edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0xE1, 0, 0);
                                 break;
@@ -3114,17 +2445,17 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
                         } else {
                             edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0, 0, 0);
                         }
-                        if (n < E->sel->def->dim[1] * 2) {
-                            edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(w) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(w) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + k * 4000, n != 0 ? gUserPieceHeights[E->f16FC][n - 1] * 16 : 0,
-                                          ZB(w) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
-                            edit_project_to_screen(XB(h, 0) + (k - 1) * 4000, gUserPieceHeights[E->f16FC][n] * 16,
-                                          ZB(w) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
-                            if (E->f16F8 == n || E->f16F8 == n + 1) {
-                                switch (E->f1700) {
+                        if (n < gEditor->cur->type->dim[1] * 2) {
+                            edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(0) + 2000, &p0[0], &p0[1], &p0[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(0) + 2000, &p1[0], &p1[1], &p1[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + k * 4000, n != 0 ? gUserPieceHeights[gEditor->userPiece][n - 1] * 16 : 0,
+                                          ZB(0) + 14000, &p2[0], &p2[1], &p2[2], NULL, arg0, arg1);
+                            edit_project_to_screen(XB(1, 0) + (k - 1) * 4000, gUserPieceHeights[gEditor->userPiece][n] * 16,
+                                          ZB(0) + 14000, &p3[0], &p3[1], &p3[2], NULL, arg0, arg1);
+                            if (gEditor->heightSel == n || gEditor->heightSel == n + 1) {
+                                switch (gEditor->heightState) {
                                 case 0:
                                     edit_add_overlay_line_2(arg1, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 100, 0, 0);
                                     edit_add_overlay_line_2(arg1, p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], 100, 0, 0);
@@ -3153,8 +2484,8 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
         gdl = arned_draw(arg1, gdl, 0, 0, 0, 0, 0, 0, -1, 1);
     }
 
-    if (E->flags & 0x800) {
-        switch (E->f1800) {
+    if (gEditor->flags & EDIT_MESSAGE) {
+        switch (gEditor->message) {
         case 0:
             gdl = gui_draw_message(gdl, arg0, arg1, "No Track Found On Game Pak");
             break;
@@ -3171,8 +2502,8 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
             gdl = gui_draw_message(gdl, arg0, arg1, "Name Your Track Before Saving!");
             break;
         }
-    } else if (E->flags & 0x1000) {
-        switch (E->f17FC) {
+    } else if (gEditor->flags & EDIT_DIALOG) {
+        switch (gEditor->dialog) {
         case 0:
             gdl = gui_draw_prompt(gdl, arg0, arg1, "Add Segment?", "OK", "Cancel", 1, 1);
             break;
@@ -3201,95 +2532,69 @@ Gfx *edit_draw_track_view(s32 arg0, s32 arg1, Gfx *gdl) {
     return gdl;
 }
 
-#define AT(p, i) (*(s16 *)((u8 *)(p) + ((i) << 1)))
-
-typedef struct Img_7 {
-    s16 dim[2];
-    u8 pad4[8];
-    u16 flags;
-    u16 padE;
-    s16 idx;
-} Img_7;
-
-typedef struct Game_38 {
-    u8 pad0[0x174];
-    u32 flags;
-    u32 pad178;
-    Node_29 *head;
-    Node_29 *tail;
-    u8 pad184[0x10];
-    Node_29 nodes[150];
-    s16 *size;
-    u8 pad16B0[6];
-    s16 scrollx;
-    s16 scrolly;
-} Game_38;
-
-extern Game_38 *gEditor_22;
-
-Node_29 *edit_insert_piece(Node_29 *a, Node_29 *b, s16 *pt)
+EditPiece *edit_insert_piece(EditPiece *a, EditPiece *b, PieceType *type)
 {
-    Node_29 *n;
+    EditPiece *n;
     s32 i;
     s32 idx;
-    Game_38 *g;
+    Editor *g;
 
-    n = gEditor_22->nodes;
+    n = gEditor->pieces;
     for (i = 0; i < 150; i++, n++) {
         if (n->used == 0) break;
     }
-    g = gEditor_22;
+    g = gEditor;
     n->used = 1;
-    if (g->flags & 8) {
-        if (((Img_7 *)pt)->flags & 0x20) {
-            n->st = 2;
+    if (g->flags & EDIT_FLIP) {
+        if (type->flags & 0x20) {
+            n->flags = 2;
         } else {
-            n->st = 0;
-            g->flags &= ~8;
+            n->flags = 0;
+            g->flags &= ~EDIT_FLIP;
         }
-    } else if (((Img_7 *)pt)->flags & 0x10) {
-        n->st = 0;
+    } else if (type->flags & 0x10) {
+        n->flags = 0;
     } else {
-        n->st = 2;
-        g->flags |= 8;
+        n->flags = 2;
+        g->flags |= EDIT_FLIP;
     }
     n->next = b;
     n->prev = a;
-    n->pt = pt;
+    n->type = type;
     if (b == NULL && a == NULL) {
-        gEditor_22->head = n;
-        gEditor_22->tail = n;
-        idx = ((Img_7 *)pt)->idx;
-        if (gEditor_22->flags & 8) idx += 2;
-        n->idx = idx;
-        n->x = gEditor_22->size[0] / 2 - AT(pt, idx & 1) / 2;
-        n->y = gEditor_22->size[1] / 2 - AT(pt, (n->idx + 1) & 1) / 2;
-        n->x += gEditor_22->scrollx;
-        n->y += gEditor_22->scrolly;
+        gEditor->first = n;
+        gEditor->last = n;
+        idx = type->rot;
+        if (gEditor->flags & EDIT_FLIP) idx += 2;
+        n->rot = idx;
+        n->x = gEditor->gridSize[0] / 2 - type->dim[idx & 1] / 2;
+        n->y = gEditor->gridSize[1] / 2 - type->dim[(n->rot + 1) & 1] / 2;
+        n->x += gEditor->scrollX;
+        n->y += gEditor->scrollY;
         if (n->x < 0) {
             n->x = 0;
-            gEditor_22->scrollx = AT(pt, n->idx & 1) / 2 - gEditor_22->size[0] / 2;
+            gEditor->scrollX = type->dim[n->rot & 1] / 2 - gEditor->gridSize[0] / 2;
         }
-        if (n->x + AT(n->pt, n->idx & 1) > gEditor_22->size[0]) {
-            n->x = gEditor_22->size[0] - AT(n->pt, n->idx & 1);
-            gEditor_22->scrollx = n->x - (gEditor_22->size[0] / 2 - AT(pt, n->idx & 1) / 2);
+        if (n->x + n->type->dim[n->rot & 1] > gEditor->gridSize[0]) {
+            n->x = gEditor->gridSize[0] - n->type->dim[n->rot & 1];
+            gEditor->scrollX = n->x - (gEditor->gridSize[0] / 2 - type->dim[n->rot & 1] / 2);
         }
         if (n->y < 0) {
             n->y = 0;
-            gEditor_22->scrolly = AT(pt, ~n->idx & 1) / 2 - gEditor_22->size[1] / 2;
+            gEditor->scrollY = type->dim[~n->rot & 1] / 2 - gEditor->gridSize[1] / 2;
         }
-        if (n->y + AT(n->pt, ~n->idx & 1) > gEditor_22->size[1]) {
-            n->y = gEditor_22->size[1] - AT(n->pt, ~n->idx & 1);
-            gEditor_22->scrolly = n->y - (gEditor_22->size[1] / 2 - AT(pt, ~n->idx & 1) / 2);
+        if (n->y + n->type->dim[~n->rot & 1] > gEditor->gridSize[1]) {
+            n->y = gEditor->gridSize[1] - n->type->dim[~n->rot & 1];
+            gEditor->scrollY = n->y - (gEditor->gridSize[1] / 2 - type->dim[~n->rot & 1] / 2);
         }
     } else {
         if (a != NULL) {
-            gEditor_22->tail = n;
+            gEditor->last = n;
             a->next = n;
             edit_place_piece_after(a, n);
         }
         if (b != NULL) {
-            gEditor_22->head = n;
+            gEditor->first = n;
             b->prev = n;
             edit_place_piece_before(b, n);
         }
@@ -3297,64 +2602,59 @@ Node_29 *edit_insert_piece(Node_29 *a, Node_29 *b, s16 *pt)
     return n;
 }
 
-#define PTRF(b, off) (*(u8 **)((u8 *)(b) + (off)))
-#define S16F(b, off) (*(s16 *)((u8 *)(b) + (off)))
-#define U16F(b, off) (*(u16 *)((u8 *)(b) + (off)))
-#define S32F(b, off) (*(s32 *)((u8 *)(b) + (off)))
-
-void edit_delete_piece(u8 *p)
+void edit_delete_piece(EditPiece *p)
 {
-    s16 *tbl2;
+    s16 *grid;
     s32 ix;
     s32 iy;
     s32 x;
     s32 y;
 
-    if (PTRF(p, 4) != 0) {
-        if (PTRF(p, 8) != 0) {
-            S32F(PTRF(p, 8), 4) = 0;
-            S32F(PTRF(p, 4), 8) = 0;
-            if ((U16F(p, 0x10) & 4) == 0) {
-                S32F(gEditor, 0x17C) = (s32)PTRF(p, 4);
-                S32F(gEditor, 0x180) = (s32)PTRF(p, 8);
+    if (p->next != NULL) {
+        if (p->prev != NULL) {
+            p->prev->next = NULL;
+            p->next->prev = NULL;
+            if ((p->flags & EDIT_PIECE_PREVIEW) == 0) {
+                gEditor->first = p->next;
+                gEditor->last = p->prev;
             }
             goto L_d4;
         }
         goto L_c;
     }
-    if (PTRF(p, 8) != 0) {
-        S32F(PTRF(p, 8), 4) = 0;
+    if (p->prev != NULL) {
+        p->prev->next = NULL;
         goto L_8c;
     }
 L_c:
-    if (PTRF(p, 4) != 0) {
-        S32F(PTRF(p, 4), 8) = (s32)PTRF(p, 8);
+    if (p->next != NULL) {
+        p->next->prev = p->prev;
     }
 L_8c:
-    if ((U16F(p, 0x10) & 4) == 0) {
-        if (S32F(gEditor, 0x17C) == (s32)p) {
-            S32F(gEditor, 0x17C) = (s32)PTRF(p, 4);
+    if ((p->flags & EDIT_PIECE_PREVIEW) == 0) {
+        if (gEditor->first == p) {
+            gEditor->first = p->next;
         }
-        if (S32F(gEditor, 0x180) == (s32)p) {
-            S32F(gEditor, 0x180) = (s32)PTRF(p, 8);
+        if (gEditor->last == p) {
+            gEditor->last = p->prev;
         }
     }
 L_d4:
     {
-        u8 *gg = gEditor;
-        *(u16 *)p = 0;
-        if (S32F(gg, 0x190) == (s32)p) {
-            S32F(gg, 0x190) = 0;
+        Editor *ed = gEditor;
+        p->used = 0;
+        if (ed->start == p) {
+            ed->start = NULL;
         }
     }
-    for (iy = 0; iy < *(s16 *)((u8 *)PTRF(p, 0x14) + (((S16F(p, 0x12) + 1) & 1) << 1)); iy++) {
-        for (ix = 0; ix < *(s16 *)((u8 *)PTRF(p, 0x14) + ((U16F(p, 0x12) & 1) << 1)); ix++) {
-            x = S16F(p, 0xC) + ix;
+    for (iy = 0; iy < p->type->dim[(p->rot + 1) & 1]; iy++) {
+        for (ix = 0; ix < p->type->dim[p->rot & 1]; ix++) {
+            x = p->x + ix;
             if (x >= 0) {
-                tbl2 = (s16 *)PTRF(gEditor, 0x16AC);
-                if (x < tbl2[0]) {
-                    y = S16F(p, 0xE) + iy;
-                    if (y >= 0 && y < tbl2[1]) {
+                grid = gEditor->gridSize;
+                if (x < grid[0]) {
+                    y = p->y + iy;
+                    if (y >= 0 && y < grid[1]) {
                         arned_set_cell(x, y, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
@@ -3363,13 +2663,15 @@ L_d4:
     }
 }
 
-s32 edit_get_port_x(Blk_22 *b, s32 s)
+/* Where a piece's connector is along an x side of the piece (0 when it is on a y side). P[s], P[s + 2] and
+   P[s + 4] are the type's dim[s], dir[s] and off[s]. */
+s32 edit_get_port_x(EditPiece *b, s32 s)
 {
-    s16 *P = b->P;
+    s16 *P = b->type->dim;
     s16 *Q = &P[s];
     s32 t = Q[2];
 
-    switch ((t + b->k12) & 3) {
+    switch ((t + b->rot) & 3) {
     case 1:
     case 3:
         return 0;
@@ -3384,7 +2686,7 @@ s32 edit_get_port_x(Blk_22 *b, s32 s)
             return P[1] - Q[4] - 2;
         }
     case 2: {
-        s16 *R = b->P;
+        s16 *R = b->type->dim;
         s16 *Q2 = &R[s];
 
         switch (Q2[2]) {
@@ -3401,9 +2703,10 @@ s32 edit_get_port_x(Blk_22 *b, s32 s)
     }
 }
 
-s32 edit_get_port_y(Spr_4 *p, s32 k)
+/* ... along a y side. */
+s32 edit_get_port_y(EditPiece *p, s32 k)
 {
-    s16 *P = p->P;
+    s16 *P = p->type->dim;
     s16 *Q = P + k;
     s32 a = Q[2];
 
@@ -3423,7 +2726,7 @@ s32 edit_get_port_y(Spr_4 *p, s32 k)
             return P[1] - Q[4] - 2;
         }
     case 1: {
-        s16 *R = p->P;
+        s16 *R = p->type->dim;
         s16 *S = R + k;
 
         switch (S[2]) {
@@ -3440,109 +2743,101 @@ s32 edit_get_port_y(Spr_4 *p, s32 k)
     }
 }
 
-#define TB(p, i) (*(u16 *)((u8 *)(p) + ((i) << 1)))
 #define SX16(v) ((s32)((u32)(v) << 16))
 #define HALF(v, s) ((s32)((SX16(v) >> 16) + (s32)((u32)SX16(v) >> 31)) >> (s))
 
-void edit_place_piece_after(Node_30 *p, Node_30 *c)
+/* Puts c after p: c's entry connector against p's exit (with no p, c goes in the middle of the grid). Some reads
+   are unsigned or volatile as the original has them. */
+void edit_place_piece_after(EditPiece *p, EditPiece *c)
 {
-    Node_30 *q = p;
+    EditPiece *q = p;
     s32 k = 1;
     s32 m = 0;
     s32 t, t2, r, v, ka, ma;
 
     if (q == 0) {
-        u16 *tg = *(u16 **)(gEditor + 0x16AC);
-        c->px = HALF(tg[0], k) - HALF(c->tab[0], k);
-        tg = *(u16 **)(gEditor + 0x16AC);
-        c->py = HALF(tg[1], k) - HALF(c->tab[1], k);
+        u16 *tg = (u16 *)gEditor->gridSize;
+        c->x = HALF(tg[0], k) - HALF((u16)c->type->dim[0], k);
+        tg = (u16 *)gEditor->gridSize;
+        c->y = HALF(tg[1], k) - HALF((u16)c->type->dim[1], k);
         return;
     }
-    if (q->flags & 2) k = 0;
-    if (c->flags & 2) m = 1;
-    c->px = q->px;
-    *(volatile s16 *)&c->py = q->py;
-    t = q->cnt + (*(u16 *)((u8 *)q->tab + (k << 1) + 4) - *(u16 *)((u8 *)*(u16 *volatile *)&c->tab + (m << 1) + 4)) + 2;
+    if (q->flags & EDIT_PIECE_FLIPPED) k = 0;
+    if (c->flags & EDIT_PIECE_FLIPPED) m = 1;
+    c->x = q->x;
+    *(volatile s16 *)&c->y = q->y;
+    t = (u16)q->rot + ((u16)q->type->dir[k] - (u16)(*(PieceType *volatile *)&c->type)->dir[m]) + 2;
     t2 = t & 3;
-    c->cnt = t2;
-    r = (*(s16 *)((u8 *)q->tab + (k << 1) + 4) + (s32)(s16)q->cnt) & 3;
+    c->rot = t2;
+    r = (q->type->dir[k] + q->rot) & 3;
     switch (r) {
     case 0:
-        c->py += TB(q->tab, ((s32)(s16)q->cnt + 1) & 1);
+        c->y += q->type->dim[(q->rot + 1) & 1];
         v = edit_get_port_x(q, k);
-        c->px += v;
+        c->x += v;
         v = edit_get_port_x(c, m);
-        c->px -= v;
+        c->x -= v;
         break;
     case 2:
-        c->py -= TB(c->tab, (t2 + 1) & 1);
+        c->y -= c->type->dim[(t2 + 1) & 1];
         v = edit_get_port_x(q, k);
-        c->px += v;
+        c->x += v;
         v = edit_get_port_x(c, m);
-        c->px -= v;
+        c->x -= v;
         break;
     case 3:
-        c->px -= TB(c->tab, t & 1);
+        c->x -= c->type->dim[t & 1];
         v = edit_get_port_y(q, k);
-        c->py += v;
+        c->y += v;
         v = edit_get_port_y(c, m);
-        c->py -= v;
+        c->y -= v;
         break;
     case 1:
-        c->px += TB(q->tab, q->cnt & 1);
+        c->x += q->type->dim[q->rot & 1];
         v = edit_get_port_y(q, k);
-        c->py += v;
+        c->y += v;
         v = edit_get_port_y(c, m);
-        c->py -= v;
+        c->y -= v;
         break;
     }
 }
 
-typedef struct { s16 size[2]; s16 rot[2]; } Tab_8;
-struct Spr_5 { u8 pad[0xc]; s16 x; s16 y; u16 fl; s16 n; Tab_8 *tab; };
-
-void edit_place_piece_before(Spr_5 *a, Spr_5 *b)
+/* Puts b before a: b's exit connector against a's entry. */
+void edit_place_piece_before(EditPiece *a, EditPiece *b)
 {
     s32 fa, fb;
     u16 n;
     s32 f; u32 g;
 
-    f = a->fl & 2; fa = f != 0;
+    f = a->flags & EDIT_PIECE_FLIPPED; fa = f != 0;
     b->x = a->x;
     b->y = a->y;
-    g = b->fl & 2; fb = g < 1;
-    n = a->n + (a->tab->rot[fa] - b->tab->rot[fb]) + 2;
-    b->n = n & 3;
-    switch ((a->tab->rot[fa] + a->n) & 3) {
+    g = b->flags & EDIT_PIECE_FLIPPED; fb = g < 1;
+    n = a->rot + (a->type->dir[fa] - b->type->dir[fb]) + 2;
+    b->rot = n & 3;
+    switch ((a->type->dir[fa] + a->rot) & 3) {
     case 0:
-        b->y += a->tab->size[(a->n + 1) & 1];
+        b->y += a->type->dim[(a->rot + 1) & 1];
         b->x += edit_get_port_x(a, fa);
         b->x -= edit_get_port_x(b, fb);
         break;
     case 2:
-        b->y -= b->tab->size[(b->n + 1) & 1];
+        b->y -= b->type->dim[(b->rot + 1) & 1];
         b->x += edit_get_port_x(a, fa);
         b->x -= edit_get_port_x(b, fb);
         break;
     case 3:
-        b->x -= b->tab->size[b->n & 1];
+        b->x -= b->type->dim[b->rot & 1];
         b->y += edit_get_port_y(a, fa);
         b->y -= edit_get_port_y(b, fb);
         break;
     case 1:
-        b->x += a->tab->size[a->n & 1];
+        b->x += a->type->dim[a->rot & 1];
         b->y += edit_get_port_y(a, fa);
         b->y -= edit_get_port_y(b, fb);
         break;
     }
 }
-
-typedef struct { u8 pad[0xC]; u16 f; u8 rest[0x32]; } Blk_23;
-typedef struct { s32 f0; u32 flags; s16 n; s16 pad; u32 mask; } Rec_50;
-typedef struct { s32 f0; s32 f4; Rec_50 *recs; } Grp;
-
-extern Blk_23 gPieceTypes_7[];
-extern Grp sEditTrackMenu_5;
 
 void edit_set_start_piece_choices(void)
 {
@@ -3550,16 +2845,16 @@ void edit_set_start_piece_choices(void)
     s32 k;
     s32 t0;
     s32 v;
-    Blk_23 *p;
+    PieceType *p;
     s32 w;
     s32 r;
 
     for (k = 0; k < 0x1D; k++) {
-        p = &gPieceTypes_7[k];
-        v = p->f;
+        p = &gPieceTypes[k];
+        v = (u16)p->flags; /* read unsigned here */
         if (v & 2) {
             w = v | 0x10;
-            p->f = w;
+            p->flags = w;
             if (w & 0x100) {
                 r = w | 0x20;
             } else {
@@ -3569,7 +2864,7 @@ void edit_set_start_piece_choices(void)
             r = v & ~0x10;
             r &= ~0x20;
         }
-        p->f = r;
+        p->flags = r;
     }
     for (i = 0; i < 4; i++) {
         switch (i) {
@@ -3586,46 +2881,20 @@ void edit_set_start_piece_choices(void)
             t0 = 0x12;
             break;
         }
-        sEditTrackMenu_5.recs[i].mask = 0;
-        for (k = 0; k < sEditTrackMenu_5.recs[i].n; k++) {
-            if (gPieceTypes_7[t0 + k].f & 0x30) {
-                sEditTrackMenu_5.recs[i].mask |= 1 << k;
+        sEditTrackMenu.items[i].mask = 0;
+        for (k = 0; k < sEditTrackMenu.items[i].count; k++) {
+            if (gPieceTypes[t0 + k].flags & (PIECE_FITS | PIECE_FITS_FLIPPED)) {
+                sEditTrackMenu.items[i].mask |= 1 << k;
             }
         }
-        if (sEditTrackMenu_5.recs[i].mask == 0) {
-            sEditTrackMenu_5.recs[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].mask == 0) {
+            sEditTrackMenu.items[i].flags &= ~0x10;
         } else {
-            sEditTrackMenu_5.recs[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= 0x10;
         }
     }
-    gui_menu_fix_cursor(&sEditTrackMenu_5);
+    gui_menu_fix_cursor(&sEditTrackMenu);
 }
-
-typedef struct Size {
-    s16 w;
-    s16 h;
-} Size;
-
-typedef struct Game_39 {
-    u8 pad0[0x170];
-    s32 f170;
-    u8 pad174[0x17C - 0x174];
-    Obj_72 *list;          /* 0x17C */
-    u8 pad180[0x16AC - 0x180];
-    Size *map;          /* 0x16AC */
-    u8 pad16B0[0x16F4 - 0x16B0];
-    s32 f16F4;
-    u8 pad16F8[0x1702 - 0x16F8];
-    s16 f1702;
-} Game_39;
-
-typedef struct Ent_86 {
-    s16 dim[2];         /* 0x00 */
-    s16 dir[2];         /* 0x04 */
-    s16 off[2];         /* 0x08 */
-    s16 flags;
-    u8 pad[0x40 - 0xE];
-} Ent_86;
 
 typedef struct Grid_3 {
     u8 g[30][30];
@@ -3635,11 +2904,9 @@ typedef struct Rect_4 {
     s32 x0, y0, x1, y1;
 } Rect_4;
 
-extern Game_39 *gEditor_23;
-extern Ent_86 gPieceTypes_8[];
 extern Grid_3 D_800F56B0;
 
-s32 edit_update_fitting_pieces(Obj_72 *o)
+s32 edit_update_fitting_pieces(EditPiece *o)
 {
     Grid_3 grid;
     Rect_4 r;
@@ -3649,8 +2916,8 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     s32 n, m, lo, hi, best;
     s16 s;
     s32 ret;
-    Obj_72 *p;
-    Ent_86 *e;
+    EditPiece *p;
+    PieceType *e;
 
     k = 1;
     if (o->next == NULL || (o->next->flags & 4)) {
@@ -3663,7 +2930,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     case 0:
         {
             s32 t, u;
-            t = o->x + o->len[k];
+            t = o->x + o->off[k];
             r.x0 = t - 14;
             u = o->y + o->h;
             r.x1 = t + 16;
@@ -3676,7 +2943,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             s32 t, u;
             t = o->x + o->w;
             r.x0 = t - 15;
-            u = o->y + o->len[k];
+            u = o->y + o->off[k];
             r.x1 = t + 15;
             r.y0 = u - 14;
             r.y1 = u + 16;
@@ -3685,7 +2952,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     case 2:
         {
             s32 t, u;
-            t = o->x + o->len[k];
+            t = o->x + o->off[k];
             r.x0 = t - 14;
             u = o->y;
             r.x1 = t + 16;
@@ -3698,7 +2965,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             s32 t, u;
             t = o->x;
             r.x0 = t - 15;
-            u = o->y + o->len[k];
+            u = o->y + o->off[k];
             r.x1 = t + 15;
             r.y0 = u - 14;
             r.y1 = u + 16;
@@ -3708,8 +2975,8 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
     mem_fill((u8 *)&grid, 0, 0x384);
     for (j = 0; j < r.y1 - r.y0; j++) {
         for (i = 0; i < r.x1 - r.x0; i++) {
-            if (i + r.x0 < 0 || i + r.x0 >= gEditor_23->map->w
-                || j + r.y0 < 0 || j + r.y0 >= gEditor_23->map->h) {
+            if (i + r.x0 < 0 || i + r.x0 >= gEditor->gridSize[0]
+                || j + r.y0 < 0 || j + r.y0 >= gEditor->gridSize[1]) {
                 switch (o->dir[k]) {
                 case 0:
                     grid.g[i][j] = 1;
@@ -3727,7 +2994,7 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             }
         }
     }
-    p = gEditor_23->list;
+    p = gEditor->first;
     if (p != NULL) {
         do {
             if (!(p->flags & 4) && p->x < r.x1 && r.x0 < p->x + p->w
@@ -3772,17 +3039,17 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
                 }
             }
             p = p->next;
-        } while (p != NULL && p != gEditor_23->list);
+        } while (p != NULL && p != gEditor->first);
     }
     D_800F56B0 = grid;
 
     for (n = 0; n < 29; n++) {
-        e = &gPieceTypes_8[n];
-        if (!(e->flags & 8)) {
+        e = &gPieceTypes[n];
+        if (!(e->flags & PIECE_IN_MENU)) {
             continue;
         }
         best = 0;
-        if (e->flags & 0x80) {
+        if (e->flags & PIECE_VAR_LENGTH) {
             lo = 1;
             hi = 8;
         } else {
@@ -3790,8 +3057,8 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
             lo = hi;
         }
         for (m = lo; m <= hi; m++) {
-            if ((u32)(n - 18) < 8 && n - 18 >= gEditor_23->f16F4) {
-                e->flags &= ~0x30;
+            if ((u32)(n - 18) < 8 && n - 18 >= gEditor->userPieceCount) {
+                e->flags &= ~(PIECE_FITS | PIECE_FITS_FLIPPED);
             } else {
                 switch (e->dir[other]) {
                 case 0:
@@ -3807,19 +3074,19 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
                     s = e->off[other];
                     break;
                 }
-                e->flags |= 0x10;
+                e->flags |= PIECE_FITS;
                 for (j = 0; j < m; j++) {
                     for (i = 0; i < e->dim[e->dir[k] & 1]; i++) {
                         if (grid.g[i + (14 - s)][j + 15]) {
-                            e->flags &= ~0x10;
+                            e->flags &= ~PIECE_FITS;
                             break;
                         }
                     }
-                    if (!(e->flags & 0x10)) {
+                    if (!(e->flags & PIECE_FITS)) {
                         break;
                     }
                 }
-                if (e->flags & 0x100) {
+                if (e->flags & PIECE_FLIPPABLE) {
                     switch (e->dir[k]) {
                     case 0:
                         s = e->dim[0] - e->off[k] - 2;
@@ -3834,37 +3101,37 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
                         s = e->off[k];
                         break;
                     }
-                    e->flags |= 0x20;
+                    e->flags |= PIECE_FITS_FLIPPED;
                     j = 0;
                     if (m > 0) {
                         do {
                             for (i = 0; i < e->dim[e->dir[k] & 1]; i++) {
                                 if (grid.g[i + (14 - s)][j + 15]) {
-                                    e->flags &= ~0x20;
+                                    e->flags &= ~PIECE_FITS_FLIPPED;
                                     break;
                                 }
                             }
                             j++;
-                        } while ((e->flags & 0x20) && j < m);
+                        } while ((e->flags & PIECE_FITS_FLIPPED) && j < m);
                     }
                 } else {
-                    e->flags &= ~0x20;
+                    e->flags &= ~PIECE_FITS_FLIPPED;
                 }
             }
-            if (e->flags & 0x10) {
+            if (e->flags & PIECE_FITS) {
                 best = m;
-            } else if (e->flags & 0x80) {
+            } else if (e->flags & PIECE_VAR_LENGTH) {
                 if (m != lo) {
-                    e->flags |= 0x10;
+                    e->flags |= PIECE_FITS;
                 }
                 break;
             }
         }
-        if (e->flags & 0x80) {
-            if (gEditor_23->f170 != 6) {
+        if (e->flags & PIECE_VAR_LENGTH) {
+            if (gEditor->mode != EDIT_MODE_USER_PIECE) {
                 e->dim[1] = (best < e->dim[1]) ? best : e->dim[1];
             }
-            gEditor_23->f1702 = best;
+            gEditor->maxSegments = best;
         }
     }
 
@@ -3886,172 +3153,129 @@ s32 edit_update_fitting_pieces(Obj_72 *o)
         default:
             continue;
         }
-        sEditTrackMenu_6.slots[i].mask = 0;
-        for (n = 0; n < sEditTrackMenu_6.slots[i].n; n++) {
-            if (gPieceTypes_8[j + n].flags & 0x30) {
-                sEditTrackMenu_6.slots[i].mask |= 1 << n;
+        sEditTrackMenu.items[i].mask = 0;
+        for (n = 0; n < sEditTrackMenu.items[i].count; n++) {
+            if (gPieceTypes[j + n].flags & 0x30) {
+                sEditTrackMenu.items[i].mask |= 1 << n;
             }
         }
-        if (sEditTrackMenu_6.slots[i].mask == 0) {
-            sEditTrackMenu_6.slots[i].flags &= ~0x10;
+        if (sEditTrackMenu.items[i].mask == 0) {
+            sEditTrackMenu.items[i].flags &= ~0x10;
         } else {
             ret = 1;
-            sEditTrackMenu_6.slots[i].flags |= 0x10;
+            sEditTrackMenu.items[i].flags |= 0x10;
         }
     }
-    gui_menu_fix_cursor(&sEditTrackMenu_6);
+    gui_menu_fix_cursor(&sEditTrackMenu);
     return ret;
 }
-
-typedef struct {
-    u16 x0;
-    u16 x2;
-    u8 pad4[0x2C];
-    void *x30;
-    void *x34;
-    u8 pad38[8];
-} Rec_51;
-
-typedef struct {
-    u8 pad[0x16F8];
-    s32 x16F8;
-    s32 x16FC;
-    u16 x1700;
-    u16 x1702;
-} Ctl_25;
-
-extern Rec_51 gPieceTypes_9[];
-extern Ctl_25 *gEditor_24;
 
 void edit_init_user_pieces(void)
 {
     s32 i, j;
-    s32 *p1 = gPieceTypes_9[0x1C].x30;
-    s32 *p2 = gPieceTypes_9[0x1C].x34;
+    PieceMeshSet *tmplA = gPieceTypes[PIECE_TYPE_TEMPLATE].meshA;
+    PieceMeshSet *tmplB = gPieceTypes[PIECE_TYPE_TEMPLATE].meshB;
 
-    gEditor_24->x16F8 = 1;
-    gEditor_24->x16FC = 0;
-    gEditor_24->x1702 = 8;
+    gEditor->heightSel = 1;
+    gEditor->userPiece = 0;
+    gEditor->maxSegments = 8;
     for (i = 0; i < 8; i++) {
-        gPieceTypes_9[i + 0x12].x2 = 4;
-        gPieceTypes_9[i + 0x12].x30 = mem_alloc_dbg((*p1 << 8) | 4, 0, sStrEditFile, 0x1D73);
-        gPieceTypes_9[i + 0x12].x34 = mem_alloc_dbg((*p2 << 8) | 4, 0, sStrEditFile, 0x1D74);
-        usrtrk_clone_piece_meshes(gPieceTypes_9[i + 0x12].x30, gPieceTypes_9[i + 0x12].x34, 8);
+        gPieceTypes[i + 0x12].dim[1] = 4;
+        gPieceTypes[i + 0x12].meshA = mem_alloc_dbg((tmplA->count << 8) | 4, 0, sStrEditFile, 0x1D73);
+        gPieceTypes[i + 0x12].meshB = mem_alloc_dbg((tmplB->count << 8) | 4, 0, sStrEditFile, 0x1D74);
+        usrtrk_clone_piece_meshes(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, 8);
         for (j = 0; j < 15; j++) {
             gUserPieceHeights[i][j] = 0;
         }
-        usrtrk_apply_heights(gPieceTypes_9[i + 0x12].x30, gPieceTypes_9[i + 0x12].x34, gUserPieceHeights[i], 8);
+        usrtrk_apply_heights(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, gUserPieceHeights[i], 8);
     }
     {
-        Ctl_25 *ea;
+        Editor *ea;
         u8 *rb;
-        volatile Rec_51 *r;
+        PieceType *r;
         u8 *tb;
         i = 0;
         tb = (u8 *)gUserPieceHeights;
         if (tb) j = 3; else j = 4;
-        ea = gEditor_24;
-        rb = (u8 *)gPieceTypes_9;
-        r = (volatile Rec_51 *)(rb + ((ea->x16FC + 0x12) << 6));
-        r->x2;
+        ea = gEditor;
+        rb = (u8 *)gPieceTypes;
+        r = (PieceType *)(rb + ((ea->userPiece + 0x12) << 6));
+        *(volatile u16 *)&r->dim[1];
         if (r) j = 1; else j = 2;
         for (; i < 15; i++) {
-            *(u16 *)(tb + (ea->x16FC * 15 + i) * 2) = 0;
+            *(u16 *)(tb + (ea->userPiece * 15 + i) * 2) = 0;
         }
     }
 }
 
-typedef struct Game_40 {
-    u8 pad0[0x184];
-    Sub_2 *sub;
-    u8 pad1[0x16FC - 0x188];
-    s32 idx;
-    u8 pad2[0x1738 - 0x1700];
-    s32 f1738;
-    u8 pad3[0x1758 - 0x173C];
-    s32 t1758;
-    s32 t175c;
-} Game_40;
-
-typedef struct T2 {
-    s16 cnt[2];
-    u8 pad[0x2C];
-    u8 *p30;
-    u8 *p34;
-    u8 pad2[0x8];
-} T2;
-
-extern Game_40 *gEditor_25;
-extern T2 gPieceTypes_10[];
-
 void edit_user_piece_remove_first_segment(void)
 {
-    T2 *t;
+    PieceType *t;
     s32 x;
     s32 y;
     s32 i;
     s16 sv;
-    Sub_2 *sub;
-    Game_40 *g;
+    EditPiece *sub;
+    Editor *g;
 
-    t = &gPieceTypes_10[gEditor_25->idx + 18];
-    for (y = 0; y < t->cnt[(gEditor_25->sub->cur + 1) & 1]; y++) {
-        for (x = 0; x < t->cnt[gEditor_25->sub->cur & 1]; x++) {
-            arned_set_cell(gEditor_25->sub->c + x, gEditor_25->sub->e + y, 0, 0, 0, 0, 0, 0, 0);
+    t = &gPieceTypes[gEditor->userPiece + 18];
+    for (y = 0; y < t->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < t->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 
-    for (i = 0; i < gPieceTypes_10[gEditor_25->idx + 18].cnt[1]; i++) {
-        __builtin_memcpy(gUserPieceHeights_2 + gEditor_25->idx * 30 + i * 4, gUserPieceHeights_2 + gEditor_25->idx * 30 + i * 4 + 4, 4);
+    for (i = 0; i < gPieceTypes[gEditor->userPiece + 18].dim[1]; i++) {
+        __builtin_memcpy((u8 *)gUserPieceHeights + gEditor->userPiece * 30 + i * 4, (u8 *)gUserPieceHeights + gEditor->userPiece * 30 + i * 4 + 4, 4);
     }
-    g = gEditor_25;
-    gPieceTypes_10[g->idx + 18].cnt[1]--;
+    g = gEditor;
+    gPieceTypes[g->userPiece + 18].dim[1]--;
     {
-        s32 k = gPieceTypes_10[g->idx + 18].cnt[1] * 4 - 2;
-        k += g->idx * 30;
-        *(s16 *)(gUserPieceHeights_2 + k) = 0;
+        s32 k = gPieceTypes[g->userPiece + 18].dim[1] * 4 - 2;
+        k += g->userPiece * 30;
+        *(s16 *)((u8 *)gUserPieceHeights + k) = 0;
     }
-    usrtrk_apply_heights(gPieceTypes_10[g->idx + 18].p30, gPieceTypes_10[g->idx + 18].p34,
-                  gUserPieceHeights_2 + g->idx * 30, gPieceTypes_10[g->idx + 18].cnt[1]);
+    usrtrk_apply_heights(gPieceTypes[g->userPiece + 18].meshA, gPieceTypes[g->userPiece + 18].meshB,
+                  (u8 *)gUserPieceHeights + g->userPiece * 30, gPieceTypes[g->userPiece + 18].dim[1]);
 
-    sub = gEditor_25->sub;
-    sv = sub->arr[sub->f8 == 0];
+    sub = gEditor->cur;
+    sv = sub->dir[sub->prev == 0];
     if (sv != 0) {
         if (sv == 1) {
-            sub->c++;
+            sub->x++;
         }
     } else {
-        sub->e++;
+        sub->y++;
     }
-    if (gEditor_25->f1738 > 45000) {
-        gEditor_25->t175c = -10000;
-        gEditor_25->t1758 = 50;
+    if (gEditor->cam[1].dist > 45000) {
+        gEditor->camZoomStep = -10000;
+        gEditor->camZoomFrames = 50;
     }
 }
 
 void edit_user_piece_remove_last_segment(void)
 {
     s32 x, y, i, j;
-    Rec_5 *tb;
-    Pl *pl;
+    PieceType *tb;
+    EditPiece *pl;
     s16 s;
 
-    tb = &gPieceTypesUser[gEditor_2->idx];
-    for (y = 0; y < tb->d[(gEditor_2->pl->f12 + 1) & 1]; y++) {
-        for (x = 0; x < tb->d[gEditor_2->pl->f12 & 1]; x++) {
-            arned_set_cell(gEditor_2->pl->x + x, gEditor_2->pl->y + y, 0, 0, 0, 0, 0, 0, 0);
+    tb = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
+    for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
-    gPieceTypes_2[gEditor_2->idx + 18].d[1]--;
+    gPieceTypes[gEditor->userPiece + 18].dim[1]--;
     for (i = 0; i < 2; i++) {
         j = i - 1;
-        gUserPieceHeights[gEditor_2->idx][gPieceTypes_2[gEditor_2->idx + 18].d[1] * 2 + j] = 0;
+        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 + j] = 0;
     }
-    usrtrk_apply_heights(gPieceTypes_2[gEditor_2->idx + 18].f30, gPieceTypes_2[gEditor_2->idx + 18].f34,
-                  gUserPieceHeights[gEditor_2->idx], gPieceTypes_2[gEditor_2->idx + 18].d[1]);
-    gEditor_2->f16F8 -= 2;
-    pl = gEditor_2->pl;
-    s = pl->sel[pl->f8 == 0];
+    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + 18].meshA, gPieceTypes[gEditor->userPiece + 18].meshB,
+                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + 18].dim[1]);
+    gEditor->heightSel -= 2;
+    pl = gEditor->cur;
+    s = pl->dir[pl->prev == 0];
     if (s != 0) {
         if (s == 1) {
             pl->x++;
@@ -4059,9 +3283,9 @@ void edit_user_piece_remove_last_segment(void)
     } else {
         pl->y++;
     }
-    if (gEditor_2->f1738 > 45000) {
-        gEditor_2->f175C = -10000;
-        gEditor_2->f1758 = 50;
+    if (gEditor->cam[1].dist > 45000) {
+        gEditor->camZoomStep = -10000;
+        gEditor->camZoomFrames = 50;
     }
 }
 
@@ -4069,120 +3293,93 @@ typedef struct U4 {
     u32 w;
 } __attribute__((packed)) U4;
 
-typedef struct Game_41 {
-    u8 pad0[0x184];
-    Sub_2 *sub;
-    u8 pad1[0x16f8 - 0x188];
-    s32 n16f8;
-    s32 idx;
-    u8 pad2[0x1758 - 0x1700];
-    s32 t1758;
-    s32 t175c;
-} Game_41;
-
-typedef struct T1 {
-    s16 cnt[2];
-    u8 pad[60];
-} T1;
-
-typedef struct T2_2 {
-    s16 w0;
-    s16 cnt;
-    u8 pad[0x2c];
-    u8 *p30;
-    u8 *p34;
-    u8 pad2[0x8];
-} T2_2;
-
-extern Game_41 *gEditor_26;
-
 void edit_user_piece_prepend_segment(void) {
-    T1 *t1;
-    T2_2 *t2;
-    T2_2 *b2;
-    T2_2 *bp;
-    T2_2 *bq;
-    T2_2 *tq;
-    T2_2 *tr;
-    T2_2 *ts;
-    Game_41 *g;
+    PieceType *t1;
+    PieceType *t2;
+    PieceType *b2;
+    PieceType *bp;
+    PieceType *bq;
+    PieceType *tq;
+    PieceType *tr;
+    PieceType *ts;
+    Editor *g;
     u8 *hb;
-    Game_41 *gt;
+    Editor *gt;
     u8 *ub;
     u8 *sb;
-    Sub_2 *sub;
+    EditPiece *sub;
     s32 x;
     s32 y;
     s32 i;
     s32 off;
     s16 sv;
 
-    t1 = &gPieceTypesUser[gEditor_26->idx];
-    for (y = 0; y < t1->cnt[(gEditor_26->sub->cur + 1) & 1]; y++) {
-        for (x = 0; x < t1->cnt[gEditor_26->sub->cur & 1]; x++) {
-            arned_set_cell(gEditor_26->sub->c + x, gEditor_26->sub->e + y, 0, 0, 0, 0, 0, 0, 0);
+    t1 = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
+    for (y = 0; y < t1->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < t1->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 
     bp = gPieceTypes;
-    tq = (T2_2 *)((u8 *)bp + ((gEditor_26->idx + 0x12) << 6));
-    i = tq->cnt - 1;
+    tq = (PieceType *)((u8 *)bp + ((gEditor->userPiece + 0x12) << 6));
+    i = tq->dim[1] - 1;
     if (i >= 0) {
         do {
-            off = gEditor_26->idx * 30 + i * 4;
-            ub = D_800F55BC;
+            off = gEditor->userPiece * 30 + i * 4;
+            ub = D_800F55BC; /* gUserPieceHeights + 4 */
             sb = ub - 4;
             *(U4 *)(ub + off) = *(U4 *)(sb + off);
             i--;
         } while (i >= 0);
     }
 
-    mem_fill(gUserPieceHeights_2 + gEditor_26->idx * 30, 0, 4);
+    mem_fill((u8 *)gUserPieceHeights + gEditor->userPiece * 30, 0, 4);
 
-    g = gEditor_26;
+    g = gEditor;
     bq = gPieceTypes;
-    tr = (T2_2 *)((u8 *)bq + ((g->idx + 0x12) << 6));
-    tr->cnt = tr->cnt + 1;
+    tr = (PieceType *)((u8 *)bq + ((g->userPiece + 0x12) << 6));
+    tr->dim[1] = tr->dim[1] + 1;
     bq = gPieceTypes;
-    ts = (T2_2 *)((u8 *)bq + ((g->idx + 0x12) << 6));
-    usrtrk_apply_heights(ts->p30, ts->p34, gUserPieceHeights_2 + g->idx * 30, ts->cnt);
+    ts = (PieceType *)((u8 *)bq + ((g->userPiece + 0x12) << 6));
+    usrtrk_apply_heights(ts->meshA, ts->meshB, (u8 *)gUserPieceHeights + g->userPiece * 30, ts->dim[1]);
 
-    gEditor_26->n16f8 = gEditor_26->n16f8 + 1;
-    sub = gEditor_26->sub;
-    sv = sub->arr[sub->f8 == 0];
+    gEditor->heightSel = gEditor->heightSel + 1;
+    sub = gEditor->cur;
+    sv = sub->dir[sub->prev == 0];
     if (sv != 0) {
         if (sv == 1) {
-            sub->c = sub->c - 1;
+            sub->x = sub->x - 1;
         }
     } else {
-        sub->e = sub->e - 1;
+        sub->y = sub->y - 1;
     }
-    gEditor_26->t175c = 10000;
-    gEditor_26->t1758 = 50;
+    gEditor->camZoomStep = 10000;
+    gEditor->camZoomFrames = 50;
 }
 
 void edit_user_piece_append_segment(void)
 {
     s32 x, y, i;
-    Rec_5 *tb;
-    Pl *pl;
+    PieceType *tb;
+    EditPiece *pl;
     s16 s;
 
-    tb = &gPieceTypesUser[gEditor_2->idx];
-    for (y = 0; y < tb->d[(gEditor_2->pl->f12 + 1) & 1]; y++) {
-        for (x = 0; x < tb->d[gEditor_2->pl->f12 & 1]; x++) {
-            arned_set_cell(gEditor_2->pl->x + x, gEditor_2->pl->y + y, 0, 0, 0, 0, 0, 0, 0);
+    tb = &gPieceTypes[PIECE_TYPE_USER + gEditor->userPiece];
+    for (y = 0; y < tb->dim[(gEditor->cur->rot + 1) & 1]; y++) {
+        for (x = 0; x < tb->dim[gEditor->cur->rot & 1]; x++) {
+            arned_set_cell(gEditor->cur->x + x, gEditor->cur->y + y, 0, 0, 0, 0, 0, 0, 0);
         }
     }
     for (i = 0; i < 2; i++) {
-        gUserPieceHeights[gEditor_2->idx][gPieceTypes_2[gEditor_2->idx + 18].d[1] * 2 + i] = 0;
+        gUserPieceHeights[gEditor->userPiece][gPieceTypes[gEditor->userPiece + 18].dim[1] * 2 + i] = 0;
     }
-    gPieceTypes_2[gEditor_2->idx + 18].d[1]++;
-    usrtrk_apply_heights(gPieceTypes_2[gEditor_2->idx + 18].f30, gPieceTypes_2[gEditor_2->idx + 18].f34,
-                  gUserPieceHeights[gEditor_2->idx], gPieceTypes_2[gEditor_2->idx + 18].d[1]);
-    gEditor_2->f16F8 += 1;
-    pl = gEditor_2->pl;
-    s = pl->sel[pl->f8 == 0];
+    gPieceTypes[gEditor->userPiece + 18].dim[1]++;
+    usrtrk_apply_heights(gPieceTypes[gEditor->userPiece + 18].meshA, gPieceTypes[gEditor->userPiece + 18].meshB,
+                  gUserPieceHeights[gEditor->userPiece], gPieceTypes[gEditor->userPiece + 18].dim[1]);
+    gEditor->heightSel += 1;
+    pl = gEditor->cur;
+    s = pl->dir[pl->prev == 0];
     if (s != 0) {
         if (s == 1) {
             pl->x--;
@@ -4190,12 +3387,12 @@ void edit_user_piece_append_segment(void)
     } else {
         pl->y--;
     }
-    gEditor_2->f175C = 10000;
-    gEditor_2->f1758 = 50;
+    gEditor->camZoomStep = 10000;
+    gEditor->camZoomFrames = 50;
 }
 
-#define CEA_IDX (*(s32 *)(gEditor + 0x16FC))
-#define LIM ((s32)gPieceTypes_3[CEA_IDX + 0x12].f2 << 1)
+#define CEA_IDX (gEditor->userPiece)
+#define LIM ((s32)gPieceTypes[CEA_IDX + 0x12].dim[1] << 1)
 
 int func_8009D224(int param_1, u16 *param_2)
 {
@@ -4246,8 +3443,8 @@ int func_8009D224(int param_1, u16 *param_2)
     return res;
 }
 
-#define CE_ROW() (*(s32 *)(gEditor + 0x16FC))
-#define CE_LIM() ((gPieceTypes_3[CE_ROW() + 0x12].f2) << 1)
+#define CE_ROW() (gEditor->userPiece)
+#define CE_LIM() ((gPieceTypes[CE_ROW() + 0x12].dim[1]) << 1)
 #define GETA(i) (((i) + 1 > 0 && (i) + 1 < CE_LIM()) ? gUserPieceHeights[CE_ROW()][i] : 0)
 #define ANG(p, i) (((i) + 1 < CE_LIM()) ? 0x2000 - (p)[(i) + 1] : 0x2000)
 #define SINS(x) gCosTable[((x) >> 4) & 0xFFF]
@@ -4269,7 +3466,7 @@ s32 func_8009D3D4(s32 p1, s16 *p2)
     return (t0 < q) ? t0 : q;
 }
 
-#define OFS(n) (((n) - 1 > 0 && (n) - 1 < gPieceTypes_4[CUR + 0x12].cnt * 2) ? gUserPieceHeights[CUR][(n) - 2] : 0)
+#define OFS(n) (((n) - 1 > 0 && (n) - 1 < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(n) - 2] : 0)
 #define ANG_2(n, p) ((n) - 1 > 0 ? (p)[(n) - 2] : 0)
 
 int func_8009D5D8(int n, u16 *p)
@@ -4288,8 +3485,8 @@ int func_8009D5D8(int n, u16 *p)
     return res < lo ? lo : res;
 }
 
-#define OFS_2(i) (((i) > 0 && (i) < gPieceTypes_4[CUR + 0x12].cnt * 2) ? gUserPieceHeights[CUR][(i) - 1] : 0)
-#define ANG_3(i, p) ((i) < gPieceTypes_4[CUR + 0x12].cnt * 2 ? (p)[i] : 0)
+#define OFS_2(i) (((i) > 0 && (i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2) ? gUserPieceHeights[gEditor->userPiece][(i) - 1] : 0)
+#define ANG_3(i, p) ((i) < gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2 ? (p)[i] : 0)
 
 int func_8009D788(int n, s16 *p)
 {
@@ -4307,18 +3504,8 @@ int func_8009D788(int n, s16 *p)
     return res < lo ? lo : res;
 }
 
-#define LIM_2 (gPieceTypes_11[gEditor_27->cur + 0x12].lim * 2)
+#define LIM_2 (gPieceTypes[gEditor->userPiece + 0x12].dim[1] * 2)
 #define T1_2 ((s16 *)gUserPieceHeights)
-
-typedef struct {
-    u8 pad[0x16FC];
-    s32 cur;
-} Ctx9D;
-
-typedef struct { s16 n0; s16 lim; s16 rest[30]; } Row9D;
-
-extern Ctx9D *gEditor_27;
-extern Row9D gPieceTypes_11[];
 
 static inline s16 *At(s16 *b, s32 c, s32 i)
 {
@@ -4333,26 +3520,26 @@ s32 func_8009D98C(s32 n)
     s32 a, cnt, v;
 
     if (n > 0 && n < LIM_2)
-        a = *At(T1_2, gEditor_27->cur, n - 1);
+        a = *At(T1_2, gEditor->userPiece, n - 1);
     else
         a = 0;
     cnt = a;
     for (;;) {
-        gUserPieceHeights[gEditor_27->cur][n - 1]++;
+        gUserPieceHeights[gEditor->userPiece][n - 1]++;
         if (n > 0 && n < LIM_2)
-            v = gUserPieceHeights[gEditor_27->cur][n - 1];
+            v = gUserPieceHeights[gEditor->userPiece][n - 1];
         else
             v = 0;
         if (n - 1 > 0 && n - 1 < LIM_2)
-            v -= gUserPieceHeights[gEditor_27->cur][n - 2];
+            v -= gUserPieceHeights[gEditor->userPiece][n - 2];
         math_to_polar(4000, v << 4, &r1, &dummy);
         r1 = 0x4000 - r1;
         if (n + 1 > 0 && n + 1 < LIM_2)
-            v = T1_2[gEditor_27->cur * 15 + n];
+            v = T1_2[gEditor->userPiece * 15 + n];
         else
             v = 0;
         if (n > 0 && n < LIM_2)
-            v -= gUserPieceHeights[gEditor_27->cur][n - 1];
+            v -= gUserPieceHeights[gEditor->userPiece][n - 1];
         math_to_polar(4000, v << 4, &r2, &dummy);
         r2 = 0x4000 - r2;
         if ((s16)(r2 - r1) < -0x2000)
@@ -4361,13 +3548,13 @@ s32 func_8009D98C(s32 n)
     }
     {
         s16 *b = T1_2;
-        *At(b, gEditor_27->cur, n - 1) = a;
+        *At(b, gEditor->userPiece, n - 1) = a;
     }
     return cnt;
 }
 
-#define LV() (*(s32 *)(gEditor + 0x16FC))
-#define CE2() (gPieceTypes[LV() + 0x12].h1 << 1)
+#define LV() (gEditor->userPiece)
+#define CE2() (gPieceTypes[LV() + 0x12].dim[1] << 1)
 
 s32 func_8009DC6C(s32 param_1)
 {
@@ -4419,19 +3606,13 @@ s32 func_8009DC6C(s32 param_1)
     return iVar4;
 }
 
-#define A_2 (gEditor_28->a)
-#define B_2 (gEditor_28->b)
-#define LIM_3 (gPieceTypes_12[B_2 + 0x12].lim * 2)
+#define A_2 (gEditor->heightSel)
+#define B_2 (gEditor->userPiece)
+#define LIM_3 (gPieceTypes[B_2 + 0x12].dim[1] * 2)
 #define H_2(c) ((c) > 0 && (c) < LIM_3 ? gUserPieceHeights[B_2][(c) - 1] : 0)
 #define MIN_2(x, y) ((x) < (y) ? (x) : (y))
 #define MAX_2(x, y) ((x) > (y) ? (x) : (y))
 #define CELL (({ s16 *_tb = (s16 *)gUserPieceHeights; _tb; })[({ s32 _c = A_2 - 1; B_2 * 15 + _c; })])
-
-typedef struct { u8 pad0[2]; s16 lim; u8 rest[0x3C]; } Tb_2;
-typedef struct { u8 pad[0x16F8]; s32 a; s32 b; s16 st; } Ctl_26;
-
-extern Tb_2 gPieceTypes_12[];
-extern Ctl_26 *gEditor_28;
 
 void edit_user_piece_adjust_height(void)
 {
@@ -4452,7 +3633,7 @@ void edit_user_piece_adjust_height(void)
     if (lo < -0x1C2) {
         lo = -0x1C2;
     }
-    *(volatile s16 *)&gEditor_28->st = 2;
+    *(volatile s16 *)&gEditor->heightState = 2;
     if (gPadInput & 1) {
         goto body;
     }
@@ -4486,21 +3667,21 @@ void edit_user_piece_adjust_height(void)
             v = CELL;
             if (hi < v) {
                 if (flag != 0) {
-                    gEditor_28->st = 1;
+                    gEditor->heightState = 1;
                 }
                 CELL = hi;
             } else if (v < lo) {
                 CELL = lo;
-                gEditor_28->st = 1;
+                gEditor->heightState = 1;
             }
         } else {
             v = CELL;
             if (hi < v) {
-                gEditor_28->st = 0;
+                gEditor->heightState = 0;
                 CELL = hi;
             } else if (v < lo) {
                 CELL = lo;
-                gEditor_28->st = 0;
+                gEditor->heightState = 0;
             }
         }
     }
@@ -4508,67 +3689,21 @@ void edit_user_piece_adjust_height(void)
 
 #define PRESSED_4(b) ((gPadInput & (b)) && !(gPadInputPrev_3[0] & (b)))
 
-typedef struct {
-    u8 pad0[0x170];
-    s32 f170;
-    u32 f174;
-    u8 pad178[0x16E0 - 0x178];
-    Obj_2 *sub;
-    u8 pad16E4[0x16F4 - 0x16E4];
-    s32 f16F4;
-    s32 f16F8;
-    s32 f16FC;
-    u8 pad1700[2];
-    s16 f1702;
-    u8 pad1704[0x17FC - 0x1704];
-    s16 f17FC;
-    s16 f17FE;
-} Game_42;
-
-typedef struct {
-    u8 pad0[0x34];
-    u32 f34;
-    u8 pad38[4];
-    u32 f3C;
-} Obj_73;
-
-typedef struct {
-    u8 pad0[6];
-    s16 f6;
-    Obj_73 *obj;
-    u8 padC[4];
-    s16 f10;
-} Menu_11;
-
-typedef struct {
-    u8 pad0[2];
-    s16 n;
-    u8 pad4[8];
-    u16 fC;
-    u8 padE[0x30 - 0xE];
-    void *a;
-    void *b;
-    u8 pad38[8];
-} Tab_9;
-
-extern Game_42 *gEditor_29;
-extern Menu_11 sEditTrackMenu_7;
-
 void edit_update_user_piece(void)
 {
     s32 i;
 
-    if (gEditor_29->f174 & 0x1000) {
+    if (gEditor->flags & EDIT_DIALOG) {
         if (PRESSED_4(0x20)) {
             gPadInputPrev_3[0] |= 0x20;
-            gEditor_29->sub->flags |= 1;
-            gEditor_29->f174 &= ~0x1000;
+            gEditor->menu->flags |= 1;
+            gEditor->flags &= ~EDIT_DIALOG;
         } else if (PRESSED_4(0x10)) {
             gPadInputPrev_3[0] |= 0x10;
-            if (gEditor_29->f17FE != 0) {
-                switch (gEditor_29->f17FC) {
+            if (gEditor->dialogChoice != 0) {
+                switch (gEditor->dialog) {
                 case 0:
-                    if (gEditor_29->f16F8 == 1) {
+                    if (gEditor->heightSel == 1) {
                         edit_user_piece_prepend_segment();
                     } else {
                         edit_user_piece_append_segment();
@@ -4576,9 +3711,9 @@ void edit_update_user_piece(void)
                     break;
                 case 1:
                     for (i = 0; i < 15; i++) {
-                        gUserPieceHeights[gEditor_29->f16FC][i] = 0;
+                        gUserPieceHeights[gEditor->userPiece][i] = 0;
                     }
-                    if (gEditor_29->f16F8 == 1) {
+                    if (gEditor->heightSel == 1) {
                         edit_user_piece_remove_first_segment();
                     } else {
                         edit_user_piece_remove_last_segment();
@@ -4586,76 +3721,76 @@ void edit_update_user_piece(void)
                     break;
                 }
             }
-            gEditor_29->sub->flags |= 1;
-            gEditor_29->f174 &= ~0x1000;
+            gEditor->menu->flags |= 1;
+            gEditor->flags &= ~EDIT_DIALOG;
         } else if (PRESSED_4(0x800) || PRESSED_4(0x1000)) {
-            gEditor_29->f17FE ^= 1;
+            gEditor->dialogChoice ^= 1;
             snd_play_menu_sound(0);
         }
     } else if (PRESSED_4(0x10)) {
-        gEditor_29->f170 = 9;
-        gEditor_29->sub->flags |= 1;
-        sEditTrackMenu_7.f10 = 3;
-        sEditTrackMenu_7.f6 = 3;
-        sEditTrackMenu_7.obj->f34 |= 0x10;
-        sEditTrackMenu_7.obj->f3C |= 1 << (gEditor_29->f16F4 - 1);
+        gEditor->mode = EDIT_MODE_PLACE;
+        gEditor->menu->flags |= 1;
+        sEditTrackMenu.sel = 3;
+        sEditTrackMenu.cursor = 3;
+        sEditTrackMenu.items[3].flags |= 0x10;
+        sEditTrackMenu.items[3].mask |= 1 << (gEditor->userPieceCount - 1);
     } else {
         if (PRESSED_4(0x10000)) {
-            Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-            Tab_9 *t;
+            PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+            PieceType *t;
             t = &b[k];
-            if (t->n >= 5 && !(t->fC & 0x200)) {
-                if (gEditor_29->f16F8 == 1 || gEditor_29->f16F8 == t->n * 2 - 1) {
-                    gEditor_29->f17FC = 1;
-                    gEditor_29->f174 |= 0x1000;
-                    gEditor_29->sub->flags &= ~1;
-                    gEditor_29->f17FE = 0;
+            if (t->dim[1] >= 5 && !(t->flags & 0x200)) {
+                if (gEditor->heightSel == 1 || gEditor->heightSel == t->dim[1] * 2 - 1) {
+                    gEditor->dialog = 1;
+                    gEditor->flags |= EDIT_DIALOG;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->dialogChoice = 0;
                     goto end;
                 }
             }
         }
-        if ((PRESSED_4(0x4000) && (gEditor_29->f174 & 1)) || (PRESSED_4(0x2000) && !(gEditor_29->f174 & 1))) {
-            if (gEditor_29->f16F8 >= 2) {
-                gEditor_29->f16F8--;
+        if ((PRESSED_4(0x4000) && (gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(0x2000) && !(gEditor->flags & EDIT_REVERSED))) {
+            if (gEditor->heightSel >= 2) {
+                gEditor->heightSel--;
                 snd_play_menu_sound(0);
             } else {
-                Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-                Tab_9 *t;
+                PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+                PieceType *t;
             t = &b[k];
-                if (t->n < gEditor_29->f1702 && !(t->fC & 0x200)) {
-                    gEditor_29->f17FC = 0;
-                    gEditor_29->f174 |= 0x1000;
-                    gEditor_29->sub->flags &= ~1;
-                    gEditor_29->f17FE = 0;
+                if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
+                    gEditor->dialog = 0;
+                    gEditor->flags |= EDIT_DIALOG;
+                    gEditor->menu->flags &= ~1;
+                    gEditor->dialogChoice = 0;
                 }
             }
         }
-        if ((PRESSED_4(0x4000) && !(gEditor_29->f174 & 1)) || (PRESSED_4(0x2000) && (gEditor_29->f174 & 1))) {
-            Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-            Tab_9 *t;
+        if ((PRESSED_4(0x4000) && !(gEditor->flags & EDIT_REVERSED)) || (PRESSED_4(0x2000) && (gEditor->flags & EDIT_REVERSED))) {
+            PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+            PieceType *t;
             t = &b[k];
-            if (gEditor_29->f16F8 < t->n * 2 - 1) {
-                gEditor_29->f16F8++;
+            if (gEditor->heightSel < t->dim[1] * 2 - 1) {
+                gEditor->heightSel++;
                 snd_play_menu_sound(0);
-            } else if (t->n < gEditor_29->f1702 && !(t->fC & 0x200)) {
-                gEditor_29->f17FC = 0;
-                gEditor_29->f174 |= 0x1000;
-                gEditor_29->sub->flags &= ~1;
-                gEditor_29->f17FE = 0;
+            } else if (t->dim[1] < gEditor->maxSegments && !(t->flags & 0x200)) {
+                gEditor->dialog = 0;
+                gEditor->flags |= EDIT_DIALOG;
+                gEditor->menu->flags &= ~1;
+                gEditor->dialogChoice = 0;
             }
         }
         edit_user_piece_adjust_height();
     }
 end:
     {
-        Tab_9 *b = gPieceTypes;
-            s32 k = gEditor_29->f16FC + 0x12;
-        Tab_9 *t;
+        PieceType *b = gPieceTypes;
+            s32 k = gEditor->userPiece + 0x12;
+        PieceType *t;
             t = &b[k];
-        usrtrk_apply_heights(t->a, t->b, gUserPieceHeights[gEditor_29->f16FC], t->n);
+        usrtrk_apply_heights(t->meshA, t->meshB, gUserPieceHeights[gEditor->userPiece], t->dim[1]);
     }
 }
 
@@ -4664,12 +3799,13 @@ s32 func_8009EB00(s32 a, s32 b)
     return b;
 }
 
-s32 func_8009EB08(Ctx_4 *c)
+/* Unused: whether c's prev can be reached from its next (1 also when either is missing). */
+s32 func_8009EB08(EditPiece *c)
 {
-    Node_31 *n = c->head;
-    if (n != NULL && c->end != NULL) {
+    EditPiece *n = c->next;
+    if (n != NULL && c->prev != NULL) {
         do {
-            if (n == c->end) {
+            if (n == c->prev) {
                 return 1;
             }
             n = n->next;
@@ -4680,80 +3816,63 @@ s32 func_8009EB08(Ctx_4 *c)
 }
 
 void edit_find_start_piece(void) {
-    u8 *p = gEditor;
-    u8 *n;
-    if (*(u8 **)(p + 0x190) != 0) {
+    Editor *p = gEditor;
+    EditPiece *n;
+    if (p->start != NULL) {
         return;
     }
-    n = *(u8 **)(p + 0x17C);
-    if (n == 0) {
+    n = p->first;
+    if (n == NULL) {
         return;
     }
     do {
-        if (*(u16 *)(*(u8 **)(n + 0x14) + 0xC) & 2) {
-            *(u8 **)(p + 0x190) = n;
+        if (n->type->flags & PIECE_START) {
+            p->start = n;
             return;
         }
-        n = *(u8 **)(n + 4);
-        if (n == *(u8 **)(p + 0x17C)) {
+        n = n->next;
+        if (n == p->first) {
             return;
         }
-    } while (n != 0);
+    } while (n != NULL);
 }
 
+/* Puts the height cursor at the user piece's first point, or its last when the view is reversed. */
 void edit_user_piece_reset_cursor(s32 arg0)
 {
-    u8 *p = gEditor;
-    if (*(u32 *)(p + 0x174) & 1) {
-        s32 idx = *(s32 *)(p + 0x16FC);
-        *(s32 *)(p + 0x16F8) = gPieceTypes[idx + 0x12].h1 * 2 - 1;
+    Editor *p = gEditor;
+    if (p->flags & EDIT_REVERSED) {
+        s32 idx = p->userPiece;
+        p->heightSel = gPieceTypes[idx + 0x12].dim[1] * 2 - 1;
         return;
     }
-    *(s32 *)(p + 0x16F8) = 1;
+    p->heightSel = 1;
 }
-
-typedef struct {
-    u8 pad[0x172C];
-    s32 a;
-    s32 b;
-    s32 c;
-} Obj_74;
-
-extern Obj_74 *gEditor_30;
 
 void edit_calc_track_cam_elevation(void)
 {
     f32 x, y;
     s32 d;
 
-    x = gEditor_30->a;
-    gEditor_30->c = ((x - 20000.0f) * 38000.0f) / 165000.0f + 40000.0f;
-    y = gEditor_30->c;
+    x = gEditor->cam[0].dist;
+    gEditor->cam[0].height = ((x - 20000.0f) * 38000.0f) / 165000.0f + 40000.0f;
+    y = gEditor->cam[0].height;
     d = __builtin_sqrtf(y * y + x * x);
-    gEditor_30->b = math_asini((gEditor_30->c << 14) / d & 0x3FFF) & 0xFFFF;
+    gEditor->cam[0].pitch = math_asini((gEditor->cam[0].height << 14) / d & 0x3FFF) & 0xFFFF;
 }
 
-typedef struct Gs_3 {
-    u8 pad[0x1738];
-    s32 f1738;
-    s32 f173c;
-    s32 f1740;
-} Gs_3;
-
-extern Gs_3 *gEditor_31;
-
 void edit_calc_piece_cam_elevation(void) {
-    Gs_3 *g;
+    Editor *g;
     f32 x;
     s32 n;
     f32 hyp;
 
-    g = gEditor_31;
-    x = (f32)g->f1738;
+    g = gEditor;
+    x = (f32)g->cam[1].dist;
     n = (s32)((x - 20000.0f) * 32000.0f / 100000.0f + 8000.0f);
-    g->f1740 = n;
+    g->cam[1].height = n;
     hyp = __builtin_sqrtf((f32)n * (f32)n + x * x);
-    gEditor_31->f173c = math_asini((gEditor_31->f1740 << 14) / (s32)hyp & 0x3FFF) & 0xFFFF;
+    gEditor->cam[1].pitch = math_asini((gEditor->cam[1].height << 14) / (s32)hyp & 0x3FFF) & 0xFFFF;
 }
 
 s32 edit_ease_delta(s32 mode, s32 v, s32 d, s32 f)
@@ -4820,24 +3939,13 @@ s32 edit_ease_delta(s32 mode, s32 v, s32 d, s32 f)
     return res;
 }
 
-typedef struct {
-    u8 pad0[0x174];
-    u32 f174;
-    u8 pad1[0x16E0 - 0x178];
-    s32 cur;
-    s32 e4;
-    s32 state;
-} Ctx_5;
-
-extern Ctx_5 *gEditor_32;
-
-void func_8009EF20(s32 a0)
+void func_8009EF20(GuiMenu *a0)
 {
-    Ctx_5 *st = gEditor_32;
-    if (st->cur != a0) {
-        s32 s = st->state;
+    Editor *st = gEditor;
+    if (st->menu != a0) {
+        s32 s = st->slideState;
         if (s == 1) {
-            st->cur = a0;
+            st->menu = a0;
             goto tail;
         }
         if (s == 0) goto c0;
@@ -4845,61 +3953,52 @@ void func_8009EF20(s32 a0)
         if (s == 3) goto c3;
         goto tail;
 c0:
-        st->state = 1;
-        st->e4 = a0;
+        st->slideState = 1;
+        st->nextMenu = a0;
         goto tail;
 c2:
-        st->state = 3;
-        st->e4 = a0;
+        st->slideState = 3;
+        st->nextMenu = a0;
         goto tail;
 c3:
-        st->state = 1;
-        st->cur = a0;
+        st->slideState = 1;
+        st->menu = a0;
 tail:
-        gEditor_32->f174 &= 0xFFFEFFFF;
+        gEditor->flags &= 0xFFFEFFFF; /* ~EDIT_A_HELD */
     }
 }
 
 void edit_cam_snap(void)
 {
-    u32 *dst = &sEditCamPos;
-    u32 *src = &sEditCamTarget;
+    EditCamPos *dst = &sEditCamPos;
+    EditCamPos *src = &sEditCamTarget;
     u32 a, b, c;
 
-    a = src[0];
-    b = src[1];
-    c = dst[2];
+    a = src->x;
+    b = src->z;
+    c = dst->yaw;
     sEditCamMoving = 0;
-    dst[0] = a;
-    dst[1] = b;
-    dst[2] = ((c + 0x800) >> 13) << 13;
+    dst->x = a;
+    dst->z = b;
+    dst->yaw = ((c + 0x800) >> 13) << 13;
 }
 
-#define G_6 ((u8 *)gEditor_33)
-
 void edit_clear_track(s32 a0) {
-    u8 *p;
     s32 i;
 
-    *(s32 *)(G_6 + 0x17C) = 0;
-    *(s32 *)(G_6 + 0x180) = 0;
-    *(s32 *)(G_6 + 0x184) = 0;
-    *(s32 *)(G_6 + 0x190) = 0;
-    *(s16 *)(G_6 + 0x16B6) = 0;
-    *(s16 *)(G_6 + 0x16B8) = 0;
-
-    p = G_6 + 0x14F4;
-    i = 0x95;
-    do {
-        *(s16 *)(p + 0x194) = 0;
-        i--;
-        p -= 0x24;
-    } while (i >= 0);
-
-    if (a0 != 0) {
-        *(s32 *)(G_6 + 0x16F4) = 8;
+    gEditor->first = NULL;
+    gEditor->last = NULL;
+    gEditor->cur = NULL;
+    gEditor->start = NULL;
+    gEditor->scrollX = 0;
+    gEditor->scrollY = 0;
+    for (i = 149; i >= 0; i--) {
+        gEditor->pieces[i].used = 0;
     }
-    strcpy((char *)gEditor_33 + 0x16BA, "<NONE>");
+    if (a0 != 0) {
+        gEditor->userPieceCount = 8;
+    }
+    strcpy(gEditor->name, "<NONE>");
 }
 
 typedef struct { u8 b[0x310]; } Blk_24;
@@ -4916,46 +4015,23 @@ void edit_save_track_to_game_pak(void)
     gGame.userTrack = 0;
 }
 
-typedef struct Sub_12 {
-    u8 pad[0xC];
-    u16 flags;
-} Sub_12;
-
-typedef struct Node_32 {
-    s32 w0;
-    struct Node_32 *next;
-    s32 w8;
-    s32 w12;
-    s32 w16;
-    Sub_12 *sub;
-} Node_32;
-
-typedef struct Obj_75 {
-    u8 p0[0x17C];
-    Node_32 *list;
-    u8 p1[4];
-    Node_32 *cur;
-    u8 p2[8];
-    Node_32 *other;
-} Obj_75;
-
 s32 edit_can_delete_piece(void) {
-    Obj_75 *o = gEditor;
-    Node_32 *a = o->cur;
-    Node_32 *n;
+    Editor *o = gEditor;
+    EditPiece *a = o->cur;
+    EditPiece *n;
     s32 r;
-    if (a == NULL || a != o->other || (a->w8 == 0 && a->next == NULL)) {
+    if (a == NULL || a != o->start || (a->prev == 0 && a->next == NULL)) {
         goto ret1;
     }
-    n = o->list;
+    n = o->first;
     r = 0;
     while (n != NULL) {
-        if (n != a && (n->sub->flags & 2) != 0) {
+        if (n != a && (n->type->flags & PIECE_START) != 0) {
             r = 1;
             break;
         }
         n = n->next;
-        if (n == o->list) {
+        if (n == o->first) {
             break;
         }
     }
@@ -4966,35 +4042,16 @@ ret1:
 
 void edit_reset_overlay_lines(s32 param_1) {
     s32 p = param_1;
-    *(s32 *)(gEditor + 0x1754) = 0;
-    guMtxL2F(gEditor + 0x1760, gArnedCamMtx_3 + (p << 6));
-    mem_fill(*(u8 **)((s32)gEditor + (p << 2) + 0x174C), 0, 0xF00);
+    gEditor->lineCount = 0;
+    guMtxL2F(gEditor->camMtx, gArnedCamMtx_3 + (p << 6));
+    mem_fill((u8 *)gEditor->lineVtx[p], 0, 0xF00);
 }
-
-typedef struct {
-    u8 pad0[0xC];
-    u16 f0C;
-    u8 rest[0x40 - 0xE];
-} Slot_14;
-
-typedef struct Node_33 {
-    u8 pad0[4];
-    struct Node_33 *next;
-    u32 f8;
-    u8 pad1[0x14 - 0xC];
-    Slot_14 *owner;
-} Node_33;
-
-typedef struct {
-    u8 pad0[0x17C];
-    Node_33 *head;
-} Obj_76;
 
 void edit_update_user_piece_usage(void)
 {
-    Obj_76 *obj;
-    Slot_14 *blk;
-    Node_33 *n;
+    Editor *obj;
+    PieceType *blk;
+    EditPiece *n;
     s32 i;
     s32 cnt, flag;
     s32 m;
@@ -5003,74 +4060,48 @@ void edit_update_user_piece_usage(void)
     m = -0x601;
     for (; i < 8; i++) {
         u32 c;
-        blk = &gPieceTypesUser[i];
-        c = blk->f0C;
-        n = obj->head;
-        blk->f0C = c & m;
+        blk = &gPieceTypes[PIECE_TYPE_USER + i];
+        c = (u16)blk->flags; /* read unsigned here */
+        n = obj->first;
+        blk->flags = c & m;
         cnt = 0;
         flag = cnt;
         if (n != 0) {
             do {
-                if (n->owner == blk) {
+                if (n->type == blk) {
                     cnt++;
-                    if (n->f8 != 0 && n->next != 0) {
+                    if (n->prev != 0 && n->next != 0) {
                         flag = 1;
                     }
                 }
                 n = n->next;
-            } while (n != obj->head && n != 0);
+            } while (n != obj->first && n != 0);
         }
         if (flag) {
-            blk->f0C = blk->f0C | 0x200;
+            blk->flags = blk->flags | 0x200;
         }
         if (cnt >= 2) {
-            blk->f0C = blk->f0C | 0x600;
+            blk->flags = blk->flags | 0x600;
         }
     }
 }
-
-typedef struct {
-    s32 unk0;
-    s32 p;
-    u8 pad[0x18];
-} Cell_10;
-
-typedef struct {
-    s16 unk0;
-    s16 rows;
-    u8 pad4[0x2C];
-    Cell_10 *a;
-    Cell_10 *b;
-    u8 pad38[8];
-} Rec_52;
-
-typedef struct {
-    Rec_52 rec[28];
-    u8 pad[0x30];
-    u32 *w;
-} Big_3;
-
-extern Big_3 gPieceTypes_13;
 
 void edit_free_user_piece_meshes(s32 n)
 {
     u32 *wp;
     s32 i, j;
     u32 k;
-    u32 o;
-    Cell_10 *a;
-    Cell_10 *b;
+    PieceMeshSet *a;
+    PieceMeshSet *b;
 
-    wp = gPieceTypes_13.w;
+    wp = &gPieceTypes[PIECE_TYPE_TEMPLATE].meshA->count;
     for (i = 0; i < n; i++) {
-        a = gPieceTypes_13.rec[i + 18].a;
-        b = gPieceTypes_13.rec[i + 18].b;
-        for (j = 0; j < gPieceTypes_13.rec[i + 18].rows; j++) {
+        a = gPieceTypes[i + 18].meshA;
+        b = gPieceTypes[i + 18].meshB;
+        for (j = 0; j < gPieceTypes[i + 18].dim[1]; j++) {
             for (k = 0; k < *wp; k++) {
-                o = (j * *wp + k) * 32;
-                mem_free(*(s32 *)((u8 *)a + o + 4));
-                o = (j * *wp + k) * 32;
-                mem_free(*(s32 *)((u8 *)b + o + 4));
+                mem_free(a->cells[j * *wp + k].mesh);
+                mem_free(b->cells[j * *wp + k].mesh);
             }
         }
         mem_free(a);

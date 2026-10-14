@@ -9,8 +9,8 @@ void ai_update_throttle(u8 *p)
     u8 b;
 
     iVar1 = *(s16 *)(p + 0x628) + 1;
-    fVar2 = *(f32 *)(gPathNodes + *(s16 *)(p + 0x628) * 0x6C + 0x10) * (1.0f - *(f32 *)(p + 0x63C))
-          + *(f32 *)(gPathNodes + (iVar1 % gPathNodeCount) * 0x6C + 0x10) * *(f32 *)(p + 0x63C);
+    fVar2 = gPathNodes[*(s16 *)(p + 0x628)].maxSpeed * (1.0f - *(f32 *)(p + 0x63C))
+          + gPathNodes[iVar1 % gPathNodeCount].maxSpeed * *(f32 *)(p + 0x63C);
     ev = gGame.mode;
     if (ev == 10) goto L_e4;
     if (ev < 11) {
@@ -93,23 +93,6 @@ void ai_set_steering(Bike_33 *b, f32 maxv) {
     b->unk5D0 = (s32)((maxv * 13.0f) / r);
 }
 
-typedef struct {
-    Vec3f pos;
-    u8 pad0C[8];
-    f32 dx;
-    f32 dz;
-    u8 pad1C[0x45 - 0x1C];
-    s8 unk45;
-    s16 next;
-    s16 alt;
-    u8 pad4A[0x58 - 0x4A];
-    f32 unk58;
-    f32 unk5C;
-    u8 pad60[4];
-    u8 flags;
-    u8 pad65[0x6C - 0x65];
-} Node_15;
-
 struct Bike_34 {
     u8 pad0[0x48];
     Vec3f pos;
@@ -167,7 +150,6 @@ struct Bike_34 {
     u8 pad748[0x7E0 - 0x748];
 };
 
-extern Node_15 *gPathNodes_26;
 extern Bike_34 gRiders_72[];
 
 void ai_update_steering(Bike_34 *b) {
@@ -199,7 +181,7 @@ void ai_update_steering(Bike_34 *b) {
     f32 ddx, ddz;
     f32 ang, s, c, q, sn;
     Vec3f *pos;
-    Node_15 *n;
+    PathNode *n;
 
     switch (gGame.mode) {
     case 6:
@@ -218,11 +200,11 @@ void ai_update_steering(Bike_34 *b) {
     case 0: {
         s32 idx = b->unk628;
         s32 a;
-        if (!(gPathNodes_26[idx].flags & 4) || gRaceFrame - b->unk5C4 < 300) {
+        if (!(gPathNodes[idx].flags & 4) || gRaceFrame - b->unk5C4 < 300) {
             break;
         }
         math_to_polar(-(b->unkB8 * 16384.0f), b->unkC0 * 16384.0f, &ang0, &ratio);
-        math_to_polar(gPathNodes_26[idx].dz * 16384.0f, gPathNodes_26[idx].dx * 16384.0f, &ang1, &ratio);
+        math_to_polar(gPathNodes[idx].lateralZ * 16384.0f, gPathNodes[idx].lateralX * 16384.0f, &ang1, &ratio);
         ang1 -= ang0;
         a = ang1 < 0 ? -ang1 : ang1;
         if (a > 0x1000) {
@@ -238,23 +220,23 @@ void ai_update_steering(Bike_34 *b) {
             break;
         }
         idx = b->unk628;
-        if (!(gPathNodes_26[idx].flags & 4)) {
+        if (!(gPathNodes[idx].flags & 4)) {
             b->unk41B = 2;
             break;
         }
         j = idx;
         do {
-            j = gPathNodes_26[j].next;
-        } while (gPathNodes_26[j].flags & 4);
+            j = gPathNodes[j].next;
+        } while (gPathNodes[j].flags & 4);
         math_to_polar(-(b->unkB8 * 16384.0f), b->unkC0 * 16384.0f, &ang0, &ratio);
-        math_to_polar(gPathNodes_26[j].dz * 16384.0f, gPathNodes_26[j].dx * 16384.0f, &ang1, &ratio);
+        math_to_polar(gPathNodes[j].lateralZ * 16384.0f, gPathNodes[j].lateralX * 16384.0f, &ang1, &ratio);
         ang1 -= ang0;
         d = ang1;
         a = d < 0 ? -d : d;
         if (a > 0x400) {
-            steer = gPathNodes_26[j].pos.x - b->pos.x;
+            steer = gPathNodes[j].pos.x - b->pos.x;
             steer = (steer * gCosTable[(ang0 >> 4) & 0xFFF]
-                 + (gPathNodes_26[j].pos.z - b->pos.z) * gCosTable[((ang0 >> 4) - 0x400) & 0xFFF]) * (1.0f / 16384.0f);
+                 + (gPathNodes[j].pos.z - b->pos.z) * gCosTable[((ang0 >> 4) - 0x400) & 0xFFF]) * (1.0f / 16384.0f);
             if (d < 0) {
                 b->unk5D0 = -13;
                 steer = -steer;
@@ -289,7 +271,7 @@ void ai_update_steering(Bike_34 *b) {
         if (gRaceFrame - b->unk5C4 < 300) {
             cnt = 4;
         } else {
-            k = gPathNodes_26[idx].unk45;
+            k = gPathNodes[idx].lookahead;
             if (cnt < k) {
                 amp = 0.0f;
                 cnt = k;
@@ -299,13 +281,13 @@ void ai_update_steering(Bike_34 *b) {
         pos = b->unk6EC ? &b->v6FC : &b->v71C;
         idx = b->unk6EC ? b->unk714 : b->unk734;
         r = path_get_lateral_offset(pos, idx);
-        if (!(gPathNodes_26[idx].unk5C < r)) {
-            if (!(r < -gPathNodes_26[idx].unk58)) {
+        if (!(gPathNodes[idx].widthPos < r)) {
+            if (!(r < -gPathNodes[idx].widthNeg)) {
                 amp = gPathSegmentT;
                 cnt = 2;
-                if (cnt < gPathNodes_26[idx].unk45) {
+                if (cnt < gPathNodes[idx].lookahead) {
                     amp = 0.0f;
-                    cnt = gPathNodes_26[idx].unk45;
+                    cnt = gPathNodes[idx].lookahead;
                 }
             } else {
                 b->unk5D0 = -8;
@@ -323,9 +305,9 @@ void ai_update_steering(Bike_34 *b) {
     if ((u32)(b->unk418 - 1) < 2 && b->unk420 > 2.0f) {
         idx = b->unk628;
         for (k = (s8)b->unk418; k > 0; k--) {
-            idx = gPathNodes_26[idx].next;
+            idx = gPathNodes[idx].next;
         }
-        f = (b->vx * gPathNodes_26[idx].dx + b->vz * gPathNodes_26[idx].dz) / b->unk420;
+        f = (b->vx * gPathNodes[idx].lateralX + b->vz * gPathNodes[idx].lateralZ) / b->unk420;
         b->unk5D0 = f * 32.0f;
         if (b->unk5D0 >= 16) {
             b->unk5D0 = 15;
@@ -334,10 +316,10 @@ void ai_update_steering(Bike_34 *b) {
         }
         ai_set_steering(b, f * 8.0f / (b->unk420 + 5.0f));
         if (b == &gRiders_72[gCamTargetOverride]) {
-            D_800EE150 = gPathNodes_26[idx].pos;
-            D_800EE160.z = 2.0f * gPathNodes_26[idx].dx;
+            D_800EE150 = gPathNodes[idx].pos;
+            D_800EE160.z = 2.0f * gPathNodes[idx].lateralX;
             D_800EE160.y = 0;
-            D_800EE160.x = 2.0f * -gPathNodes_26[idx].dz;
+            D_800EE160.x = 2.0f * -gPathNodes[idx].lateralZ;
         }
         return;
     }
@@ -347,7 +329,7 @@ void ai_update_steering(Bike_34 *b) {
         j = idx;
         while (cnt != 0) {
             cnt--;
-            j = gPathNodes_26[j].alt >= 0 ? gPathNodes_26[j].alt : gPathNodes_26[j].next;
+            j = gPathNodes[j].branch >= 0 ? gPathNodes[j].branch : gPathNodes[j].next;
         }
         break;
     case 0:
@@ -356,30 +338,30 @@ void ai_update_steering(Bike_34 *b) {
         j = idx;
         while (cnt != 0) {
             cnt--;
-            j = gPathNodes_26[j].next;
+            j = gPathNodes[j].next;
         }
         break;
     }
 
     b->unk42C = dist;
-    nx = gPathNodes_26[j].next;
-    p0x = gPathNodes_26[j].pos.x + gPathNodes_26[j].dx * dist;
-    p0z = gPathNodes_26[j].pos.z + gPathNodes_26[j].dz * dist;
-    dx = (gPathNodes_26[nx].pos.x + gPathNodes_26[nx].dx * dist) - p0x;
-    dz = (gPathNodes_26[nx].pos.z + gPathNodes_26[nx].dz * dist) - p0z;
+    nx = gPathNodes[j].next;
+    p0x = gPathNodes[j].pos.x + gPathNodes[j].lateralX * dist;
+    p0z = gPathNodes[j].pos.z + gPathNodes[j].lateralZ * dist;
+    dx = (gPathNodes[nx].pos.x + gPathNodes[nx].lateralX * dist) - p0x;
+    dz = (gPathNodes[nx].pos.z + gPathNodes[nx].lateralZ * dist) - p0z;
     amp2 = amp * amp;
     amp3 = amp2 * amp;
     len = __builtin_sqrtf(dx * dx + dz * dz);
 
     {
         f32 t1, s1, t2, s2, a1, b1, acx, acz, ds1;
-        t1 = gPathNodes_26[j].dz * -3.0f;
-        s1 = gPathNodes_26[nx].dz + gPathNodes_26[j].dz;
+        t1 = gPathNodes[j].lateralZ * -3.0f;
+        s1 = gPathNodes[nx].lateralZ + gPathNodes[j].lateralZ;
         d = len / 3.0f;
         ds1 = d * s1;
         cx = t1 * d;
-        t2 = gPathNodes_26[j].dx * 3.0f;
-        s2 = d * (gPathNodes_26[nx].dx + gPathNodes_26[j].dx);
+        t2 = gPathNodes[j].lateralX * 3.0f;
+        s2 = d * (gPathNodes[nx].lateralX + gPathNodes[j].lateralX);
         cz = t2 * d;
         a1 = (dx + ds1) * 3.0f;
         b1 = (dz - s2) * 3.0f;

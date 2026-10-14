@@ -36,20 +36,13 @@ void arned_add_wall_quad(s32 x, s32 z, s32 w, s32 h)
     sArnedWallVtxCount++;
 }
 
-typedef struct {
-    u8 pad[0x170];
-    s32 mode;
-} GState_6;
-
-extern GState_6 *gEditor_4;
-
 Gfx *arned_draw_walls(Gfx *gdl)
 {
     s32 i, j, n;
     TexSet *s;
     TexEntry *t;
 
-    if (gEditor_4->mode == 6) {
+    if (gEditor->mode == EDIT_MODE_USER_PIECE) {
         return gdl;
     }
     {
@@ -196,16 +189,6 @@ void arned_set_camera(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry)
 
 #define SINS(a) gCosTable[((a) >> 4) & 0xFFF]
 
-typedef struct {
-    u8 pad0[0x170];
-    s32 mode;
-    u8 pad174[0x1710 - 0x174];
-    TexSet *segs;
-    PrimModel *mdl;
-} Scene;
-
-extern Scene *gEditor_5;
-
 Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 cursorX, s32 cursorZ, s32 cursorRot,
                  s32 drawGrid) {
     s32 total;
@@ -338,7 +321,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 c
                 cell->piece->vtx = out;
                 n = cell->piece->numVtx;
             }
-            if (cell->piece2 != NULL && (gEditor_5->mode != 6 || !(cell->flags & 1)) && cell->piece2->numVtx + n < 0x76) {
+            if (cell->piece2 != NULL && (gEditor->mode != 6 || !(cell->flags & 1)) && cell->piece2->numVtx + n < 0x76) {
                 gDPPipeSync(gdl++);
                 gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
                 gSPClearGeometryMode(gdl++, 0x220004);
@@ -349,7 +332,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 c
             }
         }
     }
-    if (cursorRot != -1 && gEditor_5->mode != 6) {
+    if (cursorRot != -1 && gEditor->mode != 6) {
         gDPPipeSync(gdl++);
         m = &D_800F4B00[idx];
         mtx_from_angles_pos_scale(m, 0, 0, cursorRot + 0x4000, cursorX, 2500, cursorZ, 0x100);
@@ -358,7 +341,7 @@ Gfx *arned_draw(s32 idx, Gfx *gdl, s32 selX, s32 selY, s32 selW, s32 selH, s32 c
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0x80);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF67B);
         gDPPipeSync(gdl++);
-        gdl = prim_build_dl(12, gEditor_5->mdl, &gEditor_5->segs, gdl);
+        gdl = prim_build_dl(12, gEditor->cursorModel, &gEditor->cursorTex, gdl);
         gDPPipeSync(gdl++);
         gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     }
@@ -403,23 +386,23 @@ void arned_load_piece_textures(s32 texSet, TexSet *pieceTex2, TexSet *wallTex)
     s32 *w;
     ResSet *q;
     u32 *slot;
-    u8 *p;
+    Editor *p;
 
     cur = sArnedTexSetIdx;
     sArnedPieceTex2 = pieceTex2;
     sArnedWallTex = wallTex;
     if (cur != texSet) {
         if (cur == -1) {
-            sArnedPieceTex = res_load(*(ResSet **)(gEditor + 0x1720), *sArnedTexResIds[texSet]);
+            sArnedPieceTex = res_load(gEditor->pieceRes, *sArnedTexResIds[texSet]);
         } else {
             /* load into the previous set's memory, which the new handle then owns */
             res_set_load_buffer(sArnedPieceTex);
-            res_load(*(ResSet **)(gEditor + 0x1720), *sArnedTexResIds[texSet]);
+            res_load(gEditor->pieceRes, *sArnedTexResIds[texSet]);
             res_set_load_buffer(0);
             p = gEditor;
-            (*(ResSet **)(p + 0x1720))->handles[*sArnedTexResIds[sArnedTexSetIdx]] = 0;
+            p->pieceRes->handles[*sArnedTexResIds[sArnedTexSetIdx]] = 0;
             w = sArnedTexResIds[texSet];
-            q = *(ResSet **)(p + 0x1720);
+            q = p->pieceRes;
             slot = (u32 *)(*w * 4 + (u32)q->handles);
             *slot = *slot & 0xFFFFFFFC;
         }

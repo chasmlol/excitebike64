@@ -275,11 +275,11 @@ their names say what they hold or where they start.
 - **unnamed/s0_80061F80.c**: predicates that pick a route at branches of the racing line (by lap, at random,
   toggled).
 - **unnamed/s0_8005B5E0.c**: one empty function.
-- **path.c**: the racing line. `gPathNodes` (`gPathNodeCount` nodes of 0x6C bytes): position, length 0x0C, maximum
+- **path.c**: the racing line. `gPathNodes` (`gPathNodeCount` `PathNode`s of 0x6C bytes, include/structs/path.h): position, length 0x0C, maximum
   speed 0x10, lateral vector 0x14/0x18, curvature 0x1C, bank 0x20, slope 0x24, x/z spline coefficients
   0x2C-0x40; links next 0x46, branch 0x48, previous 0x4A, join 0x4C, alternative 0x4E; half-widths 0x58/0x5C,
   flags 0x64, speed tweak 0x65, lap progress 0x66. `path_init` loads it from the track's resource (`path_load`),
-  from the user track (`gUserTrackPath`) or, for Excite 3D, generates a straight line (`path_generate_straight`);
+  from the user track (`gUserTrackData.path`) or, for Excite 3D, generates a straight line (`path_generate_straight`);
   corner speeds, braking limits and jump speeds are precomputed for the CPU riders. Per bike, `path_update_bike`
   tracks the segment, the lateral offset and progress, the lap (`path_check_lap` at `gPathFinishNode`), triggers and
   the respawn timer. `gPathStartNode` is the starting grid.
@@ -530,7 +530,7 @@ not use it (see below).
 ## Track editor
 
 **edit.c** is game state 2 (`edit_init` / `edit_update` / `edit_draw` / `edit_exit`). Its state, `gEditor`
-(0x1810 bytes):
+(an `Editor` of 0x1810 bytes; the editor's structs are in include/structs/editor.h):
 
 - 0x16C menu page (0 main, 1 edit); 0x170 mode (0 idle, 4 move track, 6 user piece heights, 7/8 name entry,
   9 placing a piece, 10/11 warnings); 0x174 flags (1 reverse, 8 flip, 0x10 exit, 0x400 test track, 0x800 message
@@ -541,8 +541,8 @@ not use it (see below).
   point and user piece; 0x1720 the "Pieces" resource set; 0x172C/0x1738 two cameras {distance, pitch, height};
 - 0x17F8 dirt type; 0x17FC/0x17FE dialog and choice; 0x1800 message.
 
-A piece node: used, next 0x04, previous 0x08, cell x/y 0x0C/0x0E, flags 0x10 (2 flipped, 4 preview, 8 visible),
-rotation 0x12, type 0x14, then the rotated connector directions, offsets and size. `gPieceTypes` has 29 types of
+A piece node (`EditPiece`): used, next 0x04, previous 0x08, cell x/y 0x0C/0x0E, flags 0x10 (2 flipped, 4 preview, 8 visible),
+rotation 0x12, type 0x14, then the rotated connector directions, offsets and size. `gPieceTypes` has 29 `PieceType`s of
 0x40 bytes {size[2], connector direction[2], connector offset[2], flags 0xC, name 0x1C, resource ids 0x20-0x2C, mesh
 sets 0x30/0x34, path points 0x38, collision 0x3C}: 0-1 straights, 2-5 turns, 6-17 jumps, 18-25 User Piece 1-8,
 26 New User Piece, 27 empty ground, 28 the user piece template. Type flags: 2 can start the track, 0x10/0x20 fits
@@ -558,10 +558,10 @@ floor, the arena walls and the cursor, plus the camera, viewport and scissor set
 
 - `usrtrk_pack_track` packs one (at most 0x310 bytes): 0x35, dirt type, name[10], piece count, current piece, user
   piece count, per user piece a segment count and heights, then 3 bytes per piece (x 5 bits, y 5, flags 6, rotation
-  2, type 6). `usrtrk_load_layout` unpacks it into `gUserTrackLayout`, `usrtrk_load_into_editor` into `gEditor`.
-- For a race, `usrtrk_load_pieces` and `usrtrk_build_track` (called from the stadium code) fill `gUserTrackData`:
+  2, type 6). `usrtrk_load_layout` unpacks it into `gUserTrackLayout` (`UserTrackLayout`), `usrtrk_load_into_editor` into `gEditor`.
+- For a race, `usrtrk_load_pieces` and `usrtrk_build_track` (called from the stadium code) fill `gUserTrackData` (`UserTrackData`):
   two mesh sets of 500x500 cells with rotated vertices and 1-bit textures, the dirt texture, the racing line
-  (`gUserTrackPath`, header 0xAA000003) and the merged collision with a 16x16 hash.
+  (`gUserTrackData.path`, header 0xAA000003) and the merged collision with a 16x16 hash.
 
 ## The LodgeNet build
 

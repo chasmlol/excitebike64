@@ -1,65 +1,15 @@
 #include "game.h"
 
+/* The track name without its terminator, copied as one block */
 typedef struct { u8 b[10]; } Blk10;
 
-typedef struct {
-    u32 nv;
-    Vtx *v;
-    u32 ntri;
-    u32 *tri;
-    s32 x10;
-    s32 x14;
-} Mesh;
-
-typedef struct {
-    Mesh *mesh;
-    s32 a, b, c, d;
-    s16 *tex;
-    s32 e, f;
-} Entry_2;
-
-struct Set {
-    u32 n;
-    Entry_2 e[1];
-};
-
-typedef struct Node_34 {
-    s32 hdr;
-    struct Node_34 *next;
-    u8 p8[5];
-    u8 f0D;
-    u16 f0E;
-    u8 p10;
-    u8 f11;
-    u8 p12;
-    u8 f13;
-    void *f14;
-} Node_34;
-
-typedef struct {
-    u8 pad0[0x17C];
-    Node_34 *list;
-    u8 pad1[0x10];
-    Node_34 *cur;
-    u8 pad2[0x16BA - 0x194];
-    Blk10 blk;
-    u8 pad3[0x16F4 - 0x16C4];
-    s32 n16F4;
-    u8 pad4[0x17FB - 0x16F8];
-    u8 b17FB;
-} Gs_4;
-
-typedef struct { u16 f0; s16 cnt; u8 pad[0x3C]; } Ent40_4;
-typedef struct { u16 w[15]; } Row_6;
-
-extern Gs_4 *gEditor_34;
-extern Ent40_4 gPieceTypes_14[];
-extern Row_6 gUserPieceHeights_3[];
-
+/* Packs the editor's track for a save (at most 0x310 bytes): 0x35, the dirt type, the name, the piece count, the
+   start piece, the user piece count, each user piece's segment count and heights, then 3 bytes per piece from the
+   first: x (5 bits), y (5), flags (6), rot (2), type (6). Returns the size. */
 s32 usrtrk_pack_track(u8 *buf)
 {
     u8 *p = buf;
-    Node_34 *n = gEditor_34->list;
+    EditPiece *n = gEditor->first;
     s32 cnt, curi, k, j, tot;
     u16 e;
     u8 *d;
@@ -69,59 +19,46 @@ s32 usrtrk_pack_track(u8 *buf)
     if (n != NULL) {
         cnt = 0;
         do {
-            if (n == gEditor_34->cur) {
+            if (n == gEditor->start) {
                 curi = cnt;
             }
             n = n->next;
             tot = cnt + 1;
             cnt = tot;
-        } while (n != NULL && n != gEditor_34->list);
+        } while (n != NULL && n != gEditor->first);
 
         p[0] = 0x35;
-        p[1] = gEditor_34->b17FB;
+        p[1] = gEditor->dirtType;
         p += 2;
-        *(Blk10 *)p = gEditor_34->blk;
+        *(Blk10 *)p = *(Blk10 *)gEditor->name;
         p += 10;
         *(u16 *)p = tot;
         p += 2;
         *(u16 *)p = curi;
         p += 2;
-        *(u16 *)p = *(u16 *)((u8 *)gEditor_34 + 0x16F6);
+        *(u16 *)p = gEditor->userPieceCount;
         p += 2;
-        for (k = 0; k < gEditor_34->n16F4; k++) {
-            c = gPieceTypes_14[k + 18].cnt;
+        for (k = 0; k < gEditor->userPieceCount; k++) {
+            c = gPieceTypes[k + 18].dim[1];
             *(u16 *)p = c;
             d = p + 2;
             for (j = 0; j < c * 2 - 1; j++) {
-                ((u16 *)d)[j] = gUserPieceHeights_3[k].w[j];
+                ((u16 *)d)[j] = gUserPieceHeights[k][j];
             }
             p += c * 4;
         }
-        n = gEditor_34->list;
+        n = gEditor->first;
         do {
-            e = ((u32)n->f14 - (u32)gPieceTypes_14) >> 6;
-            p[0] = ((n->f0D & 0x1F) << 3) | ((n->f0E & 0x1F) >> 2);
-            p[1] = ((((u8 *)n)[0xF] & 0x1F) << 6) | (n->f11 & 0x3F);
-            p[2] = ((n->f13 & 3) << 6) | (e & 0x3F);
+            e = ((u32)n->type - (u32)gPieceTypes) >> 6;
+            p[0] = ((n->x & 0x1F) << 3) | ((n->y & 0x1F) >> 2);
+            p[1] = ((n->y & 0x1F) << 6) | (n->flags & 0x3F);
+            p[2] = ((n->rot & 3) << 6) | (e & 0x3F);
             p += 3;
             n = n->next;
-        } while (n != NULL && n != gEditor_34->list);
+        } while (n != NULL && n != gEditor->first);
     }
     return (s16)(p - buf);
 }
-
-typedef struct { s16 a, b, c, d, e, pad; } Rec_54;
-
-typedef struct {
-    s32 n;
-    s32 ntrk;
-    s32 id;
-    u8 len[8];
-    u8 data[8][30];
-    Rec_54 rec[1];
-} Obj_77;
-
-extern Obj_77 *gUserTrackLayout_3;
 
 void usrtrk_load_layout(u8 *p)
 {
@@ -132,68 +69,36 @@ void usrtrk_load_layout(u8 *p)
     s16 i;
     s32 k;
     s32 j;
-    Obj_77 *o;
-    Rec_54 *r;
+    UserTrackLayout *o;
+    UserTrackPiece *r;
 
     id = p[1];
     p += 0xC;
     n = *((u16 *)p)++;
     start = *((u16 *)p)++;
     ntrk = *((s16 *)p)++;
-    if (gUserTrackLayout_3 != NULL) {
-        mem_free(gUserTrackLayout_3);
+    if (gUserTrackLayout != NULL) {
+        mem_free(gUserTrackLayout);
     }
-    gUserTrackLayout_3 = mem_alloc_dbg(((s16)n - 1) * sizeof(Rec_54) + sizeof(Obj_77), 0, (s32)sStrUsrTrkFile, 0xFD);
-    gUserTrackLayout_3->id = id;
-    gUserTrackLayout_3->ntrk = ntrk;
+    gUserTrackLayout = mem_alloc_dbg(((s16)n - 1) * sizeof(UserTrackPiece) + sizeof(UserTrackLayout), 0, (s32)sStrUsrTrkFile, 0xFD);
+    gUserTrackLayout->dirtType = id;
+    gUserTrackLayout->userPieceCount = ntrk;
     for (i = 0; i < ntrk; i++) {
-        gUserTrackLayout_3->len[i] = p[1];
-        memcpy_2((u8 *)(i * 30 + (u32)gUserTrackLayout_3) + 0x14, p + 2, gUserTrackLayout_3->len[i] * 4 - 2);
-        p += gUserTrackLayout_3->len[i] * 4;
+        gUserTrackLayout->segmentCounts[i] = p[1];
+        memcpy_2((u8 *)(i * 30 + (u32)gUserTrackLayout) + 0x14 /* heights[i] */, p + 2, gUserTrackLayout->segmentCounts[i] * 4 - 2);
+        p += gUserTrackLayout->segmentCounts[i] * 4;
     }
-    gUserTrackLayout_3->n = (s16)n;
+    gUserTrackLayout->pieceCount = (s16)n;
     for (k = 0; k < (s16)n; k++) {
         j = (k - (s16)start + (s16)n) % (s16)n;
-        gUserTrackLayout_3->rec[j].a = p[0] >> 3;
-        gUserTrackLayout_3->rec[j].b = (p[1] >> 6) | ((p[0] & 7) << 2);
-        gUserTrackLayout_3->rec[j].c = p[1] & 0x3F;
-        gUserTrackLayout_3->rec[j].d = p[2] >> 6;
-        gUserTrackLayout_3->rec[j].e = p[2] & 0x3F;
+        gUserTrackLayout->pieces[j].x = p[0] >> 3;
+        gUserTrackLayout->pieces[j].y = (p[1] >> 6) | ((p[0] & 7) << 2);
+        gUserTrackLayout->pieces[j].flags = p[1] & 0x3F;
+        gUserTrackLayout->pieces[j].rot = p[2] >> 6;
+        gUserTrackLayout->pieces[j].type = p[2] & 0x3F;
         p += 3;
     }
 }
-
-typedef struct { u16 a0; u16 h2; u8 p4[0x2C]; void *f30; void *f34; u8 p38[8]; } Rec_55;
-
-typedef struct Node_35 {
-    u16 used;
-    u16 pad;
-    struct Node_35 *next;
-    struct Node_35 *prev;
-    u16 a, b, c, d;
-    Rec_55 *rec;
-    u8 pad18[0x24 - 0x18];
-} Node_35;
-
-typedef struct Game_43 {
-    u8 p000[0x17C];
-    Node_35 *f17C;
-    Node_35 *f180;
-    Node_35 *f184;
-    u8 p188[8];
-    Node_35 *f190;
-    Node_35 nodes[150];
-    u8 p16AC[0x16BA - 0x16AC];
-    Blk10 hdr;
-    u8 f16C4;
-    u8 p16C5[0x16F4 - 0x16C5];
-    s32 f16F4;
-    u8 p16F8[0x17F8 - 0x16F8];
-    s32 f17F8;
-} Game_43;
-
-extern Game_43 *gEditor_35;
-extern Rec_55 gPieceTypes_15[];
 
 void usrtrk_load_into_editor(u8 *p)
 {
@@ -202,119 +107,69 @@ void usrtrk_load_into_editor(u8 *p)
     u16 w;
     s16 cnt, sel;
     s32 j;
-    Rec_55 *rec;
+    PieceType *rec;
     u16 *tp;
 
     {
-        Game_43 *g;
+        Editor *g;
         u8 v = p[1];
         p += 2;
-        g = gEditor_35;
-        g->f17F8 = v;
-        g->hdr = *(Blk10 *)p;
+        g = gEditor;
+        g->dirtType = v;
+        *(Blk10 *)g->name = *(Blk10 *)p;
     }
     p += 10;
-    gEditor_35->f16C4 = 0;
+    gEditor->name[10] = 0;
     cnt = *(s16 *)p;
     p += 2;
     sel = *(s16 *)p;
     p += 2;
-    gEditor_35->f16F4 = *(s16 *)p;
+    gEditor->userPieceCount = *(s16 *)p;
     p += 2;
-    for (i = 0; i < gEditor_35->f16F4; i++) {
+    for (i = 0; i < gEditor->userPieceCount; i++) {
         n = *(s16 *)p;
         w = *(u16 *)p;
         tp = gUserPieceHeights[i];
         memcpy(tp, p + 2, (n * 2 - 1) * 2);
-        usrtrk_apply_heights(gPieceTypes_15[i + 0x12].f30, gPieceTypes_15[i + 0x12].f34, tp, n);
-        gPieceTypes_15[i + 0x12].h2 = w;
+        usrtrk_apply_heights(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, tp, n);
+        gPieceTypes[i + 0x12].dim[1] = w;
         p = (u8 *)((s16 *)p + n * 2);
     }
 
-    gEditor_35->f17C = gEditor_35->f184 = gEditor_35->nodes;
-    gEditor_35->f180 = &gEditor_35->nodes[cnt - 1];
-    gEditor_35->f190 = &gEditor_35->nodes[sel];
+    gEditor->first = gEditor->cur = gEditor->pieces;
+    gEditor->last = &gEditor->pieces[cnt - 1];
+    gEditor->start = &gEditor->pieces[sel];
     for (j = 0; j < cnt; j++) {
-        gEditor_35->nodes[j].used = 1;
+        gEditor->pieces[j].used = 1;
         if (j == 0) {
-            gEditor_35->nodes[j].prev = 0;
+            gEditor->pieces[j].prev = 0;
         } else {
-            gEditor_35->nodes[j].prev = &gEditor_35->nodes[j - 1];
+            gEditor->pieces[j].prev = &gEditor->pieces[j - 1];
         }
         if (j == cnt - 1) {
-            gEditor_35->nodes[j].next = 0;
+            gEditor->pieces[j].next = 0;
         } else {
-            gEditor_35->nodes[j].next = &gEditor_35->nodes[j + 1];
+            gEditor->pieces[j].next = &gEditor->pieces[j + 1];
         }
-        gEditor_35->nodes[j].a = p[0] >> 3;
-        gEditor_35->nodes[j].b = (p[1] >> 6) | ((p[0] & 7) << 2);
-        gEditor_35->nodes[j].c = p[1] & 0x3F;
-        gEditor_35->nodes[j].d = p[2] >> 6;
-        gEditor_35->nodes[j].rec = &gPieceTypes_15[p[2] & 0x3F];
+        gEditor->pieces[j].x = p[0] >> 3;
+        gEditor->pieces[j].y = (p[1] >> 6) | ((p[0] & 7) << 2);
+        gEditor->pieces[j].flags = p[1] & 0x3F;
+        gEditor->pieces[j].rot = p[2] >> 6;
+        gEditor->pieces[j].type = &gPieceTypes[p[2] & 0x3F];
         p += 3;
-        edit_update_piece_ports(&gEditor_35->nodes[j]);
+        edit_update_piece_ports(&gEditor->pieces[j]);
     }
     for (j = cnt; j < 150; j++) {
-        gEditor_35->nodes[j].used = 0;
+        gEditor->pieces[j].used = 0;
     }
 }
 
-typedef struct Node_36 {
-    s32 unk0;
-    struct Node_36 *next;
-    s32 unk8;
-    u16 a;
-    u16 b;
-    u16 c;
-    u16 d;
-    u8 *ref;
-} Node_36;
-
-typedef struct {
-    u8 pad[0x17C];
-    Node_36 *listA;
-    u8 pad180[0x190 - 0x180];
-    Node_36 *listB;
-    u8 pad194[0x16F4 - 0x194];
-    s32 nItems;
-    u8 pad16F8[0x17F8 - 0x16F8];
-    s32 val;
-} Game_44;
-
-typedef struct {
-    u16 a;
-    u16 b;
-    u16 c;
-    u16 d;
-    s16 idx;
-    u16 pad;
-} OutRec;
-
-typedef struct {
-    s32 cnt;
-    s32 n;
-    s32 val;
-    u8 len[8];
-    u8 names[8][30];
-    OutRec recs[1];
-} Out_5;
-
-typedef struct {
-    u8 unk0[3];
-    u8 len;
-    u8 pad[60];
-} Tbl_7;
-
-extern Game_44 *gEditor_36;
-extern Out_5 *gUserTrackLayout_4;
-extern Tbl_7 gPieceTypes_16[];
-
 void usrtrk_layout_from_editor(void)
 {
-    Node_36 *n;
-    Game_44 *g;
-    OutRec *r;
-    Out_5 *o;
+    EditPiece *n;
+    Editor *g;
+    UserTrackPiece *r;
+    UserTrackLayout *o;
     s16 count;
     s32 cnt;
     s32 f;
@@ -324,83 +179,50 @@ void usrtrk_layout_from_editor(void)
     u16 d;
 
     count = 0;
-    n = gEditor_36->listA;
+    n = gEditor->first;
     do {
         n = n->next;
         count++;
-    } while (n != NULL && n != gEditor_36->listA);
-    if (gUserTrackLayout_4 != NULL) {
-        mem_free(gUserTrackLayout_4);
+    } while (n != NULL && n != gEditor->first);
+    if (gUserTrackLayout != NULL) {
+        mem_free(gUserTrackLayout);
     }
     cnt = (s16)count;
     o = mem_alloc_dbg((cnt - 1) * 12 + 0x110, 0, sStrUsrTrkFile, 0x1AE);
-    f = gEditor_36->val;
-    gUserTrackLayout_4 = o;
-    o->cnt = cnt;
-    o->val = f;
-    k = gEditor_36->nItems;
+    f = gEditor->dirtType;
+    gUserTrackLayout = o;
+    o->pieceCount = cnt;
+    o->dirtType = f;
+    k = gEditor->userPieceCount;
     i = 0;
-    o->n = k;
+    o->userPieceCount = k;
     if (k > 0) {
         do {
-            gUserTrackLayout_4->len[i] = gPieceTypes_16[i + 0x12].len;
-            memcpy((u8 *)(i * 30 + (s32)gUserTrackLayout_4) + 0x14, gUserPieceHeights[i], gUserTrackLayout_4->len[i] * 4 - 2);
+            gUserTrackLayout->segmentCounts[i] = gPieceTypes[i + 0x12].dim[1];
+            memcpy((u8 *)(i * 30 + (s32)gUserTrackLayout) + 0x14 /* heights[i] */, gUserPieceHeights[i], gUserTrackLayout->segmentCounts[i] * 4 - 2);
             i++;
-        } while (i < gUserTrackLayout_4->n);
+        } while (i < gUserTrackLayout->userPieceCount);
     }
-    n = gEditor_36->listB;
+    n = gEditor->start;
     k = 0;
     do {
-        t = (s32)n->ref;
-        gUserTrackLayout_4->recs[k].a = n->a;
-        gUserTrackLayout_4->recs[k].b = n->b;
-        gUserTrackLayout_4->recs[k].c = n->c;
-        d = n->d;
-        gUserTrackLayout_4->recs[k].idx = (t - (s32)gPieceTypes_16) >> 6;
-        gUserTrackLayout_4->recs[k].d = d;
+        t = (s32)n->type;
+        gUserTrackLayout->pieces[k].x = n->x;
+        gUserTrackLayout->pieces[k].y = n->y;
+        gUserTrackLayout->pieces[k].flags = n->flags;
+        d = n->rot;
+        gUserTrackLayout->pieces[k].type = (t - (s32)gPieceTypes) >> 6;
+        gUserTrackLayout->pieces[k].rot = d;
         n = n->next;
         k++;
         if (n == NULL) {
-            n = gEditor_36->listA;
+            n = gEditor->first;
             if (n == NULL) {
                 return;
             }
         }
-    } while (n != gEditor_36->listB);
+    } while (n != gEditor->start);
 }
-
-typedef struct {
-    u8 pad00[0x02];
-    s16 h02;
-    u8 pad04[0x08];
-    u16 flags;
-    u8 pad0E[0x12];
-    u32 *p20;
-    u32 *p24;
-    u32 *p28;
-    u32 *p2C;
-    Set *s30;
-    Set *s34;
-    s32 r38;
-    s32 r3C;
-} Ent_89;
-
-typedef struct {
-    u8 pad[8];
-    u32 *p8;
-    u8 pad2[4];
-    s32 r10;
-} Hdr_11;
-
-typedef struct {
-    u8 pad[0xC];
-    u8 cnt[8];
-    u8 rec[1][0x1E];
-} Tab_10;
-
-extern Hdr_11 gEditArena_2;
-extern Ent_89 gPieceTypes_17[];
-extern Tab_10 *gUserTrackLayout_5;
 
 void usrtrk_load_pieces(void)
 {
@@ -412,29 +234,29 @@ void usrtrk_load_pieces(void)
     res_register_type(sStrUsrTrkArn, (s32)D_800248EC);
     res_register_type(sStrUsrTrkWal, (s32)D_80031D08);
     res_open_set(sStrUsrTrkPieces, &sPiecesResSet);
-    gEditArena_2.r10 = res_load(sPiecesResSet, *gEditArena_2.p8);
+    gEditArena.collision = (WallMesh *)res_load(sPiecesResSet, *gEditArena.collisionId);
     height_free_walls();
-    mem_fill(gUserTrackData_2, 0, 0x2C);
+    mem_fill((u8 *)&gUserTrackData, 0, sizeof(UserTrackData));
 
     for (i = 0; i < 29; i++) {
-        gPieceTypes_17[i].r38 = 0;
-        gPieceTypes_17[i].r3C = 0;
-        if (!(gPieceTypes_17[i].flags & 0x40)) {
-        gPieceTypes_17[i].s30 = 0;
-        gPieceTypes_17[i].s34 = 0;
-        if (gPieceTypes_17[i].p20 != 0) {
-            gPieceTypes_17[i].s30 = (Set *)res_load(sPiecesResSet, *gPieceTypes_17[i].p20);
+        gPieceTypes[i].path = 0;
+        gPieceTypes[i].collision = 0;
+        if (!(gPieceTypes[i].flags & PIECE_USER)) {
+        gPieceTypes[i].meshA = 0;
+        gPieceTypes[i].meshB = 0;
+        if (gPieceTypes[i].meshAId != 0) {
+            gPieceTypes[i].meshA = (PieceMeshSet *)res_load(sPiecesResSet, *gPieceTypes[i].meshAId);
         }
-        if (gPieceTypes_17[i].p24 != 0) {
-            gPieceTypes_17[i].s34 = (Set *)res_load(sPiecesResSet, *gPieceTypes_17[i].p24);
+        if (gPieceTypes[i].meshBId != 0) {
+            gPieceTypes[i].meshB = (PieceMeshSet *)res_load(sPiecesResSet, *gPieceTypes[i].meshBId);
         }
-        if (gPieceTypes_17[i].p20 != 0 && (j = 0, j < gPieceTypes_17[i].s30->n)) {
+        if (gPieceTypes[i].meshAId != 0 && (j = 0, j < gPieceTypes[i].meshA->count)) {
             do {
-                Mesh *m = gPieceTypes_17[i].s30->e[j].mesh;
-                for (k = 0; k < m->nv; k++) {
+                PieceMesh *m = gPieceTypes[i].meshA->cells[j].mesh;
+                for (k = 0; k < m->vtxCount; k++) {
                     s32 l;
                     for (l = 0; l < 3; l += 2) {
-                        s32 v = (s16)m->v[k].v.ob[l];
+                        s32 v = (s16)m->vtx[k].v.ob[l];
                         if (v < 0) {
                             c = -v;
                             v = c / 25;
@@ -445,74 +267,71 @@ void usrtrk_load_pieces(void)
                             v = v / 25 + (v % 25 >= 13);
                             v *= 25;
                         }
-                        m->v[k].v.ob[l] = v;
+                        m->vtx[k].v.ob[l] = v;
                     }
                 }
                 j++;
-            } while (j < gPieceTypes_17[i].s30->n);
+            } while (j < gPieceTypes[i].meshA->count);
         }
-        if (gPieceTypes_17[i].p28 != 0) {
-            gPieceTypes_17[i].r38 = res_load(sPiecesResSet, *gPieceTypes_17[i].p28) + 4;
+        if (gPieceTypes[i].pathId != 0) {
+            gPieceTypes[i].path = (s32 *)(res_load(sPiecesResSet, *gPieceTypes[i].pathId) + 4);
         }
-        if (gPieceTypes_17[i].p2C != 0) {
-            gPieceTypes_17[i].r3C = res_load(sPiecesResSet, *gPieceTypes_17[i].p2C);
+        if (gPieceTypes[i].collisionId != 0) {
+            gPieceTypes[i].collision = (WallMesh *)res_load(sPiecesResSet, *gPieceTypes[i].collisionId);
             height_free_walls();
         }
         }
     }
 
     for (i = 18, n = 0; i < 30; i++, n++) {
-        if (!(gPieceTypes_17[i].flags & 0x40)) continue;
-        gPieceTypes_17[i].s30 = mem_alloc_dbg(gUserTrackLayout_5->cnt[n] << 6 | 4, 0, sStrUsrTrkFile, 0x27F);
-        gPieceTypes_17[i].s34 = mem_alloc_dbg(gUserTrackLayout_5->cnt[n] << 6 | 4, 0, sStrUsrTrkFile, 0x280);
-        gPieceTypes_17[i].h02 = gUserTrackLayout_5->cnt[n];
-        if (gPieceTypes_17[i].p28 != 0) {
-            gPieceTypes_17[i].r38 = res_load(sPiecesResSet, *gPieceTypes_17[i].p28) + 4;
+        if (!(gPieceTypes[i].flags & PIECE_USER)) continue;
+        gPieceTypes[i].meshA = mem_alloc_dbg(gUserTrackLayout->segmentCounts[n] << 6 | 4, 0, sStrUsrTrkFile, 0x27F);
+        gPieceTypes[i].meshB = mem_alloc_dbg(gUserTrackLayout->segmentCounts[n] << 6 | 4, 0, sStrUsrTrkFile, 0x280);
+        gPieceTypes[i].dim[1] = gUserTrackLayout->segmentCounts[n];
+        if (gPieceTypes[i].pathId != 0) {
+            gPieceTypes[i].path = (s32 *)(res_load(sPiecesResSet, *gPieceTypes[i].pathId) + 4);
         }
-        if (gPieceTypes_17[i].p2C != 0) {
-            gPieceTypes_17[i].r3C = res_load(sPiecesResSet, *gPieceTypes_17[i].p2C);
+        if (gPieceTypes[i].collisionId != 0) {
+            gPieceTypes[i].collision = (WallMesh *)res_load(sPiecesResSet, *gPieceTypes[i].collisionId);
             height_free_walls();
         }
-        usrtrk_clone_piece_meshes(gPieceTypes_17[i].s30, gPieceTypes_17[i].s34, gUserTrackLayout_5->cnt[n]);
-        usrtrk_apply_heights(gPieceTypes_17[i].s30, gPieceTypes_17[i].s34, gUserTrackLayout_5->rec[n], gUserTrackLayout_5->cnt[n]);
-        gPieceTypes_17[i].h02 = gUserTrackLayout_5->cnt[n];
+        usrtrk_clone_piece_meshes(gPieceTypes[i].meshA, gPieceTypes[i].meshB, gUserTrackLayout->segmentCounts[n]);
+        usrtrk_apply_heights(gPieceTypes[i].meshA, gPieceTypes[i].meshB, gUserTrackLayout->heights[n], gUserTrackLayout->segmentCounts[n]);
+        gPieceTypes[i].dim[1] = gUserTrackLayout->segmentCounts[n];
     }
 }
 
-#define E(o, idx, kk) (*(o))->v[idx].v.ob[1] = ((kk) > 0 && (kk) < n * 2) ? h[(kk) - 1] : 0
+#define E(o, idx, kk) (*(o))->vtx[idx].v.ob[1] = ((kk) > 0 && (kk) < n * 2) ? h[(kk) - 1] : 0
 
-struct Mesh_8 {
-    u32 n;
-    Vtx *v;
-};
-
-void usrtrk_apply_heights(Mesh_8 **dst, Mesh_8 **src, s16 *h, s32 n)
+/* Sets the heights of a user piece's meshes (n segments, 2 cells each) from h, the 2n - 1 heights between them,
+   on the template piece's vertices. */
+void usrtrk_apply_heights(PieceMeshSet *dst, PieceMeshSet *src, s16 *h, s32 n)
 {
-    Mesh_8 **tmpl = D_800CE9B4;
+    PieceMeshSet *tmpl = gPieceTypes[PIECE_TYPE_TEMPLATE].meshB;
     s32 i, j, k;
     s32 idx, c, a, b;
     u32 m;
     Vtx *v;
-    Mesh_8 **d, **s, **t;
+    PieceMesh **d, **s, **t;
 
     k = 0;
     for (i = 0; i < n; i++) {
         for (j = 0; j < 2; j++) {
-            s = &src[(i * 2 + j) * 8 + 1];
-            t = &tmpl[j * 8 + 1];
-            d = &dst[(i * 2 + j) * 8 + 1];
-            for (m = 0; m < (*s)->n; m++) {
+            s = &src->cells[i * 2 + j].mesh;
+            t = &tmpl->cells[j].mesh;
+            d = &dst->cells[i * 2 + j].mesh;
+            for (m = 0; m < (*s)->vtxCount; m++) {
                 {
-                    s32 x = i * 2 + ((*s)->v[m].v.ob[2] + 250) / 250;
+                    s32 x = i * 2 + ((*s)->vtx[m].v.ob[2] + 250) / 250;
                     if (x > 0 && x < n * 2) a = h[x - 1]; else a = 0;
                 }
                 {
-                    s32 x = i * 2 + ((*s)->v[m].v.ob[2] + 250) / 250;
+                    s32 x = i * 2 + ((*s)->vtx[m].v.ob[2] + 250) / 250;
                     s32 y = x + 1;
                     if (y > 0 && y < n * 2) b = h[x]; else b = 0;
                 }
-                c = ((*s)->v[m].v.ob[2] + 250) % 250;
-                (*s)->v[m].v.ob[1] = (*t)->v[m].v.ob[1] + a + (b - a) * c / 250;
+                c = ((*s)->vtx[m].v.ob[2] + 250) % 250;
+                (*s)->vtx[m].v.ob[1] = (*t)->vtx[m].v.ob[1] + a + (b - a) * c / 250;
             }
             if (j == 0) {
                 E(d, 4, k);
@@ -540,152 +359,104 @@ void usrtrk_apply_heights(Mesh_8 **dst, Mesh_8 **src, s16 *h, s32 n)
     }
 }
 
-typedef struct {
-    u8 pad[0x730];
-    Set *s1;
-    Set *s2;
-} Glob_10;
-
-extern Glob_10 gPieceTypes_18;
-
-void usrtrk_clone_piece_meshes(Set *out1, Set *out2, s32 count)
+void usrtrk_clone_piece_meshes(PieceMeshSet *out1, PieceMeshSet *out2, s32 count)
 {
-    Set *set1;
-    Set *set2;
+    PieceMeshSet *set1;
+    PieceMeshSet *set2;
     s32 j;
     u32 i;
     u32 n;
     s32 off;
-    Entry_2 *o;
-    Entry_2 *o2;
+    PieceCell *o;
+    PieceCell *o2;
     s32 size;
     s32 size2;
 
-    set1 = gPieceTypes_18.s1;
-    set2 = gPieceTypes_18.s2;
+    set1 = gPieceTypes[PIECE_TYPE_TEMPLATE].meshA;
+    set2 = gPieceTypes[PIECE_TYPE_TEMPLATE].meshB;
     for (j = 0; j < count; j++) {
-        for (i = 0; i < (n = set1->n); i++) {
-            size = (set1->e[i].tex[1] << 4) | 4;
-            o = &out1->e[j * n + i];
-            o2 = &out2->e[j * set2->n + i];
-            o->mesh = mem_alloc_dbg(sizeof(Mesh) + set1->e[i].mesh->nv * 16 + set1->e[i].mesh->ntri * 4 + size, 0, (s32)sStrUsrTrkFile, 0x2F8);
-            *o->mesh = *set1->e[i].mesh;
-            o->e = set1->e[i].e;
-            o->f = set1->e[i].f;
-            o->a = set1->e[i].a;
-            o->b = set1->e[i].b;
-            o->c = set1->e[i].c;
-            o->d = set1->e[i].d;
-            o->mesh->nv = set1->e[i].mesh->nv;
-            o->mesh->v = (Vtx *)(o->mesh + 1);
-            o->mesh->tri = (u32 *)(o->mesh->v + o->mesh->nv);
-            o->mesh->ntri = set1->e[i].mesh->ntri;
-            o->tex = (s16 *)(o->mesh->tri + o->mesh->ntri);
-            memcpy(o->mesh->v, set1->e[i].mesh->v, o->mesh->nv * 16);
-            memcpy(o->mesh->tri, set1->e[i].mesh->tri, o->mesh->ntri * 4);
-            memcpy(o->tex, set1->e[i].tex, size);
+        for (i = 0; i < (n = set1->count); i++) {
+            size = (set1->cells[i].tex[1] << 4) | 4;
+            o = &out1->cells[j * n + i];
+            o2 = &out2->cells[j * set2->count + i];
+            o->mesh = mem_alloc_dbg(sizeof(PieceMesh) + set1->cells[i].mesh->vtxCount * 16 + set1->cells[i].mesh->triCount * 4 + size, 0, (s32)sStrUsrTrkFile, 0x2F8);
+            *o->mesh = *set1->cells[i].mesh;
+            o->unk_18 = set1->cells[i].unk_18;
+            o->unk_1C = set1->cells[i].unk_1C;
+            o->x0 = set1->cells[i].x0;
+            o->y0 = set1->cells[i].y0;
+            o->x1 = set1->cells[i].x1;
+            o->y1 = set1->cells[i].y1;
+            o->mesh->vtxCount = set1->cells[i].mesh->vtxCount;
+            o->mesh->vtx = (Vtx *)(o->mesh + 1);
+            o->mesh->tris = (u32 *)(o->mesh->vtx + o->mesh->vtxCount);
+            o->mesh->triCount = set1->cells[i].mesh->triCount;
+            o->tex = (s16 *)(o->mesh->tris + o->mesh->triCount);
+            memcpy(o->mesh->vtx, set1->cells[i].mesh->vtx, o->mesh->vtxCount * 16);
+            memcpy(o->mesh->tris, set1->cells[i].mesh->tris, o->mesh->triCount * 4);
+            memcpy(o->tex, set1->cells[i].tex, size);
 
-            size2 = (set2->e[i].tex[1] << 4) | 4;
-            o2->mesh = mem_alloc_dbg(sizeof(Mesh) + set2->e[i].mesh->nv * 16 + set2->e[i].mesh->ntri * 4 + size2, 0, (s32)sStrUsrTrkFile, 0x30C);
-            *o2->mesh = *set2->e[i].mesh;
-            o2->e = set2->e[i].e;
-            o2->f = set2->e[i].f;
-            o2->a = set2->e[i].a;
-            o2->b = set2->e[i].b + j * 500;
-            o2->c = set2->e[i].c;
-            o2->d = set2->e[i].d + j * 500;
-            o2->mesh->nv = set2->e[i].mesh->nv;
-            o2->mesh->v = (Vtx *)(o2->mesh + 1);
-            o2->mesh->tri = (u32 *)(o2->mesh->v + o2->mesh->nv);
-            o2->mesh->ntri = set2->e[i].mesh->ntri;
-            o2->tex = (s16 *)(o2->mesh->tri + o2->mesh->ntri);
-            memcpy(o2->mesh->v, set2->e[i].mesh->v, o2->mesh->nv * 16);
-            memcpy(o2->mesh->tri, set2->e[i].mesh->tri, o2->mesh->ntri * 4);
-            memcpy(o2->tex, set2->e[i].tex, size2);
+            size2 = (set2->cells[i].tex[1] << 4) | 4;
+            o2->mesh = mem_alloc_dbg(sizeof(PieceMesh) + set2->cells[i].mesh->vtxCount * 16 + set2->cells[i].mesh->triCount * 4 + size2, 0, (s32)sStrUsrTrkFile, 0x30C);
+            *o2->mesh = *set2->cells[i].mesh;
+            o2->unk_18 = set2->cells[i].unk_18;
+            o2->unk_1C = set2->cells[i].unk_1C;
+            o2->x0 = set2->cells[i].x0;
+            o2->y0 = set2->cells[i].y0 + j * 500;
+            o2->x1 = set2->cells[i].x1;
+            o2->y1 = set2->cells[i].y1 + j * 500;
+            o2->mesh->vtxCount = set2->cells[i].mesh->vtxCount;
+            o2->mesh->vtx = (Vtx *)(o2->mesh + 1);
+            o2->mesh->tris = (u32 *)(o2->mesh->vtx + o2->mesh->vtxCount);
+            o2->mesh->triCount = set2->cells[i].mesh->triCount;
+            o2->tex = (s16 *)(o2->mesh->tris + o2->mesh->triCount);
+            memcpy(o2->mesh->vtx, set2->cells[i].mesh->vtx, o2->mesh->vtxCount * 16);
+            memcpy(o2->mesh->tris, set2->cells[i].mesh->tris, o2->mesh->triCount * 4);
+            memcpy(o2->tex, set2->cells[i].tex, size2);
         }
     }
 }
-
-typedef struct Sub_13 {
-    s32 pad0[5];
-    s32 *f14;
-    s32 pad18;
-    s32 *f1c;
-    s32 pad20;
-    s32 *f24;
-    s32 *f28;
-    s32 *f2c;
-} Sub_13;
-
-typedef struct Blk_26 {
-    s32 *f00;
-    s32 pad04;
-    s32 *f08;
-    s32 pad0c;
-    s32 *f10;
-    s32 *f14;
-    s32 *f18;
-    s32 *f1c;
-    s32 *f20;
-    s32 pad24;
-    Sub_13 *f28;
-} Blk_26;
-
-extern Blk_26 gUserTrackData_3;
 
 void usrtrk_unload(void)
 {
     res_close_set(sPiecesResSet);
     sPiecesResSet = 0;
-    if (gUserTrackData_3.f00 != 0) {
-        mem_free(gUserTrackData_3.f00);
-        mem_free(gUserTrackData_3.f08);
-        mem_free(gUserTrackData_3.f10);
-        mem_free(gUserTrackData_3.f14);
-        mem_free(gUserTrackData_3.f18);
-        mem_free(gUserTrackData_3.f1c);
-        mem_free(gUserTrackData_3.f20);
-        if (gUserTrackData_3.f28->f14 != 0) {
-            mem_free(gUserTrackData_3.f28->f14);
+    if (gUserTrackData.meshA != 0) {
+        mem_free(gUserTrackData.meshA);
+        mem_free(gUserTrackData.meshB);
+        mem_free(gUserTrackData.tex);
+        mem_free(gUserTrackData.vtxA);
+        mem_free(gUserTrackData.meshesA);
+        mem_free(gUserTrackData.vtxB);
+        mem_free(gUserTrackData.meshesB);
+        if (gUserTrackData.collision->vtx != 0) {
+            mem_free(gUserTrackData.collision->vtx);
         }
-        if (gUserTrackData_3.f28->f24 != 0) {
-            mem_free(gUserTrackData_3.f28->f24);
+        if (gUserTrackData.collision->tris != 0) {
+            mem_free(gUserTrackData.collision->tris);
         }
-        if (gUserTrackData_3.f28->f1c != 0) {
-            mem_free(gUserTrackData_3.f28->f1c);
+        if (gUserTrackData.collision->edges != 0) {
+            mem_free(gUserTrackData.collision->edges);
         }
-        if (gUserTrackData_3.f28->f28 != 0) {
-            mem_free(gUserTrackData_3.f28->f28);
+        if (gUserTrackData.collision->cells[0].tris != 0) {
+            mem_free(gUserTrackData.collision->cells[0].tris);
         }
-        if (gUserTrackData_3.f28->f2c != 0) {
-            mem_free(gUserTrackData_3.f28->f2c);
+        if (gUserTrackData.collision->cells[0].edges != 0) {
+            mem_free(gUserTrackData.collision->cells[0].edges);
         }
-        mem_free(gUserTrackData_3.f28);
+        mem_free(gUserTrackData.collision);
     }
     usrtrk_free_user_piece_meshes(0);
     height_free_walls();
 }
 
-typedef struct {
-    s16 f0;
-    s16 count;
-    u8 pad4[8];
-    u16 flags;
-    u8 padE[0x22];
-    void **f30;
-    void **f34;
-    u8 pad38[8];
-} Rec_56;
-
-extern Rec_56 gPieceTypes_19[];
-
-static inline void freeOne(Rec_56 *q, s32 k)
+static inline void freeOne(PieceType *q, s32 k)
 {
-    void **a;
-    void **b;
+    PieceMesh **a;
+    PieceMesh **b;
 
-    a = &q->f30[k * 8 + 1];
-    b = &q->f34[k * 8 + 1];
+    a = &q->meshA->cells[k].mesh;
+    b = &q->meshB->cells[k].mesh;
     mem_free(*a);
     mem_free(*b);
 }
@@ -697,21 +468,21 @@ void usrtrk_free_user_piece_meshes(s32 param_1)
     s32 n;
 
     for (n = 18; n < 30; n++) {
-        if (gPieceTypes_19[n].flags & 0x40) {
-            for (i = 0; param_1 == 0 ? i < gPieceTypes_19[n].count : i < 8; i++) {
+        if (gPieceTypes[n].flags & PIECE_USER) {
+            for (i = 0; param_1 == 0 ? i < gPieceTypes[n].dim[1] : i < 8; i++) {
                 for (j = 0; j < 2; j++) {
-                    freeOne(&gPieceTypes_19[n], i * 2 + j);
+                    freeOne(&gPieceTypes[n], i * 2 + j);
                 }
             }
-            mem_free(gPieceTypes_19[n].f30);
-            mem_free(gPieceTypes_19[n].f34);
+            mem_free(gPieceTypes[n].meshA);
+            mem_free(gPieceTypes[n].meshB);
         }
     }
 }
 
-#define PC (gUserTrackLayout_6->pc[i])
-#define EN (gPieceTypes_20[gUserTrackLayout_6->pc[i].type])
-#define EP (gPieceTypes_20[p->type])
+#define PC (gUserTrackLayout->pieces[i])
+#define EN (gPieceTypes[gUserTrackLayout->pieces[i].type])
+#define EP (gPieceTypes[p->type])
 #define R (sPieceRotations[grid[c].rot])
 #define G (grid[gy * size[0] + gx])
 #define W (EP.dim[0])
@@ -735,133 +506,50 @@ void usrtrk_free_user_piece_meshes(s32 param_1)
 #define TS(m, k) (((ts[0] & (m)) << (7 - (k))) | BX(1, m, k) | BX(2, m, k) | BX(3, m, k) | BX(4, m, k) | BX(5, m, k) | BX(6, m, k) | ({ s32 z; if (ts[7] & (m)) z = 1; else z = 0; z; }))
 #define COPY8 td[8] = ts[8]; td[9] = ts[9]; td[10] = ts[10]; td[11] = ts[11];               td[12] = ts[12]; td[13] = ts[13]; td[14] = ts[14]; td[15] = ts[15]
 
-typedef struct { s16 a, b, c, d; } V4_2;
-typedef struct { s16 a, b, c, d, e, f; } V6;
-
+/* A grid cell of the track being built: the piece cell drawn there. */
 typedef struct {
-    s16 *a;
-    s16 *b;
-} GridPtr;
-
-typedef struct Geo {
-    s32 xmin, ymin, xmax, ymax;
-    s32 nv; V4_2 *v;
-    s32 ne; V4_2 *e;
-    s32 nt; V6 *t;
-    GridPtr cell[256];
-} Geo;
-
-typedef struct {
-    u32 nv;
-    Vtx *v;
-    s32 f8;
-    void *fC;
-    s32 f10, f14;
-} Mesh_9;
-
-typedef struct {
-    Mesh_9 *mesh;
-    s32 x0, y0, x1, y1;
-    s16 *tex;
-    s32 f18, f1C;
-} Entry_8;
-
-typedef struct {
-    u32 n;
-    Entry_8 e[1];
-} Set_2;
-
-typedef struct {
-    s16 dim[2];
-    u8 pad4[8];
-    u16 flags;
-    u8 padE[0x22];
-    Set_2 *s30;
-    Set_2 *s34;
-    s32 *r38;
-    Geo *p3C;
-} Ent_90;
-
-typedef struct {
-    s16 x, y;
-    u16 flags;
-    s16 rot;
-    s16 type;
-    s16 pad;
-} Piece;
-
-typedef struct {
-    s32 n;
-    s32 f4;
-    s32 mode;
-    u8 padC[8];
-    u16 rec[8][15];
-    Piece pc[1];
-} Tab_11;
-
-typedef struct {
-    Ent_90 *e;
-    Entry_8 *a;
-    Entry_8 *b;
+    PieceType *type;
+    PieceCell *cellA;
+    PieceCell *cellB;
     s16 rot, col, row, ox, oy;
     s16 pad;
-} Cell_11;
+} UsrTrkGridCell;
 
+/* A node of the path being built (header 0xAA000003: a PathResNode and the flag 2 byte). */
 typedef struct {
-    s32 x, y;
-    s32 f8;
-    s16 next, fE, prev, f12;
-    u8 pad[0x18];
-} Rec_57;
+    PathResNode node;
+    u8 unk_28;
+    u8 pad29[3];
+} UsrTrkPathRec; /* size 0x2C */
 
 typedef struct {
     s16 ix, iy, ox, oy, sx, sy;
 } Rot;
 
-typedef struct RecSet_2 {
-    s32 n;
-    Rec_57 r[1];
-} RecSet_2;
-
-typedef struct {
-    Set_2 *f00;
-    s32 f04;
-    Set_2 *f08;
-    s32 f0C;
-    s16 *f10;
-    Vtx *f14;
-    Mesh_9 *f18;
-    Vtx *f1C;
-    Mesh_9 *f20;
-    struct RecSet_2 *f24;
-    Geo *f28;
-} Blk_27;
-
-typedef struct {
-    u8 pad[0x10];
-    Geo *f10;
-} Hdr_12;
+/* gUserTrackData.path while the nodes are added (after the header word). */
+typedef struct UsrTrkPathList {
+    s32 count;
+    UsrTrkPathRec nodes[1];
+} UsrTrkPathList;
 
 typedef struct {
     u8 pad[0x68];
     Vec3f v68;
 } Obj_79;
 
-extern Tab_11 *gUserTrackLayout_6;
-extern Ent_90 gPieceTypes_20[];
-extern Hdr_12 gEditArena_3;
-extern Blk_27 gUserTrackData_4;
 extern Rot sPieceRotations[];
 extern Obj_79 *gCurTrack_42;
+
+#define PATH_LIST ((UsrTrkPathList *)gUserTrackData.path)
 
 void usrtrk_build_track(void)
 {
     Vtx *va;
-    Mesh_9 *ma;
-    Entry_8 *ea;
+    PieceMesh *ma;
+    PieceCell *ea;
     Vtx *vb;
-    Mesh_9 *mb;
-    Entry_8 *eb;
+    PieceMesh *mb;
+    PieceCell *eb;
     s16 *g68;
     s16 *g6C;
     s32 nva;
@@ -880,7 +568,7 @@ void usrtrk_build_track(void)
     s16 size[2];
     Vec3f pos;
     s32 pt[6];
-    Cell_11 *grid;
+    UsrTrkGridCell *grid;
     s32 i, j, k, m;
     s32 gx, gy, col, row;
     s32 cnt, texsz;
@@ -892,15 +580,15 @@ void usrtrk_build_track(void)
     s32 c, n;
     s32 dx, dy;
     s32 sz1, sz2;
-    Ent_90 *e;
-    Piece *p;
+    PieceType *e;
+    UserTrackPiece *p;
     s32 v, q, b, l;
-    V4_2 *dv;
-    V4_2 *sv;
+    WallVtx *dv;
+    WallVtx *sv;
     Vtx *src;
-    Rec_57 *rec;
-    Entry_8 *bb;
-    Ent_90 *d;
+    UsrTrkPathRec *rec;
+    PieceCell *bb;
+    PieceType *d;
     s32 rc;
     s32 idx;
     s16 *tex;
@@ -915,7 +603,7 @@ void usrtrk_build_track(void)
     nvb = 0;
     size[0] = -32000;
     size[1] = -32000;
-    for (i = 0; i < gUserTrackLayout_6->n; i++) {
+    for (i = 0; i < gUserTrackLayout->pieceCount; i++) {
         if (size[0] < PC.x + EN.dim[PC.rot & 1]) {
             size[0] = PC.x + EN.dim[PC.rot & 1];
         }
@@ -927,27 +615,27 @@ void usrtrk_build_track(void)
     size[1] = (size[1] < 15) ? 15 : size[1];
     cnt = 0;
     ncells = size[0] * size[1];
-    grid = mem_alloc_dbg(ncells * sizeof(Cell_11), 0, sStrUsrTrkFile, 0x416);
-    mem_fill(grid, 0, ncells * sizeof(Cell_11));
-    ne = gEditArena_3.f10->ne;
-    nv = gEditArena_3.f10->nv;
-    nt = gEditArena_3.f10->nt;
-    for (i = 0, p = gUserTrackLayout_6->pc; i < gUserTrackLayout_6->n; p++, i++) {
-        if (EP.flags & 0x40) {
+    grid = mem_alloc_dbg(ncells * sizeof(UsrTrkGridCell), 0, sStrUsrTrkFile, 0x416);
+    mem_fill(grid, 0, ncells * sizeof(UsrTrkGridCell));
+    ne = gEditArena.collision->numEdges;
+    nv = gEditArena.collision->numVtx;
+    nt = gEditArena.collision->numTris;
+    for (i = 0, p = gUserTrackLayout->pieces; i < gUserTrackLayout->pieceCount; p++, i++) {
+        if (EP.flags & PIECE_USER) {
             cnt += EP.dim[1] * 8;
         } else {
-            cnt += *EP.r38 - 1;
+            cnt += *EP.path - 1;
         }
-        if (EP.p3C != NULL) {
-            if (EP.flags & 0x40) {
+        if (EP.collision != NULL) {
+            if (EP.flags & PIECE_USER) {
                 m = EP.dim[1] * 2;
-                nv += EP.p3C->nv * m;
-                nt += EP.p3C->nt * m;
-                ne += EP.p3C->ne * m;
+                nv += EP.collision->numVtx * m;
+                nt += EP.collision->numTris * m;
+                ne += EP.collision->numEdges * m;
             } else {
-                nv += EP.p3C->nv;
-                nt += EP.p3C->nt;
-                ne += EP.p3C->ne;
+                nv += EP.collision->numVtx;
+                nt += EP.collision->numTris;
+                ne += EP.collision->numEdges;
             }
         }
         lo[0] = p->x;
@@ -957,28 +645,28 @@ void usrtrk_build_track(void)
         for (gy = lo[1], row = 0; gy < hi[1]; gy++, row++) {
             for (gx = lo[0], col = 0; gx < hi[0]; gx++, col++) {
                 G.rot = p->rot;
-                G.e = &EP;
+                G.type = &EP;
                 G.col = col;
                 G.row = row;
                 switch (p->rot) {
                 case 0:
-                    G.a = &EP.s30->e[K0];
-                    G.b = EP.s34 ? &EP.s34->e[K0] : NULL;
+                    G.cellA = &EP.meshA->cells[K0];
+                    G.cellB = EP.meshB ? &EP.meshB->cells[K0] : NULL;
                     break;
                 case 1:
-                    G.a = &EP.s30->e[K1];
-                    G.b = EP.s34 ? &EP.s34->e[K1] : NULL;
+                    G.cellA = &EP.meshA->cells[K1];
+                    G.cellB = EP.meshB ? &EP.meshB->cells[K1] : NULL;
                     break;
                 case 2:
-                    G.a = &EP.s30->e[K2];
-                    G.b = EP.s34 ? &EP.s34->e[K2] : NULL;
+                    G.cellA = &EP.meshA->cells[K2];
+                    G.cellB = EP.meshB ? &EP.meshB->cells[K2] : NULL;
                     break;
                 case 3:
-                    G.a = &EP.s30->e[K3];
-                    G.b = EP.s34 ? &EP.s34->e[K3] : NULL;
+                    G.cellA = &EP.meshA->cells[K3];
+                    G.cellB = EP.meshB ? &EP.meshB->cells[K3] : NULL;
                     break;
                 }
-                bb = G.b;
+                bb = G.cellB;
                 if (bb != NULL) {
                     d = &EP;
                     switch (p->rot) {
@@ -1004,229 +692,230 @@ void usrtrk_build_track(void)
         }
     }
     for (c = 0; c < ncells; c++) {
-        if (grid[c].a == NULL) {
+        if (grid[c].cellA == NULL) {
             grid[c].rot = 0;
-            grid[c].e = &gPieceTypes_20[27];
-            grid[c].a = &gPieceTypes_20[27].s30->e[0];
+            grid[c].type = &gPieceTypes[27];
+            grid[c].cellA = &gPieceTypes[27].meshA->cells[0];
             grid[c].col = 0;
             grid[c].row = 0;
-            if (gPieceTypes_20[27].s34 != NULL) {
-                grid[c].b = &gPieceTypes_20[27].s34->e[0];
+            if (gPieceTypes[27].meshB != NULL) {
+                grid[c].cellB = &gPieceTypes[27].meshB->cells[0];
             } else {
-                grid[c].b = NULL;
+                grid[c].cellB = NULL;
             }
         }
-        nva += grid[c].a->mesh->nv * sizeof(Vtx);
-        if (grid[c].b != NULL) {
-            nvb += grid[c].b->mesh->nv * sizeof(Vtx);
+        nva += grid[c].cellA->mesh->vtxCount * sizeof(Vtx);
+        if (grid[c].cellB != NULL) {
+            nvb += grid[c].cellB->mesh->vtxCount * sizeof(Vtx);
         }
-        if (grid[c].a->tex[0] & 1) {
-            texsz += (grid[c].a->tex[1] * 16) | 4;
+        if (grid[c].cellA->tex[0] & 1) {
+            texsz += (grid[c].cellA->tex[1] * 16) | 4;
         } else {
             texsz += 0x54;
         }
     }
-    switch (gUserTrackLayout_6->mode) {
+    switch (gUserTrackLayout->dirtType) {
     case 0:
-        gUserTrackData_4.f04 = res_load(sPiecesResSet, D_800D1348);
+        gUserTrackData.dirtTex = res_load(sPiecesResSet, D_800D1348);
         break;
     case 1:
-        gUserTrackData_4.f04 = res_load(sPiecesResSet, D_800D134C);
+        gUserTrackData.dirtTex = res_load(sPiecesResSet, D_800D134C);
         break;
     case 2:
-        gUserTrackData_4.f04 = res_load(sPiecesResSet, D_800D1350);
+        gUserTrackData.dirtTex = res_load(sPiecesResSet, D_800D1350);
         break;
     }
-    gUserTrackData_4.f0C = res_load(sPiecesResSet, D_800D1370);
-    gUserTrackData_4.f00 = mem_alloc_dbg(ncells * sizeof(Entry_8) | 4, 0, sStrUsrTrkFile, 0x4F5);
-    gUserTrackData_4.f00->n = ncells;
-    gUserTrackData_4.f08 = mem_alloc_dbg(ncells * sizeof(Entry_8) | 4, 0, sStrUsrTrkFile, 0x4F8);
-    gUserTrackData_4.f08->n = ncells;
-    gUserTrackData_4.f24 = mem_alloc_dbg((cnt / 5 + 1) * sizeof(Rec_57) + 8, 0, sStrUsrTrkFile, 0x4FB);
-    gUserTrackData_4.f28 = mem_alloc_dbg(sizeof(Geo), 0, sStrUsrTrkFile, 0x4FC);
-    gUserTrackData_4.f28->v = mem_alloc_dbg(nv * sizeof(V4_2), 0, sStrUsrTrkFile, 0x4FD);
-    gUserTrackData_4.f28->e = mem_alloc_dbg(ne * sizeof(V4_2), 0, sStrUsrTrkFile, 0x4FE);
-    gUserTrackData_4.f28->t = mem_alloc_dbg(nt * sizeof(V6), 0, sStrUsrTrkFile, 0x4FF);
+    gUserTrackData.objectTex = res_load(sPiecesResSet, D_800D1370);
+    gUserTrackData.meshA = mem_alloc_dbg(ncells * sizeof(PieceCell) | 4, 0, sStrUsrTrkFile, 0x4F5);
+    gUserTrackData.meshA->count = ncells;
+    gUserTrackData.meshB = mem_alloc_dbg(ncells * sizeof(PieceCell) | 4, 0, sStrUsrTrkFile, 0x4F8);
+    gUserTrackData.meshB->count = ncells;
+    gUserTrackData.path = mem_alloc_dbg((cnt / 5 + 1) * sizeof(UsrTrkPathRec) + 8, 0, sStrUsrTrkFile, 0x4FB);
+    /* one cell short of a WallMesh: the cell lists below also set cells[256], past the end */
+    gUserTrackData.collision = mem_alloc_dbg(sizeof(WallMesh) - sizeof(WallCell), 0, sStrUsrTrkFile, 0x4FC);
+    gUserTrackData.collision->vtx = mem_alloc_dbg(nv * sizeof(WallVtx), 0, sStrUsrTrkFile, 0x4FD);
+    gUserTrackData.collision->edges = mem_alloc_dbg(ne * sizeof(WallEdge), 0, sStrUsrTrkFile, 0x4FE);
+    gUserTrackData.collision->tris = mem_alloc_dbg(nt * sizeof(WallTri), 0, sStrUsrTrkFile, 0x4FF);
     g68 = mem_alloc_dbg(0x8200, 0, sStrUsrTrkFile, 0x500);
     g6C = mem_alloc_dbg(0x10200, 0, sStrUsrTrkFile, 0x501);
     w = size[0] * 250;
     h = size[1] * 250;
-    gUserTrackData_4.f10 = mem_alloc_dbg(texsz, 0, sStrUsrTrkFile, 0x508);
-    gUserTrackData_4.f14 = mem_alloc_dbg(nva, 0, sStrUsrTrkFile, 0x509);
-    gUserTrackData_4.f18 = mem_alloc_dbg(ncells * sizeof(Mesh_9), 0, sStrUsrTrkFile, 0x50A);
-    gUserTrackData_4.f1C = mem_alloc_dbg(nvb, 0, sStrUsrTrkFile, 0x50C);
-    gUserTrackData_4.f20 = mem_alloc_dbg(ncells * sizeof(Mesh_9), 0, sStrUsrTrkFile, 0x50D);
-    ebase = gEditArena_3.f10->ne;
-    vbase = gEditArena_3.f10->nv;
-    tbase = gEditArena_3.f10->nt;
-    gUserTrackData_4.f28->nv = nv;
-    gUserTrackData_4.f28->nt = nt;
-    gUserTrackData_4.f28->ne = ne;
-    gUserTrackData_4.f28->xmax = -1000000;
-    gUserTrackData_4.f28->ymax = -1000000;
-    gUserTrackData_4.f28->xmin = 1000000;
-    gUserTrackData_4.f28->ymin = 1000000;
-    for (j = 0; j < gEditArena_3.f10->nv; j++) {
-        gUserTrackData_4.f28->v[j].a = gEditArena_3.f10->v[j].a;
-        gUserTrackData_4.f28->v[j].b = gEditArena_3.f10->v[j].b;
-        gUserTrackData_4.f28->v[j].c = gEditArena_3.f10->v[j].c;
-        gUserTrackData_4.f28->v[j].d = gEditArena_3.f10->v[j].d;
+    gUserTrackData.tex = mem_alloc_dbg(texsz, 0, sStrUsrTrkFile, 0x508);
+    gUserTrackData.vtxA = mem_alloc_dbg(nva, 0, sStrUsrTrkFile, 0x509);
+    gUserTrackData.meshesA = mem_alloc_dbg(ncells * sizeof(PieceMesh), 0, sStrUsrTrkFile, 0x50A);
+    gUserTrackData.vtxB = mem_alloc_dbg(nvb, 0, sStrUsrTrkFile, 0x50C);
+    gUserTrackData.meshesB = mem_alloc_dbg(ncells * sizeof(PieceMesh), 0, sStrUsrTrkFile, 0x50D);
+    ebase = gEditArena.collision->numEdges;
+    vbase = gEditArena.collision->numVtx;
+    tbase = gEditArena.collision->numTris;
+    gUserTrackData.collision->numVtx = nv;
+    gUserTrackData.collision->numTris = nt;
+    gUserTrackData.collision->numEdges = ne;
+    gUserTrackData.collision->maxX = -1000000;
+    gUserTrackData.collision->maxZ = -1000000;
+    gUserTrackData.collision->minX = 1000000;
+    gUserTrackData.collision->minZ = 1000000;
+    for (j = 0; j < gEditArena.collision->numVtx; j++) {
+        gUserTrackData.collision->vtx[j].x = gEditArena.collision->vtx[j].x;
+        gUserTrackData.collision->vtx[j].z = gEditArena.collision->vtx[j].z;
+        gUserTrackData.collision->vtx[j].y = gEditArena.collision->vtx[j].y;
+        gUserTrackData.collision->vtx[j].h = gEditArena.collision->vtx[j].h;
     }
-    for (j = 0; j < gEditArena_3.f10->ne; j++) {
-        gUserTrackData_4.f28->e[j].a = gEditArena_3.f10->e[j].a;
-        gUserTrackData_4.f28->e[j].b = gEditArena_3.f10->e[j].b;
-        gUserTrackData_4.f28->e[j].c = -0x8000;
-        gUserTrackData_4.f28->e[j].d = 0x40;
+    for (j = 0; j < gEditArena.collision->numEdges; j++) {
+        gUserTrackData.collision->edges[j].v0 = gEditArena.collision->edges[j].v0;
+        gUserTrackData.collision->edges[j].v1 = gEditArena.collision->edges[j].v1;
+        gUserTrackData.collision->edges[j].nx = -0x8000;
+        gUserTrackData.collision->edges[j].nz = 0x40;
     }
-    for (j = 0; j < gEditArena_3.f10->nt; j++) {
-        gUserTrackData_4.f28->t[j].a = gEditArena_3.f10->t[j].a;
-        gUserTrackData_4.f28->t[j].b = gEditArena_3.f10->t[j].b;
-        gUserTrackData_4.f28->t[j].c = gEditArena_3.f10->t[j].c;
-        gUserTrackData_4.f28->t[j].d = gEditArena_3.f10->t[j].d;
-        gUserTrackData_4.f28->t[j].e = gEditArena_3.f10->t[j].e;
-        gUserTrackData_4.f28->t[j].f = gEditArena_3.f10->t[j].f;
+    for (j = 0; j < gEditArena.collision->numTris; j++) {
+        gUserTrackData.collision->tris[j].v[0] = gEditArena.collision->tris[j].v[0];
+        gUserTrackData.collision->tris[j].v[1] = gEditArena.collision->tris[j].v[1];
+        gUserTrackData.collision->tris[j].v[2] = gEditArena.collision->tris[j].v[2];
+        gUserTrackData.collision->tris[j].nx = gEditArena.collision->tris[j].nx;
+        gUserTrackData.collision->tris[j].ny = gEditArena.collision->tris[j].ny;
+        gUserTrackData.collision->tris[j].nz = gEditArena.collision->tris[j].nz;
     }
     bmw = (nv + 15) / 16;
     mem_fill(gZBuffer_2 + bmw, 0xFF, nv * 2);
-    for (i = 0, p = gUserTrackLayout_6->pc; i < gUserTrackLayout_6->n; p++, i++) {
-        e = &gPieceTypes_20[p->type];
-        if (e->p3C != NULL) {
-            gUserTrackData_4.f28->xmin = -3750;
-            gUserTrackData_4.f28->xmax = 3750;
-            gUserTrackData_4.f28->ymin = -3750;
-            gUserTrackData_4.f28->ymax = 3750;
-            if (e->flags & 0x40) {
+    for (i = 0, p = gUserTrackLayout->pieces; i < gUserTrackLayout->pieceCount; p++, i++) {
+        e = &gPieceTypes[p->type];
+        if (e->collision != NULL) {
+            gUserTrackData.collision->minX = -3750;
+            gUserTrackData.collision->maxX = 3750;
+            gUserTrackData.collision->minZ = -3750;
+            gUserTrackData.collision->maxZ = 3750;
+            if (e->flags & PIECE_USER) {
                 reps = e->dim[1] * 2;
             } else {
                 reps = 1;
             }
             for (k = 0; k < reps; k++) {
-                for (j = 0; j < e->p3C->nv; j++) {
+                for (j = 0; j < e->collision->numVtx; j++) {
                     gZBuffer_2[bmw + vbase + j] = i;
-                    gUserTrackData_4.f28->v[vbase + j].c = e->p3C->v[j].c;
-                    gUserTrackData_4.f28->v[vbase + j].d = e->p3C->v[j].d;
+                    gUserTrackData.collision->vtx[vbase + j].y = e->collision->vtx[j].y;
+                    gUserTrackData.collision->vtx[vbase + j].h = e->collision->vtx[j].h;
                     switch (p->rot) {
                     case 0:
-                        gUserTrackData_4.f28->v[vbase + j].a = e->p3C->v[j].a;
-                        gUserTrackData_4.f28->v[vbase + j].b = e->p3C->v[j].b;
-                        if (e->p3C->v[j].b == 0) {
+                        gUserTrackData.collision->vtx[vbase + j].x = e->collision->vtx[j].x;
+                        gUserTrackData.collision->vtx[vbase + j].z = e->collision->vtx[j].z;
+                        if (e->collision->vtx[j].z == 0) {
                             if (k != 0) {
-                                gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][k - 1];
+                                gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][k - 1];
                             }
                         } else if (k != reps - 1) {
-                            gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][k];
+                            gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][k];
                         }
-                        gUserTrackData_4.f28->v[vbase + j].a += p->x * 125 - w / 4;
-                        gUserTrackData_4.f28->v[vbase + j].b += p->y * 125 - h / 4 + (k * 4000) / 64;
+                        gUserTrackData.collision->vtx[vbase + j].x += p->x * 125 - w / 4;
+                        gUserTrackData.collision->vtx[vbase + j].z += p->y * 125 - h / 4 + (k * 4000) / 64;
                         break;
                     case 1:
-                        gUserTrackData_4.f28->v[vbase + j].a = e->p3C->v[j].b;
-                        gUserTrackData_4.f28->v[vbase + j].b = e->dim[0] * 125 - e->p3C->v[j].a;
-                        if (e->p3C->v[j].b == 0) {
+                        gUserTrackData.collision->vtx[vbase + j].x = e->collision->vtx[j].z;
+                        gUserTrackData.collision->vtx[vbase + j].z = e->dim[0] * 125 - e->collision->vtx[j].x;
+                        if (e->collision->vtx[j].z == 0) {
                             if (k != 0) {
-                                gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][k - 1];
+                                gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][k - 1];
                             }
                         } else if (k != reps - 1) {
-                            gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][k];
+                            gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][k];
                         }
-                        gUserTrackData_4.f28->v[vbase + j].a += p->x * 125 - w / 4 + (k * 4000) / 64;
-                        gUserTrackData_4.f28->v[vbase + j].b += p->y * 125 - h / 4;
+                        gUserTrackData.collision->vtx[vbase + j].x += p->x * 125 - w / 4 + (k * 4000) / 64;
+                        gUserTrackData.collision->vtx[vbase + j].z += p->y * 125 - h / 4;
                         break;
                     case 2:
-                        gUserTrackData_4.f28->v[vbase + j].a = e->dim[0] * 125 - e->p3C->v[j].a;
-                        gUserTrackData_4.f28->v[vbase + j].b = e->dim[1] * 125 - e->p3C->v[j].b;
-                        if (e->p3C->v[j].b == 0) {
+                        gUserTrackData.collision->vtx[vbase + j].x = e->dim[0] * 125 - e->collision->vtx[j].x;
+                        gUserTrackData.collision->vtx[vbase + j].z = e->dim[1] * 125 - e->collision->vtx[j].z;
+                        if (e->collision->vtx[j].z == 0) {
                             if (k != 0) {
-                                gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][k - 1];
+                                gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][k - 1];
                             }
                         } else if (k != reps - 1) {
-                            gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][k];
+                            gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][k];
                         }
-                        gUserTrackData_4.f28->v[vbase + j].a += p->x * 125 - w / 4;
-                        gUserTrackData_4.f28->v[vbase + j].b += p->y * 125 - h / 4 - (k * 4000) / 64;
+                        gUserTrackData.collision->vtx[vbase + j].x += p->x * 125 - w / 4;
+                        gUserTrackData.collision->vtx[vbase + j].z += p->y * 125 - h / 4 - (k * 4000) / 64;
                         break;
                     case 3:
-                        gUserTrackData_4.f28->v[vbase + j].a = e->dim[1] * 125 - e->p3C->v[j].b;
-                        gUserTrackData_4.f28->v[vbase + j].b = e->p3C->v[j].a;
-                        if (e->p3C->v[j].b == 0) {
+                        gUserTrackData.collision->vtx[vbase + j].x = e->dim[1] * 125 - e->collision->vtx[j].z;
+                        gUserTrackData.collision->vtx[vbase + j].z = e->collision->vtx[j].x;
+                        if (e->collision->vtx[j].z == 0) {
                             kk = reps - k - 1;
                             if (kk != 0) {
-                                gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][reps - k - 2];
+                                gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][reps - k - 2];
                             }
                         } else if ((kr = reps - k - 1) != reps - 1) {
-                            gUserTrackData_4.f28->v[vbase + j].d += gUserTrackLayout_6->rec[e - &gPieceTypes_20[18]][kr];
+                            gUserTrackData.collision->vtx[vbase + j].h += gUserTrackLayout->heights[e - &gPieceTypes[18]][kr];
                         }
-                        gUserTrackData_4.f28->v[vbase + j].a += p->x * 125 - w / 4 - ((reps - k - 1) * 4000) / 64;
-                        gUserTrackData_4.f28->v[vbase + j].b += p->y * 125 - h / 4;
+                        gUserTrackData.collision->vtx[vbase + j].x += p->x * 125 - w / 4 - ((reps - k - 1) * 4000) / 64;
+                        gUserTrackData.collision->vtx[vbase + j].z += p->y * 125 - h / 4;
                         break;
                     }
                 }
-                for (j = 0; j < e->p3C->ne; j++) {
-                    gUserTrackData_4.f28->e[ebase + j].a = e->p3C->e[j].a + vbase;
-                    gUserTrackData_4.f28->e[ebase + j].b = e->p3C->e[j].b + vbase;
+                for (j = 0; j < e->collision->numEdges; j++) {
+                    gUserTrackData.collision->edges[ebase + j].v0 = e->collision->edges[j].v0 + vbase;
+                    gUserTrackData.collision->edges[ebase + j].v1 = e->collision->edges[j].v1 + vbase;
                     switch (p->rot) {
                     case 0:
-                        gUserTrackData_4.f28->e[ebase + j].c = e->p3C->e[j].c;
-                        gUserTrackData_4.f28->e[ebase + j].d = e->p3C->e[j].d;
+                        gUserTrackData.collision->edges[ebase + j].nx = e->collision->edges[j].nx;
+                        gUserTrackData.collision->edges[ebase + j].nz = e->collision->edges[j].nz;
                         break;
                     case 1:
-                        gUserTrackData_4.f28->e[ebase + j].c = e->p3C->e[j].d;
-                        gUserTrackData_4.f28->e[ebase + j].d = -e->p3C->e[j].c;
+                        gUserTrackData.collision->edges[ebase + j].nx = e->collision->edges[j].nz;
+                        gUserTrackData.collision->edges[ebase + j].nz = -e->collision->edges[j].nx;
                         break;
                     case 2:
-                        gUserTrackData_4.f28->e[ebase + j].c = -e->p3C->e[j].c;
-                        gUserTrackData_4.f28->e[ebase + j].d = -e->p3C->e[j].d;
+                        gUserTrackData.collision->edges[ebase + j].nx = -e->collision->edges[j].nx;
+                        gUserTrackData.collision->edges[ebase + j].nz = -e->collision->edges[j].nz;
                         break;
                     case 3:
-                        gUserTrackData_4.f28->e[ebase + j].c = -e->p3C->e[j].d;
-                        gUserTrackData_4.f28->e[ebase + j].d = e->p3C->e[j].c;
+                        gUserTrackData.collision->edges[ebase + j].nx = -e->collision->edges[j].nz;
+                        gUserTrackData.collision->edges[ebase + j].nz = e->collision->edges[j].nx;
                         break;
                     }
-                    gUserTrackData_4.f28->e[ebase + j].c &= ~1;
-                    gUserTrackData_4.f28->e[ebase + j].d &= ~1;
+                    gUserTrackData.collision->edges[ebase + j].nx &= ~1;
+                    gUserTrackData.collision->edges[ebase + j].nz &= ~1;
                 }
-                for (j = 0; j < e->p3C->nt; j++) {
-                    gUserTrackData_4.f28->t[tbase + j].a = e->p3C->t[j].a + vbase;
-                    gUserTrackData_4.f28->t[tbase + j].b = e->p3C->t[j].b + vbase;
-                    gUserTrackData_4.f28->t[tbase + j].c = e->p3C->t[j].c + vbase;
+                for (j = 0; j < e->collision->numTris; j++) {
+                    gUserTrackData.collision->tris[tbase + j].v[0] = e->collision->tris[j].v[0] + vbase;
+                    gUserTrackData.collision->tris[tbase + j].v[1] = e->collision->tris[j].v[1] + vbase;
+                    gUserTrackData.collision->tris[tbase + j].v[2] = e->collision->tris[j].v[2] + vbase;
                     switch (p->rot) {
                     case 0:
-                        gUserTrackData_4.f28->t[tbase + j].d = e->p3C->t[j].d;
-                        gUserTrackData_4.f28->t[tbase + j].f = e->p3C->t[j].f;
+                        gUserTrackData.collision->tris[tbase + j].nx = e->collision->tris[j].nx;
+                        gUserTrackData.collision->tris[tbase + j].nz = e->collision->tris[j].nz;
                         break;
                     case 1:
-                        gUserTrackData_4.f28->t[tbase + j].d = e->p3C->t[j].f;
-                        gUserTrackData_4.f28->t[tbase + j].f = -e->p3C->t[j].d;
+                        gUserTrackData.collision->tris[tbase + j].nx = e->collision->tris[j].nz;
+                        gUserTrackData.collision->tris[tbase + j].nz = -e->collision->tris[j].nx;
                         break;
                     case 2:
-                        gUserTrackData_4.f28->t[tbase + j].d = -e->p3C->t[j].d;
-                        gUserTrackData_4.f28->t[tbase + j].f = -e->p3C->t[j].f;
+                        gUserTrackData.collision->tris[tbase + j].nx = -e->collision->tris[j].nx;
+                        gUserTrackData.collision->tris[tbase + j].nz = -e->collision->tris[j].nz;
                         break;
                     case 3:
-                        gUserTrackData_4.f28->t[tbase + j].d = -e->p3C->t[j].f;
-                        gUserTrackData_4.f28->t[tbase + j].f = e->p3C->t[j].d;
+                        gUserTrackData.collision->tris[tbase + j].nx = -e->collision->tris[j].nz;
+                        gUserTrackData.collision->tris[tbase + j].nz = e->collision->tris[j].nx;
                         break;
                     }
-                    gUserTrackData_4.f28->t[tbase + j].e = e->p3C->t[j].e;
+                    gUserTrackData.collision->tris[tbase + j].ny = e->collision->tris[j].ny;
                 }
-                ebase += e->p3C->ne;
-                vbase += e->p3C->nv;
-                tbase += e->p3C->nt;
+                ebase += e->collision->numEdges;
+                vbase += e->collision->numVtx;
+                tbase += e->collision->numTris;
             }
         }
     }
     mem_fill(gZBuffer_2, 0, bmw * 2);
-    for (j = gEditArena_3.f10->nv; j < nv; j++) {
+    for (j = gEditArena.collision->numVtx; j < nv; j++) {
         if (!((gZBuffer_2[j / 16] >> (j % 16)) & 1)) {
             for (l = j + 1; l < nv; l++) {
                 if (!((gZBuffer_2[l / 16] >> (l % 16)) & 1)) {
-                    dx = gUserTrackData_4.f28->v[j].a - gUserTrackData_4.f28->v[l].a;
-                    dy = gUserTrackData_4.f28->v[j].b - gUserTrackData_4.f28->v[l].b;
+                    dx = gUserTrackData.collision->vtx[j].x - gUserTrackData.collision->vtx[l].x;
+                    dy = gUserTrackData.collision->vtx[j].z - gUserTrackData.collision->vtx[l].z;
                     if (dx * dx + dy * dy < 16) {
-                        gUserTrackData_4.f28->v[l].a += dx / 2;
-                        gUserTrackData_4.f28->v[l].b += dy / 2;
-                        gUserTrackData_4.f28->v[j].a -= dx - dx / 2;
-                        gUserTrackData_4.f28->v[j].b -= dy - dy / 2;
+                        gUserTrackData.collision->vtx[l].x += dx / 2;
+                        gUserTrackData.collision->vtx[l].z += dy / 2;
+                        gUserTrackData.collision->vtx[j].x -= dx - dx / 2;
+                        gUserTrackData.collision->vtx[j].z -= dy - dy / 2;
                         gZBuffer_2[l / 16] |= 1 << (l % 16);
                         gZBuffer_2[j / 16] |= 1 << (j % 16);
                         break;
@@ -1239,11 +928,11 @@ void usrtrk_build_track(void)
         g68[c * 65] = 0;
         g6C[c * 129] = 0;
     }
-    for (b = 0; b < gUserTrackData_4.f28->ne; b++) {
-        pt[0] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->e[b].a].a + w / 4;
-        pt[1] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->e[b].a].b + h / 4;
-        pt[2] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->e[b].b].a + w / 4;
-        pt[3] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->e[b].b].b + h / 4;
+    for (b = 0; b < gUserTrackData.collision->numEdges; b++) {
+        pt[0] = gUserTrackData.collision->vtx[gUserTrackData.collision->edges[b].v0].x + w / 4;
+        pt[1] = gUserTrackData.collision->vtx[gUserTrackData.collision->edges[b].v0].z + h / 4;
+        pt[2] = gUserTrackData.collision->vtx[gUserTrackData.collision->edges[b].v1].x + w / 4;
+        pt[3] = gUserTrackData.collision->vtx[gUserTrackData.collision->edges[b].v1].z + h / 4;
         minx = MIN_2(pt[0], pt[2]);
         maxx = MAX_2(pt[0], pt[2]);
         miny = MIN_2(pt[1], pt[3]);
@@ -1259,13 +948,13 @@ void usrtrk_build_track(void)
             }
         }
     }
-    for (b = 0; b < gUserTrackData_4.f28->nt; b++) {
-        pt[0] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->t[b].a].a + w / 4;
-        pt[1] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->t[b].a].b + h / 4;
-        pt[2] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->t[b].b].a + w / 4;
-        pt[3] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->t[b].b].b + h / 4;
-        pt[4] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->t[b].c].a + w / 4;
-        pt[5] = gUserTrackData_4.f28->v[gUserTrackData_4.f28->t[b].c].b + h / 4;
+    for (b = 0; b < gUserTrackData.collision->numTris; b++) {
+        pt[0] = gUserTrackData.collision->vtx[gUserTrackData.collision->tris[b].v[0]].x + w / 4;
+        pt[1] = gUserTrackData.collision->vtx[gUserTrackData.collision->tris[b].v[0]].z + h / 4;
+        pt[2] = gUserTrackData.collision->vtx[gUserTrackData.collision->tris[b].v[1]].x + w / 4;
+        pt[3] = gUserTrackData.collision->vtx[gUserTrackData.collision->tris[b].v[1]].z + h / 4;
+        pt[4] = gUserTrackData.collision->vtx[gUserTrackData.collision->tris[b].v[2]].x + w / 4;
+        pt[5] = gUserTrackData.collision->vtx[gUserTrackData.collision->tris[b].v[2]].z + h / 4;
         tminx = MIN_2(MIN_2(pt[0], pt[2]), pt[4]);
         tmaxx = MAX_2(MAX_2(pt[0], pt[2]), pt[4]);
         tminy = MIN_2(MIN_2(pt[1], pt[3]), pt[5]);
@@ -1287,42 +976,42 @@ void usrtrk_build_track(void)
         sz2 += g6C[c * 129] * 2;
         sz1 += g68[c * 65] * 2;
     }
-    gUserTrackData_4.f28->cell[0].b = mem_alloc_dbg(sz2, 0, sStrUsrTrkFile, 0x6A8);
-    gUserTrackData_4.f28->cell[0].a = mem_alloc_dbg(sz1, 0, sStrUsrTrkFile, 0x6A9);
+    gUserTrackData.collision->cells[0].edges = mem_alloc_dbg(sz2, 0, sStrUsrTrkFile, 0x6A8);
+    gUserTrackData.collision->cells[0].tris = mem_alloc_dbg(sz1, 0, sStrUsrTrkFile, 0x6A9);
     for (c = 0; c < 257; c++) {
         if (c > 0) {
-            gUserTrackData_4.f28->cell[c].a = gUserTrackData_4.f28->cell[c - 1].a + g68[(c - 1) * 65];
-            gUserTrackData_4.f28->cell[c].b = gUserTrackData_4.f28->cell[c - 1].b + g6C[(c - 1) * 129];
+            gUserTrackData.collision->cells[c].tris = gUserTrackData.collision->cells[c - 1].tris + g68[(c - 1) * 65];
+            gUserTrackData.collision->cells[c].edges = gUserTrackData.collision->cells[c - 1].edges + g6C[(c - 1) * 129];
         }
         if (c < 256) {
             if (g68[c * 65] != 0) {
-                memcpy(gUserTrackData_4.f28->cell[c].a, g68 + c * 65 + 1, g68[c * 65] * 2);
+                memcpy(gUserTrackData.collision->cells[c].tris, g68 + c * 65 + 1, g68[c * 65] * 2);
             }
             if (g6C[c * 129] != 0) {
-                memcpy(gUserTrackData_4.f28->cell[c].b, g6C + c * 129 + 1, g6C[c * 129] * 2);
+                memcpy(gUserTrackData.collision->cells[c].edges, g6C + c * 129 + 1, g6C[c * 129] * 2);
             }
         }
     }
     mem_free(g68);
     mem_free(g6C);
-    height_init_walls(&gUserTrackData_4.f28, 0);
-    va = gUserTrackData_4.f14;
-    ma = gUserTrackData_4.f18;
-    tex = gUserTrackData_4.f10;
-    vb = gUserTrackData_4.f1C;
-    mb = gUserTrackData_4.f20;
-    ea = gUserTrackData_4.f00->e;
-    eb = gUserTrackData_4.f08->e;
-    *(s32 *)gUserTrackData_4.f24 = 0xAA000003;
-    gUserTrackData_4.f24 = (RecSet_2 *)((s32 *)gUserTrackData_4.f24 + 1);
-    gUserTrackData_4.f24->n = 0;
-    rec = gUserTrackData_4.f24->r;
+    height_init_walls(&gUserTrackData.collision, 0);
+    va = gUserTrackData.vtxA;
+    ma = gUserTrackData.meshesA;
+    tex = gUserTrackData.tex;
+    vb = gUserTrackData.vtxB;
+    mb = gUserTrackData.meshesB;
+    ea = gUserTrackData.meshA->cells;
+    eb = gUserTrackData.meshB->cells;
+    *gUserTrackData.path = 0xAA000003;
+    gUserTrackData.path = (u32 *)((s32 *)gUserTrackData.path + 1);
+    PATH_LIST->count = 0;
+    rec = PATH_LIST->nodes;
     rc = 0;
-    for (i = 0, p = gUserTrackLayout_6->pc; i < gUserTrackLayout_6->n; p++, i++) {
-        if (EP.flags & 0x40) {
+    for (i = 0, p = gUserTrackLayout->pieces; i < gUserTrackLayout->pieceCount; p++, i++) {
+        if (EP.flags & PIECE_USER) {
             n = EP.dim[1] * 8;
         } else {
-            n = *EP.r38 - 1;
+            n = *EP.path - 1;
         }
         for (; rc < n; rc += 5) {
             s32 x, y, o;
@@ -1333,38 +1022,38 @@ void usrtrk_build_track(void)
                 sz2 = rc;
             }
             o = sz2 * 44 + 4;
-            __builtin_memcpy(rec, (u8 *)EP.r38 + o, sizeof(Rec_57));
+            __builtin_memcpy(rec, (u8 *)EP.path + o, sizeof(UsrTrkPathRec));
             switch (p->rot) {
             case 0:
-                x = rec->x + p->x * 8000 - w * 16;
-                y = rec->y + p->y * 8000 - h * 16;
+                x = rec->node.x + p->x * 8000 - w * 16;
+                y = rec->node.z + p->y * 8000 - h * 16;
                 break;
             case 1:
-                x = rec->y + p->x * 8000 - w * 16;
-                y = EP.dim[0] * 8000 - rec->x + p->y * 8000 - h * 16;
+                x = rec->node.z + p->x * 8000 - w * 16;
+                y = EP.dim[0] * 8000 - rec->node.x + p->y * 8000 - h * 16;
                 break;
             case 2:
-                x = EP.dim[0] * 8000 - rec->x + p->x * 8000 - w * 16;
-                y = EP.dim[1] * 8000 - rec->y + p->y * 8000 - h * 16;
+                x = EP.dim[0] * 8000 - rec->node.x + p->x * 8000 - w * 16;
+                y = EP.dim[1] * 8000 - rec->node.z + p->y * 8000 - h * 16;
                 break;
             case 3:
-                x = EP.dim[1] * 8000 - rec->y + p->x * 8000 - w * 16;
-                y = rec->x + p->y * 8000 - h * 16;
+                x = EP.dim[1] * 8000 - rec->node.z + p->x * 8000 - w * 16;
+                y = rec->node.x + p->y * 8000 - h * 16;
                 break;
             }
-            rec->x = x;
-            rec->y = y;
-            rec->prev = gUserTrackData_4.f24->n - 1;
-            rec->next = ++gUserTrackData_4.f24->n;
-            rec->f12 = -1;
-            rec->fE = -1;
+            rec->node.x = x;
+            rec->node.z = y;
+            rec->node.prev = PATH_LIST->count - 1;
+            rec->node.next = ++PATH_LIST->count;
+            rec->node.join = -1;
+            rec->node.branch = -1;
             rec++;
         }
         rc -= n;
     }
-    gUserTrackData_4.f24->r[0].prev = gUserTrackData_4.f24->n - 1;
-    gUserTrackData_4.f24->r[gUserTrackData_4.f24->n - 1].next = 0;
-    gUserTrackData_4.f24 = (RecSet_2 *)((s32 *)gUserTrackData_4.f24 - 1);
+    PATH_LIST->nodes[0].node.prev = PATH_LIST->count - 1;
+    PATH_LIST->nodes[PATH_LIST->count - 1].node.next = 0;
+    gUserTrackData.path = (u32 *)((s32 *)gUserTrackData.path - 1);
     c = 0;
     for (gy = 0; gy < size[1]; gy++) {
         for (gx = 0; gx < size[0]; gx++) {
@@ -1374,15 +1063,15 @@ void usrtrk_build_track(void)
             ea->x1 = gx * 500 - w + 500;
             ea->y1 = gy * 500 - h + 500;
             ea->tex = tex;
-            ea->f1C = 0;
-            ma->nv = grid[c].a->mesh->nv;
-            ma->f8 = grid[c].a->mesh->f8;
-            ma->v = va;
-            ma->fC = grid[c].a->mesh->fC;
-            ma->f10 = 0;
-            ma->f14 = 0;
-            src = grid[c].a->mesh->v;
-            for (v = 0; v < grid[c].a->mesh->nv; v++, src++) {
+            ea->unk_1C = 0;
+            ma->vtxCount = grid[c].cellA->mesh->vtxCount;
+            ma->triCount = grid[c].cellA->mesh->triCount;
+            ma->vtx = va;
+            ma->tris = grid[c].cellA->mesh->tris;
+            ma->unk_10 = 0;
+            ma->unk_14 = 0;
+            src = grid[c].cellA->mesh->vtx;
+            for (v = 0; v < grid[c].cellA->mesh->vtxCount; v++, src++) {
                 va->v.ob[0] = R.ox + (ea->x0 + (src->v.ob[R.ix] + 250) * R.sx);
                 va->v.ob[1] = src->v.ob[1];
                 va->v.ob[2] = R.oy + (ea->y0 + (src->v.ob[R.iy] + 250) * R.sy);
@@ -1395,13 +1084,13 @@ void usrtrk_build_track(void)
                 va->v.cn[3] = 0xFF;
                 va++;
             }
-            if (grid[c].a->tex[0] & 1) {
-                *tex = grid[c].a->tex[0] & 0xFFFB;
+            if (grid[c].cellA->tex[0] & 1) {
+                *tex = grid[c].cellA->tex[0] & 0xFFFB;
                 tex++;
-                *tex = grid[c].a->tex[1];
+                *tex = grid[c].cellA->tex[1];
                 tex++;
-                for (ti = 0; ti < grid[c].a->tex[1]; ti++) {
-                    ts = (u8 *)grid[c].a->tex + (ti * 16 + 4);
+                for (ti = 0; ti < grid[c].cellA->tex[1]; ti++) {
+                    ts = (u8 *)grid[c].cellA->tex + (ti * 16 + 4);
                     td = (u8 *)tex;
                     switch (grid[c].rot) {
                     case 0:
@@ -1486,22 +1175,22 @@ void usrtrk_build_track(void)
             }
             ea++;
             ma++;
-            if (grid[c].b != NULL) {
+            if (grid[c].cellB != NULL) {
                 eb->mesh = mb;
                 eb->x0 = gx * 500 - w;
                 eb->y0 = gy * 500 - h;
                 eb->x1 = gx * 500 - w + 500;
                 eb->y1 = gy * 500 - h + 500;
                 eb->tex = NULL;
-                eb->f1C = 0;
-                mb->nv = grid[c].b->mesh->nv;
-                mb->f8 = grid[c].b->mesh->f8;
-                mb->v = vb;
-                mb->fC = grid[c].b->mesh->fC;
-                mb->f10 = 0;
-                mb->f14 = 0;
-                src = grid[c].b->mesh->v;
-                for (v = 0; v < grid[c].b->mesh->nv; v++, src++) {
+                eb->unk_1C = 0;
+                mb->vtxCount = grid[c].cellB->mesh->vtxCount;
+                mb->triCount = grid[c].cellB->mesh->triCount;
+                mb->vtx = vb;
+                mb->tris = grid[c].cellB->mesh->tris;
+                mb->unk_10 = 0;
+                mb->unk_14 = 0;
+                src = grid[c].cellB->mesh->vtx;
+                for (v = 0; v < grid[c].cellB->mesh->vtxCount; v++, src++) {
                     vb->v.ob[0] = R.ox + (eb->x0 + (src->v.ob[R.ix] + 250) * R.sx);
                     vb->v.ob[1] = src->v.ob[1];
                     vb->v.ob[2] = R.oy + (eb->y0 + (src->v.ob[R.iy] + 250) * R.sy);
@@ -1523,13 +1212,13 @@ void usrtrk_build_track(void)
                 eb->x1 = gx * 500 - w + 500;
                 eb->y1 = gy * 500 - h + 500;
                 eb->tex = NULL;
-                eb->f1C = 0;
-                mb->nv = 0;
-                mb->f8 = 0;
-                mb->v = NULL;
-                mb->fC = D_800D06B4;
-                mb->f10 = 0;
-                mb->f14 = 0;
+                eb->unk_1C = 0;
+                mb->vtxCount = 0;
+                mb->triCount = 0;
+                mb->vtx = NULL;
+                mb->tris = D_800D06B4;
+                mb->unk_10 = 0;
+                mb->unk_14 = 0;
             }
             eb++;
             mb++;
@@ -1542,15 +1231,10 @@ void usrtrk_build_track(void)
     gCurTrack_42->v68.z = pos.z;
 }
 
-typedef struct Node_37 { u8 pad[4]; struct Node_37 *next; } Node_37;
-typedef struct { u8 pad[0x17C]; Node_37 *head; u8 pad2[0x16F4 - 0x180]; s32 count; } Game_45;
-
-extern Game_45 *gEditor_37;
-
 s16 usrtrk_get_packed_size(void)
 {
     s32 cnt = 0;
-    Node_37 *n = gEditor_37->head;
+    EditPiece *n = gEditor->first;
     s32 total;
     s32 i;
 
@@ -1558,9 +1242,9 @@ s16 usrtrk_get_packed_size(void)
         do {
             n = n->next;
             cnt++;
-        } while (n != NULL && n != gEditor_37->head);
+        } while (n != NULL && n != gEditor->first);
     }
     total = (s16)cnt * 3 + 8;
-    for (i = 0; i < gEditor_37->count; i++) { total += gPieceTypes[i + 18].h1 * 4; }
+    for (i = 0; i < gEditor->userPieceCount; i++) { total += gPieceTypes[i + 18].dim[1] * 4; }
     return total + 10;
 }

@@ -104,10 +104,7 @@ typedef struct {
     u8 pad10[0x2C - 0x10];
 } Menu;
 
-typedef struct { u8 pad0[0x174]; s32 w174; } Ctl_18;
-
 extern Course_2 gTracks_14[];
-extern Ctl_18 *gEditor_3;
 extern Menu sScreens[];
 
 void shell_init(void)
@@ -230,8 +227,8 @@ void shell_init(void)
             gGame.flags &= 0xFFF7FFFF;
         }
     }
-    if (gEditor_3 != NULL) {
-        if (gEditor_3->w174 & 0x2000) {
+    if (gEditor != NULL) {
+        if (gEditor->flags & EDIT_PAK_LOAD) {
             gGame.pakScreenMode = 3;
             shell_goto_screen_3(&sScreens[15], 0, 1);
         } else {

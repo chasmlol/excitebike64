@@ -1655,11 +1655,6 @@ D_800C9548                            game  0x800C9548  data      0x8
 gLoDetailThresh                       game  0x800C9550  data     0x10
 gVisibleThresh                        game  0x800C9560  data     0x10
 gUserTrackLayout                      game  0x800C9570  data      0x4
-gUserTrackLayout_2                    game  0x800C9570  data        -  gUserTrackLayout
-gUserTrackLayout_3                    game  0x800C9570  data        -  gUserTrackLayout
-gUserTrackLayout_4                    game  0x800C9570  data        -  gUserTrackLayout
-gUserTrackLayout_5                    game  0x800C9570  data        -  gUserTrackLayout
-gUserTrackLayout_6                    game  0x800C9570  data        -  gUserTrackLayout
 D_800C9574                            game  0x800C9574  data      0xc
 sTexSegList                           game  0x800C9580  data      0x4
 sTexSegListIndex                      game  0x800C9584  data      0x4
@@ -2039,97 +2034,20 @@ gGui_4                                game  0x800CE200  data        -  gGui
 gGui_5                                game  0x800CE200  data        -  gGui
 gGui_6                                game  0x800CE200  data        -  gGui
 sEditCamTarget                        game  0x800CE210  data      0xc
-sEditCamTarget_2                      game  0x800CE210  data        -  sEditCamTarget
-sEditCamTarget_3                      game  0x800CE210  data        -  sEditCamTarget
 sEditCamPos                           game  0x800CE21C  data      0xc
-sEditCamPos_2                         game  0x800CE21C  data        -  sEditCamPos
-sEditCamPos_3                         game  0x800CE21C  data        -  sEditCamPos
-sEditCamPos_4                         game  0x800CE21C  data        -  sEditCamPos
 sEditCamPosFixed                      game  0x800CE228  data      0xc
 sEditCamDelta                         game  0x800CE234  data      0xc
 sEditCamMoving                        game  0x800CE240  data     0x2c
-gEditArena                            game  0x800CE26C  data      0x4
-gEditArena_2                          game  0x800CE26C  data        -  gEditArena
-gEditArena_3                          game  0x800CE26C  data        -  gEditArena
-D_800CE270                            game  0x800CE270  data     0x10
-gPieceTypes                           game  0x800CE280  data     0x80
-gPieceTypes_10                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_11                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_12                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_13                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_14                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_15                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_16                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_17                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_18                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_19                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_2                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_20                        game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_3                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_4                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_5                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_6                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_7                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_8                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypes_9                         game  0x800CE280  data        -  gPieceTypes
-gPieceTypesTurn                       game  0x800CE300  data    0x100
-gPieceTypesJump                       game  0x800CE400  data    0x300
-gPieceTypesUser                       game  0x800CE700  data    0x2b4
-D_800CE9B4                            game  0x800CE9B4  data      0xc
+gEditArena                            game  0x800CE26C  data     0x14
+gPieceTypes                           game  0x800CE280  data    0x740
 sEditViewRects                        game  0x800CE9C0  data     0x40
-sEditViewRects_2                      game  0x800CE9C0  data        -  sEditViewRects
 sEditViewRectsBase                    game  0x800CEA00  data     0x40
 gEditor                               game  0x800CEA40  data      0x4
-gEditor_10                            game  0x800CEA40  data        -  gEditor
-gEditor_11                            game  0x800CEA40  data        -  gEditor
-gEditor_12                            game  0x800CEA40  data        -  gEditor
-gEditor_13                            game  0x800CEA40  data        -  gEditor
-gEditor_14                            game  0x800CEA40  data        -  gEditor
-gEditor_15                            game  0x800CEA40  data        -  gEditor
-gEditor_16                            game  0x800CEA40  data        -  gEditor
-gEditor_17                            game  0x800CEA40  data        -  gEditor
-gEditor_18                            game  0x800CEA40  data        -  gEditor
-gEditor_19                            game  0x800CEA40  data        -  gEditor
-gEditor_2                             game  0x800CEA40  data        -  gEditor
-gEditor_20                            game  0x800CEA40  data        -  gEditor
-gEditor_21                            game  0x800CEA40  data        -  gEditor
-gEditor_22                            game  0x800CEA40  data        -  gEditor
-gEditor_23                            game  0x800CEA40  data        -  gEditor
-gEditor_24                            game  0x800CEA40  data        -  gEditor
-gEditor_25                            game  0x800CEA40  data        -  gEditor
-gEditor_26                            game  0x800CEA40  data        -  gEditor
-gEditor_27                            game  0x800CEA40  data        -  gEditor
-gEditor_28                            game  0x800CEA40  data        -  gEditor
-gEditor_29                            game  0x800CEA40  data        -  gEditor
-gEditor_3                             game  0x800CEA40  data        -  gEditor
-gEditor_30                            game  0x800CEA40  data        -  gEditor
-gEditor_31                            game  0x800CEA40  data        -  gEditor
-gEditor_32                            game  0x800CEA40  data        -  gEditor
-gEditor_33                            game  0x800CEA40  data        -  gEditor
-gEditor_34                            game  0x800CEA40  data        -  gEditor
-gEditor_35                            game  0x800CEA40  data        -  gEditor
-gEditor_36                            game  0x800CEA40  data        -  gEditor
-gEditor_37                            game  0x800CEA40  data        -  gEditor
-gEditor_4                             game  0x800CEA40  data        -  gEditor
-gEditor_5                             game  0x800CEA40  data        -  gEditor
-gEditor_6                             game  0x800CEA40  data        -  gEditor
-gEditor_7                             game  0x800CEA40  data        -  gEditor
-gEditor_8                             game  0x800CEA40  data        -  gEditor
-gEditor_9                             game  0x800CEA40  data        -  gEditor
 sEditUserPieceMenuItems               game  0x800CEA44  data     0x44
 sEditMainMenuItems                    game  0x800CEA88  data     0x80
-sEditMainMenu                         game  0x800CEB08  data     0x10
-sEditMainMenuChoice                   game  0x800CEB18  data      0x4
-sEditTrackMenuItems                   game  0x800CEB1C  data     0x38
-sEditTrackMenuItems_2                 game  0x800CEB1C  data        -  sEditTrackMenuItems
-sEditUserPieceItemCount               game  0x800CEB54  data     0x48
+sEditMainMenu                         game  0x800CEB08  data     0x14
+sEditTrackMenuItems                   game  0x800CEB1C  data     0x80
 sEditTrackMenu                        game  0x800CEB9C  data     0x14
-sEditTrackMenu_2                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_3                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_4                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_5                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_6                      game  0x800CEB9C  data        -  sEditTrackMenu
-sEditTrackMenu_7                      game  0x800CEB9C  data        -  sEditTrackMenu
 sEditMultiUseWarning                  game  0x800CEBB0  data     0x1c
 sEditSizeLockWarning                  game  0x800CEBCC  data     0x14
 sNesExitMsg                           game  0x800CEBE0  data     0x20
@@ -4291,39 +4209,6 @@ gPathNodeCount                        game  0x800EE490  data        -
 gPathStartNode                        game  0x800EE494  data        -
 D_800EE496                            game  0x800EE496  data        -
 gPathNodes                            game  0x800EE498  data        -
-trk_800EE498                          game  0x800EE498  data        -
-gPathNodes_10                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_11                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_12                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_13                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_14                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_15                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_16                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_17                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_18                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_19                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_2                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_20                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_21                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_22                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_23                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_24                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_25                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_26                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_27                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_28                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_29                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_3                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_30                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_31                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_32                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_33                         game  0x800EE498  data        -  gPathNodes
-gPathNodes_4                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_5                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_6                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_7                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_8                          game  0x800EE498  data        -  gPathNodes
-gPathNodes_9                          game  0x800EE498  data        -  gPathNodes
 sPathRawData                          game  0x800EE49C  data        -
 gPathSegmentT                         game  0x800EE4A0  data        -
 sLastPlaceChangeTime                  game  0x800EE4B0  data        -
@@ -4747,8 +4632,6 @@ sArnedVtxBufs                         game  0x800F55A0  data        -
 sArnedTexSetIdx                       game  0x800F55A4  data        -
 D_800F55B0                            game  0x800F55B0  data        -
 gUserPieceHeights                     game  0x800F55B8  data        -
-gUserPieceHeights_2                   game  0x800F55B8  data        -  gUserPieceHeights
-gUserPieceHeights_3                   game  0x800F55B8  data        -  gUserPieceHeights
 D_800F55BC                            game  0x800F55BC  data        -
 sEditCamStep                          game  0x800F56A8  data        -
 D_800F56B0                            game  0x800F56B0  data        -
@@ -4776,10 +4659,6 @@ sNesOperand_2                         game  0x800F5BB8  data        -  sNesOpera
 sNesOperand16                         game  0x800F5BBA  data        -
 sNesOperand8                          game  0x800F5BBB  data        -
 gUserTrackData                        game  0x800F5CC0  data        -
-gUserTrackData_2                      game  0x800F5CC0  data        -  gUserTrackData
-gUserTrackData_3                      game  0x800F5CC0  data        -  gUserTrackData
-gUserTrackData_4                      game  0x800F5CC0  data        -  gUserTrackData
-gUserTrackPath                        game  0x800F5CE4  data        -
 sSfxStreamBuf                         game  0x800F8840  data        -
 sSfxNumVoices                         game  0x800FA840  data        -
 sSfxOutputRate                        game  0x800FA844  data        -

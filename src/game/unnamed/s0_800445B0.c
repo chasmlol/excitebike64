@@ -685,29 +685,10 @@ f32 phys_check_resting(f32 *a, f32 *b, f32 *h, Vec3f *v, s32 n, f32 thr)
     return res;
 }
 
-typedef struct {
-    Vec3f pos;
-    u8 padC[0x14 - 0xC];
-    f32 f14;
-    f32 f18;
-    u8 pad1C[0x44 - 0x1C];
-    s8 f44;
-    u8 pad45;
-    s16 next;
-    u8 pad48[2];
-    s16 prev;
-    u8 pad4C[0x58 - 0x4C];
-    f32 f58;
-    f32 f5C;
-    u8 pad60[0x6C - 0x60];
-} Node_7;
-
-extern Node_7 *gPathNodes_11;
-
 void bike_respawn(Bike_26 *b) {
     s32 s;
     s32 v, i, k, idx;
-    Node_7 *n;
+    PathNode *n;
     Game *g;
     Bike_26 *p;
     f32 z, r2, half, t, d, dx, dz, y;
@@ -813,14 +794,14 @@ void bike_respawn(Bike_26 *b) {
         if (gGame.mode == 14) {
             s = 1;
         }
-        while (gPathNodes_11[s].f44 > 0) {
-            s = gPathNodes_11[s].next;
+        while (gPathNodes[s].respawnDir > 0) {
+            s = gPathNodes[s].next;
             if (s > gPathNodeCount) {
                 s = 0;
             }
         }
-        while (gPathNodes_11[s].f44 < 0) {
-            s = gPathNodes_11[s].prev;
+        while (gPathNodes[s].respawnDir < 0) {
+            s = gPathNodes[s].prev;
             if (s < 0) {
                 s = gPathNodeCount - 1;
             }
@@ -835,21 +816,21 @@ void bike_respawn(Bike_26 *b) {
             if (v == gPathFinishNode) {
                 k = -1;
             }
-            v = gPathNodes_11[v].prev;
+            v = gPathNodes[v].prev;
         }
         b->f628 = s;
         if (gGame.mode == 6) {
             b->f7AA = 0;
             b->pos.x = (f32)b->f7A9 * 2.178f;
         } else {
-            r2 = (gPathNodes_11[s].f58 * gPathNodes_11[s].f58 + gPathNodes_11[s].f5C * gPathNodes_11[s].f5C) / 36.0f;
+            r2 = (gPathNodes[s].widthNeg * gPathNodes[s].widthNeg + gPathNodes[s].widthPos * gPathNodes[s].widthPos) / 36.0f;
             half = __builtin_sqrtf(r2) * 0.5f;
             t = 0.0f;
-            while (t <= gPathNodes_11[s].f5C || -t <= gPathNodes_11[s].f58) {
-                if (!(t > 0.0f ? gPathNodes_11[s].f5C < t : gPathNodes_11[s].f58 < -t)) {
-                    b->pos.x = gPathNodes_11[s].pos.x + gPathNodes_11[s].f14 * t;
+            while (t <= gPathNodes[s].widthPos || -t <= gPathNodes[s].widthNeg) {
+                if (!(t > 0.0f ? gPathNodes[s].widthPos < t : gPathNodes[s].widthNeg < -t)) {
+                    b->pos.x = gPathNodes[s].pos.x + gPathNodes[s].lateralX * t;
                     d = 10000.0f;
-                    b->pos.z = gPathNodes_11[s].pos.z + gPathNodes_11[s].f18 * t;
+                    b->pos.z = gPathNodes[s].pos.z + gPathNodes[s].lateralZ * t;
                     if (gGhostRace != 0) {
                         break;
                     }
@@ -872,10 +853,10 @@ void bike_respawn(Bike_26 *b) {
                 t = -t;
             }
             if (d < r2) {
-                b->pos = gPathNodes_11[s].pos;
+                b->pos = gPathNodes[s].pos;
             }
         }
-        quat_from_euler(&b->q.x, 0.0f, 0.0f, math_atan2f(gPathNodes_11[s].f14, gPathNodes_11[s].f18));
+        quat_from_euler(&b->q.x, 0.0f, 0.0f, math_atan2f(gPathNodes[s].lateralX, gPathNodes[s].lateralZ));
         break;
     }
     bike_place_on_ground(b);
@@ -903,7 +884,7 @@ void bike_respawn(Bike_26 *b) {
     b->f1C0 = 250.0f;
     b->q370 = b->q;
     if (s > 0) {
-        b->pos.y = gPathNodes_11[s].pos.y + 1.0f;
+        b->pos.y = gPathNodes[s].pos.y + 1.0f;
     }
     y = (f32)height_get_ground(b->pos.x * 1000.0f, b->pos.y * 1000.0f, b->pos.z * 1000.0f) / 1000.0f + z + 0.5f;
     b->pos.y = y - (gGame.mode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);

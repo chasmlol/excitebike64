@@ -86,11 +86,6 @@ typedef struct Scr Scr;
 typedef struct Ctl_21 Ctl_21;
 typedef struct Obj_67 Obj_67;
 typedef struct Menu_5 Menu_5;
-typedef struct Game_36 Game_36;
-typedef struct Rec_49 Rec_49;
-typedef struct Spr_5 Spr_5;
-typedef struct Set Set;
-typedef struct Mesh_8 Mesh_8;
 typedef struct Chan_6 Chan_6;
 typedef struct Ring_2 Ring_2;
 typedef struct Obj_80 Obj_80;
@@ -157,7 +152,6 @@ typedef struct Vec {
 } Vec;
 
 typedef struct { s32 m[9]; } Mtx3;
-typedef struct { f32 x, y, z; u8 pad[0x60]; } Spot;
 
 typedef struct Rec_2 {
     u8 pad[0xA0];
@@ -1048,95 +1042,6 @@ typedef struct Ctl_2 {
     s16 sel;
 } Ctl_2;
 
-typedef struct Node_28 {
-    s32 f0;
-    struct Node_28 *a;     /* 0x04 */
-    struct Node_28 *b;     /* 0x08 */
-    s16 x;              /* 0x0C */
-    s16 y;              /* 0x0E */
-    u8 pad10[8];
-    s16 dirA;           /* 0x18 */
-    s16 dirB;           /* 0x1A */
-    s16 f1C;            /* 0x1C */
-    s16 f1E;            /* 0x1E */
-    s16 w;              /* 0x20 */
-    s16 h;              /* 0x22 */
-} Node_28;
-
-typedef struct Node_29 {
-    s16 used;
-    s16 pad2;
-    struct Node_29 *next;
-    struct Node_29 *prev;
-    s16 x;
-    s16 y;
-    s16 st;
-    s16 idx;
-    s16 *pt;
-    u8 pad18[0xC];
-} Node_29;
-
-typedef struct Blk_22 {
-    s32 w0;
-    s32 w1;
-    s32 w2;
-    s32 w3;
-    s16 h10;
-    s16 k12;
-    s16 *P;
-} Blk_22;
-
-typedef struct Spr_4 {
-    s32 w0;
-    s32 w1;
-    s32 w2;
-    s32 w3;
-    s16 h10;
-    s16 rot;
-    s16 *P;
-} Spr_4;
-
-typedef struct Node_30 {
-    u8 pad[0xC];
-    s16 px;
-    s16 py;
-    u16 flags;
-    u16 cnt;
-    u16 *tab;
-} Node_30;
-
-typedef struct Obj_72 {
-    s32 f0;
-    struct Obj_72 *next;   /* 0x04 */
-    s32 f8;
-    s16 x;              /* 0x0C */
-    s16 y;              /* 0x0E */
-    u16 flags;          /* 0x10 */
-    s16 f12;
-    s32 f14;
-    s16 dir[2];         /* 0x18 */
-    s16 len[2];         /* 0x1C */
-    s16 w;              /* 0x20 */
-    s16 h;              /* 0x22 */
-} Obj_72;
-
-typedef struct {
-    s16 h0;
-    s16 h1;
-    u8 rest[60];
-} Row;
-
-typedef struct Node_31 {
-    s32 f0;
-    struct Node_31 *next;
-} Node_31;
-
-typedef struct Ctx_4 {
-    s32 f0;
-    Node_31 *head;
-    Node_31 *end;
-} Ctx_4;
-
 typedef struct Ring {
     s32 f00;
     s32 cur;        /* 0x04 */
@@ -1251,6 +1156,10 @@ typedef struct Spr {
 #include "structs/flash.h"
 #include "structs/arned.h"
 #include "structs/resman.h"
+
+/* The racing line and the track editor. */
+#include "structs/path.h"
+#include "structs/editor.h"
 
 /* The game's setup, the race, the season and the podium. */
 #include "structs/race.h"

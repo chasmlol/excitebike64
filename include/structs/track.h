@@ -84,7 +84,9 @@ typedef struct SurfacePoly {
     /* 0x08 */ SurfacePoint pts[1]; /* [count] */
 } SurfacePoly;
 
-/* The wall mesh: vertical edges with a height, and triangles, binned on a 16x16 grid of the track. */
+/* The wall mesh: vertical edges with a height, and triangles, binned on a 16x16 grid of the track. A track's is a
+   resource (also the user track arena's and each piece type's); a user track's is merged from those
+   (usrtrk_build_track). */
 typedef struct WallVtx {
     /* 0x00 */ s16 x;       /* 64 mm units */
     /* 0x02 */ s16 z;

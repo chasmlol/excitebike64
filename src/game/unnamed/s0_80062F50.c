@@ -437,7 +437,7 @@ void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
     s32 cnt;
     s32 i;
     s32 lim;
-    u8 *r;
+    PathNode *r;
 
     v4 = *(s8 *)(p1 + 0x6ED) + *(s16 *)(p1 + 0x660);
     if (0.0f < p3) {
@@ -445,10 +445,10 @@ void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
         while (0.0f < p3) {
             {
                 s32 off = idx * 0x6c;
-                r = (u8 *)(off + (s32)gPathNodes);
+                r = (PathNode *)(off + (s32)gPathNodes);
             }
-            idx = *(s16 *)(r + 0x46);
-            p3 = p3 - *(f32 *)(r + 0xc);
+            idx = r->next;
+            p3 = p3 - r->length;
             if (idx == gPathFinishNode) {
                 v4 = v4 + 1;
             }
@@ -458,10 +458,10 @@ void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
         while (p3 < 0.0f) {
             {
                 s32 off = idx * 0x6c;
-                r = (u8 *)(off + (s32)gPathNodes);
+                r = (PathNode *)(off + (s32)gPathNodes);
             }
-            idx = *(s16 *)(r + 0x4a);
-            p3 = p3 + *(f32 *)(r + 0xc);
+            idx = r->prev;
+            p3 = p3 + r->length;
             if (idx == gPathFinishNode) {
                 v4 = v4 - 1;
             }
@@ -721,15 +721,6 @@ typedef struct Player_24 {
     u8 pad7A7[0x7E0 - 0x7A7];
 } Player_24;
 
-typedef struct {
-    u8 pad0[0x46];
-    s16 next;       /* 0x46 */
-    u8 pad48[0x58 - 0x48];
-    f32 f58;
-    f32 f5C;
-    u8 pad60[0x6C - 0x60];
-} TrackNode;
-
 extern Player_24 sExtraRiders_2[];
 
 void ai_update_lanes(void)
@@ -738,7 +729,7 @@ void ai_update_lanes(void)
     Player_24 *p;
     Player_24 *q;
     Player_24 **out;
-    TrackNode *t;
+    PathNode *t;
     s32 i;
     s32 j;
     s32 n;
@@ -774,12 +765,12 @@ void ai_update_lanes(void)
         node = p->node;
         j = 6;
         do {
-            t = (TrackNode *)(node * sizeof(TrackNode) + (u32)gPathNodes);
-            if (lo < -t->f58) {
-                lo = -t->f58;
+            t = (PathNode *)(node * sizeof(PathNode) + (u32)gPathNodes);
+            if (lo < -t->widthNeg) {
+                lo = -t->widthNeg;
             }
-            if (t->f5C < hi) {
-                hi = t->f5C;
+            if (t->widthPos < hi) {
+                hi = t->widthPos;
             }
             j--;
             node = t->next;
@@ -901,7 +892,6 @@ extern Racer_2 gRiders_84[];
 
 void race_init_ai_skills(s32 arg0, s32 count) {
     s32 i;
-
 
     for (i = 0; i < count; i++) {
         if (count == 1) {
