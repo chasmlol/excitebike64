@@ -736,6 +736,8 @@ boot_func_80003350:
     /* 8000365C */  .word 0x08737764
 .elseif VERSION == VERSION_US_REV1
     .word 0xE43D0BB8, 0x312812EC, 0x32FEE12F
+.elseif VERSION == VERSION_EU
+    .word 0x204F424A, 0x535C4D41, 0x54524958
 .else
     .error "the linker fill of this version"
 .endif
