@@ -115,17 +115,15 @@ void tunes_init(s32 numChannels)
 /* tunes_apply_echo, inlined: runs `count` samples through the echo ring. */
 static inline void echo_ring(s16 *pcm, s32 count)
 {
-    u16 *echo;
     s32 sample;
 
     while (count != 0) {
-        echo = &sStreamEchoBuf[sStreamEchoPos];
-        sample = *pcm + ((s16)*echo >> 1);
+        sample = *pcm + ((s16)sStreamEchoBuf[sStreamEchoPos] >> 1);
         if (sample > 0x7FFF)
             sample = 0x7FFF;
         if (sample < -0x7FFF)
             sample = -0x7FFF;
-        *echo = sample;
+        sStreamEchoBuf[sStreamEchoPos] = sample;
         *pcm++ = sample;
         sStreamEchoPos = (sStreamEchoPos + 1) % STREAM_ECHO_RING;
         count--;
