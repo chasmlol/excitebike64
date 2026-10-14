@@ -21,8 +21,9 @@ sha1, cic and [rom]). The comparison:
 Prints a report: changed functions (with how their start was found), removed ones, calls to code no REF function
 covers (new functions), symbols placed by a neighbour's offset or not at all, and the draft layout for
 version.toml. --write writes versions/NEW/functions.csv and symbols.txt (refused if they exist; --out DIR writes
-them to DIR instead). The drafts need
-checking: build NEW (tools/build_all.py --version NEW) and fix what differs.
+them to DIR instead). The drafts need checking: build NEW (tools/build_all.py --version NEW) and fix what differs.
+Linker fill next to a segment marker or a changed function, and fill between the objects' data, are not always
+found: the build lists the bytes left, which become `padding` entries (code) or data symbols (data).
 """
 import argparse
 import bisect
