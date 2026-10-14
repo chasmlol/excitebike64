@@ -1679,8 +1679,6 @@ sPvsData                              game  0x800C9638  data      0x4
 sPvsIndex                             game  0x800C963C  data      0x4
 gTrackObjects                         game  0x800C9640  data      0x4
 gTrackSections                        game  0x800C9644  data      0x4
-gTrackSections_10                     game  0x800C9644  data        -  gTrackSections
-gTrackSections_9                      game  0x800C9644  data        -  gTrackSections
 gWaterModels                          game  0x800C9648  data      0x4
 sCullSlope                            game  0x800C964C  data      0x4
 gCamTargetOverride                    game  0x800C9650  data      0x4
@@ -4853,7 +4851,6 @@ gLightningFlash                       game  0x800F14E8  data        -
 sFlashTris                            game  0x800F14F0  data        -
 sFlashTimer                           game  0x800F14F4  data        -
 sFlashCandidates                      game  0x800F14F8  data        -
-sFlashCandidates_2                    game  0x800F14F8  data        -  sFlashCandidates
 sFlashCandidateCount                  game  0x800F14FC  data        -
 sExcite3DSpawnTime                    game  0x800F1504  data        -
 gSoccerBall                           game  0x800F1510  data        -
