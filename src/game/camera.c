@@ -240,11 +240,11 @@ void cam_update(void) {
                     if ((gPlayerInputs[k] & 0x80) && !(gPlayerInputsPrev_3[k] & 0x80) && !(gEvent.flags & 0x800) &&
                         gEvent.state != 0 && gEvent.allFinished == 0) {
                         s32 md = gRiders_25[sCamTarget].f5AA;
-                        if (md != 9 && gGameMode != 7) {
+                        if (md != 9 && gGame.mode != 7) {
                             sel = 1;
                             { Player_10 *b = (Player_10 *)((u32)gRiders_25 + ((md & 1) >> 1)); s5 = &b[sCamTarget].f54; }
                             m = md;
-                            if (gGameMode == 6 && gRiders_25[sCamTarget].b3FF == 0) {
+                            if (gGame.mode == 6 && gRiders_25[sCamTarget].b3FF == 0) {
                                 m ^= 6;
                             } else {
                                 do {
@@ -615,7 +615,7 @@ s32 cam_mode_soccer(Bike_16 *bike, Rec6 *out) {
     n = gEvent.flags & 0xF;
     if (n != 0) {
     i = n - 1;
-    if (i == ((bike - gRiders_26) >> ((gNumPlayers - 1) >> 1))) {
+    if (i == ((bike - gRiders_26) >> ((gGame.numPlayers - 1) >> 1))) {
         switch (n) {
         case 1:
             s = 1000.0f;
@@ -960,7 +960,7 @@ void cam_mode_fall_view(Ent_23 *e, Rec_4 *r)
     r->c = b[i].c;
     r->b = 0;
     cam_snap_to(r);
-    if (gGameMode == 7) {
+    if (gGame.mode == 7) {
         e->f44C = 0.5f;
         if (d < -12000) {
             e->h624 = 10000;

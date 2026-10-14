@@ -843,7 +843,7 @@ void path_init(u32 *param_1)
     s32 iVar1;
     u32 uVar2;
 
-    if (gGameMode == 6) {
+    if (gGame.mode == 6) {
         path_generate_straight();
         goto end;
     }
@@ -858,11 +858,11 @@ void path_init(u32 *param_1)
         goto end;
     }
     if (*(s32 *)(gCurTrack + 0x2c) != 2) {
-        if (gGameMode == 9 && (gTutorialLessons[*(s16 *)(gSeason + 0x64) * 40 + 0xC] & 2)) {
+        if (gGame.mode == 9 && (gTutorialLessons[*(s16 *)(gSeason + 0x64) * 40 + 0xC] & 2)) {
             iVar1 = D_800D10F0;
             goto L134;
         }
-        if (*(volatile s32 *)&gGameMode == 7 && (gCheatFlags & 8)) {
+        if (*(volatile s32 *)&gGame.mode == 7 && (gCheatFlags & 8)) {
             iVar1 = D_800D0D50;
             goto L134;
         }
@@ -1185,13 +1185,13 @@ void path_update_bike(Bike_28 *b)
         if (!(b->f4E4->flags & 0x100) && !(b->f588->flags & 0x100)) {
             b->f626 = oldSeg;
             b->f624 = 0;
-        } else if (gGameMode != 0xE && (b->f4E4->flags & 0x100) && (b->f588->flags & 0x100)) {
+        } else if (gGame.mode != 0xE && (b->f4E4->flags & 0x100) && (b->f588->flags & 0x100)) {
             if (++b->f624 > 10) {
                 bike_respawn(b);
             }
         }
     }
-    if (gEvent.state < 5 && gGameMode != 9) {
+    if (gEvent.state < 5 && gGame.mode != 9) {
         gPathSegmentT = 0.0f;
         b->seg = D_800EE496;
     } else {
@@ -1224,7 +1224,7 @@ void path_update_bike(Bike_28 *b)
                     remove_walls_trigger(gCurTrack_26->ev[i].d);
                 }
             }
-            if (gGameMode == 7) {
+            if (gGame.mode == 7) {
                 if (b->seg == gPathNodes_25->f4A) {
                     b->seg = 0;
                 }
@@ -1237,7 +1237,7 @@ void path_update_bike(Bike_28 *b)
                     } else {
                         b->f3FF = 1;
                         b->f662 = 0;
-                        b->f68C = gEventTime_2[0];
+                        b->f68C = gEvent.time;
                         event_check_record_time(b);
                         b->f6E8 = 1;
                     }
@@ -1337,7 +1337,7 @@ void path_check_lap(Ent_47 *p, s32 a1)
         if (a1 == iv || a1 == SEG(iv)->f4A) {
             if ((s8)p->f6ED == 0 && (gGame.flags & 1) == 0) {
                 v = p - gRiders_51;
-                if (v < gEventNumRiders) {
+                if (v < gEvent.numRiders) {
                     event_rider_lap_completed(v);
                     return;
                 }

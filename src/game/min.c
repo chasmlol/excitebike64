@@ -126,10 +126,10 @@ void race_update_replay(void)
 {
     if (gReplayRecording != 0) {
         if (gReplayPlayback == 0) {
-            if (gGameMode == 9 || gEventAllFinished == 0) {
+            if (gGame.mode == 9 || gEvent.allFinished == 0) {
                 replay_record_frame(gPlayerInputs);
             }
-        } else if (gGameMode == 9 || gEventAllFinished == 0) {
+        } else if (gGame.mode == 9 || gEvent.allFinished == 0) {
             replay_play_frame(gPlayerInputs);
         }
         if (sReplayRequest != 0 && sClearFrames < 5) {
@@ -248,7 +248,7 @@ void race_init(s32 arg)
     gGame.flags |= 0x10000;
     race_load_frontend_code(0);
     if (gReplayPlayback != 0) {
-        gCamTargetOverride = D_800F05EC;
+        gCamTargetOverride = gEvent.camTarget;
     } else {
         gCamTargetOverride = -1;
     }
@@ -395,7 +395,7 @@ void race_exit(void)
     u32 f;
 
     rumble_stop_all();
-    if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0 && (gGameMode_2 - 0xD) < 2) {
+    if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0 && (gGame.mode - 0xD) < 2) {
         mem_free(gUserTrackLayout);
         gUserTrackLayout = 0;
     }
@@ -629,7 +629,7 @@ void race_intro_load(void)
     gRaceTextObjs[0x4a] = r;
     r = res_load(D_800E7728, D_800D09B0);
     gRaceTextObjs[0x50] = r;
-    if (gGameMode == 1) {
+    if (gGame.mode == 1) {
         i = 0;
         do {
             r = res_load(D_800E7728, *(s32 *)D_800C8D68[*(s16 *)((u8 *)*(s16 **)gSeason + (i << 1) + 8)]);
@@ -666,7 +666,7 @@ void race_intro_unload(void) {
     res_unload(&D_800E7728_3->unk4[D_800D088C]);
     res_unload(&D_800E7728_3->unk4[D_800D09B0]);
     res_unload(&D_800E7728_3->unk4[D_800D085C]);
-    if (gGameMode == 1) {
+    if (gGame.mode == 1) {
         for (i = 0; i < 5; i++) {
             res_unload(&D_800E7728_3->unk4[*D_800C8D68_2[(*gSeason_7)->a[i]]]);
         }
@@ -1787,7 +1787,7 @@ void race_teardown(void)
     map_free();
     rain_free();
     snow_free();
-    if (gGameMode == 9) {
+    if (gGame.mode == 9) {
         path_free();
     }
     if (gDrawFlags & 0x800) {

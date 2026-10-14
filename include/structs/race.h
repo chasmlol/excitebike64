@@ -35,7 +35,7 @@ typedef struct Event {
     /* 0x5C */ u8 unk_5C[0x68 - 0x5C];
     /* 0x68 */ s16 goals[2];        /* soccer score */
     /* 0x6C */ s16 goalTimer;       /* soccer: 180 frames after a goal */
-    /* 0x6E */ s8 unk_6E;           /* soccer */
+    /* 0x6E */ s8 ballToucher;      /* soccer: the rider who touched the ball last */
     /* 0x6F */ u8 unk_6F;
     /* 0x70 */ s32 tutorialAction;
     /* 0x74 */ s32 unk_74;

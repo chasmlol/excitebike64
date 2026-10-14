@@ -50,7 +50,7 @@ s32 shell_format_pak_file_label(u8 *src, char *dst, s32 flag)
             n++;
             dst[n] = 0;
         }
-        ret = D_800F01F8;
+        ret = gGame.pakScreenMode;
         ret = ret ^ 3;
     } else {
         if (src[4] != 0x35) {
@@ -62,7 +62,7 @@ s32 shell_format_pak_file_label(u8 *src, char *dst, s32 flag)
         dst[m + 10] = 0;
         m = strlen(dst);
         __builtin_memcpy(dst + m, src + 6, 10);
-        ret = D_800F01F8;
+        ret = gGame.pakScreenMode;
         ret = ret ^ 1;
     }
     return (ret == 0) << 1;
@@ -246,10 +246,10 @@ void shell_init(void)
     }
     if (gEditor_3 != NULL) {
         if (gEditor_3->w174 & 0x2000) {
-            D_800F01F8 = 3;
+            gGame.pakScreenMode = 3;
             shell_goto_screen_3(&sScreens[15], 0, 1);
         } else {
-            D_800F01F8 = 4;
+            gGame.pakScreenMode = 4;
             shell_goto_screen_3(&sScreens[15], 0, 1);
         }
     } else {
@@ -264,7 +264,7 @@ void shell_init(void)
                     }
                 }
             }
-            if (gRaceExitCode == 3 && gGameMode == 1) {
+            if (gRaceExitCode == 3 && gGame.mode == 1) {
                 shell_restore_race_results();
                 if (gSeason_15->h64 > 0) {
                     gSeason_15->h64--;
@@ -277,20 +277,20 @@ void shell_init(void)
                 gCreditsMode = 0;
                 shell_goto_screen_3(&sScreens[8], 0, 1);
             } else {
-                shell_goto_screen_3(D_800F016C, 0, 1);
+                shell_goto_screen_3(gGame.returnScreen, 0, 1);
             }
             gGame.flags &= 0xFEFF7FFF;
         } else if (flag) {
             shell_goto_screen_3(&sScreens[10], 1, 1);
         } else {
-            if (gEventAllFinished != 0 && mode != 0 && mode != 6 && gGame.mode == 1) {
+            if (gEvent.allFinished != 0 && mode != 0 && mode != 6 && gGame.mode == 1) {
                 if (gSeason_15 != NULL && gSeason_15->p0 - D_800CA9C8 == 4) {
                     m = &sScreens[2];
                 } else {
                     m = &sScreens[0];
                 }
-            } else if ((gEventAllFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGameMode == 0)
-                       || (gEventAllFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGameMode == 8)) {
+            } else if ((gEvent.allFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGame.mode == 0)
+                       || (gEvent.allFinished != 0 && gRaceExitCode != 0 && gRaceExitCode != 6 && gGame.mode == 8)) {
                 m = &sScreens[1];
             } else {
                 if (gActiveReplay != 0) {
@@ -393,7 +393,7 @@ void shell_cb_season(s32 arg0) {
             gCurTrack = sTrackTutorial;
             gGame.mode = 9;
             *(volatile s32 *)&gGame.numPlayers = 1; /* volatile: the store stays before the next one */
-            D_800F0624_2 = 0;
+            *(volatile s32 *)&gEvent.tutorialBuf = 0;
             gGame.riders[0] = 4;
             gGame.flags &= ~0x80;
             gSeason_16->cup = &D_800CA9C8[6];
@@ -995,16 +995,16 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
                 gGame.flags |= 0x80;
                 t = gSeason_17->trk;
                 if (gSeason_17->f64 + 1 >= t->n) {
-                    if (gSeason_17->f6C[0] == 0 && (t - D_800CA9C8_4 != 4 || D_800F05F8 == 0)) {
+                    if (gSeason_17->f6C[0] == 0 && (t - D_800CA9C8_4 != 4 || gEvent.finishOrder[0] == 0)) {
                         gGame.flags = (gGame.flags & ~0x80) | 0x40000;
                         shell_goto_screen_2(0, 0, 1);
                         gActiveReplay = 0;
                         return;
                     }
-                } else if (t - D_800CA9C8_4 != 4 || D_800F05F8 == 0) {
+                } else if (t - D_800CA9C8_4 != 4 || gEvent.finishOrder[0] == 0) {
                     shell_goto_screen_2(0, 0, 1);
                     gSeason_17->f64++;
-                    race_jitter_ai_order(gGame.numPlayers, gEventNumRiders - gGame.numPlayers);
+                    race_jitter_ai_order(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
                     race_grid_from_standings();
                     gActiveReplay = 0;
                     return;
@@ -1069,7 +1069,7 @@ void shell_season_standings_input(Info *arg0, s32 arg1, u32 *arg2, Pad16 *arg3)
             if (*arg2 & 0x1002) {
                 snd_play_menu_sound(0);
                 d = gReplayWritePtr - gReplayBuf;
-                if (gGameMode != 8 ? d >= gReplayBufSize : d >= 0x2800) {
+                if (gGame.mode != 8 ? d >= gReplayBufSize : d >= 0x2800) {
                     gGame.menuSel ^= 2;
                 } else {
                     if (++gGame.menuSel >= 3) {
@@ -1378,8 +1378,8 @@ void shell_rider_select_input(Obj_63 *p1, s32 p2, u32 *p3, Pad16 *arg3)
 
     if ((*p3 & 0x50) && ok) {
         snd_play_menu_sound(1);
-        if (D_800F0128 < 8) {
-            if (D_800F0128 >= 2) {
+        if (gGame.savedMode < 8) {
+            if (gGame.savedMode >= 2) {
                 shell_goto_screen_2(0, 1, 1);
             } else {
                 shell_goto_screen_2(p1->fC->f4, 1, 1);
@@ -1627,7 +1627,7 @@ void shell_season_select_input(Arg0 *a0, Arg1 *a1, s32 *pad, Pad16 *arg3) {
         }
         k = *pad;
         if (k & 0x50) {
-            D_800EFDE0 = 1;
+            gGame.seasonMenuState = 1;
         } else if (k & 0x20) {
             gGame.seasonMenuState = 1;
             if (gGame.customTrackPrev == -1) D_800CA9C8_5[*a0->f20].n--;
@@ -1649,7 +1649,7 @@ extern Save_4 gSaveData_10;
 
 s32 shell_is_round_unlocked(s32 n)
 {
-    if (D_800F0180 == gSaveData_10.cup) {
+    if (gGame.difficulty == gSaveData_10.cup) {
         s32 r = 0;
         if (n == 0 || ((gSaveData_10.mask >> (n - 1)) & 1)) {
             r = 1;
@@ -2446,7 +2446,7 @@ void shell_exit(void)
     if (gGame.mode != 7 && gGame.mode != 2 && gCreditsMode == 0 && !(gGame.flags & 0x40000)) {
         switch (gGame.numPlayers) {
         default:
-            D_800EFDB4 = 0;
+            D_800EFDB4 = 0; /* its own symbol: gGame is in a register here */
             break;
         case 1:
             gGame.numCpuRiders = 5;
@@ -2456,7 +2456,7 @@ void shell_exit(void)
             break;
         }
     } else {
-        D_800EFDB4 = 0;
+        gGame.numCpuRiders = 0;
     }
     if (!(gGame.flags & 0x8000)) {
         g = &gGame;
@@ -2471,7 +2471,7 @@ void shell_exit(void)
     osViSetSpecialFeatures(0xAA);
     gGame.flags &= ~1;
     if (gGame.flags & 0x40000) {
-        gGame.numPlayers = gEventNumRiders;
+        gGame.numPlayers = gEvent.numRiders;
         if (gGame.numPlayers >= 4) {
             gGame.numPlayers = 3;
         }
@@ -2488,7 +2488,7 @@ void shell_exit(void)
         fatal_halt(1);
     }
     res_close_set(D_800E7728);
-    mem_free(D_800F01BC);
+    mem_free(gGame.recordTracks);
     gRaceExitCode = 6;
     font_unload_set();
 }
@@ -2502,7 +2502,7 @@ typedef struct {
 
 typedef struct {
     u8 pad0[0x34];
-    V7 f34;
+    TrackRecord f34;
     u32 f50;
     u8 pad54[0xA0 - 0x54];
 } Bike_41;
@@ -2624,12 +2624,12 @@ void shell_unload_screen(Scr *s)
         LOAD(D_800D1498);
         LOAD(D_800D139C);
         LOAD(D_800D13A0);
-        mem_free(D_800F01B4);
+        mem_free(gGame.playerPalettes);
         break;
     case 6:
         save_write(5, 0);
         save_write(1, 0);
-        sfx_free_sample(D_800F04E4);
+        sfx_free_sample(gGame.optionsSfx);
         LOAD(D_800D1470);
         LOAD(D_800D1424);
         LOAD(D_800D1444);
@@ -2648,7 +2648,7 @@ void shell_unload_screen(Scr *s)
         if (s->f16 == 9) {
             LOAD(D_800D13CC);
         } else {
-            gCurTrack_40->f34 = D_800F05AC;
+            gCurTrack_40->f34 = *(TrackRecord *)&gEvent.record; /* copied through a pointer, as in event_init */
             gCurTrack_40->f50 &= ~0x180;
             save_write(2, gCurTrack_40 - gTracks_15);
             for (i = 0; i < gGame.numRecordTracks; i++) {
@@ -2658,7 +2658,7 @@ void shell_unload_screen(Scr *s)
             }
             LOAD(*sTrackPicResIds[sTrackPicIndex[i]]);
         }
-        mem_free(D_800F01B4);
+        mem_free(gGame.playerPalettes);
         LOAD(D_800D1488);
         LOAD(D_800D1380);
         LOAD(D_800D148C);
@@ -2667,7 +2667,7 @@ void shell_unload_screen(Scr *s)
     case 7:
     case 13:
     case 14:
-        mem_free(D_800F01B4);
+        mem_free(gGame.playerPalettes);
         LOAD(D_800D13A0);
         LOAD(D_800D143C);
         LOAD(D_800D13C0);
@@ -2794,7 +2794,7 @@ void shell_update_season_progress(void)
         if (idx < 5) if (idx >= 0) {
             pb = r->p;
             if ((s32)*pb <= (s32)r->cnt + 1) {
-                if (!(idx == 4 && D_800F05F8 != 0) && r->flag == 0) {
+                if (!(idx == 4 && gEvent.finishOrder[0] != 0) && r->flag == 0) {
                     g2 = &gGame;
                     q = &gSaveData_12;
                     lv = q[0x2C0];
@@ -2821,7 +2821,7 @@ void shell_update_season_progress(void)
                 }
             }
             idx2 = ((gSeason_21->p - &D_800CA9C8_7) * 0x38E38E39) >> 2;
-            if (idx2 != 4 || D_800F05F8 == 0) {
+            if (idx2 != 4 || gEvent.finishOrder[0] == 0) {
                 pb2 = gSeason_21->p;
                 e = pb2 + (gGame.difficulty - 1);
                 if (gSeason_21->cnt == e[1]) {
@@ -3264,7 +3264,7 @@ void shell_goto_screen(Item_12 *p1, s32 p2, s32 p3, s32 arg3)
         if (p1 != NULL && p2 != 0) {
             p1->parent = sCurScreen_3;
         }
-        D_800F016C = sPrevScreen;
+        gGame.returnScreen = sPrevScreen;
         sCurScreen_3 = p1;
     }
 }
@@ -5479,13 +5479,13 @@ void shell_draw(Mtx *m, s32 fb, Gfx **pgdl)
     u16 alpha;
 
     gdl = *pgdl;
-    if (D_800EFDC4 == 0) {
+    if (gGame.fadeState == 0) {
         s = sPrevScreen;
     } else {
         s = sCurScreen;
     }
     if (s != NULL) {
-        if (D_800EFDC4 == 0) {
+        if (gGame.fadeState == 0) {
             tbl = s->tbl + sPrevScreenCursor * 16;
         } else {
             tbl = s->tbl;
@@ -5528,7 +5528,7 @@ done:
     gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     gDPPipeSync(gdl++);
     gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[fb]);
-    if (D_800EFDC4 == 1 || s == NULL || s->f1C == 0) {
+    if (gGame.fadeState == 1 || s == NULL || s->f1C == 0) {
         gDPSetFillColor(gdl++, 0);
         gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     }
@@ -5643,7 +5643,7 @@ void shell_cb_tutorial(s32 arg)
         gCurTrack = sTrackTutorial;
         gGame.numPlayers = 1;
         gGame.mode = 9;
-        D_800F0624 = 0;
+        gEvent.tutorialBuf = 0;
         gGame.riders[0] = 4;
         gGame.flags &= ~0x80;
         gSeason_24->p0 = sTutorialRound;
@@ -5660,7 +5660,7 @@ void shell_cb_tutorial(s32 arg)
 void shell_cb_exhibition(s32 x)
 {
     if (x != 0) {
-        gGameMode = 0;
+        gGame.mode = 0;
     }
 }
 

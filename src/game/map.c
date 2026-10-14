@@ -34,7 +34,7 @@ void map_init(void)
     s32 x, y;
 
     sMapImage = 0;
-    switch (gGameMode) {
+    switch (gGame.mode) {
     case 2:
     case 3:
     case 4:
@@ -71,7 +71,7 @@ void map_init(void)
             sMapX = (x * wA) / 0x140;
             sMapH = (hB * 0x40) / 0xF0;
             sMapY = (y * hA) / 0xF0;
-            if (gGameMode == 7) {
+            if (gGame.mode == 7) {
                 sMapW = sMapW + sMapW / 2;
                 sMapH = sMapH + sMapH / 2;
             }

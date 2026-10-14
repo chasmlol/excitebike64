@@ -239,7 +239,7 @@ void podium_update(void)
             sPodiumFrame++;
         }
     }
-    for (i = 0; i < gEventNumRiders; i++) {
+    for (i = 0; i < gEvent.numRiders; i++) {
         cam = (u16 *)&sPodiumYaw;
         gRiders_10[i].f7A5 = 0;
         gRiders_10[i].f44 = 1;

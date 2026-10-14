@@ -233,7 +233,7 @@ void stunt_update(Obj_56 *o)
     stunt_read_input(o);
     if (o->b3FB != 0) {
         if (--o->b3FB == 0) {
-            if ((o->w744 < 0 || 30.0f < o->f6F4) && gEventAllFinished == 0) {
+            if ((o->w744 < 0 || 30.0f < o->f6F4) && gEvent.allFinished == 0) {
                 found = 0;
                 t = o->w3C4;
                 o->w3C4 = 0;

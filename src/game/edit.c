@@ -594,7 +594,7 @@ void edit_exit(void)
     gui_free();
     osViSetSpecialFeatures(0xAA);
     if (iVar7 >= 0) {
-        __builtin_memcpy(gZBuffer, D_800F0158, 0x400);
+        __builtin_memcpy(gZBuffer, gGame.userTrack, 0x400);
         n = (iVar7 - 1) * 0xc + 0x110;
         memcpy(gZBuffer + 0x400, gUserTrackLayout_2, n);
         mem_free(gUserTrackLayout_2);

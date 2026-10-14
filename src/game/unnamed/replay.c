@@ -20,7 +20,7 @@ void replay_record_start(u8 *param_1, s32 param_2)
     replay_write_bits(0, 8);
     replay_write_bits(0, 8);
     replay_write_header();
-    sReplayRecPlayers = gNumPlayers;
+    sReplayRecPlayers = gGame.numPlayers;
     sReplayFrameCountPtr = gReplayWritePtr;
     replay_write_bits(0, 8);
     replay_write_bits(0, 8);
@@ -385,8 +385,8 @@ void replay_read_header(void)
     s32 i;
     s32 n;
 
-    gNumPlayers = getbits(8);
-    D_800EFDB4 = getbits(8);
+    gGame.numPlayers = getbits(8);
+    gGame.numCpuRiders = getbits(8);
     getbits(8);
     getbits(8);
     for (i = 0; i < 6; i++) {
@@ -508,7 +508,7 @@ void replay_play_start(s32 param_1)
     sReplayReadBitPos = 8;
     sReplayReadPtr = param_1 + 4;
     replay_read_header();
-    sReplayPlayPlayers = gNumPlayers;
+    sReplayPlayPlayers = gGame.numPlayers;
     sReplayFramesLeft = replay_read_bits(8);
     u = replay_read_bits(8);
     sReplayFramesLeft = sReplayFramesLeft + u * 0x100;
@@ -528,7 +528,7 @@ void replay_play_start_keep_setup(s32 param_1)
     sReplayReadBitPos = 8;
     sReplayReadPtr = param_1 + 4;
     replay_skip_header();
-    sReplayPlayPlayers = gNumPlayers;
+    sReplayPlayPlayers = gGame.numPlayers;
     sReplayFramesLeft = replay_read_bits(8);
     u = replay_read_bits(8);
     sReplayFramesLeft = sReplayFramesLeft + u * 0x100;

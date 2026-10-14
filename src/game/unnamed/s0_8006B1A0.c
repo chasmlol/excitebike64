@@ -380,7 +380,7 @@ void excite3d_update(void)
 
 void excite3d_player_steer(Obj_52 *p)
 {
-    if (gEventTime <= 0) {
+    if (gEvent.time <= 0) {
         return;
     }
     if ((s8)p->u7aa != 0) {

@@ -268,7 +268,7 @@ void bikes_init(void) {
         gRiders_16[i].f5A8 = gRiders_16[i].f5AA;
     }
     i = 0;
-    if (gEventNumRiders > 0) {
+    if (gEvent.numRiders > 0) {
         do {
             p = &gRiders_16[i];
             if (i < 4) {
@@ -340,7 +340,7 @@ void bikes_init(void) {
                 } else {
                     idx = gPathStartNode;
                 }
-                n = gEventNumRiders;
+                n = gEvent.numRiders;
                 if (gGhostRace != 0 && n == 1) {
                     n = 2;
                 }
@@ -395,12 +395,12 @@ void bikes_init(void) {
                 gRiders_16[i].hist[j] = gRiders_16[i].pos;
             }
             i++;
-        } while (i < gEventNumRiders);
+        } while (i < gEvent.numRiders);
     }
     race_init_standings(8);
     bike_set_contact_friction(0.5f);
     sBikeMaxReverseSpeed = -5.0f;
-    race_init_ai_skills(gGame.numPlayers, gEventNumRiders - gGame.numPlayers);
+    race_init_ai_skills(gGame.numPlayers, gEvent.numRiders - gGame.numPlayers);
     switch (gGame.mode) {
     case 2:
         sBikeMaxReverseSpeed = -20.0f;
@@ -456,7 +456,7 @@ void bike_apply_rider_stats(u8 *a0, s32 a1)
         FLD(a0, 0x7C4) = t;
         FLD(a0, 0x7BC) = sBikeTune[14] * sBikeTune[5] * 32.0f * k57;
     }
-    if (gGameMode == 0xF) {
+    if (gGame.mode == 0xF) {
         FLD(a0, 0x7D8) = 0.7f;
     } else {
         FLD(a0, 0x7D8) = 1.0f;
@@ -726,7 +726,7 @@ void bike_update_wheel_contacts(Bike_5 *b) {
         diff = b->pos.y - (f32)h / 1000.0f;
         idx = (D_800E84F4[1] >> 4) & 0xF;
         *(volatile s32 *)&b->unk780 = idx;
-        if ((gGameMode == 7 || gCurTrack == D_800CBB70) && diff > 2.0f && (gSurfaceTable_2[idx].flags & 0x800)) {
+        if ((gGame.mode == 7 || gCurTrack == D_800CBB70) && diff > 2.0f && (gSurfaceTable_2[idx].flags & 0x800)) {
             bike_queue_crash_2(b, -25);
             return;
         }
@@ -751,8 +751,8 @@ void bike_update_wheel_contacts(Bike_5 *b) {
     }
 }
 
-#define MAXRPM (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f : 15000.0f)
-#define RATE (gGameMode == 6 ? gBikeTuneDamping * 2000.0f : 2200.0f)
+#define MAXRPM (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f : 15000.0f)
+#define RATE (gGame.mode == 6 ? gBikeTuneDamping * 2000.0f : 2200.0f)
 
 struct Rec_9 {
     s32 f00;
@@ -821,13 +821,13 @@ void bike_update_suspension(u8 *s)
     one = 1.0f;
     fv2 = one - one / sSuspSpringScale;
     t1 = fv2 * B;
-    if (gGameMode == 6) {
+    if (gGame.mode == 6) {
         fs1v = t1 / (gBikeTuneSpringRate * 20000.0f);
     } else {
         fs1v = t1 / 15000.0f;
     }
     t2 = fv2 * A3;
-    if (gGameMode == 6) {
+    if (gGame.mode == 6) {
         t3 = t2 / (gBikeTuneSpringRate * 20000.0f);
     } else {
         t3 = t2 / 15000.0f;
@@ -948,7 +948,7 @@ void bike_rear_tire_force(Bike_6 *a, Cam *b)
             v = 250.0f;
         }
     }
-    if (len < v * b->fA0 || gGameMode == 15) {
+    if (len < v * b->fA0 || gGame.mode == 15) {
         d[0] = b->v6C[0] * t;
         d[1] = b->v6C[1] * t;
         d[2] = b->v6C[2] * t;
@@ -1100,9 +1100,9 @@ void bike_place_on_ground(Bike_7 *b)
     quat_to_mtx3f(b->rot, b->mtx);
     quat_to_angles(b->mtx, &b->ang[0], &b->ang[1], &b->ang[2]);
     r = bike_raycast_ground(&b->pos, &b->up, 0.0f, 0.002f, tmp);
-    d[0] = b->up.x * -((r + 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    d[1] = b->up.y * -((r + 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
-    d[2] = b->up.z * -((r + 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    d[0] = b->up.x * -((r + 0.5f) - b->f1BC * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    d[1] = b->up.y * -((r + 0.5f) - b->f1BC * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    d[2] = b->up.z * -((r + 0.5f) - b->f1BC * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
     b->pos.x -= d[0];
     b->pos.y -= d[1];
     b->pos.z -= d[2];
@@ -1121,7 +1121,7 @@ void bike_place_on_ground(Bike_7 *b)
         df = b->f520 - b->f47C;
     } while ((0.0f < df ? 0.02f < df : 0.02f < -df) && i++ < 16);
     bike_update_wheel_contacts(b);
-    r = (((b->f520 + b->f47C) * 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    r = (((b->f520 + b->f47C) * 0.5f) - b->f1BC * 14.700001f / (gGame.mode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
     d[0] = b->up.x * -r;
     d[1] = b->up.y * -r;
     d[2] = b->up.z * -r;
@@ -1205,7 +1205,7 @@ void bike_update_brakes(u8 *p)
     } else {
         *(u8 *)(p + 0x6e9) = 1;
     }
-    if ((gEventFlags & 0x10) == 0) {
+    if ((gEvent.flags & 0x10) == 0) {
         if ((*(u32 *)(p + 0x5b0) & 0x20010) != 0 && f5 < 0.0f) {
             f32 m, q;
             m = f3 * -2572.5f;
@@ -1287,7 +1287,7 @@ void bike_update_drive_force(Bike_8 *p)
     if (p->f4FC < 0 && p->f458 < 0 && b < 10.0f) {
         x = p->f53C - p->f498;
         if (0.15f < x) {
-            if (gGameMode == 7) {
+            if (gGame.mode == 7) {
                 if (p->f5D2 >= 0) {
                     return;
                 }
@@ -1374,7 +1374,7 @@ void bike_process_input(Obj_9 *o, s32 a1)
             fs0 *= 0.25f;
         }
     }
-    if (gGameMode == 6) {
+    if (gGame.mode == 6) {
         x = D_800E37E2 - 0x8000;
         t = x;
         if (t > 0x2000 && 0.0f < fs0) {
@@ -1546,7 +1546,7 @@ void bike_update_tire_forces(Bike_42 *b)
     v = f;
     if (v > 4000.0f) v = 4000.0f;
     if (v < MINSPD) v = MINSPD;
-    if (sl < v * F_3(b, 0x598) || gGameMode == 15) {
+    if (sl < v * F_3(b, 0x598) || gGame.mode == 15) {
         d.x = F_3(b, 0x564) * f;
         d.y = F_3(b, 0x568) * f;
         d.z = F_3(b, 0x56C) * f;
@@ -1791,7 +1791,7 @@ f32 bike_calc_lean_torque(u8 *p)
         fX = fX * 0.015f - *(f32 *)(p + 0x438) * 0.1f;
     }
     fR = 0.0f;
-    if (gGameMode != 0xF) fR = fX;
+    if (gGame.mode != 0xF) fR = fX;
     return fR;
 }
 
@@ -1980,7 +1980,7 @@ void bike_compute_forces(Bike_10 *b) {
                 t = 3.0f;
             }
             F.x += t * 32.0f / 1000.0f * 1323.0001f;
-            if (gGameMode != 7) {
+            if (gGame.mode != 7) {
                 if (b->f4FC >= 8 && b->f478 == b->f47C && b->f430 < 0.0f) {
                     F.x += 8000.0f;
                 }
@@ -2346,7 +2346,7 @@ void bike_handle_landing(void *a0)
     *(s32 *)(s1 + 0x5C0) = 0;
     if (fs0 < -10.0f)
         *(s16 *)(s1 + 0x416) = 0;
-    if (gGameMode == 0xF) {
+    if (gGame.mode == 0xF) {
         *(f32 *)(s1 + 0x7B8) = sBikeTuneLanding;
         *(s32 *)(s1 + 0x8C) = 0;
     }
@@ -2726,7 +2726,7 @@ void bike_update_jump(Bike_13 *b) {
                         snd_play_rider_sfx_pitch(7, b - gRiders_18, 0xC0, 0xC0, 1);
                     }
                 }
-                if (gGameMode == 6) {
+                if (gGame.mode == 6) {
                     Vec3f *q = &b->f74C;
                     if (b->f420 > 4.0f) {
                     th = q->x; sp = q->z; if (b == 0) r = 0; height_get_ground(th * 1000.0f, q->y * 1000.0f, sp * 1000.0f);
@@ -2822,7 +2822,7 @@ void bike_update_jump(Bike_13 *b) {
                 z /= len;
                 fs3 = b->f71C.y * 14.700001f;
                 fs4 = (x * b->f728.x + z * b->f728.z) / b->f728.y;
-                if (gGameMode != 5) {
+                if (gGame.mode != 5) {
                     b->f734 = path_find_segment(&b->f71C, b->f734, n, b->f6EB);
                     if (gPathNodes_4[b->f734].f64 & 0x10) {
                         fs3 -= 1000.0f;
@@ -2832,7 +2832,7 @@ void bike_update_jump(Bike_13 *b) {
                 e = b->f728.x * b->vel.x + b->f728.y * (b->vel.y - b->f718 * 17.640001f) + b->f728.z * b->vel.z;
                 x = (x * b->f708.x + z * b->f708.z) / b->f708.y;
                 fs3 -= e * e;
-                if (gGameMode != 5) {
+                if (gGame.mode != 5) {
                     b->f714 = path_find_segment(&b->f6FC, b->f714, n, b->f6EB);
                     if (gPathNodes_4[b->f714].f64 & 0x10) {
                         fs2 -= 500.0f;
@@ -3021,7 +3021,7 @@ void bike_update(Bike_14 *b, s32 n)
             bike_wheel_surface_bumps(b->f4F8, b->f388);
             bike_wheel_surface_bumps(b->f454, b->f388);
             bike_update_suspension(b);
-            switch (gGameMode) {
+            switch (gGame.mode) {
             case 2:
             case 4:
             case 5:
@@ -3050,7 +3050,7 @@ void bike_update(Bike_14 *b, s32 n)
             case 2:
                 if (b->f3D0 < 0) {
                     b->f3FF = 3;
-                    if (gGameMode == 5) {
+                    if (gGame.mode == 5) {
                         b->f3FF = 0;
                         b->f6E8 = 1;
                         b->f5AA = b->f5A8;
@@ -3143,7 +3143,7 @@ void bikes_update(s32 n) {
     f32 t, t2, tk, t2k;
     f32 x, y, z;
 
-    if (gEventFlags & 0x800) {
+    if (gEvent.flags & 0x800) {
         return;
     }
     for (i = 0; i < 8; i++) {
@@ -3206,7 +3206,7 @@ void bikes_update(s32 n) {
                 b->fpos = b->prev;
             }
         }
-        switch (gGameMode) {
+        switch (gGame.mode) {
         case 2:
             soccer_ball_update();
             break;
@@ -3309,7 +3309,7 @@ arm1:
 arm2:
     if (*(s8 *)(p + 0x3D0) < 0) {
         *(u8 *)(p + 0x3FF) = 3;
-        if (gGameMode == 5) {
+        if (gGame.mode == 5) {
             *(u8 *)(p + 0x3FF) = 0;
             *(u8 *)(p + 0x6E8) = 1;
             *(u16 *)(p + 0x5AA) = *(u16 *)(p + 0x5A8);

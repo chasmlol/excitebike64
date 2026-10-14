@@ -150,7 +150,7 @@ void engine_update(s32 idx, s32 dt)
     if (o->f44 != 0) {
         o->flags &= ~0x20010;
     }
-    if (o->f458 < 1 && (gEventFlags & 0x10) == 0) {
+    if (o->f458 < 1 && (gEvent.flags & 0x10) == 0) {
         if (o->f420 < 4.5f && (o->flags & 0x20010) != 0) {
             v = o->rpm;
             if (v < 6500.0f) {
@@ -203,7 +203,7 @@ void engine_update(s32 idx, s32 dt)
     if (14500.0f < o->rpm) {
         o->rpm = 14500.0f;
     }
-    if ((o->flags & 0x20010) != 0 && (gEventFlags & 0x10) == 0) {
+    if ((o->flags & 0x20010) != 0 && (gEvent.flags & 0x10) == 0) {
         if (o->f458 < 1) {
             if (o->f654 != 0) {
                 fv = sOverheatPowerScale;

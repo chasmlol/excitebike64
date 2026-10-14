@@ -39,7 +39,7 @@ void tutorial_init_lesson(s32 a0)
     if (s->tutorialBuf == 0) {
         s->tutorialBuf = mem_alloc_dbg(0x80, 0, (s32)D_800D7340, 0x16D);
     }
-    D_800F0180 = 1;
+    gGame.difficulty = 1;
     if (CUR.fl & 4) {
         s->time = 0;
         s->flags |= 0x1000;
@@ -87,7 +87,7 @@ void tutorial_check_lesson_skip(void)
             if (*(s16 *)(gSeason + 0x64) < 1) {
                 return;
             }
-            D_800F0618 = 3;
+            gEvent.tutorialAction = 3;
             gRacePhase = 6;
             gRacePhaseTimer = -1;
             snd_play_menu_sound(1);
@@ -102,7 +102,7 @@ void tutorial_check_lesson_skip(void)
         if (tutorial_next_lesson_unlocked() == 0) {
             return;
         }
-        D_800F0618 = 4;
+        gEvent.tutorialAction = 4;
         gRacePhase = 6;
         gRacePhaseTimer = -1;
         snd_play_menu_sound(1);
@@ -302,7 +302,7 @@ void tutorial_update(void)
                 D_800F0738++;
             }
             if (D_800F0738 >= 10) {
-                if (gEventFlags & 0x2000) {
+                if (gEvent.flags & 0x2000) {
                     gTutorialResult = 1;
                     if (((gPadInput & 0x40) && !(gPadInputPrev & 0x40)) ||
                         ((gPadInput & 0x10) && !(gPadInputPrev & 0x10))) {
@@ -329,7 +329,7 @@ void tutorial_update(void)
         tutorial_check_lesson_skip();
         if (D_800E3DE8 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
             if (event_request_exit() != 0) {
-                D_800F0618 = 6;
+                gEvent.tutorialAction = 6;
                 gActiveReplay = 0;
                 gDemoPlayback = 0;
                 sDemoActive = 0;
@@ -458,7 +458,7 @@ void event_init(s32 a0, s32 a1)
     case 2:
         gEvent.countdown = 0xB4;
         gEvent.state = 6;
-        gEvent.unk_6E = 0;
+        gEvent.ballToucher = 0;
         gEvent.goals[0] = 0;
         gEvent.goals[1] = 0;
         gEvent.goalTimer = 0;
@@ -509,7 +509,7 @@ s32 event_check_record_time(s32 *p)
 
     if (((u8 *)p)[0x6E8] != 0) goto done;
     if (gReplayPlayback != 0) goto done;
-    if (gGameMode == 1 && gSeason_4 != 0 && ((*gSeason_4 - (s32)D_800CA9C8) * 0x38E38E39 >> 2) == 5) goto done;
+    if (gGame.mode == 1 && gSeason_4 != 0 && ((*gSeason_4 - (s32)D_800CA9C8) * 0x38E38E39 >> 2) == 5) goto done;
     ch = gCurTrack_3;
     if (ch[0x14] & 2) goto done;
     if (gEvent.time >= gEvent.record.times[2]) goto done;
@@ -531,7 +531,7 @@ s32 event_check_record_time(s32 *p)
     gEvent.record.times[i] = gEvent.time;
     gEvent.record.initials[i][0] = 0xFF;
     gEvent.record.initials[i][1] = 0xFF;
-    gEvent.record.initials[i][2] = (gGameMode == 8) ? 0 : (u8)(((u32)((s32)p - (s32)gRiders_56) * 0xBEFBEFBFu) >> 5);
+    gEvent.record.initials[i][2] = (gGame.mode == 8) ? 0 : (u8)(((u32)((s32)p - (s32)gRiders_56) * 0xBEFBEFBFu) >> 5);
     gCurTrack_3[0x14] |= 0x100;
     if (ret) announce_record((((s32)p - (s32)gRiders_56) * -0x41041041) >> 5);
 done:
@@ -570,7 +570,7 @@ u32 event_rider_finished(s32 p0)
     *(u16 *)(s0 + 8) = a0;
     *(s32 *)(s0 + 0x2C) = v->time;
     if (*(u8 *)(D_800E3E20_2 + a1 + 0x88) == 0 && gReplayPlayback == 0) {
-        if ((gGameMode != 8 || p == D_800C8CE0) && gNumScreens == 1) {
+        if ((gGame.mode != 8 || p == D_800C8CE0) && gNumScreens == 1) {
             func_8001106C();
         }
     }
@@ -590,7 +590,7 @@ u32 event_rider_finished(s32 p0)
             if (s2[0x6E8] != 0) {
                 goto L1fc;
             }
-            a1 = D_800F05CC;
+            a1 = gEvent.numFinished;
             if (a1 != a2) {
                 goto L19c;
             }
@@ -665,7 +665,7 @@ void event_rider_lap_completed(s32 p)
     s32 i;
     s16 v;
 
-    switch (gGameMode) {
+    switch (gGame.mode) {
     case 2:
     case 3:
     case 4:
@@ -677,13 +677,13 @@ void event_rider_lap_completed(s32 p)
     }
     b = &gRiders_57[p].r;
     if (b->cnt < gEvent.numLaps) {
-        if (gRiders_57[p].r.f6E8 == 0 && gReplayPlayback == 0 && gGameMode != 7 && gGameMode != 5 &&
+        if (gRiders_57[p].r.f6E8 == 0 && gReplayPlayback == 0 && gGame.mode != 7 && gGame.mode != 5 &&
             !(gCurTrack_29->f50 & 2) && (t = b->times[b->cnt]) < gEvent.record.bestLap &&
-            (gGameMode != 8 || p == D_800C8CE0)) {
+            (gGame.mode != 8 || p == D_800C8CE0)) {
             gEvent.record.bestLap = t;
             gEvent.record.initials[3][0] = 0xFF;
             gEvent.record.initials[3][1] = 0xFF;
-            gEvent.record.initials[3][2] = (gGameMode == 8) ? 0 : p;
+            gEvent.record.initials[3][2] = (gGame.mode == 8) ? 0 : p;
             st = 3;
             gCurTrack_29->f50 |= 0x80;
         }
@@ -710,7 +710,7 @@ void event_rider_lap_completed(s32 p)
         ((volatile Rec_31 *)b)->cnt++;
         if (b->cnt != gEvent.numLaps) {
             if (st != 3) {
-                if (gGameMode == 8 && gRiderAlpha[p] == 0xFF) {
+                if (gGame.mode == 8 && gRiderAlpha[p] == 0xFF) {
                     st = 1;
                 } else if (b->f662 == 0) {
                     st = 2;
@@ -726,7 +726,7 @@ void event_rider_lap_completed(s32 p)
                     st = 5;
                 }
             }
-        } else if (p < gNumPlayers) {
+        } else if (p < gGame.numPlayers) {
             st = 6;
         }
     }
@@ -829,7 +829,7 @@ void event_update_hillclimb(void)
         }
         if (r->done == 0) flag = 0;
     }
-    gEventAllFinished = flag;
+    gEvent.allFinished = flag;
     if (flag) {
         if (((gPlayerInputs_2 & 0x40) && !(gPlayerInputsPrev & 0x40)) ||
             ((gPlayerInputs_2 & 0x10) && !(gPlayerInputsPrev & 0x10))) {
@@ -905,7 +905,7 @@ void event_update_stunt(void)
     }
     gRiders_59[0].f3FF = 1;
     *(volatile s16 *)&gRiders_59[0].f668 = 1;
-    if (gNumPlayers == 2) {
+    if (gGame.numPlayers == 2) {
         if (gRiders_59[0].key > gRiders_59[1].key) {
             gRiders_59[0].f668 = 0;
             gRiders_59[1].f668 = 5;
@@ -957,7 +957,7 @@ void event_update_soccer(void)
                 announce_goal();
                 D_800E3F68 = 1;
                 gEvent.flags |= 0x11;
-                if ((gEvent.unk_6E >> ((gNumPlayers - 1) >> 1)) == 1) {
+                if ((gEvent.ballToucher >> ((gGame.numPlayers - 1) >> 1)) == 1) {
                     gEvent.flags |= 0x20;
                 } else {
                     gEvent.flags &= ~0x20;
@@ -969,7 +969,7 @@ void event_update_soccer(void)
                 announce_goal();
                 D_800E4748 = 1;
                 gEvent.flags |= 0x12;
-                if ((gEvent.unk_6E >> ((gNumPlayers - 1) >> 1)) == 0) {
+                if ((gEvent.ballToucher >> ((gGame.numPlayers - 1) >> 1)) == 0) {
                     gEvent.flags |= 0x20;
                 } else {
                     gEvent.flags &= ~0x20;
@@ -1043,7 +1043,7 @@ void event_update_soccer(void)
         break;
     case 12:
         if (PRESSED(0, 0x40) || PRESSED(1, 0x40) || PRESSED(2, 0x40) || PRESSED(3, 0x40) ||
-            (D_800F05D0 == 0 &&
+            (gEvent.messageTimer == 0 &&
              (PRESSED(0, 0x10) || PRESSED(1, 0x10) || PRESSED(2, 0x10) || PRESSED(3, 0x10)))) {
             if (gRacePhase == 5) {
                 gRacePhase = 6;
@@ -1135,7 +1135,7 @@ void event_update_race(void) {
     } else if (gEvent.messageTimer != 0) {
         gEvent.messageTimer--;
     }
-    gEventAllFinished = 1;
+    gEvent.allFinished = 1;
     gRaceExitCode = 2;
     if (sRaceEndFrame == -1) {
         sRaceEndFrame = gRaceFrame;
@@ -1146,7 +1146,7 @@ void event_update_race(void) {
         if ((gPadInput_2[2] & 0x40) && !(gPadInputPrev_2[2] & 0x40)) goto go;
         if ((gPadInput_2[3] & 0x40) && !(gPadInputPrev_2[3] & 0x40)) goto go;
         if (gCreditsMode != 0 && (gGame.flags & 0x01000000) && (gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) goto go;
-        if (D_800F05D0 != 0 && gCreditsMode == 0) goto end;
+        if (gEvent.messageTimer != 0 && gCreditsMode == 0) goto end;
         if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) goto go;
         if ((gPadInput_2[1] & 0x10) && !(gPadInputPrev_2[1] & 0x10)) goto go;
         if ((gPadInput_2[2] & 0x10) && !(gPadInputPrev_2[2] & 0x10)) goto go;
@@ -1306,7 +1306,7 @@ void event_hud_init(void)
     s32 t13;
     Game *s2;
 
-    if (gGameMode == 9) {
+    if (gGame.mode == 9) {
         sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, D_800D7340, 0xB4B);
         *sGreyPalette = 0;
         puVar4 = sGreyPalette + 1;
@@ -1418,7 +1418,7 @@ void event_set_place_text(u8 *p, s32 n, s32 arg2)
     s32 off;
     Quad *r;
 
-    if (gEventNumRiders >= 2) {
+    if (gEvent.numRiders >= 2) {
         buf[0] = n + 0x31;
         m = n;
         if (m > 3) {
@@ -1532,7 +1532,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         gdl = render_draw_temp_gauge(gdl, a1, a2, pl);
         font_text_create(gHudTextObjs[4], 0x40, 1, 2, 0x20);
         font_text_create(gHudTextObjs[5], 0x40, 1, 4, 0x20);
-        event_format_time(gRiders_63[pl].w69C - gEventTime, buf);
+        event_format_time(gRiders_63[pl].w69C - gEvent.time, buf);
         font_text_add(gHudTextObjs[4], "Time:");
         font_draw_text(gHudTextObjs[4], 0x23, gViMode == 2 ? 0x180 : 0xD6);
         font_text_add(gHudTextObjs[5], buf);
@@ -1540,7 +1540,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     } else {
         font_text_create(gHudTextObjs[4], 0x40, 2, 2, 0x20);
         font_text_create(gHudTextObjs[5], 0x40, 2, 4, 0x20);
-        t = -gEventTime + gRiders_63[pl].w69C;
+        t = -gEvent.time + gRiders_63[pl].w69C;
         if (gRiders_63[pl].b3FF) {
             t = gRiders_63[pl].w68C;
         }
@@ -1573,7 +1573,7 @@ Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     }
     if (gRiders_63[pl].b3FF) {
         font_text_create(gHudTextObjs[7], 0x40, 1, 4, 0x21);
-        if (gEventAllFinished == 0 || pl != 0) {
+        if (gEvent.allFinished == 0 || pl != 0) {
             font_text_add(gHudTextObjs[7], "Game Over");
         } else {
             font_text_add(gHudTextObjs[7], D_800D84A8);
@@ -1653,8 +1653,8 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     f32 v;
 
     font_reset_queue();
-    if (gNumPlayers >= 2) {
-        if (gEventAllFinished != 0) {
+    if (gGame.numPlayers >= 2) {
+        if (gEvent.allFinished != 0) {
             font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
             switch (p->h668) {
             case 0:
@@ -1677,7 +1677,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         idx = -1;
         do {
         } while (0);
-        event_format_time(gEventTime, buf);
+        event_format_time(gEvent.time, buf);
         font_text_add(gHudTextObjs_3[0], "Time:");
         font_draw_text(gHudTextObjs_3[0], 0x3C, yt);
         font_text_add(gHudTextObjs_3[1], buf);
@@ -1746,7 +1746,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
         }
         font_text_create(gHudTextObjs_3[0], 0x40, 1, 2, 0x10);
         font_text_create(gHudTextObjs_3[1], 0x40, 1, 4, 0x10);
-        event_format_time(gEventTime, buf);
+        event_format_time(gEvent.time, buf);
         font_text_add(gHudTextObjs_3[0], "Time:");
         font_draw_text(gHudTextObjs_3[0], 0x23, gViMode == 2 ? 0x180 : 0xD6);
         font_text_add(gHudTextObjs_3[1], buf);
@@ -1830,7 +1830,7 @@ Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->s3EB[i]].name);
             font_draw_text(gHudTextObjs_3[i + 8], 0x23, by + i * dy);
         }
-        if (gEventAllFinished != 0) {
+        if (gEvent.allFinished != 0) {
             font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
             font_text_add(gHudTextObjs_3[7], D_800E3BBF >= 3 ? "Press START to Continue" : "Game Over");
             font_draw_text(gHudTextObjs_3[7],
@@ -1894,7 +1894,7 @@ Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
     if (gHudLevel <= 0) {
         font_text_create(gHudTextObjs[1], 0x40, 1, 2, 0x20);
         font_text_create(gHudTextObjs[2], 0x40, 1, 4, 0x20);
-        event_format_time(gEventTime, buf);
+        event_format_time(gEvent.time, buf);
         y = gViewRects_10[gNumScreens - 1][idx].b;
         font_text_add(gHudTextObjs[1], D_800D8484);
         z = y + 0x14;
@@ -2446,7 +2446,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             gDPRaw(gdl++, 0xE200001C, 0x404240);
             cx = 0x100;
             cy = 0x78;
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 cx = 0x13C;
             }
             gdl = render_draw_image((cx - sSoccerMapTexture_2[8] * 4) | 1, cy - (sSoccerMapTexture_2[9] >> 1) - 1, sSoccerMapTexture_2 + 8, gdl,
@@ -2460,7 +2460,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             gDPSetPrimColor(gdl++, 0, 0, 0xFA, 0xFA, 0x28, 0xFF);
             gDPFillRectangle(gdl++, cx + gRiders_67[1].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[1].f48 * 0.25f - 2.0f,
                              cx + gRiders_67[1].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[1].f48 * 0.25f + 2.0f);
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 gDPSetPrimColor(gdl++, 0, 0, 0x28, 0xFA, 0x28, 0xFF);
                 gDPFillRectangle(gdl++, cx + gRiders_67[2].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[2].f48 * 0.25f - 2.0f,
                                  cx + gRiders_67[2].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[2].f48 * 0.25f + 2.0f);
@@ -2475,7 +2475,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         switch (gEvent.state) {
         case 6:
             font_text_create(gHudTextObjs[0], 0x40, 1, 4, 0x21);
-            if (gNumPlayers == 2) {
+            if (gGame.numPlayers == 2) {
                 font_text_add(gHudTextObjs[0], "One on One Soccer: First Half");
             } else {
                 font_text_add(gHudTextObjs[0], D_800D865C);
@@ -2533,7 +2533,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             font_text_add(gHudTextObjs[2], buf);
             int_to_str(gEvent.goals[1], buf);
             font_text_add(gHudTextObjs[3], buf);
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 font_draw_text(gHudTextObjs[0], gScreenWidth / 2 - 45, 30);
                 font_draw_text(gHudTextObjs[1], gScreenWidth / 2 - 45, gScreenHeight - 30);
                 font_draw_text(gHudTextObjs[2], gScreenWidth / 2 + 39, 30);
@@ -2559,7 +2559,7 @@ Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             }
             event_format_time(gEvent.time, buf);
             font_text_add(gHudTextObjs[5], buf);
-            if (gNumPlayers == 4) {
+            if (gGame.numPlayers == 4) {
                 font_draw_text(gHudTextObjs[4], gScreenWidth / 2 - 10, gScreenHeight / 2 - 7);
                 font_draw_text(gHudTextObjs[5], gScreenWidth / 2 - 10, gScreenHeight / 2 + 7);
             } else {
@@ -2916,9 +2916,9 @@ s32 tutorial_next_lesson_unlocked(void) {
     return v1 < c->hdr[1];
 }
 
-#define ROWS (gNumPlayers_2[0] >= 2 ? 6 : 9)
-#define COLS (gNumPlayers_2[0] >= 3 ? 8 : 12)
-#define RECT (gViewRects[gNumViews - 1][D_800F05F8])
+#define ROWS (gGame.numPlayers >= 2 ? 6 : 9)
+#define COLS (gGame.numPlayers >= 3 ? 8 : 12)
+#define RECT (gViewRects[gNumViews - 1][gEvent.finishOrder[0]])
 
 typedef struct Plr_7 {
     u8 pad0[0x64];
@@ -2942,8 +2942,8 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     s32 sp;
     int n;
 
-    if (gHudLevel != 3 || gGameMode == 9) {
-        switch (gGameMode) {
+    if (gHudLevel != 3 || gGame.mode == 9) {
+        switch (gGame.mode) {
         case 2:
             if (gPauseMenu == 0) {
                 gdl = event_draw_hud_soccer(gdl, p1, p2, p3);
@@ -2972,7 +2972,7 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     } else if (gReplayPlayback == 0) {
         gdl = event_draw_countdown(gdl, p3);
     }
-    if (D_800F0630 >= 0 || D_800F0630 == -2) {
+    if (gEvent.finishTimer >= 0 || gEvent.finishTimer == -2) {
         gDPSetRenderMode(gdl++, 0x404240, 0);
         gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_OFF);
@@ -2981,10 +2981,10 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, prev);
         for (i = 0; i < ROWS; i++) {
             for (j = i & 1; j < COLS; j += 2) {
-                if (D_800F0630 == -2) {
+                if (gEvent.finishTimer == -2) {
                     a = 35;
                 } else {
-                    n = D_800F0630 - j * 10;
+                    n = gEvent.finishTimer - j * 10;
                     if (n < 0) {
                         a = 0;
                     } else if (n >= 30) {
@@ -3007,10 +3007,10 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         prev = 35;
         for (i = 0; i < ROWS; i++) {
             for (j = ~i & 1; j < COLS; j += 2) {
-                if (D_800F0630 == -2) {
+                if (gEvent.finishTimer == -2) {
                     a = 35;
                 } else {
-                    n = D_800F0630 - j * 10;
+                    n = gEvent.finishTimer - j * 10;
                     if (n < 0) {
                         a = 0;
                     } else if (n >= 30) {
@@ -3048,11 +3048,11 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         }
         break;
     case 1:
-        for (n = 0; n < (gGameMode == 1 ? 4 : 5); n++) {
+        for (n = 0; n < (gGame.mode == 1 ? 4 : 5); n++) {
             font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 0x11);
-            if (gGameMode == 1) {
+            if (gGame.mode == 1) {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItemsSeason[n]);
-            } else if (gGameMode == 2) {
+            } else if (gGame.mode == 2) {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItemsSoccer[n]);
             } else {
                 font_text_add(gMenuTextObjs[n], sPauseMenuItems[n]);
@@ -3062,7 +3062,7 @@ Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         }
         break;
     case 5:
-        if (D_800F0618 != 6) {
+        if (gEvent.tutorialAction != 6) {
             s32 k;
             k = gViewRects[0][0].y + gViewRects[0][0].h / 2 - sp * 2;
             for (n = 0; n < 5; n++) {
@@ -3212,8 +3212,8 @@ void event_exit(void)
             mem_free(D_800CA924_3.arg);
         }
     }
-    if (gGameMode == 9 && D_800F0624 != 0) {
-        mem_free(D_800F0624);
+    if (gGame.mode == 9 && gEvent.tutorialBuf != 0) {
+        mem_free(gEvent.tutorialBuf);
     }
     save_write(1, 0);
 }
@@ -3254,12 +3254,12 @@ u32 tutorial_lesson_passed(void) {
     s16 idx = *(s16 *)(gSeason + 0x64);
     e = e + idx * 40;
     if (e[0xC] & 4) {
-        return ((gEventFlags >> 12) ^ 1) & 1;
+        return ((gEvent.flags >> 12) ^ 1) & 1;
     }
     if (*(u32 *)(e + 0x1C) != 0) {
         return 0;
     }
-    return ~gEventTime_3 >> 31;
+    return (u32)~gEvent.time >> 31;
 }
 
 s32 event_request_exit(void)
@@ -3339,7 +3339,7 @@ void event_soccer_init(void)
     w = p->flags;
     p->countdown = 0xB4;
     gEvent.state = 6;
-    p->unk_6E = 0;
+    p->ballToucher = 0;
     p->goals[0] = 0;
     p->goals[1] = 0;
     p->goalTimer = 0;

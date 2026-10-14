@@ -691,7 +691,7 @@ void tunes_update_speech(void)
             if (lo < n) {
                 n = lo;
             }
-            lo = gEventNumRiders - 2;
+            lo = gEvent.numRiders - 2;
             if (lo < n) {
                 n = lo;
             }
@@ -804,7 +804,7 @@ void announce_leader_lap(s32 param_1, s32 param_2)
     if (check((u32 *)&param_1)) {
         return;
     }
-    if (param_2 == D_800F05C8 - 2) {
+    if (param_2 == gEvent.numLaps - 2) {
         queue(sFinalLapClips[random_byte() & 1]);
     } else if (param_2 == 0) {
         queue(sLeaderFirstLapClips[random_byte() % 3]);
@@ -839,7 +839,7 @@ static inline s32 check_3(u32 *p)
 
 void announce_place(u32 a, u32 b)
 {
-    if (gEventTime < 0x168) return;
+    if (gEvent.time < 0x168) return;
     if (sSpeechQueueCount >= 6) return;
     if (gRiders_53[a].f668 >= 0) return;
     if (check_3(&a)) return;
@@ -1045,7 +1045,7 @@ void announce_trick(u32 a, s32 b)
 
 void func_8004E3EC(u32 a, u32 b, s32 c)
 {
-    if (gEventTime < 0x168) {
+    if (gEvent.time < 0x168) {
         return;
     }
     if (sSpeechQueueCount >= 6) {

@@ -29,7 +29,7 @@ void bike_crash_begin(Bike_23 *b, s32 n)
         flash_start(0x3C);
         tunes_queue_crowd(0);
     }
-    if (gGameMode == 6) {
+    if (gGame.mode == 6) {
         b->x626 = path_find_segment(&b->pos, b->x628, 10, 1);
     }
     idx = b - gRiders_46;
@@ -403,7 +403,7 @@ s32 phys_body_step(Body_3 *b, Pt_4 *t, s32 n, u8 m)
                     o->f45 = (t[k].v.z > 0.0f) ? -0x19 : -0x1C;
                     o->f43C = o->b0.vel;
                 } else if (a < -15.0f) {
-                    if (gCurTrack_25->f2C == 0 && gGameMode != 10 && gGameMode != 2) {
+                    if (gCurTrack_25->f2C == 0 && gGame.mode != 10 && gGame.mode != 2) {
                         sCrashAnnounceFrame = gRaceFrame;
                         if ((f32)height_get_ground((s32)(o->b0.pos.x * 1000.0f), (s32)(o->b0.pos.y * 1000.0f), (s32)(o->b0.pos.z * 1000.0f)) / 1000.0f - o->b0.pos.y > 2.0f) {
                             announce_crash(o - gRiders_48);
@@ -557,7 +557,7 @@ s32 phys_body_step(Body_3 *b, Pt_4 *t, s32 n, u8 m)
                 collide_bodies(b, &gRiders_48[i].b0);
             }
         }
-        if (gGameMode == 2) {
+        if (gGame.mode == 2) {
             collide_bodies(b, &gSoccerBall);
         }
     }

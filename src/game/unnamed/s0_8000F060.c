@@ -571,7 +571,7 @@ void snd_update_rider(s32 arg0) {
         v = 0;
         if (gRiders_12[arg0].f654 == 0) {
             x = gRiders_12[arg0].f648;
-            if (x > 10000.0f && gRiders_12[arg0].f6E8 == 0 && (gGameMode != 8 || arg0 != gGhostSlot)) {
+            if (x > 10000.0f && gRiders_12[arg0].f6E8 == 0 && (gGame.mode != 8 || arg0 != gGhostSlot)) {
                 v = (s32)((x - 10000.0f) * 70.0f / 2000.0f) + 64;
                 v = (v * vol) >> 8;
                 if (v < 0) {

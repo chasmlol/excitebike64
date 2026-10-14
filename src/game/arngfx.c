@@ -557,7 +557,7 @@ void arn_update_view(s32 param_1)
     } else {
         arn_cull_models(gTrackSections, param_1, f, NULL, 0);
     }
-    arn_cull_models(gTrackObjects, param_1, gGameMode != 2, NULL, 0);
+    arn_cull_models(gTrackObjects, param_1, gGame.mode != 2, NULL, 0);
     if (gWaterModels != NULL) {
         arn_cull_models(gWaterModels, param_1, 1, NULL, 0);
     }

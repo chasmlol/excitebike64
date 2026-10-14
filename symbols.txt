@@ -4639,24 +4639,9 @@ D_800EFD74                            game  0x800EFD74  data        -
 D_800EFD78                            game  0x800EFD78  data        -
 D_800EFD7C                            game  0x800EFD7C  data        -
 D_800EFD84                            game  0x800EFD84  data        -
-gNumPlayers                           game  0x800EFDAC  data        -
-gNumPlayers_2                         game  0x800EFDAC  data        -  gNumPlayers
 D_800EFDB4                            game  0x800EFDB4  data        -
-gGameMode                             game  0x800EFDBC  data        -
-gGameMode_2                           game  0x800EFDBC  data        -  gGameMode
-D_800EFDC4                            game  0x800EFDC4  data        -
-D_800EFDE0                            game  0x800EFDE0  data        -
-D_800F0128                            game  0x800F0128  data        -
 D_800F0154                            game  0x800F0154  data        -
-D_800F0158                            game  0x800F0158  data        -
-D_800F016C                            game  0x800F016C  data        -
-D_800F0180                            game  0x800F0180  data        -
-D_800F01B4                            game  0x800F01B4  data        -
-D_800F01BC                            game  0x800F01BC  data        -
 D_800F01C0                            game  0x800F01C0  data        -
-D_800F01F8                            game  0x800F01F8  data        -
-D_800F0200                            game  0x800F0200  data        -
-D_800F04E4                            game  0x800F04E4  data        -
 sRaceEndFrame                         game  0x800F0520  data        -
 sTempGaugeTextures                    game  0x800F0524  data        -
 sTempGaugeTextures_2                  game  0x800F0524  data        -  sTempGaugeTextures
@@ -4671,25 +4656,8 @@ D_800F0544                            game  0x800F0544  data        -
 D_800F0548                            game  0x800F0548  data        -
 D_800F054C                            game  0x800F054C  data        -
 gEvent                                game  0x800F05A8  data        -
-D_800F05AC                            game  0x800F05AC  data        -
-D_800F05BC                            game  0x800F05BC  data        -
-D_800F05C8                            game  0x800F05C8  data        -
-gEventNumRiders                       game  0x800F05CA  data        -
-D_800F05CC                            game  0x800F05CC  data        -
-D_800F05D0                            game  0x800F05D0  data        -
 gEventTime                            game  0x800F05D4  data        -
-gEventTime_2                          game  0x800F05D4  data        -  gEventTime
-gEventTime_3                          game  0x800F05D4  data        -  gEventTime
-D_800F05E4                            game  0x800F05E4  data        -
-gEventAllFinished                     game  0x800F05E8  data        -
-D_800F05EC                            game  0x800F05EC  data        -
-D_800F05F8                            game  0x800F05F8  data        -
 gEventFlags                           game  0x800F0600  data        -
-D_800F0616                            game  0x800F0616  data        -
-D_800F0618                            game  0x800F0618  data        -
-D_800F0624                            game  0x800F0624  data        -
-D_800F0624_2                          game  0x800F0624  data        -  D_800F0624
-D_800F0630                            game  0x800F0630  data        -
 D_800F0634                            game  0x800F0634  data        -
 sSeasonState                          game  0x800F0638  data        -
 gTutorialResult                       game  0x800F06AC  data        -

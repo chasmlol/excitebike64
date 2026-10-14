@@ -403,11 +403,11 @@ void render_init(void) {
     if (gGame.numPlayers >= 2 && !(gGame.flags & 0x10)) {
         n = 4;
     }
-    if ((gGame.flags & 1) && gEventNumRiders == 1) {
+    if ((gGame.flags & 1) && gEvent.numRiders == 1) {
         n = 2;
     }
     if (gPodiumMode != 0) {
-        n = gEventNumRiders;
+        n = gEvent.numRiders;
     }
     if (gCreditsMode != 0) {
         n = 1;
@@ -540,7 +540,7 @@ void render_init(void) {
         gSkyMode = 0;
         mem_fill(gFogColor, 0, 3);
     }
-    if (D_800F05E4 != 0) {
+    if (gEvent.noPlayers != 0) {
         gDrawFlags &= ~0x800;
     } else {
         gDrawFlags |= 0x800;
@@ -1782,7 +1782,7 @@ Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu) {
                 if (gNumScreens == 2 && i == j) {
                     m = 3;
                 }
-                if (D_800F05E4 != 0 && j == 0) {
+                if (gEvent.noPlayers != 0 && j == 0) {
                     m = 3;
                 }
                 if (gNumScreens == 1 && (j == gCamTargetOverride || (gCamTargetOverride == -1 && j == 0))) {
@@ -2335,7 +2335,7 @@ Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     u16 *pal;
     s32 x, y;
 
-    if (gGameMode == 8) {
+    if (gGame.mode == 8) {
         p = D_800C8CE0;
     } else {
         p = pl;

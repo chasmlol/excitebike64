@@ -574,7 +574,7 @@ void save_init_defaults(void)
     i = 0;
     pc = gTracks;
     pd = gSaveData_5.recs;
-    ps = D_800F0200;
+    ps = (Rec_3 *)gGame.records;
     do {
         i++;
         if (pc->flags & 0x200) {
@@ -686,26 +686,26 @@ s32 save_update_unlocks(void)
         gSpecialTracksItems[2].flags |= 1;
     }
 
-    D_800F0180 = 1;
-    if (!(D_800F0180 < gSaveData_6.cnt || (gSaveData_6.cnt == D_800F0180 && (gSaveData_6.bits & 4)))) gSpecialTracksItems[3].flags |= 1;
+    gGame.difficulty = 1;
+    if (!(gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 4)))) gSpecialTracksItems[3].flags |= 1;
 
-    D_800F0180 = 2;
-    if ((D_800F0180 < gSaveData_6.cnt || (gSaveData_6.cnt == D_800F0180 && (gSaveData_6.bits & 8)))) {
+    gGame.difficulty = 2;
+    if ((gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 8)))) {
         if (gSpecialTracksItems[4].flags & 1) ret = 4;
         gSpecialTracksItems[4].flags &= ~1;
     } else {
         gSpecialTracksItems[4].flags |= 1;
     }
 
-    D_800F0180 = 3;
-    if ((D_800F0180 < gSaveData_6.cnt || (gSaveData_6.cnt == D_800F0180 && (gSaveData_6.bits & 16)))) {
+    gGame.difficulty = 3;
+    if ((gGame.difficulty < gSaveData_6.cnt || (gSaveData_6.cnt == gGame.difficulty && (gSaveData_6.bits & 16)))) {
         if (gSpecialTracksItems[5].flags & 1) ret = 5;
         gSpecialTracksItems[5].flags &= ~1;
     } else {
         gSpecialTracksItems[5].flags |= 1;
     }
 
-    D_800F0180 = saved;
+    gGame.difficulty = saved;
     return ret;
 }
 
@@ -779,7 +779,7 @@ void save_load(s32 arg0)
         D_800CA9C8_3.count++;
     }
     D_800CAAA1 = gSaveData_7.c1;
-    D_800F0180 = gSaveData_7.c0;
+    gGame.difficulty = gSaveData_7.c0;
     save_update_unlocks();
 }
 

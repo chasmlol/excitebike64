@@ -131,7 +131,7 @@ void race_spawn_extra_rider(Spawn *sp)
     Vec3f unused;
 
     if (D_800F1BC4 & 0x10) return;
-    if (gEventFlags & 0x200) return;
+    if (gEvent.flags & 0x200) return;
 
     b = &gRiders_79[6];
     track = sp->track;
@@ -191,7 +191,7 @@ void race_spawn_extra_rider(Spawn *sp)
     b->b3D0 = -1;
     b->quat2 = b->quat;
     b->pos.y = bike_get_ground_height(&b->pos) + 0.0f + 0.5f
-        - (gGameMode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
+        - (gGame.mode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
     b->w744 = 4;
     bike_update_wheel_contacts(b);
     bike_update_wheel_contacts(b);
@@ -269,7 +269,7 @@ void race_update_extra_riders(Player_22 *p)
 {
     Player_22 *q;
 
-    if (gGameMode == 8) return;
+    if (gGame.mode == 8) return;
     if (sExtraRiderSpawns_2 != NULL && p->f662 < 2) {
         Ent_63 *e = sExtraRiderSpawns_2->e;
         while (e->key < p->f660) e++;
@@ -363,7 +363,7 @@ void race_sort_positions(void)
     for (i = 0; i < gEvent.numRiders; i++) {
         gRiderStandings_4[i]->h662 = i;
     }
-    if (gEventTime > 120) {
+    if (gEvent.time > 120) {
         race_announce_position_changes();
     }
 }
@@ -552,7 +552,7 @@ void race_update_riders(void)
             best = t;
             idx = -1;
             if (n0 >= 2) {
-                for (i = 0; i < gNumPlayers; i++) {
+                for (i = 0; i < gGame.numPlayers; i++) {
                     if (gAnnounceTimes[i] < best) {
                         best = gAnnounceTimes[i];
                         idx = i;
@@ -692,7 +692,7 @@ void race_update_riders(void)
             }
         }
     }
-    if (gNumPlayers == 1 && n0 == 1) {
+    if (gGame.numPlayers == 1 && n0 == 1) {
         race_update_extra_riders((u8 *)list[0]);
     }
     ai_update_lanes();
@@ -1144,7 +1144,7 @@ void race_grid_from_standings(void)
     u8 *hb;
 
     mem_fill_3(sGridOrderNext, -1, 6);
-    if (gGameMode == 1) {
+    if (gGame.mode == 1) {
         Event *p = &gEvent;
         i = 0;
         if (p->numRiders > 0) {
