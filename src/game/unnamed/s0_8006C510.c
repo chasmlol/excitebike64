@@ -231,27 +231,6 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *proj, s32 n) {
 #define SY(n) (gScreenHeight * (n) / 240)
 
 typedef struct {
-    s32 *font0;         /* 0x00 */
-    u8 pad4[0xC];
-    s32 *f10;
-    s32 *f14;
-    s32 *f18;
-    s32 *f1C;
-    s32 *f20;
-    s32 *f24;
-    s32 *f28;
-    s32 *f2C;
-    s32 *f30;
-    s32 *f34;
-    s32 *f38;
-    u8 pad3C[0x128 - 0x3C];
-    u8 *f128;           /* 0x128 */
-    Pic *f12C[5];       /* 0x12C */
-    Pic *f140;          /* 0x140 */
-    Pic *f144;          /* 0x144 */
-} Res_5;
-
-typedef struct {
     u8 n;
     u8 pad1[7];
     s16 ids[14];        /* 0x08 */
@@ -285,7 +264,6 @@ typedef struct {
     char f4D[3];
 } Info_2;
 
-extern Res_5 *gRaceTextObjs_2;
 extern Sel_2 *gSeason_14;
 extern List_7 D_800CA9C8_2[];
 extern Info_2 *gCurTrack_37;
@@ -309,8 +287,8 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
     gDPSetRenderMode(gdl++, 0x404240, 0);
-    gDPLoadTLUT_pal256(gdl++, gRaceTextObjs_2->f140->pal);
-    gdl = render_draw_image(gViewRects_2.x + 8, gViewRects_2.y + 3, gRaceTextObjs_2->f140->img, gdl, arg2, 1, 1, 3, 0);
+    gDPLoadTLUT_pal256(gdl++, gRaceTextObjs->introPic->pal);
+    gdl = render_draw_image(gViewRects_2.x + 8, gViewRects_2.y + 3, gRaceTextObjs->introPic->img, gdl, arg2, 1, 1, 3, 0);
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetPrimColor(gdl++, 0, 0, 0xE6, 0xE6, 0xE6, 0xFF);
@@ -318,133 +296,133 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
         for (i = 0; i < gSeason_14->list->n; i++) {
-            gDPLoadTLUT_pal256(gdl++, gRaceTextObjs_2->f12C[i]->pal);
-            p = gRaceTextObjs_2->f12C[i]->img;
+            gDPLoadTLUT_pal256(gdl++, gRaceTextObjs->roundPics[i]->pal);
+            p = gRaceTextObjs->roundPics[i]->img;
             if (i != gSeason_14->sel || (gFrameCounter & 0x20)) {
-                font_text_create(gRaceTextObjs_2->font0, 0x40, 2, (i == gSeason_14->sel) ? 7 : 2, (i != gSeason_14->sel) ? 0x20000021 : 0x21);
-                font_text_add(gRaceTextObjs_2->font0, gTracks_11[gSeason_14->list->ids[i]]);
-                font_draw_text(gRaceTextObjs_2->font0, gViewRects_2.x + gViewRects_2.w - 0x69,
-                              gViewRects_2.y + 0x15 + gRaceTextObjs_2->f128[0x21] * i);
+                font_text_create(gRaceTextObjs->text[0], 0x40, 2, (i == gSeason_14->sel) ? 7 : 2, (i != gSeason_14->sel) ? 0x20000021 : 0x21);
+                font_text_add(gRaceTextObjs->text[0], gTracks_11[gSeason_14->list->ids[i]]);
+                font_draw_text(gRaceTextObjs->text[0], gViewRects_2.x + gViewRects_2.w - 0x69,
+                              gViewRects_2.y + 0x15 + gRaceTextObjs->introImages[0x21] * i);
             }
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - p[0] * 8 - 8,
-                                gViewRects_2.y + 0xB + gRaceTextObjs_2->f128[0x21] * i, p, gdl, arg2, 1, 1, 3, 0);
+                                gViewRects_2.y + 0xB + gRaceTextObjs->introImages[0x21] * i, p, gdl, arg2, 1, 1, 3, 0);
         }
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        p = gRaceTextObjs_2->f128 + 0x20;
+        p = gRaceTextObjs->introImages + 0x20;
         for (i = 0; i < gSeason_14->list->n; i++) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - p[0] * 8, gViewRects_2.y + 6 + p[1] * i,
                                 p, gdl, arg2, 1, 1, 6, 0);
         }
-        p = gRaceTextObjs_2->f128 + 0x18;
+        p = gRaceTextObjs->introImages + 0x18;
     } else {
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
-        p = gRaceTextObjs_2->f128 + 0x18;
+        p = gRaceTextObjs->introImages + 0x18;
     }
     if (gFrameCounter & 0x20) {
         y = 0xAA;
         if (gGame_48.f4C == 1) y = 0x9E;
-        font_text_create(gRaceTextObjs_2->f10, 0x40, 2, 4, 0x21);
-        font_text_add(gRaceTextObjs_2->f10, "Press the A Button to Race");
-        font_draw_text(gRaceTextObjs_2->f10, gScreenWidth / 2 - ((gGame_48.f4C == 1) ? 0x52 : 0), y);
+        font_text_create(gRaceTextObjs->text[4], 0x40, 2, 4, 0x21);
+        font_text_add(gRaceTextObjs->text[4], "Press the A Button to Race");
+        font_draw_text(gRaceTextObjs->text[4], gScreenWidth / 2 - ((gGame_48.f4C == 1) ? 0x52 : 0), y);
     }
     if (gGame_48.f4C == 1) {
-        font_text_create(gRaceTextObjs_2->f10, 0x40, 2, 7, 0x21);
+        font_text_create(gRaceTextObjs->text[4], 0x40, 2, 7, 0x21);
         if (gSeason_14->list - D_800CA9C8_2 == 4) {
             if (gSeason_14->sel == gSeason_14->list->n - 1) {
-                font_text_add(gRaceTextObjs_2->f10, D_800D8F58);
+                font_text_add(gRaceTextObjs->text[4], D_800D8F58);
             } else {
-                font_text_add(gRaceTextObjs_2->f10, D_800D8F84);
+                font_text_add(gRaceTextObjs->text[4], D_800D8F84);
             }
         } else {
-            font_text_add(gRaceTextObjs_2->f10, D_800D8FA4);
+            font_text_add(gRaceTextObjs->text[4], D_800D8FA4);
         }
-        font_draw_text(gRaceTextObjs_2->f10, gScreenWidth / 2 - 0x52, 0xAA);
+        font_draw_text(gRaceTextObjs->text[4], gScreenWidth / 2 - 0x52, 0xAA);
     }
     gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y, p, gdl, arg2, 1, 1, 6, 0);
-    p = gRaceTextObjs_2->f128 + 8;
+    p = gRaceTextObjs->introImages + 8;
     gdl = render_draw_image(gViewRects_2.x, gViewRects_2.y + gViewRects_2.h - p[1], p, gdl, arg2, 1, 1, 6, 0);
     if (gGame_48.f4C == 0 && gGame_48.f3C >= 2 && (gFrameCounter & 0x20)) {
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-        gDPLoadTLUT_pal256(gdl++, gRaceTextObjs_2->f144->pal);
+        gDPLoadTLUT_pal256(gdl++, gRaceTextObjs->lapArrows->pal);
         if (gGame_48.f40 >= 2) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - 0x4B, gViewRects_2.y + gViewRects_2.h - 0xE,
-                                gRaceTextObjs_2->f144->img, gdl, arg2, 1, 1, 3, 0);
+                                gRaceTextObjs->lapArrows->img, gdl, arg2, 1, 1, 3, 0);
         }
         if (gGame_48.f40 < 6) {
             gdl = render_draw_image(gViewRects_2.x + gViewRects_2.w - 0x28, gViewRects_2.y + gViewRects_2.h - 0xE,
-                                gRaceTextObjs_2->f144->img + 8, gdl, arg2, 1, 1, 3, 0);
+                                gRaceTextObjs->lapArrows->img + 8, gdl, arg2, 1, 1, 3, 0);
         }
     }
-    font_text_create(gRaceTextObjs_2->f10, 0x40, 1, 4, 0x20);
-    font_text_add(gRaceTextObjs_2->f10, "Best Times:");
-    font_draw_text(gRaceTextObjs_2->f10, SX(221), SY(197));
-    font_text_create(gRaceTextObjs_2->f14, 0x40, 1, 4, 0x20);
-    font_text_add(gRaceTextObjs_2->f14, "Best Lap:");
-    font_draw_text(gRaceTextObjs_2->f14, SX(-7), SY(197));
+    font_text_create(gRaceTextObjs->text[4], 0x40, 1, 4, 0x20);
+    font_text_add(gRaceTextObjs->text[4], "Best Times:");
+    font_draw_text(gRaceTextObjs->text[4], SX(221), SY(197));
+    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 4, 0x20);
+    font_text_add(gRaceTextObjs->text[5], "Best Lap:");
+    font_draw_text(gRaceTextObjs->text[5], SX(-7), SY(197));
     g = &gGame_48;
-    font_text_create(gRaceTextObjs_2->f14, 0x40, 1, 4, 0x20);
-    font_text_add(gRaceTextObjs_2->f14, "Number of Laps:");
-    font_draw_text(gRaceTextObjs_2->f14, SX(-2), SY(214));
-    font_text_create(gRaceTextObjs_2->f14, 0x40, 1, 2, (g->f4C == 0 && g->f3C >= 2) ? 0x21 : 0x22);
+    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 4, 0x20);
+    font_text_add(gRaceTextObjs->text[5], "Number of Laps:");
+    font_draw_text(gRaceTextObjs->text[5], SX(-2), SY(214));
+    font_text_create(gRaceTextObjs->text[5], 0x40, 1, 2, (g->f4C == 0 && g->f3C >= 2) ? 0x21 : 0x22);
     int_to_str(gGame_48.f40, buf);
-    font_text_add(gRaceTextObjs_2->f14, buf);
-    font_draw_text(gRaceTextObjs_2->f14, SX(-217) - ((gGame_48.f4C == 0 && gGame_48.f3C >= 2) ? 0x1E : 0), SY(214));
-    font_text_create(gRaceTextObjs_2->f1C, 0x40, 1, 2, 0x20);
+    font_text_add(gRaceTextObjs->text[5], buf);
+    font_draw_text(gRaceTextObjs->text[5], SX(-217) - ((gGame_48.f4C == 0 && gGame_48.f3C >= 2) ? 0x1E : 0), SY(214));
+    font_text_create(gRaceTextObjs->text[7], 0x40, 1, 2, 0x20);
     if (gGame_48.f40 != gCurTrack_37->f1E) {
-        font_text_create(gRaceTextObjs_2->f18, 0x40, 2, 2, 0x21);
-        font_text_create(gRaceTextObjs_2->f28, 0x40, 2, 2, 0x21);
-        font_text_create(gRaceTextObjs_2->f2C, 0x40, 2, 2, 0x21);
-        font_text_add(gRaceTextObjs_2->f18, "Unavailable");
-        font_draw_text(gRaceTextObjs_2->f18, SX(61), SY(196));
-        font_text_add(gRaceTextObjs_2->f28, "Unavailable");
-        font_draw_text(gRaceTextObjs_2->f28, SX(64), SY(205));
-        font_text_add(gRaceTextObjs_2->f2C, "Unavailable");
-        font_draw_text(gRaceTextObjs_2->f2C, SX(66), SY(214));
+        font_text_create(gRaceTextObjs->text[6], 0x40, 2, 2, 0x21);
+        font_text_create(gRaceTextObjs->text[10], 0x40, 2, 2, 0x21);
+        font_text_create(gRaceTextObjs->text[11], 0x40, 2, 2, 0x21);
+        font_text_add(gRaceTextObjs->text[6], "Unavailable");
+        font_draw_text(gRaceTextObjs->text[6], SX(61), SY(196));
+        font_text_add(gRaceTextObjs->text[10], "Unavailable");
+        font_draw_text(gRaceTextObjs->text[10], SX(64), SY(205));
+        font_text_add(gRaceTextObjs->text[11], "Unavailable");
+        font_draw_text(gRaceTextObjs->text[11], SX(66), SY(214));
     } else {
-        font_text_create(gRaceTextObjs_2->f18, 0x40, 2, 2, 0x20);
-        font_text_create(gRaceTextObjs_2->f28, 0x40, 2, 2, 0x20);
-        font_text_create(gRaceTextObjs_2->f2C, 0x40, 2, 2, 0x20);
+        font_text_create(gRaceTextObjs->text[6], 0x40, 2, 2, 0x20);
+        font_text_create(gRaceTextObjs->text[10], 0x40, 2, 2, 0x20);
+        font_text_create(gRaceTextObjs->text[11], 0x40, 2, 2, 0x20);
         event_format_time(gCurTrack_37->f34, buf);
-        font_text_add(gRaceTextObjs_2->f18, buf);
-        font_draw_text(gRaceTextObjs_2->f18, SX(116), SY(196));
+        font_text_add(gRaceTextObjs->text[6], buf);
+        font_draw_text(gRaceTextObjs->text[6], SX(116), SY(196));
         event_format_time(gCurTrack_37->f38, buf);
-        font_text_add(gRaceTextObjs_2->f28, buf);
-        font_draw_text(gRaceTextObjs_2->f28, SX(119), SY(205));
+        font_text_add(gRaceTextObjs->text[10], buf);
+        font_draw_text(gRaceTextObjs->text[10], SX(119), SY(205));
         event_format_time(gCurTrack_37->f3C, buf);
-        font_text_add(gRaceTextObjs_2->f2C, buf);
-        font_draw_text(gRaceTextObjs_2->f2C, SX(121), SY(214));
+        font_text_add(gRaceTextObjs->text[11], buf);
+        font_draw_text(gRaceTextObjs->text[11], SX(121), SY(214));
     }
     event_format_time(gCurTrack_37->f40, buf);
-    font_text_add(gRaceTextObjs_2->f1C, buf);
-    font_draw_text(gRaceTextObjs_2->f1C, gScreenWidth / 2 + gScreenWidth * 111 / 512, SY(197));
+    font_text_add(gRaceTextObjs->text[7], buf);
+    font_draw_text(gRaceTextObjs->text[7], gScreenWidth / 2 + gScreenWidth * 111 / 512, SY(197));
     if (gGame_48.f40 == gCurTrack_37->f1E) {
-        font_text_create(gRaceTextObjs_2->f20, 0x40, 2, 2, 0x22);
+        font_text_create(gRaceTextObjs->text[8], 0x40, 2, 2, 0x22);
         __builtin_memcpy(buf, gCurTrack_37->f44, 3);
         buf[3] = 0;
-        font_text_add(gRaceTextObjs_2->f20, buf);
-        font_draw_text(gRaceTextObjs_2->f20, SX(7), SY(196));
-        font_text_create(gRaceTextObjs_2->f30, 0x40, 2, 2, 0x22);
+        font_text_add(gRaceTextObjs->text[8], buf);
+        font_draw_text(gRaceTextObjs->text[8], SX(7), SY(196));
+        font_text_create(gRaceTextObjs->text[12], 0x40, 2, 2, 0x22);
         __builtin_memcpy(buf, gCurTrack_37->f47, 3);
         buf[3] = 0;
-        font_text_add(gRaceTextObjs_2->f30, buf);
-        font_draw_text(gRaceTextObjs_2->f30, SX(10), SY(205));
-        font_text_create(gRaceTextObjs_2->f34, 0x40, 2, 2, 0x22);
+        font_text_add(gRaceTextObjs->text[12], buf);
+        font_draw_text(gRaceTextObjs->text[12], SX(10), SY(205));
+        font_text_create(gRaceTextObjs->text[13], 0x40, 2, 2, 0x22);
         __builtin_memcpy(buf, gCurTrack_37->f4A, 3);
         buf[3] = 0;
-        font_text_add(gRaceTextObjs_2->f34, buf);
-        font_draw_text(gRaceTextObjs_2->f34, SX(12), SY(214));
+        font_text_add(gRaceTextObjs->text[13], buf);
+        font_draw_text(gRaceTextObjs->text[13], SX(12), SY(214));
     }
-    font_text_create(gRaceTextObjs_2->f24, 0x40, 1, 2, 0x22);
+    font_text_create(gRaceTextObjs->text[9], 0x40, 1, 2, 0x22);
     __builtin_memcpy(buf, gCurTrack_37->f4D, 3);
     buf[3] = 0;
-    font_text_add(gRaceTextObjs_2->f24, buf);
-    font_draw_text(gRaceTextObjs_2->f24, SX(-220), SY(197));
-    font_text_create(gRaceTextObjs_2->f38, 0x40, 4, 2, 0x20);
-    font_text_add(gRaceTextObjs_2->f38, gCurTrack_37->name);
-    font_draw_text(gRaceTextObjs_2->f38, SX(215), SY(29));
+    font_text_add(gRaceTextObjs->text[9], buf);
+    font_draw_text(gRaceTextObjs->text[9], SX(-220), SY(197));
+    font_text_create(gRaceTextObjs->text[14], 0x40, 4, 2, 0x20);
+    font_text_add(gRaceTextObjs->text[14], gCurTrack_37->name);
+    font_draw_text(gRaceTextObjs->text[14], SX(215), SY(29));
     return font_render(gdl);
 }
 
@@ -462,54 +440,54 @@ void hud_draw_congratulations(u32 *param_1, Dyn *arg1, s32 arg2)
     if ((gGame & 0x200000) != 0) {
         iVar4 = gScreenHeight_2 / 2 - 24;
     }
-    font_text_create((s32 *)*gRaceTextObjs, 0x40, 4, 7, 0x21);
-    font_text_add((s32 *)*gRaceTextObjs, D_800D8FFC);
-    font_draw_text((s32 *)*gRaceTextObjs, gScreenWidth / 2, iVar4);
+    font_text_create(gRaceTextObjs->text[0], 0x40, 4, 7, 0x21);
+    font_text_add(gRaceTextObjs->text[0], D_800D8FFC);
+    font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4);
     if ((gFrameCounter & 0x20) != 0) {
-        font_text_create((s32 *)*gRaceTextObjs, 0x40, 5, 4, 0x21);
-        font_text_add((s32 *)*gRaceTextObjs, D_800D9010);
-        font_draw_text((s32 *)*gRaceTextObjs, *(volatile s32 *)&gScreenWidth / 2, *(volatile s32 *)&gScreenHeight_2 * 7 / 8);
+        font_text_create(gRaceTextObjs->text[0], 0x40, 5, 4, 0x21);
+        font_text_add(gRaceTextObjs->text[0], D_800D9010);
+        font_draw_text(gRaceTextObjs->text[0], *(volatile s32 *)&gScreenWidth / 2, *(volatile s32 *)&gScreenHeight_2 * 7 / 8);
     }
-    font_text_create((s32 *)*gRaceTextObjs, 0x40, 4, 2, 0x21);
+    font_text_create(gRaceTextObjs->text[0], 0x40, 4, 2, 0x21);
     if ((gGame & 0x400000) != 0) {
-        font_text_add((s32 *)*gRaceTextObjs, D_800D9024);
+        font_text_add(gRaceTextObjs->text[0], D_800D9024);
         goto LAB_after;
     }
     if ((gGame & 0x100000) != 0) {
-        font_text_add((s32 *)*gRaceTextObjs, D_800D9044);
+        font_text_add(gRaceTextObjs->text[0], D_800D9044);
         goto LAB_after;
     }
     if ((gGame & 0x800000) != 0) {
-        font_text_add((s32 *)*gRaceTextObjs, D_800D9060);
+        font_text_add(gRaceTextObjs->text[0], D_800D9060);
         goto LAB_after;
     }
-    font_text_add((s32 *)*gRaceTextObjs, D_800D9078);
+    font_text_add(gRaceTextObjs->text[0], D_800D9078);
 LAB_after:
-    font_draw_text((s32 *)*gRaceTextObjs, gScreenWidth / 2, iVar4 + 0x18);
+    font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4 + 0x18);
     pf = (s32 *)&gGame;
     if ((pf[0] & 0x200000) != 0) {
-        font_text_create((s32 *)*gRaceTextObjs, 0x40, 4, 4, 0x21);
+        font_text_create(gRaceTextObjs->text[0], 0x40, 4, 4, 0x21);
         switch (pf[0x1D5]) {
         case 1:
-            font_text_add((s32 *)*gRaceTextObjs, D_800D9090);
+            font_text_add(gRaceTextObjs->text[0], D_800D9090);
             break;
         case 2:
-            font_text_add((s32 *)*gRaceTextObjs, D_800D90A8);
+            font_text_add(gRaceTextObjs->text[0], D_800D90A8);
             break;
         case 3:
-            font_text_add((s32 *)*gRaceTextObjs, D_800D90C8);
+            font_text_add(gRaceTextObjs->text[0], D_800D90C8);
             break;
         case 4:
-            font_text_add((s32 *)*gRaceTextObjs, D_800D90DC);
+            font_text_add(gRaceTextObjs->text[0], D_800D90DC);
             break;
         case 5:
-            font_text_add((s32 *)*gRaceTextObjs, D_800D90F4);
+            font_text_add(gRaceTextObjs->text[0], D_800D90F4);
             break;
         default:
             goto LAB_end;
         }
     LAB_end:
-        font_draw_text((s32 *)*gRaceTextObjs, gScreenWidth / 2, iVar4 + 0x30);
+        font_draw_text(gRaceTextObjs->text[0], gScreenWidth / 2, iVar4 + 0x30);
     }
     font_render(param_1);
 }

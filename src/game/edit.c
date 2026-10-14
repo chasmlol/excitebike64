@@ -2174,8 +2174,8 @@ typedef struct {
     s32 f16F8;
     s32 f16FC;
     u8 pad1700[0x18];
-    s32 *font2;         /* 0x1718 */
-    s32 *font;          /* 0x171C */
+    TextObj *font2;     /* 0x1718 */
+    TextObj *font;      /* 0x171C */
     u8 pad1720[0x80];
     Vp vp0;             /* 0x17A0 */
     u8 pad17B0[0x18];

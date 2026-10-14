@@ -1490,7 +1490,6 @@ gCheatFlags                           game  0x800C2280  data      0x4
 sCheatTable                           game  0x800C2284  data     0xcc
 gDrawFlags                            game  0x800C2350  data      0x4
 gRaceTextObjs                         game  0x800C2354  data      0x4
-gRaceTextObjs_2                       game  0x800C2354  data        -  gRaceTextObjs
 gPodiumMode                           game  0x800C2358  data      0x4
 sPinHeadCheat                         game  0x800C235C  data      0x4
 sBigHeadCheat                         game  0x800C2360  data      0x4
