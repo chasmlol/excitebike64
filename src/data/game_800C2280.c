@@ -1513,6 +1513,9 @@ u32 sRetraceCount = 0;
 u32 sGfxDoneCount = 0;
 u32 sDisplayedFb = 0xFFFFFFFF;
 u32 sViDitherFilter = 0;
+#if VERSION == VERSION_US_REV1
+u32 D_rev1_800C333C = 0x1440FFFB;
+#endif
 u32 gRspInitDL[0xe] = {
     /* 0x000 */ 0xD9C0F9FA, 0, 0xD7000000, 0,
     /* 0x010 */ 0xDB040004, 0x1, 0xDB04000C, 0x1,
@@ -7288,4 +7291,7 @@ u32 gGidCamFlash[0xc] = {
     /* 0x010 */ 0x31, 0x32, 0x33, 0x34,
     /* 0x020 */ 0x35, 0x36, 0x37, 0x800A4158,
 };
+#endif
+#if VERSION == VERSION_US_REV1
+u32 D_rev1_800D1EBC = 0x30002;
 #endif

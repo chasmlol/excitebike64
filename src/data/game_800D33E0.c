@@ -694,6 +694,9 @@ u32 gFontLoadBuffer[0x4] = { 0, 0x44554B4A, 0x494D444F, 0x4744554B };
 u32 gFontLoadBuffer[0x4] = { 0, 0x66666666, 0x66666666, 0x66666666 };
 #endif
 /* 0x800d5880-0x800d5b38 (696 bytes): libultra data (build_libultra.py) */
+#if VERSION == VERSION_US_REV1
+u32 D_rev1_800D6418[0x2] = { 0x6F6F7070, 0x70707070 };
+#endif
 #if VERSION == VERSION_LODGENET
 u32 D_800D5B38[0x2] = { 0xFFFF0000 };
 #elif VERSION == VERSION_US_REV1 || VERSION == VERSION_EU
@@ -846,3 +849,6 @@ char D_800D63B8[0x8] = "20 mph";
 char D_800D63C0[0x8] = "10 mph";
 char D_800D63C8[0x8] = "5 mph";
 char D_800D63D0[0x8] = "0 mph";
+#if VERSION == VERSION_US_REV1
+u32 D_rev1_800D7328[0x2] = { 0 };
+#endif
