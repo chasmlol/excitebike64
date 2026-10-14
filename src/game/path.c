@@ -613,8 +613,8 @@ void path_init(u32 *param_1)
         goto end;
     }
     if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0) {
-        sPathRawData = gUserTrackPath;
-        path_load(gUserTrackPath);
+        sPathRawData = gUserTrackData.path;
+        path_load(gUserTrackData.path);
         path_calc_widths_and_progress();
         path_limit_jump_speeds();
         gPathFinishNode = 1;

@@ -23,43 +23,13 @@ struct Set {
     Entry_2 e[1];
 };
 
-typedef struct Node_34 {
-    s32 hdr;
-    struct Node_34 *next;
-    u8 p8[5];
-    u8 f0D;
-    u16 f0E;
-    u8 p10;
-    u8 f11;
-    u8 p12;
-    u8 f13;
-    void *f14;
-} Node_34;
-
-typedef struct {
-    u8 pad0[0x17C];
-    Node_34 *list;
-    u8 pad1[0x10];
-    Node_34 *cur;
-    u8 pad2[0x16BA - 0x194];
-    Blk10 blk;
-    u8 pad3[0x16F4 - 0x16C4];
-    s32 n16F4;
-    u8 pad4[0x17FB - 0x16F8];
-    u8 b17FB;
-} Gs_4;
-
-typedef struct { u16 f0; s16 cnt; u8 pad[0x3C]; } Ent40_4;
-typedef struct { u16 w[15]; } Row_6;
-
-extern Gs_4 *gEditor_34;
-extern Ent40_4 gPieceTypes_14[];
-extern Row_6 gUserPieceHeights_3[];
-
+/* Packs the editor's track for a save (at most 0x310 bytes): 0x35, the dirt type, the name, the piece count, the
+   start piece, the user piece count, each user piece's segment count and heights, then 3 bytes per piece from the
+   first: x (5 bits), y (5), flags (6), rot (2), type (6). Returns the size. */
 s32 usrtrk_pack_track(u8 *buf)
 {
     u8 *p = buf;
-    Node_34 *n = gEditor_34->list;
+    EditPiece *n = gEditor->first;
     s32 cnt, curi, k, j, tot;
     u16 e;
     u8 *d;
@@ -69,59 +39,46 @@ s32 usrtrk_pack_track(u8 *buf)
     if (n != NULL) {
         cnt = 0;
         do {
-            if (n == gEditor_34->cur) {
+            if (n == gEditor->start) {
                 curi = cnt;
             }
             n = n->next;
             tot = cnt + 1;
             cnt = tot;
-        } while (n != NULL && n != gEditor_34->list);
+        } while (n != NULL && n != gEditor->first);
 
         p[0] = 0x35;
-        p[1] = gEditor_34->b17FB;
+        p[1] = gEditor->dirtType;
         p += 2;
-        *(Blk10 *)p = gEditor_34->blk;
+        *(Blk10 *)p = *(Blk10 *)gEditor->name;
         p += 10;
         *(u16 *)p = tot;
         p += 2;
         *(u16 *)p = curi;
         p += 2;
-        *(u16 *)p = *(u16 *)((u8 *)gEditor_34 + 0x16F6);
+        *(u16 *)p = gEditor->userPieceCount;
         p += 2;
-        for (k = 0; k < gEditor_34->n16F4; k++) {
-            c = gPieceTypes_14[k + 18].cnt;
+        for (k = 0; k < gEditor->userPieceCount; k++) {
+            c = gPieceTypes[k + 18].dim[1];
             *(u16 *)p = c;
             d = p + 2;
             for (j = 0; j < c * 2 - 1; j++) {
-                ((u16 *)d)[j] = gUserPieceHeights_3[k].w[j];
+                ((u16 *)d)[j] = gUserPieceHeights[k][j];
             }
             p += c * 4;
         }
-        n = gEditor_34->list;
+        n = gEditor->first;
         do {
-            e = ((u32)n->f14 - (u32)gPieceTypes_14) >> 6;
-            p[0] = ((n->f0D & 0x1F) << 3) | ((n->f0E & 0x1F) >> 2);
-            p[1] = ((((u8 *)n)[0xF] & 0x1F) << 6) | (n->f11 & 0x3F);
-            p[2] = ((n->f13 & 3) << 6) | (e & 0x3F);
+            e = ((u32)n->type - (u32)gPieceTypes) >> 6;
+            p[0] = ((n->x & 0x1F) << 3) | ((n->y & 0x1F) >> 2);
+            p[1] = ((n->y & 0x1F) << 6) | (n->flags & 0x3F);
+            p[2] = ((n->rot & 3) << 6) | (e & 0x3F);
             p += 3;
             n = n->next;
-        } while (n != NULL && n != gEditor_34->list);
+        } while (n != NULL && n != gEditor->first);
     }
     return (s16)(p - buf);
 }
-
-typedef struct { s16 a, b, c, d, e, pad; } Rec_54;
-
-typedef struct {
-    s32 n;
-    s32 ntrk;
-    s32 id;
-    u8 len[8];
-    u8 data[8][30];
-    Rec_54 rec[1];
-} Obj_77;
-
-extern Obj_77 *gUserTrackLayout_3;
 
 void usrtrk_load_layout(u8 *p)
 {
@@ -132,68 +89,36 @@ void usrtrk_load_layout(u8 *p)
     s16 i;
     s32 k;
     s32 j;
-    Obj_77 *o;
-    Rec_54 *r;
+    UserTrackLayout *o;
+    UserTrackPiece *r;
 
     id = p[1];
     p += 0xC;
     n = *((u16 *)p)++;
     start = *((u16 *)p)++;
     ntrk = *((s16 *)p)++;
-    if (gUserTrackLayout_3 != NULL) {
-        mem_free(gUserTrackLayout_3);
+    if (gUserTrackLayout != NULL) {
+        mem_free(gUserTrackLayout);
     }
-    gUserTrackLayout_3 = mem_alloc_dbg(((s16)n - 1) * sizeof(Rec_54) + sizeof(Obj_77), 0, (s32)sStrUsrTrkFile, 0xFD);
-    gUserTrackLayout_3->id = id;
-    gUserTrackLayout_3->ntrk = ntrk;
+    gUserTrackLayout = mem_alloc_dbg(((s16)n - 1) * sizeof(UserTrackPiece) + sizeof(UserTrackLayout), 0, (s32)sStrUsrTrkFile, 0xFD);
+    gUserTrackLayout->dirtType = id;
+    gUserTrackLayout->userPieceCount = ntrk;
     for (i = 0; i < ntrk; i++) {
-        gUserTrackLayout_3->len[i] = p[1];
-        memcpy_2((u8 *)(i * 30 + (u32)gUserTrackLayout_3) + 0x14, p + 2, gUserTrackLayout_3->len[i] * 4 - 2);
-        p += gUserTrackLayout_3->len[i] * 4;
+        gUserTrackLayout->segmentCounts[i] = p[1];
+        memcpy_2((u8 *)(i * 30 + (u32)gUserTrackLayout) + 0x14 /* heights[i] */, p + 2, gUserTrackLayout->segmentCounts[i] * 4 - 2);
+        p += gUserTrackLayout->segmentCounts[i] * 4;
     }
-    gUserTrackLayout_3->n = (s16)n;
+    gUserTrackLayout->pieceCount = (s16)n;
     for (k = 0; k < (s16)n; k++) {
         j = (k - (s16)start + (s16)n) % (s16)n;
-        gUserTrackLayout_3->rec[j].a = p[0] >> 3;
-        gUserTrackLayout_3->rec[j].b = (p[1] >> 6) | ((p[0] & 7) << 2);
-        gUserTrackLayout_3->rec[j].c = p[1] & 0x3F;
-        gUserTrackLayout_3->rec[j].d = p[2] >> 6;
-        gUserTrackLayout_3->rec[j].e = p[2] & 0x3F;
+        gUserTrackLayout->pieces[j].x = p[0] >> 3;
+        gUserTrackLayout->pieces[j].y = (p[1] >> 6) | ((p[0] & 7) << 2);
+        gUserTrackLayout->pieces[j].flags = p[1] & 0x3F;
+        gUserTrackLayout->pieces[j].rot = p[2] >> 6;
+        gUserTrackLayout->pieces[j].type = p[2] & 0x3F;
         p += 3;
     }
 }
-
-typedef struct { u16 a0; u16 h2; u8 p4[0x2C]; void *f30; void *f34; u8 p38[8]; } Rec_55;
-
-typedef struct Node_35 {
-    u16 used;
-    u16 pad;
-    struct Node_35 *next;
-    struct Node_35 *prev;
-    u16 a, b, c, d;
-    Rec_55 *rec;
-    u8 pad18[0x24 - 0x18];
-} Node_35;
-
-typedef struct Game_43 {
-    u8 p000[0x17C];
-    Node_35 *f17C;
-    Node_35 *f180;
-    Node_35 *f184;
-    u8 p188[8];
-    Node_35 *f190;
-    Node_35 nodes[150];
-    u8 p16AC[0x16BA - 0x16AC];
-    Blk10 hdr;
-    u8 f16C4;
-    u8 p16C5[0x16F4 - 0x16C5];
-    s32 f16F4;
-    u8 p16F8[0x17F8 - 0x16F8];
-    s32 f17F8;
-} Game_43;
-
-extern Game_43 *gEditor_35;
-extern Rec_55 gPieceTypes_15[];
 
 void usrtrk_load_into_editor(u8 *p)
 {
@@ -202,60 +127,60 @@ void usrtrk_load_into_editor(u8 *p)
     u16 w;
     s16 cnt, sel;
     s32 j;
-    Rec_55 *rec;
+    PieceType *rec;
     u16 *tp;
 
     {
-        Game_43 *g;
+        Editor *g;
         u8 v = p[1];
         p += 2;
-        g = gEditor_35;
-        g->f17F8 = v;
-        g->hdr = *(Blk10 *)p;
+        g = gEditor;
+        g->dirtType = v;
+        *(Blk10 *)g->name = *(Blk10 *)p;
     }
     p += 10;
-    gEditor_35->f16C4 = 0;
+    gEditor->name[10] = 0;
     cnt = *(s16 *)p;
     p += 2;
     sel = *(s16 *)p;
     p += 2;
-    gEditor_35->f16F4 = *(s16 *)p;
+    gEditor->userPieceCount = *(s16 *)p;
     p += 2;
-    for (i = 0; i < gEditor_35->f16F4; i++) {
+    for (i = 0; i < gEditor->userPieceCount; i++) {
         n = *(s16 *)p;
         w = *(u16 *)p;
         tp = gUserPieceHeights[i];
         memcpy(tp, p + 2, (n * 2 - 1) * 2);
-        usrtrk_apply_heights(gPieceTypes_15[i + 0x12].f30, gPieceTypes_15[i + 0x12].f34, tp, n);
-        gPieceTypes_15[i + 0x12].h2 = w;
+        usrtrk_apply_heights(gPieceTypes[i + 0x12].meshA, gPieceTypes[i + 0x12].meshB, tp, n);
+        gPieceTypes[i + 0x12].dim[1] = w;
         p = (u8 *)((s16 *)p + n * 2);
     }
 
-    gEditor_35->f17C = gEditor_35->f184 = gEditor_35->nodes;
-    gEditor_35->f180 = &gEditor_35->nodes[cnt - 1];
-    gEditor_35->f190 = &gEditor_35->nodes[sel];
+    gEditor->first = gEditor->cur = gEditor->pieces;
+    gEditor->last = &gEditor->pieces[cnt - 1];
+    gEditor->start = &gEditor->pieces[sel];
     for (j = 0; j < cnt; j++) {
-        gEditor_35->nodes[j].used = 1;
+        gEditor->pieces[j].used = 1;
         if (j == 0) {
-            gEditor_35->nodes[j].prev = 0;
+            gEditor->pieces[j].prev = 0;
         } else {
-            gEditor_35->nodes[j].prev = &gEditor_35->nodes[j - 1];
+            gEditor->pieces[j].prev = &gEditor->pieces[j - 1];
         }
         if (j == cnt - 1) {
-            gEditor_35->nodes[j].next = 0;
+            gEditor->pieces[j].next = 0;
         } else {
-            gEditor_35->nodes[j].next = &gEditor_35->nodes[j + 1];
+            gEditor->pieces[j].next = &gEditor->pieces[j + 1];
         }
-        gEditor_35->nodes[j].a = p[0] >> 3;
-        gEditor_35->nodes[j].b = (p[1] >> 6) | ((p[0] & 7) << 2);
-        gEditor_35->nodes[j].c = p[1] & 0x3F;
-        gEditor_35->nodes[j].d = p[2] >> 6;
-        gEditor_35->nodes[j].rec = &gPieceTypes_15[p[2] & 0x3F];
+        gEditor->pieces[j].x = p[0] >> 3;
+        gEditor->pieces[j].y = (p[1] >> 6) | ((p[0] & 7) << 2);
+        gEditor->pieces[j].flags = p[1] & 0x3F;
+        gEditor->pieces[j].rot = p[2] >> 6;
+        gEditor->pieces[j].type = &gPieceTypes[p[2] & 0x3F];
         p += 3;
-        edit_update_piece_ports(&gEditor_35->nodes[j]);
+        edit_update_piece_ports(&gEditor->pieces[j]);
     }
     for (j = cnt; j < 150; j++) {
-        gEditor_35->nodes[j].used = 0;
+        gEditor->pieces[j].used = 0;
     }
 }
 
@@ -414,7 +339,7 @@ void usrtrk_load_pieces(void)
     res_open_set(sStrUsrTrkPieces, &sPiecesResSet);
     gEditArena_2.r10 = res_load(sPiecesResSet, *gEditArena_2.p8);
     height_free_walls();
-    mem_fill(gUserTrackData_2, 0, 0x2C);
+    mem_fill((u8 *)&gUserTrackData, 0, sizeof(UserTrackData));
 
     for (i = 0; i < 29; i++) {
         gPieceTypes_17[i].r38 = 0;
@@ -488,7 +413,7 @@ struct Mesh_8 {
 
 void usrtrk_apply_heights(Mesh_8 **dst, Mesh_8 **src, s16 *h, s32 n)
 {
-    Mesh_8 **tmpl = D_800CE9B4;
+    Mesh_8 **tmpl = (Mesh_8 **)gPieceTypes[PIECE_TYPE_TEMPLATE].meshB;
     s32 i, j, k;
     s32 idx, c, a, b;
     u32 m;

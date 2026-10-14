@@ -21,16 +21,6 @@ extern SegRef *gTerrainTexSet_2;
 extern ItemList *gTrackSections;
 extern ItemList *gTrackObjects_2;
 
-typedef struct {
-    s32 f0;
-    s32 f4;
-    s32 f8;
-    s32 fC;
-    s32 pad[6];
-    s32 f28;
-} Blk5CC0;
-
-extern Blk5CC0 gUserTrackData;
 
 void arn_init(void)
 {
@@ -51,13 +41,13 @@ void arn_init(void)
     if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0) {
         usrtrk_load_pieces();
         usrtrk_build_track();
-        if (gUserTrackData.f28 != 0) {
-            D_800C9574 = gUserTrackData.f28;
+        if (gUserTrackData.collision != 0) {
+            D_800C9574 = (s32)gUserTrackData.collision;
         }
         gWaterModels = 0;
         gWaterTexSet = 0;
-        gTerrainTexSet = gUserTrackData.f4;
-        gObjectTexSet = gUserTrackData.fC;
+        gTerrainTexSet = gUserTrackData.dirtTex;
+        gObjectTexSet = gUserTrackData.objectTex;
         sStandModels = res_load(D_800E7728, D_800D07C0);
         sStandLowModel = res_load(D_800E7728, D_800D06F4);
         sStandTextures = res_load(D_800E7728, D_800D07D4);
@@ -65,10 +55,10 @@ void arn_init(void)
         sObjectSegs[2] = 0;
         gAnimTexSet = 0;
         sObjectSegs[0] = gObjectTexSet;
-        gTrackSections_2 = (s32 *)gUserTrackData.f0;
-        gSectionDLs = tube_build_dlists(gUserTrackData.f0, (s32)&gTerrainTexSet, 0, 0);
-        gTrackObjects = (s32 *)gUserTrackData.f8;
-        gObjectDLs = tube_build_dlists(gUserTrackData.f8, (s32)sObjectSegs, 0xC, 1);
+        gTrackSections_2 = (s32 *)gUserTrackData.meshA;
+        gSectionDLs = tube_build_dlists(gUserTrackData.meshA, (s32)&gTerrainTexSet, 0, 0);
+        gTrackObjects = (s32 *)gUserTrackData.meshB;
+        gObjectDLs = tube_build_dlists(gUserTrackData.meshB, (s32)sObjectSegs, 0xC, 1);
         arn_apply_noise_shading((s32)gTrackSections_2);
     } else {
         D_800C9574 = track_res_get(D_800D1518);
@@ -237,7 +227,6 @@ Gfx *arn_draw_water(Gfx *gdl, s32 p2, s32 p3, u32 sh)
     u32 off;
     u8 pad[0x48];
     Tbl *tbl = gWaterModels_2;
-
 
     if (tbl == NULL) {
         return gdl;

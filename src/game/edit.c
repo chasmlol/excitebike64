@@ -288,7 +288,7 @@ void edit_exit(void)
     s32 n;
 
     if (gEditor->flags & EDIT_TEST_TRACK) {
-        iVar7 = *gUserTrackLayout_2;
+        iVar7 = gUserTrackLayout->pieceCount;
     } else {
         iVar7 = -1;
     }
@@ -312,12 +312,12 @@ void edit_exit(void)
     if (iVar7 >= 0) {
         __builtin_memcpy(gZBuffer, D_800F0158, 0x400);
         n = (iVar7 - 1) * 0xc + 0x110;
-        memcpy(gZBuffer + 0x400, gUserTrackLayout_2, n);
-        mem_free(gUserTrackLayout_2);
+        memcpy(gZBuffer + 0x400, gUserTrackLayout, n);
+        mem_free(gUserTrackLayout);
         mem_free(gGame_88.p);
-        gUserTrackLayout_2 = mem_alloc_dbg(n, 0, sStrEditFile, 0x651);
+        gUserTrackLayout = mem_alloc_dbg(n, 0, sStrEditFile, 0x651);
         gGame_88.p = mem_alloc_dbg(0x400, 0, sStrEditFile, 0x652);
-        memcpy(gUserTrackLayout_2, gZBuffer + 0x400, n);
+        memcpy(gUserTrackLayout, gZBuffer + 0x400, n);
         __builtin_memcpy(gGame_88.p, gZBuffer, 0x400);
     }
     font_unload_set();
