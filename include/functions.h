@@ -5,36 +5,36 @@
 #include "structs.h"
 
 /* src/game/render.c */
-void render_load_rider(ResFile *r, s32 n, s32 **ids, s32 arg3, s32 arg4, s32 arg5);
+void render_load_rider(ResFile *resSet, s32 index, s32 **skins, s32 bikeModel, s32 bikePalette, s32 riderType);
 void render_update_screen_layout(void);
 void render_init(void);
 void render_free(void);
-Gfx *render_set_viewport(Gfx *dl, Mtx *m, s32 n, s32 flag);
+Gfx *render_set_viewport(Gfx *gdl, Mtx *projMtx, s32 view, s32 loadProj);
 Gfx *render_set_viewport_2(Gfx *dl, s32 p2, s32 p3);
 u32 *render_set_viewport_3();
 u32 *render_set_viewport_4(u32 *dl, s32 p2, s32 p3);
-s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 k, s32 c, s32 q, s32 n);
+s32 render_get_rider_lod(s32 x, s32 y, s32 z, s32 view, s32 section, s32 dyn, s32 rider);
 Gfx *render_begin_menu_frame(Gfx *gdl, s32 fb, u8 *mtx);
 Gfx *render_begin_menu_frame_2();
-Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *arg2);
+Gfx *render_draw_sound_menu(Gfx *gdl, s32 fb, Dyn *dyn);
 Gfx *render_draw_controls_menu(Gfx *gdl, s32 fb, u8 *mtx);
 Gfx *render_clear_viewports(Gfx *gdl);
 void render_draw_race(Dyn *dyn, s32 fb, Gfx **pgdl);
-Gfx *render_draw_riders(Gfx *gdl, s32 vp, s32 p3, s32 xlu);
-void render_update_rider_palette(s32 pl, s32 k);
-Gfx *render_restore_state(Gfx *gdl, s32 a1, s32 a2);
-Gfx *render_draw_place_markers(Gfx *gdl, s32 arg1);
-Gfx *render_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl);
-Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 a4, s32 sx, s32 sy, s32 flags, s32 dw);
+Gfx *render_draw_riders(Gfx *gdl, s32 fb, s32 dyn, s32 translucent);
+void render_update_rider_palette(s32 rider, s32 view);
+Gfx *render_restore_state(Gfx *gdl, s32 fb, s32 dyn);
+Gfx *render_draw_place_markers(Gfx *gdl, s32 dyn);
+Gfx *render_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 view, s32 player);
+Gfx *render_draw_image(s32 x, s32 y, Img *img, Gfx *gdl, s32 fb, s32 alignX, s32 alignY, s32 flags, s32 width);
 void render_update_viewports(void);
 Gfx *render_draw_credits(Gfx *gdl);
-void render_make_world_mtx(s32 p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, s32 p8, s32 p9);
-Gfx *render_load_ucode(Gfx *gdl, s32 a1, s32 a2, s32 a3, s32 a4);
+void render_make_world_mtx(s32 mtx, s32 rx, s32 ry, s32 rz, s32 x, s32 y, s32 z, s32 scale, s32 view);
+Gfx *render_load_ucode(Gfx *gdl, s32 fb, s32 dyn, s32 text, s32 data);
 void render_reset_viewports(void);
 void render_apply_split_layout(void);
 void render_blit_place_glyph(u8 *src, s32 x, s32 y, s32 w, s32 h);
-void render_lerp_rgb(u8 *param_1, u8 *param_2, u8 *param_3, s32 param_4, s32 param_5);
-void render_lerp_palette(u16 *p1, u16 *p2, u16 *p3, s32 a, s32 n);
+void render_lerp_rgb(u8 *a, u8 *b, u8 *out, s32 t, s32 count);
+void render_lerp_palette(u16 *palA, u16 *palB, u16 *out, s32 t, s32 count);
 
 /* src/game/podium.c */
 void podium_update_camera(void);
@@ -169,21 +169,21 @@ f32 math_double(f32 x);
 s32 cic_is_6103(void);
 
 /* src/game/prim.c */
-Gfx *prim_build_dl(s32 flags, PrimModel *mdl, TexSet **sets, Gfx *gdl);
+Gfx *prim_build_dl(s32 flags, PrimModel *model, TexSet **sets, Gfx *gdl);
 void prim_animate_textures(TexSet *set, s32 frame);
 void prim_flip_images(TexSet *set);
-void prim_set_tex_mode_callback(s32 a0);
-void prim_set_tex_addr_callback(s32 a0);
+void prim_set_tex_mode_callback(s32 func);
+void prim_set_tex_addr_callback(s32 func);
 void prim_init(void);
 void prim_exit(void);
-void prim_set_tex_size_shift(s32 x);
-void prim_alloc_seg_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags);
-void prim_alloc_dl(Gfx **out, PrimModel *mdl, TexSet **sets, u32 flags);
-void prim_flip_image_rows(u8 *p, s32 stride, s32 rows);
-void prim_pkg_unrelocate(TexSet **pp);
-void prim_pkg_relocate(TexSet **pp);
-void prim_n64_relocate(PrimModel **pp);
-s32 prim_find_nearest_color(u16 *p, s32 r, s32 g, s32 b, s32 flag, s32 n);
+void prim_set_tex_size_shift(s32 shift);
+void prim_alloc_seg_dl(Gfx **out, PrimModel *model, TexSet **sets, u32 flags);
+void prim_alloc_dl(Gfx **out, PrimModel *model, TexSet **sets, u32 flags);
+void prim_flip_image_rows(u8 *top, s32 stride, s32 rows);
+void prim_pkg_unrelocate(TexSet **handle);
+void prim_pkg_relocate(TexSet **handle);
+void prim_n64_relocate(PrimModel **handle);
+s32 prim_find_nearest_color(u16 *pal, s32 r, s32 g, s32 b, s32 opaque, s32 count);
 
 /* src/game/min.c */
 void race_init_replay(void);
@@ -249,124 +249,124 @@ void bike_update_dirt_spray(Rider *o);
 
 /* src/game/arngfx.c */
 void arn_init(void);
-Gfx *arn_draw(Gfx *gdl, s32 a1, s32 a2, s32 view);
-Gfx *arn_draw_water(Gfx *gdl, s32 p2, s32 p3, u32 sh);
-Gfx *arn_draw_far(Gfx *gdl, s32 a1, s32 a2, s32 mode);
+Gfx *arn_draw(Gfx *gdl, s32 dyn, s32 fb, s32 view);
+Gfx *arn_draw_water(Gfx *gdl, s32 dyn, s32 fb, u32 view);
+Gfx *arn_draw_far(Gfx *gdl, s32 dyn, s32 fb, s32 view);
 void arn_cull_models(TrackModelList *list, s32 view, s32 strict, s16 *slots, s32 nslots);
-void arn_apply_noise_shading(TrackModelList *list);
+void arn_apply_noise_shading(TrackModelList *sections);
 void arn_free(void);
-void arn_update_view(s32 param_1);
+void arn_update_view(s32 view);
 void arn_relocate(TrackModelList **pp);
 
 /* src/game/tubegfx.c */
 void tube_init(void);
 void tube_free(void);
-void tube_update_view(s32 n);
-Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog);
-Gfx *tube_draw_far(Gfx *gdl, s32 mtx, s32 a2, s32 view);
-Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view);
-void tube_cull_sections(TrackModelList *l, s32 n);
-void tube_assign_objects(TrackModelList *a, TrackModelList *b);
-s32 tube_get_water_level(s32 x, s32 y, s32 *out);
+void tube_update_view(s32 view);
+Gfx *tube_draw_layer(Gfx *gdl, s32 dyn, s32 fb, s32 view, s32 fog);
+Gfx *tube_draw_far(Gfx *gdl, s32 dyn, s32 fb, s32 view);
+Gfx *tube_draw_water(Gfx *gdl, s32 dyn, s32 fb, s32 view);
+void tube_cull_sections(TrackModelList *sections, s32 view);
+void tube_assign_objects(TrackModelList *models, TrackModelList *sections);
+s32 tube_get_water_level(s32 x, s32 z, s32 *out);
 Gfx **tube_build_dlists(TrackModelList *list, TexSet **sets, u32 flags, s32 animTex);
-void tube_remap_tex_addr(u32 *param_1);
+void tube_remap_tex_addr(u32 *addr);
 void tube_init_tex_groups(void);
 void tube_load_pvs(void);
-void tube_calc_fog_range(s32 a, s32 *b, s32 *c);
-Gfx *tube_draw(Gfx *gdl, s32 a, s32 b, s32 c);
-short *tube_alloc_mtx(s32 p1, s32 p2, s32 p3, s32 p4);
-Gfx *tube_set_anim_tex_segs(Gfx *gdl, s32 idx);
+void tube_calc_fog_range(s32 view, s32 *fogNear, s32 *fogFar);
+Gfx *tube_draw(Gfx *gdl, s32 dyn, s32 fb, s32 view);
+short *tube_alloc_mtx(s32 view, s32 x, s32 y, s32 z);
+Gfx *tube_set_anim_tex_segs(Gfx *gdl, s32 object);
 void tube_free_tex_segs(void);
 void tube_reset_objects(void);
 void tube_rotate_vertex_colors(TrackModelList *list);
 void tube_animate_textures(void);
-void tube_spawn_splash(s32 param_1, s32 param_2, s32 param_3, s32 param_4);
+void tube_spawn_splash(s32 rider, s32 x, s32 y, s32 z);
 void tube_update_splashes(void);
-Gfx *tube_tex_mode_callback(Gfx *gdl, s32 flag);
+Gfx *tube_tex_mode_callback(Gfx *gdl, s32 cutout);
 
 /* src/game/camera.c */
-void cam_init(s32 arg0);
+void cam_init(s32 unused);
 void cam_build_segment_order(void);
 void cam_update(void);
-f32 cam_calc_ground_pitch(Rider *self);
-f32 cam_calc_air_pitch(Rider *p);
-void cam_update_rider_select(Rider *p, CamOut *out, s32 arg2);
-int cam_calc_bike_yaw(Rider *s);
-s32 cam_mode_soccer(Rider *bike, CamOut *out);
-f32 cam_calc_hill_climb_pitch(Rider *param_1);
-void cam_mode_hill_climb(Rider *p, CamOut *out);
-void cam_update_chase(Rider *p, CamOut *out, s32 z);
+f32 cam_calc_ground_pitch(Rider *rider);
+f32 cam_calc_air_pitch(Rider *rider);
+void cam_update_rider_select(Rider *rider, CamOut *out, s32 changed);
+int cam_calc_bike_yaw(Rider *rider);
+s32 cam_mode_soccer(Rider *rider, CamOut *out);
+f32 cam_calc_hill_climb_pitch(Rider *rider);
+void cam_mode_hill_climb(Rider *rider, CamOut *out);
+void cam_update_chase(Rider *rider, CamOut *out, s32 dist);
 s32 cam_update_chase_2(Rider *p, CamOut *out, s32 z);
-void cam_mode_fall_view(Rider *e, CamOut *r);
-void cam_start_fall_view(Rider *p);
-void cam_mode_stunt_pip(Rider *p, CamOut *out);
-void cam_smooth_to(CamOut *p);
+void cam_mode_fall_view(Rider *rider, CamOut *out);
+void cam_start_fall_view(Rider *rider);
+void cam_mode_stunt_pip(Rider *rider, CamOut *out);
+void cam_smooth_to(CamOut *in);
 void cam_snap_to(CamOut *src);
 s32 cam_snap_to_2(CamOut *src);
-void cam_snap_to_moving(CamOut *p, f32 *v);
+void cam_snap_to_moving(CamOut *out, f32 *vel);
 s32 cam_find_zone(void);
-f32 cam_zone_get_progress(Rider *p, s32 a, s32 b);
+f32 cam_zone_get_progress(Rider *rider, s32 startNode, s32 endNode);
 void cam_zone_update_follow(Rider *rider, CamOut *out);
 void cam_zone_update_dolly(Rider *rider, CamOut *out);
-void cam_get_track_heading(s16 p1, f32 p2, u16 *p3);
-void cam_get_track_pos(s16 param_1, f32 param_2, f32 *param_3, f32 *param_4, f32 *param_5);
-void cam_collide_walls(s32 a, s32 b, s32 c);
-void cam_shift_xz(s32 p1, s32 p2, s32 p3, s32 p4);
-void cam_clamp_to_track(s32 m, s32 n);
-void cam_keep_above_ground(s32 param_1, s32 param_2);
-void cam_shift_z(s32 p, s32 q);
-void cam_mode_chase_7m(Rider *param_1, CamOut *param_2);
-void cam_mode_chase_far_alt(Rider *a, CamOut *b);
-void cam_mode_side_view(Rider *param_1, CamOut *param_2);
-void cam_mode_high_side(Rider *o, CamOut *out);
-void cam_mode_chase_near(Rider *p, CamOut *p2);
-void cam_mode_chase_mid(Rider *param_1, CamOut *param_2);
-void cam_mode_chase_far(Rider *a, CamOut *b);
-void cam_mode_celebration(Rider *o, CamOut *out);
-void cam_mode_first_person(Rider *p1, CamOut *p2);
+void cam_get_track_heading(s16 node, f32 frac, u16 *out);
+void cam_get_track_pos(s16 node, f32 frac, f32 *x, f32 *y, f32 *z);
+void cam_collide_walls(s32 rider, s32 view, s32 camWalls);
+void cam_shift_xz(s32 view, s32 rider, s32 dx, s32 dz);
+void cam_clamp_to_track(s32 rider, s32 view);
+void cam_keep_above_ground(s32 rider, s32 view);
+void cam_shift_z(s32 view, s32 dz);
+void cam_mode_chase_7m(Rider *rider, CamOut *out);
+void cam_mode_chase_far_alt(Rider *rider, CamOut *out);
+void cam_mode_side_view(Rider *rider, CamOut *out);
+void cam_mode_high_side(Rider *rider, CamOut *out);
+void cam_mode_chase_near(Rider *rider, CamOut *out);
+void cam_mode_chase_mid(Rider *rider, CamOut *out);
+void cam_mode_chase_far(Rider *rider, CamOut *out);
+void cam_mode_celebration(Rider *rider, CamOut *out);
+void cam_mode_first_person(Rider *rider, CamOut *out);
 void func_8002D888(Rider *arg0, CamOut *arg1);
 void func_8002D890(void);
 void func_8002D898(void);
 void cam_free(void);
-void cam_get_track_turn(s16 p1, f32 f, u16 *p3);
-void cam_get_track_slope(s32 a0, f32 f, s16 *out);
-void cam_set_frozen(s32 i, s32 v);
+void cam_get_track_turn(s16 node, f32 t, u16 *out);
+void cam_get_track_slope(s32 node, f32 frac, s16 *out);
+void cam_set_frozen(s32 rider, s32 frozen);
 
 /* src/game/height.c */
 void height_init(TrackModelList *sections, TrackModelList *objects, WallMesh *walls, u32 *polys);
 void height_free(void);
-s32 height_test_area(s32 id, s32 x, s32 y, s32 z);
+s32 height_test_area(s32 area, s32 x, s32 y, s32 z);
 s32 height_get_ground(s32 x, s32 y, s32 z);
 s32 height_get_desert(s32 x, s32 z);
 float height_get_desert_f(float x, float z);
 void height_get_ground_color(s32 x, s32 z, s32 *out);
-s32 height_get_tri_verts(s32 p1, s32 p2, Vec3i *v);
-void height_get_ground_normal(f32 *param_1);
+s32 height_get_tri_verts(s32 area, s32 tri, Vec3i *v);
+void height_get_ground_normal(f32 *out);
 void height_collect_ground_tris(s32 x0, s32 z0, s32 x1, s32 z1, s32 hy);
 void height_push_off_wall(f32 *pos);
-s32 height_raycast_desert_objs(f32 *p1, f32 *p2, f32 *p3, f32 *p4);
-void height_push_out_of_desert_objs(f32 *p);
+s32 height_raycast_desert_objs(f32 *start, f32 *end, f32 *normal, f32 *tmax);
+void height_push_out_of_desert_objs(f32 *pos);
 u8 height_raycast_walls(f32 *start, f32 *end, f32 *out, f32 *tmax, s32 wantFlag);
 void height_gather_walls(s32 x0, s32 z0, s32 x1, s32 z1);
-void height_init_walls(WallMesh **pp, s32 reloc);
-void height_init_walls_reloc(WallMesh **pp);
+void height_init_walls(WallMesh **handle, s32 reloc);
+void height_init_walls_reloc(WallMesh **handle);
 void height_free_walls(void);
-s32 point_in_tri_xz(s32 *p1, s32 *p2, s32 x, s32 y);
-int height_get_grid_cell(int x, int y);
+s32 point_in_tri_xz(s32 *xs, s32 *zs, s32 x, s32 z);
+int height_get_grid_cell(int x, int z);
 s32 point_in_poly_xz(SurfacePoly *poly, s32 px, s32 pz);
-s32 height_seg_cross_line_z(s32 p1, s32 p2, s32 p3);
-s32 height_seg_cross_line_x(s32 p1, s32 p2, s32 p3);
+s32 height_seg_cross_line_z(s32 lo, s32 hi, s32 z);
+s32 height_seg_cross_line_x(s32 lo, s32 hi, s32 x);
 
 /* src/game/sun.c */
 void sun_init(void);
-void sun_update_screen_pos(s32 mtx, s32 view, s32 arg2);
-void sun_check_occlusion(s32 a0);
-Gfx *sun_draw_flare(Gfx *gdl, u8 *mtx, s32 idx);
-Gfx *sun_draw_stars(Gfx *gdl, s32 arg);
-s32 project_to_screen(s32 x, s32 y, s32 z, s32 *p4, s32 *p5, s32 *p6, s32 *p7, s32 p8, s32 p9);
+void sun_update_screen_pos(s32 dyn, s32 view, s32 fb);
+void sun_check_occlusion(s32 unused);
+Gfx *sun_draw_flare(Gfx *gdl, u8 *dyn, s32 fb);
+Gfx *sun_draw_stars(Gfx *gdl, s32 mtx);
+s32 project_to_screen(s32 x, s32 y, s32 z, s32 *sx, s32 *sy, s32 *sz, s32 *w, s32 mtx, s32 view);
 void sun_free(void);
 s32 zbuffer_decode(s32 x);
-Vtx *sun_alloc_vtx(s32 count, s32 view);
+Vtx *sun_alloc_vtx(s32 count, s32 fb);
 
 /* src/game/unnamed/s0_80033E30.c */
 void sky_scan_zbuffer(s32 arg0);
@@ -389,19 +389,19 @@ void engine_reset(RiderEngine *p);
 void particles_update(void);
 void particle_spawn(s32 type, s32 surface, Vec3f *pos, Vec3f *vel, u8 *color);
 void particles_emit_sparks(Rider *rider);
-void particles_load_textures(void *file);
+void particles_load_textures(void *resSet);
 void particles_emit_bike_dirt(void);
-void particles_emit_water_splash(Rider *p);
+void particles_emit_water_splash(Rider *rider);
 void particles_emit_dust_cloud(void);
-Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2);
-Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf);
+Gfx *particles_draw(Gfx *gdl, s32 view, s32 dyn);
+Gfx *rain_draw(Gfx *gdl, s32 dyn, s32 fb);
 void particles_init(Surface *surfaces);
 void particles_free(void);
 void particles_start_dust_cloud(Vec3f *pos, s32 rider);
 void rain_init(void);
 void rain_free(void);
-void particles_start_sparks(Rider *p);
-void particles_project_point(f32 *v, s32 *a1, s32 *a2, s32 *a3, s32 *a4, s32 a5, s32 idx);
+void particles_start_sparks(Rider *rider);
+void particles_project_point(f32 *pos, s32 *sx, s32 *sy, s32 *sz, s32 *w, s32 mtx, s32 view);
 void particles_start_exhaust_puff(s32 rider);
 
 /* src/game/shadow.c */
@@ -443,37 +443,37 @@ void rider_anims_unload(void);
 
 /* src/game/desgfx.c */
 void des_init(void);
-void des_update_view(s32 arg0);
-Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3);
-Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3);
-Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 p2, s32 idx, s32 arg3);
-Blk_2 *des_draw_arrow(Blk_2 *gdl, s32 p2, s32 arg2, s32 arg3);
+void des_update_view(s32 view);
+Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *dyn, s32 fb, s32 view);
+Gfx *des_draw_terrain(Gfx *gdl, s32 dyn, s32 fb, s32 view);
+Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 dyn, s32 fb, s32 view);
+Blk_2 *des_draw_arrow(Blk_2 *gdl, s32 dyn, s32 fb, s32 view);
 void des_calc_lod_grid(void);
 void des_update_patches(void);
-void des_build_patch(s32 n, s32 x, s32 z, s32 lod);
-Gfx *des_build_patch_dl(s32 mask);
+void des_build_patch(s32 index, s32 x, s32 z, s32 lod);
+Gfx *des_build_patch_dl(s32 seams);
 void des_free(void);
-void des_set_arrow_angle(s32 a0);
-void divmod_floor(s32 a, s32 b, s32 *q, s32 *r);
-void des_bbox_add(s32 param_1, s32 param_2);
+void des_set_arrow_angle(s32 angle);
+void divmod_floor(s32 num, s32 den, s32 *q, s32 *r);
+void des_bbox_add(s32 x, s32 z);
 void des_bbox_reset(void);
-Gfx *des_tex_mode_callback(Gfx *gdl, s32 x);
-void des_set_waypoint(s32 x);
+Gfx *des_tex_mode_callback(Gfx *gdl, s32 cutout);
+void des_set_waypoint(s32 checkpoint);
 
 /* src/game/fractal.c */
-void fractal_update_tiles(s32 px, s32 pz);
-void fractal_generate(DesertTile *f, s32 n);
-s32 fractal_corner_height(s32 a0, s32 a1);
+void fractal_update_tiles(s32 camX, s32 camZ);
+void fractal_generate(DesertTile *tile, s32 steps);
+s32 fractal_corner_height(s32 x, s32 z);
 void fractal_subdivide_edge(u8 *buf);
 void fractal_tile_init(DesertTile *t, s32 x, s32 z);
 void fractal_place_objects(volatile DesertTile *t);
-s32 fractal_get_visible_objects(s32 x, s32 z, s32 ang, s32 range, DesertObj *out, s32 max);
+s32 fractal_get_visible_objects(s32 x, s32 z, s32 yaw, s32 range, DesertObj *out, s32 max);
 void fractal_emit_fire_smoke(void);
 void fractal_init(u8 *map);
 void fractal_reset(void);
-void fractal_generate_step(s32 n);
+void fractal_generate_step(s32 steps);
 u8 fractal_rand_byte(void);
-s32 fractal_tile_seed(s32 param_1, s32 param_2);
+s32 fractal_tile_seed(s32 x, s32 z);
 
 /* src/game/unnamed/s0_800445B0.c */
 void bike_crash_begin(Rider *b, s32 n);
@@ -492,7 +492,7 @@ void rider_change_anim(Rider *o, s32 b);
 void desert_init(void);
 void desert_export_checkpoints(void);
 void desert_update_race(void);
-void desert_ai_steer(Rider *s);
+void desert_ai_steer(Rider *rider);
 
 /* src/game/unnamed/s0_80048230.c */
 void font_load_race_set(void *arc);
@@ -635,19 +635,19 @@ void ai_free(void);
 /* src/game/decal.c */
 void debug_update_value_display(void);
 void debug_dump_spline(void);
-void debug_record_spline_node(Obj_40 *o);
-void debug_ftoa(char *p, f32 x, s32 n);
+void debug_record_spline_node(Obj_40 *body);
+void debug_ftoa(char *out, f32 value, s32 digits);
 f32 func_8005CEFC(f32 x);
 f32 debug_round_sig3(f32 x);
 void debug_print_float(char *label, f32 value);
 void debug_print_float2(char *label, f32 a, f32 b);
-void debug_print_vec3(s32 arg0, f32 *v);
+void debug_print_vec3(s32 unused, f32 *v);
 void debug_print_int(char *label, s32 value);
 void debug_print_hex(char *label, u32 value);
 void decal_init(void);
 void decal_update_tire_tracks(void);
 TireTrack *decal_add_quad(s32 area, s32 *a0, s32 *a1, s32 *b0, s32 *b1, s32 surface);
-Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3);
+Gfx *decal_draw(Gfx *gdl, s32 fb, Mtx *dyn, s32 view);
 void decal_free(void);
 void decal_end_track(s32 rider);
 void decal_clear_all(void);
@@ -756,12 +756,12 @@ s32 cic_check_rdram_200(void);
 
 /* src/game/instance.c */
 s32 instances_load(ResSet *resSet, s32 resIndex, s32 flags, TrackModelList *sections, TexSet *texSet);
-Gfx *instances_draw(Gfx *gdl, Mtx *m, s32 unused, s32 view, s32 vis);
+Gfx *instances_draw(Gfx *gdl, Mtx *frameMtx, s32 unused, s32 view, s32 vis);
 void instances_free(void);
 
 /* src/game/shatter.c */
-s32 shatter_tri_longest_edge(ShatterPiece *t, s32 *outI, s32 *outN, s32 *ox, s32 *oy, s32 *oz);
-void shatter_init(TrackModelList *p);
+s32 shatter_tri_longest_edge(ShatterPiece *piece, s32 *outI, s32 *outN, s32 *ox, s32 *oy, s32 *oz);
+void shatter_init(TrackModelList *objects);
 void shatter_update_pieces(void);
 void shatter_check_riders(void);
 void shatter_break_object(s32 index);
@@ -772,31 +772,31 @@ void shatter_update(void);
 /* src/game/map.c */
 void map_init(void);
 Gfx *map_draw_progress_bar(Gfx *gdl);
-Gfx *map_draw_rider_dot(Gfx *gdl, s32 player, s32 big);
-Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half);
-Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2);
-void map_get_rider_pos(s32 player, s32 *px, s32 *py);
+Gfx *map_draw_rider_dot(Gfx *gdl, s32 rider, s32 big);
+Gfx *map_draw_progress_marker(Gfx *gdl, s32 index, s32 big);
+Gfx *map_draw_minimap(Gfx *gdl, Dyn *dyn, s32 fb);
+void map_get_rider_pos(s32 index, s32 *px, s32 *py);
 void map_build_image(void);
-void map_get_node_pos(PathNode *n, f32 *x, f32 *z);
-Gfx *map_draw_dot(Gfx *gdl, s32 idx, s32 flag, s32 x, s32 y);
+void map_get_node_pos(PathNode *node, f32 *x, f32 *z);
+Gfx *map_draw_dot(Gfx *gdl, s32 index, s32 big, s32 x, s32 y);
 void map_stamp_brush(u16 *dst, u16 *src, s32 x, s32 y);
 void map_free(void);
 
 /* src/game/palmod.c */
 void palmod_register(TexSet *set, s32 kind);
 void palmod_update(void);
-void palmod_init(s32 p);
+void palmod_init(s32 podium);
 void palmod_free(void);
-void palmod_sepia(s32 a0, s32 *a1, s32 *a2, s32 *a3);
+void palmod_sepia(s32 grey, s32 *r, s32 *g, s32 *b);
 void palmod_desaturate_rgb(u16 *dst, u8 *src);
 void palmod_desaturate_pal(u16 *dst, u16 *src);
 
 /* src/game/flash.c */
-void flash_init(s32 arg0);
+void flash_init(s32 resSet);
 void flash_init_2(void);
 void flash_update(void);
 void flash_free(void);
-void flash_start(s32 x);
+void flash_start(s32 frames);
 
 /* src/game/unnamed/s0_8006B1A0.c */
 void excite3d_init(void);
@@ -853,13 +853,13 @@ void ambient_clear(void);
 
 /* src/game/snow.c */
 void snow_init(void);
-Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2);
+Gfx *snow_draw(Gfx *gdl, s32 dyn, s32 unused);
 void snow_update(void);
 void snow_respawn_flake(Snowflake *flake);
 void snow_free(void);
 
 /* src/game/remove.c */
-void remove_walls_init(TrackModelList *m, WallMesh *o);
+void remove_walls_init(TrackModelList *objects, WallMesh *walls);
 void remove_walls_trigger(s32 id);
 void remove_walls_free(void);
 void remove_walls_reset(void);
