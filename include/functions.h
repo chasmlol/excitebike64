@@ -1321,69 +1321,69 @@ void n64snd_clear_output(void);
 void mem_report(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void mem_report_2(void);
 void mem_report_totals(void);
-void *mem_alloc_dbg(s32 size, u32 flags, s32 owner, s32 tag);
+void *mem_alloc_dbg(s32 size, u32 flags, s32 owner, s32 line);
 s32 *mem_alloc_dbg_2(s32 a, s32 b, void *c, s32 d);
 void mem_free(void *ptr);
 s32 mem_free_2(void *ptr);
-void *mem_alloc_at_dbg(void *ptr, s32 size, s32 tag, s32 id);
-s32 mem_dump_blocks(s32 a, u32 b, s32 c);
+void *mem_alloc_at_dbg(void *ptr, s32 size, s32 owner, s32 line);
+s32 mem_dump_blocks(s32 start, u32 end, s32 verbose);
 void mem_report_clear_mark(void);
 void mem_report_set_mark(void);
-s32 mem_init(s32 p0, s32 p1, s32 a, s32 b);
-s32 *mem_calloc_dbg(s32 a0, s32 a1, s32 a2, s32 a3);
-s32 *mem_realloc_dbg(s32 *p, u32 size, s32 a, s32 b, s32 c);
+s32 mem_init(s32 unused0, s32 unused1, s32 start, s32 size);
+s32 *mem_calloc_dbg(s32 size, s32 flags, s32 owner, s32 line);
+s32 *mem_realloc_dbg(s32 *ptr, u32 size, s32 flags, s32 owner, s32 line);
 s32 mem_check(void);
-s32 mem_get_size(s32 *p);
-void mem_alloc(s32 a, s32 b);
-void mem_calloc(u32 a, u32 b);
-void mem_realloc(s32 *a, s32 b, s32 c);
-void mem_alloc_at(s32 a, s32 b);
+s32 mem_get_size(s32 *ptr);
+void mem_alloc(s32 size, s32 flags);
+void mem_calloc(u32 size, u32 flags);
+void mem_realloc(s32 *ptr, s32 size, s32 flags);
+void mem_alloc_at(s32 ptr, s32 size);
 Block *mem_format_heap(Block **start, Block **end);
 s32 mem_validate(Block *start, Block *end, Block *list);
-void str_cat_hex(char *a0, u32 a1);
+void str_cat_hex(char *dst, u32 value);
 
 /* src/game/unnamed/lib_800BDCB0.c */
-s32 swd_decode_token(s32 *p1, u32 *p2);
+s32 swd_decode_token(s32 *len, u32 *value);
 s32 swd_decompress(void);
 void swd_reset_bits(void);
-u32 swd_read_bits(s32 param_1);
+u32 swd_read_bits(s32 count);
 
 /* src/game/file.c */
 s32 file_init(u8 *src);
-FilePage *file_load_page(FileHandle *so, s32 si, s8 sf);
+FilePage *file_load_page(FileHandle *handle, s32 pageNum, s8 toFront);
 s32 file_shutdown(void);
-FileHandle *file_open(u8 *param_1, char *arg1);
-void file_close(FileHandle *q);
-void file_seek(FileHandle *o, s32 v, s32 mode);
-s32 file_tell(FileHandle *p);
-s32 file_read(u8 *buf, s32 size, s32 count, FileHandle *f);
-s32 file_eof(FileHandle *a0);
-FileDirEntry *file_find(u8 *param_1);
-FilePage *file_get_page(FileHandle *k, s32 id, s8 flag);
-void file_read_rom(void *param_1, void *param_2, s32 param_3);
+FileHandle *file_open(u8 *name, char *mode);
+void file_close(FileHandle *handle);
+void file_seek(FileHandle *handle, s32 offset, s32 mode);
+s32 file_tell(FileHandle *handle);
+s32 file_read(u8 *buf, s32 size, s32 count, FileHandle *handle);
+s32 file_eof(FileHandle *handle);
+FileDirEntry *file_find(u8 *name);
+FilePage *file_get_page(FileHandle *handle, s32 pageNum, s8 toFront);
+void file_read_rom(void *rom, void *ram, s32 size);
 
 /* src/game/unnamed/lib_800BEC20.c */
-s32 dma_start(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4);
+s32 dma_start(s32 handle, s32 direction, s32 devAddr, s32 dramAddr, s32 size);
 void dma_update(void);
 s32 dma_init(void);
-s32 dma_get_status(s32 a0);
-void dma_release(s32 a0);
-void dma_wait(s32 x);
+s32 dma_get_status(s32 slot);
+void dma_release(s32 slot);
+void dma_wait(s32 slot);
 
 /* src/game/unnamed/lib_800BF040.c */
-s32 dma_epi_start(s32 a0, u16 *a1, s32 a2);
+s32 dma_epi_start(s32 handle, u16 *ioMesg, s32 direction);
 
 /* src/game/unnamed/lib_800BF0E0.c */
 s32 dma_pi_get_cmd_queue(void);
 u32 *dma_cart_rom_init(void);
 
 /* src/game/unnamed/lib_800BF280.c */
-s32 dma_jam_mesg(Q_3 *q, s32 v, s32 mode);
+s32 dma_jam_mesg(Q_3 *mq, s32 msg, s32 flag);
 
 /* src/game/unnamed/lib_800BF3C0.c */
 Blk_29 *sram_init(void);
-int sram_read(u32 param_1);
-s32 sram_write(s32 p);
+int sram_read(u32 buf);
+s32 sram_write(s32 buf);
 
 /* src/game/resman.c */
 s32 res_open_set(char *path, ResSet **out);
