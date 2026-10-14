@@ -14,9 +14,7 @@ struct Player_10 {
     u8 pad62A[0x7E0 - 0x62A];
 };
 
-extern CamMode gCamModes[];
-extern CamOut sCamHistorySum[4];
-extern CamPitchSpring sCamPitchSprings[4];
+extern CamMode gCamModes[12]; /* here: bikenew.c declares its own view */
 
 void cam_init(s32 arg0)
 {
@@ -1196,20 +1194,20 @@ extern Big gRiders_29[];
 s32 cam_find_zone(void)
 {
     s32 pass = 0;
-    s32 cur;
+    s32 node;
     s32 k;
-    s32 a, b, v;
+    s32 start, end, v;
     s32 d;
     s32 off;
-    s16 *pv;
+    s16 *pos;
     Obj_16 *P;
     u16 *pf; /* the view's zone state, by its flags: stores through a u16 keep gCamView's load in the loop */
     CamZoneState *states;
     G *g;
-    s16 *tab;
-    CamFollowZone *rec;
-    s32 a2, b2;
-    CamDollyZone *rec2;
+    s16 *order;
+    CamFollowZone *follow;
+    s32 start2, end2;
+    CamDollyZone *dolly;
 
     if (gCamView == 0) {
         D_800C97E4 = -1;
@@ -1217,28 +1215,28 @@ s32 cam_find_zone(void)
     g = &gEvent;
     states = gCamZoneState_2;
     P = gCurTrack_20;
-    tab = sCamSegOrder;
-    cur = gRiders_29[sCamTarget].f628;
+    order = sCamSegOrder;
+    node = gRiders_29[sCamTarget].f628;
     do {
-        if (cur < 0) {
+        if (node < 0) {
             goto done;
         }
         if (P->la != NULL && (k = 0, P->nA > 0)) {
-            pv = (s16 *)(cur * 2 + (s32)tab);
+            pos = (s16 *)(node * 2 + (s32)order);
             pf = (u16 *)(gCamView * 8 + (s32)states);
             off = k;
         loopA:
             {
                 if (pass == 0 || (FOLLOW_ZONE(off).flags & 0x40)) {
-                    b = tab[FOLLOW_ZONE(off).endNode];
-                    a = tab[FOLLOW_ZONE(off).startNode];
-                    if ((b < a && (*pv >= a || *pv < b)) ||
-                        (a < b && *pv >= a && *pv < b)) {
+                    end = order[FOLLOW_ZONE(off).endNode];
+                    start = order[FOLLOW_ZONE(off).startNode];
+                    if ((end < start && (*pos >= start || *pos < end)) ||
+                        (start < end && *pos >= start && *pos < end)) {
                         if (g->f3C != 0 || !(FOLLOW_ZONE(off).flags & 2)) {
                             ZONE_STATE->type = 1;
-                            rec = (CamFollowZone *)((u8 *)P->la + off);
-                            v = rec != ZONE_STATE->zone.follow;
-                            ZONE_STATE->zone.follow = rec;
+                            follow = (CamFollowZone *)((u8 *)P->la + off);
+                            v = follow != ZONE_STATE->zone.follow;
+                            ZONE_STATE->zone.follow = follow;
                             if (v || !(*pf & 2)) {
                                 *pf |= 4;
                             }
@@ -1251,7 +1249,7 @@ s32 cam_find_zone(void)
                         }
                     }
                 }
-                if (pv == (s16 *)tab) v = 1; else v = 2;
+                if (pos == (s16 *)order) v = 1; else v = 2;
                 off += sizeof(CamFollowZone);
                 k++;
             }
@@ -1259,24 +1257,24 @@ s32 cam_find_zone(void)
         }
         if ((void *)g == (void *)P) k = 1; else k = 2;
         if (pass == 0) k = 1; else k = 2;
-        if (tab == 0) k = 1; else k = 2;
+        if (order == 0) k = 1; else k = 2;
         if (P->lb != NULL && (k = 0, P->nB > 0)) {
-            pv = (s16 *)(cur * 2 + (s32)tab);
+            pos = (s16 *)(node * 2 + (s32)order);
             d = gCamView;
             pf = (u16 *)(d * 8 + (s32)states);
             off = k;
         loopB:
             {
                 if (pass == 0 || (DOLLY_ZONE(off).flags & 0x40)) {
-                    b2 = tab[DOLLY_ZONE(off).endNode];
-                    a2 = tab[DOLLY_ZONE(off).startNode];
-                    if ((b2 < a2 && (*pv >= a2 || *pv < b2)) ||
-                        (a2 < b2 && *pv >= a2 && *pv < b2)) {
+                    end2 = order[DOLLY_ZONE(off).endNode];
+                    start2 = order[DOLLY_ZONE(off).startNode];
+                    if ((end2 < start2 && (*pos >= start2 || *pos < end2)) ||
+                        (start2 < end2 && *pos >= start2 && *pos < end2)) {
                         if (g->f3C != 0 || !(DOLLY_ZONE(off).flags & 2)) {
                             ZONE_STATE->type = 0;
-                            rec2 = (CamDollyZone *)((u8 *)P->lb + off);
-                            v = rec2 != ZONE_STATE->zone.dolly;
-                            ZONE_STATE->zone.dolly = rec2;
+                            dolly = (CamDollyZone *)((u8 *)P->lb + off);
+                            v = dolly != ZONE_STATE->zone.dolly;
+                            ZONE_STATE->zone.dolly = dolly;
                             if (v || !(*pf & 2)) {
                                 *pf |= 4;
                             }
@@ -1298,7 +1296,7 @@ s32 cam_find_zone(void)
             if (k < gCurTrack_43->nB) goto loopB;
         }
         pass++;
-        cur = gPathNodes_8[cur].next;
+        node = gPathNodes_8[node].next;
     } while (pass < 2);
 done:
     return 0;
@@ -1469,7 +1467,7 @@ void cam_zone_update_dolly(Actor *rider, CamOut *out)
             m[0] = 0;
             m[1] = 0;
             m[2] = zone->y1;
-            vec3i_mul_mtx3i(m, mtx, &sCamZoneOffset);
+            vec3i_mul_mtx3i(m, mtx, &sCamZoneOffset.x);
         } else if (f & 4) {
             math_to_polar(-zone->x, zone->z, &a1, &r1);
             math_to_polar(r1, -zone->y + 700, &a2, &r1);
@@ -1477,7 +1475,7 @@ void cam_zone_update_dolly(Actor *rider, CamOut *out)
             m[0] = 0;
             m[1] = 0;
             m[2] = zone->y1;
-            vec3i_mul_mtx3i(m, mtx, &sCamZoneOffset);
+            vec3i_mul_mtx3i(m, mtx, &sCamZoneOffset.x);
         }
     }
     t = cam_zone_get_progress(rider, zone->startNode, zone->endNode);
