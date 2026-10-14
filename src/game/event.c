@@ -326,7 +326,7 @@ void tutorial_update(void)
 /* gRaceSeries: races run one after the other */
 typedef struct { s32 count; s32 done; s32 *buf; } RaceSeries;
 
-extern TrackInfo *gCurTrack_28;
+extern TrackInfo *gCurTrack_14;
 extern TrackInfo gTracks_10[];
 extern RaceSeries gRaceSeries_2;
 
@@ -346,8 +346,8 @@ void event_init(s32 numRiders, s32 numLaps)
         }
     }
     gRaceExitCode = RACE_EXIT_NONE;
-    *(TrackRecord *)&gEvent.record = gCurTrack_28->record; /* a copy through a pointer: the base register differs otherwise */
-    gCurTrack_28->flags &= ~(TRACK_FLAG_NEW_LAP | TRACK_FLAG_NEW_TIME);
+    *(TrackRecord *)&gEvent.record = gCurTrack_14->record; /* a copy through a pointer: the base register differs otherwise */
+    gCurTrack_14->flags &= ~(TRACK_FLAG_NEW_LAP | TRACK_FLAG_NEW_TIME);
     gEvent.finishTimer = -1;
     gEvent.flags = 0;
     gEvent.allFinished = 0;
@@ -368,7 +368,7 @@ void event_init(s32 numRiders, s32 numLaps)
         gEvent.state = EVENT_STATE_GO;
     } else {
         if ((gGame.mode == MODE_EXHIBITION || gGame.mode == MODE_SEASON) &&
-            gCurTrack_28 - gTracks_10 != TRACK_LAS_VEGAS) {
+            gCurTrack_14 - gTracks_10 != TRACK_LAS_VEGAS) {
             gEvent.state = EVENT_STATE_WAIT;
             gEvent.countdown = 0x100;
         } else {
@@ -445,7 +445,7 @@ s32 event_check_record_time(Rider *rider)
     if (gReplayPlayback != 0) goto done;
     /* the custom round: the cup's index (/ sizeof(Cup)) is 5 */
     if (gGame.mode == MODE_SEASON && gSeason != 0 && (((s32)gSeason->cup - (s32)gCups) * 0x38E38E39 >> 2) == 5) goto done;
-    track = gCurTrack_28;
+    track = gCurTrack_14;
     if (track->flags & TRACK_FLAG_USER) goto done;
     if (gEvent.time >= gEvent.record.times[2]) goto done;
     if (gGame.mode == MODE_TIME_TRIAL && rider != &gRiders[gTimeTrialPlayer]) goto done;
@@ -467,7 +467,7 @@ s32 event_check_record_time(Rider *rider)
     gEvent.record.initials[i][0] = 0xFF;
     gEvent.record.initials[i][1] = 0xFF;
     gEvent.record.initials[i][2] = (gGame.mode == MODE_TIME_TRIAL) ? 0 : (u8)(rider - gRiders);
-    gCurTrack_28->flags |= TRACK_FLAG_NEW_TIME;
+    gCurTrack_14->flags |= TRACK_FLAG_NEW_TIME;
     if (best) announce_record(rider - gRiders);
 done:
     return best;
@@ -568,7 +568,6 @@ finished:
     return isBest & 0xff;
 }
 
-extern TrackInfo *gCurTrack_29;
 
 /* What event_rider_lap_completed has the announcer say */
 #define LAP_SAY_NOTHING     0
@@ -602,14 +601,14 @@ void event_rider_lap_completed(s32 p)
     race = &gRiders[p].race;
     if (race->lap < gEvent.numLaps) {
         if (gRiders[p].isCpu == 0 && gReplayPlayback == 0 && gGame.mode != MODE_HILL_CLIMB && gGame.mode != MODE_DESERT &&
-            !(gCurTrack_29->flags & TRACK_FLAG_USER) && (lapTime = race->lapTimes[race->lap]) < gEvent.record.bestLap &&
+            !(gCurTrack_14->flags & TRACK_FLAG_USER) && (lapTime = race->lapTimes[race->lap]) < gEvent.record.bestLap &&
             (gGame.mode != MODE_TIME_TRIAL || p == gTimeTrialPlayer)) {
             gEvent.record.bestLap = lapTime;
             gEvent.record.initials[3][0] = 0xFF;
             gEvent.record.initials[3][1] = 0xFF;
             gEvent.record.initials[3][2] = (gGame.mode == MODE_TIME_TRIAL) ? 0 : p;
             say = LAP_SAY_BEST_LAP;
-            gCurTrack_29->flags |= TRACK_FLAG_NEW_LAP;
+            gCurTrack_14->flags |= TRACK_FLAG_NEW_LAP;
         }
         if (gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) {
             goto end;
@@ -751,7 +750,6 @@ void event_update_hillclimb(void)
     }
 }
 
-extern TrackInfo *gCurTrack_30;
 
 /* Stunt course: when the clock runs out, the players' scores go into the records, the riders stop, and with two
    players the higher score wins (place 1 is a tie). */
@@ -794,7 +792,7 @@ void event_update_stunt(void)
             gEvent.record.initials[j][2] = rider - gRiders;
             gEvent.record.initials[j][0] = 0xFF;
             gEvent.record.initials[j][1] = 0xFF;
-            gCurTrack_30->flags |= TRACK_FLAG_NEW_TIME;
+            gCurTrack_14->flags |= TRACK_FLAG_NEW_TIME;
         }
     }
     gEvent.allFinished = 1;
@@ -2087,7 +2085,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 dyn, s32 fb, s32 view)
                     yy = VP.y + VP.h - 0x38;
                     dy = 0x14;
                 }
-                if (gCurTrack_8->w50 & TRACK_FLAG_USER) {
+                if (gCurTrack_14->flags & TRACK_FLAG_USER) {
                     yy += dy;
                 }
                 font_draw_text(tRaceL, xb, yy);
@@ -2107,7 +2105,7 @@ Gfx *event_draw_hud_race(Gfx *gdl, s32 dyn, s32 fb, s32 view)
                 font_draw_text(tLapL, xb, yy);
                 font_draw_text(tLap, xa, yy);
                 yy += dy;
-                if (!(gCurTrack_8->w50 & TRACK_FLAG_USER)) {
+                if (!(gCurTrack_14->flags & TRACK_FLAG_USER)) {
                     event_format_time(gEvent.record.bestLap, buf);
                     font_text_add(tBestL, "Best: ");
                     font_text_add(tBest, buf);

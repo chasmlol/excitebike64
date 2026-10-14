@@ -885,7 +885,6 @@ typedef struct {
     void *sfxVolume;
 } DebugTunables;
 
-extern TrackInfo *gCurTrack_15;
 extern Pad24 gPlayerInputs_3;
 extern Pad24 gPlayerInputsPrev_4;
 extern Pad24 D_800E3750;
@@ -957,8 +956,8 @@ void race_update(u32 *pads)
     {
         s32 *loDetail = gLoDetailThresh;
         s32 *visible = gVisibleThresh;
-        w = gCurTrack_15->unk_58[gNumViews - 1];
-        h = gCurTrack_15->unk_60[gNumViews - 1];
+        w = gCurTrack_14->unk_58[gNumViews - 1];
+        h = gCurTrack_14->unk_60[gNumViews - 1];
         tunables.loDetailThresh = &loDetail[gNumViews - 1];
         tunables.visibleThresh = &visible[gNumViews - 1];
     }
@@ -1017,7 +1016,7 @@ void race_update(u32 *pads)
         }
         if (!(gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) && (gSaveData.options & SAVE_OPT_HIGH_RES) &&
             gHasExpansionPak != 0 && (gGame.numPlayers == 1 || gGame.mode == MODE_TIME_TRIAL) &&
-            gCurTrack_15->envType != TRACK_ENV_DESERT && !(gGame.flags & (GAME_LOW_RES | GAME_PODIUM))) {
+            gCurTrack_14->envType != TRACK_ENV_DESERT && !(gGame.flags & (GAME_LOW_RES | GAME_PODIUM))) {
             gViModeRequest = VI_MODE_HI_RES;
         } else {
             gViModeRequest = VI_MODE_MED_RES;
@@ -1472,7 +1471,7 @@ void race_update(u32 *pads)
     if (gDebugRiderCount >= 9) {
         gDebugRiderCount = 8;
     }
-    if (gCurTrack_15->envType == TRACK_ENV_DESERT) {
+    if (gCurTrack_14->envType == TRACK_ENV_DESERT) {
         fractal_emit_fire_smoke();
     }
     hacks_update();
@@ -1555,7 +1554,6 @@ typedef struct {
     s32 romAddr;    /* the container's: 0x28 bytes of header, then the segments */
 } BootHeader;
 
-extern TrackInfo *gCurTrack_16;
 extern BootHeader gBootHeader_2;
 
 /* Gives the front-end code and the UsrTrk.c overlay (not on the user track) back to the heap during a race
@@ -1584,7 +1582,7 @@ void race_load_frontend_code(s32 load)
     if (load != 0) {
         size = (u32)&gUsrTrkOvlStart[-0x30] - (u32)frontendStart;
         mem_alloc_at_dbg(frontendStart + 0x30, size, sStrMinFile, 0xBDD);
-        if (!(gCurTrack_16->flags & TRACK_FLAG_USER)) {
+        if (!(gCurTrack_14->flags & TRACK_FLAG_USER)) {
             mem_alloc_at_dbg(usrTrkStart + 0x10, (u32)&gUsrTrkOvlEnd[-0x10] - (u32)usrTrkStart, sStrMinFile, 0xBE0);
         }
         osWritebackDCacheAll();
@@ -1629,7 +1627,7 @@ void race_load_frontend_code(s32 load)
         sFrontendLoaded = 1;
     } else {
         mem_free(frontendStart + 0x30);
-        if (!(gCurTrack_16->flags & TRACK_FLAG_USER)) {
+        if (!(gCurTrack_14->flags & TRACK_FLAG_USER)) {
             mem_free(usrTrkStart + 0x10);
         }
         sFrontendLoaded = 0;

@@ -3955,8 +3955,6 @@ gCurTrack_11                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_12                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_13                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_14                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_15                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_16                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_17                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_18                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_19                          game  0x800EFD64  data        -  gCurTrack
@@ -3969,10 +3967,7 @@ gCurTrack_24                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_25                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_26                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_27                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_28                          game  0x800EFD64  data        -  gCurTrack
-gCurTrack_29                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_3                           game  0x800EFD64  data        -  gCurTrack
-gCurTrack_30                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_31                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_32                          game  0x800EFD64  data        -  gCurTrack
 gCurTrack_33                          game  0x800EFD64  data        -  gCurTrack
