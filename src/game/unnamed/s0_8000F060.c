@@ -1,6 +1,5 @@
 #include "game.h"
 
-
 /* Starts the sound: the sfx layer on the N64 driver, its echo, the streams, and loads the menu sounds. */
 void snd_init(void)
 {
