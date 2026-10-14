@@ -4962,6 +4962,8 @@ Gfx *shell_draw_screen(Mtx *m, s32 fb, Gfx *gdl, ScreenItem *item, s32 unused)
             font_text_create(gGame.texts[j * 4 + 5], 0x20, FONT_MAIN, (s32)img, TEXT_LEFT);
             place = j;
             while (place > 0 && screen->type == SCREEN_TYPE_RACE_RESULT && gRiders[gEvent.finishOrder[place]].race.finishTime == gRiders[gEvent.finishOrder[place - 1]].race.finishTime) {
+                s32 unused; /* the block's declaration changes the code */
+
                 place--;
             }
             int_to_str(place + 1, buf);
