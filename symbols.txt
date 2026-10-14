@@ -363,9 +363,6 @@ engine_torque_at_rpm                  game  0x80036108  func     0xe4
 engine_reset                          game  0x800361EC  func     0x38
 particles_update                      game  0x80036230  func    0x144
 particle_spawn                        game  0x80036374  func    0x1d0
-particle_spawn_2                      game  0x80036374  func        -  particle_spawn
-particle_spawn_3                      game  0x80036374  func        -  particle_spawn
-particle_spawn_4                      game  0x80036374  func        -  particle_spawn
 particles_emit_sparks                 game  0x80036544  func    0x168
 particles_load_textures               game  0x800366AC  func    0x1f8
 particles_emit_bike_dirt              game  0x800368A4  func    0x550
@@ -3812,7 +3809,6 @@ sGaugeNeedleY                         game  0x800DC0DC  data        -
 gFogColor                             game  0x800DC0E0  data        -
 gFogColor_2                           game  0x800DC0E0  data        -  gFogColor
 sRiderLightColor                      game  0x800DC0E8  data        -
-sRiderLightColor_2                    game  0x800DC0E8  data        -  sRiderLightColor
 sRenderFrame                          game  0x800DC108  data        -
 D_800DC110                            game  0x800DC110  data        -
 D_800DC110_2                          game  0x800DC110  data        -  D_800DC110
@@ -4280,28 +4276,20 @@ D_800E8EF0                            game  0x800E8EF0  data        -
 D_800E9080                            game  0x800E9080  data        -
 sParticleLast                         game  0x800E9210  data        -
 sParticles                            game  0x800E9214  data        -
-sParticles_2                          game  0x800E9214  data        -  sParticles
-sParticles_3                          game  0x800E9214  data        -  sParticles
-sParticles_4                          game  0x800E9214  data        -  sParticles
 sRainLastCamPos                       game  0x800E9218  data        -
 sExhaustPuffTimers                    game  0x800E9228  data        -
 sRainLastCamYaw                       game  0x800E9268  data        -
 sClodTextures                         game  0x800E926C  data        -
-sClodTextures_2                       game  0x800E926C  data        -  sClodTextures
 sSplashTextures                       game  0x800E9270  data        -
-sSplashTextures_2                     game  0x800E9270  data        -  sSplashTextures
 sDustCloudPos                         game  0x800E9278  data        -
 sRainVtx                              game  0x800E9288  data        -
 sSparkleTextures                      game  0x800E9290  data        -
-sSparkleTextures_2                    game  0x800E9290  data        -  sSparkleTextures
 sDustCloudStart                       game  0x800E9294  data        -
 gSurfaceTablePtr                      game  0x800E9298  data        -
 gSurfaceTablePtr_2                    game  0x800E9298  data        -  gSurfaceTablePtr
 gSurfaceTablePtr_3                    game  0x800E9298  data        -  gSurfaceTablePtr
 sExhaustTextures                      game  0x800E929C  data        -
-sExhaustTextures_2                    game  0x800E929C  data        -  sExhaustTextures
 sPuffTextures                         game  0x800E92A0  data        -
-sPuffTextures_2                       game  0x800E92A0  data        -  sPuffTextures
 sSplashSoundTime                      game  0x800E92A8  data        -
 D_800E92C8                            game  0x800E92C8  data        -
 D_800E92C8_2                          game  0x800E92C8  data        -  D_800E92C8

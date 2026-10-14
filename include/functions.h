@@ -389,10 +389,7 @@ void engine_reset(Vec3f *p);
 
 /* src/game/mud2.c */
 void particles_update(void);
-void particle_spawn(s32 type, u8 b, V3 *pos, V3 *vel, u8 *col);
-void particle_spawn_2(s32 type, s32 b, V3 *pos, V3 *vel, u8 *col);
-void particle_spawn_3(s32 a, s32 b, f32 *c, f32 *d, u8 *e);
-void particle_spawn_4(s32 a, s32 b, f32 *c, s32 *d, s32 *e);
+void particle_spawn(s32 type, s32 surface, Vec3f *pos, Vec3f *vel, u8 *color);
 void particles_emit_sparks(Obj_29 *param_1);
 void particles_load_textures(void *param_1);
 void particles_emit_bike_dirt(void);
@@ -402,12 +399,12 @@ Gfx *particles_draw(Gfx *gdl, s32 view, s32 arg2);
 Gfx *rain_draw(Gfx *gdl, s32 mtx, s32 buf);
 void particles_init(s32 p);
 void particles_free(void);
-void particles_start_dust_cloud(Vec3f *src, s32 val);
+void particles_start_dust_cloud(Vec3f *pos, s32 rider);
 void rain_init(void);
 void rain_free(void);
 void particles_start_sparks(u8 *p);
 void particles_project_point(f32 *v, s32 *a1, s32 *a2, s32 *a3, s32 *a4, s32 a5, s32 idx);
-void particles_start_exhaust_puff(s32 param_1);
+void particles_start_exhaust_puff(s32 rider);
 
 /* src/game/shadow.c */
 Blk_2 *shadow_clear_texture(Blk_2 *gdl, s32 unused, s32 n);
