@@ -1511,6 +1511,7 @@ extern s32 sMapW;
 extern s32 sMapH;
 extern s32 sPalModCount;
 extern s32 sPalModState[];
+extern PalMod *sPalModEntries;
 extern s32 D_800F14D4;
 extern s32 sPalModMax;
 extern s32 sLightningPattern;

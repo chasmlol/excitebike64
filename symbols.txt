@@ -4844,8 +4844,6 @@ sMapH                                 game  0x800F14BC  data        -
 sPalModCount                          game  0x800F14C0  data        -
 sPalModState                          game  0x800F14C8  data        -
 sPalModEntries                        game  0x800F14D0  data        -
-sPalModEntries_2                      game  0x800F14D0  data        -  sPalModEntries
-sPalModEntries_3                      game  0x800F14D0  data        -  sPalModEntries
 D_800F14D4                            game  0x800F14D4  data        -
 sPalModMax                            game  0x800F14D8  data        -
 sLightningPattern                     game  0x800F14DC  data        -

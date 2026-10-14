@@ -929,11 +929,6 @@ typedef struct {
 
 typedef struct { u16 a, b; } Pal_2;
 
-typedef struct Obj_51 {
-    s32 pad0;
-    u16 *src;
-} Obj_51;
-
 typedef struct Obj_52 {
     u8 pad0[0x48];
     f32 f48;

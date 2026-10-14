@@ -786,7 +786,7 @@ void map_stamp_brush(u16 *dst, u16 *src, s32 x, s32 y);
 void map_free(void);
 
 /* src/game/palmod.c */
-void palmod_register(Obj_51 *a, s32 b);
+void palmod_register(TexSet *set, s32 kind);
 void palmod_update(void);
 void palmod_init(s32 p);
 void palmod_free(void);
