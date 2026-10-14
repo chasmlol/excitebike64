@@ -95,7 +95,7 @@ void shell_blend_palette_to_gray(s32 alpha, u16 *src)
 
 typedef struct {
     u8 pad0[0x34];
-    V7 r34;
+    TrackRecord r34;
     s32 w50;
     u8 pad54[0xA0 - 0x54];
 } Course_2;
@@ -129,7 +129,7 @@ void shell_init(void)
     s32 flag;
     s32 mode;
     s32 i;
-    V7 *dst;
+    TrackRecord *dst;
     s32 n;
     Course_2 *c;
     void *m;
@@ -149,7 +149,7 @@ void shell_init(void)
         n = 0;
         for (i = 0; i < 27; i++) {
             s32 f = gTracks_14[i].w50;
-            V7 *src = &gTracks_14[i].r34;
+            TrackRecord *src = &gTracks_14[i].r34;
             if (f & 0x200) {
                 dst = &gGame.records[n];
                 *dst = *src;

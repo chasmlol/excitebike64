@@ -872,7 +872,6 @@ typedef struct Bike_26 {
     u8 pad7DD[0x7E0 - 0x7DD];
 } Bike_26;
 
-typedef struct { s32 w[7]; } V7;
 typedef struct { u8 pad[0x24]; } Ent24;
 typedef struct { u8 b0, b1, b2, b3; } Pts;
 typedef struct { u8 w; u8 h; u8 pad[2]; void *img; } Img_2;

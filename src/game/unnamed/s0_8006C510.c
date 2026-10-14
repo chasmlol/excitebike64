@@ -540,7 +540,7 @@ typedef struct {
 typedef struct {
     u32 magic;
     u32 sum;
-    Rec_3 recs[24];
+    TrackRecord recs[24];
     u8 name[0x17];
     u8 f2BF;
     u8 f2C0;
@@ -560,8 +560,8 @@ extern Save gSaveData_5;
 
 void save_init_defaults(void)
 {
-    Rec_3 *pd;
-    Rec_3 *ps;
+    TrackRecord *pd;
+    TrackRecord *ps;
     Rider_6 *pc;
     u8 *q;
     u8 c;
@@ -574,7 +574,7 @@ void save_init_defaults(void)
     i = 0;
     pc = gTracks;
     pd = gSaveData_5.recs;
-    ps = (Rec_3 *)gGame.records;
+    ps = gGame.records;
     do {
         i++;
         if (pc->flags & 0x200) {
@@ -709,11 +709,11 @@ s32 save_update_unlocks(void)
     return ret;
 }
 
-typedef struct { u8 pad0[0x34]; Rec_3 b; s32 flags; u8 pad54[0xA0 - 0x54]; } Rec_42;
+typedef struct { u8 pad0[0x34]; TrackRecord b; s32 flags; u8 pad54[0xA0 - 0x54]; } Rec_42;
 
 typedef struct {
     u8 pad0[8];
-    Rec_3 blk[24];
+    TrackRecord blk[24];
     u8 a8[5];
     u8 tbl[5][3];
     u8 pad2BC[4];
@@ -752,8 +752,8 @@ void save_load(s32 arg0)
             gUnlockedTracks |= 1 << i;
         }
         if (gTracks_12[i].flags & 0x200) {
-            Rec_3 *d = &gTracks_12[i].b;
-            Rec_3 *s = &gSaveData_7.blk[j];
+            TrackRecord *d = &gTracks_12[i].b;
+            TrackRecord *s = &gSaveData_7.blk[j];
             *d = *s;
             j++;
         }
