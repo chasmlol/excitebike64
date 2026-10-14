@@ -22,10 +22,10 @@ typedef struct TrackHack {
    sGravelPitModels picked at random, along a straight line, over and over. */
 #define GRAVEL_PIT_NUM_MOVERS   2
 #define GRAVEL_PIT_NUM_MODELS   4
-#define GRAVEL_PIT_ITEM_LENGTH  11500   /* mm of line per item */
+#define GRAVEL_PIT_HALF_LENGTH  11500   /* mm per item: a line is 2 * count * this long */
 
-/* hack_gravel_pit_init lays the line through the middle of the data's two points, in their direction, count items
-   long, at the ground height of the middle. */
+/* hack_gravel_pit_init lays the line through the middle of the data's two points, in their direction, at the ground
+   height of the middle. */
 typedef struct GravelPitMover {
     /* 0x00 */ s32 lineX0, lineZ0;      /* the two points of the data */
     /* 0x08 */ s32 lineX1, lineZ1;

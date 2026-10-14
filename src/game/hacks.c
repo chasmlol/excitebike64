@@ -60,7 +60,7 @@ void hack_gravel_pit_init(void)
         math_to_polar(mover->lineX1 - mover->lineX0, mover->lineZ1 - mover->lineZ0, &mover->angle, &len);
         midX = (mover->lineX0 + mover->lineX1) / 2;
         midZ = (mover->lineZ0 + mover->lineZ1) / 2;
-        len = mover->count * GRAVEL_PIT_ITEM_LENGTH; /* half the line's length */
+        len = mover->count * GRAVEL_PIT_HALF_LENGTH; /* half the line's length */
         mover->start.x = midX + gCosTable[(((s16)mover->angle >> 4) - 0x400) & 0xFFF] * len / 0x4000;
         mover->start.z = midZ + gCosTable[mover->angle >> 4] * len / 0x4000;
         mover->end.x = midX - gCosTable[(((s16)mover->angle >> 4) - 0x400) & 0xFFF] * len / 0x4000;
