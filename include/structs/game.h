@@ -66,6 +66,15 @@
 #define INPUT_STICK_X_MAX   0x0F000000  /* full x magnitude */
 #define INPUT_STICK_Y_MAX   0xF0000000  /* full y magnitude */
 
+/* gViModeRequest, gViMode: the scheduler's video modes. */
+#define VI_MODE_LO_RES      0   /* 320x240 */
+#define VI_MODE_MED_RES     1   /* 512x240 */
+#define VI_MODE_HI_RES      2   /* 640x480 (SAVE_OPT_HIGH_RES, with the Expansion Pak) */
+
+/* gDrawFlags bits (the debug menu's switches) the game code tests. */
+#define DRAW_HUD            0x0800
+#define DRAW_DITHER_FILTER  0x1000  /* the VI's dither filter */
+
 /* The entries of gGameStates. */
 #define GAME_STATE_SHELL    0   /* the front end (shell.c) */
 #define GAME_STATE_RACE     1   /* a race (min.c) */
