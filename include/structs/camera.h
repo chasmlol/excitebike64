@@ -6,6 +6,9 @@
 
 struct Rider;
 
+/* gCamSegFlags: the flags of the racing-line node under each view's camera. */
+#define CAM_SEG_COVERED 0x40 /* a covered area: rain and snow stop */
+
 /* A camera placement: what a mode's update produces, the 16 samples of history per view and their running sum.
    Position in mm, angles in 1/0x10000 of a turn. */
 typedef struct CamOut {
