@@ -6304,13 +6304,13 @@ void func_800880DC(s32 a0) {
     D_800CA924[2] = 0;
 }
 
-void shell_cb_original_excitebike(void)
+void shell_cb_original_excitebike(s32 chosen)
 {
     gGame_4[19] = 12;
     gGame_4[0] = (gGame_4[0] & ~0x80) | 0x40;
 }
 
-void shell_cb_stunt_course(int param_1)
+void shell_cb_stunt_course(s32 param_1)
 {
     if (param_1 != 0) {
         u32 *b = &gGame;
