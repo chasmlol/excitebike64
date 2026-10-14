@@ -1561,6 +1561,6 @@ s16 usrtrk_get_packed_size(void)
         } while (n != NULL && n != gEditor_37->head);
     }
     total = (s16)cnt * 3 + 8;
-    for (i = 0; i < gEditor_37->count; i++) { total += gPieceTypes[i + 18].h1 * 4; }
+    for (i = 0; i < gEditor_37->count; i++) { total += gPieceTypes[i + 18].dim[1] * 4; }
     return total + 10;
 }

@@ -499,10 +499,10 @@ void arned_load_piece_textures(s32 param_1, s32 param_2, s32 param_3)
     sArnedWallTex = param_3;
     if (cur != param_1) {
         if (cur == -1) {
-            sArnedPieceTex = res_load(*(s32 *)(gEditor + 0x1720), *sArnedTexResIds[param_1]);
+            sArnedPieceTex = res_load(gEditor->pieceRes, *sArnedTexResIds[param_1]);
         } else {
             res_set_load_buffer(sArnedPieceTex);
-            res_load(*(s32 *)(gEditor + 0x1720), *sArnedTexResIds[param_1]);
+            res_load(gEditor->pieceRes, *sArnedTexResIds[param_1]);
             res_set_load_buffer(0);
             p = gEditor;
             *(s32 *)(((s32 *)*(s32 *)(p + 0x1720))[1] + *sArnedTexResIds[sArnedTexSetIdx] * 4) = 0;

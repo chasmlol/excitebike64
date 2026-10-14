@@ -3,7 +3,6 @@
 #define STRUCTS_H
 
 #include "common.h"
-#include "structs/path.h"
 
 /* Declared here for the prototypes and globals; most are defined in the source file that uses them. */
 typedef struct Dyn Dyn;
@@ -1327,5 +1326,8 @@ typedef struct Spr {
     u8 w, h, s, t;
     u8 r, g, b, a;
 } Spr;
+
+#include "structs/path.h"
+#include "structs/editor.h"
 
 #endif
