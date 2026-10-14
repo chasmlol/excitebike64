@@ -2296,9 +2296,7 @@ sNesDutyTable                         game  0x800D05D8  data      0x8
 sNesLengthTable                       game  0x800D05E0  data     0x40
 sNesNoisePeriods                      game  0x800D0620  data     0x40
 sNesRowCallback                       game  0x800D0660  data     0x10
-sNesRowCallback_2                     game  0x800D0660  data        -  sNesRowCallback
 sNesCpuMemory                         game  0x800D0670  data     0x10
-sNesCpuMemory_2                       game  0x800D0670  data        -  sNesCpuMemory
 sPiecesResSet                         game  0x800D0680  data      0x4
 sPieceRotations                       game  0x800D0684  data     0x30
 D_800D06B4                            game  0x800D06B4  data     0x14
@@ -5038,7 +5036,6 @@ D_800F1BC5_2                          game  0x800F1BC5  data        -  D_800F1BC
 D_800F1BC6                            game  0x800F1BC6  data        -
 D_800F1BC7                            game  0x800F1BC7  data        -
 gSaveNesTrack                         game  0x800F1BD4  data        -
-gSaveNesTrack_2                       game  0x800F1BD4  data        -  gSaveNesTrack
 D_800F1DF4                            game  0x800F1DF4  data        -
 D_800F1DF4_2                          game  0x800F1DF4  data        -  D_800F1DF4
 sStuntSeqByDir                        game  0x800F2110  data        -
@@ -5163,7 +5160,6 @@ D_800F55BC                            game  0x800F55BC  data        -
 sEditCamStep                          game  0x800F56A8  data        -
 D_800F56B0                            game  0x800F56B0  data        -
 sNesSnapshot                          game  0x800F5A40  data        -
-sNesSnapshot_2                        game  0x800F5A40  data        -  sNesSnapshot
 sNesGfx                               game  0x800F5A44  data        -
 sNesBgTlutLoaded                      game  0x800F5A48  data        -
 sNesLastTileKey                       game  0x800F5A4C  data        -
@@ -5171,7 +5167,6 @@ sNesMemory                            game  0x800F5A50  data        -
 sNesChrTiles                          game  0x800F5A54  data        -
 sNesPalette                           game  0x800F5A58  data        -
 sNesBgTluts                           game  0x800F5A60  data        -
-sNesBgTluts_2                         game  0x800F5A60  data        -  sNesBgTluts
 sNesSpriteTluts                       game  0x800F5A68  data        -
 sNesAudioFreq                         game  0x800F5A70  data        -
 sNesAudioBufIndex                     game  0x800F5A74  data        -
@@ -5182,7 +5177,6 @@ sNesClearFrames                       game  0x800F5A98  data        -
 sNesFrameCount                        game  0x800F5AA0  data        -
 sNesEffAddr                           game  0x800F5BB0  data        -
 sNesOperand                           game  0x800F5BB8  data        -
-sNesOperand_2                         game  0x800F5BB8  data        -  sNesOperand
 sNesOperand16                         game  0x800F5BBA  data        -
 sNesOperand8                          game  0x800F5BBB  data        -
 gUserTrackData                        game  0x800F5CC0  data        -
@@ -5319,9 +5313,8 @@ D_80105440                            game  0x80105440  data        -
 sFontSprLists                         game  0x801054E0  data        -
 D_80105580                            game  0x80105580  data        -
 D_80105680                            game  0x80105680  data        -
-sNesReg4015                           game  0x80384015  data        -
 sNesRegS                              game  0x80394105  data        -
-D_803941AC                            game  0x803941AC  data        -
+sNesNoiseLength                       game  0x803941AC  data        -
 D_A0000200                            game  0xA0000200  data        -
 D_A0000284                            game  0xA0000284  data        -
 osTvType                              boot  0x80000300  data        -

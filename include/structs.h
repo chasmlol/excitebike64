@@ -116,6 +116,7 @@ typedef struct Rec_49 Rec_49;
 typedef struct Spr_5 Spr_5;
 typedef struct Set Set;
 typedef struct Mesh_8 Mesh_8;
+#include "structs/nes.h"
 typedef struct Chan_6 Chan_6;
 typedef struct Ring_2 Ring_2;
 typedef struct Obj_80 Obj_80;

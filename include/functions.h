@@ -1086,7 +1086,7 @@ void nes_op_php(void);
 void nes_op_rti(void);
 void nes_cpu_nmi(void);
 void nes_run_frame(void);
-s32 nes_cpu_reset(s32 param_1, s32 param_2);
+s32 nes_cpu_reset(Nes *machine, void (*rowCallback)(s32));
 void nes_op_adc(void);
 void nes_op_and(void);
 void nes_op_bcc(void);
