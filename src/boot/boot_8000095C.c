@@ -1,20 +1,20 @@
 #include "boot.h"
 
-void boot_func_8000095C(u8 *param_1, u32 param_2)
+void boot_log_write(u8 *param_1, u32 param_2)
 {
-    if (D_8000CDF0 == -1) {
-        D_8000CDF0 = boot_func_8000292C(D_80011240, 0);
+    if (sBootLogFd == -1) {
+        sBootLogFd = sn_pc_open(sBootLogFileName, 0);
     }
-    boot_func_80002B78(D_8000CDF0, param_1, param_2);
+    sn_pc_write(sBootLogFd, param_1, param_2);
 }
 
-void boot_func_800009C4(u8 *p)
+void boot_log_print(u8 *p)
 {
     u32 n;
 
-    if (D_8000CDF0 == -1) {
-        D_8000CDF0 = boot_func_8000292C(D_80011240, 0);
+    if (sBootLogFd == -1) {
+        sBootLogFd = sn_pc_open(sBootLogFileName, 0);
     }
     n = strlen((char *)p);
-    boot_func_80002B78(D_8000CDF0, p, n);
+    sn_pc_write(sBootLogFd, p, n);
 }

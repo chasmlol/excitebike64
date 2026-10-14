@@ -1,6 +1,6 @@
 #include "game.h"
 
-s32 func_800BF280(Q_3 *q, s32 v, s32 mode)
+s32 dma_jam_mesg(Q_3 *q, s32 v, s32 mode)
 {
     s32 lk;
     s32 idx;

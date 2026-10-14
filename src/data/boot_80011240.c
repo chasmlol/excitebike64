@@ -4,7 +4,7 @@
  * which places every symbol at the address in its name. Gaps are bytes other steps build. */
 #include "data.h"
 
-u8 D_80011240[0x10] = {
+u8 sBootLogFileName[0x10] = {
     0x6F, 0x75, 0x74, 0x70, 0x75, 0x74, 0x2E, 0x6C, 0x6F, 0x67, 0, 0x60, 0x34, 0x84, 0, 0x28,
 };
 /* 0x80011250-0x800112a8 (88 bytes): literals of the C (build_code.py) */

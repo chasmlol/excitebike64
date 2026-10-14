@@ -1,37 +1,37 @@
 #include "game.h"
 
-void func_8006BFC0(void)
+void soccer_ball_init_contacts(void)
 {
     s32 i;
     f32 sq, f6;
 
     for (i = 0; i < 5; i++) {
         f6 = ((f32)i * 6.2831855f) / 5.0f;
-        D_800CCDE0[i].z = 0.9f;
+        sSoccerBallContacts[i].z = 0.9f;
         sq = sqrtf(0.19000006f);
-        D_800CCDE0[i].x = sq * cosf(f6);
-        D_800CCDE0[i].y = sq * sinf(f6);
+        sSoccerBallContacts[i].x = sq * cosf(f6);
+        sSoccerBallContacts[i].y = sq * sinf(f6);
     }
     for (i = 0; i < 5; i++) {
         f6 = ((f32)i * 6.2831855f) / 5.0f;
-        D_800CCDE0[i + 5].z = 0.1f;
+        sSoccerBallContacts[i + 5].z = 0.1f;
         sq = sqrtf(0.99f);
-        D_800CCDE0[i + 5].x = sq * cosf(f6);
-        D_800CCDE0[i + 5].y = sq * sinf(f6);
+        sSoccerBallContacts[i + 5].x = sq * cosf(f6);
+        sSoccerBallContacts[i + 5].y = sq * sinf(f6);
     }
     for (i = 0; i < 5; i++) {
         f6 = ((f32)i * 6.2831855f) / 5.0f + 3.1415927f;
-        D_800CCDE0[i + 10].z = -0.1f;
+        sSoccerBallContacts[i + 10].z = -0.1f;
         sq = sqrtf(0.99f);
-        D_800CCDE0[i + 10].x = sq * cosf(f6);
-        D_800CCDE0[i + 10].y = sq * sinf(f6);
+        sSoccerBallContacts[i + 10].x = sq * cosf(f6);
+        sSoccerBallContacts[i + 10].y = sq * sinf(f6);
     }
     for (i = 0; i < 5; i++) {
         f6 = ((f32)i * 6.2831855f) / 5.0f + 3.1415927f;
-        D_800CCDE0[i + 15].z = -0.9f;
+        sSoccerBallContacts[i + 15].z = -0.9f;
         sq = sqrtf(0.19000006f);
-        D_800CCDE0[i + 15].x = sq * cosf(f6);
-        D_800CCDE0[i + 15].y = sq * sinf(f6);
+        sSoccerBallContacts[i + 15].x = sq * cosf(f6);
+        sSoccerBallContacts[i + 15].y = sq * sinf(f6);
     }
 }
 
@@ -54,25 +54,25 @@ typedef struct Body_5 {
     u8 type;            /* 0x17C */
 } Body_5;
 
-extern Body_5 D_800F1510_3;
+extern Body_5 gSoccerBall_3;
 
-void func_8006C28C(s32 a0)
+void soccer_ball_reset(s32 a0)
 {
-    D_800F1510_3.pos.x = 0.0f;
-    D_800F1510_3.pos.z = 0.0f;
-    D_800F1510_3.type = 4;
-    D_800F1510_3.pos.y = 1.0f;
-    D_800F1510_3.f174 = 125.0f;
-    D_800F1510_3.f178 = 31.25f;
-    D_800F1510_3.angvel.x = D_800F1510_3.angvel.y = D_800F1510_3.angvel.z = D_800F1510_3.pos.x;
-    D_800F1510_3.vel.x = D_800F1510_3.vel.y = D_800F1510_3.vel.z = D_800F1510_3.pos.x;
-    D_800F1510_3.acc.x = D_800F1510_3.acc.y = D_800F1510_3.acc.z = D_800F1510_3.pos.x;
-    D_800F1510_3.angacc.x = D_800F1510_3.angacc.y = D_800F1510_3.angacc.z = D_800F1510_3.pos.x;
-    D_800F1510_3.q.q[0] = 1.0f;
-    D_800F1510_3.q.q[3] = D_800F1510_3.q.q[2] = D_800F1510_3.q.q[1] = D_800F1510_3.pos.x;
+    gSoccerBall_3.pos.x = 0.0f;
+    gSoccerBall_3.pos.z = 0.0f;
+    gSoccerBall_3.type = 4;
+    gSoccerBall_3.pos.y = 1.0f;
+    gSoccerBall_3.f174 = 125.0f;
+    gSoccerBall_3.f178 = 31.25f;
+    gSoccerBall_3.angvel.x = gSoccerBall_3.angvel.y = gSoccerBall_3.angvel.z = gSoccerBall_3.pos.x;
+    gSoccerBall_3.vel.x = gSoccerBall_3.vel.y = gSoccerBall_3.vel.z = gSoccerBall_3.pos.x;
+    gSoccerBall_3.acc.x = gSoccerBall_3.acc.y = gSoccerBall_3.acc.z = gSoccerBall_3.pos.x;
+    gSoccerBall_3.angacc.x = gSoccerBall_3.angacc.y = gSoccerBall_3.angacc.z = gSoccerBall_3.pos.x;
+    gSoccerBall_3.q.q[0] = 1.0f;
+    gSoccerBall_3.q.q[3] = gSoccerBall_3.q.q[2] = gSoccerBall_3.q.q[1] = gSoccerBall_3.pos.x;
     if (a0 != 0) {
-        D_800F1510_3.f7C = func_80060270(D_800CC2F4);
-        func_8006BFC0();
+        gSoccerBall_3.f7C = collide_build_sphere_tree(D_800CC2F4);
+        soccer_ball_init_contacts();
     }
 }
 
@@ -87,11 +87,11 @@ typedef struct {
 
 typedef struct { u8 p0[0x648]; s32 f648; u8 p1[0x7E0 - 0x64C]; } Ent_75;
 
-extern Ent_75 D_800E37C0_88[];
+extern Ent_75 gRiders_88[];
 
-void func_8006C340(void)
+void soccer_ball_update(void)
 {
-    Body_6 *b = &D_800F1510;
+    Body_6 *b = &gSoccerBall;
     Vec3f v;
     f32 len;
     s32 i;
@@ -109,14 +109,14 @@ void func_8006C340(void)
         b->ndir.y = -v.y;
         b->ndir.z = -v.z;
     }
-    func_800453D8(b, D_800CCDE0, 0x14, 1);
-    b->pos.x += b->vel.x * D_800E76C8;
-    b->pos.y += b->vel.y * D_800E76C8;
-    b->pos.z += b->vel.z * D_800E76C8;
-    b->dir.x += b->ndir.x * D_800E76C8;
-    b->dir.y += b->ndir.y * D_800E76C8;
-    b->dir.z += b->ndir.z * D_800E76C8;
+    phys_body_step(b, sSoccerBallContacts, 0x14, 1);
+    b->pos.x += b->vel.x * gPhysDeltaTime;
+    b->pos.y += b->vel.y * gPhysDeltaTime;
+    b->pos.z += b->vel.z * gPhysDeltaTime;
+    b->dir.x += b->ndir.x * gPhysDeltaTime;
+    b->dir.y += b->ndir.y * gPhysDeltaTime;
+    b->dir.z += b->ndir.z * gPhysDeltaTime;
     for (i = 3; i >= 0; i--) {
-        D_800E37C0_88[i].f648 = 0;
+        gRiders_88[i].f648 = 0;
     }
 }

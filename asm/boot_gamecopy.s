@@ -2,8 +2,8 @@
 # image: boot
 # vram: 0x80011584-0x80011600
 #
-# Not part of SWDN64.ASM. Copies D_800115E8 bytes from D_800115E4 to D_800115EC, invalidates the
-# instruction cache and jumps to D_800115F0. The boot loader's C code (0x800014B8-0x8000162C) copies the
+# Not part of SWDN64.ASM. Copies gBootStubSize bytes from gBootStubSrc to gBootStubDst, invalidates the
+# instruction cache and jumps to gBootStubEntry. The boot loader's C code (0x800014B8-0x8000162C) copies the
 # stub (0x80011584-0x800115F8) to 0x802F0000, stores the four parameter words (zero in the image) and calls
 # the copy, which moves the decompressed game over the boot loader and starts it at 0x80000400.
 # 0x800115F4-0x80011600 is 0xFF fill: the end of the ROM range boot.bin is cut from (ROM 0x1000-0x12200),
@@ -14,16 +14,16 @@
 .set gp=64
 .section .text, "ax"
 
-.global boot_func_80011584
-boot_func_80011584:
-    /* 80011584 */  lui         $t0, %hi(D_800115E4)
-    /* 80011588 */  lw          $t0, %lo(D_800115E4)($t0)
-    /* 8001158C */  lui         $t1, %hi(D_800115E8)
-    /* 80011590 */  lw          $t1, %lo(D_800115E8)($t1)
-    /* 80011594 */  lui         $t2, %hi(D_800115EC)
-    /* 80011598 */  lw          $t2, %lo(D_800115EC)($t2)
-    /* 8001159C */  lui         $t3, %hi(D_800115F0)
-    /* 800115A0 */  lw          $t3, %lo(D_800115F0)($t3)
+.global boot_game_copy_stub
+boot_game_copy_stub:
+    /* 80011584 */  lui         $t0, %hi(gBootStubSrc)
+    /* 80011588 */  lw          $t0, %lo(gBootStubSrc)($t0)
+    /* 8001158C */  lui         $t1, %hi(gBootStubSize)
+    /* 80011590 */  lw          $t1, %lo(gBootStubSize)($t1)
+    /* 80011594 */  lui         $t2, %hi(gBootStubDst)
+    /* 80011598 */  lw          $t2, %lo(gBootStubDst)($t2)
+    /* 8001159C */  lui         $t3, %hi(gBootStubEntry)
+    /* 800115A0 */  lw          $t3, %lo(gBootStubEntry)($t3)
 .L800115A4:
     /* 800115A4 */  lw          $t5, 0x0($t0)
     /* 800115A8 */  sw          $t5, 0x0($t2)
@@ -44,13 +44,13 @@ boot_func_80011584:
     /* 800115E0 */   nop
 
 # parameters: source, byte count, destination, entry point
-D_800115E4:
+gBootStubSrc:
     /* 800115E4 */  .word 0x00000000
-D_800115E8:
+gBootStubSize:
     /* 800115E8 */  .word 0x00000000
-D_800115EC:
+gBootStubDst:
     /* 800115EC */  .word 0x00000000
-D_800115F0:
+gBootStubEntry:
     /* 800115F0 */  .word 0x00000000
 
 # 0xFF ROM fill (end of boot.bin's ROM range)

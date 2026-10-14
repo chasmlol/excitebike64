@@ -4,45 +4,45 @@
  * which places every symbol at the address in its name. Gaps are bytes other steps build. */
 #include "data.h"
 
-extern void func_800BBBC0();
-extern void func_800BBFC0();
-extern void func_800BC024();
-extern void func_800BC064();
-extern void func_800BC080();
-extern void func_800BC09C();
-extern void func_800BC0BC();
-extern void func_800BC0D8();
-extern void func_800BC0F4();
-extern void func_800BC110();
-extern void func_800BC12C();
-extern void func_800BC148();
-extern void func_800BC164();
-extern void func_800BC180();
-extern void func_800BC19C();
-extern void func_800BC1B8();
-extern void func_800BC1D4();
-extern void func_800BC1F0();
-extern void func_800BC20C();
-extern void func_800BC228();
-extern void func_800BC264();
-extern void func_800BC270();
-extern void func_800BC28C();
-extern void func_800BC2A8();
-extern void func_800BC2C4();
-extern void func_800BC2E0();
-extern void func_800BC2E8();
-extern void func_800BC2F0();
-extern void func_800BC2F8();
+extern void n64snd_init();
+extern void n64snd_get_caps();
+extern void n64snd_shutdown();
+extern void n64snd_load_sample_named();
+extern void n64snd_load_sample_index();
+extern void n64snd_create_sample();
+extern void n64snd_free_sample();
+extern void n64snd_get_sample_info();
+extern void n64snd_set_sample_info();
+extern void n64snd_write_sample_data();
+extern void n64snd_voice_set_sample();
+extern void n64snd_voice_set_rate();
+extern void n64snd_voice_set_volume();
+extern void n64snd_voice_set_pan();
+extern void n64snd_voice_set_position();
+extern void n64snd_voice_get_position();
+extern void n64snd_voice_set_flags();
+extern void n64snd_voice_get_flags();
+extern void n64snd_get_sample_clock();
+extern void n64snd_get_buffer_clock();
+extern void n64snd_set_callback();
+extern void n64snd_echo_init();
+extern void n64snd_echo_enable();
+extern void n64snd_echo_set_level();
+extern void n64snd_echo_free();
+extern void n64snd_stub1();
+extern void n64snd_stub2();
+extern void n64snd_stub3();
+extern void n64snd_set_mute();
 
-u32 D_800D33E0 = 0;
-u32 D_800D33E4 = 0;
-u32 D_800D33E8 = 0;
+u32 sSfxStreams = 0;
+u32 sSfxNextHandle = 0;
+u32 sSfxSounds = 0;
 u32 D_800D33EC = 0;
-u32 D_800D33F0 = 0;
-u32 D_800D33F4 = 0;
-u32 D_800D33F8[0x2] = { 0 };
-u32 D_800D3400 = 0x100;
-u16 D_800D3404[0x100] = {
+u32 sSfxInitialized = 0;
+u32 sSfxFrameCallback = 0;
+u32 gSfxActiveCount[0x2] = { 0 };
+u32 sSoftmixMasterVolume = 0x100;
+u16 sSoftmixExpandTable[0x100] = {
     /* 0x000 */ 0, 0xE, 0x1C, 0x2A, 0x39, 0x48, 0x58, 0x68,
     /* 0x010 */ 0x79, 0x8B, 0x9D, 0xB0, 0xC4, 0xD8, 0xED, 0x103,
     /* 0x020 */ 0x11A, 0x131, 0x149, 0x162, 0x17C, 0x197, 0x1B3, 0x1D0,
@@ -76,7 +76,7 @@ u16 D_800D3404[0x100] = {
     /* 0x1e0 */ 0xFEE6, 0xFEFD, 0xFF13, 0xFF28, 0xFF3C, 0xFF50, 0xFF63, 0xFF75,
     /* 0x1f0 */ 0xFF87, 0xFF98, 0xFFA8, 0xFFB8, 0xFFC7, 0xFFD6, 0xFFE4, 0xFFF2,
 };
-u8 D_800D3604[0x2000] = {
+u8 sDecoderCompandTable[0x2000] = {
     /* 0x000 */ 0, 0x1, 0x1, 0x2, 0x3, 0x3, 0x4, 0x4, 0x5, 0x5, 0x6, 0x6, 0x7, 0x7, 0x8, 0x8,
     /* 0x010 */ 0x9, 0x9, 0x9, 0xA, 0xA, 0xB, 0xB, 0xC, 0xC, 0xC, 0xD, 0xD, 0xE, 0xE, 0xE, 0xF,
     /* 0x020 */ 0xF, 0xF, 0x10, 0x10, 0x10, 0x11, 0x11, 0x11, 0x12, 0x12, 0x12, 0x13, 0x13, 0x13, 0x14, 0x14,
@@ -590,54 +590,54 @@ u8 D_800D3604[0x2000] = {
     /* 0x1fe0 */ 0xF1, 0xF2, 0xF2, 0xF2, 0xF3, 0xF3, 0xF4, 0xF4, 0xF4, 0xF5, 0xF5, 0xF6, 0xF6, 0xF6, 0xF7, 0xF7,
     /* 0x1ff0 */ 0xF8, 0xF8, 0xF9, 0xF9, 0xFA, 0xFA, 0xFB, 0xFB, 0xFC, 0xFC, 0xFD, 0xFD, 0xFE, 0xFF, 0xFF,
 };
-u32 D_800D5604 = 0;
-u32 D_800D5608 = 0;
-u32 D_800D560C = 0;
-u32 D_800D5610 = 0;
-u32 D_800D5614[0x3] = { 0 };
-u32 D_800D5620[0x2] = { 0 };
-u32 D_800D5628 = 0;
-u32 D_800D562C = 0;
-u32 D_800D5630[0x2] = { 0, 0xFFFFFFFF };
-u32 D_800D5638 = 0;
-u32 D_800D563C[0x1d] = {
-    /* 0x000 */ (u32)func_800BBFC0, (u32)func_800BBBC0, (u32)func_800BC024, (u32)func_800BC064,
-    /* 0x010 */ (u32)func_800BC080, (u32)func_800BC09C, (u32)func_800BC0BC, (u32)func_800BC0D8,
-    /* 0x020 */ (u32)func_800BC0F4, (u32)func_800BC110, (u32)func_800BC12C, (u32)func_800BC148,
-    /* 0x030 */ (u32)func_800BC164, (u32)func_800BC180, (u32)func_800BC19C, (u32)func_800BC1B8,
-    /* 0x040 */ (u32)func_800BC1D4, (u32)func_800BC1F0, (u32)func_800BC20C, (u32)func_800BC228,
-    /* 0x050 */ (u32)func_800BC264, (u32)func_800BC270, (u32)func_800BC28C, (u32)func_800BC2A8,
-    /* 0x060 */ (u32)func_800BC2C4, (u32)func_800BC2E0, (u32)func_800BC2E8, (u32)func_800BC2F0,
-    /* 0x070 */ (u32)func_800BC2F8,
+u32 gSfxResSet = 0;
+u32 sSoftmixEchoOn = 0;
+u32 sSoftmixDecompressFn = 0;
+u32 sSoftmixDecompressBuf = 0;
+u32 sSoftmixDecompressBufSize[0x3] = { 0 };
+u32 sN64SndMuted[0x2] = { 0 };
+u32 sN64SndBufIndex = 0;
+u32 sN64SndActive = 0;
+u32 sN64SndCallback[0x2] = { 0, 0xFFFFFFFF };
+u32 gN64SndSilenceFrames = 0;
+u32 gN64SndDriver[0x1d] = {
+    /* 0x000 */ (u32)n64snd_get_caps, (u32)n64snd_init, (u32)n64snd_shutdown, (u32)n64snd_load_sample_named,
+    /* 0x010 */ (u32)n64snd_load_sample_index, (u32)n64snd_create_sample, (u32)n64snd_free_sample, (u32)n64snd_get_sample_info,
+    /* 0x020 */ (u32)n64snd_set_sample_info, (u32)n64snd_write_sample_data, (u32)n64snd_voice_set_sample, (u32)n64snd_voice_set_rate,
+    /* 0x030 */ (u32)n64snd_voice_set_volume, (u32)n64snd_voice_set_pan, (u32)n64snd_voice_set_position, (u32)n64snd_voice_get_position,
+    /* 0x040 */ (u32)n64snd_voice_set_flags, (u32)n64snd_voice_get_flags, (u32)n64snd_get_sample_clock, (u32)n64snd_get_buffer_clock,
+    /* 0x050 */ (u32)n64snd_set_callback, (u32)n64snd_echo_init, (u32)n64snd_echo_enable, (u32)n64snd_echo_set_level,
+    /* 0x060 */ (u32)n64snd_echo_free, (u32)n64snd_stub1, (u32)n64snd_stub2, (u32)n64snd_stub3,
+    /* 0x070 */ (u32)n64snd_set_mute,
 };
-u32 D_800D56B0[0x3] = { 0 };
-u32 D_800D56BC = 0;
-u32 D_800D56C0[0x8] = {
+u32 gN64SndMixCallback[0x3] = { 0 };
+u32 sN64SndUnderruns = 0;
+u32 sHexDigitDivisors[0x8] = {
     /* 0x000 */ 0x10000000, 0x1000000, 0x100000, 0x10000,
     /* 0x010 */ 0x1000, 0x100, 0x10, 0x1,
 };
-u32 D_800D56E0[0x8] = {
+u32 sDecDigitDivisors[0x8] = {
     /* 0x000 */ 0x2710, 0x3E8, 0x64, 0xA,
     /* 0x010 */ 0x1, 0x6D696E65, 0x20527573, 0x68000000,
 };
-u32 D_800D5700[0x4] = { 0x8, 0, 0, 0x2 };
-u32 D_800D5710 = 0;
-u32 D_800D5714[0x3] = { 0, 0x3F7851EC, 0x1 };
-u32 D_800D5720[0x4] = { 0x1 };
-u32 D_800D5730 = 0;
-u32 D_800D5734 = 0;
-u32 D_800D5738[0x2] = { 0, 0x4B444F47 };
-u8 D_800D5740[0x18] = {
+u32 sFilePageCount[0x4] = { 0x8, 0, 0, 0x2 };
+u32 gDmaIdleCallback = 0;
+u32 sDmaCopyFunc[0x3] = { 0, 0x3F7851EC, 0x1 };
+u32 sCartRomInitFirst[0x4] = { 0x1 };
+u32 gResLoadCallback = 0;
+u32 sResSwapBytes = 0;
+u32 sResTypesInit[0x2] = { 0, 0x4B444F47 };
+u8 sFontDefaultPalette[0x18] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xB0, 0xB0, 0xB0, 0,
     /* 0x010 */ 0xD0, 0xD0, 0xD0, 0, 0xF0, 0xF0, 0xF0,
 };
-u32 D_800D5758 = 0x10000;
-u32 D_800D575C = 0x10000;
-u32 D_800D5760 = 0x400;
-u32 D_800D5764 = 0x400;
+u32 sFontScaleX = 0x10000;
+u32 sFontScaleY = 0x10000;
+u32 sFontTexStepX = 0x400;
+u32 sFontTexStepY = 0x400;
 u32 D_800D5768 = 0;
 u32 D_800D576C = 0;
-u32 D_800D5770[0x20] = {
+u32 sFontAllocMasks[0x20] = {
     /* 0x000 */ 0xFFFFFFFF, 0xAAAAAAAA, 0x92492492, 0x88888888,
     /* 0x010 */ 0x84210842, 0x82082082, 0x81020408, 0x80808080,
     /* 0x020 */ 0x80402010, 0x80200802, 0x80100200, 0x80080080,
@@ -647,7 +647,7 @@ u32 D_800D5770[0x20] = {
     /* 0x060 */ 0x80000040, 0x80000020, 0x80000010, 0x80000008,
     /* 0x070 */ 0x80000004, 0x80000002, 0x80000001, 0x80000000,
 };
-u32 D_800D57F0[0x20] = {
+u32 sFontAllocBits[0x20] = {
     /* 0x000 */ 0x80000000, 0xC0000000, 0xE0000000, 0xF0000000,
     /* 0x010 */ 0xF8000000, 0xFC000000, 0xFE000000, 0xFF000000,
     /* 0x020 */ 0xFF800000, 0xFFC00000, 0xFFE00000, 0xFFF00000,
@@ -657,7 +657,7 @@ u32 D_800D57F0[0x20] = {
     /* 0x060 */ 0xFFFFFF80, 0xFFFFFFC0, 0xFFFFFFE0, 0xFFFFFFF0,
     /* 0x070 */ 0xFFFFFFF8, 0xFFFFFFFC, 0xFFFFFFFE, 0xFFFFFFFF,
 };
-u32 D_800D5870[0x4] = { 0, 0x44554B4A, 0x494D444F, 0x4744554B };
+u32 gFontLoadBuffer[0x4] = { 0, 0x44554B4A, 0x494D444F, 0x4744554B };
 /* 0x800d5880-0x800d5b38 (696 bytes): libultra data (build_libultra.py) */
 u32 D_800D5B38[0x2] = { 0xFFFF0000 };
 /* 0x800d5b40-0x800d5c90 (336 bytes): libultra data (build_libultra.py) */

@@ -1,6 +1,6 @@
 #include "game.h"
 
-void func_8005B5F0(u8 *p)
+void ai_update_throttle(u8 *p)
 {
     s32 iVar1;
     f32 fVar2;
@@ -9,9 +9,9 @@ void func_8005B5F0(u8 *p)
     u8 b;
 
     iVar1 = *(s16 *)(p + 0x628) + 1;
-    fVar2 = *(f32 *)(D_800EE498 + *(s16 *)(p + 0x628) * 0x6C + 0x10) * (1.0f - *(f32 *)(p + 0x63C))
-          + *(f32 *)(D_800EE498 + (iVar1 % D_800EE490) * 0x6C + 0x10) * *(f32 *)(p + 0x63C);
-    ev = D_800EFDBC;
+    fVar2 = *(f32 *)(gPathNodes + *(s16 *)(p + 0x628) * 0x6C + 0x10) * (1.0f - *(f32 *)(p + 0x63C))
+          + *(f32 *)(gPathNodes + (iVar1 % gPathNodeCount) * 0x6C + 0x10) * *(f32 *)(p + 0x63C);
+    ev = gGameMode;
     if (ev == 10) goto L_e4;
     if (ev < 11) {
         if (ev == 7) goto L_e4;
@@ -49,7 +49,7 @@ CS:
     if (fVar3 < -0.5f && *(s32 *)(p + 0x744) < 3 && *(u8 *)(p + 0x7A6) == 0) {
         if (fVar3 < -5.0f && *(f32 *)(p + 0x648) < 9500.0f) {
             if ((*(u32 *)(p + 0x5B4) & 0x20000) == 0) {
-                *(s32 *)(p + 0x5B8) = D_800E76D0;
+                *(s32 *)(p + 0x5B8) = gRaceFrame;
             }
             *(s32 *)(p + 0x5B0) = 0x20000;
             return;
@@ -69,21 +69,21 @@ struct Bike_33 {
     u8 unk5D0;
 };
 
-void func_8005B7F8(Bike_33 *b, f32 maxv) {
+void ai_set_steering(Bike_33 *b, f32 maxv) {
     f32 speed = b->unk420;
     s32 i = 0;
     f32 t;
     f32 r;
 
-    while (D_800C9050[i + 1] < speed) {
+    while (sSteerSpeedSteps[i + 1] < speed) {
         i++;
     }
     if (speed < 0.0f) {
         t = 0.0f;
     } else {
-        t = (D_800C9050[i + 1] - speed) / (D_800C9050[i + 1] - D_800C9050[i]);
+        t = (sSteerSpeedSteps[i + 1] - speed) / (sSteerSpeedSteps[i + 1] - sSteerSpeedSteps[i]);
     }
-    r = (D_800C901C[i] * t + D_800C901C[i + 1] * (1.0f - t)) * 0.18849557638168335f * 0.5f;
+    r = (sSteerMaxBySpeed[i] * t + sSteerMaxBySpeed[i + 1] * (1.0f - t)) * 0.18849557638168335f * 0.5f;
     if (r < maxv) {
         maxv = r;
     } else if (r < -maxv) {
@@ -167,10 +167,10 @@ struct Bike_34 {
     u8 pad748[0x7E0 - 0x748];
 };
 
-extern Node_15 *D_800EE498_26;
-extern Bike_34 D_800E37C0_72[];
+extern Node_15 *gPathNodes_26;
+extern Bike_34 gRiders_72[];
 
-void func_8005B928(Bike_34 *b) {
+void ai_update_steering(Bike_34 *b) {
     f32 unused[8];
     s16 ang0;
     s32 ratio;
@@ -201,15 +201,15 @@ void func_8005B928(Bike_34 *b) {
     Vec3f *pos;
     Node_15 *n;
 
-    switch (D_800EFDBC_2) {
+    switch (gGameMode_2) {
     case 6:
-        func_8006B2AC((u8 *)b);
+        excite3d_cpu_steer((u8 *)b);
         break;
     case 5:
-        func_80047F7C((u8 *)b);
+        desert_ai_steer((u8 *)b);
         return;
     case 10:
-        func_8005B7F8(b, 0.0f);
+        ai_set_steering(b, 0.0f);
         b->unk5D0 = 0;
         break;
     }
@@ -218,11 +218,11 @@ void func_8005B928(Bike_34 *b) {
     case 0: {
         s32 idx = b->unk628;
         s32 a;
-        if (!(D_800EE498_26[idx].flags & 4) || D_800E76D0 - b->unk5C4 < 300) {
+        if (!(gPathNodes_26[idx].flags & 4) || gRaceFrame - b->unk5C4 < 300) {
             break;
         }
-        func_8001254C(-(b->unkB8 * 16384.0f), b->unkC0 * 16384.0f, &ang0, &ratio);
-        func_8001254C(D_800EE498_26[idx].dz * 16384.0f, D_800EE498_26[idx].dx * 16384.0f, &ang1, &ratio);
+        math_to_polar(-(b->unkB8 * 16384.0f), b->unkC0 * 16384.0f, &ang0, &ratio);
+        math_to_polar(gPathNodes_26[idx].dz * 16384.0f, gPathNodes_26[idx].dx * 16384.0f, &ang1, &ratio);
         ang1 -= ang0;
         a = ang1 < 0 ? -ang1 : ang1;
         if (a > 0x1000) {
@@ -238,23 +238,23 @@ void func_8005B928(Bike_34 *b) {
             break;
         }
         idx = b->unk628;
-        if (!(D_800EE498_26[idx].flags & 4)) {
+        if (!(gPathNodes_26[idx].flags & 4)) {
             b->unk41B = 2;
             break;
         }
         j = idx;
         do {
-            j = D_800EE498_26[j].next;
-        } while (D_800EE498_26[j].flags & 4);
-        func_8001254C(-(b->unkB8 * 16384.0f), b->unkC0 * 16384.0f, &ang0, &ratio);
-        func_8001254C(D_800EE498_26[j].dz * 16384.0f, D_800EE498_26[j].dx * 16384.0f, &ang1, &ratio);
+            j = gPathNodes_26[j].next;
+        } while (gPathNodes_26[j].flags & 4);
+        math_to_polar(-(b->unkB8 * 16384.0f), b->unkC0 * 16384.0f, &ang0, &ratio);
+        math_to_polar(gPathNodes_26[j].dz * 16384.0f, gPathNodes_26[j].dx * 16384.0f, &ang1, &ratio);
         ang1 -= ang0;
         d = ang1;
         a = d < 0 ? -d : d;
         if (a > 0x400) {
-            steer = D_800EE498_26[j].pos.x - b->pos.x;
-            steer = (steer * D_800C2C60[(ang0 >> 4) & 0xFFF]
-                 + (D_800EE498_26[j].pos.z - b->pos.z) * D_800C2C60[((ang0 >> 4) - 0x400) & 0xFFF]) * (1.0f / 16384.0f);
+            steer = gPathNodes_26[j].pos.x - b->pos.x;
+            steer = (steer * gCosTable[(ang0 >> 4) & 0xFFF]
+                 + (gPathNodes_26[j].pos.z - b->pos.z) * gCosTable[((ang0 >> 4) - 0x400) & 0xFFF]) * (1.0f / 16384.0f);
             if (d < 0) {
                 b->unk5D0 = -13;
                 steer = -steer;
@@ -270,12 +270,12 @@ void func_8005B928(Bike_34 *b) {
             b->unk41B = 2;
         }
         steer = b->unk5D0 > 0 ? 0.3f : -0.3f;
-        func_8005B7F8(b, steer);
+        ai_set_steering(b, steer);
         return;
     }
     case 2:
         b->unk41B = 0;
-        b->unk5C4 = D_800E76D0;
+        b->unk5C4 = gRaceFrame;
         b->unk42C = b->unk638;
         break;
     }
@@ -286,26 +286,26 @@ void func_8005B928(Bike_34 *b) {
         idx = b->unk628;
         amp = b->unk63C;
         cnt = 2;
-        if (D_800E76D0 - b->unk5C4 < 300) {
+        if (gRaceFrame - b->unk5C4 < 300) {
             cnt = 4;
         } else {
-            k = D_800EE498_26[idx].unk45;
+            k = gPathNodes_26[idx].unk45;
             if (cnt < k) {
                 amp = 0.0f;
                 cnt = k;
             }
         }
-    } else if (D_800EFDBC_2 != 6) {
+    } else if (gGameMode_2 != 6) {
         pos = b->unk6EC ? &b->v6FC : &b->v71C;
         idx = b->unk6EC ? b->unk714 : b->unk734;
-        r = func_8004A944(pos, idx);
-        if (!(D_800EE498_26[idx].unk5C < r)) {
-            if (!(r < -D_800EE498_26[idx].unk58)) {
-                amp = D_800EE4A0;
+        r = path_get_lateral_offset(pos, idx);
+        if (!(gPathNodes_26[idx].unk5C < r)) {
+            if (!(r < -gPathNodes_26[idx].unk58)) {
+                amp = gPathSegmentT;
                 cnt = 2;
-                if (cnt < D_800EE498_26[idx].unk45) {
+                if (cnt < gPathNodes_26[idx].unk45) {
                     amp = 0.0f;
-                    cnt = D_800EE498_26[idx].unk45;
+                    cnt = gPathNodes_26[idx].unk45;
                 }
             } else {
                 b->unk5D0 = -8;
@@ -323,21 +323,21 @@ void func_8005B928(Bike_34 *b) {
     if ((u32)(b->unk418 - 1) < 2 && b->unk420 > 2.0f) {
         idx = b->unk628;
         for (k = (s8)b->unk418; k > 0; k--) {
-            idx = D_800EE498_26[idx].next;
+            idx = gPathNodes_26[idx].next;
         }
-        f = (b->vx * D_800EE498_26[idx].dx + b->vz * D_800EE498_26[idx].dz) / b->unk420;
+        f = (b->vx * gPathNodes_26[idx].dx + b->vz * gPathNodes_26[idx].dz) / b->unk420;
         b->unk5D0 = f * 32.0f;
         if (b->unk5D0 >= 16) {
             b->unk5D0 = 15;
         } else if (b->unk5D0 < -15) {
             b->unk5D0 = -15;
         }
-        func_8005B7F8(b, f * 8.0f / (b->unk420 + 5.0f));
-        if (b == &D_800E37C0_72[D_800C9650]) {
-            D_800EE150 = D_800EE498_26[idx].pos;
-            D_800EE160.z = 2.0f * D_800EE498_26[idx].dx;
+        ai_set_steering(b, f * 8.0f / (b->unk420 + 5.0f));
+        if (b == &gRiders_72[gCamTargetOverride]) {
+            D_800EE150 = gPathNodes_26[idx].pos;
+            D_800EE160.z = 2.0f * gPathNodes_26[idx].dx;
             D_800EE160.y = 0;
-            D_800EE160.x = 2.0f * -D_800EE498_26[idx].dz;
+            D_800EE160.x = 2.0f * -gPathNodes_26[idx].dz;
         }
         return;
     }
@@ -347,7 +347,7 @@ void func_8005B928(Bike_34 *b) {
         j = idx;
         while (cnt != 0) {
             cnt--;
-            j = D_800EE498_26[j].alt >= 0 ? D_800EE498_26[j].alt : D_800EE498_26[j].next;
+            j = gPathNodes_26[j].alt >= 0 ? gPathNodes_26[j].alt : gPathNodes_26[j].next;
         }
         break;
     case 0:
@@ -356,30 +356,30 @@ void func_8005B928(Bike_34 *b) {
         j = idx;
         while (cnt != 0) {
             cnt--;
-            j = D_800EE498_26[j].next;
+            j = gPathNodes_26[j].next;
         }
         break;
     }
 
     b->unk42C = dist;
-    nx = D_800EE498_26[j].next;
-    p0x = D_800EE498_26[j].pos.x + D_800EE498_26[j].dx * dist;
-    p0z = D_800EE498_26[j].pos.z + D_800EE498_26[j].dz * dist;
-    dx = (D_800EE498_26[nx].pos.x + D_800EE498_26[nx].dx * dist) - p0x;
-    dz = (D_800EE498_26[nx].pos.z + D_800EE498_26[nx].dz * dist) - p0z;
+    nx = gPathNodes_26[j].next;
+    p0x = gPathNodes_26[j].pos.x + gPathNodes_26[j].dx * dist;
+    p0z = gPathNodes_26[j].pos.z + gPathNodes_26[j].dz * dist;
+    dx = (gPathNodes_26[nx].pos.x + gPathNodes_26[nx].dx * dist) - p0x;
+    dz = (gPathNodes_26[nx].pos.z + gPathNodes_26[nx].dz * dist) - p0z;
     amp2 = amp * amp;
     amp3 = amp2 * amp;
     len = __builtin_sqrtf(dx * dx + dz * dz);
 
     {
         f32 t1, s1, t2, s2, a1, b1, acx, acz, ds1;
-        t1 = D_800EE498_26[j].dz * -3.0f;
-        s1 = D_800EE498_26[nx].dz + D_800EE498_26[j].dz;
+        t1 = gPathNodes_26[j].dz * -3.0f;
+        s1 = gPathNodes_26[nx].dz + gPathNodes_26[j].dz;
         d = len / 3.0f;
         ds1 = d * s1;
         cx = t1 * d;
-        t2 = D_800EE498_26[j].dx * 3.0f;
-        s2 = d * (D_800EE498_26[nx].dx + D_800EE498_26[j].dx);
+        t2 = gPathNodes_26[j].dx * 3.0f;
+        s2 = d * (gPathNodes_26[nx].dx + gPathNodes_26[j].dx);
         cz = t2 * d;
         a1 = (dx + ds1) * 3.0f;
         b1 = (dz - s2) * 3.0f;
@@ -427,20 +427,20 @@ void func_8005B928(Bike_34 *b) {
         dx = b->unk538 - b->unk494;
         dz = b->unk540 - b->unk49C;
         dx = r * __builtin_sqrtf(dx * dx + dz * dz);
-        dx += func_80013098(wx, wz);
+        dx += math_atan2f(wx, wz);
         sn = cosf(dx);
         c = sinf(dx);
         q = b->unkA8 * sn - b->unkA0 * c;
         tl = b->unkB8 * c - b->unkC0 * sn;
         steer = 0.0f;
         if (!(r * tl < 0.0f)) {
-            steer = func_80013098(-q, tl);
+            steer = math_atan2f(-q, tl);
         }
     } else {
         steer = r * 1.25f;
     }
     if (b->unk744 < 4) {
-        func_8005B7F8(b, steer);
+        ai_set_steering(b, steer);
     } else {
         k = steer * 192.0f;
         if (k >= 16) {
@@ -454,7 +454,7 @@ void func_8005B928(Bike_34 *b) {
 
 #define FLD(t, p, o) (*(t *)((u8 *)(p) + (o)))
 
-void func_8005C5BC(u8 *p, s32 m)
+void bike_update_steering(u8 *p, s32 m)
 {
     s32 dir, i;
     u8 b;
@@ -462,14 +462,14 @@ void func_8005C5BC(u8 *p, s32 m)
 
     dir = FLD(s8, p, 0x5d0);
     if (FLD(s16, p, 0x5aa) == 4) {
-        func_8006BC14(p);
+        excite3d_player_steer(p);
     } else {
         b = (s32)(FLD(f32, p, 0x48) / 2.178f);
         FLD(u8, p, 0x7a9) = b;
         if (FLD(u8, p, 0x44) != 0) {
             FLD(s8, p, 0x7aa) = 0;
         } else {
-            FLD(s8, p, 0x7aa) = (s32)((FLD(f32, p, 0x48) - b * 2.178f) * (D_800C8E00 / 2.178f));
+            FLD(s8, p, 0x7aa) = (s32)((FLD(f32, p, 0x48) - b * 2.178f) * (gLaneChangeFrames / 2.178f));
             if (FLD(u8, p, 0x7a9) == 0 && FLD(s8, p, 0x7aa) < 0) {
                 FLD(s8, p, 0x7aa) = 0;
             }
@@ -480,21 +480,21 @@ void func_8005C5BC(u8 *p, s32 m)
     }
     x = FLD(f32, p, 0x420);
     i = 0;
-    while (D_800C9050[i + 1] < x) {
+    while (sSteerSpeedSteps[i + 1] < x) {
         i++;
     }
     if (x < 0.0f) {
         r = 0.0f;
     } else {
-        r = (D_800C9050[i + 1] - x) / (D_800C9050[i + 1] - D_800C9050[i]);
+        r = (sSteerSpeedSteps[i + 1] - x) / (sSteerSpeedSteps[i + 1] - sSteerSpeedSteps[i]);
     }
     S = 0.012566371f;
     T = dir * S;
-    w = (D_800C901C[i] * r + D_800C901C[i + 1] * (1.0f - r)) * FLD(f32, p, 0x7d0);
+    w = (sSteerMaxBySpeed[i] * r + sSteerMaxBySpeed[i + 1] * (1.0f - r)) * FLD(f32, p, 0x7d0);
     T *= w;
     lim = 0.18849556f;
     lim *= w;
-    S = (D_800C8FD8[i] * r + D_800C8FD8[i + 1] * (1.0f - r)) * 0.327f * m * S;
+    S = (sSteerRateBySpeed[i] * r + sSteerRateBySpeed[i + 1] * (1.0f - r)) * 0.327f * m * S;
     if (FLD(u8, p, 0x6e9) != 0) {
         T *= 0.25f;
     }
@@ -502,7 +502,7 @@ void func_8005C5BC(u8 *p, s32 m)
         S *= 5.0f;
     }
     if (FLD(u8, p, 0x41c) != 0) {
-        T = D_800CB130;
+        T = sHardTurnSteerAngle;
         if (FLD(s8, p, 0x5d0) <= 0) {
             T = -T;
         }
@@ -516,7 +516,7 @@ void func_8005C5BC(u8 *p, s32 m)
             T = w;
         }
     }
-    if (D_800EFDBC == 7) {
+    if (gGameMode == 7) {
         T += (FLD(f32, p, 0xb8) * FLD(f32, p, 0x56c) - FLD(f32, p, 0xc0) * FLD(f32, p, 0x564)) * 16.0f * S;
     }
     g = FLD(f32, p, 0x5a0);

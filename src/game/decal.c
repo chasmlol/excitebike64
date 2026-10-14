@@ -7,7 +7,7 @@ typedef struct {
     u8 pad2[4];
 } E16;
 
-extern E16 *D_800F07F8;
+extern E16 *sTireTrackVtx;
 
 typedef struct {
     u8 pad0[0x44C];
@@ -26,48 +26,48 @@ typedef struct {
     s32 f410;
 } Gm;
 
-extern Ply *D_800EFD64_31;
-extern Gm D_800EFD70_44;
-extern Ent_58 D_800E37C0_73[];
+extern Ply *gCurTrack_31;
+extern Gm gGame_44;
+extern Ent_58 gRiders_73[];
 
-void func_8005C910(void)
+void debug_update_value_display(void)
 {
     s32 i;
     char buf[0x28];
 
-    if (D_800E3770_2 & 0x80) {
-        if (D_800E36E0 == 0) {
-            D_800CB178++;
-            if (D_800CB178 == 4) {
-                D_800CB178 = 0;
+    if (gPlayerInputs_2 & 0x80) {
+        if (gPlayerInputsPrev == 0) {
+            sDebugPage++;
+            if (sDebugPage == 4) {
+                sDebugPage = 0;
             }
         }
     }
     for (i = 0x13; i >= 0; i--) {
     }
-    switch (D_800CB178) {
+    switch (sDebugPage) {
     case 1:
-        if (*(s32 *)((u8 *)D_800EFD64_31 + 0x2C) == 2) {
+        if (*(s32 *)((u8 *)gCurTrack_31 + 0x2C) == 2) {
             break;
         }
         if (D_800C8D08 != 0 || D_800C8D10 != 0 || D_800C8D00 != 0 || D_800C8D18 != 0) {
             break;
         }
-        func_8005D004(D_800D8B10, D_800E76E8);
-        func_8005D004(D_800D8B18, D_800E76EC);
+        debug_print_float(D_800D8B10, D_800E76E8);
+        debug_print_float(D_800D8B18, D_800E76EC);
         break;
     case 0:
-        func_8005D004(D_800D8B20, D_800E76E8);
-        func_8005D004(D_800D8B24, D_800E76EC);
-        func_8005D004(D_800D8B28, D_800E76F0);
-        func_8005D004(D_800D8B2C, D_800E76F4);
-        func_8005D004(D_800D8B30, D_800E76F8);
-        func_8005D004(D_800D8B34, D_800E76FC);
+        debug_print_float(D_800D8B20, D_800E76E8);
+        debug_print_float(D_800D8B24, D_800E76EC);
+        debug_print_float(D_800D8B28, D_800E76F0);
+        debug_print_float(D_800D8B2C, D_800E76F4);
+        debug_print_float(D_800D8B30, D_800E76F8);
+        debug_print_float(D_800D8B34, D_800E76FC);
         break;
     case 2:
         for (i = 0; i < 6; i++) {
-            func_8005CD30(buf, D_800E37C0_73[i].f44C / D_800EFD64_31->f20[D_800EFD70_44.f410 - 1], 4);
-            func_8005D004(buf, D_800E37C0_73[i].f450);
+            debug_ftoa(buf, gRiders_73[i].f44C / gCurTrack_31->f20[gGame_44.f410 - 1], 4);
+            debug_print_float(buf, gRiders_73[i].f450);
         }
         break;
     }
@@ -80,27 +80,27 @@ typedef struct {
     u8 b40[16];
 } Frame5CB20;
 
-void func_8005CB20(void)
+void debug_dump_spline(void)
 {
     Frame5CB20 f;
     s32 k;
     u32 u;
 
-    func_8000EFB0(D_800CB17C);
-    func_8000EE30(D_800F0750, f.b40);
-    func_8000EFB0(f.b40);
-    func_8000EFB0(D_800CB1D4);
-    for (k = 1; k <= D_800F0750; k++) {
-        func_8000EE30((s32)(D_800F0754[k].x * 1000.0f), f.b10);
-        func_8000EE30((s32)(D_800F0754[k].z * 1000.0f), f.b30);
-        u = func_8002E920((s32)(D_800F0754[k].x * 1000.0f), (s32)(D_800F0754[k].y * 1000.0f), (s32)(D_800F0754[k].z * 1000.0f));
-        func_8000EE30(u, f.b20);
-        func_8000EFB0(f.b10);
-        func_8000EFB0(D_800D8B44);
-        func_8000EFB0(f.b30);
-        func_8000EFB0(D_800D8B48);
+    debug_log(D_800CB17C);
+    int_to_str(sSplineNodeCount, f.b40);
+    debug_log(f.b40);
+    debug_log(D_800CB1D4);
+    for (k = 1; k <= sSplineNodeCount; k++) {
+        int_to_str((s32)(sSplineNodes[k].x * 1000.0f), f.b10);
+        int_to_str((s32)(sSplineNodes[k].z * 1000.0f), f.b30);
+        u = height_get_ground((s32)(sSplineNodes[k].x * 1000.0f), (s32)(sSplineNodes[k].y * 1000.0f), (s32)(sSplineNodes[k].z * 1000.0f));
+        int_to_str(u, f.b20);
+        debug_log(f.b10);
+        debug_log(D_800D8B44);
+        debug_log(f.b30);
+        debug_log(D_800D8B48);
     }
-    func_8000EFB0(D_800CB1F0);
+    debug_log(D_800CB1F0);
 }
 
 struct Obj_40 {
@@ -108,7 +108,7 @@ struct Obj_40 {
     Vec3f pos;
 };
 
-void func_8005CC84(Obj_40 *o)
+void debug_record_spline_node(Obj_40 *o)
 {
     s32 n;
     s32 ni;
@@ -119,9 +119,9 @@ void func_8005CC84(Obj_40 *o)
     f32 dy;
     f32 dz;
 
-    if (D_800F0750 < 2000) {
-        gp = &D_800F0754;
-        n = D_800F0750;
+    if (sSplineNodeCount < 2000) {
+        gp = &sSplineNodes;
+        n = sSplineNodeCount;
         p = (Vec3f *)((u32)(n * 12) + (u32)*gp);
         dx = p->x - o->pos.x;
         dy = p->y - o->pos.y;
@@ -129,7 +129,7 @@ void func_8005CC84(Obj_40 *o)
         if (1.0f < dx * dx + dy * dy + dz * dz) {
             ni = n + 1;
             q = (Vec3f *)((u32)(ni * 12) + (u32)*gp);
-            D_800F0750 = ni;
+            sSplineNodeCount = ni;
             *q = o->pos;
         }
     }
@@ -141,7 +141,7 @@ typedef struct {
 
 extern S4_2 D_800D8B64;
 
-void func_8005CD30(char *p, f32 x, s32 n)
+void debug_ftoa(char *p, f32 x, s32 n)
 {
     s32 ip;
     s32 pw;
@@ -200,7 +200,7 @@ f32 func_8005CEFC(f32 x)
     return x / 200.0f;
 }
 
-f32 func_8005CF20(f32 x)
+f32 debug_round_sig3(f32 x)
 {
     f32 a;
     f32 b;
@@ -230,25 +230,25 @@ f32 func_8005CF20(f32 x)
     return -a;
 }
 
-void func_8005D004(char *param_1, f32 param_2)
+void debug_print_float(char *param_1, f32 param_2)
 {
     char buf[40];
     s32 len;
-    func_8000EF8C(buf, param_1);
+    str_copy(buf, param_1);
     len = strlen(buf);
-    func_8005CD30(buf + len, param_2, 3);
+    debug_ftoa(buf + len, param_2, 3);
 }
 
-void func_8005D050(char *param_1, f32 param_2, f32 param_3)
+void debug_print_float2(char *param_1, f32 param_2, f32 param_3)
 {
     char buf[40];
     s32 n;
     s32 i;
 
-    func_8000ED10((u8 *)buf, 0x20, 0x1E);
-    func_8000EF8C(buf, param_1);
+    mem_fill((u8 *)buf, 0x20, 0x1E);
+    str_copy(buf, param_1);
     n = strlen(buf);
-    func_8005CD30(buf + n, param_2, 3);
+    debug_ftoa(buf + n, param_2, 3);
     i = 0;
     if (0 < n + 6) {
         do {
@@ -258,76 +258,76 @@ void func_8005D050(char *param_1, f32 param_2, f32 param_3)
             i++;
         } while (i < n + 6);
     }
-    func_8005CD30(buf + 6 + n, param_3, 3);
+    debug_ftoa(buf + 6 + n, param_3, 3);
 }
 
-void func_8005D118(s32 arg0, f32 *v)
+void debug_print_vec3(s32 arg0, f32 *v)
 {
     char bx[24];
     char by[24];
     char bz[24];
 
     strcpy(bx, "\nx=");
-    func_8005CD30(bx + strlen(bx), v[0], 6);
+    debug_ftoa(bx + strlen(bx), v[0], 6);
     strcpy(by, "y=");
-    func_8005CD30(by + strlen(by), v[1], 6);
+    debug_ftoa(by + strlen(by), v[1], 6);
     strcpy(bz, "z=");
-    func_8005CD30(bz + strlen(bz), v[2], 6);
+    debug_ftoa(bz + strlen(bz), v[2], 6);
 }
 
-void func_8005D1D0(char *param_1, s32 param_2) {
+void debug_print_int(char *param_1, s32 param_2) {
     char pad[16];
     char buf[40];
     char *b;
 
     b = buf;
-    func_8000EF8C(b, param_1);
-    func_8000EE30(param_2, b + strlen(b));
+    str_copy(b, param_1);
+    int_to_str(param_2, b + strlen(b));
 }
 
-void func_8005D220(char *param_1, u32 param_2) {
+void debug_print_hex(char *param_1, u32 param_2) {
     char buf[56];
     char *s = buf + 16;
-    func_8000EF8C(s, param_1);
-    func_8000EF0C(param_2, s + strlen(s));
+    str_copy(s, param_1);
+    u32_to_hex_str(param_2, s + strlen(s));
 }
 
-void func_8005D270(void)
+void decal_init(void)
 {
     s32 i;
 
-    D_800F0774 = func_800BC908(0xC00, 0, (s32)D_800D8B90, 0x67);
-    D_800F07F8 = func_800BC908(0x2000, 0, (s32)D_800D8B90, 0x68);
-    D_800F0770 = 0;
-    func_8000ED10(D_800F0798, 0, 0x20);
-    func_8000ED10(D_800F07D8, 0, 0x20);
-    func_8000ED10(D_800F0778, 0, 0x20);
-    func_8000ED10(D_800F0828, 0, 0x20);
-    func_8000ED10(D_800F0774, 0, 0xC00);
-    func_8000ED10(D_800F07B8, 0, 0x20);
-    func_8000ED10(D_800F0800, 0, 0x20);
+    sTireTracks = mem_alloc_dbg(0xC00, 0, (s32)D_800D8B90, 0x67);
+    sTireTrackVtx = mem_alloc_dbg(0x2000, 0, (s32)D_800D8B90, 0x68);
+    sTireTrackNext = 0;
+    mem_fill(sTireTrackCur, 0, 0x20);
+    mem_fill(gTireTrackTimers, 0, 0x20);
+    mem_fill(sTireTrackLastY, 0, 0x20);
+    mem_fill(sTireTrackMudTimer, 0, 0x20);
+    mem_fill(sTireTracks, 0, 0xC00);
+    mem_fill(sTireTrackSurface, 0, 0x20);
+    mem_fill(sTireTrackMudSurface, 0, 0x20);
     for (i = 0; i < 0x80; i++) {
-        D_800F0774[i * 0x18] = 0;
+        sTireTracks[i * 0x18] = 0;
     }
     for (i = 0; i < 0x200; i += 4) {
-        D_800F07F8[i].a = 0;
-        D_800F07F8[i].b = 0;
-        D_800F07F8[i + 1].a = 0x200;
-        D_800F07F8[i + 1].b = 0;
-        D_800F07F8[i + 2].a = 0;
-        D_800F07F8[i + 2].b = 0;
-        D_800F07F8[i + 3].a = 0x200;
-        D_800F07F8[i + 3].b = 0;
+        sTireTrackVtx[i].a = 0;
+        sTireTrackVtx[i].b = 0;
+        sTireTrackVtx[i + 1].a = 0x200;
+        sTireTrackVtx[i + 1].b = 0;
+        sTireTrackVtx[i + 2].a = 0;
+        sTireTrackVtx[i + 2].b = 0;
+        sTireTrackVtx[i + 3].a = 0x200;
+        sTireTrackVtx[i + 3].b = 0;
     }
-    D_800F0820 = func_800BC908(8, 0, (s32)D_800D8B90, 0x85);
-    D_800F0820[0] = 0xFF;
-    D_800F0820[1] = 0xDC;
-    D_800F0820[2] = 0x88;
-    D_800F0820[3] = 0x58;
-    D_800F0820[4] = 0x38;
-    D_800F0820[5] = 0x58;
-    D_800F0820[6] = 0x8C;
-    D_800F0820[7] = 0x1F;
+    sTireTrackTexture = mem_alloc_dbg(8, 0, (s32)D_800D8B90, 0x85);
+    sTireTrackTexture[0] = 0xFF;
+    sTireTrackTexture[1] = 0xDC;
+    sTireTrackTexture[2] = 0x88;
+    sTireTrackTexture[3] = 0x58;
+    sTireTrackTexture[4] = 0x38;
+    sTireTrackTexture[5] = 0x58;
+    sTireTrackTexture[6] = 0x8C;
+    sTireTrackTexture[7] = 0x1F;
 }
 
 typedef struct Rec_32 {
@@ -379,16 +379,16 @@ typedef struct Bike_35 {
     u8 pad7A6[0x7E0 - 0x7A6];
 } Bike_35;
 
-extern Bike_35 D_800E37C0_74[];
-extern Cell_4 *D_800E8948_5;
-extern Seg_14 *D_800E9298_2;
-extern Rec_32 *D_800F0774_2;
-extern Rec_32 *D_800F0798_2[];
-extern Seg_14 *D_800F07B8_2[];
-extern Gate_2 *D_800F07F8_2;
-extern Seg_14 *D_800F0800_2[];
+extern Bike_35 gRiders_74[];
+extern Cell_4 *sHeightAreas_5;
+extern Seg_14 *gSurfaceTablePtr_2;
+extern Rec_32 *sTireTracks_2;
+extern Rec_32 *sTireTrackCur_2[];
+extern Seg_14 *sTireTrackSurface_2[];
+extern Gate_2 *sTireTrackVtx_2;
+extern Seg_14 *sTireTrackMudSurface_2[];
 
-void func_8005D444(void)
+void decal_update_tire_tracks(void)
 {
     s32 pos[3];
     s32 a[3];
@@ -407,45 +407,45 @@ void func_8005D444(void)
     Cell_4 *ce;
 
     for (i = 0; i < 8; i++) {
-        if (D_800E37C0_74[i].f7A5 != 0) continue;
-        p = &D_800E37C0_74[i];
-        if (D_800F0828_2[i] != 0) D_800F0828_2[i]--;
-        if (D_800E37C0_74[i].f4F0 != 0.0f) {
-            D_800F07D8[i] = 1;
-        } else if (D_800F07D8[i] != 0) {
-            D_800F07D8[i]--;
+        if (gRiders_74[i].f7A5 != 0) continue;
+        p = &gRiders_74[i];
+        if (sTireTrackMudTimer_2[i] != 0) sTireTrackMudTimer_2[i]--;
+        if (gRiders_74[i].f4F0 != 0.0f) {
+            gTireTrackTimers[i] = 1;
+        } else if (gTireTrackTimers[i] != 0) {
+            gTireTrackTimers[i]--;
         }
-        if (!(p->seg->flags & 1)) D_800F07D8[i] = 0;
-        t = D_800F07B8_2[i];
+        if (!(p->seg->flags & 1)) gTireTrackTimers[i] = 0;
+        t = sTireTrackSurface_2[i];
         if (p->seg != t) {
             chg = 1;
             if (t != NULL && (t->flags & 0x40) && p->f458 <= 0) {
-                D_800F0800_2[i] = t;
-                D_800F07D8[i] = 45;
-                D_800F0828_2[i] = 45;
+                sTireTrackMudSurface_2[i] = t;
+                gTireTrackTimers[i] = 45;
+                sTireTrackMudTimer_2[i] = 45;
             }
         } else {
             chg = 0;
         }
-        D_800F07B8_2[i] = p->seg;
-        if (p->f44 != 0) D_800F07D8[i] = 0;
-        if (D_800EE140 != 0) D_800F07D8[i] = 0;
-        if (D_800F07D8[i] == 0) {
-            D_800F0798_2[i] = NULL;
+        sTireTrackSurface_2[i] = p->seg;
+        if (p->f44 != 0) gTireTrackTimers[i] = 0;
+        if (D_800EE140 != 0) gTireTrackTimers[i] = 0;
+        if (gTireTrackTimers[i] == 0) {
+            sTireTrackCur_2[i] = NULL;
             continue;
         }
         pos[0] = p->x * 1000.0f;
         pos[1] = p->y * 1000.0f;
         pos[2] = p->z * 1000.0f;
-        func_80013650(m, p->f370);
+        quat_to_mtx3i(m, p->f370);
         d[0] = -p->f4B4 * 1000.0f;
         d[2] = p->f4AC * 1000.0f;
-        len = func_8000EB18_2(d[0] * d[0] + d[2] * d[2]);
+        len = isqrt_u32_2(d[0] * d[0] + d[2] * d[2]);
         if (len == 0) {
             d[1] = 0;
             d[0] = m[0];
             d[2] = m[2];
-            len = func_8000EB18_2(m[0] * m[0] + m[2] * m[2]);
+            len = isqrt_u32_2(m[0] * m[0] + m[2] * m[2]);
         }
         if (len != 0) {
             d[0] = d[0] * 50 / len;
@@ -455,49 +455,49 @@ void func_8005D444(void)
         a[2] = pos[2] - d[2];
         b[0] = pos[0] + d[0];
         b[2] = pos[2] + d[2];
-        a[1] = func_8002E920(a[0], pos[1], a[2]);
-        b[1] = func_8002E920(b[0], pos[1], b[2]);
-        if (D_800E8508 == 0) continue;
-        key = D_800E8958;
-        if (D_800EFD64_5->mode == 2) {
-            func_8004262C(pos[0], 128000, &qr[0], &qr[1]);
-            func_8004262C(pos[2], 128000, &qr[2], &qr[3]);
+        a[1] = height_get_ground(a[0], pos[1], a[2]);
+        b[1] = height_get_ground(b[0], pos[1], b[2]);
+        if (gGroundFound == 0) continue;
+        key = gGroundArea;
+        if (gCurTrack_5->mode == 2) {
+            divmod_floor(pos[0], 128000, &qr[0], &qr[1]);
+            divmod_floor(pos[2], 128000, &qr[2], &qr[3]);
             key = (qr[0] << 16) | (u16)qr[2];
         }
-        if (D_800F0798_2[i] != NULL && (u32)(a[1] - D_800F0778_2[i] + 500) > 1000) {
-            D_800F0798_2[i] = NULL;
-            D_800F07D8[i] = 0;
+        if (sTireTrackCur_2[i] != NULL && (u32)(a[1] - sTireTrackLastY_2[i] + 500) > 1000) {
+            sTireTrackCur_2[i] = NULL;
+            gTireTrackTimers[i] = 0;
             continue;
         }
-        idx = p->seg - D_800E9298_2;
-        if (D_800F0828_2[i] != 0) idx = D_800F0800_2[i] - D_800E9298_2;
-        if (D_800F0798_2[i] != NULL) {
-            k = D_800F0798_2[i]->key;
-            if (D_800EFD64_5->mode == 1) {
-                ce = &D_800E8948_5[k];
+        idx = p->seg - gSurfaceTablePtr_2;
+        if (sTireTrackMudTimer_2[i] != 0) idx = sTireTrackMudSurface_2[i] - gSurfaceTablePtr_2;
+        if (sTireTrackCur_2[i] != NULL) {
+            k = sTireTrackCur_2[i]->key;
+            if (gCurTrack_5->mode == 1) {
+                ce = &sHeightAreas_5[k];
                 ox = (ce->x0 + ce->x1) / 2;
                 oz = (ce->z0 + ce->z1) / 2;
-            } else if (D_800EFD64_5->mode == 2) {
+            } else if (gCurTrack_5->mode == 2) {
                 ox = (k >> 16) * 8000 + 4000;
                 oz = (s16)k * 8000 + 4000;
             } else {
                 ox = oz = 0;
             }
-            r = D_800F0798_2[i];
+            r = sTireTrackCur_2[i];
             dx = pos[0] - r->x;
             dz = pos[2] - r->z;
             nx = r->nx;
             nz = r->nz;
-            l2 = func_8000EB18_2(dx * dx + dz * dz);
+            l2 = isqrt_u32_2(dx * dx + dz * dz);
             if (l2 != 0) {
                 dx = (dx << 14) / l2;
                 dz = (dz << 14) / l2;
             }
-            if ((nx * dx + nz * dz) >> 14 < 0x3F07 || key != D_800F0798_2[i]->key || chg) {
+            if ((nx * dx + nz * dz) >> 14 < 0x3F07 || key != sTireTrackCur_2[i]->key || chg) {
                 Gate_2 *g;
                 s16 *q, *q2;
-                len = D_800F0798_2[i] - D_800F0774_2;
-                g = (Gate_2 *)((len << 6) + (u32)D_800F07F8_2);
+                len = sTireTrackCur_2[i] - sTireTracks_2;
+                g = (Gate_2 *)((len << 6) + (u32)sTireTrackVtx_2);
                 q = g->a;
                 c[0] = q[0] + ox;
                 c[1] = q[1];
@@ -512,15 +512,15 @@ void func_8005D444(void)
                 e[0] *= 16;
                 e[1] *= 16;
                 e[2] *= 16;
-                D_800F0798_2[i] = func_8005DCFC(key, c, e, a, b, idx);
-                D_800F0778_2[i] = a[1];
+                sTireTrackCur_2[i] = decal_add_quad(key, c, e, a, b, idx);
+                sTireTrackLastY_2[i] = a[1];
             } else {
-                D_800F0798_2[i]->x = pos[0];
-                D_800F0798_2[i]->z = pos[2];
+                sTireTrackCur_2[i]->x = pos[0];
+                sTireTrackCur_2[i]->z = pos[2];
                 {
                 Gate_2 *g;
-                len = D_800F0798_2[i] - D_800F0774_2;
-                g = &D_800F07F8_2[len];
+                len = sTireTrackCur_2[i] - sTireTracks_2;
+                g = &sTireTrackVtx_2[len];
                 g->a[0] = a[0] / 16 - ox;
                 g->a[1] = a[1] / 16;
                 g->a[2] = a[2] / 16 - oz;
@@ -528,11 +528,11 @@ void func_8005D444(void)
                 g->b[1] = b[1] / 16;
                 g->b[2] = b[2] / 16 - oz;
                 }
-                D_800F0778_2[i] = a[1];
+                sTireTrackLastY_2[i] = a[1];
             }
         } else {
-            D_800F0798_2[i] = func_8005DCFC(key, a, b, a, b, idx);
-            D_800F0778_2[i] = a[1];
+            sTireTrackCur_2[i] = decal_add_quad(key, a, b, a, b, idx);
+            sTireTrackLastY_2[i] = a[1];
         }
     }
 }
@@ -551,10 +551,10 @@ struct Rec_33 {
 typedef struct { s32 f0, f4, a, b, c, d; s32 pad[2]; } Box_2;
 typedef struct { s32 pad[11]; s32 mode; } Ctl_17;
 
-extern Ctl_17 *D_800EFD64_32;
-extern Box_2 *D_800E8948_6;
+extern Ctl_17 *gCurTrack_32;
+extern Box_2 *sHeightAreas_6;
 
-Rec_33 *func_8005DCFC(s32 p1, s32 *p2, s32 *p3, s32 *p4, s32 *p5, s32 p6)
+Rec_33 *decal_add_quad(s32 p1, s32 *p2, s32 *p3, s32 *p4, s32 *p5, s32 p6)
 {
     s32 i, j, mode;
     s32 sx, sy;
@@ -568,12 +568,12 @@ Rec_33 *func_8005DCFC(s32 p1, s32 *p2, s32 *p3, s32 *p4, s32 *p5, s32 p6)
     Rec_33 *rb;
 
     for (i = 0; i < 4; i++) {
-        if (&D_800F0774_3[D_800F0770] == D_800F0798[i]) D_800F0798[i] = 0;
+        if (&sTireTracks_3[sTireTrackNext] == sTireTrackCur[i]) sTireTrackCur[i] = 0;
     }
 
-    mode = D_800EFD64_32->mode;
+    mode = gCurTrack_32->mode;
     if (mode == 1) {
-        b = &D_800E8948_6[p1];
+        b = &sHeightAreas_6[p1];
         sx = (b->a + b->c) / 2;
         sy = (b->b + b->d) / 2;
     } else if (mode == 2) {
@@ -583,8 +583,8 @@ Rec_33 *func_8005DCFC(s32 p1, s32 *p2, s32 *p3, s32 *p4, s32 *p5, s32 p6)
         sx = sy = 0;
     }
 
-    j = D_800F0770 * 4;
-    pt = (Vtx16 *)((u32)(j * 16) + (u32)D_800F07F8);
+    j = sTireTrackNext * 4;
+    pt = (Vtx16 *)((u32)(j * 16) + (u32)sTireTrackVtx);
     pt[0].x = (p2[0] >> 4) - sx;
     pt[0].y = p2[1] >> 4;
     pt[0].z = (p2[2] >> 4) - sy;
@@ -602,27 +602,27 @@ Rec_33 *func_8005DCFC(s32 p1, s32 *p2, s32 *p3, s32 *p4, s32 *p5, s32 p6)
     pt->z = (p5[2] >> 4) - sy;
 
     j = j / 4;
-    rb = D_800F0774_3;
+    rb = sTireTracks_3;
     rec = (Rec_33 *)((s32)(j * 24) + (s32)rb);
     rec->cx = (p4[0] + p5[0]) / 2;
     rec->cz = cz = (p4[2] + p5[2]) / 2;
     dx = rec->cx - (p2[0] + p3[0]) / 2;
     dz = cz - (p2[2] + p3[2]) / 2;
-    r = func_8000EB18_3(dx * dx + dz * dz);
+    r = isqrt_u32_3(dx * dx + dz * dz);
     if (r != 0) {
         dx = (dx * 0x4000) / (s32)r;
         dz = (dz * 0x4000) / (s32)r;
     }
 
-    r2 = (Rec_33 *)((u32)(j * 24) + (u32)D_800F0774_3);
+    r2 = (Rec_33 *)((u32)(j * 24) + (u32)sTireTracks_3);
     r2->flag = 1;
     r2->dx = dx;
     r2->dz = dz;
     r2->p1 = p1;
-    D_800F0774_3[j].p6 = p6;
+    sTireTracks_3[j].p6 = p6;
 
-    D_800F0770 = (D_800F0770 + 1) % 128;
-    return &D_800F0774_3[j];
+    sTireTrackNext = (sTireTrackNext + 1) % 128;
+    return &sTireTracks_3[j];
 }
 
 #define RAW(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
@@ -631,11 +631,11 @@ typedef struct { u8 active; u8 col; u8 pad[2]; s32 id; u8 rest[0x10]; } Ent_59;
 typedef struct { u8 pad[0x34]; u8 r, g, b; u8 pad2[9]; } Col_2;
 typedef struct { u32 count; u8 pad[0x1C]; Obj obj[1]; } ObjList;
 
-extern Ent_59 *D_800F0774_4;
-extern Col_2 *D_800E9298_3;
-extern ObjList *D_800E8948_7;
+extern Ent_59 *sTireTracks_4;
+extern Col_2 *gSurfaceTablePtr_3;
+extern ObjList *sHeightAreas_7;
 
-Gfx *func_8005E090(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
+Gfx *decal_draw(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
     s32 i, j, k, m, a, idx, started, v, hi, lo;
     Col_2 *c;
 
@@ -649,39 +649,39 @@ Gfx *func_8005E090(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
     RAW(gdl++, 0xFC119623, 0xFF2FFFFF);
-    gDPLoadTextureBlock(gdl++, D_800F0820, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 1, 0,
+    gDPLoadTextureBlock(gdl++, sTireTrackTexture, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 1, 0,
                         G_TX_CLAMP, G_TX_NOMIRROR | G_TX_WRAP, 3, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
 
-    if (D_800EFD64_5->mode == 2) {
-        for (i = 0; i < D_800EB9EC; i++) {
+    if (gCurTrack_5->mode == 2) {
+        for (i = 0; i < sDesBlockCount; i++) {
             started = 0;
             for (j = 0; j < 128; j++) {
-                if (!D_800F0774_4[j].active) continue;
-                v = D_800F0774_4[j].id;
+                if (!sTireTracks_4[j].active) continue;
+                v = sTireTracks_4[j].id;
                 hi = v >> 16;
                 lo = (s16)v;
                 if (hi == D_800ED6A8[i] && lo == D_800ED728[i]) {
                     k = j + 1;
                     if (!started) {
-                        gSPMatrix(gdl++, &D_800EA9E8[arg1][i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                        gSPMatrix(gdl++, &sDesBlockMtx[arg1][i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                         started = 1;
                     }
                     for (; k < 128; k++) {
                         if (k >= j + 8) break;
-                        if (!D_800F0774_4[k].active) break;
-                        v = D_800F0774_4[k].id;
+                        if (!sTireTracks_4[k].active) break;
+                        v = sTireTracks_4[k].id;
                         hi = v >> 16;
                         lo = (s16)v;
                         if (hi != D_800ED6A8[i] || lo != D_800ED728[i]) break;
                     }
                     k -= j;
-                    gSPVertex(gdl++, &D_800F07F8[j * 4], k * 4, 0);
+                    gSPVertex(gdl++, &sTireTrackVtx[j * 4], k * 4, 0);
                     for (m = 0; m < k; m++) {
                         idx = m + j;
-                        a = idx - D_800F0770;
+                        a = idx - sTireTrackNext;
                         if (a < 0) a += 128;
                         if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, D_800E9298_3[D_800F0774_4[idx].col].r, D_800E9298_3[D_800F0774_4[idx].col].g, D_800E9298_3[D_800F0774_4[idx].col].b, a);
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks_4[idx].col].r, gSurfaceTablePtr_3[sTireTracks_4[idx].col].g, gSurfaceTablePtr_3[sTireTracks_4[idx].col].b, a);
                             gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                         }
                     }
@@ -689,33 +689,33 @@ Gfx *func_8005E090(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
                 }
             }
         }
-    } else if (D_800EFD64_5->mode == 1) {
-        ObjList *l = D_800E8948_7;
+    } else if (gCurTrack_5->mode == 1) {
+        ObjList *l = sHeightAreas_7;
         u32 bit;
         {
-            for (i = 0; i < D_800E8948_7->count; i++) {
+            for (i = 0; i < sHeightAreas_7->count; i++) {
                 if (l->obj[i].mask & (1 << (arg3 * 2))) {
                 started = 0;
                 for (j = 0; j < 128; j++) {
-                    if (D_800F0774_4[j].active && D_800F0774_4[j].id == i) {
+                    if (sTireTracks_4[j].active && sTireTracks_4[j].id == i) {
                         k = j + 1;
                         if (!started) {
-                            gSPMatrix(gdl++, D_800E77D4[i * 4 + arg3], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+                            gSPMatrix(gdl++, gSectionMtxs[i * 4 + arg3], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                             started = 1;
                         }
                         for (; k < 128; k++) {
                             if (k >= j + 8) break;
-                            if (!D_800F0774_4[k].active) break;
-                            if (D_800F0774_4[k].id != i) break;
+                            if (!sTireTracks_4[k].active) break;
+                            if (sTireTracks_4[k].id != i) break;
                         }
                         k -= j;
-                        gSPVertex(gdl++, &D_800F07F8[j * 4], k * 4, 0);
+                        gSPVertex(gdl++, &sTireTrackVtx[j * 4], k * 4, 0);
                         for (m = 0; m < k; m++) {
                             idx = m + j;
-                            a = idx - D_800F0770;
+                            a = idx - sTireTrackNext;
                             if (a < 0) a += 128;
                             if (a >= 16) {
-                                gDPSetPrimColor(gdl++, 0, 0, D_800E9298_3[D_800F0774_4[idx].col].r, D_800E9298_3[D_800F0774_4[idx].col].g, D_800E9298_3[D_800F0774_4[idx].col].b, a);
+                                gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks_4[idx].col].r, gSurfaceTablePtr_3[sTireTracks_4[idx].col].g, gSurfaceTablePtr_3[sTireTracks_4[idx].col].b, a);
                                 gSP2Triangles(gdl++, m * 4, m * 4 + 1, m * 4 + 2, 0, m * 4 + 2, m * 4 + 1, m * 4 + 3, 0);
                             }
                         }
@@ -727,15 +727,15 @@ Gfx *func_8005E090(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
         }
     } else {
         for (i = 0; i < 128; i += 8) {
-            gSPVertex(gdl++, &D_800F07F8[i * 4], 32, 0);
+            gSPVertex(gdl++, &sTireTrackVtx[i * 4], 32, 0);
             for (j = 0; j < 8; j++) {
                 idx = i + j;
-                if (D_800F0774_4[idx].active) {
-                    if (D_800E8948_7->obj[D_800F0774_4[idx].id].mask & (1 << (arg3 * 2))) {
-                        a = idx - D_800F0770;
+                if (sTireTracks_4[idx].active) {
+                    if (sHeightAreas_7->obj[sTireTracks_4[idx].id].mask & (1 << (arg3 * 2))) {
+                        a = idx - sTireTrackNext;
                         if (a < 0) a += 128;
                         if (a >= 16) {
-                            gDPSetPrimColor(gdl++, 0, 0, D_800E9298_3[D_800F0774_4[idx].col].r, D_800E9298_3[D_800F0774_4[idx].col].g, D_800E9298_3[D_800F0774_4[idx].col].b, a);
+                            gDPSetPrimColor(gdl++, 0, 0, gSurfaceTablePtr_3[sTireTracks_4[idx].col].r, gSurfaceTablePtr_3[sTireTracks_4[idx].col].g, gSurfaceTablePtr_3[sTireTracks_4[idx].col].b, a);
                             gSP2Triangles(gdl++, j * 4, j * 4 + 1, j * 4 + 2, 0, j * 4 + 2, j * 4 + 1, j * 4 + 3, 0);
                         }
                     }
@@ -748,25 +748,25 @@ Gfx *func_8005E090(Gfx *gdl, s32 arg1, Mtx *arg2, s32 arg3) {
     return gdl;
 }
 
-void func_8005E960(void)
+void decal_free(void)
 {
-    func_800BCB04(D_800F0820);
-    func_800BCB04(D_800F07F8);
-    func_800BCB04(D_800F0774);
+    mem_free(sTireTrackTexture);
+    mem_free(sTireTrackVtx);
+    mem_free(sTireTracks);
 }
 
-void func_8005E9A4(s32 a0)
+void decal_end_track(s32 a0)
 {
-    D_800F0798[a0] = 0;
+    sTireTrackCur[a0] = 0;
 }
 
-void func_8005E9BC(void) {
+void decal_clear_all(void) {
     s32 i;
     for (i = 0; i < 8; i++) {
-        D_800F0798[i] = 0;
-        D_800F07D8[i] = 0;
+        sTireTrackCur[i] = 0;
+        gTireTrackTimers[i] = 0;
     }
     for (i = 0; i < 0x80; i++) {
-        D_800F0774[i * 0x18] = 0;
+        sTireTracks[i * 0x18] = 0;
     }
 }

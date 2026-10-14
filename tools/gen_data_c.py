@@ -135,7 +135,7 @@ def code_refs():
         names[k] |= {int(v, 16) for v in lib[k]["symbols"].values()}
         names[k] |= {s.address for s in common.symbols()[k].values()}
     # The listings' `; D_` comments pair each low half with the last lui of its register in a linear scan, which
-    # crosses branches (func_80017338 +0x538 reads D_800E7728; its comment says D_800D7728, inside a string):
+    # crosses branches (race_update +0x538 reads D_800E7728; its comment says D_800D7728, inside a string):
     # they tell how an address is accessed (lwc1, lhu, ...), not where symbols start.
     for fn in common.functions():
         if fn["kind"] == "padding":
@@ -179,7 +179,7 @@ def extern_decls(text, symtab):
 
 def known_names(image):
     """address -> name: libultra's real names, then functions.csv's function names. Entries split.py calls
-    linker padding count too: data points at three of them (func_800A3B58, func_800A3F08, func_800BC2E8 are
+    linker padding count too: data points at three of them (nes_am_immediate_stub, nes_am_relative_stub, n64snd_stub2 are
     `jr $ra; nop`, empty functions only reached through function-pointer tables)."""
     names = {}
     for f in common.functions():

@@ -17,23 +17,23 @@ typedef struct {
     void *seg;
 } SegRef;
 
-extern SegRef *D_800E783C_2;
-extern ItemList *D_800C9644;
-extern ItemList *D_800C9640_2;
+extern SegRef *gTerrainTexSet_2;
+extern ItemList *gTrackSections;
+extern ItemList *gTrackObjects_2;
 
 static inline MtxS *getmtx(s32 x, s32 y, s32 z, s32 view)
 {
     MtxS *m;
 
-    if (D_800E77D0 >= 300) {
+    if (sTubeMtxCount >= 300) {
         return NULL;
     }
-    x = x * 16 - D_800E8090[view].x;
-    y = y * 16 - D_800E8090[view].y;
-    z = z * 16 - D_800E8090[view].z;
-    m = &D_800E7798[D_800E30A8][D_800E77D0];
-    func_80011490(m, 0, 0, 0, x, y, z, 0x100);
-    D_800E77D0++;
+    x = x * 16 - gCamPos[view].x;
+    y = y * 16 - gCamPos[view].y;
+    z = z * 16 - gCamPos[view].z;
+    m = &sTubeMtxPool[gGfxFrameIndex][sTubeMtxCount];
+    mtx_from_angles_pos_scale(m, 0, 0, 0, x, y, z, 0x100);
+    sTubeMtxCount++;
     return m;
 }
 
@@ -46,15 +46,15 @@ typedef struct {
     s32 f28;
 } Blk5CC0;
 
-extern Blk5CC0 D_800F5CC0;
+extern Blk5CC0 gUserTrackData;
 
-void func_80022BD0(void)
+void arn_init(void)
 {
     s32 iVar1;
     s32 t;
 
-    D_800C23F0 = 0x4000;
-    iVar1 = (s32)(D_800EFD64 - D_800CB210_2) * -0x33333333 >> 5;
+    gFarClip = 0x4000;
+    iVar1 = (s32)(gCurTrack - gTracks_2) * -0x33333333 >> 5;
     D_800E7718 = 0;
     if (iVar1 == 0x18) {
         D_800E7718 = 1;
@@ -62,58 +62,58 @@ void func_80022BD0(void)
     if (iVar1 == 0x16) {
         D_800E7718 = 1;
     }
-    func_800BFC40(D_800D6A30, (s32)D_800248EC);
-    func_800BFC40(D_800D6A34, (s32)D_80031D08);
-    if ((*(u32 *)(D_800EFD64 + 0x50) & 2) != 0) {
-        func_800A4BEC();
-        func_800A5A74();
-        if (D_800F5CC0.f28 != 0) {
-            D_800C9574 = D_800F5CC0.f28;
+    res_register_type(D_800D6A30, (s32)D_800248EC);
+    res_register_type(D_800D6A34, (s32)D_80031D08);
+    if ((*(u32 *)(gCurTrack + 0x50) & 2) != 0) {
+        usrtrk_load_pieces();
+        usrtrk_build_track();
+        if (gUserTrackData.f28 != 0) {
+            D_800C9574 = gUserTrackData.f28;
         }
-        D_800C9648 = 0;
-        D_800E7824 = 0;
-        D_800E783C = D_800F5CC0.f4;
-        D_800E781C = D_800F5CC0.fC;
-        D_800E7720 = func_800BF79C(D_800E7728, D_800D07C0);
-        D_800E7710 = func_800BF79C(D_800E7728, D_800D06F4);
-        D_800E771C = func_800BF79C(D_800E7728, D_800D07D4);
-        D_800E7808[1] = 0;
-        D_800E7808[2] = 0;
-        D_800E77F8 = 0;
-        D_800E7808[0] = D_800E781C;
-        D_800C9644_2 = (s32 *)D_800F5CC0.f0;
-        D_800E78A0 = func_80027574(D_800F5CC0.f0, (s32)&D_800E783C, 0, 0);
-        D_800C9640 = (s32 *)D_800F5CC0.f8;
-        D_800E7828 = func_80027574(D_800F5CC0.f8, (s32)D_800E7808, 0xC, 1);
-        func_80024490((s32)D_800C9644_2);
+        gWaterModels = 0;
+        gWaterTexSet = 0;
+        gTerrainTexSet = gUserTrackData.f4;
+        gObjectTexSet = gUserTrackData.fC;
+        sStandModels = res_load(D_800E7728, D_800D07C0);
+        sStandLowModel = res_load(D_800E7728, D_800D06F4);
+        sStandTextures = res_load(D_800E7728, D_800D07D4);
+        sObjectSegs[1] = 0;
+        sObjectSegs[2] = 0;
+        gAnimTexSet = 0;
+        sObjectSegs[0] = gObjectTexSet;
+        gTrackSections_2 = (s32 *)gUserTrackData.f0;
+        gSectionDLs = tube_build_dlists(gUserTrackData.f0, (s32)&gTerrainTexSet, 0, 0);
+        gTrackObjects = (s32 *)gUserTrackData.f8;
+        gObjectDLs = tube_build_dlists(gUserTrackData.f8, (s32)sObjectSegs, 0xC, 1);
+        arn_apply_noise_shading((s32)gTrackSections_2);
     } else {
-        D_800C9574 = func_8005AED8(D_800D1518);
-        D_800C9648 = func_8005AED8(D_800D14E4);
-        D_800E7824 = func_8005AED8(D_800D1510);
-        D_800E783C = func_8005AED8(D_800D1504);
-        D_800E781C = func_8005AED8(D_800D1508);
-        D_800E7720 = func_8005AED8(D_800D1584);
-        D_800E7710 = func_8005AED8(D_800D1588);
-        D_800E771C = func_8005AED8(D_800D158C);
-        D_800E77F8 = func_8005AED8(D_800D1500);
-        D_800E7808[1] = D_800E77F8;
-        D_800E7808[2] = 0;
-        D_800E7808[0] = D_800E781C;
-        D_800C9644_2 = (s32 *)func_8005AED8(D_800D14DC);
-        D_800E78A0 = func_80027574((s32)D_800C9644_2, (s32)&D_800E783C, 0, 0);
-        D_800C9640 = (s32 *)func_8005AED8(D_800D14E0);
-        D_800E7828 = func_80027574((s32)D_800C9640, (s32)D_800E7808, 0xC, 1);
+        D_800C9574 = track_res_get(D_800D1518);
+        gWaterModels = track_res_get(D_800D14E4);
+        gWaterTexSet = track_res_get(D_800D1510);
+        gTerrainTexSet = track_res_get(D_800D1504);
+        gObjectTexSet = track_res_get(D_800D1508);
+        sStandModels = track_res_get(D_800D1584);
+        sStandLowModel = track_res_get(D_800D1588);
+        sStandTextures = track_res_get(D_800D158C);
+        gAnimTexSet = track_res_get(D_800D1500);
+        sObjectSegs[1] = gAnimTexSet;
+        sObjectSegs[2] = 0;
+        sObjectSegs[0] = gObjectTexSet;
+        gTrackSections_2 = (s32 *)track_res_get(D_800D14DC);
+        gSectionDLs = tube_build_dlists((s32)gTrackSections_2, (s32)&gTerrainTexSet, 0, 0);
+        gTrackObjects = (s32 *)track_res_get(D_800D14E0);
+        gObjectDLs = tube_build_dlists((s32)gTrackObjects, (s32)sObjectSegs, 0xC, 1);
     }
-    func_80011490(D_800E7730, 0, 0, 0, 0, 0, 0, 300);
-    func_8002DA60((s32)D_800C9644_2, (s32)D_800C9640, D_800C9574, 0);
-    iVar1 = func_8005B58C(D_800D1528);
-    func_80065B10(D_800E7728, iVar1, 1, (s32)D_800C9644_2, D_800E781C);
-    if ((D_800E1898 == 1) && (D_800E7718 == 0)) {
-        t = *D_800C9644_2;
-        D_800E7724 = t << 1;
-        D_800E7714 = func_800BC908(t << 2, 0, (s32)D_800D6A38, 0xC9);
+    mtx_from_angles_pos_scale(D_800E7730, 0, 0, 0, 0, 0, 0, 300);
+    height_init((s32)gTrackSections_2, (s32)gTrackObjects, D_800C9574, 0);
+    iVar1 = track_res_find(D_800D1528);
+    instances_load(D_800E7728, iVar1, 1, (s32)gTrackSections_2, gObjectTexSet);
+    if ((gNumScreens == 1) && (D_800E7718 == 0)) {
+        t = *gTrackSections_2;
+        sSectionDrawOrderLen = t << 1;
+        sSectionDrawOrder = mem_alloc_dbg(t << 2, 0, (s32)D_800D6A38, 0xC9);
     } else {
-        D_800E7714 = 0;
+        sSectionDrawOrder = 0;
     }
 }
 
@@ -123,11 +123,11 @@ typedef struct {
     u16 fogmax[4];
 } FogTab;
 
-extern SegRef *D_800E771C_2;
-extern SegRef *D_800E7710_2;
-extern ItemList *D_800E7720_2;
+extern SegRef *sStandTextures_2;
+extern SegRef *sStandLowModel_2;
+extern ItemList *sStandModels_2;
 
-Gfx *func_80022FD8(Gfx *gdl, s32 a1, s32 a2, s32 view)
+Gfx *arn_draw(Gfx *gdl, s32 a1, s32 a2, s32 view)
 {
     u32 i, n;
     s32 j;
@@ -144,14 +144,14 @@ Gfx *func_80022FD8(Gfx *gdl, s32 a1, s32 a2, s32 view)
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
     gDPSetRenderMode(gdl++, 0x442230, 0);
     gDPSetCombine(gdl++, 0x127E24, 0xFFFFF3F9);
-    if (D_800C2350 & 0x20) {
-        gSPSegment(gdl++, 6, D_800C95B8);
-        gSPSegment(gdl++, 7, D_800C95D8);
-        for (i = 0; i < D_800C9640_2->n; i++) {
-            m = D_800C9640_2->it[i].mask;
+    if (gDrawFlags & 0x20) {
+        gSPSegment(gdl++, 6, sTexOpaqueDL);
+        gSPSegment(gdl++, 7, sTexCutoutDL);
+        for (i = 0; i < gTrackObjects_2->n; i++) {
+            m = gTrackObjects_2->it[i].mask;
             if ((m & (1 << (view * 2))) && !(m & (2 << (view * 2)))) {
-                gdl = func_800281F4(gdl, i);
-                gSPDisplayList(gdl++, D_800E7828[i]);
+                gdl = tube_set_anim_tex_segs(gdl, i);
+                gSPDisplayList(gdl++, gObjectDLs[i]);
             }
         }
     }
@@ -160,23 +160,23 @@ Gfx *func_80022FD8(Gfx *gdl, s32 a1, s32 a2, s32 view)
     gSPSetGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
     gDPSetRenderMode(gdl++, 0x552230, 0);
-    gDPLoadTLUT_pal256(gdl++, D_800E783C_2->seg);
-    if (D_800E7714_2 != NULL && view == 0) {
-        for (j = 0; j < D_800E7724; j++) {
-            k = D_800E7714_2[j];
+    gDPLoadTLUT_pal256(gdl++, gTerrainTexSet_2->seg);
+    if (sSectionDrawOrder_2 != NULL && view == 0) {
+        for (j = 0; j < sSectionDrawOrderLen; j++) {
+            k = sSectionDrawOrder_2[j];
             if (k < 0) continue;
-            it = &D_800C9644->it[k];
+            it = &gTrackSections->it[k];
             m = it->mask;
             if ((m & (1 << (view * 2))) && !(m & (2 << (view * 2)))) {
-                gSPDisplayList(gdl++, D_800E78A0[k]);
+                gSPDisplayList(gdl++, gSectionDLs[k]);
             }
         }
     } else {
-        for (k = 0; k < D_800C9644->n; k++) {
-            it = &D_800C9644->it[k];
+        for (k = 0; k < gTrackSections->n; k++) {
+            it = &gTrackSections->it[k];
             m = it->mask;
             if ((m & (1 << (view * 2))) && !(m & (2 << (view * 2)))) {
-                gSPDisplayList(gdl++, D_800E78A0[k]);
+                gSPDisplayList(gdl++, gSectionDLs[k]);
             }
         }
     }
@@ -184,27 +184,27 @@ Gfx *func_80022FD8(Gfx *gdl, s32 a1, s32 a2, s32 view)
     gSPSetGeometryMode(gdl++, G_FOG);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
     gSPSetGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
-    gDPSetFogColor(gdl++, D_800DC0E0[0], D_800DC0E0[1], D_800DC0E0[2], 255);
-    fog = D_800EFD64;
-    gSPFogPosition(gdl++, fog->fogmin[D_800E1898 - 1], fog->fogmax[D_800E1898 - 1]);
+    gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
+    fog = gCurTrack;
+    gSPFogPosition(gdl++, fog->fogmin[gNumScreens - 1], fog->fogmax[gNumScreens - 1]);
     gDPSetCombine(gdl++, 0x127E24, 0xFFFFFFFF);
     gDPSetRenderMode(gdl++, 0xC8004030, 0);
-    if (D_800E7714_2 != NULL && view == 0) {
-        for (j = 0; j < D_800E7724; j++) {
-            k = D_800E7714_2[j];
+    if (sSectionDrawOrder_2 != NULL && view == 0) {
+        for (j = 0; j < sSectionDrawOrderLen; j++) {
+            k = sSectionDrawOrder_2[j];
             if (k < 0) continue;
-            it = &D_800C9644->it[k];
+            it = &gTrackSections->it[k];
             m = it->mask;
             if ((m & (1 << (view * 2))) && (m & (2 << (view * 2)))) {
-                gSPDisplayList(gdl++, D_800E78A0[k]);
+                gSPDisplayList(gdl++, gSectionDLs[k]);
             }
         }
     } else {
-        for (k = 0; k < D_800C9644->n; k++) {
-            it = &D_800C9644->it[k];
+        for (k = 0; k < gTrackSections->n; k++) {
+            it = &gTrackSections->it[k];
             m = it->mask;
             if ((m & (1 << (view * 2))) && (m & (2 << (view * 2)))) {
-                gSPDisplayList(gdl++, D_800E78A0[k]);
+                gSPDisplayList(gdl++, gSectionDLs[k]);
             }
         }
     }
@@ -213,15 +213,15 @@ Gfx *func_80022FD8(Gfx *gdl, s32 a1, s32 a2, s32 view)
     gDPSetRenderMode(gdl++, 0x442230, 0);
     gSPClearGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
-    gDPLoadTLUT_pal256(gdl++, D_800E771C_2->seg);
-    if (D_800C2594 < 3) {
-        for (i = 0; i < D_800E7720_2->n; i++) {
-            if (D_800C2350 & 0x10) {
-                gdl = func_80013D70(4, D_800E7720_2->it[i].id, &D_800E771C_2, gdl);
+    gDPLoadTLUT_pal256(gdl++, sStandTextures_2->seg);
+    if (gNumViews < 3) {
+        for (i = 0; i < sStandModels_2->n; i++) {
+            if (gDrawFlags & 0x10) {
+                gdl = prim_build_dl(4, sStandModels_2->it[i].id, &sStandTextures_2, gdl);
             }
         }
     } else {
-        gdl = func_80013D70(4, (s32)D_800E7710_2->seg, &D_800E771C_2, gdl);
+        gdl = prim_build_dl(4, (s32)sStandLowModel_2->seg, &sStandTextures_2, gdl);
     }
     gDPPipeSync(gdl++);
     return gdl;
@@ -244,15 +244,15 @@ typedef struct {
     u16 fogMin[4];
 } Fog;
 
-extern Tbl *D_800C9648_2;
-extern Fog *D_800EFD64_18;
+extern Tbl *gWaterModels_2;
+extern Fog *gCurTrack_18;
 
-Gfx *func_800238F0(Gfx *gdl, s32 p2, s32 p3, u32 sh)
+Gfx *arn_draw_water(Gfx *gdl, s32 p2, s32 p3, u32 sh)
 {
     u32 i;
     u32 off;
     u8 pad[0x48];
-    Tbl *tbl = D_800C9648_2;
+    Tbl *tbl = gWaterModels_2;
 
 
     if (tbl == NULL) {
@@ -265,17 +265,17 @@ Gfx *func_800238F0(Gfx *gdl, s32 p2, s32 p3, u32 sh)
     gDPSetRenderMode(gdl++, 0x404A50, 0);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
-    gSPFogPosition(gdl++, D_800EFD64_18->fogMin[D_800E1898 - 1], D_800EFD64_18->fogMax[D_800E1898 - 1]);
+    gSPFogPosition(gdl++, gCurTrack_18->fogMin[gNumScreens - 1], gCurTrack_18->fogMax[gNumScreens - 1]);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
-    D_800C8C74 = 1;
-    for (i = 0; i < D_800C9648_2->n; i++) {
+    gPrimIATextures = 1;
+    for (i = 0; i < gWaterModels_2->n; i++) {
         off = i * 32 + 4;
-        if ((*(u32 *)((u8 *)D_800C9648_2 + off + 0x1C) >> (sh << 1)) & 1) {
-            gdl = func_80013D70(0, D_800C9648_2->e[i].dl, D_800E7824_2, gdl);
+        if ((*(u32 *)((u8 *)gWaterModels_2 + off + 0x1C) >> (sh << 1)) & 1) {
+            gdl = prim_build_dl(0, gWaterModels_2->e[i].dl, gWaterTexSet_2, gdl);
         }
     }
     gDPPipeSync(gdl++);
-    D_800C8C74 = 0;
+    gPrimIATextures = 0;
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gSPClearGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPClearGeometryMode(gdl++, G_FOG);
@@ -288,9 +288,9 @@ typedef struct List {
     struct { u32 flags; u32 pad[7]; } e[1];
 } List;
 
-extern List *D_800C9640_4;
+extern List *gTrackObjects_4;
 
-Gfx *func_80023C0C(Gfx *gdl, s32 a1, s32 a2, s32 mode)
+Gfx *arn_draw_far(Gfx *gdl, s32 a1, s32 a2, s32 mode)
 {
     s32 pos[4];
     s32 out[3];
@@ -298,14 +298,14 @@ Gfx *func_80023C0C(Gfx *gdl, s32 a1, s32 a2, s32 mode)
     u16 *fog;
     u32 i;
 
-    func_80011A58(mtx, 0, 0, D_800E8000[mode]);
+    mtx3i_from_angles(mtx, 0, 0, gCamYaw[mode]);
     pos[0] = 0;
     pos[1] = -30;
     pos[2] = 0;
-    func_80012DC8(pos, mtx, out);
-    func_80011490(D_800E7730, 0, 0, 0, out[0], out[1], out[2], 0x100);
+    vec3i_mul_mtx3i(pos, mtx, out);
+    mtx_from_angles_pos_scale(D_800E7730, 0, 0, 0, out[0], out[1], out[2], 0x100);
 
-    gSPViewport(gdl++, &D_800E19C0[mode + 4]);
+    gSPViewport(gdl++, &gViewports[mode + 4]);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gSPSetGeometryMode(gdl++, 0x200004);
@@ -315,16 +315,16 @@ Gfx *func_80023C0C(Gfx *gdl, s32 a1, s32 a2, s32 mode)
     gDPSetRenderMode(gdl++, 0xC8004030, 0);
     gDPSetCombine(gdl++, 0x127E24, 0xFFFFF3F9);
     gSPSetGeometryMode(gdl++, G_FOG);
-    gDPSetFogColor(gdl++, D_800DC0E0[0], D_800DC0E0[1], D_800DC0E0[2], 255);
-    fog = (u16 *)((u8 *)D_800EFD64 + ((D_800E1898 - 1) << 1));
+    gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
+    fog = (u16 *)((u8 *)gCurTrack + ((gNumScreens - 1) << 1));
     gSPFogPosition(gdl++, fog[0x2C], fog[0x30]);
-    gSPSegment(gdl++, 6, D_800C9588);
-    gSPSegment(gdl++, 7, D_800C95A0);
+    gSPSegment(gdl++, 6, sTexOpaqueFogDL);
+    gSPSegment(gdl++, 7, sTexCutoutFogDL);
 
-    for (i = 0; i < D_800C9640_4->n; i++) {
-        if ((D_800C9640_4->e[i].flags & (1 << (mode * 2))) && (D_800C9640_4->e[i].flags & (2 << (mode * 2)))) {
-            gdl = func_800281F4(gdl, i);
-            gSPDisplayList(gdl++, D_800E7828[i]);
+    for (i = 0; i < gTrackObjects_4->n; i++) {
+        if ((gTrackObjects_4->e[i].flags & (1 << (mode * 2))) && (gTrackObjects_4->e[i].flags & (2 << (mode * 2)))) {
+            gdl = tube_set_anim_tex_segs(gdl, i);
+            gSPDisplayList(gdl++, gObjectDLs[i]);
         }
     }
 
@@ -349,9 +349,9 @@ typedef struct {
     u32 bits;
 } Rec_10;
 
-extern Game_12 D_800EFD70_27;
+extern Game_12 gGame_27;
 
-void func_8002400C(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
+void arn_cull_models(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
 {
     s32 unused[10];
     s32 d[4];
@@ -377,18 +377,18 @@ void func_8002400C(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
     s32 ey;
     Rec_10 *rec;
 
-    far = D_800C9550[D_800E1898 - 1];
-    near = D_800C9560[D_800E1898 - 1];
+    far = gLoDetailThresh[gNumScreens - 1];
+    near = gVisibleThresh[gNumScreens - 1];
     if (slots != NULL) {
         for (sn = 0; sn < nslots; sn++) {
             slots[sn] = -1;
         }
     }
-    cam0 = D_800E8090_3[p][0] >> 4;
-    sn = D_800C2C60[(D_800E8000[p] >> 4) & 0xFFF];
-    cs = D_800C2C60[((D_800E8000[p] >> 4) - 0x400) & 0xFFF];
-    cam1 = D_800E8090_3[p][1] >> 4;
-    cam2 = D_800E8090_3[p][2] >> 4;
+    cam0 = gCamPos_3[p][0] >> 4;
+    sn = gCosTable[(gCamYaw[p] >> 4) & 0xFFF];
+    cs = gCosTable[((gCamYaw[p] >> 4) - 0x400) & 0xFFF];
+    cam1 = gCamPos_3[p][1] >> 4;
+    cam2 = gCamPos_3[p][2] >> 4;
     for (i = 0; i < list[0]; i++) {
         rec = (Rec_10 *)(list + 1) + i;
         ex = ((rec->x1 + rec->x0) >> 1) - cam0;
@@ -403,7 +403,7 @@ void func_8002400C(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
         if (far < r[2] && strict != 0) {
             rec->bits |= 2 << (p * 2);
         }
-        if (D_800EFD70_27.mode == 9 || D_800EFD70_27.mode == 2 || D_800E1898 == 2) {
+        if (gGame_27.mode == 9 || gGame_27.mode == 2 || gNumScreens == 2) {
             if (r[2] >= -799 && r[2] < 1200 && r[0] >= -799 && r[0] < 800) goto visible;
         } else {
             if (r[2] >= -399 && r[2] < 800 && r[0] >= -399 && r[0] < 400) goto visible;
@@ -419,9 +419,9 @@ void func_8002400C(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
         }
         h = r[2];
         h /= 2;
-        if (D_800E1898 == 2 && D_800C2384 == 0 && D_800C2388 == 0) {
+        if (gNumScreens == 2 && gInsetViewActive == 0 && gSplitVertical == 0) {
             h = h * 3 >> 1;
-            if (D_800E7978[0] > 0x1500) {
+            if (gCamPitch[0] > 0x1500) {
                 h = (h * 4) / 3;
             }
         }
@@ -438,7 +438,7 @@ void func_8002400C(u32 *list, s32 p, s32 strict, s16 *slots, s32 nslots)
         rec->flag = 1;
         rec->bits |= 1 << (p * 2);
         if (slots != NULL) {
-            idx = r[2] * nslots / D_800C9560[D_800E1898 - 1];
+            idx = r[2] * nslots / gVisibleThresh[gNumScreens - 1];
             if (idx < 0) {
                 idx = 0;
             }
@@ -481,7 +481,7 @@ struct Model_2 {
     Item_2 items[1];
 };
 
-void func_80024490(Model_2 *m)
+void arn_apply_noise_shading(Model_2 *m)
 {
     s32 minB = 9999999;
     s32 minA = 9999999;
@@ -504,12 +504,12 @@ void func_80024490(Model_2 *m)
         if (maxA < it->maxA) maxA = it->maxA;
         if (maxB < it->maxB) maxB = it->maxB;
     }
-    while (func_80065858() != 0) {
+    while (sched_get_current_task() != 0) {
     }
-    buf = D_800C29E0;
+    buf = gZBuffer;
     out = buf + 0x10000;
     for (i = 0; i < 0x10000; i++) {
-        buf[i] = func_8000EFE8();
+        buf[i] = random_byte();
     }
     for (i = 0; i < 0x10000; i++) {
         out[i] = (buf[i] + buf[i + 0x100] + buf[i - 0x100] + buf[i + 1] + buf[i - 1]) / 5;
@@ -540,49 +540,49 @@ void func_80024490(Model_2 *m)
     }
 }
 
-void func_80024708(void)
+void arn_free(void)
 {
     u32 i;
 
     i = 0;
-    if (*D_800C9644_2 != 0) {
+    if (*gTrackSections_2 != 0) {
         do {
-            func_800BCB04(D_800E78A0[i]);
+            mem_free(gSectionDLs[i]);
             i = i + 1;
-        } while (i < (u32)*D_800C9644_2);
+        } while (i < (u32)*gTrackSections_2);
     }
     i = 0;
-    if (*D_800C9640 != 0) {
+    if (*gTrackObjects != 0) {
         do {
-            func_800BCB04(D_800E7828[i]);
+            mem_free(gObjectDLs[i]);
             i = i + 1;
-        } while (i < (u32)*D_800C9640);
+        } while (i < (u32)*gTrackObjects);
     }
-    func_800BCB04((s32)D_800E78A0);
-    func_800BCB04((s32)D_800E7828);
-    if ((D_800EFD64_3[20] & 2) != 0) {
-        func_800A5840();
+    mem_free((s32)gSectionDLs);
+    mem_free((s32)gObjectDLs);
+    if ((gCurTrack_3[20] & 2) != 0) {
+        usrtrk_unload();
     }
-    func_8002E190();
-    func_80028278();
-    if (D_800E7714 != 0) {
-        func_800BCB04(D_800E7714);
+    height_free();
+    tube_free_tex_segs();
+    if (sSectionDrawOrder != 0) {
+        mem_free(sSectionDrawOrder);
     }
 }
 
-void func_8002482C(s32 param_1)
+void arn_update_view(s32 param_1)
 {
     s32 f = (D_800E7718 == 0);
-    void *p3 = D_800E7714;
+    void *p3 = sSectionDrawOrder;
 
     if (p3 != NULL && param_1 == 0) {
-        func_8002400C(D_800C9644, 0, f, p3, D_800E7724);
+        arn_cull_models(gTrackSections, 0, f, p3, sSectionDrawOrderLen);
     } else {
-        func_8002400C(D_800C9644, param_1, f, NULL, 0);
+        arn_cull_models(gTrackSections, param_1, f, NULL, 0);
     }
-    func_8002400C(D_800C9640, param_1, D_800EFDBC != 2, NULL, 0);
-    if (D_800C9648 != NULL) {
-        func_8002400C(D_800C9648, param_1, 1, NULL, 0);
+    arn_cull_models(gTrackObjects, param_1, gGameMode != 2, NULL, 0);
+    if (gWaterModels != NULL) {
+        arn_cull_models(gWaterModels, param_1, 1, NULL, 0);
     }
 }
 
@@ -590,7 +590,7 @@ typedef struct {
     u32 f0, f4, f8, fc, f10, f14, f18, f1c;
 } Ent_16;
 
-void func_800248EC(u32 *param)
+void arn_relocate(u32 *param)
 {
     u32 *base = (u32 *)*param;
     Ent_16 *e;
@@ -640,111 +640,111 @@ typedef struct {
     u16 *pal;
 } Pal_5;
 
-extern Pal_5 *D_800E781C_2;
-extern Mdl *D_800C9640_5;
-extern Mdl *D_800C9644_6;
+extern Pal_5 *gObjectTexSet_2;
+extern Mdl *gTrackObjects_5;
+extern Mdl *gTrackSections_6;
 
-void func_80024980(void)
+void tube_init(void)
 {
     s32 i, j;
     u32 *p;
 
     for (i = 0; i < 2; i++) {
-        D_800E7798[i] = func_800BC908(0x4B00, 0, D_800D6A50, 0xCA);
+        sTubeMtxPool[i] = mem_alloc_dbg(0x4B00, 0, D_800D6A50, 0xCA);
         for (j = 0; j < 300; j++) {
-            func_80011490(&D_800E7798[i][j], 0, 0, 0, 0, 0, 0, 0x100);
+            mtx_from_angles_pos_scale(&sTubeMtxPool[i][j], 0, 0, 0, 0, 0, 0, 0x100);
         }
     }
     D_800E7820 = -1;
-    D_800C23F0 = 8000;
-    func_800BFC40((u8 *)D_800D6A5C, (s32)func_800248EC);
-    func_800BFC40((u8 *)D_800D6A60, (s32)func_80031D08);
-    D_800E781C_2 = (Pal_5 *)func_8005AED8(D_800D1508);
-    p = &D_800E783C;
-    *p = func_8005AED8(D_800D1504);
-    D_800E7824 = func_8005AED8(D_800D1510);
-    D_800E77F8 = func_8005AED8(D_800D1500);
-    D_800E77C4 = func_8005AED8(D_800D14FC);
-    D_800C9640_5 = (Mdl *)func_8005AED8(D_800D14E0);
-    D_800E7808[0] = (u32)D_800E781C_2;
-    D_800E7808[1] = D_800E77C4;
-    D_800E7808[2] = D_800E77F8;
-    D_800E7828 = func_80027574(D_800C9640_5, D_800E7808, 0x4C, 1);
-    D_800C9644_6 = (Mdl *)func_8005AED8(D_800D14DC);
-    D_800E78A0 = func_80027574(D_800C9644_6, p, 0, 0);
-    D_800C9648 = (Mdl *)func_8005AED8(D_800D14E4);
-    if (D_800C2280 & 0x80) {
-        func_80028330(D_800C9644_6);
-        func_80028330(D_800C9640_5);
+    gFarClip = 8000;
+    res_register_type((u8 *)D_800D6A5C, (s32)arn_relocate);
+    res_register_type((u8 *)D_800D6A60, (s32)height_init_walls_reloc);
+    gObjectTexSet_2 = (Pal_5 *)track_res_get(D_800D1508);
+    p = &gTerrainTexSet;
+    *p = track_res_get(D_800D1504);
+    gWaterTexSet = track_res_get(D_800D1510);
+    gAnimTexSet = track_res_get(D_800D1500);
+    D_800E77C4 = track_res_get(D_800D14FC);
+    gTrackObjects_5 = (Mdl *)track_res_get(D_800D14E0);
+    sObjectSegs[0] = (u32)gObjectTexSet_2;
+    sObjectSegs[1] = D_800E77C4;
+    sObjectSegs[2] = gAnimTexSet;
+    gObjectDLs = tube_build_dlists(gTrackObjects_5, sObjectSegs, 0x4C, 1);
+    gTrackSections_6 = (Mdl *)track_res_get(D_800D14DC);
+    gSectionDLs = tube_build_dlists(gTrackSections_6, p, 0, 0);
+    gWaterModels = (Mdl *)track_res_get(D_800D14E4);
+    if (gCheatFlags & 0x80) {
+        tube_rotate_vertex_colors(gTrackSections_6);
+        tube_rotate_vertex_colors(gTrackObjects_5);
     }
-    D_800E7834 = func_800BC908(D_800C9640_5->n * 4, 0, D_800D6A50, 0xF9);
-    for (i = 0; i < D_800C9640_5->n; i++) {
-        D_800E7834[i] = D_800C9640_5->e[i].f18;
+    gObjectFlags = mem_alloc_dbg(gTrackObjects_5->n * 4, 0, D_800D6A50, 0xF9);
+    for (i = 0; i < gTrackObjects_5->n; i++) {
+        gObjectFlags[i] = gTrackObjects_5->e[i].f18;
     }
-    func_80066494(D_800C9640_5);
-    D_800E77D4 = func_800BC908(D_800C9644_6->n * 16, 0, D_800D6A50, 0x103);
-    func_80027B7C();
+    shatter_init(gTrackObjects_5);
+    gSectionMtxs = mem_alloc_dbg(gTrackSections_6->n * 16, 0, D_800D6A50, 0x103);
+    tube_load_pvs();
     for (i = 0; i < 256; i++) {
-        if (D_800E781C_2->pal[i] == 0xF83F) {
-            D_800E781C_2->pal[i] = 0;
+        if (gObjectTexSet_2->pal[i] == 0xF83F) {
+            gObjectTexSet_2->pal[i] = 0;
         }
     }
     p = &D_800C9574;
-    *p = func_8005AED8(D_800D1518);
-    func_80072AD0(D_800C9640_5, *p);
-    func_8002DA60(D_800C9644_6, D_800C9640_5, *p, func_8005AED8(D_800D14F4));
-    D_800E7814 = func_800BC908(D_800C9644_6->n * 16, 0, D_800D6A50, 0x11D);
-    for (i = 0; i < D_800C9644_6->n; i++) {
-        D_800E7814[i].x = D_800C9644_6->e[i].a;
-        D_800E7814[i].z = D_800C9644_6->e[i].b;
-        D_800E7814[i].y = D_800C9644_6->e[i].c;
-        D_800E7814[i].w = D_800C9644_6->e[i].d;
+    *p = track_res_get(D_800D1518);
+    remove_walls_init(gTrackObjects_5, *p);
+    height_init(gTrackSections_6, gTrackObjects_5, *p, track_res_get(D_800D14F4));
+    sSectionBounds = mem_alloc_dbg(gTrackSections_6->n * 16, 0, D_800D6A50, 0x11D);
+    for (i = 0; i < gTrackSections_6->n; i++) {
+        sSectionBounds[i].x = gTrackSections_6->e[i].a;
+        sSectionBounds[i].z = gTrackSections_6->e[i].b;
+        sSectionBounds[i].y = gTrackSections_6->e[i].c;
+        sSectionBounds[i].w = gTrackSections_6->e[i].d;
     }
-    func_800270F8(D_800C9640_5, D_800C9644_6);
-    if (D_800C9648 != NULL) {
-        func_800270F8(D_800C9648, D_800C9644_6);
+    tube_assign_objects(gTrackObjects_5, gTrackSections_6);
+    if (gWaterModels != NULL) {
+        tube_assign_objects(gWaterModels, gTrackSections_6);
     }
-    func_80065B10(D_800E7728, func_8005B58C(D_800D1528), 0, D_800C9644_6, D_800E781C_2);
+    instances_load(D_800E7728, track_res_find(D_800D1528), 0, gTrackSections_6, gObjectTexSet_2);
 }
 
-void func_80024DA4(void)
+void tube_free(void)
 {
     u32 i;
 
-    func_80067AC4();
+    shatter_free();
     i = 0;
-    func_800BCB04(D_800E7814);
-    func_800BCB04(D_800E77D4);
-    func_800BCB04(D_800E7834);
-    if (*D_800C9644_3 != 0) {
+    mem_free(sSectionBounds);
+    mem_free(gSectionMtxs);
+    mem_free(gObjectFlags);
+    if (*gTrackSections_3 != 0) {
         do {
-            func_800BCB04(D_800E78A0[i]);
+            mem_free(gSectionDLs[i]);
             i++;
-        } while (i < *D_800C9644_3);
+        } while (i < *gTrackSections_3);
     }
     i = 0;
-    if (*D_800C9640 != 0) {
+    if (*gTrackObjects != 0) {
         do {
-            func_800BCB04(D_800E7828[i]);
+            mem_free(gObjectDLs[i]);
             i++;
-        } while (i < *D_800C9640);
+        } while (i < *gTrackObjects);
     }
-    func_800BCB04(D_800E78A0);
-    func_800BCB04(D_800E7828);
-    func_80028278();
-    func_800BCB04(D_800E7798_2.a);
-    func_800BCB04(D_800E7798_2.b);
-    func_800BCB04(D_800C963C);
-    func_800BCB04(D_800C9638);
-    D_800C963C = 0;
-    D_800C9638 = 0;
-    func_8002E190();
-    func_80072E7C();
-    D_800E77F8 = 0;
+    mem_free(gSectionDLs);
+    mem_free(gObjectDLs);
+    tube_free_tex_segs();
+    mem_free(sTubeMtxPool_2.a);
+    mem_free(sTubeMtxPool_2.b);
+    mem_free(sPvsIndex);
+    mem_free(sPvsData);
+    sPvsIndex = 0;
+    sPvsData = 0;
+    height_free();
+    remove_walls_free();
+    gAnimTexSet = 0;
     D_800E77C4 = 0;
-    D_800C9648 = 0;
-    D_800E7824 = 0;
-    D_800C9644_3 = (u32 *)0;
+    gWaterModels = 0;
+    gWaterTexSet = 0;
+    gTrackSections_3 = (u32 *)0;
 }
 
 typedef struct {
@@ -757,34 +757,34 @@ typedef struct {
     Item_3 items[1];
 } List_3;
 
-extern List_3 *D_800C9640_6;
-extern List_3 *D_800C9644_7;
-extern List_3 *D_800C9648_3;
+extern List_3 *gTrackObjects_6;
+extern List_3 *gTrackSections_7;
+extern List_3 *gWaterModels_3;
 
-void func_80024F24(s32 n)
+void tube_update_view(s32 n)
 {
     u32 i;
     Item_3 *it;
 
-    func_80027DE0(n, &D_800E7770[n], &D_800E7780[n]);
-    func_80026924(D_800C9644_7, n);
-    for (i = 0; i < D_800C9640_6->count; i++) {
-        it = (Item_3 *)&((u32 *)D_800C9640_6)[i * 8 + 1];
-        it->f1C = (it->f1C & 0xFFFF0000) | D_800C9644_7->items[it->f1C >> 16].f1C;
+    tube_calc_fog_range(n, &sTubeFogNear[n], &sTubeFogFar[n]);
+    tube_cull_sections(gTrackSections_7, n);
+    for (i = 0; i < gTrackObjects_6->count; i++) {
+        it = (Item_3 *)&((u32 *)gTrackObjects_6)[i * 8 + 1];
+        it->f1C = (it->f1C & 0xFFFF0000) | gTrackSections_7->items[it->f1C >> 16].f1C;
     }
-    if (D_800C9648_3 != NULL) {
-        for (i = 0; i < D_800C9648_3->count; i++) {
-            it = (Item_3 *)&((u32 *)D_800C9648_3)[i * 8 + 1];
-            it->f1C = (it->f1C & 0xFFFF0000) | D_800C9644_7->items[it->f1C >> 16].f1C;
+    if (gWaterModels_3 != NULL) {
+        for (i = 0; i < gWaterModels_3->count; i++) {
+            it = (Item_3 *)&((u32 *)gWaterModels_3)[i * 8 + 1];
+            it->f1C = (it->f1C & 0xFFFF0000) | gTrackSections_7->items[it->f1C >> 16].f1C;
         }
     }
-    if (D_800E30A8 != D_800E7820) {
-        D_800E77D0 = 0;
+    if (gGfxFrameIndex != D_800E7820) {
+        sTubeMtxCount = 0;
     }
-    D_800E7820 = D_800E30A8;
+    D_800E7820 = gGfxFrameIndex;
 }
 
-Gfx *func_80025060(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
+Gfx *tube_draw_layer(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
 {
     u32 i;
     MtxS *m;
@@ -795,20 +795,20 @@ Gfx *func_80025060(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gSPSetGeometryMode(gdl++, G_ZBUFFER);
-    gDPLoadTLUT_pal256(gdl++, D_800E783C_2->seg);
+    gDPLoadTLUT_pal256(gdl++, gTerrainTexSet_2->seg);
     gSPSetGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gDPSetCombine(gdl++, 0x127E24, 0xFFFFF3F9);
     if (fog == 0) {
         gDPSetRenderMode(gdl++, 0x442230, 0);
     } else {
         gSPSetGeometryMode(gdl++, G_FOG);
-        gDPSetFogColor(gdl++, D_800DC0E0[0], D_800DC0E0[1], D_800DC0E0[2], 255);
-        gSPFogPosition(gdl++, D_800E7770[view], D_800E7780[view]);
+        gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
+        gSPFogPosition(gdl++, sTubeFogNear[view], sTubeFogFar[view]);
         gDPSetRenderMode(gdl++, 0xC8004030, 0);
     }
 
-    for (i = 0; i < D_800C9644->n; i++) {
-        it = &D_800C9644->it[i];
+    for (i = 0; i < gTrackSections->n; i++) {
+        it = &gTrackSections->it[i];
         sh = it->mask >> (view * 2);
         if (!(sh & 1)) continue;
         if (sh & 2) continue;
@@ -821,31 +821,31 @@ Gfx *func_80025060(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
             s32 x = (it->x0 + it->x1) / 2;
             s32 z = (it->z0 + it->z1) / 2;
             m = getmtx(x, 0, z, view);
-            D_800E77D4[i * 4 + view] = m;
+            gSectionMtxs[i * 4 + view] = m;
             if (m != NULL) {
                 gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                gSPDisplayList(gdl++, D_800E78A0[i]);
+                gSPDisplayList(gdl++, gSectionDLs[i]);
             }
         }
     }
     gDPPipeSync(gdl++);
     if (fog != 0) {
-        gdl = func_80066070(gdl, (Mtx *)mtx, a2, view, 1);
+        gdl = instances_draw(gdl, (Mtx *)mtx, a2, view, 1);
         gDPPipeSync(gdl++);
     }
     gDPSetBlendColor(gdl++, 0, 0, 0, 255);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
     if (fog == 0) {
-        gSPSegment(gdl++, 6, D_800C95B8);
-        gSPSegment(gdl++, 7, D_800C95D8);
+        gSPSegment(gdl++, 6, sTexOpaqueDL);
+        gSPSegment(gdl++, 7, sTexCutoutDL);
     } else {
-        gSPSegment(gdl++, 6, D_800C9588);
-        gSPSegment(gdl++, 7, D_800C95A0);
+        gSPSegment(gdl++, 6, sTexOpaqueFogDL);
+        gSPSegment(gdl++, 7, sTexCutoutFogDL);
     }
 
-    for (i = 0; i < D_800C9640_2->n; i++) {
-        if (D_800E7834[i] & 8) continue;
-        it = &D_800C9640_2->it[i];
+    for (i = 0; i < gTrackObjects_2->n; i++) {
+        if (gObjectFlags[i] & 8) continue;
+        it = &gTrackObjects_2->it[i];
         sh = it->mask >> (view * 2);
         if (!(sh & 1)) continue;
         if (sh & 2) continue;
@@ -856,18 +856,18 @@ Gfx *func_80025060(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
         }
         {
             s32 x, z;
-            gdl = func_800281F4(gdl, i);
+            gdl = tube_set_anim_tex_segs(gdl, i);
             x = (it->x0 + it->x1) / 2;
             z = (it->z0 + it->z1) / 2;
             m = getmtx(x, 0, z, view);
             if (m != NULL) {
-                if (D_800E7834[i] & 1) {
+                if (gObjectFlags[i] & 1) {
                     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
                 }
                 gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                gSPDisplayList(gdl++, D_800E7828[i]);
-                if (D_800E7834[i] & 1) {
-                    gSPSetGeometryMode(gdl++, D_800E19CC);
+                gSPDisplayList(gdl++, gObjectDLs[i]);
+                if (gObjectFlags[i] & 1) {
+                    gSPSetGeometryMode(gdl++, gCullMode);
                 }
             }
         }
@@ -880,11 +880,11 @@ Gfx *func_80025060(Gfx *gdl, s32 mtx, s32 a2, s32 view, s32 fog)
     return gdl;
 }
 
-extern SegRef *D_800E781C_3;
+extern SegRef *gObjectTexSet_3;
 extern SegRef *D_800E77C4_2;
-extern SegRef *D_800E77F8_2;
+extern SegRef *gAnimTexSet_2;
 
-Gfx *func_800258F4(Gfx *gdl, s32 mtx, s32 a2, s32 view)
+Gfx *tube_draw_far(Gfx *gdl, s32 mtx, s32 a2, s32 view)
 {
     u32 i;
     MtxS *m;
@@ -892,12 +892,12 @@ Gfx *func_800258F4(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     u32 sh;
     s32 tmp[18];
 
-    gSPSegment(gdl++, 1, D_800E781C_3->seg);
+    gSPSegment(gdl++, 1, gObjectTexSet_3->seg);
     if (D_800E77C4_2 != NULL) {
         gSPSegment(gdl++, 2, D_800E77C4_2->seg);
     }
-    if (D_800E77F8_2 != NULL) {
-        gSPSegment(gdl++, 3, D_800E77F8_2->seg);
+    if (gAnimTexSet_2 != NULL) {
+        gSPSegment(gdl++, 3, gAnimTexSet_2->seg);
     }
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -905,54 +905,54 @@ Gfx *func_800258F4(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     gDPPipeSync(gdl++);
     gSPSetGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gSPSetGeometryMode(gdl++, G_FOG);
-    gDPSetFogColor(gdl++, D_800DC0E0[0], D_800DC0E0[1], D_800DC0E0[2], 255);
-    gSPFogPosition(gdl++, D_800E7770[view], D_800E7780[view]);
+    gDPSetFogColor(gdl++, gFogColor[0], gFogColor[1], gFogColor[2], 255);
+    gSPFogPosition(gdl++, sTubeFogNear[view], sTubeFogFar[view]);
     gDPSetCombine(gdl++, 0x127E24, 0xFFFFF3F9);
     gDPSetRenderMode(gdl++, 0xC8004030, 0);
-    gDPLoadTLUT_pal256(gdl++, D_800E783C_2->seg);
-    gSPViewport(gdl++, &D_800E19C0[view + 4]);
+    gDPLoadTLUT_pal256(gdl++, gTerrainTexSet_2->seg);
+    gSPViewport(gdl++, &gViewports[view + 4]);
 
-    for (i = 0; i < D_800C9644->n; i++) {
-        it = &D_800C9644->it[i];
+    for (i = 0; i < gTrackSections->n; i++) {
+        it = &gTrackSections->it[i];
         sh = it->mask >> (view * 2);
         if (!(sh & 1)) continue;
         if (sh & 2) {
             s32 x = (it->x0 + it->x1) / 2;
             s32 z = (it->z0 + it->z1) / 2;
             m = getmtx(x, 0, z, view);
-            D_800E77D4[i * 4 + view] = m;
+            gSectionMtxs[i * 4 + view] = m;
             if (m != NULL) {
                 gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                gSPDisplayList(gdl++, D_800E78A0[i]);
+                gSPDisplayList(gdl++, gSectionDLs[i]);
             }
         }
     }
     gDPPipeSync(gdl++);
-    gdl = func_80066070(gdl, (Mtx *)mtx, a2, view, 3);
+    gdl = instances_draw(gdl, (Mtx *)mtx, a2, view, 3);
     gDPSetBlendColor(gdl++, 0, 0, 0, 255);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
-    gSPSegment(gdl++, 6, D_800C9588);
-    gSPSegment(gdl++, 7, D_800C95A0);
+    gSPSegment(gdl++, 6, sTexOpaqueFogDL);
+    gSPSegment(gdl++, 7, sTexCutoutFogDL);
 
-    for (i = 0; i < D_800C9640_2->n; i++) {
-        if (D_800E7834[i] & 8) continue;
-        it = &D_800C9640_2->it[i];
+    for (i = 0; i < gTrackObjects_2->n; i++) {
+        if (gObjectFlags[i] & 8) continue;
+        it = &gTrackObjects_2->it[i];
         sh = it->mask >> (view * 2);
         if (!(sh & 1)) continue;
         if (sh & 2) {
             s32 x, z;
-            gdl = func_800281F4(gdl, i);
+            gdl = tube_set_anim_tex_segs(gdl, i);
             x = (it->x0 + it->x1) / 2;
             z = (it->z0 + it->z1) / 2;
             m = getmtx(x, 0, z, view);
             if (m != NULL) {
-                if (D_800E7834[i] & 1) {
+                if (gObjectFlags[i] & 1) {
                     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
                 }
                 gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                gSPDisplayList(gdl++, D_800E7828[i]);
-                if (D_800E7834[i] & 1) {
-                    gSPSetGeometryMode(gdl++, D_800E19CC);
+                gSPDisplayList(gdl++, gObjectDLs[i]);
+                if (gObjectFlags[i] & 1) {
+                    gSPSetGeometryMode(gdl++, gCullMode);
                 }
             }
         }
@@ -975,17 +975,17 @@ typedef struct {
     TexEnt e[1];
 } TexTab;
 
-extern ItemList *D_800C9648_4;
+extern ItemList *gWaterModels_4;
 extern TexTab *D_800E92C8;
 
-Gfx *func_80026120(Gfx *gdl, s32 mtx, s32 a2, s32 view)
+Gfx *tube_draw_water(Gfx *gdl, s32 mtx, s32 a2, s32 view)
 {
     s32 i;
     MtxS *m;
     Item *it;
     s32 tmp[18];
 
-    if (D_800C9648_4 == NULL) {
+    if (gWaterModels_4 == NULL) {
         return gdl;
     }
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
@@ -995,19 +995,19 @@ Gfx *func_80026120(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     gDPSetRenderMode(gdl++, 0x404A50, 0);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
     gDPSetAlphaCompare(gdl++, G_AC_NONE);
-    gSPFogPosition(gdl++, D_800E7780[view], D_800E7770[view]);
+    gSPFogPosition(gdl++, sTubeFogFar[view], sTubeFogNear[view]);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
-    D_800C8C74 = 1;
+    gPrimIATextures = 1;
 
-    for (i = 0; i < D_800C9648_4->n; i++) {
-        it = &D_800C9648_4->it[i];
+    for (i = 0; i < gWaterModels_4->n; i++) {
+        it = &gWaterModels_4->it[i];
         if ((it->mask >> (view * 2)) & 1) {
             s32 x = (it->x0 + it->x1) / 2;
             s32 z = (it->z0 + it->z1) / 2;
             m = getmtx(x, 0, z, view);
             if (m != NULL) {
                 gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                gdl = func_80013D70(0, D_800C9648_4->it[i].id, D_800E7824_2, gdl);
+                gdl = prim_build_dl(0, gWaterModels_4->it[i].id, gWaterTexSet_2, gdl);
             }
         }
     }
@@ -1015,39 +1015,39 @@ Gfx *func_80026120(Gfx *gdl, s32 mtx, s32 a2, s32 view)
     gDPPipeSync(gdl++);
     gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
     for (i = 0; i < 8; i++) {
-        if (D_800E77D8[i] == 0) continue;
-        it = &D_800C9644->it[D_800E77A0[i]];
+        if (sSplashTimer[i] == 0) continue;
+        it = &gTrackSections->it[sSplashSection[i]];
         if ((it->mask >> (view * 2)) & 1) {
-            s32 a = D_800E77D8[i] / 2;
+            s32 a = sSplashTimer[i] / 2;
             s32 f;
             if (a >= 256) {
                 a = 255;
             }
             gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, a);
-            f = (120 - D_800E77D8[i]) / 12;
+            f = (120 - sSplashTimer[i]) / 12;
             if (f >= 5) {
                 f = (f - 2) % 3 + 2;
             }
             gDPLoadTextureBlock(gdl++, D_800E92C8->e[f].img, G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
                                 G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD);
-            m = getmtx(D_800E7840[i].x, D_800E7840[i].y, D_800E7840[i].z, view);
+            m = getmtx(sSplashPos[i].x, sSplashPos[i].y, sSplashPos[i].z, view);
             if (m != NULL) {
-                func_80011490(m, 0, 0, 0, D_800E7840[i].x * 16 - D_800E8090[view].x, D_800E7840[i].y * 16 - D_800E8090[view].y,
-                              D_800E7840[i].z * 16 - D_800E8090[view].z, 0x100);
+                mtx_from_angles_pos_scale(m, 0, 0, 0, sSplashPos[i].x * 16 - gCamPos[view].x, sSplashPos[i].y * 16 - gCamPos[view].y,
+                              sSplashPos[i].z * 16 - gCamPos[view].z, 0x100);
                 gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                gSPVertex(gdl++, D_800C95F8, 4, 0);
+                gSPVertex(gdl++, sSplashQuadVtx, 4, 0);
                 gSP2Triangles(gdl++, 0, 1, 2, 0, 0, 2, 3, 0);
             }
         }
     }
-    D_800C8C74 = 0;
+    gPrimIATextures = 0;
     gDPPipeSync(gdl++);
     gSPMatrix(gdl++, mtx + 0x400, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gSPClearGeometryMode(gdl++, G_SHADING_SMOOTH | G_SHADE);
     gSPClearGeometryMode(gdl++, G_FOG);
-    func_80014A68(0);
+    prim_set_tex_mode_callback(0);
     return gdl;
 }
 
@@ -1055,9 +1055,9 @@ typedef struct { s32 f0, f4, f8, fC, f10, f14, f18, f1C; } Rec_11;
 struct List_4 { u32 count; Rec_11 r[1]; };
 typedef struct { u8 pad[0x5AA]; s16 f5AA; u8 pad2[0x7E0 - 0x5AC]; } Player_9;
 
-extern Player_9 D_800E37C0_22[];
+extern Player_9 gRiders_22[];
 
-void func_80026924(List_4 *l, s32 n)
+void tube_cull_sections(List_4 *l, s32 n)
 {
     s32 k;
     s32 i;
@@ -1075,15 +1075,15 @@ void func_80026924(List_4 *l, s32 n)
     s32 w[4];
 
     k = n;
-    if (D_800C9650 != -1) {
-        k = D_800C9650;
+    if (gCamTargetOverride != -1) {
+        k = gCamTargetOverride;
     }
-    D_800C964C = 0x68;
-    if (D_800E1898 == 2) {
-        D_800C964C = 0x9C;
+    sCullSlope = 0x68;
+    if (gNumScreens == 2) {
+        sCullSlope = 0x9C;
     }
-    if (D_800EFD64_2 - D_800CB210 == 20 && D_800E3D6A == 4) {
-        n1 = D_800E15E0[0];
+    if (gCurTrack_2 - gTracks == 20 && D_800E3D6A == 4) {
+        n1 = gRiderSection[0];
         if (n1 >= 0 && n1 < l->count) {
             s32 ref = l->r[n1].f8 + l->r[n1].f10;
             for (i = 0; i < l->count; i++) {
@@ -1097,30 +1097,30 @@ void func_80026924(List_4 *l, s32 n)
         }
     } else {
         base = 0;
-        if (D_800E1898 != 1) {
+        if (gNumScreens != 1) {
             base = l->count;
         }
-        px = D_800E8090[n].x;
-        py = D_800E8090[n].y;
-        pz = D_800E8090[n].z;
+        px = gCamPos[n].x;
+        py = gCamPos[n].y;
+        pz = gCamPos[n].z;
         cnt = 0;
-        if (D_800E37C0_22[n].f5AA == 9) {
-            D_800E77FC = D_800E15E0[k];
+        if (gRiders_22[n].f5AA == 9) {
+            sCamSection = gRiderSection[k];
         } else {
-            D_800E8508 = 0;
-            func_8002E920(px, py, pz);
-            if (D_800E8508 == 0) {
-                D_800E77FC = D_800E15E0[k];
-                D_800E8508 = 1;
+            gGroundFound = 0;
+            height_get_ground(px, py, pz);
+            if (gGroundFound == 0) {
+                sCamSection = gRiderSection[k];
+                gGroundFound = 1;
             } else {
-                D_800E77FC = D_800E8958;
+                sCamSection = gGroundArea;
             }
         }
         bit = 1 << (n * 2);
         for (i = 0; i < l->count; i++) {
             l->r[i].f1C &= ~(3 << (n * 2));
         }
-        e = D_800C963C_2[D_800E77FC + base];
+        e = sPvsIndex_2[sCamSection + base];
         n1 = e[0];
         tot = n1 + e[1];
         for (i = 0; i < tot; i++) {
@@ -1131,17 +1131,17 @@ void func_80026924(List_4 *l, s32 n)
         }
         px >>= 4;
         pz >>= 4;
-        l->r[D_800E77FC].f1C |= bit;
-        lim = 0xC48A / (0x3EE - D_800E7770[n]);
-        ang = D_800E8000[n] >> 4;
-        sn = D_800C2C60[ang & 0xFFF];
-        cs = D_800C2C60[(ang - 0x400) & 0xFFF];
+        l->r[sCamSection].f1C |= bit;
+        lim = 0xC48A / (0x3EE - sTubeFogNear[n]);
+        ang = gCamYaw[n] >> 4;
+        sn = gCosTable[ang & 0xFFF];
+        cs = gCosTable[(ang - 0x400) & 0xFFF];
         for (i = 0; i < l->count; i++) {
             Rec_11 *r = &l->r[i];
-            Quad *q = &D_800E7814[i];
+            Quad *q = &sSectionBounds[i];
             if (r->f1C & bit) {
                 cnt++;
-                if (D_800E8508 == 0 && cnt >= 16) {
+                if (gGroundFound == 0 && cnt >= 16) {
                     r->f1C &= ~bit;
                     cnt--;
                 } else {
@@ -1166,7 +1166,7 @@ void func_80026924(List_4 *l, s32 n)
                         } else {
                             r->f1C &= ~(0x100 << n);
                         }
-                        if (D_800EFD64_2 - D_800CB210 != 20 && d[0] > 300 && d[1] > 300 && d[2] > 300 && d[3] > 300) {
+                        if (gCurTrack_2 - gTracks != 20 && d[0] > 300 && d[1] > 300 && d[2] > 300 && d[3] > 300) {
                             s32 y = q->a;
                             s32 u2;
                             t = (sn * (y - px) + cs * (q->c - pz)) >> 14;
@@ -1178,8 +1178,8 @@ void func_80026924(List_4 *l, s32 n)
                             w[1] = (u2 << 8) / d[1];
                             w[2] = ((t + f) << 8) / d[2];
                             w[3] = ((u2 + f) << 8) / d[3];
-                            if ((w[0] < -D_800C964C && w[1] < -D_800C964C && w[2] < -D_800C964C && w[3] < -D_800C964C) ||
-                                (D_800C964C < w[0] && D_800C964C < w[1] && D_800C964C < w[2] && D_800C964C < w[3])) {
+                            if ((w[0] < -sCullSlope && w[1] < -sCullSlope && w[2] < -sCullSlope && w[3] < -sCullSlope) ||
+                                (sCullSlope < w[0] && sCullSlope < w[1] && sCullSlope < w[2] && sCullSlope < w[3])) {
                                 cnt--;
                                 r->f1C &= ~(3 << (n * 2));
                             }
@@ -1208,9 +1208,9 @@ typedef struct {
     s32 x0, x1, z0, z1;
 } Box;
 
-extern Box *D_800E7814_2;
+extern Box *sSectionBounds_2;
 
-void func_800270F8(Lst *a, Lst *b)
+void tube_assign_objects(Lst *a, Lst *b)
 {
     Ent_17 *e;
     Ent_17 *f;
@@ -1219,12 +1219,12 @@ void func_800270F8(Lst *a, Lst *b)
     s32 best, bd;
 
     for (i = 0; i < a->n; i++) {
-        D_800E8508 = 0;
+        gGroundFound = 0;
         x = (a->e[i].x0 + a->e[i].x1) / 2;
         z = (a->e[i].z0 + a->e[i].z1) / 2;
-        func_8002E920(x << 4, 999999, z << 4);
-        if (D_800E8508 != 0) {
-            { s32 n = D_800E8958; if (n) dz = 1; best = n; }
+        height_get_ground(x << 4, 999999, z << 4);
+        if (gGroundFound != 0) {
+            { s32 n = gGroundArea; if (n) dz = 1; best = n; }
         } else {
             x /= 4;
             z /= 4;
@@ -1245,17 +1245,17 @@ void func_800270F8(Lst *a, Lst *b)
         do {
             a->e[i].idx = best << 16;
         } while (0);
-        if (a->e[i].x0 < ((Box *)((best << 4) + (u32)D_800E7814_2))->x0) {
-            D_800E7814_2[best].x0 = a->e[i].x0;
+        if (a->e[i].x0 < ((Box *)((best << 4) + (u32)sSectionBounds_2))->x0) {
+            sSectionBounds_2[best].x0 = a->e[i].x0;
         }
-        if (a->e[i].z0 < D_800E7814_2[best].z0) {
-            D_800E7814_2[best].z0 = a->e[i].z0;
+        if (a->e[i].z0 < sSectionBounds_2[best].z0) {
+            sSectionBounds_2[best].z0 = a->e[i].z0;
         }
-        if (D_800E7814_2[best].x1 < a->e[i].x1) {
-            D_800E7814_2[best].x1 = a->e[i].x1;
+        if (sSectionBounds_2[best].x1 < a->e[i].x1) {
+            sSectionBounds_2[best].x1 = a->e[i].x1;
         }
-        if (D_800E7814_2[best].z1 < a->e[i].z1) {
-            D_800E7814_2[best].z1 = a->e[i].z1;
+        if (sSectionBounds_2[best].z1 < a->e[i].z1) {
+            sSectionBounds_2[best].z1 = a->e[i].z1;
         }
     }
 }
@@ -1281,9 +1281,9 @@ typedef struct Tbl_2 {
     Ent_18 e[1];
 } Tbl_2;
 
-extern Tbl_2 *D_800C9648_5;
+extern Tbl_2 *gWaterModels_5;
 
-s32 func_8002733C(s32 x, s32 y, s32 *out)
+s32 tube_get_water_level(s32 x, s32 y, s32 *out)
 {
     u32 i;
     s32 k;
@@ -1294,17 +1294,17 @@ s32 func_8002733C(s32 x, s32 y, s32 *out)
     u8 *pb;
     u8 *base;
 
-    if (D_800C9648_5 == NULL) {
+    if (gWaterModels_5 == NULL) {
         return 0;
     }
     x >>= 4;
     y >>= 4;
-    for (i = 0; i < D_800C9648_5->n; i++) {
-        e = &D_800C9648_5->e[i];
+    for (i = 0; i < gWaterModels_5->n; i++) {
+        e = &gWaterModels_5->e[i];
         if (x < e->x0 || e->x1 < x || y < e->y0 || e->y1 < y) {
             continue;
         }
-        if (D_800EFD64_3[0xb] == 1) {
+        if (gCurTrack_3[0xb] == 1) {
             fx = x - (e->x0 + e->x1) / 2;
             fy = y - (e->y0 + e->y1) / 2;
         } else {
@@ -1317,7 +1317,7 @@ s32 func_8002733C(s32 x, s32 y, s32 *out)
                     la[k] = *(s16 *)((u32)(pb[k + 1] << 4) + (u32)base);
                     lb[k] = *(s16 *)((u32)(pb[k + 1] << 4) + (u32)base + 4);
                 }
-                if (func_80031D54(la, lb, fx, fy)) {
+                if (point_in_tri_xz(la, lb, fx, fy)) {
                     *out = *(s16 *)((u32)(pb[1] << 4) + (u32)base + 2) << 4;
                     return 1;
                 }
@@ -1340,9 +1340,9 @@ struct Ent_19 {
     u8 pad8[0x18];
 };
 
-s32 func_80013D70_3(u32 a0, Sub_5 *a1, s32 a2, s32 a3);
+s32 prim_build_dl_3(u32 a0, Sub_5 *a1, s32 a2, s32 a3);
 
-s32 **func_80027574(Ent_19 *h, s32 p2, u32 p3, s32 p4)
+s32 **tube_build_dlists(Ent_19 *h, s32 p2, u32 p3, s32 p4)
 {
     u8 *buf;
     s32 off;
@@ -1355,12 +1355,12 @@ s32 **func_80027574(Ent_19 *h, s32 p2, u32 p3, s32 p4)
     s32 j;
     s32 d;
 
-    buf = D_800C29D8[1 - D_800E30A8];
-    if (!(*(s32 *)(D_800EFD64 + 0x50) & 2)) {
+    buf = gFramebuffers[1 - gGfxFrameIndex];
+    if (!(*(s32 *)(gCurTrack + 0x50) & 2)) {
         i = h->sub->fC - (s32)h;
-        n = func_800BD924(h);
+        n = mem_get_size(h);
         memcpy(buf, (u8 *)h + i, n - i);
-        h = func_800BD798(h, i, 0, D_800D6A50, 0x51B);
+        h = mem_realloc_dbg(h, i, 0, D_800D6A50, 0x51B);
         do { } while (0);
         sz = 0;
         d = (s32)buf - ((s32)h + i);
@@ -1371,54 +1371,54 @@ s32 **func_80027574(Ent_19 *h, s32 p2, u32 p3, s32 p4)
             } while (sz < h->n);
         }
     }
-    tbl = func_800BC908(h->n * 4, 0, D_800D6A50, 0x524);
-    func_80014A68(p4 ? func_800285C4 : NULL);
-    if (p4 && D_800E77F8) {
-        func_80027AB4();
-        D_800C9584 = func_800BC908((h->n + 1) * 4, 0, D_800D6A50, 0x52E);
-        D_800E77C8 = D_800C9580 = (s32 *)(D_800C29E0 + 0x1E000);
+    tbl = mem_alloc_dbg(h->n * 4, 0, D_800D6A50, 0x524);
+    prim_set_tex_mode_callback(p4 ? tube_tex_mode_callback : NULL);
+    if (p4 && gAnimTexSet) {
+        tube_init_tex_groups();
+        sTexSegListIndex = mem_alloc_dbg((h->n + 1) * 4, 0, D_800D6A50, 0x52E);
+        D_800E77C8 = sTexSegList = (s32 *)(gZBuffer + 0x1E000);
     }
     for (i = 0; i < h->n; i++) {
-        D_800C8C7C = -1;
-        t = func_800BC908(func_80013D70_3(p3 | 1, h[i].sub, p2, D_800C29E0) - D_800C29E0, 0, D_800D6A50, 0x541);
+        gPrimTexAlphaMode = -1;
+        t = mem_alloc_dbg(prim_build_dl_3(p3 | 1, h[i].sub, p2, gZBuffer) - gZBuffer, 0, D_800D6A50, 0x541);
         tbl[i] = t;
         if (t == NULL) {
             for (;;) {
             }
         }
-        if (p4 && D_800E77F8) {
-            func_80014A74(func_80027934);
-            D_800C9584[i] = (s32)D_800E77C8;
+        if (p4 && gAnimTexSet) {
+            prim_set_tex_addr_callback(tube_remap_tex_addr);
+            sTexSegListIndex[i] = (s32)D_800E77C8;
             D_800E7790 = 0;
         }
-        D_800C8C7C = -1;
-        func_80013D70_3(p3 | 1, h[i].sub, p2, (s32)tbl[i]);
-        if (p4 && D_800E77F8) {
+        gPrimTexAlphaMode = -1;
+        prim_build_dl_3(p3 | 1, h[i].sub, p2, (s32)tbl[i]);
+        if (p4 && gAnimTexSet) {
             D_800E77C8 += D_800E7790;
-            func_80014A74(NULL);
+            prim_set_tex_addr_callback(NULL);
         }
     }
-    if (p4 && D_800E77F8) {
-        D_800C9584[i] = (s32)D_800E77C8;
+    if (p4 && gAnimTexSet) {
+        sTexSegListIndex[i] = (s32)D_800E77C8;
         i++;
-        sz = (s32)D_800E77C8 - (s32)D_800C9580;
+        sz = (s32)D_800E77C8 - (s32)sTexSegList;
         if (sz != 0) {
             sz *= 4;
-            nb = func_800BC908(sz, 0, D_800D6A50, 0x565);
-            memcpy(nb, D_800C9580, sz);
+            nb = mem_alloc_dbg(sz, 0, D_800D6A50, 0x565);
+            memcpy(nb, sTexSegList, sz);
             for (j = 0; j < (s32)i; j++) {
-                D_800C9584[j] = (s32)(nb + ((D_800C9584[j] - (s32)D_800C9580) >> 2));
+                sTexSegListIndex[j] = (s32)(nb + ((sTexSegListIndex[j] - (s32)sTexSegList) >> 2));
             }
-            D_800C9580 = nb;
+            sTexSegList = nb;
         } else {
-            D_800C9580 = NULL;
+            sTexSegList = NULL;
         }
     }
-    func_80014A68(NULL);
+    prim_set_tex_mode_callback(NULL);
     return tbl;
 }
 
-void func_80027934(u32 *param_1)
+void tube_remap_tex_addr(u32 *param_1)
 {
     s32 *piVar1;
     s32 iVar4;
@@ -1428,11 +1428,11 @@ void func_80027934(u32 *param_1)
     u32 uVar3;
 
     uVar3 = *param_1;
-    iVar5 = D_800E77F8_3[0] - 1;
-    if (((u32)D_800E77F8_3[3] <= uVar3) && (uVar3 <= *(u32 *)((u8 *)D_800E77F8_3 + (iVar5 << 3) + 0xC)) &&
+    iVar5 = gAnimTexSet_3[0] - 1;
+    if (((u32)gAnimTexSet_3[3] <= uVar3) && (uVar3 <= *(u32 *)((u8 *)gAnimTexSet_3 + (iVar5 << 3) + 0xC)) &&
         (-1 < iVar5)) {
         iVar6 = 0;
-        piVar1 = D_800E77F8_3;
+        piVar1 = gAnimTexSet_3;
         while (iVar6 <= iVar5) {
             if ((u32)piVar1[3] == uVar3) {
                 break;
@@ -1440,7 +1440,7 @@ void func_80027934(u32 *param_1)
             iVar6 = iVar6 + 1;
             piVar1 = piVar1 + 2;
         }
-        if ((iVar6 <= iVar5) && (1 < *(s32 *)(D_800E782C + iVar6 * 4))) {
+        if ((iVar6 <= iVar5) && (1 < *(s32 *)(sTexAnimGroupLen + iVar6 * 4))) {
             iVar5 = 0;
             while (iVar5 < D_800E7790) {
                 if (D_800E77C8_2[iVar5 * 4 + 2] + D_800E77C8_2[iVar5 * 4] == iVar6) {
@@ -1453,9 +1453,9 @@ void func_80027934(u32 *param_1)
                 do {
                 } while (1);
 store:
-                D_800E77C8_2[D_800E7790 * 4] = D_800E7830[iVar6 * 4 + 3];
-                D_800E77C8_2[D_800E7790 * 4 + 1] = D_800E782C[iVar6 * 4 + 3];
-                D_800E77C8_2[D_800E7790 * 4 + 2] = (u8)(iVar6 - D_800E7830[iVar6 * 4 + 3]);
+                D_800E77C8_2[D_800E7790 * 4] = sTexAnimGroupStart[iVar6 * 4 + 3];
+                D_800E77C8_2[D_800E7790 * 4 + 1] = sTexAnimGroupLen[iVar6 * 4 + 3];
+                D_800E77C8_2[D_800E7790 * 4 + 2] = (u8)(iVar6 - sTexAnimGroupStart[iVar6 * 4 + 3]);
                 D_800E7790 = D_800E7790 + 1;
             }
             *param_1 = (u32)((iVar5 + 8) << 24);
@@ -1466,28 +1466,28 @@ store:
 typedef struct { u8 pad[2]; u8 flags; u8 pad2[5]; } Ent_20;
 typedef struct { u32 count; u32 pad; Ent_20 e[1]; } Tbl_3;
 
-extern Tbl_3 *D_800E77F8_4;
+extern Tbl_3 *gAnimTexSet_4;
 
-void func_80027AB4(void)
+void tube_init_tex_groups(void)
 {
     s32 i, start, k;
     Tbl_3 *t;
 
-    D_800E7830_2 = (s32 *)(D_800C29E0 + 0x18000);
-    D_800E782C_2 = D_800E7830_2 + D_800E77F8_4->count;
+    sTexAnimGroupStart_2 = (s32 *)(gZBuffer + 0x18000);
+    sTexAnimGroupLen_2 = sTexAnimGroupStart_2 + gAnimTexSet_4->count;
     start = 0;
-    for (i = 0; i < D_800E77F8_4->count; i++) {
-        if (!(D_800E77F8_4->e[i].flags & 0x34)) {
+    for (i = 0; i < gAnimTexSet_4->count; i++) {
+        if (!(gAnimTexSet_4->e[i].flags & 0x34)) {
             for (k = start; k <= i; k++) {
-                D_800E7830_2[k] = start;
-                D_800E782C_2[k] = i - start + 1;
+                sTexAnimGroupStart_2[k] = start;
+                sTexAnimGroupLen_2[k] = i - start + 1;
             }
             start = i + 1;
         }
     }
 }
 
-void func_80027B7C(void)
+void tube_load_pvs(void)
 {
     s32 idx;
     s32 i;
@@ -1501,23 +1501,23 @@ void func_80027B7C(void)
     u16 *p;
     s32 t1, t2;
 
-    while (func_80065858() != 0) {
+    while (sched_get_current_task() != 0) {
     }
-    D_800C9638_2 = (u16 *)func_8005AED8(D_800D1514);
-    if (*D_800C9644_3 != *D_800C9638_2) {
-        func_8000ECB8(1);
+    sPvsData_2 = (u16 *)track_res_get(D_800D1514);
+    if (*gTrackSections_3 != *sPvsData_2) {
+        fatal_halt(1);
     }
     idx = 1;
-    dst = D_800C29E0;
-    offs = (s32 *)(D_800C29E0 + 0x1E000);
+    dst = gZBuffer;
+    offs = (s32 *)(gZBuffer + 0x1E000);
     for (i = 0; i < 4; i++) {
-        for (j = 0; j < *D_800C9644_3; j++) {
-            a = D_800C9638_2[idx];
-            b = D_800C9638_2[idx + 1];
-            if (i == 0 || i == D_800EFD70_4[15] - 1) {
+        for (j = 0; j < *gTrackSections_3; j++) {
+            a = sPvsData_2[idx];
+            b = sPvsData_2[idx + 1];
+            if (i == 0 || i == gGame_4[15] - 1) {
                 n = a + b;
-                *offs++ = dst - D_800C29E0;
-                memcpy(dst, (u16 *)((idx << 1) + (s32)D_800C9638_2), (n + 2) * 2);
+                *offs++ = dst - gZBuffer;
+                memcpy(dst, (u16 *)((idx << 1) + (s32)sPvsData_2), (n + 2) * 2);
                 dst += n * 2 + 4;
             }
             t1 = idx + 2;
@@ -1526,15 +1526,15 @@ void func_80027B7C(void)
         }
     }
     idx = 0;
-    func_800BFEA4((u32 *)(D_800E7728_2[1] + func_8005B58C(D_800D1514) * 4));
-    i = dst - D_800C29E0;
-    D_800C9638_2 = func_800BC908(i, idx, D_800D6A50, 0x61B);
-    memcpy(D_800C9638_2, D_800C29E0, i);
-    i = (s32)offs + (-0x1E000 - (s32)D_800C29E0);
-    D_800C963C = func_800BC908(i, idx, D_800D6A50, 0x620);
-    memcpy(D_800C963C, D_800C29E0 + 0x1E000, i);
-    p = D_800C9638_2;
-    q = D_800C963C;
+    res_unload((u32 *)(D_800E7728_2[1] + track_res_find(D_800D1514) * 4));
+    i = dst - gZBuffer;
+    sPvsData_2 = mem_alloc_dbg(i, idx, D_800D6A50, 0x61B);
+    memcpy(sPvsData_2, gZBuffer, i);
+    i = (s32)offs + (-0x1E000 - (s32)gZBuffer);
+    sPvsIndex = mem_alloc_dbg(i, idx, D_800D6A50, 0x620);
+    memcpy(sPvsIndex, gZBuffer + 0x1E000, i);
+    p = sPvsData_2;
+    q = sPvsIndex;
     for (; idx < i / 4; idx++) {
         *q++ += (s32)p;
     }
@@ -1544,11 +1544,11 @@ typedef struct { u8 pad[0x628]; s16 f628; u8 rest[0x7E0 - 0x62A]; } Rec7E0;
 typedef struct { u8 pad[0x46]; s16 next; u8 pad2[0x60 - 0x48]; u32 bits; u8 rest[0x6C - 0x64]; } Node_2;
 typedef struct { u8 pad[0x58]; u16 a[4]; u16 b[4]; u8 rest[0xA0 - 0x68]; } Trk_7;
 
-extern Rec7E0 D_800E37C0_23[];
-extern Trk_7 *D_800EFD64_19;
-extern Trk_7 D_800CB210_8[];
+extern Rec7E0 gRiders_23[];
+extern Trk_7 *gCurTrack_19;
+extern Trk_7 gTracks_8[];
 
-void func_80027DE0(s32 a, s32 *b, s32 *c)
+void tube_calc_fog_range(s32 a, s32 *b, s32 *c)
 {
     f32 v[3];
     s32 n;
@@ -1559,12 +1559,12 @@ void func_80027DE0(s32 a, s32 *b, s32 *c)
     Node_2 *nd, *base;
     s32 x, y, j, g;
 
-    v[0] = (f32)D_800E8090[a].x / 1000.0f;
-    v[1] = (f32)D_800E8090[a].y / 1000.0f;
-    v[2] = (f32)D_800E8090[a].z / 1000.0f;
-    func_8004AB24(v, &n, &t, D_800E37C0_23[D_800C9654[a]].f628);
-    base = D_800EE498;
-    g = D_800E1898;
+    v[0] = (f32)gCamPos[a].x / 1000.0f;
+    v[1] = (f32)gCamPos[a].y / 1000.0f;
+    v[2] = (f32)gCamPos[a].z / 1000.0f;
+    path_get_segment_and_t(v, &n, &t, gRiders_23[gCamTargets[a]].f628);
+    base = gPathNodes;
+    g = gNumScreens;
     i = g - 1;
     nd = (Node_2 *)(n * sizeof(Node_2) + (u32)base);
     j = nd->next;
@@ -1595,12 +1595,12 @@ void func_80027DE0(s32 a, s32 *b, s32 *c)
     fy = (f32)a1 + fb;
     x = (s32)fx;
     y = (s32)fy;
-    x = D_800EFD64_19->a[g - 1] - x;
-    y = D_800EFD64_19->b[g - 1] - y;
+    x = gCurTrack_19->a[g - 1] - x;
+    y = gCurTrack_19->b[g - 1] - y;
     if (y < x) {
         x = y;
     }
-    if (D_800EFD64_19 - D_800CB210_8 == 8 && g == 1) {
+    if (gCurTrack_19 - gTracks_8 == 8 && g == 1) {
         x = 1000;
         y = 0x41A;
     }
@@ -1609,37 +1609,37 @@ void func_80027DE0(s32 a, s32 *b, s32 *c)
 }
 
 /* G_MOVEWORD 0xDB, index 6 (segment table), offset seg*4 */
-void func_8002803C(Gfx *gdl, s32 a, s32 b, s32 c) {
+void tube_draw(Gfx *gdl, s32 a, s32 b, s32 c) {
     Gfx *q;
 
-    gDma1p(gdl++, 0xDB, D_800E781C_4[1], 0x4, 0x6);
+    gDma1p(gdl++, 0xDB, gObjectTexSet_4[1], 0x4, 0x6);
     if (D_800E77C4_3 != 0) {
         gDma1p(gdl++, 0xDB, D_800E77C4_3[1], 0x8, 0x6);
     }
-    if (D_800E77F8_5 != 0) {
-        gDma1p(gdl++, 0xDB, D_800E77F8_5[1], 0xC, 0x6);
+    if (gAnimTexSet_5 != 0) {
+        gDma1p(gdl++, 0xDB, gAnimTexSet_5[1], 0xC, 0x6);
     }
-    q = func_80025060(gdl, a, b, c, 0);
-    func_80025060(q, a, b, c, 1);
+    q = tube_draw_layer(gdl, a, b, c, 0);
+    tube_draw_layer(q, a, b, c, 1);
 }
 
-short *func_8002811C(s32 p1, s32 p2, s32 p3, s32 p4)
+short *tube_alloc_mtx(s32 p1, s32 p2, s32 p3, s32 p4)
 {
     short *r;
     s32 n;
     s32 t;
 
-    n = D_800E77D0;
+    n = sTubeMtxCount;
     if (n >= 300) {
         return 0;
     }
-    p2 = p2 * 0x10 - D_800E8090_4[p1].a;
-    p3 = p3 * 0x10 - D_800E8090_4[p1].b;
-    p4 = p4 * 0x10 - D_800E8090_4[p1].c;
+    p2 = p2 * 0x10 - gCamPos_4[p1].a;
+    p3 = p3 * 0x10 - gCamPos_4[p1].b;
+    p4 = p4 * 0x10 - gCamPos_4[p1].c;
     t = n * 0x40;
-    r = (short *)(D_800E7798_3[D_800E30A8] + t);
-    func_80011490(r, 0, 0, 0, p2, p3, p4, 0x100);
-    D_800E77D0 = D_800E77D0 + 1;
+    r = (short *)(sTubeMtxPool_3[gGfxFrameIndex] + t);
+    mtx_from_angles_pos_scale(r, 0, 0, 0, p2, p3, p4, 0x100);
+    sTubeMtxCount = sTubeMtxCount + 1;
     return r;
 }
 
@@ -1654,37 +1654,37 @@ typedef struct {
     Ent_21 e[1];
 } Bank;
 
-extern Bank *D_800E77F8_6;
+extern Bank *gAnimTexSet_6;
 
-Gfx *func_800281F4(Gfx *gdl, s32 idx)
+Gfx *tube_set_anim_tex_segs(Gfx *gdl, s32 idx)
 {
-    if (D_800E77F8_6 != NULL && D_800C9584 != NULL) {
-        u8 *cur = D_800C9584[idx];
-        u8 *end = D_800C9584[idx + 1];
+    if (gAnimTexSet_6 != NULL && sTexSegListIndex != NULL) {
+        u8 *cur = sTexSegListIndex[idx];
+        u8 *end = sTexSegListIndex[idx + 1];
         s32 i;
 
         for (i = 0; cur != end; cur += 4, i++) {
-            gSPSegment(gdl++, i + 8, D_800E77F8_6->e[cur[2] + cur[0]].addr);
+            gSPSegment(gdl++, i + 8, gAnimTexSet_6->e[cur[2] + cur[0]].addr);
         }
     }
     return gdl;
 }
 
-void func_80028278(void)
+void tube_free_tex_segs(void)
 {
-    if (D_800C9580 != 0) {
-        func_800BCB04(D_800C9580);
-        D_800C9580 = 0;
+    if (sTexSegList != 0) {
+        mem_free(sTexSegList);
+        sTexSegList = 0;
     }
-    if (D_800C9584 != 0) {
-        func_800BCB04(D_800C9584);
-        D_800C9584 = 0;
+    if (sTexSegListIndex != 0) {
+        mem_free(sTexSegListIndex);
+        sTexSegListIndex = 0;
     }
 }
 
-void func_800282C8(void)
+void tube_reset_objects(void)
 {
-    u32 *p = D_800C9640;
+    u32 *p = gTrackObjects;
     u32 *c;
     u32 i = 0;
     u32 *q;
@@ -1693,22 +1693,22 @@ void func_800282C8(void)
     if (*p != 0) {
         m = 0xfffffff7;
         c = p;
-        q = D_800E7834;
+        q = gObjectFlags;
         do {
             i++;
             *q = *q & m;
             q++;
         } while (i < *c);
     }
-    func_800679C0();
-    func_80072EF0();
+    shatter_reset();
+    remove_walls_reset();
 }
 
 typedef struct { u32 a, b, c; u32 val; } Rec_12;
 typedef struct { u32 count; Rec_12 *recs; } Sub_6;
 struct Ent_22 { u32 count; Sub_6 *sub; u32 pad[6]; };
 
-void func_80028330(Ent_22 *p)
+void tube_rotate_vertex_colors(Ent_22 *p)
 {
     u32 i, j;
     for (i = 0; i < p->count; i++) {
@@ -1720,20 +1720,20 @@ void func_80028330(Ent_22 *p)
     }
 }
 
-void func_800283C0(void)
+void tube_animate_textures(void)
 {
     volatile s32 pad[10];
-    s32 v = D_800E76D0 / 2;
-    if (v == D_800E78AC) return;
-    D_800E78AC = v;
-    if (D_800C2358 != 0 && D_800E1B70 == 0x100) return;
-    if (D_800E77F8 != 0) {
-        func_800147C4(D_800E77F8, v);
+    s32 v = gRaceFrame / 2;
+    if (v == sTexAnimTick) return;
+    sTexAnimTick = v;
+    if (gPodiumMode != 0 && gDesaturation == 0x100) return;
+    if (gAnimTexSet != 0) {
+        prim_animate_textures(gAnimTexSet, v);
     }
-    if (D_800E7824 != 0) {
-        D_800C8C74 = 1;
-        func_800147C4(D_800E7824, D_800E78AC);
-        D_800C8C74 = 0;
+    if (gWaterTexSet != 0) {
+        gPrimIATextures = 1;
+        prim_animate_textures(gWaterTexSet, sTexAnimTick);
+        gPrimIATextures = 0;
     }
 }
 
@@ -1743,30 +1743,30 @@ typedef struct {
     u8 rest[0x7E0 - 0x4F8 - 4];
 } Rec37;
 
-extern Rec37 D_800E37C0_24[];
+extern Rec37 gRiders_24[];
 
-void func_8002845C(s32 param_1, s32 param_2, s32 param_3, s32 param_4)
+void tube_spawn_splash(s32 param_1, s32 param_2, s32 param_3, s32 param_4)
 {
-    if (D_800E77D8[param_1] == 0 && D_800E37C0_24[param_1].f4F8 >= 0) {
-        D_800E8508 = 0;
-        func_8002E920(param_2, param_3, param_4);
-        if (D_800E8508 != 0) D_800E77A0[param_1] = D_800E8958;
-        else D_800E77A0[param_1] = D_800E15E0[param_1];
-        D_800E77D8[param_1] = 0x78;
-        D_800E7840_2[param_1].a = param_2 >> 4;
-        D_800E7840_2[param_1].b = param_3 >> 4;
-        D_800E7840_2[param_1].c = param_4 >> 4;
-        func_80010994(6, param_1, 0xff);
+    if (sSplashTimer[param_1] == 0 && gRiders_24[param_1].f4F8 >= 0) {
+        gGroundFound = 0;
+        height_get_ground(param_2, param_3, param_4);
+        if (gGroundFound != 0) sSplashSection[param_1] = gGroundArea;
+        else sSplashSection[param_1] = gRiderSection[param_1];
+        sSplashTimer[param_1] = 0x78;
+        sSplashPos_2[param_1].a = param_2 >> 4;
+        sSplashPos_2[param_1].b = param_3 >> 4;
+        sSplashPos_2[param_1].c = param_4 >> 4;
+        snd_play_rider_sfx(6, param_1, 0xff);
     }
 }
 
-void func_80028590(void)
+void tube_update_splashes(void)
 {
     s32 i;
     s32 *p;
 
     i = 0;
-    p = D_800E77D8;
+    p = sSplashTimer;
     do {
         i = i + 1;
         if (*p != 0) {
@@ -1776,7 +1776,7 @@ void func_80028590(void)
     } while (i < 8);
 }
 
-Gfx *func_800285C4(Gfx *gdl, s32 flag)
+Gfx *tube_tex_mode_callback(Gfx *gdl, s32 flag)
 {
     if (flag) {
         gSPDisplayList(gdl++, 0x07000000);

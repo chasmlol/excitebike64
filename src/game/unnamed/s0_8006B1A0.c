@@ -16,26 +16,26 @@ typedef struct {
     u8 p4[0x7E0 - 0x7A6];
 } Ent_72;
 
-extern Ent_72 D_800E37C0_86[];
+extern Ent_72 gRiders_86[];
 
-void func_8006B1A0(void)
+void excite3d_init(void)
 {
     s32 i;
 
-    D_800F1504 = 600;
-    D_800E76D0 = 0;
+    sExcite3DSpawnTime = 600;
+    gRaceFrame = 0;
     for (i = 6; i < 8; i++) {
-        D_800E37C0_86[i].f7A4 = 1;
-        D_800E37C0_86[i].f6E8 = 1;
-        D_800E37C0_86[i].f7A5 = 0;
-        D_800E37C0_86[i].x = -1000.0f;
-        D_800E37C0_86[i].y = -50.0f;
-        D_800E37C0_86[i].z = -1000.0f;
-        func_8001AEB0(&D_800E37C0_86[i], 0);
-        func_80013438(&D_800E37C0_86[i].x + 12, 0.0f, 0.0f, 0.0f);
+        gRiders_86[i].f7A4 = 1;
+        gRiders_86[i].f6E8 = 1;
+        gRiders_86[i].f7A5 = 0;
+        gRiders_86[i].x = -1000.0f;
+        gRiders_86[i].y = -50.0f;
+        gRiders_86[i].z = -1000.0f;
+        bike_apply_rider_stats(&gRiders_86[i], 0);
+        quat_from_euler(&gRiders_86[i].x + 12, 0.0f, 0.0f, 0.0f);
     }
     for (i = 0; i < 8; i++) {
-        D_800E37C0_86[i].f44C = D_800CCDC0[i];
+        gRiders_86[i].f44C = sExcite3DTimeScales[i];
     }
 }
 
@@ -47,9 +47,9 @@ typedef struct {
     u8 p2[0x6C - 0x66];
 } Seg_16;
 
-extern Seg_16 *D_800EE498_30;
+extern Seg_16 *gPathNodes_30;
 
-void func_8006B2AC(u8 *p)
+void excite3d_cpu_steer(u8 *p)
 {
     s32 i0;
     s32 i1;
@@ -70,28 +70,28 @@ void func_8006B2AC(u8 *p)
     side = (s32)((*(f32 *)(p + 0x48) + 1.089f) / 2.178f);
     other = side ^ 1;
     sh1 = side << 1;
-    t0 = (D_800EE498_30[i1].f65 >> sh1) & 3;
+    t0 = (gPathNodes_30[i1].f65 >> sh1) & 3;
     if (t0 == 0) {
         for (;;) {
             i1++;
             {
-                f32 dd = D_800EE498_30[i1].f8 - *(f32 *)(p + 0x50);
+                f32 dd = gPathNodes_30[i1].f8 - *(f32 *)(p + 0x50);
                 if (!(-40.0f < dd)) break;
             }
-            t0 = (D_800EE498_30[i1].f65 >> sh1) & 3;
+            t0 = (gPathNodes_30[i1].f65 >> sh1) & 3;
             if (t0 != 0) break;
         }
     }
     sh2 = other << 1;
-    t1 = (D_800EE498_30[i0].f65 >> sh2) & 3;
+    t1 = (gPathNodes_30[i0].f65 >> sh2) & 3;
     if (t1 == 0) {
         for (;;) {
             i0++;
             {
-                f32 dd = D_800EE498_30[i0].f8 - *(f32 *)(p + 0x50);
+                f32 dd = gPathNodes_30[i0].f8 - *(f32 *)(p + 0x50);
                 if (!(-40.0f < dd)) break;
             }
-            t1 = (D_800EE498_30[i0].f65 >> sh2) & 3;
+            t1 = (gPathNodes_30[i0].f65 >> sh2) & 3;
             if (t1 != 0) break;
         }
     }
@@ -106,9 +106,9 @@ void func_8006B2AC(u8 *p)
     d = f - h;
     *(f32 *)(p + 0x42C) = -f;
     if (0.21779999f < d) {
-        n = h + *(f32 *)(p + 0x420) * D_800E76C8 / 10.0f;
+        n = h + *(f32 *)(p + 0x420) * gPhysDeltaTime / 10.0f;
     } else if (d < -0.21779999f) {
-        n = h - *(f32 *)(p + 0x420) * D_800E76C8 / 10.0f;
+        n = h - *(f32 *)(p + 0x420) * gPhysDeltaTime / 10.0f;
     } else {
         goto done;
     }
@@ -204,11 +204,11 @@ typedef struct {
     u8 padC[0x6C - 0xC];
 } Seg_17;
 
-extern Bike_40 D_800E37C0_87[8];
-extern Bike_40 *D_800F0C10_7[];
-extern Seg_17 *D_800EE498_31;
+extern Bike_40 gRiders_87[8];
+extern Bike_40 *gRiderStandings_7[];
+extern Seg_17 *gPathNodes_31;
 
-void func_8006B4EC(void)
+void excite3d_update(void)
 {
     Bike_40 *p;
     Bike_40 *a;
@@ -233,75 +233,75 @@ void func_8006B4EC(void)
     f32 v;
     f32 lo;
 
-    for (p = D_800E37C0_87; p < &D_800E37C0_87[8]; p++) {
+    for (p = gRiders_87; p < &gRiders_87[8]; p++) {
         if (p->f7A4 == 0 && p->f6E8 != 0 && p->f44 == 0 && p->f744 < 3) {
-            func_8006B2AC((u8 *)p);
+            excite3d_cpu_steer((u8 *)p);
         }
     }
 
     do {
         sw = 0;
-        for (i = 0; i < D_800F05A8.n - 1; i++) {
-            a = D_800F0C10_7[i];
-            b = D_800F0C10_7[i + 1];
+        for (i = 0; i < gEvent.n - 1; i++) {
+            a = gRiderStandings_7[i];
+            b = gRiderStandings_7[i + 1];
             if (a->f630 < b->f630 && (a->f7A5 | b->f7A5) == 0) {
                 sw = 1;
-                D_800F0C10_7[i] = b;
-                D_800F0C10_7[i + 1] = a;
+                gRiderStandings_7[i] = b;
+                gRiderStandings_7[i + 1] = a;
             }
         }
     } while (sw);
 
-    for (i = 0; i < D_800F05A8.n; i++) {
-        D_800F0C10_7[i]->f662 = i;
+    for (i = 0; i < gEvent.n; i++) {
+        gRiderStandings_7[i]->f662 = i;
     }
 
-    func_800635A4();
+    race_announce_position_changes();
 
-    if (D_800E37C0_87[0].f50 < -970.375f) {
-        D_800E37C0_87[0].f50 -= -997.15717f;
-        D_800E37C0_87[0].f8 = D_800E37C0_87[0].f8 - -997157.2f;
-        D_800E37C0_87[0].f14 = D_800E37C0_87[0].f14 - -997157.2f;
-        D_800E37C0_87[0].f74 -= -997.15717f;
-        func_8002D384(0, 0xF3725);
-        q = D_800E37C0_87;
+    if (gRiders_87[0].f50 < -970.375f) {
+        gRiders_87[0].f50 -= -997.15717f;
+        gRiders_87[0].f8 = gRiders_87[0].f8 - -997157.2f;
+        gRiders_87[0].f14 = gRiders_87[0].f14 - -997157.2f;
+        gRiders_87[0].f74 -= -997.15717f;
+        cam_shift_z(0, 0xF3725);
+        q = gRiders_87;
         j = 0;
-        while (q->f50 < D_800EE498_31[j].f8) {
+        while (q->f50 < gPathNodes_31[j].f8) {
             j++;
         }
         q->f628 = j;
-        func_8005E9A4(0);
-        func_800511B8(0);
+        decal_end_track(0);
+        event_rider_lap_completed(0);
     }
 
-    for (e = &D_800E37C0_87[1]; e < &D_800E37C0_87[8]; e++) {
+    for (e = &gRiders_87[1]; e < &gRiders_87[8]; e++) {
         if (e->f7A4 == 0 && e->f50 < -970.375f) {
             if (e->f6ED == 0) {
-                if (e - D_800E37C0_87 < 4) {
-                    func_800511B8(e - D_800E37C0_87);
+                if (e - gRiders_87 < 4) {
+                    event_rider_lap_completed(e - gRiders_87);
                 }
                 e->f6ED = 1;
             }
-            d = e->f50 - D_800E37C0_87[0].f50;
+            d = e->f50 - gRiders_87[0].f50;
             if (d < -70.0f) {
                 e->f6ED = 0;
                 e->f50 -= -997.15717f;
                 e->f74 -= -997.15717f;
                 {
                     s32 jj = 0;
-                    t = D_800EE498_31;
+                    t = gPathNodes_31;
                     while (e->f50 < t[jj].f8) {
                         jj++;
                     }
                     e->f628 = jj;
                 }
-                func_8005E9A4(e - D_800E37C0_87);
+                decal_end_track(e - gRiders_87);
             }
         }
     }
 
     cnt = 0;
-    for (e = D_800E37C0_87; e < &D_800E37C0_87[8]; e++) {
+    for (e = gRiders_87; e < &gRiders_87[8]; e++) {
         if (e->f6E8 == 0 && e->f7A5 == 0) {
             cnt++;
             z = e->f50;
@@ -309,34 +309,34 @@ void func_8006B4EC(void)
     }
 
     if (cnt != 0) {
-        k = D_800E37C0_87[0].f628 + 4;
-        dist = D_800E37C0_87[0].f50 - D_800EE498_31[k].f8;
-        h = D_800E37C0_87[0].f4C;
+        k = gRiders_87[0].f628 + 4;
+        dist = gRiders_87[0].f50 - gPathNodes_31[k].f8;
+        h = gRiders_87[0].f4C;
         if (!(dist > 100.0f)) goto body;
         h = 4.0f;
         goto found;
         do {
         body:
-            v = D_800EE498_31[k].f4;
+            v = gPathNodes_31[k].f4;
             if (h < v) {
                 h = v;
             }
-            if (h - D_800E37C0_87[0].f4C > 1.5f && h - v > 1.5f) {
+            if (h - gRiders_87[0].f4C > 1.5f && h - v > 1.5f) {
                 goto found;
             }
-            k = (k + 1) % D_800EE490;
-            dist = D_800E37C0_87[0].f50 - D_800EE498_31[k].f8;
+            k = (k + 1) % gPathNodeCount;
+            dist = gRiders_87[0].f50 - gPathNodes_31[k].f8;
         } while (!(dist > 100.0f));
         h = 4.0f;
     found:
         lo = -10.0f;
-        for (p = &D_800E37C0_87[6]; p < &D_800E37C0_87[8]; p++) {
-            if (!(h < p->f4C) && D_800E76D0 - D_800F1504 > 60 && p->f6E8 != 0 &&
-                D_800E76D0 - p->f7B0 > 179 && p->f7A5 == 0) {
+        for (p = &gRiders_87[6]; p < &gRiders_87[8]; p++) {
+            if (!(h < p->f4C) && gRaceFrame - sExcite3DSpawnTime > 60 && p->f6E8 != 0 &&
+                gRaceFrame - p->f7B0 > 179 && p->f7A5 == 0) {
                 d = z - p->f50;
                 if (d < lo || dist < d) {
-                    now = D_800E76D0;
-                    D_800F1504 = now;
+                    now = gRaceFrame;
+                    sExcite3DSpawnTime = now;
                     if (now & 1) {
                         p->f7D8 = 0.2f;
                         p->f50 = z - dist;
@@ -344,18 +344,18 @@ void func_8006B4EC(void)
                         p->f7D8 = 0.2f;
                         p->f50 = z - lo;
                     }
-                    func_80061E20((u8 *)&p->f48);
+                    collide_reset_body((u8 *)&p->f48);
                     p->f1C4 = 1;
-                    p->f7A9 = func_800138A4() & 3;
+                    p->f7A9 = r250_next() & 3;
                     p->f4C = 40.0f;
                     p->f48 = p->f7A9 * 2.178f;
-                    p->f4C = func_800228A0(&p->f48);
-                    func_8001C780(p);
+                    p->f4C = bike_get_ground_height(&p->f48);
+                    bike_place_on_ground(p);
                     p->f420 = 10.0f;
                     p->f42C = -p->f48;
                     p->f58 = p->f420 * p->fBC;
                     p->f5C = p->f420 * p->fC0;
-                    p->f7B0 = D_800E76D0;
+                    p->f7B0 = gRaceFrame;
                     p->f54 = 0;
                     p->f620 = 0;
                     p->f41D = 0;
@@ -378,9 +378,9 @@ void func_8006B4EC(void)
     }
 }
 
-void func_8006BC14(Obj_52 *p)
+void excite3d_player_steer(Obj_52 *p)
 {
-    if (D_800F05D4 <= 0) {
+    if (gEventTime <= 0) {
         return;
     }
     if ((s8)p->u7aa != 0) {
@@ -391,17 +391,17 @@ void func_8006BC14(Obj_52 *p)
         }
     } else if (p->w744 < 0) {
         if (p->b5d0 < -5) {
-            if (p->u7a9 != 0 && func_8006BD4C_2(p, p->u7a9 - 1)) {
+            if (p->u7a9 != 0 && excite3d_lane_is_clear_2(p, p->u7a9 - 1)) {
                 p->u7a9--;
-                p->u7aa = (s8)-D_800C8E00;
+                p->u7aa = (s8)-gLaneChangeFrames;
             }
-        } else if (p->b5d0 >= 6 && p->u7a9 < 3 && func_8006BD4C_2(p, p->u7a9 + 1)) {
+        } else if (p->b5d0 >= 6 && p->u7a9 < 3 && excite3d_lane_is_clear_2(p, p->u7a9 + 1)) {
             p->u7a9++;
-            p->u7aa = (s8)D_800C8E00;
+            p->u7aa = (s8)gLaneChangeFrames;
         }
     }
     p->w54 = 0;
-    p->f48 = p->u7a9 * 2.178f - (s8)p->u7aa * (2.178f / D_800C8E00);
+    p->f48 = p->u7a9 * 2.178f - (s8)p->u7aa * (2.178f / gLaneChangeFrames);
 }
 
 struct Obj_53 {
@@ -415,7 +415,7 @@ struct Obj_53 {
     u8 b7A9;
 };
 
-s32 func_8006BD4C(Obj_53 *o, s32 n)
+s32 excite3d_lane_is_clear(Obj_53 *o, s32 n)
 {
     V3 a, b;
     f32 z, bx, r1, r2, sgn, step;
@@ -433,8 +433,8 @@ s32 func_8006BD4C(Obj_53 *o, s32 n)
     b.x = bx;
     a.z = o->f50;
     b.z = a.z;
-    r1 = func_800228A0(&b);
-    r2 = func_800228A0(&a);
+    r1 = bike_get_ground_height(&b);
+    r2 = bike_get_ground_height(&a);
     if (r1 != r2) {
 ret0:
         return 0;
@@ -443,16 +443,16 @@ ret0:
     if (z < o->f5C) {
         sgn = -1.0f;
     }
-    step = o->f5C * D_800C8E00 / 60.0f - sgn - sgn;
+    step = o->f5C * gLaneChangeFrames / 60.0f - sgn - sgn;
     for (i = 0; i < 5; i++) {
         b = a;
         b.z += (f32)i * step * 0.25f + sgn;
-        func_800228A0(&b);
-        if (D_800C9080_2[(D_800E84F8 >> 4) & 0xF].flags & 0x400) {
+        bike_get_ground_height(&b);
+        if (gSurfaceTable_2[(gGroundSurface >> 4) & 0xF].flags & 0x400) {
             goto ret0;
         }
     }
-    fl = D_800C9080_2[(D_800E84F8 >> 4) & 0xF].flags & 0x400;
+    fl = gSurfaceTable_2[(gGroundSurface >> 4) & 0xF].flags & 0x400;
     return fl == 0;
 }
 
@@ -462,9 +462,9 @@ typedef struct Ent_73 {
     u8 rest[0x60];
 } Ent_73;
 
-void func_8006BF04(Obj_54 *o)
+void excite3d_update_progress(Obj_54 *o)
 {
-    Ent_73 *t = D_800EE498;
+    Ent_73 *t = gPathNodes;
     s32 count = 0;
     f32 f;
     if (o->f50 < t->f8) {
@@ -492,9 +492,9 @@ struct Obj_55 {
     s16 s628;
 };
 
-void func_8006BF78(Obj_55 *o) {
+void excite3d_find_segment(Obj_55 *o) {
     s16 c = 0;
-    Ent_74 *p = D_800EE498;
+    Ent_74 *p = gPathNodes;
     if (o->f50 < p->f8) {
         do {
             p++;

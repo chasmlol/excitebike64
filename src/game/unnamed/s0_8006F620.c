@@ -2,11 +2,11 @@
 
 typedef struct { u8 r0; u8 key[7]; } Rec_43;
 
-extern Rec_43 *D_800F2110[];
-extern Rec_43 *D_800F2128[];
+extern Rec_43 *sStuntSeqByDir[];
+extern Rec_43 *sStuntSeqByDirAlt[];
 
-extern Rec_43 D_800CCF20[13];
-extern Rec_43 D_800CCF88[8];
+extern Rec_43 sStuntInputSeqs[13];
+extern Rec_43 sStuntInputSeqsAlt[8];
 
 static inline u8 cmp(Rec_43 *a, Rec_43 *b)
 {
@@ -23,7 +23,7 @@ static inline u8 cmp(Rec_43 *a, Rec_43 *b)
     return 0;
 }
 
-void func_8006F620(void)
+void stunt_init_input_tables(void)
 {
     u8 flag;
     s32 i;
@@ -32,7 +32,7 @@ void func_8006F620(void)
     Rec_43 *t, *pa, *pb, *p1;
     Rec_43 tmp;
 
-    t = D_800CCF20;
+    t = sStuntInputSeqs;
     p1 = &t[1];
     do {
         flag = 0;
@@ -40,7 +40,7 @@ void func_8006F620(void)
         pa = t;
         off = 8;
         pb = p1;
-        for (; i < sizeof(D_800CCF20) / sizeof(Rec_43) - 2; i++) {
+        for (; i < sizeof(sStuntInputSeqs) / sizeof(Rec_43) - 2; i++) {
             if (cmp(pa, pb)) {
                 flag = 1;
                 tmp = *pa;
@@ -53,15 +53,15 @@ void func_8006F620(void)
         }
     } while (flag);
     for (i = 0; i < 5; i++) {
-        for (m = 0; m < sizeof(D_800CCF20) / sizeof(Rec_43); m++) {
-            if (D_800CCF20[m].key[0] <= i + 2) {
+        for (m = 0; m < sizeof(sStuntInputSeqs) / sizeof(Rec_43); m++) {
+            if (sStuntInputSeqs[m].key[0] <= i + 2) {
                 break;
             }
         }
-        D_800F2110[i] = (Rec_43 *)(m * 8 + (u32)D_800CCF20);
+        sStuntSeqByDir[i] = (Rec_43 *)(m * 8 + (u32)sStuntInputSeqs);
     }
 
-    t = D_800CCF88;
+    t = sStuntInputSeqsAlt;
     p1 = &t[1];
     do {
         flag = 0;
@@ -69,7 +69,7 @@ void func_8006F620(void)
         pa = t;
         off = 8;
         pb = p1;
-        for (; i < sizeof(D_800CCF88) / sizeof(Rec_43) - 2; i++) {
+        for (; i < sizeof(sStuntInputSeqsAlt) / sizeof(Rec_43) - 2; i++) {
             if (cmp(pa, pb)) {
                 flag = 1;
                 tmp = *pa;
@@ -82,12 +82,12 @@ void func_8006F620(void)
         }
     } while (flag);
     for (i = 0; i < 5; i++) {
-        for (m = 0; m < sizeof(D_800CCF88) / sizeof(Rec_43); m++) {
-            if (D_800CCF88[m].key[0] <= i + 2) {
+        for (m = 0; m < sizeof(sStuntInputSeqsAlt) / sizeof(Rec_43); m++) {
+            if (sStuntInputSeqsAlt[m].key[0] <= i + 2) {
                 break;
             }
         }
-        D_800F2128[i] = (Rec_43 *)(m * 8 + (u32)D_800CCF88);
+        sStuntSeqByDirAlt[i] = (Rec_43 *)(m * 8 + (u32)sStuntInputSeqsAlt);
     }
 }
 
@@ -117,11 +117,11 @@ typedef struct {
     s32 sh[1];
 } Cfg_11;
 
-extern Move D_800C9A40_12[];
-extern Ent_78 D_800E37C0_89[];
-extern Cfg_11 D_800EFD70_51;
+extern Move gRiderAnims_12[];
+extern Ent_78 gRiders_89[];
+extern Cfg_11 gGame_51;
 
-void func_8006F8D4(Ent_78 *e)
+void stunt_read_input(Ent_78 *e)
 {
     u32 w;
     s32 x, y, dir;
@@ -159,16 +159,16 @@ void func_8006F8D4(Ent_78 *e)
     }
     if ((e->btn & 0x100) && (!(e->prev & 0x100) || flag)) {
         if (e->btn & 0x10000) {
-            p = D_800F2128[dir - 2];
+            p = sStuntSeqByDirAlt[dir - 2];
         } else {
-            p = D_800F2110[dir - 2];
+            p = sStuntSeqByDir[dir - 2];
         }
         do {
             for (i = 0; i < 7; i++) {
                 if (p[i + 1] == 0 &&
-                    (((D_800C9A40_12[p[0]].mask >> D_800EFD70_51.sh[e - D_800E37C0_89]) & 1) ||
-                     (D_800C2280 & 0x200))) {
-                    e->f408 = D_800E76D0;
+                    (((gRiderAnims_12[p[0]].mask >> gGame_51.sh[e - gRiders_89]) & 1) ||
+                     (gCheatFlags & 0x200))) {
+                    e->f408 = gRaceFrame;
                     e->f3D3 = p[0];
                 }
                 if ((p + i)[1] != e->hist[(e->idx + i) & 7]) break;
@@ -223,9 +223,9 @@ typedef struct {
     s32 rest[11];
 } TblEnt_2;
 
-extern TblEnt_2 D_800C9A40_13[];
+extern TblEnt_2 gRiderAnims_13[];
 
-void func_8006FB3C(Obj_56 *o)
+void stunt_update(Obj_56 *o)
 {
     s32 found;
     s32 k;
@@ -236,10 +236,10 @@ void func_8006FB3C(Obj_56 *o)
     s8 d3;
     s8 s;
 
-    func_8006F8D4(o);
+    stunt_read_input(o);
     if (o->b3FB != 0) {
         if (--o->b3FB == 0) {
-            if ((o->w744 < 0 || 30.0f < o->f6F4) && D_800F05E8 == 0) {
+            if ((o->w744 < 0 || 30.0f < o->f6F4) && gEventAllFinished == 0) {
                 found = 0;
                 t = o->w3C4;
                 o->w3C4 = 0;
@@ -259,7 +259,7 @@ void func_8006FB3C(Obj_56 *o)
                     }
                     o->b3E4[0] = o->s3D2;
                 }
-                if (found && (D_800C2280 & 0x10)) {
+                if (found && (gCheatFlags & 0x10)) {
                     o->w648 = 0;
                 }
             } else {
@@ -271,8 +271,8 @@ void func_8006FB3C(Obj_56 *o)
     if (s < 0) {
         d3 = o->s3D3;
         if (d3 >= 0) {
-            if (D_800E76D0 - o->w408 < 60) {
-                func_8006FE84(o, d3);
+            if (gRaceFrame - o->w408 < 60) {
+                stunt_start(o, d3);
             } else {
                 o->s3D3 = -1;
             }
@@ -284,7 +284,7 @@ void func_8006FB3C(Obj_56 *o)
             v = (s32)(o->f6F4 * 60.0f);
             if (o->w3B0 > 0 && v >= 16) {
                 o->w3AC += o->w3B0;
-                lim = D_800C9A40_13[o->s3D0].p[1] << 8;
+                lim = gRiderAnims_13[o->s3D0].p[1] << 8;
                 if (o->w3AC >= lim) {
                     o->w3AC = lim - 0x100;
                     o->w3B0 = -0x100;
@@ -308,13 +308,13 @@ void func_8006FB3C(Obj_56 *o)
     }
     if (o->w744 < 0 && o->f420 < 5.0f && s < 16) {
         if (o->w01C > 0) {
-            func_800445B0(o, 0x22);
+            bike_crash_begin(o, 0x22);
         } else {
-            func_800445B0(o, 0x1F);
+            bike_crash_begin(o, 0x1F);
         }
         return;
     }
-    if (func_800701B4(o, (o->w5B0 >> 8) & 1) != 0) {
+    if (stunt_animate(o, (o->w5B0 >> 8) & 1) != 0) {
         u8 pv = o->s3D0;
         o->b3FB = 0x20;
         o->s3D0 = -1;
@@ -371,9 +371,9 @@ struct Ent_79 {
     u8 p7A9[0x7E0 - 0x7A9];
 };
 
-extern Tab_7 D_800C9A40_14[];
+extern Tab_7 gRiderAnims_14[];
 
-void func_8006FE84(Ent_79 *o, s32 n)
+void stunt_start(Ent_79 *o, s32 n)
 {
     s32 u;
     s32 d, k, j, cnt, v, c2; s8 a2;
@@ -389,11 +389,11 @@ void func_8006FE84(Ent_79 *o, s32 n)
                 return;
             }
         }
-    } else if (!(D_800C9A40_14[n].f0 & 0x10)) {
+    } else if (!(gRiderAnims_14[n].f0 & 0x10)) {
         return;
     }
     o->f41B = 0;
-    func_8003F564(o->f65C, 0xF);
+    rider_pose_snapshot(o->f65C, 0xF);
     if (n == 0xF) {
         if (o->f744 < 3) {
             return;
@@ -405,7 +405,7 @@ void func_8006FE84(Ent_79 *o, s32 n)
     }
     o->f3D0 = n;
     o->f3AC = 0;
-    u = D_800C9A40_14[n].f2C;
+    u = gRiderAnims_14[n].f2C;
     o->f3D3 = -1;
     o->f3B4 = 0;
     o->f7A8 = 0;
@@ -416,7 +416,7 @@ void func_8006FE84(Ent_79 *o, s32 n)
     if (n >= 0x10) {
         return;
     }
-    if (D_800C9A40_14[n].f38 == -1) {
+    if (gRiderAnims_14[n].f38 == -1) {
         return;
     }
     if (o->f3FB != 0) {
@@ -445,7 +445,7 @@ void func_8006FE84(Ent_79 *o, s32 n)
         o->f3C4 = 0;
     } else {
         a2 = (s8)c;
-        v = D_800C9A40_14[a2].f20;
+        v = gRiderAnims_14[a2].f20;
         v += o->f3BA * 2;
         for (; d < 4; d++) {
             if (a2 == o->hist[d]) {
@@ -456,9 +456,9 @@ void func_8006FE84(Ent_79 *o, s32 n)
         v = v / 8;
         o->f3C4 += v;
     }
-    id = ((s32)o - (s32)D_800E37C0) * -0x41041041 >> 5;
-    if (id != D_800E3700 || D_800C8CD8 == 0) {
-        func_8004E2E0(id, D_800C9A40_14[n].f38);
+    id = ((s32)o - (s32)gRiders) * -0x41041041 >> 5;
+    if (id != gGhostSlot || gGhostRace == 0) {
+        announce_trick(id, gRiderAnims_14[n].f38);
     }
     c2 = 0;
     for (j = 0; j < 4; j++) {
@@ -467,7 +467,7 @@ void func_8006FE84(Ent_79 *o, s32 n)
         }
     }
     if (c2 < 2) {
-        if (D_800C9A40_14[n].f20 < 0x3E9) {
+        if (gRiderAnims_14[n].f20 < 0x3E9) {
             c2 = 1;
         } else {
             c2 = 2;
@@ -475,7 +475,7 @@ void func_8006FE84(Ent_79 *o, s32 n)
     } else {
         c2 = 0;
     }
-    func_8004F410(c2);
+    tunes_queue_crowd(c2);
 }
 
 typedef struct Tbl_6 {
@@ -490,9 +490,9 @@ typedef struct Tbl_6 {
     u8 pad38[4];
 } Tbl_6;
 
-extern Tbl_6 D_800C9A40_15[];
+extern Tbl_6 gRiderAnims_15[];
 
-s32 func_800701B4(Obj_57 *p, s32 k)
+s32 stunt_animate(Obj_57 *p, s32 k)
 {
     s32 i;
     s32 top;
@@ -504,7 +504,7 @@ s32 func_800701B4(Obj_57 *p, s32 k)
     if (i < 0) {
         goto ret0;
     }
-    e = &D_800C9A40_15[i];
+    e = &gRiderAnims_15[i];
     top = e->f0C[1] << 8;
     fl = e->flags;
 
@@ -529,7 +529,7 @@ s32 func_800701B4(Obj_57 *p, s32 k)
                 df = -df;
             }
             if (df > 0x1000) {
-                func_800477F0_3(p, -0x22);
+                bike_queue_crash_3(p, -0x22);
             }
         }
         return 1;
@@ -632,9 +632,9 @@ typedef struct {
     u8 rest[0x3C - 0x24];
 } Ent_80;
 
-extern Ent_80 D_800C9A40_16[];
+extern Ent_80 gRiderAnims_16[];
 
-void func_8007047C(Obj_58 *o) {
+void stunt_add_points(Obj_58 *o) {
     s32 base;
     s8 idx;
     s32 k;
@@ -644,7 +644,7 @@ void func_8007047C(Obj_58 *o) {
         return;
     }
     idx = (s8)o->f3d0;
-    base = D_800C9A40_16[idx].f20;
+    base = gRiderAnims_16[idx].f20;
     base += o->f3ba * 2;
     for (k = 0; k < 4; k++) {
         if (idx == o->f3e4[k]) {
@@ -660,7 +660,7 @@ void func_8007047C(Obj_58 *o) {
     o->f3c4 += base;
 }
 
-s32 func_80070514(u8 *a, u8 *b) {
+s32 stunt_seq_less(u8 *a, u8 *b) {
     s32 i;
 
     for (i = 0; i < 7; i++) {
@@ -690,7 +690,7 @@ struct Obj_59 {
     s8 list[16];
 };
 
-s32 func_80070568(Obj_59 *p)
+s32 stunt_record_done(Obj_59 *p)
 {
     s32 ret = 0;
     s32 i;

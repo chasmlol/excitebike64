@@ -21,11 +21,11 @@ typedef struct {
 
 typedef struct Seg_19 Seg_19;
 
-extern TexSet_4 *D_800F5578;
-extern Cell_7 *D_800CE1FC;
-extern GridPt *D_800F4F9C;
-extern Seg_19 *D_800F4F88;
-extern Seg_19 *D_800F5574;
+extern TexSet_4 *sArnedWallTex;
+extern Cell_7 *sArnedCells;
+extern GridPt *sArnedFloorVtx;
+extern Seg_19 *sArnedPieceTex;
+extern Seg_19 *sArnedPieceTex2;
 
 typedef struct {
     s16 ob[3];
@@ -34,42 +34,42 @@ typedef struct {
     u8 cn[4];
 } V_2;
 
-extern V_2 *D_800F557C_2;
+extern V_2 *sArnedWallVtx_2;
 
-void func_8008CB10(s32 x, s32 z, s32 w, s32 h)
+void arned_add_wall_quad(s32 x, s32 z, s32 w, s32 h)
 {
-    D_800F557C_2[D_800F4FD4].ob[0] = x;
-    D_800F557C_2[D_800F4FD4].ob[1] = 0;
-    D_800F557C_2[D_800F4FD4].ob[2] = z;
-    D_800F557C_2[D_800F4FD4].tc[0] = 0;
-    D_800F557C_2[D_800F4FD4].tc[1] = 0;
-    D_800F4FD4++;
-    D_800F557C_2[D_800F4FD4].ob[0] = x + w;
-    D_800F557C_2[D_800F4FD4].ob[1] = 0;
-    D_800F557C_2[D_800F4FD4].ob[2] = z + h;
-    D_800F557C_2[D_800F4FD4].tc[0] = 0x800;
-    D_800F557C_2[D_800F4FD4].tc[1] = 0;
-    D_800F4FD4++;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[0] = x;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[1] = 0;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[2] = z;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[0] = 0;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[1] = 0;
+    sArnedWallVtxCount++;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[0] = x + w;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[1] = 0;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[2] = z + h;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[0] = 0x800;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[1] = 0;
+    sArnedWallVtxCount++;
     if (w != 0) {
         z += w / 2;
-        x = (x * D_800F4F8C + 1) / D_800F4F8C;
+        x = (x * sArnedGridW + 1) / sArnedGridW;
     }
     if (h != 0) {
         x -= h / 2;
-        z = (z * D_800F4F90 + 1) / D_800F4F90;
+        z = (z * sArnedGridH + 1) / sArnedGridH;
     }
-    D_800F557C_2[D_800F4FD4].ob[0] = x;
-    D_800F557C_2[D_800F4FD4].ob[1] = 500;
-    D_800F557C_2[D_800F4FD4].ob[2] = z;
-    D_800F557C_2[D_800F4FD4].tc[0] = 0;
-    D_800F557C_2[D_800F4FD4].tc[1] = 0x1000;
-    D_800F4FD4++;
-    D_800F557C_2[D_800F4FD4].ob[0] = x + w;
-    D_800F557C_2[D_800F4FD4].ob[1] = 500;
-    D_800F557C_2[D_800F4FD4].ob[2] = z + h;
-    D_800F557C_2[D_800F4FD4].tc[0] = 0x800;
-    D_800F557C_2[D_800F4FD4].tc[1] = 0x1000;
-    D_800F4FD4++;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[0] = x;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[1] = 500;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[2] = z;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[0] = 0;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[1] = 0x1000;
+    sArnedWallVtxCount++;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[0] = x + w;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[1] = 500;
+    sArnedWallVtx_2[sArnedWallVtxCount].ob[2] = z + h;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[0] = 0x800;
+    sArnedWallVtx_2[sArnedWallVtxCount].tc[1] = 0x1000;
+    sArnedWallVtxCount++;
 }
 
 typedef struct {
@@ -77,29 +77,29 @@ typedef struct {
     s32 mode;
 } GState_6;
 
-extern GState_6 *D_800CEA40_4;
+extern GState_6 *gEditor_4;
 
-Gfx *func_8008CC80(Gfx *gdl)
+Gfx *arned_draw_walls(Gfx *gdl)
 {
     s32 i, j, n;
     TexSet_4 *s;
     Img_2 *t;
 
-    if (D_800CEA40_4->mode == 6) {
+    if (gEditor_4->mode == 6) {
         return gdl;
     }
     {
-        s = D_800F5578;
+        s = sArnedWallTex;
         gDPLoadTLUT_pal256(gdl++, s->pal);
         t = &s->tex;
         gDPLoadTextureBlock(gdl++, t->img, G_IM_FMT_IA, G_IM_SIZ_8b,
                             t->w * 8, t->h, 0,
                             G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_CLAMP,
                             5, 6, G_TX_NOLOD, G_TX_NOLOD);
-        for (i = 0; i < D_800F4FD4; i += 32) {
-            n = D_800F4FD4 - i;
+        for (i = 0; i < sArnedWallVtxCount; i += 32) {
+            n = sArnedWallVtxCount - i;
             if (n > 32) n = 32;
-            gSPVertex(gdl++, &D_800F557C_3[i], n, 0);
+            gSPVertex(gdl++, &sArnedWallVtx_3[i], n, 0);
             for (j = 0; j < n / 4; j++) {
                 gSP2Triangles(gdl++, j * 4, j * 4 + 1, j * 4 + 3, 0, j * 4, j * 4 + 3, j * 4 + 2, 0);
             }
@@ -108,7 +108,7 @@ Gfx *func_8008CC80(Gfx *gdl)
     return gdl;
 }
 
-void func_8008CF94(s32 w, s32 h)
+void arned_init_grid(s32 w, s32 h)
 {
     s32 size;
     s32 n;
@@ -121,64 +121,64 @@ void func_8008CF94(s32 w, s32 h)
     u8 *p;
     GridPt *g;
 
-    if (D_800CE1FC != NULL) {
-        func_8008ED48();
+    if (sArnedCells != NULL) {
+        arned_free_grid();
     }
-    D_800F4FF0 = func_800BC908(0x3880, 0, (s32)D_800DA830, 0xD4);
+    sArnedObjViews = mem_alloc_dbg(0x3880, 0, (s32)D_800DA830, 0xD4);
     size = w * ((h << 2) + h << 2);
-    D_800CE1FC = p = func_800BC908(size, 0, (s32)D_800DA830, 0xD7);
+    sArnedCells = p = mem_alloc_dbg(size, 0, (s32)D_800DA830, 0xD7);
     if (p == NULL) {
-        p = func_8000ECB8_2(1);
+        p = fatal_halt_2(1);
     }
-    D_800F4F8C = w;
-    D_800F4F90 = h;
-    func_8000ED10(p, 0, size);
-    n = D_800F4F8C * D_800F4F90;
+    sArnedGridW = w;
+    sArnedGridH = h;
+    mem_fill(p, 0, size);
+    n = sArnedGridW * sArnedGridH;
     for (i = 0; i < n; i++) {
-        D_800CE1FC[i].f8 = -1;
+        sArnedCells[i].f8 = -1;
     }
     n = -1;
     for (i = 0x1C1; i >= 0; i--) {
-        D_800F4B80[i] = n;
+        sArnedSlotOwner[i] = n;
     }
-    D_800F55A0 = func_800BC908(0x708, 0, (s32)D_800DA830, 0xE4);
+    sArnedVtxBufs = mem_alloc_dbg(0x708, 0, (s32)D_800DA830, 0xE4);
     for (i = 0; i < 0x1C2; i++) {
-        p = func_800BC908(0x750, 0, (s32)D_800DA830, 0xE7);
-        D_800F55A0[i] = p;
-        func_8000ED10(p, 0, 0x750);
+        p = mem_alloc_dbg(0x750, 0, (s32)D_800DA830, 0xE7);
+        sArnedVtxBufs[i] = p;
+        mem_fill(p, 0, 0x750);
     }
     hh = h;
     do {
-        GridPt **pp = &D_800F4F9C;
+        GridPt **pp = &sArnedFloorVtx;
         nx = w + 1;
         ny = hh + 1;
-        *pp = func_800BC908(nx * (ny << 4), 0, (s32)D_800DA830, 0xEF);
+        *pp = mem_alloc_dbg(nx * (ny << 4), 0, (s32)D_800DA830, 0xEF);
         i = 0;
     } while (0);
     k = 0;
     if (ny > 0) {
         do {
             for (j = 0; j < w + 1; j++) {
-                D_800F4F9C[k].x = j * 500 - w * 250;
-                D_800F4F9C[k].y = 0;
-                D_800F4F9C[k].z = i * 500 - hh * 250;
+                sArnedFloorVtx[k].x = j * 500 - w * 250;
+                sArnedFloorVtx[k].y = 0;
+                sArnedFloorVtx[k].z = i * 500 - hh * 250;
                 k++;
             }
         } while (++i < hh + 1);
     }
     i = 0;
-    func_8000ED10(D_800F4FF0, 0, 0x3880);
-    D_800F557C = func_800BC908((D_800F4F8C + D_800F4F90) * 0x80, 0, (s32)D_800DA830, 0x100);
-    D_800F4FD4 = 0;
-    for (i = 0; i < D_800F4F8C; i++) {
-        func_8008CB10(i * 500 - D_800F4F8C * 250, D_800F4F90 * 250, 500, 0);
-        func_8008CB10(D_800F4F8C * 250 - i * 500, -(D_800F4F90 * 250), -500, 0);
+    mem_fill(sArnedObjViews, 0, 0x3880);
+    sArnedWallVtx = mem_alloc_dbg((sArnedGridW + sArnedGridH) * 0x80, 0, (s32)D_800DA830, 0x100);
+    sArnedWallVtxCount = 0;
+    for (i = 0; i < sArnedGridW; i++) {
+        arned_add_wall_quad(i * 500 - sArnedGridW * 250, sArnedGridH * 250, 500, 0);
+        arned_add_wall_quad(sArnedGridW * 250 - i * 500, -(sArnedGridH * 250), -500, 0);
     }
-    for (i = 0; i < D_800F4F90; i++) {
-        func_8008CB10(-(D_800F4F8C * 250), i * 500 - D_800F4F90 * 250, 0, 500);
-        func_8008CB10(D_800F4F8C * 250, D_800F4F90 * 250 - i * 500, 0, -500);
+    for (i = 0; i < sArnedGridH; i++) {
+        arned_add_wall_quad(-(sArnedGridW * 250), i * 500 - sArnedGridH * 250, 0, 500);
+        arned_add_wall_quad(sArnedGridW * 250, sArnedGridH * 250 - i * 500, 0, -500);
     }
-    D_800F55A4 = -1;
+    sArnedTexSetIdx = -1;
 }
 
 typedef struct {
@@ -195,29 +195,29 @@ typedef struct {
     s16 pad12;
 } Ent14;
 
-extern Ent14 *D_800CE1FC_2;
+extern Ent14 *sArnedCells_2;
 
-void func_8008D3B4(s32 x, s32 y, s32 w0, s32 b0a, s32 w1, s32 b0b, s32 b0c, s32 h0, s32 h1)
+void arned_set_cell(s32 x, s32 y, s32 w0, s32 b0a, s32 w1, s32 b0b, s32 b0c, s32 h0, s32 h1)
 {
-    s32 idx = D_800F4F8C * y + x;
+    s32 idx = sArnedGridW * y + x;
 
-    if ((b0c & 2) || D_800CE1FC_2[idx].w0 != w0 || D_800CE1FC_2[idx].w1 != w1 || D_800CE1FC_2[idx].b0a != b0a ||
-        D_800CE1FC_2[idx].b0b != b0b || D_800CE1FC_2[idx].b0c != b0c || D_800CE1FC_2[idx].h0 != h0 ||
-        D_800CE1FC_2[idx].h1 != h1) {
-        D_800CE1FC_2[idx].flag = 1;
+    if ((b0c & 2) || sArnedCells_2[idx].w0 != w0 || sArnedCells_2[idx].w1 != w1 || sArnedCells_2[idx].b0a != b0a ||
+        sArnedCells_2[idx].b0b != b0b || sArnedCells_2[idx].b0c != b0c || sArnedCells_2[idx].h0 != h0 ||
+        sArnedCells_2[idx].h1 != h1) {
+        sArnedCells_2[idx].flag = 1;
     }
-    D_800CE1FC_2[idx].w0 = w0;
-    D_800CE1FC_2[idx].w1 = w1;
-    D_800CE1FC_2[idx].b0a = b0a;
-    D_800CE1FC_2[idx].b0b = b0b;
-    D_800CE1FC_2[idx].b0c = b0c & ~2;
-    D_800CE1FC_2[idx].h0 = h0;
-    D_800CE1FC_2[idx].h1 = h1;
+    sArnedCells_2[idx].w0 = w0;
+    sArnedCells_2[idx].w1 = w1;
+    sArnedCells_2[idx].b0a = b0a;
+    sArnedCells_2[idx].b0b = b0b;
+    sArnedCells_2[idx].b0c = b0c & ~2;
+    sArnedCells_2[idx].h0 = h0;
+    sArnedCells_2[idx].h1 = h1;
 }
 
 typedef struct { Pad16 r[4]; } M;
 
-void func_8008D4C4(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry)
+void arned_set_camera(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry)
 {
     M persp;
     M rot;
@@ -228,28 +228,28 @@ void func_8008D4C4(s32 idx, s32 x, s32 y, s32 z, s16 rx, s16 ry)
     s32 f1, f2, f3;
 
     D_800F558C = x;
-    D_800C23F0 = 0x7FBC;
+    gFarClip = 0x7FBC;
     D_800F5594 = y;
     D_800F559C = z;
     D_800F5580 = rx;
     D_800F5582 = ry;
-    f1 = D_800F13F0;
-    f2 = D_800F13F0;
-    f3 = D_800F13F0;
-    q = (f32)f1 * 0.5f * D_800C2C60[0] / D_800C2C60[0xC00];
-    *(volatile f32 *)&D_800E1930 = q;
-    D_800E1930 = q * f2 * 0.00390625f;
-    guPerspective(&persp, &D_800E1B44, 33.0f, 320.0f / f3, 50.0f, D_800C23F0, 1.0f);
+    f1 = gScreenHeight;
+    f2 = gScreenHeight;
+    f3 = gScreenHeight;
+    q = (f32)f1 * 0.5f * gCosTable[0] / gCosTable[0xC00];
+    *(volatile f32 *)&gProjScale = q;
+    gProjScale = q * f2 * 0.00390625f;
+    guPerspective(&persp, &gPerspNorm, 33.0f, 320.0f / f3, 50.0f, gFarClip, 1.0f);
     guRotateRPY(&rot, D_800F5582 * 360.0f * 1.5258789e-05f, -(f32)D_800F5580 * 360.0f * 1.5258789e-05f, 0.0f);
-    func_80012D30((u8 *)&rot);
-    func_80011490(&a, 0, 0, 0, -D_800F558C, -D_800F5594, -D_800F559C, 0x100);
-    func_800120A4(&a, &rot, &b);
-    func_800120A4(&b, D_800C25F8_2, &a);
-    func_800120A4(&a, &persp, &c);
-    *(M *)D_800F4F08_2[idx] = c;
+    mtx_transpose_rot((u8 *)&rot);
+    mtx_from_angles_pos_scale(&a, 0, 0, 0, -D_800F558C, -D_800F5594, -D_800F559C, 0x100);
+    mtx_mul(&a, &rot, &b);
+    mtx_mul(&b, gViewAxisMtx_2, &a);
+    mtx_mul(&a, &persp, &c);
+    *(M *)gArnedCamMtx_2[idx] = c;
 }
 
-#define SINS(a) D_800C2C60[((a) >> 4) & 0xFFF]
+#define SINS(a) gCosTable[((a) >> 4) & 0xFFF]
 
 typedef struct {
     s32 n;
@@ -293,10 +293,10 @@ typedef struct {
     Model_7 *mdl;
 } Scene;
 
-extern Scene *D_800CEA40_5;
-extern ObjSet *D_800F4FF0_2;
+extern Scene *gEditor_5;
+extern ObjSet *sArnedObjViews_2;
 
-Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, s32 p8, s32 p9) {
+Gfx *arned_draw(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, s32 p8, s32 p9) {
     s32 total;
     s32 x0, z0;
     s32 i, j, x, y, n;
@@ -307,24 +307,24 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
     ObjSet *os;
     Blk64 *m;
 
-    total = D_800F4F8C * D_800F4F90;
+    total = sArnedGridW * sArnedGridH;
     for (i = 0; i < 450; i++) {
-        if (D_800F4B80[i] == -2) {
-            D_800F4B80[i] = -1;
+        if (sArnedSlotOwner[i] == -2) {
+            sArnedSlotOwner[i] = -1;
         }
     }
     i = 0;
-    x0 = -(D_800F4F8C * 250);
-    z0 = -(D_800F4F90 * 250);
-    for (y = 0; y < D_800F4F90; y++) {
-        for (x = 0; x < D_800F4F8C; x++, i++) {
-            cell = &D_800CE1FC[i];
+    x0 = -(sArnedGridW * 250);
+    z0 = -(sArnedGridH * 250);
+    for (y = 0; y < sArnedGridH; y++) {
+        for (x = 0; x < sArnedGridW; x++, i++) {
+            cell = &sArnedCells[i];
             if (cell->dirty != 0) {
                 if (cell->slot != -1) {
-                    D_800F4B80[cell->slot] = -2;
+                    sArnedSlotOwner[cell->slot] = -2;
                 }
                 for (n = 0; n < 450; n++) {
-                    if (D_800F4B80[n] == -1) {
+                    if (sArnedSlotOwner[n] == -1) {
                         break;
                     }
                 }
@@ -334,17 +334,17 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
                 if (n == 450) {
                     cell->slot = -1;
                 } else {
-                    D_800F4B80[n] = i;
+                    sArnedSlotOwner[n] = i;
                     cell->slot = n;
-                    out = D_800F55A0_2[n];
+                    out = sArnedVtxBufs_2[n];
                     cell->dirty = 0;
                     n = 0;
                     if (cell->m0 != NULL && (u32)cell->m0->n < 0x76) {
-                        func_8008EDE4(cell->m0->v, cell->m0->n, cell->rotA, out, x0 + x * 500, z0 + y * 500, 1);
+                        arned_transform_piece_verts(cell->m0->v, cell->m0->n, cell->rotA, out, x0 + x * 500, z0 + y * 500, 1);
                         n = cell->m0->n;
                     }
                     if (cell->m4 != NULL && (u32)(cell->m4->n + n) < 0x76) {
-                        func_8008EDE4(cell->m4->v, cell->m4->n, cell->rotB, &out[n], x0 + x * 500 + cell->dx, z0 + y * 500 + cell->dz, 0);
+                        arned_transform_piece_verts(cell->m4->v, cell->m4->n, cell->rotB, &out[n], x0 + x * 500 + cell->dx, z0 + y * 500 + cell->dz, 0);
                         n += cell->m4->n;
                     }
                     for (; n < 0x75; n++) {
@@ -354,41 +354,41 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
             }
         }
     }
-    dx = D_800C2C60[(((D_800E2038 << 8) >> 4) - 0x400) & 0xFFF] * 80 / 0x4000;
-    dz = D_800C2C60[((D_800E2038 << 8) >> 4) & 0xFFF] * 80 / 0x4000;
+    dx = gCosTable[(((gFrameCounter << 8) >> 4) - 0x400) & 0xFFF] * 80 / 0x4000;
+    dz = gCosTable[((gFrameCounter << 8) >> 4) & 0xFFF] * 80 / 0x4000;
     {
     Lights1 light = gdSPDefLights1(0x28, 0x28, 0x28, 0xFF, 0xFF, 0xFF, dx, 0x7F, dz);
-    D_800F4FA0[idx] = light;
+    sArnedLights[idx] = light;
     }
-    gSPSetLights1(gdl++, D_800F4FA0[idx]);
+    gSPSetLights1(gdl++, sArnedLights[idx]);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, D_800F4F94, D_800F4F98, D_800F4F94 + D_800F4FE8, D_800F4F98 + D_800F4FEC);
-    gSPViewport(gdl++, &D_800F4FD8);
-    gSPPerspNormalize(gdl++, D_800E1B44);
+    gSPViewport(gdl++, &gArnedViewport);
+    gSPPerspNormalize(gdl++, gPerspNorm);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
     gSPSetGeometryMode(gdl++, G_CULL_BACK);
-    gSPMatrix(gdl++, &D_800C2678, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPMatrix(gdl++, &D_800F4F08[idx], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, &gArnedCamMtx[idx], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
     if (p9 != 0) {
         gDPSetRenderMode(gdl++, 0x0F0A4000, 0);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
         gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
         gSPClearGeometryMode(gdl++, G_ZBUFFER);
         for (i = 0; i < total; i++) {
-            x = i % D_800F4F8C;
-            y = i / D_800F4F8C;
+            x = i % sArnedGridW;
+            y = i / sArnedGridW;
             n = (x + y) & 1;
             if (n) {
                 r = 16;
                 g = 16;
                 b = 16;
             } else {
-                r = g = x * 100 / D_800F4F8C + 35;
-                b = x * 60 / D_800F4F8C + 140;
+                r = g = x * 100 / sArnedGridW + 35;
+                b = x * 60 / sArnedGridW + 140;
             }
             gDPPipeSync(gdl++);
             gDPSetPrimColor(gdl++, 0, 0, r, g, b, 0xFF);
-            gSPVertex(gdl++, &D_800F4F9C[y * (D_800F4F8C + 1) + x], 2, 0);
-            gSPVertex(gdl++, &D_800F4F9C[(y + 1) * (D_800F4F8C + 1) + x], 2, 2);
+            gSPVertex(gdl++, &sArnedFloorVtx[y * (sArnedGridW + 1) + x], 2, 0);
+            gSPVertex(gdl++, &sArnedFloorVtx[(y + 1) * (sArnedGridW + 1) + x], 2, 2);
             gSP2Triangles(gdl++, 0, 1, 3, 0, 0, 3, 2, 0);
         }
     }
@@ -400,20 +400,20 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
     gDPSetRenderMode(gdl++, 0x552230, 0);
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
     if (p9 != 0) {
-        gdl = func_8008CC80(gdl);
+        gdl = arned_draw_walls(gdl);
     }
     gDPPipeSync(gdl++);
     gSPClipRatio(gdl++, FRUSTRATIO_1);
     gDPSetEnvColor(gdl++, 0xFF, 0x82, 0x82, 0xFF);
     for (i = 0; i < total; i++) {
-        cell = &D_800CE1FC[i];
+        cell = &sArnedCells[i];
         if (cell->slot != -1) {
             n = 0;
             if (cell->m0 != NULL && (u32)cell->m0->n < 0x76) {
                 gDPPipeSync(gdl++);
                 if (cell->flags & 1) {
                     s32 s;
-                    s = D_800E2038 << 10;
+                    s = gFrameCounter << 10;
                     gDPSetPrimColor(gdl++, 0, 0, (SINS(s) * 25 >> 13) + 128, (SINS(s) * 25 >> 13) + 128, (SINS(s) * 127 >> 14) + 128, 0xFF);
                     gDPSetCombine(gdl++, 0x119623, 0xFF2FFFFF);
                     gSPClearGeometryMode(gdl++, 0x220004);
@@ -422,34 +422,34 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
                     gSPSetGeometryMode(gdl++, 0x220004);
                 }
                 out = cell->m0->v;
-                cell->m0->v = D_800F55A0_2[cell->slot];
-                gdl = func_80013D70(12, cell->m0, &D_800F4F88, gdl);
+                cell->m0->v = sArnedVtxBufs_2[cell->slot];
+                gdl = prim_build_dl(12, cell->m0, &sArnedPieceTex, gdl);
                 cell->m0->v = out;
                 n = cell->m0->n;
             }
-            if (cell->m4 != NULL && (D_800CEA40_5->mode != 6 || !(cell->flags & 1)) && (u32)(cell->m4->n + n) < 0x76) {
+            if (cell->m4 != NULL && (gEditor_5->mode != 6 || !(cell->flags & 1)) && (u32)(cell->m4->n + n) < 0x76) {
                 gDPPipeSync(gdl++);
                 gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF87C);
                 gSPClearGeometryMode(gdl++, 0x220004);
                 out = cell->m4->v;
-                cell->m4->v = D_800F55A0_2[cell->slot] + n;
-                gdl = func_80013D70(12, cell->m4, &D_800F5574, gdl);
+                cell->m4->v = sArnedVtxBufs_2[cell->slot] + n;
+                gdl = prim_build_dl(12, cell->m4, &sArnedPieceTex2, gdl);
                 cell->m4->v = out;
             }
         }
     }
-    if (p8 != -1 && D_800CEA40_5->mode != 6) {
+    if (p8 != -1 && gEditor_5->mode != 6) {
         gDPPipeSync(gdl++);
         m = &D_800F4B00[idx];
-        func_80011490(m, 0, 0, p8 + 0x4000, p6, 2500, p7, 0x100);
+        mtx_from_angles_pos_scale(m, 0, 0, p8 + 0x4000, p6, 2500, p7, 0x100);
         gSPMatrix(gdl++, m, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
         gDPSetRenderMode(gdl++, 0x504A50, 0);
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0x80);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF67B);
         gDPPipeSync(gdl++);
-        gdl = func_80013D70(12, D_800CEA40_5->mdl, &D_800CEA40_5->segs, gdl);
+        gdl = prim_build_dl(12, gEditor_5->mdl, &gEditor_5->segs, gdl);
         gDPPipeSync(gdl++);
-        gSPMatrix(gdl++, &D_800C2678, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        gSPMatrix(gdl++, &gIdentityMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     }
     for (i = 0; i < 8; i++) {
         n = i & 1;
@@ -461,7 +461,7 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
         gDPSetPrimColor(gdl++, 0, 0, 0xFF, 0xFF, 0xFF, 0x80);
         gSPClearGeometryMode(gdl++, G_CULL_BOTH);
         gSPSetGeometryMode(gdl++, G_CULL_FRONT);
-        gdl = func_8008CC80(gdl);
+        gdl = arned_draw_walls(gdl);
         gDPPipeSync(gdl++);
         gSPClearGeometryMode(gdl++, G_CULL_BOTH);
         gSPSetGeometryMode(gdl++, G_CULL_BACK);
@@ -469,7 +469,7 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
     gSPSetGeometryMode(gdl++, 0x220004);
     for (i = 0; i < 8; i++) {
-        os = D_800F4FF0_2 + i;
+        os = sArnedObjViews_2 + i;
         if (os->count != 0) {
             gSPMatrix(gdl++, &os->mtx[idx], G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
             gSPPerspNormalize(gdl++, os->persp);
@@ -477,16 +477,16 @@ Gfx *func_8008D728(s32 idx, Gfx *gdl, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s3
             gSPViewport(gdl++, &os->vp[idx]);
             for (j = 0; j < os->count; j++) {
                 gSPMatrix(gdl++, &os->ent[j].mtx[idx], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-                gdl = func_80013D70(12, os->ent[j].mdl, &D_800F4F88, gdl);
+                gdl = prim_build_dl(12, os->ent[j].mdl, &sArnedPieceTex, gdl);
             }
-            D_800F4FF0_2[i].count = 0;
+            sArnedObjViews_2[i].count = 0;
         }
     }
     gSPClearGeometryMode(gdl++, 0x220004);
     return gdl;
 }
 
-void func_8008E76C(s32 param_1, s32 param_2, s32 param_3)
+void arned_load_piece_textures(s32 param_1, s32 param_2, s32 param_3)
 {
     s32 cur;
     s32 *w;
@@ -494,24 +494,24 @@ void func_8008E76C(s32 param_1, s32 param_2, s32 param_3)
     s32 *slot;
     u8 *p;
 
-    cur = D_800F55A4;
-    D_800F5574 = param_2;
-    D_800F5578 = param_3;
+    cur = sArnedTexSetIdx;
+    sArnedPieceTex2 = param_2;
+    sArnedWallTex = param_3;
     if (cur != param_1) {
         if (cur == -1) {
-            D_800F4F88 = func_800BF79C(*(s32 *)(D_800CEA40 + 0x1720), *D_800CE1F0[param_1]);
+            sArnedPieceTex = res_load(*(s32 *)(gEditor + 0x1720), *sArnedTexResIds[param_1]);
         } else {
-            func_800C0258(D_800F4F88);
-            func_800BF79C(*(s32 *)(D_800CEA40 + 0x1720), *D_800CE1F0[param_1]);
-            func_800C0258(0);
-            p = D_800CEA40;
-            *(s32 *)(((s32 *)*(s32 *)(p + 0x1720))[1] + *D_800CE1F0[D_800F55A4] * 4) = 0;
-            w = D_800CE1F0[param_1];
+            res_set_load_buffer(sArnedPieceTex);
+            res_load(*(s32 *)(gEditor + 0x1720), *sArnedTexResIds[param_1]);
+            res_set_load_buffer(0);
+            p = gEditor;
+            *(s32 *)(((s32 *)*(s32 *)(p + 0x1720))[1] + *sArnedTexResIds[sArnedTexSetIdx] * 4) = 0;
+            w = sArnedTexResIds[param_1];
             q = (s32 *)*(s32 *)(p + 0x1720);
             slot = (s32 *)(*w * 4 + q[1]);
             *slot = *slot & 0xFFFFFFFC;
         }
-        D_800F55A4 = param_1;
+        sArnedTexSetIdx = param_1;
     }
 }
 
@@ -526,9 +526,9 @@ typedef struct {
     u8 pad[0x710 - 0xAF];
 } Cam_5;
 
-extern Cam_5 *D_800F4FF0_3;
+extern Cam_5 *sArnedObjViews_3;
 
-void func_8008E8A4(s32 n, s32 id, s32 x, s32 y, s32 w, s32 h, s32 p7, s32 p8,
+void arned_set_object_view(s32 n, s32 id, s32 x, s32 y, s32 w, s32 h, s32 p7, s32 p8,
                    s32 p9, s32 p10, s32 p11, s32 p12)
 {
     Mtx persp;
@@ -539,7 +539,7 @@ void func_8008E8A4(s32 n, s32 id, s32 x, s32 y, s32 w, s32 h, s32 p7, s32 p8,
     Cam_5 *c; Cam_5 *base;
     f32 t, t2, asp;
 
-    base = D_800F4FF0_3;
+    base = sArnedObjViews_3;
     c = (Cam_5 *)(id * sizeof(Cam_5) + (u32)base);
     c->fA8 = 0;
     c->x = x;
@@ -551,22 +551,22 @@ void func_8008E8A4(s32 n, s32 id, s32 x, s32 y, s32 w, s32 h, s32 p7, s32 p8,
     c->vp[n].vp.vtrans[1] = (y + h / 2) * 4;
     c->vp[n].vp.vtrans[2] = 0x1FF;
     c->fAE = p12;
-    t = (f32)D_800F13F0 * 0.5f * (f32)D_800C2C60[0] / (f32)D_800C2C60[0xC00];
-    t2 = t * (f32)D_800F13F0 * 0.00390625f;
-    asp = 320.0f / (f32)D_800F13F0;
-    *(volatile f32 *)&D_800E1930 = t;
-    D_800E1930 = t2;
-    guPerspective(&persp, &D_800F4FF0_3[id].persp, 33.0f, asp, 50.0f, 16384.0f, 1.0f);
+    t = (f32)gScreenHeight * 0.5f * (f32)gCosTable[0] / (f32)gCosTable[0xC00];
+    t2 = t * (f32)gScreenHeight * 0.00390625f;
+    asp = 320.0f / (f32)gScreenHeight;
+    *(volatile f32 *)&gProjScale = t;
+    gProjScale = t2;
+    guPerspective(&persp, &sArnedObjViews_3[id].persp, 33.0f, asp, 50.0f, 16384.0f, 1.0f);
     guRotateRPY(&rot, (f32)p10 * 360.0f * 1.5258789e-05f, -(f32)p11 * 360.0f * 1.5258789e-05f, 0.0f);
-    func_80012D30(&rot);
-    func_80011490(&m1, 0, 0, 0, -p7, -p8, -p9, 0x100);
-    func_800120A4(&m1, &rot, &m2);
-    func_800120A4(&m2, &D_800C25F8, &m1);
-    func_800120A4(&m1, &persp, &res);
-    D_800F4FF0_3[id].mtx[n] = res;
+    mtx_transpose_rot(&rot);
+    mtx_from_angles_pos_scale(&m1, 0, 0, 0, -p7, -p8, -p9, 0x100);
+    mtx_mul(&m1, &rot, &m2);
+    mtx_mul(&m2, &gViewAxisMtx, &m1);
+    mtx_mul(&m1, &persp, &res);
+    sArnedObjViews_3[id].mtx[n] = res;
 }
 
-void func_8008EB74(s32 param_1, s32 param_2, s32 param_3, s32 param_4, s32 param_5)
+void arned_add_object(s32 param_1, s32 param_2, s32 param_3, s32 param_4, s32 param_5)
 {
     s32 off;
     u8 *p;
@@ -574,19 +574,19 @@ void func_8008EB74(s32 param_1, s32 param_2, s32 param_3, s32 param_4, s32 param
     u8 *q;
     u8 *base;
 
-    base = D_800F4FF0;
+    base = sArnedObjViews;
     off = param_2 * 0x710;
     p = (u8 *)(off + (s32)base);
     n = *(s32 *)(p + 0xa8);
     if (n < 0xc) {
         q = p + n * 0x88;
         *(s32 *)(q + 0xb0) = param_3;
-        func_80011490(p + (*(s32 *)(p + 0xa8) * 0x88 + 0xb0) + (param_1 * 0x40 + 8), 0, 0, 0, param_4, 0, param_5, 0x100);
-        *(s32 *)((off + (s32)D_800F4FF0) + 0xa8) += 1;
+        mtx_from_angles_pos_scale(p + (*(s32 *)(p + 0xa8) * 0x88 + 0xb0) + (param_1 * 0x40 + 8), 0, 0, 0, param_4, 0, param_5, 0x100);
+        *(s32 *)((off + (s32)sArnedObjViews) + 0xa8) += 1;
     }
 }
 
-s16 *func_8008EC3C(s32 param_1, s32 param_2)
+s16 *arned_find_vertex(s32 param_1, s32 param_2)
 {
     s32 w;
     s32 h;
@@ -603,19 +603,19 @@ s16 *func_8008EC3C(s32 param_1, s32 param_2)
     u32 uVar3;
     u32 uVar4;
 
-    w = D_800F4F8C;
+    w = sArnedGridW;
     iVar8 = param_1 - w * 250;
-    h = D_800F4F90;
+    h = sArnedGridH;
     iVar5 = param_2 - h * 250;
     q5 = iVar5 / 500;
     q8 = iVar8 / 500;
-    puVar1 = (s32 *)(D_800CE1FC_3 + (q5 * w + q8) * 0x14);
+    puVar1 = (s32 *)(sArnedCells_3 + (q5 * w + q8) * 0x14);
     puVar7 = (s32 *)*puVar1;
     if (puVar7 == NULL || (iVar6 = *(s16 *)(puVar1 + 2)) < 0) {
         return NULL;
     }
     cnt = *(u32 *)puVar7;
-    base = (s16 *)D_800F55A0[iVar6];
+    base = (s16 *)sArnedVtxBufs[iVar6];
     uVar4 = 0;
     if (cnt != 0) {
         uVar3 = cnt;
@@ -631,26 +631,26 @@ s16 *func_8008EC3C(s32 param_1, s32 param_2)
     return NULL;
 }
 
-void func_8008ED48(void)
+void arned_free_grid(void)
 {
     s32 i;
     void **tbl;
 
     i = 0;
     do {
-        tbl = (void **)D_800F55A0;
-        func_800BCB04(tbl[i]);
+        tbl = (void **)sArnedVtxBufs;
+        mem_free(tbl[i]);
         i++;
     } while (i < 0x1c2);
-    func_800BCB04(D_800F55A0);
-    func_800BCB04(D_800CE1FC);
-    func_800BCB04(D_800F4F9C);
-    func_800BCB04(D_800F557C);
-    func_800BCB04(D_800F4FF0);
-    D_800CE1FC = 0;
+    mem_free(sArnedVtxBufs);
+    mem_free(sArnedCells);
+    mem_free(sArnedFloorVtx);
+    mem_free(sArnedWallVtx);
+    mem_free(sArnedObjViews);
+    sArnedCells = 0;
 }
 
-void func_8008EDE4(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, s32 dz, s32 flag)
+void arned_transform_piece_verts(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, s32 dz, s32 flag)
 {
     s32 x, z, nx, nz;
 
@@ -704,8 +704,8 @@ void func_8008EDE4(Vtx_t *in, s32 n, s32 rot, Vtx_t *out, s32 dx, s32 dz, s32 fl
     }
 }
 
-void func_8008EF84(s32 a0, s32 a1, s32 a2, s32 a3) {
-    s16 *q = D_800F4FD8;
+void arned_set_viewport(s32 a0, s32 a1, s32 a2, s32 a3) {
+    s16 *q = gArnedViewport;
     s32 k = 0x1FF;
 
     q[0] = a2 << 1;
@@ -722,7 +722,7 @@ void func_8008EF84(s32 a0, s32 a1, s32 a2, s32 a3) {
 
 void func_8008EFFC(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4)
 {
-    s16 *b = D_800F4FD8;
+    s16 *b = gArnedViewport;
 
     b[0] = a2 * 2;
     b[2] = 0x1FF;
@@ -736,7 +736,7 @@ void func_8008EFFC(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4)
     b[1] = (a3 + a4) * 2;
 }
 
-void func_8008F07C(s32 a0, s32 a1, s32 a2, s32 a3)
+void arned_set_scissor(s32 a0, s32 a1, s32 a2, s32 a3)
 {
     D_800F5584 = a0;
     D_800F5588 = a1;

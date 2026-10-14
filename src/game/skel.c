@@ -1,6 +1,6 @@
 #include "game.h"
 
-Blk_2 *func_8003AAE0(Blk_2 *gdl, s32 unused, s32 n)
+Blk_2 *shadow_clear_texture(Blk_2 *gdl, s32 unused, s32 n)
 {
     s32 k = n;
     Blk_2 *p0 = gdl++;
@@ -25,17 +25,17 @@ Blk_2 *func_8003AAE0(Blk_2 *gdl, s32 unused, s32 n)
     p4->w1 = 0;
     p5 = gdl++;
     p5->w0 = 0xFF68001F;
-    p5->w1 = D_800E92DC + k * 0x400;
+    p5->w1 = sShadowTextures + k * 0x400;
     p6 = gdl++;
     p6->w0 = 0xF607C07C;
     p6->w1 = 0;
-    if (D_800E37C0[k * 0x7E0 + 0x44] != 0) {
+    if (gRiders[k * 0x7E0 + 0x44] != 0) {
         q0 = gdl++;
         q0->w0 = 0xE7000000;
         q0->w1 = 0;
         q1 = gdl++;
         q1->w0 = 0xFF68001F;
-        q1->w1 = D_800E92DC + (k + 8) * 0x400;
+        q1->w1 = sShadowTextures + (k + 8) * 0x400;
         q2 = gdl++;
         q2->w0 = 0xF607C07C;
         q2->w1 = 0;
@@ -69,10 +69,10 @@ typedef struct {
     u8 pad45[0x7E0 - 0x45];
 } Blk_9;
 
-extern Blk_9 D_800E37C0_37[];
-extern Plr_4 D_800DC150_9[];
+extern Blk_9 gRiders_37[];
+extern Plr_4 gRiderGfx_9[];
 
-Gfx *func_8003AC18(s32 idx, Gfx *gdl, Mtx *m)
+Gfx *shadow_render_caster(s32 idx, Gfx *gdl, Mtx *m)
 {
     f32 mf[4][4];
     s16 rot[64];
@@ -81,68 +81,68 @@ Gfx *func_8003AC18(s32 idx, Gfx *gdl, Mtx *m)
     s32 i;
 
     gDPPipeSync(gdl++);
-    gSPViewport(gdl++, &D_800C99A0);
+    gSPViewport(gdl++, &sShadowViewport);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 1, 1, 31, 31);
     gSPClipRatio(gdl++, FRUSTRATIO_6);
-    blk = &D_800E37C0_37[idx];
+    blk = &gRiders_37[idx];
     guOrtho(mf, -15.0f, 15.0f, -15.0f, 15.0f, 50.0f, 4192.0f, 1.0f);
-    func_80011490(rot, -0x4000, 0, 0, 0, 0, 0, 4);
-    func_800120A4(rot, (s16 *)mf, (s16 *)&D_800E95E8);
-    func_80011490(&D_800E9630, 0, 0, 0, 0, 0, 0, 0x100);
+    mtx_from_angles_pos_scale(rot, -0x4000, 0, 0, 0, 0, 0, 4);
+    mtx_mul(rot, (s16 *)mf, (s16 *)&sShadowProjMtx);
+    mtx_from_angles_pos_scale(&sShadowViewMtx, 0, 0, 0, 0, 0, 0, 0x100);
     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
     gSPTexture(gdl++, 0, 0, 0, 0, G_OFF);
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
     gDPSetRenderMode(gdl++, 0x0C084000, 0);
     gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, 255);
-    gSPMatrix(gdl++, &D_800E95E8, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPMatrix(gdl++, &D_800E9630, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-    gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, D_800E92DC + idx * 0x400);
+    gSPMatrix(gdl++, &sShadowProjMtx, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(gdl++, &sShadowViewMtx, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, sShadowTextures + idx * 0x400);
 
     for (i = 0; i < 6; i++) {
-        gSPMatrix(gdl++, (u8 *)D_800DC150_9[idx].mtx23C[D_800E30A8] + i * 0x40, G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+        gSPMatrix(gdl++, (u8 *)gRiderGfx_9[idx].mtx23C[gGfxFrameIndex] + i * 0x40, G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
         gSPDisplayList(gdl++, D_800E16C0[i]);
         gSPPopMatrix(gdl++, G_MTX_MODELVIEW);
     }
     if (blk->f44) {
-        gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, D_800E92DC + (idx + 8) * 0x400);
+        gDPSetColorImage(gdl++, G_IM_FMT_IA, G_IM_SIZ_8b, 32, sShadowTextures + (idx + 8) * 0x400);
     }
-    gSPSegment(gdl++, 1, D_800DC150_9[0].seg22C);
-    gSPSegment(gdl++, 6, D_800DC150_9[idx].seg234[D_800E30A8]);
-    if (!(D_800C2280 & 0x20)) {
-        gSPDisplayList(gdl++, D_800DC150_9[0].dl220);
+    gSPSegment(gdl++, 1, gRiderGfx_9[0].seg22C);
+    gSPSegment(gdl++, 6, gRiderGfx_9[idx].seg234[gGfxFrameIndex]);
+    if (!(gCheatFlags & 0x20)) {
+        gSPDisplayList(gdl++, gRiderGfx_9[0].dl220);
     }
     gDPPipeSync(gdl++);
     gSPMatrix(gdl++, m + 16, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPSetGeometryMode(gdl++, D_800E19CC);
+    gSPSetGeometryMode(gdl++, gCullMode);
     return gdl;
 }
 
-Gfx *func_8003B0AC(s32 id, s32 unused, Gfx *gdl, s32 arg3) {
+Gfx *shadow_draw(s32 id, s32 unused, Gfx *gdl, s32 arg3) {
     s32 i;
 
-    if (D_800E8D68 == 0 || D_800E9670 == 0 || D_800E92E0 == 0) {
+    if (gGroundTriCount == 0 || sShadowTriCount == 0 || sShadowVtxCount == 0) {
         return gdl;
     }
     gDPPipeSync(gdl++);
     gDPSetRenderMode(gdl++, 0x404A50, 0);
     gDPSetCombine(gdl++, 0xFFB3FF, 0xFF65FEFF);
-    if (D_800F14E8 == 0) {
-        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, D_800C238C[id % 8] * 97 / 256);
+    if (gLightningFlash == 0) {
+        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, gRiderAlpha[id % 8] * 97 / 256);
     } else {
-        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, D_800C238C[id % 8]);
+        gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, gRiderAlpha[id % 8]);
     }
     gDPSetBlendColor(gdl++, 0, 0, 0, 1);
     gDPSetAlphaCompare(gdl++, G_AC_THRESHOLD);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
-    gDPLoadTextureBlock(gdl++, D_800E92DC + (id << 10), G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
+    gDPLoadTextureBlock(gdl++, sShadowTextures + (id << 10), G_IM_FMT_IA, G_IM_SIZ_8b, 32, 32, 0,
                         G_TX_CLAMP, G_TX_CLAMP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
-    gSPVertex(gdl++, &D_800E9628[D_800E30A8 * 1152 + id * 72], D_800E92E0, 0);
-    for (i = 0; i < D_800E9670 - 1; i += 2) {
-        gSP2Triangles(gdl++, D_800E93D8[i * 3], D_800E93D8[i * 3 + 1], D_800E93D8[i * 3 + 2], 0,
-                      D_800E93D8[i * 3 + 3], D_800E93D8[i * 3 + 4], D_800E93D8[i * 3 + 5], 0);
+    gSPVertex(gdl++, &sShadowVtx[gGfxFrameIndex * 1152 + id * 72], sShadowVtxCount, 0);
+    for (i = 0; i < sShadowTriCount - 1; i += 2) {
+        gSP2Triangles(gdl++, sShadowTriIndices[i * 3], sShadowTriIndices[i * 3 + 1], sShadowTriIndices[i * 3 + 2], 0,
+                      sShadowTriIndices[i * 3 + 3], sShadowTriIndices[i * 3 + 4], sShadowTriIndices[i * 3 + 5], 0);
     }
-    if (D_800E9670 & 1) {
-        gSP1Triangle(gdl++, D_800E93D8[i * 3], D_800E93D8[i * 3 + 1], D_800E93D8[i * 3 + 2], 0);
+    if (sShadowTriCount & 1) {
+        gSP1Triangle(gdl++, sShadowTriIndices[i * 3], sShadowTriIndices[i * 3 + 1], sShadowTriIndices[i * 3 + 2], 0);
     }
     gDPPipeSync(gdl++);
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
@@ -151,7 +151,7 @@ Gfx *func_8003B0AC(s32 id, s32 unused, Gfx *gdl, s32 arg3) {
     return gdl;
 }
 
-Gfx *func_8003B558(s32 param_1, s32 param_2, Gfx *gdl)
+Gfx *shadow_draw_debug_texture(s32 param_1, s32 param_2, Gfx *gdl)
 {
     Gfx *g0;
     Gfx *g1;
@@ -194,7 +194,7 @@ Gfx *func_8003B558(s32 param_1, s32 param_2, Gfx *gdl)
     ((u32 *)g5)[1] = 0x80008000;
     g6 = gdl++;
     ((u32 *)g6)[0] = 0xFD700000;
-    ((u32 *)g6)[1] = (u32)(D_800E92DC + param_1 * 0x400);
+    ((u32 *)g6)[1] = (u32)(sShadowTextures + param_1 * 0x400);
     g7 = gdl++;
     ((u32 *)g7)[0] = 0xF5700000;
     ((u32 *)g7)[1] = 0x07098260;
@@ -242,10 +242,10 @@ typedef struct {
     Vec3i v[3];
 } Facet;
 
-extern Player_11 D_800E37C0_38[];
-extern Facet D_800E80D8_2[];
+extern Player_11 gRiders_38[];
+extern Facet gGroundTris_2[];
 
-void func_8003B7E0(s32 n)
+void shadow_build_mesh(s32 n)
 {
     s32 x, y, z;
     s32 i, j, k, cnt;
@@ -254,51 +254,51 @@ void func_8003B7E0(s32 n)
     Vec3i *src;
 
     if (n < 8) {
-        x = D_800E37C0_38[n].x;
-        y = D_800E37C0_38[n].y;
-        z = D_800E37C0_38[n].z;
+        x = gRiders_38[n].x;
+        y = gRiders_38[n].y;
+        z = gRiders_38[n].z;
     } else {
-        x = D_800E37C0_38[n % 8].x2;
-        y = D_800E37C0_38[n % 8].y2;
-        z = D_800E37C0_38[n % 8].z2;
+        x = gRiders_38[n % 8].x2;
+        y = gRiders_38[n % 8].y2;
+        z = gRiders_38[n % 8].z2;
     }
-    func_8002F62C(x - 1000, z - 1000, x + 1000, z + 1000, D_800E37C0_38[n].y + 1000);
-    if (D_800E8D68 == 0) return;
-    D_800E92E0 = 0;
-    D_800E9670 = 0;
-    k = D_800E30A8 * 0x480;
+    height_collect_ground_tris(x - 1000, z - 1000, x + 1000, z + 1000, gRiders_38[n].y + 1000);
+    if (gGroundTriCount == 0) return;
+    sShadowVtxCount = 0;
+    sShadowTriCount = 0;
+    k = gGfxFrameIndex * 0x480;
     k += n * 0x48;
-    vb = (u32)D_800E9628 + k * 16;
-    for (i = 0; i < D_800E8D68; i++) {
+    vb = (u32)sShadowVtx + k * 16;
+    for (i = 0; i < gGroundTriCount; i++) {
         for (j = 0; j < 3; j++) {
-            D_800E80D8_2[i].v[j].x -= x;
-            D_800E80D8_2[i].v[j].y -= y;
-            D_800E80D8_2[i].v[j].z -= z;
+            gGroundTris_2[i].v[j].x -= x;
+            gGroundTris_2[i].v[j].y -= y;
+            gGroundTris_2[i].v[j].z -= z;
         }
-        func_8003BB1C(&D_800E80D8_2[i], 1000);
-        cnt = D_800E9670 - 2;
-        if (cnt + D_800E92D8 >= 0x48) return;
-        if (D_800E92E0 + D_800E92D8 >= 0x20) return;
-        j = D_800E92E0;
-        for (k = 0; k < D_800E92D8; k++) {
-            v = (Vtx *)(D_800E92E0 * 16 + vb);
-            v->v.ob[0] = D_800E92E8[k].x;
-            v->v.ob[1] = D_800E92E8[k].y;
-            v->v.ob[2] = D_800E92E8[k].z;
-            v->v.tc[0] = ((D_800E92E8[k].x + 1000) << 11) / 2000;
-            D_800E92E0++;
-            v->v.tc[1] = ((-D_800E92E8[k].z + 1000) << 11) / 2000;
+        shadow_clip_triangle(&gGroundTris_2[i], 1000);
+        cnt = sShadowTriCount - 2;
+        if (cnt + sClipOutCount >= 0x48) return;
+        if (sShadowVtxCount + sClipOutCount >= 0x20) return;
+        j = sShadowVtxCount;
+        for (k = 0; k < sClipOutCount; k++) {
+            v = (Vtx *)(sShadowVtxCount * 16 + vb);
+            v->v.ob[0] = sClipPolyA[k].x;
+            v->v.ob[1] = sClipPolyA[k].y;
+            v->v.ob[2] = sClipPolyA[k].z;
+            v->v.tc[0] = ((sClipPolyA[k].x + 1000) << 11) / 2000;
+            sShadowVtxCount++;
+            v->v.tc[1] = ((-sClipPolyA[k].z + 1000) << 11) / 2000;
         }
-        for (k = 2; k < D_800E92D8; k++) {
-            D_800E93D8[D_800E9670 * 3] = j;
-            D_800E93D8[D_800E9670 * 3 + 1] = j + (k - 1);
-            D_800E93D8[D_800E9670 * 3 + 2] = j + k;
-            D_800E9670++;
+        for (k = 2; k < sClipOutCount; k++) {
+            sShadowTriIndices[sShadowTriCount * 3] = j;
+            sShadowTriIndices[sShadowTriCount * 3 + 1] = j + (k - 1);
+            sShadowTriIndices[sShadowTriCount * 3 + 2] = j + k;
+            sShadowTriCount++;
         }
     }
 }
 
-void func_8003BB1C(Facet_2 *a, s32 lim)
+void shadow_clip_triangle(Facet_2 *a, s32 lim)
 {
     Vec *o;
     Vec *p;
@@ -307,19 +307,19 @@ void func_8003BB1C(Facet_2 *a, s32 lim)
     s32 t;
 
 
-    D_800E92E8_2[0] = a->v[0];
-    D_800E92E8_2[1] = a->v[1];
-    D_800E92E8_2[2] = a->v[2];
-    D_800E92D4 = 3;
-    o = D_800E94F8;
+    sClipPolyA_2[0] = a->v[0];
+    sClipPolyA_2[1] = a->v[1];
+    sClipPolyA_2[2] = a->v[2];
+    sClipInCount = 3;
+    o = sClipPolyB;
     i = 0;
-    D_800E92D8 = 0;
-    for (; i < D_800E92D4; i++) {
-        p = &D_800E92E8_2[i];
-        q = &D_800E92E8_2[(i + 1) % D_800E92D4];
+    sClipOutCount = 0;
+    for (; i < sClipInCount; i++) {
+        p = &sClipPolyA_2[i];
+        q = &sClipPolyA_2[(i + 1) % sClipInCount];
         if (p->x <= lim) {
             *o++ = *p;
-            D_800E92D8++;
+            sClipOutCount++;
         }
         if ((p->x <= lim && q->x > lim) || (p->x > lim && q->x <= lim)) {
             t = ((lim - p->x) << 8) / (q->x - p->x);
@@ -327,20 +327,20 @@ void func_8003BB1C(Facet_2 *a, s32 lim)
             o->y = p->y + t * (q->y - p->y) / 256;
             o->z = p->z + t * (q->z - p->z) / 256;
             o++;
-            D_800E92D8++;
+            sClipOutCount++;
         }
     }
 
-    D_800E92D4 = D_800E92D8;
-    o = D_800E92E8_2;
+    sClipInCount = sClipOutCount;
+    o = sClipPolyA_2;
     i = 0;
-    D_800E92D8 = 0;
-        for (; i < D_800E92D4; i++) {
-            p = &D_800E94F8[i];
-            q = &D_800E94F8[(i + 1) % D_800E92D4];
+    sClipOutCount = 0;
+        for (; i < sClipInCount; i++) {
+            p = &sClipPolyB[i];
+            q = &sClipPolyB[(i + 1) % sClipInCount];
             if (p->x >= -lim) {
                 *o++ = *p;
-                D_800E92D8++;
+                sClipOutCount++;
             }
             if ((p->x >= -lim && q->x < -lim) || (p->x < -lim && q->x >= -lim)) {
                 t = ((-lim - p->x) << 8) / (q->x - p->x);
@@ -348,20 +348,20 @@ void func_8003BB1C(Facet_2 *a, s32 lim)
                 o->y = p->y + t * (q->y - p->y) / 256;
                 o->z = p->z + t * (q->z - p->z) / 256;
                 o++;
-                D_800E92D8++;
+                sClipOutCount++;
             }
         }
 
-    D_800E92D4 = D_800E92D8;
-    o = D_800E94F8;
+    sClipInCount = sClipOutCount;
+    o = sClipPolyB;
     i = 0;
-    D_800E92D8 = 0;
-        for (; i < D_800E92D4; i++) {
-            p = &D_800E92E8_2[i];
-            q = &D_800E92E8_2[(i + 1) % D_800E92D4];
+    sClipOutCount = 0;
+        for (; i < sClipInCount; i++) {
+            p = &sClipPolyA_2[i];
+            q = &sClipPolyA_2[(i + 1) % sClipInCount];
             if (p->z <= lim) {
                 *o++ = *p;
-                D_800E92D8++;
+                sClipOutCount++;
             }
             if ((p->z <= lim && q->z > lim) || (p->z > lim && q->z <= lim)) {
                 t = ((lim - p->z) << 8) / (q->z - p->z);
@@ -369,20 +369,20 @@ void func_8003BB1C(Facet_2 *a, s32 lim)
                 o->y = p->y + t * (q->y - p->y) / 256;
                 o->x = p->x + t * (q->x - p->x) / 256;
                 o++;
-                D_800E92D8++;
+                sClipOutCount++;
             }
         }
 
-    D_800E92D4 = D_800E92D8;
-    o = D_800E92E8_2;
+    sClipInCount = sClipOutCount;
+    o = sClipPolyA_2;
     i = 0;
-    D_800E92D8 = 0;
-        for (; i < D_800E92D4; i++) {
-            p = &D_800E94F8[i];
-            q = &D_800E94F8[(i + 1) % D_800E92D4];
+    sClipOutCount = 0;
+        for (; i < sClipInCount; i++) {
+            p = &sClipPolyB[i];
+            q = &sClipPolyB[(i + 1) % sClipInCount];
             if (p->z >= -lim) {
                 *o++ = *p;
-                D_800E92D8++;
+                sClipOutCount++;
             }
             if ((p->z >= -lim && q->z < -lim) || (p->z < -lim && q->z >= -lim)) {
                 t = ((-lim - p->z) << 8) / (q->z - p->z);
@@ -390,30 +390,30 @@ void func_8003BB1C(Facet_2 *a, s32 lim)
                 o->y = p->y + t * (q->y - p->y) / 256;
                 o->x = p->x + t * (q->x - p->x) / 256;
                 o++;
-                D_800E92D8++;
+                sClipOutCount++;
             }
         }
 }
 
-void func_8003C21C(void)
+void shadow_init(void)
 {
     u32 x;
 
-    D_800E9628 = func_800BC908(0x9000, 0, D_800D6DF4, 0x1F6);
-    D_800E92D0 = func_800BC908(0x4040, 0, D_800D6DF4, 0x1F9);
-    func_8000ED10((u8 *)D_800E92D0, 0, 0x4040);
-    x = (u32)D_800E92D0;
-    D_800E92DC = x;
+    sShadowVtx = mem_alloc_dbg(0x9000, 0, sStrShadowC, 0x1F6);
+    sShadowTexAlloc = mem_alloc_dbg(0x4040, 0, sStrShadowC, 0x1F9);
+    mem_fill((u8 *)sShadowTexAlloc, 0, 0x4040);
+    x = (u32)sShadowTexAlloc;
+    sShadowTextures = x;
     while ((x & 0x3F) != 0) {
-        D_800E92DC = D_800E92DC + 0x10;
-        x = D_800E92DC;
+        sShadowTextures = sShadowTextures + 0x10;
+        x = sShadowTextures;
     }
 }
 
-void func_8003C2AC(void)
+void shadow_free(void)
 {
-    func_800BCB04(D_800E9628);
-    func_800BCB04(D_800E92D0);
+    mem_free(sShadowVtx);
+    mem_free(sShadowTexAlloc);
 }
 
 typedef struct {
@@ -434,26 +434,26 @@ typedef struct {
     s32 pad[19];
 } Out_3;
 
-extern Out_3 D_800E9680[];
+extern Out_3 sSkelLoadBuf[];
 
 static inline void walk(Ent_33 *base, s32 val, s32 n)
 {
     s32 i;
 
     while (n != 0) {
-        i = D_800EA680;
+        i = sSkelWalkIndex;
         base[i].f0 = val;
         if (base[i].f34 != 0) {
-            D_800EA680++;
-            func_8003C834(base, i, base[D_800EA680 - 1].f34);
+            sSkelWalkIndex++;
+            skel_assign_parents(base, i, base[sSkelWalkIndex - 1].f34);
         } else {
-            D_800EA680++;
+            sSkelWalkIndex++;
         }
         n--;
     }
 }
 
-void *func_8003C2E0(u32 *param_1, s32 param_2)
+void *skel_load(u32 *param_1, s32 param_2)
 {
     Ent_33 *ents;
     Ent_33 *p;
@@ -463,7 +463,7 @@ void *func_8003C2E0(u32 *param_1, s32 param_2)
     s32 j;
     void *r;
 
-    ents = func_800BF79C(param_1, param_2);
+    ents = res_load(param_1, param_2);
     sum = 0;
     cnt = 0;
     do {
@@ -472,20 +472,20 @@ void *func_8003C2E0(u32 *param_1, s32 param_2)
         sum--;
         cnt++;
     } while (sum >= 0);
-    D_800EA680 = 0;
+    sSkelWalkIndex = 0;
     walk(ents, -1, 1);
     for (i = 0; i < cnt; i++) {
-        D_800E9680[i].f4 = ents[i].f28;
-        D_800E9680[i].f8 = ents[i].f2C;
-        D_800E9680[i].fC = ents[i].f30;
-        D_800E9680[i].f0 = ents[i].f0;
+        sSkelLoadBuf[i].f4 = ents[i].f28;
+        sSkelLoadBuf[i].f8 = ents[i].f2C;
+        sSkelLoadBuf[i].fC = ents[i].f30;
+        sSkelLoadBuf[i].f0 = ents[i].f0;
         for (sum = 0; sum < 9; sum++) {
-            D_800E9680[i].f10[sum] = ents[i].f4[sum];
+            sSkelLoadBuf[i].f10[sum] = ents[i].f4[sum];
         }
     }
-    func_800BFEA4((u32 *)(param_1[1] + param_2 * 4));
-    r = func_800BC908(cnt * 0x80, 0, D_800D6E00, 0x74);
-    memcpy(r, D_800E9680, cnt * 0x80);
+    res_unload((u32 *)(param_1[1] + param_2 * 4));
+    r = mem_alloc_dbg(cnt * 0x80, 0, sStrSkelC, 0x74);
+    memcpy(r, sSkelLoadBuf, cnt * 0x80);
     return r;
 }
 
@@ -497,7 +497,7 @@ struct Node_6 {
     s32 wmtx[16];
 };
 
-void func_8003C4A4(Node_6 *n, s32 count)
+void skel_update_world_transforms(Node_6 *n, s32 count)
 {
     s32 i;
     Node_6 *par;
@@ -508,8 +508,8 @@ void func_8003C4A4(Node_6 *n, s32 count)
     n[0].wpos[2] = n[0].pos[2];
     for (i = 1; i < count; i++) {
         par = &n[n[i].parent];
-        func_80011C1C(n[i].rot, par->wmtx, n[i].wmtx);
-        func_80012DC8(n[i].pos, par->wmtx, n[i].wpos);
+        mtx3i_mul(n[i].rot, par->wmtx, n[i].wmtx);
+        vec3i_mul_mtx3i(n[i].pos, par->wmtx, n[i].wpos);
         n[i].wpos[0] += par->wpos[0];
         n[i].wpos[1] += par->wpos[1];
         n[i].wpos[2] += par->wpos[2];
@@ -529,27 +529,27 @@ s32 func_8003C588(Rec_20 *recs, s32 n, s32 *out, s32 *mat, s32 *pos, s32 idx)
     s32 d, sum;
     s32 i;
 
-    d = pos[0] - D_800E8090[idx].x;
+    d = pos[0] - gCamPos[idx].x;
     if (d < 0) d = -d;
     sum = d;
-    d = pos[1] - D_800E8090[idx].y;
+    d = pos[1] - gCamPos[idx].y;
     if (d < 0) d = -d;
     sum += d;
-    d = pos[2] - D_800E8090[idx].z;
+    d = pos[2] - gCamPos[idx].z;
     if (d < 0) d = -d;
     sum += d;
     if (sum > 0x8000) return 1;
     for (i = 0; i < n; i++) {
-        func_80012DC8(recs[i].v34, mat, wp);
+        vec3i_mul_mtx3i(recs[i].v34, mat, wp);
         wp[0] += pos[0];
         wp[1] += pos[1];
         wp[2] += pos[2];
-        rel[0] = (D_800E8090[idx].x >> 6) - wp[0];
-        rel[1] = (D_800E8090[idx].y >> 6) - wp[1];
-        rel[2] = (D_800E8090[idx].z >> 6) - wp[2];
-        func_80012D94(recs[i].m40);
-        func_80012DC8(rel, recs[i].m40, &out[i * 3]);
-        func_80012D94(recs[i].m40);
+        rel[0] = (gCamPos[idx].x >> 6) - wp[0];
+        rel[1] = (gCamPos[idx].y >> 6) - wp[1];
+        rel[2] = (gCamPos[idx].z >> 6) - wp[2];
+        mtx3i_transpose(recs[i].m40);
+        vec3i_mul_mtx3i(rel, recs[i].m40, &out[i * 3]);
+        mtx3i_transpose(recs[i].m40);
     }
     return 0;
 }
@@ -558,7 +558,7 @@ struct Blk_10 { u8 pad[0x34]; s32 x, y, z; u8 pad2[0x40]; };
 typedef struct { s16 a, b, c; u16 idx; u8 pad[8]; } Ent_34;
 struct List_6 { u32 n; Ent_34 *e; };
 
-void func_8003C720(Blk_10 *tbl, List_6 *list) {
+void skel_make_verts_bone_local(Blk_10 *tbl, List_6 *list) {
     u32 i;
     for (i = 0; i < list->n; i++) {
         u16 k = list->e[i].idx;
@@ -568,7 +568,7 @@ void func_8003C720(Blk_10 *tbl, List_6 *list) {
     }
 }
 
-void func_8003C7A8(s32 *param_1, s32 param_2)
+void skel_reset_pose(s32 *param_1, s32 param_2)
 {
     s32 i;
     s32 *p;
@@ -577,13 +577,13 @@ void func_8003C7A8(s32 *param_1, s32 param_2)
     if (param_2 > 0) {
         p = param_1;
         do {
-            func_80011A58(p + 4, 0, 0, 0);
-            func_80011A58(p + 0x10, 0, 0, 0);
+            mtx3i_from_angles(p + 4, 0, 0, 0);
+            mtx3i_from_angles(p + 0x10, 0, 0, 0);
             i++;
             p += 0x20;
         } while (i < param_2);
     }
-    func_8003C4A4(param_1, param_2);
+    skel_update_world_transforms(param_1, param_2);
 }
 
 struct Ent_35 {
@@ -592,18 +592,18 @@ struct Ent_35 {
     s32 f34;
 };
 
-void func_8003C834(Ent_35 *base, s32 val, s32 n)
+void skel_assign_parents(Ent_35 *base, s32 val, s32 n)
 {
     s32 i;
 
     while (n != 0) {
-        i = D_800EA680;
+        i = sSkelWalkIndex;
         base[i].f0 = val;
         if (base[i].f34 != 0) {
-            D_800EA680++;
-            func_8003C834(base, i, base[D_800EA680 - 1].f34);
+            sSkelWalkIndex++;
+            skel_assign_parents(base, i, base[sSkelWalkIndex - 1].f34);
         } else {
-            D_800EA680++;
+            sSkelWalkIndex++;
         }
         n--;
     }

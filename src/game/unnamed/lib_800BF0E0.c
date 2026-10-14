@@ -3,7 +3,7 @@
 /* Numeric addresses (0x800D1DF0 / 0x800D1DF8) give one 'lw' macro each (lui+lw in the same reg);
    'r + t - t' references t in the then-arm so flow marks it global (combine drops the use later),
    global-alloc then gives r its $v0 preference and the flag gets $v1. */
-s32 func_800BF0E0(void)
+s32 dma_pi_get_cmd_queue(void)
 {
     s32 t = *(s32 *)0x800D1DF0;
     s32 r = 0;
@@ -13,7 +13,7 @@ s32 func_800BF0E0(void)
     return r;
 }
 
-u32 *func_800BF100(void)
+u32 *dma_cart_rom_init(void)
 {
     u32 uVar1;
     u32 v;
@@ -29,7 +29,7 @@ u32 *func_800BF100(void)
     register u32 *p0 asm("$16");
 
     __osPiGetAccess();
-    if (D_800D5720 != 0) {
+    if (sCartRomInitFirst != 0) {
         __asm__ __volatile__("lui %0, 0x8010
 	addiu %0, %0, 0x9B4" : "=r"(pb4));
         q = pb4 + 0x10;
@@ -72,7 +72,7 @@ u32 *func_800BF100(void)
     }
     __osPiRelAccess();
     {
-        u32 *r = &D_801009B0;
+        u32 *r = &sCartRomHandleData;
         __asm__ __volatile__("" : "+r"(r));
         return r;
     }

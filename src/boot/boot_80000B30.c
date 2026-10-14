@@ -18,53 +18,53 @@ typedef struct Rec_6 {
     s32 f48;          /* 0x48 */
 } Rec_6;
 
-extern Rec_6 D_80017980[];
+extern Rec_6 sBootDmaRequests[];
 
-void boot_func_80000B30(void)
+void boot_dma_update(void)
 {
     s32 i;
     s32 iVar2;
 
-    D_80017964 = 0;
+    sBootDmaPendingCount = 0;
     D_80017C00 = 0;
     for (i = 0; i < 8; i++) {
-        if (D_80017980[i].state == 1) {
-            iVar2 = osRecvMesg(D_80017980[i].r4, 0, 0);
+        if (sBootDmaRequests[i].state == 1) {
+            iVar2 = osRecvMesg(sBootDmaRequests[i].r4, 0, 0);
             if (iVar2 == 0) {
-                D_80017980[i].state = 3;
+                sBootDmaRequests[i].state = 3;
             } else {
-                D_80017964 = D_80017964 + 1;
+                sBootDmaPendingCount = sBootDmaPendingCount + 1;
                 return;
             }
-        } else if (D_80017980[i].state == 2) {
-            if (D_8000CE04 == 0) {
-                D_80017980[i].rp = D_80017980[i].r4;
+        } else if (sBootDmaRequests[i].state == 2) {
+            if (sBootDmaCopyFunc == 0) {
+                sBootDmaRequests[i].rp = sBootDmaRequests[i].r4;
                 D_80017C00 = D_80017C00 + 1;
-                D_80017980[i].flag = 0;
-                D_80017980[i].f28 = D_80017980[i].f3c;
-                D_80017980[i].f2c = D_80017980[i].f40;
-                D_80017980[i].f30 = D_80017980[i].f44;
-                iVar2 = osEPiStartDma(D_80017980[i].f38, D_80017980[i].b20, D_80017980[i].f48);
+                sBootDmaRequests[i].flag = 0;
+                sBootDmaRequests[i].f28 = sBootDmaRequests[i].f3c;
+                sBootDmaRequests[i].f2c = sBootDmaRequests[i].f40;
+                sBootDmaRequests[i].f30 = sBootDmaRequests[i].f44;
+                iVar2 = osEPiStartDma(sBootDmaRequests[i].f38, sBootDmaRequests[i].b20, sBootDmaRequests[i].f48);
                 if (iVar2 == 0) {
-                    D_80017980[i].state = 1;
+                    sBootDmaRequests[i].state = 1;
                     return;
                 }
             } else {
-                D_8000CE04(D_80017980[i].f40, D_80017980[i].f3c, D_80017980[i].f44);
-                D_80017980[i].state = 3;
+                sBootDmaCopyFunc(sBootDmaRequests[i].f40, sBootDmaRequests[i].f3c, sBootDmaRequests[i].f44);
+                sBootDmaRequests[i].state = 3;
             }
         }
     }
 }
 
-s32 boot_func_80000C80(void) {
+s32 boot_dma_init(void) {
     s32 n;
     s32 *base;
     s32 *s0;
     s32 *s1;
     s32 *s2;
 
-    osCreatePiManager(0x96, &D_80017968, D_80017BE0, 8);
+    osCreatePiManager(0x96, &sBootPiCmdQueue, sBootPiCmdMsgs, 8);
     n = 0;
     base = D_80017984;
     s2 = base - 1;
@@ -78,6 +78,6 @@ s32 boot_func_80000C80(void) {
         n++;
         s0 += 19;
     } while (n < 8);
-    D_80017C04 = osCartRomInit();
+    sBootCartHandle = osCartRomInit();
     return 0;
 }

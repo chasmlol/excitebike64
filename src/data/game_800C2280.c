@@ -44,33 +44,33 @@ extern u32 D_800CCAB0[];
 extern u32 D_800CCAC8[];
 extern u32 D_800CCAD8[];
 extern u32 D_800CCB00[];
-extern u32 D_800CCB3C[];
-extern u32 D_800CCB60[];
+extern u32 sHackLeftysMill[];
+extern u32 sHackGravelPit[];
 extern u32 D_800CD2A0[];
 extern u32 D_800CD2B0[];
 extern u32 D_800CD2C0[];
-extern u32 D_800CD2D0[];
+extern u32 sSeasonRoundItems[];
 extern u32 D_800CD340[];
 extern u32 D_800CD350[];
-extern u32 D_800CD370[];
+extern u32 gSpecialTracksItems[];
 extern u32 D_800CD3D0[];
-extern u32 D_800CD430[];
-extern u32 D_800CD570[];
+extern u32 sTrackListItems[];
+extern u32 sMainMenuItems[];
 extern u32 D_800CD5D0[];
 extern u32 D_800CD5E0[];
 extern u32 D_800CD5F0[];
 extern u32 D_800CD620[];
-extern u32 D_800CD718[];
-extern u32 D_800CD744[];
-extern u32 D_800CD770[];
-extern u32 D_800CD79C[];
-extern u32 D_800CD7C8[];
-extern u32 D_800CD7F4[];
-extern u32 D_800CD820[];
-extern u32 D_800CD84C[];
-extern u32 D_800CD878[];
-extern u32 D_800CD8A4[];
-extern u32 D_800CD980[];
+extern u32 sScreenOptions[];
+extern u32 sScreenSeason[];
+extern u32 sScreenSpecialTracks[];
+extern u32 sScreenMainMenu[];
+extern u32 sScreenRiderSelect[];
+extern u32 sScreenBronzeTracks[];
+extern u32 sScreenSilverTracks[];
+extern u32 sScreenGoldTracks[];
+extern u32 sScreenPlatinumTracks[];
+extern u32 sScreenTitle[];
+extern u32 sScreenBootSplash[];
 extern u32 D_800CD9AC[];
 extern u32 D_800CDEA8[];
 extern u32 D_800CDEC0[];
@@ -96,9 +96,9 @@ extern char D_800CDFF0[];
 extern char D_800CDFFC[];
 extern char D_800CE004[];
 extern char D_800CE01C[];
-extern u32 D_800CEA44[];
-extern u32 D_800CEA88[];
-extern u32 D_800CEB1C[];
+extern u32 sEditUserPieceMenuItems[];
+extern u32 sEditMainMenuItems[];
+extern u32 sEditTrackMenuItems[];
 extern u32 D_800CEC30;
 extern u32 D_800CEC34;
 extern u32 D_800CEC38;
@@ -1136,13 +1136,13 @@ extern char D_800DB024[];
 extern char D_800DB028[];
 extern char D_800DB02C[];
 extern char D_800DB030[];
-extern u8 D_800E37C0[];
+extern u8 gRiders[];
 extern u8 D_800E3FA0[];
 extern u8 D_800E4780[];
 extern u8 D_800E4F60[];
 extern u8 D_800E5740[];
 extern u8 D_800E5F20[];
-extern u8 D_800E6700[];
+extern u8 sExtraRiders[];
 extern u8 D_800E6EE0[];
 extern u8 D_800EFD74[];
 extern u8 D_800EFD78[];
@@ -1150,161 +1150,161 @@ extern u8 D_800EFD7C[];
 extern u8 D_800EFD84[];
 extern u8 D_800F0154[];
 extern u8 D_800F01C0[];
-extern u8 D_800F0638[];
-extern void func_80003CC0();
-extern void func_800154FC();
-extern void func_80015CD8();
-extern void func_80017338();
-extern void func_80029CE0();
-extern void func_8002A680();
-extern void func_8002AE5C();
-extern void func_8002B210();
-extern void func_8002D480();
-extern void func_8002D49C();
+extern u8 sSeasonState[];
+extern void render_draw_race();
+extern void race_init();
+extern void race_exit();
+extern void race_update();
+extern void cam_mode_soccer();
+extern void cam_mode_hill_climb();
+extern void cam_mode_fall_view();
+extern void cam_mode_stunt_pip();
+extern void cam_mode_chase_far_alt();
+extern void cam_mode_side_view();
 extern void func_8002D528();
-extern void func_8002D5A0();
-extern void func_8002D604();
-extern void func_8002D620();
-extern void func_8002D63C();
-extern void func_8002D788();
-extern void func_80061F80();
-extern void func_80061F98();
-extern void func_80061FB0();
-extern void func_80061FC8();
-extern void func_80061FD4();
-extern void func_80062008();
-extern void func_80062018();
-extern void func_80062090();
-extern void func_80062244();
-extern void func_80062588();
-extern void func_800626CC();
-extern void func_80062998();
-extern void func_80062E08();
-extern void func_80062E9C();
-extern void func_80062EC0();
-extern void func_80062EC8();
-extern void func_80062ED0();
-extern void func_80062F40();
-extern void func_800737A4();
-extern void func_80073F84();
-extern void func_8007405C();
-extern void func_80077C3C();
-extern void func_8007896C();
-extern void func_80087310();
-extern void func_80087E30();
-extern void func_80087E84();
-extern void func_80087EC8();
-extern void func_80087EF8();
-extern void func_80087F9C();
-extern void func_80087FB0();
-extern void func_8008802C();
-extern void func_800880B8();
-extern void func_80088170();
-extern void func_80088198();
-extern void func_80090A04();
-extern void func_80091270();
-extern void func_800949BC();
-extern void func_800959CC();
-extern void func_8009F470();
-extern void func_8009FA04();
-extern void func_800A020C();
-extern void func_800A19BC();
-extern void func_800A2588();
-extern void func_800A265C();
-extern void func_800A2750();
-extern void func_800A283C();
-extern void func_800A2928();
-extern void func_800A29F0();
-extern void func_800A2B14();
-extern void func_800A2BB8();
-extern void func_800A2FB4();
-extern void func_800A3014();
-extern void func_800A3040();
-extern void func_800A3070();
-extern void func_800A30E8();
-extern void func_800A3118();
-extern void func_800A3150();
-extern void func_800A3180();
-extern void func_800A31B0();
-extern void func_800A31E0();
-extern void func_800A3210();
-extern void func_800A3240();
-extern void func_800A3250();
-extern void func_800A3260();
-extern void func_800A3270();
-extern void func_800A3280();
-extern void func_800A32D4();
-extern void func_800A3328();
-extern void func_800A337C();
-extern void func_800A3408();
-extern void func_800A3430();
-extern void func_800A3458();
-extern void func_800A3484();
-extern void func_800A3510();
-extern void func_800A3538();
-extern void func_800A3560();
-extern void func_800A3578();
-extern void func_800A35D4();
-extern void func_800A3608();
-extern void func_800A363C();
-extern void func_800A3670();
-extern void func_800A3678();
-extern void func_800A36A4();
-extern void func_800A36D0();
-extern void func_800A36FC();
-extern void func_800A375C();
-extern void func_800A37A8();
-extern void func_800A3804();
-extern void func_800A3818();
-extern void func_800A3834();
-extern void func_800A3848();
-extern void func_800A38A0();
-extern void func_800A38F8();
-extern void func_800A3950();
-extern void func_800A3974();
-extern void func_800A3998();
-extern void func_800A39BC();
-extern void func_800A39E0();
-extern void func_800A39F0();
-extern void func_800A3A14();
-extern void func_800A3A1C();
-extern void func_800A3A24();
-extern void func_800A3A2C();
-extern void func_800A3A4C();
-extern void func_800A3A54();
-extern void func_800A3ADC();
-extern void func_800A3AE4();
-extern void func_800A3B58();
-extern void func_800A3B60();
-extern void func_800A3B8C();
-extern void func_800A3B94();
-extern void func_800A3C28();
-extern void func_800A3C30();
-extern void func_800A3CC4();
-extern void func_800A3CCC();
-extern void func_800A3D60();
-extern void func_800A3D68();
-extern void func_800A3E00();
-extern void func_800A3E08();
-extern void func_800A3E84();
-extern void func_800A3E8C();
-extern void func_800A3F08();
-extern void func_800A3F10();
-extern void func_800A3F3C();
-extern void func_800A3F44();
-extern void func_800A3F7C();
-extern void func_800A3F84();
-extern void func_800A3FE0();
-extern void func_800A4018();
-extern void func_800A4038();
-extern void func_800A4078();
-extern void func_800A40B8();
-extern void func_800A40FC();
-extern void func_800A4140();
-extern void func_800A4168();
+extern void cam_mode_chase_near();
+extern void cam_mode_chase_mid();
+extern void cam_mode_chase_far();
+extern void cam_mode_celebration();
+extern void cam_mode_first_person();
+extern void ai_route_lap_ge();
+extern void ai_route_lap_le();
+extern void ai_route_toggle();
+extern void ai_route_lap_gt0();
+extern void ai_route_toggle_from_lap();
+extern void ai_route_random();
+extern void ai_route_lap_lt_or_wide();
+extern void ai_route_never();
+extern void hack_gravel_pit_init();
+extern void hack_gravel_pit_update();
+extern void hack_gravel_pit_draw_pass2();
+extern void hack_mill_update();
+extern void hack_mill_init();
+extern void hack_mill_exit();
+extern void hack_mill_draw_pass1();
+extern void hack_mill_draw_pass2();
+extern void hack_gravel_pit_exit();
+extern void hack_gravel_pit_draw_pass1();
+extern void shell_init();
+extern void shell_cb_soccer();
+extern void shell_cb_season();
+extern void shell_update();
+extern void shell_exit();
+extern void shell_draw();
+extern void shell_cb_desert();
+extern void shell_cb_select_track();
+extern void shell_cb_time_trials();
+extern void shell_cb_tutorial();
+extern void shell_cb_exhibition();
+extern void shell_cb_excite3d();
+extern void shell_cb_hill_climb();
+extern void shell_cb_custom_tracks();
+extern void shell_cb_original_excitebike();
+extern void shell_cb_stunt_course();
+extern void edit_init();
+extern void edit_exit();
+extern void edit_update();
+extern void edit_draw();
+extern void nes_init();
+extern void nes_update_input();
+extern void nes_draw_frame();
+extern void nes_exit();
+extern void nes_op_asl();
+extern void nes_op_asr();
+extern void nes_op_rol();
+extern void nes_op_ror();
+extern void nes_op_lsr();
+extern void nes_op_brk();
+extern void nes_op_php();
+extern void nes_op_rti();
+extern void nes_op_adc();
+extern void nes_op_and();
+extern void nes_op_bcc();
+extern void nes_op_bcs();
+extern void nes_op_beq();
+extern void nes_op_bit();
+extern void nes_op_bmi();
+extern void nes_op_bne();
+extern void nes_op_bpl();
+extern void nes_op_bvc();
+extern void nes_op_bvs();
+extern void nes_op_clc();
+extern void nes_op_cld();
+extern void nes_op_cli();
+extern void nes_op_clv();
+extern void nes_op_cmp();
+extern void nes_op_cpx();
+extern void nes_op_cpy();
+extern void nes_op_dec();
+extern void nes_op_dex();
+extern void nes_op_dey();
+extern void nes_op_eor();
+extern void nes_op_inc();
+extern void nes_op_inx();
+extern void nes_op_iny();
+extern void nes_op_jmp();
+extern void nes_op_jsr();
+extern void nes_op_lda();
+extern void nes_op_ldx();
+extern void nes_op_ldy();
+extern void nes_op_nop();
+extern void nes_op_ora();
+extern void nes_op_pha();
+extern void nes_op_pla();
+extern void nes_op_plp();
+extern void nes_op_rts();
+extern void nes_op_sbc();
+extern void nes_op_sec();
+extern void nes_op_sed();
+extern void nes_op_sei();
+extern void nes_op_sta();
+extern void nes_op_stx();
+extern void nes_op_sty();
+extern void nes_op_tax();
+extern void nes_op_tay();
+extern void nes_op_tsx();
+extern void nes_op_txa();
+extern void nes_op_txs();
+extern void nes_op_tya();
+extern void nes_am_implied_stub();
+extern void nes_am_implied();
+extern void nes_am_accumulator_stub();
+extern void nes_am_accumulator();
+extern void nes_am_absolute_stub();
+extern void nes_am_absolute();
+extern void nes_am_zeropage_stub();
+extern void nes_am_zeropage();
+extern void nes_am_immediate_stub();
+extern void nes_am_immediate();
+extern void nes_am_absolute_x_stub();
+extern void nes_am_absolute_x();
+extern void nes_am_absolute_y_stub();
+extern void nes_am_absolute_y();
+extern void nes_am_indexed_indirect_stub();
+extern void nes_am_indexed_indirect();
+extern void nes_am_indirect_indexed_stub();
+extern void nes_am_indirect_indexed();
+extern void nes_am_zeropage_x_stub();
+extern void nes_am_zeropage_x();
+extern void nes_am_zeropage_y_stub();
+extern void nes_am_zeropage_y();
+extern void nes_am_relative_stub();
+extern void nes_am_relative();
+extern void nes_am_jump_absolute_stub();
+extern void nes_am_jump_absolute();
+extern void nes_am_jump_indirect_stub();
+extern void nes_am_jump_indirect();
+extern void nes_ea_absolute();
+extern void nes_ea_zeropage();
+extern void nes_ea_absolute_x();
+extern void nes_ea_absolute_y();
+extern void nes_ea_indexed_indirect();
+extern void nes_ea_indirect_indexed();
+extern void nes_ea_zeropage_x();
+extern void nes_ea_zeropage_y();
 
-u32 D_800C2280 = 0;
-u32 D_800C2284[0x33] = {
+u32 gCheatFlags = 0;
+u32 sCheatTable[0x33] = {
     /* 0x000 */ (u32)D_800D5DD8, (u32)D_800D5DCC, (u32)D_800D5DC0, (u32)D_800D5DB4,
     /* 0x010 */ (u32)D_800D5DA8, (u32)D_800D5D9C, (u32)D_800D5D90, (u32)D_800D5D84,
     /* 0x020 */ (u32)D_800D5D78, (u32)D_800D5D70, (u32)D_800D5D60, (u32)D_800D5D54,
@@ -1319,24 +1319,24 @@ u32 D_800C2284[0x33] = {
     /* 0x0b0 */ (u32)D_800D5E28, (u32)D_800D5E18, (u32)D_800D5E0C, (u32)D_800D5E04,
     /* 0x0c0 */ (u32)D_800D5DF8, (u32)D_800D5DF0,
 };
-u32 D_800C2350 = 0xECFF;
-u32 D_800C2354 = 0;
-u32 D_800C2358 = 0;
-u32 D_800C235C = 0x1;
-u32 D_800C2360 = 0;
-u32 D_800C2364 = 0;
-u32 D_800C2368[0x6] = {
+u32 gDrawFlags = 0xECFF;
+u32 gRaceTextObjs = 0;
+u32 gPodiumMode = 0;
+u32 sPinHeadCheat = 0x1;
+u32 sBigHeadCheat = 0;
+u32 gMirrorMode = 0;
+u32 sPlaceStrings[0x6] = {
     /* 0x000 */ (u32)D_800D5EB8, (u32)D_800D5EB4, (u32)D_800D5EB0, (u32)D_800D5EAC,
     /* 0x010 */ (u32)D_800D5EA8, (u32)D_800D5EA4,
 };
-u32 D_800C2380 = 0x1;
-u32 D_800C2384 = 0x1;
-u32 D_800C2388 = 0;
-u32 D_800C238C[0x8] = {
+u32 sInsetViewWanted = 0x1;
+u32 gInsetViewActive = 0x1;
+u32 gSplitVertical = 0;
+u32 gRiderAlpha[0x8] = {
     /* 0x000 */ 0xFF, 0xFF, 0xFF, 0xFF,
     /* 0x010 */ 0xFF, 0xFF, 0xFF, 0xFF,
 };
-u32 D_800C23AC = 0x21;
+u32 sFovY = 0x21;
 u32 D_800C23B0[0x6] = {
     /* 0x000 */ (u32)&D_800D0DB0, (u32)&D_800D0DBC, (u32)&D_800D0DC8, (u32)&D_800D0DC0,
     /* 0x010 */ (u32)D_800D0DCC, (u32)D_800D0DD4,
@@ -1346,19 +1346,19 @@ u32 D_800C23D0[0x8] = {
     /* 0x000 */ 0xFFFFFFFE, 0, 0, 0x18,
     /* 0x010 */ 0x2, 0, 0, 0xFFFFFFFB,
 };
-u32 D_800C23F0 = 0x1060;
-u32 D_800C23F4[0x10] = {
+u32 gFarClip = 0x1060;
+u32 sLayout2PVertical[0x10] = {
     /* 0x000 */ 0x1C, 0x18, 0xE4, 0xC0,
     /* 0x010 */ 0x100, 0x18, 0xE4, 0xC0,
 };
-u32 D_800C2434[0x10] = {
+u32 sLayout2PHorizontal[0x10] = {
     /* 0x000 */ 0x38, 0x10, 0x190, 0x68,
     /* 0x010 */ 0x38, 0x78, 0x190, 0x68,
 };
-u32 D_800C2474[0x4] = { 0x14, 0x2A, 0x1D8, 0xA0 };
-u32 D_800C2484[0x4] = { 0x14, 0x10, 0x1D8, 0xD0 };
-u32 D_800C2494[0x10] = { 0x14, 0x10, 0x1D8, 0xD0 };
-u32 D_800C24D4[0x30] = {
+u32 sLayout1PHiRes[0x4] = { 0x14, 0x2A, 0x1D8, 0xA0 };
+u32 sLayout1P[0x4] = { 0x14, 0x10, 0x1D8, 0xD0 };
+u32 gViewLayouts[0x10] = { 0x14, 0x10, 0x1D8, 0xD0 };
+u32 sViewLayoutsMulti[0x30] = {
     /* 0x000 */ 0x38, 0x18, 0x190, 0x60,
     /* 0x010 */ 0x38, 0x78, 0x190, 0x60,
     /* 0x040 */ [0x10] = 0x20, 0x18, 0xE0, 0x60,
@@ -1370,8 +1370,8 @@ u32 D_800C24D4[0x30] = {
     /* 0x0a0 */ 0x20, 0x78, 0xE0, 0x60,
     /* 0x0b0 */ 0x100, 0x78, 0xE0, 0x60,
 };
-u32 D_800C2594 = 0x1;
-u32 D_800C2598 = 0;
+u32 gNumViews = 0x1;
+u32 gCurView = 0;
 u32 D_800C259C[0xc] = {
     /* 0x000 */ (u32)D_800D06C8, (u32)&D_800D0B00, (u32)&D_800D0B50, (u32)D_800D0FC4,
     /* 0x010 */ (u32)D_800D087C, (u32)D_800D1004, (u32)D_800D0DF8, (u32)D_800D119C,
@@ -1381,20 +1381,20 @@ u32 D_800C25CC[0x7] = {
     /* 0x000 */ 0, 0x7, 0x8, 0x1,
     /* 0x010 */ 0x2, 0x3,
 };
-u16 D_800C25E8[0x8] = { 0, 0, 0x1FF, 0, 0, 0, 0x1FF };
-u32 D_800C25F8[0x10] = {
+u16 gScreenViewport[0x8] = { 0, 0, 0x1FF, 0, 0, 0, 0x1FF };
+u32 gViewAxisMtx[0x10] = {
     /* 0x000 */ 0x10000, 0, 0x1, 0,
     /* 0x010 */ 0, 0xFFFF0000, 0, 0x1,
 };
-u32 D_800C2638[0x10] = {
+u32 sMirrorViewAxisMtx[0x10] = {
     /* 0x000 */ 0xFFFF0000, 0, 0x1, 0,
     /* 0x010 */ 0, 0xFFFF0000, 0, 0x1,
 };
-u32 D_800C2678[0x10] = {
+u32 gIdentityMtx[0x10] = {
     /* 0x000 */ 0x10000, 0, 0x1, 0,
     /* 0x010 */ 0, 0x10000, 0, 0x1,
 };
-u32 D_800C26B8[0x4] = { (u32)D_800D0760, (u32)D_800D0934, (u32)&D_800D0A54, (u32)D_800D0A8C };
+u32 sRiderModelTable[0x4] = { (u32)D_800D0760, (u32)D_800D0934, (u32)&D_800D0A54, (u32)D_800D0A8C };
 u32 D_800C26C8[0x38] = {
     /* 0x000 */ (u32)D_800D0B58, (u32)&D_800D0B74, (u32)D_800D0B90, (u32)&D_800D0BAC,
     /* 0x010 */ (u32)&D_800D0BC4, (u32)D_800D0BDC, (u32)D_800D0714, (u32)D_800D0908,
@@ -1411,10 +1411,10 @@ u32 D_800C26C8[0x38] = {
     /* 0x0c0 */ (u32)&D_800D0AA4, (u32)&D_800D0AC0, (u32)&D_800D0BF4, (u32)&D_800D0C08,
     /* 0x0d0 */ (u32)&D_800D0C1C, (u32)&D_800D0C2C, (u32)&D_800D0C38, (u32)&D_800D0C58,
 };
-u32 D_800C27A8 = 0;
-u32 D_800C27AC = 0;
-u32 D_800C27B0 = 0;
-u32 D_800C27B4 = 0;
+u32 sPonytailMesh = 0;
+u32 sCreditsFont = 0;
+u32 sCreditsHeaderFont = 0;
+u32 sCreditsText = 0;
 s16 D_800C27B8[0x24] = {
     /* 0x000 */ 90, 113, 135, 157, 157, 180, 180, 202,
     /* 0x010 */ 202, 225, 225, 0, 269, 75, 180, 79,
@@ -1437,8 +1437,8 @@ u32 D_800C2880[0x10] = {
     /* 0x010 */ (u32)D_800D07F0, (u32)&D_800D0F2C, 0, 0,
     /* 0x020 */ (u32)&D_800D0C14, (u32)D_800D11B4,
 };
-u32 D_800C28C0[0x3] = { (u32)D_800C2800, (u32)D_800C2840, (u32)D_800C2880 };
-u32 D_800C28CC[0x15] = {
+u32 sPodiumRiderClips[0x3] = { (u32)D_800C2800, (u32)D_800C2840, (u32)D_800C2880 };
+u32 sPodiumCameraClips[0x15] = {
     /* 0x000 */ (u32)&D_800D0774, 0, (u32)D_800D0788, 0,
     /* 0x010 */ (u32)D_800D09FC, 0, (u32)D_800D0798, 0,
     /* 0x020 */ (u32)D_800D0A0C, 0, 0, 0,
@@ -1447,42 +1447,42 @@ u32 D_800C28CC[0x15] = {
     /* 0x050 */ 0x8C424FC0,
 };
 u32 D_800C2920 = 0;
-u32 D_800C2924 = 0;
-u32 D_800C2928 = 0;
-u8 D_800C292C = 0;
-u8 D_800C292D = 0;
-u8 D_800C292E[0x2] = { 0, 0x14 };
+u32 gRumbleResetRequest = 0;
+u32 sEepromType = 0;
+u8 gContMask = 0;
+u8 gContCount = 0;
+u8 gContFirst[0x2] = { 0, 0x14 };
 u32 D_800C2930 = 0;
-u32 D_800C2934 = 0;
-u32 D_800C2938 = 0;
-u32 D_800C293C = 0;
-u32 D_800C2940 = 0;
-u32 D_800C2944 = 0;
-u32 D_800C2948 = 0;
-u32 D_800C294C = 0xB0200000;
-u32 D_800C2950 = 0;
+u32 sDebugLagEnable = 0;
+u32 sDebugLagLoops = 0;
+u32 sScreenshotCounter = 0;
+u32 gHasExpansionPak = 0;
+u32 sLastDoneFb = 0;
+u32 sScreenshotRequest = 0;
+u32 gResourceRomAddr = 0xB0200000;
+u32 gLoadedByBootLoader = 0;
 u32 D_800C2954 = 0;
-u32 D_800C2958 = 0;
-u32 D_800C295C[0x1c] = {
-    /* 0x000 */ (u32)func_800737A4, (u32)func_80077C3C, (u32)func_80087310, (u32)func_8007896C,
-    /* 0x010 */ 0, 0x2710, 0, (u32)func_800154FC,
-    /* 0x020 */ (u32)func_80017338, (u32)func_80003CC0, (u32)func_80015CD8, 0,
-    /* 0x030 */ 0x1770, 0, (u32)func_80090A04, (u32)func_800949BC,
-    /* 0x040 */ (u32)func_800959CC, (u32)func_80091270, 0, 0x6590,
-    /* 0x050 */ 0, (u32)func_8009F470, (u32)func_8009FA04, (u32)func_800A020C,
-    /* 0x060 */ (u32)func_800A19BC, 0, 0x4000,
+u32 sGfxTasksPending = 0;
+u32 gGameStates[0x1c] = {
+    /* 0x000 */ (u32)shell_init, (u32)shell_update, (u32)shell_draw, (u32)shell_exit,
+    /* 0x010 */ 0, 0x2710, 0, (u32)race_init,
+    /* 0x020 */ (u32)race_update, (u32)render_draw_race, (u32)race_exit, 0,
+    /* 0x030 */ 0x1770, 0, (u32)edit_init, (u32)edit_update,
+    /* 0x040 */ (u32)edit_draw, (u32)edit_exit, 0, 0x6590,
+    /* 0x050 */ 0, (u32)nes_init, (u32)nes_update_input, (u32)nes_draw_frame,
+    /* 0x060 */ (u32)nes_exit, 0, 0x4000,
 };
-u32 D_800C29CC[0x3] = { 0, 0xFFFFFFFF, 0xFFFFFFFF };
-u32 D_800C29D8 = 0;
+u32 gCurGameState[0x3] = { 0, 0xFFFFFFFF, 0xFFFFFFFF };
+u32 gFramebuffers = 0;
 u32 D_800C29DC = 0;
-u32 D_800C29E0 = 0;
+u32 gZBuffer = 0;
 u32 D_800C29E4 = 0;
-u32 D_800C29E8 = 0;
-u32 D_800C29EC = 0;
-u32 D_800C29F0 = 0;
-u32 D_800C29F4 = 0;
-u32 D_800C29F8 = 0xFFFFFFFF;
-u32 D_800C29FC = 0;
+u32 sGfxContextIndex = 0;
+u32 sGfxDlMaxLength = 0;
+u32 sRetraceCount = 0;
+u32 sGfxDoneCount = 0;
+u32 sDisplayedFb = 0xFFFFFFFF;
+u32 sViDitherFilter = 0;
 u32 D_800C2A00[0xe] = {
     /* 0x000 */ 0xD9C0F9FA, 0, 0xD7000000, 0,
     /* 0x010 */ 0xDB040004, 0x1, 0xDB04000C, 0x1,
@@ -1500,11 +1500,11 @@ u32 D_800C2A38[0x22] = {
     /* 0x070 */ 0xFCFFFFFF, 0xFFFDF6FB, 0xE7000000, 0,
     /* 0x080 */ 0xDF000000,
 };
-u32 D_800C2AC0 = 0xFFFFFFFF;
-u32 D_800C2AC4[0x3] = { 0x4D2, 0, 0x8C62004C };
-u32 D_800C2AD0 = 0;
-u32 D_800C2AD4 = 0;
-u32 D_800C2AD8[0x1b] = {
+u32 sDebugLogFd = 0xFFFFFFFF;
+u32 sRandomSeed[0x3] = { 0x4D2, 0, 0x8C62004C };
+u32 sEngineSamplesLoaded = 0;
+u32 sSndReducedSet = 0;
+u32 sTrackTunes[0x1b] = {
     /* 0x000 */ (u32)&D_800D1224, (u32)&D_800D1248, (u32)&D_800D11E0, (u32)&D_800D1218,
     /* 0x010 */ (u32)&D_800D1224, (u32)&D_800D11E0, (u32)&D_800D1218, (u32)&D_800D1224,
     /* 0x020 */ (u32)&D_800D11F0, (u32)&D_800D11E0, (u32)&D_800D1224, (u32)&D_800D11F0,
@@ -1513,13 +1513,13 @@ u32 D_800C2AD8[0x1b] = {
     /* 0x050 */ (u32)&D_800D1218, (u32)&D_800D1224, (u32)&D_800D1224, (u32)&D_800D1218,
     /* 0x060 */ (u32)&D_800D1224, (u32)&D_800D1248, (u32)&D_800D1248,
 };
-u32 D_800C2B44 = 0;
-u32 D_800C2B48[0x4] = { 0x3, 0x4, 0x4, 0x4 };
-u32 D_800C2B58 = 0xFF;
-u32 D_800C2B5C = 0;
-u32 D_800C2B60 = 0;
-u32 D_800C2B64 = 0;
-u32 D_800C2B68[0x2a] = {
+u32 sRaceTuneStarted = 0;
+u32 sEngineVoiceCounts[0x4] = { 0x3, 0x4, 0x4, 0x4 };
+u32 gSfxVolume = 0xFF;
+u32 sSndEnabled = 0;
+u32 sSndServiceBusy = 0;
+u32 sSndRaceLoaded = 0;
+u32 sEngineSamples[0x2a] = {
     /* 0x000 */ (u32)&D_800D11F4, 0, 0, 0,
     /* 0x010 */ 0x4074, 0x5DC0, (u32)&D_800D11F8, 0,
     /* 0x020 */ 0, 0, 0x4E52, 0x6784,
@@ -1532,7 +1532,7 @@ u32 D_800C2B68[0x2a] = {
     /* 0x090 */ (u32)&D_800D1238, 0, 0, 0,
     /* 0x0a0 */ 0x4E52, 0x6590,
 };
-u32 D_800C2C10[0xf] = {
+u32 sRiderSfx[0xf] = {
     /* 0x000 */ (u32)&D_800D1220, 0, (u32)&D_800D1228, 0,
     /* 0x010 */ (u32)&D_800D11C8, 0, (u32)&D_800D11DC, 0,
     /* 0x020 */ (u32)&D_800D121C, 0, (u32)&D_800D124C, 0,
@@ -1540,7 +1540,7 @@ u32 D_800C2C10[0xf] = {
 };
 u32 D_800C2C4C[0x2] = { 0, (u32)&D_800D122C };
 u32 D_800C2C54[0x3] = { 0 };
-s16 D_800C2C60[0x1000] = {
+s16 gCosTable[0x1000] = {
     /* 0x000 */ 16384, 16383, 16383, 16383, 16383, 16383, 16383, 16383,
     /* 0x010 */ 16382, 16382, 16382, 16381, 16381, 16380, 16380, 16379,
     /* 0x020 */ 16379, 16378, 16377, 16377, 16376, 16375, 16374, 16373,
@@ -2054,7 +2054,7 @@ s16 D_800C2C60[0x1000] = {
     /* 0x1fe0 */ 16379, 16379, 16380, 16380, 16381, 16381, 16382, 16382,
     /* 0x1ff0 */ 16382, 16383, 16383, 16383, 16383, 16383, 16383, 16383,
 };
-s16 D_800C4C60[0x1002] = {
+s16 sAtanTable[0x1002] = {
     /* 0x000 */ 0, 2, 5, 7, 10, 12, 15, 17,
     /* 0x010 */ 20, 22, 25, 28, 30, 33, 35, 38,
     /* 0x020 */ 40, 43, 45, 48, 50, 53, 56, 58,
@@ -2569,7 +2569,7 @@ s16 D_800C4C60[0x1002] = {
     /* 0x1ff0 */ 8181, 8183, 8184, 8185, 8186, 8188, 8189, 8190,
     /* 0x2000 */ 8192,
 };
-u16 D_800C6C64[0x1006] = {
+u16 sAsinTable[0x1006] = {
     /* 0x000 */ 0, 0x2, 0x5, 0x7, 0xA, 0xC, 0xF, 0x11,
     /* 0x010 */ 0x14, 0x16, 0x19, 0x1C, 0x1E, 0x21, 0x23, 0x26,
     /* 0x020 */ 0x28, 0x2B, 0x2D, 0x30, 0x32, 0x35, 0x38, 0x3A,
@@ -3084,35 +3084,35 @@ u16 D_800C6C64[0x1006] = {
     /* 0x1ff0 */ 0x3D73, 0x3D9E, 0x3DCB, 0x3DFC, 0x3E33, 0x3E70, 0x3EBA, 0x3F19,
     /* 0x2000 */ 0x4000, 0x39C0, 0x1060, 0x3, 0, 0x1021,
 };
-u32 D_800C8C70 = 0;
-u32 D_800C8C74 = 0;
+u32 gPrimBoneMtx = 0;
+u32 gPrimIATextures = 0;
 u32 D_800C8C78 = 0;
-u32 D_800C8C7C = 0;
-u32 D_800C8C80 = 0;
-u32 D_800C8C84[0x9] = {
+u32 gPrimTexAlphaMode = 0;
+u32 sPrimTexModeCallback = 0;
+u32 sPrimTexAddrCallback[0x9] = {
     /* 0x000 */ 0, 0x4, 0x2, 0x3,
     /* 0x010 */ 0x2, 0, 0, 0x1,
     /* 0x020 */ 0x1,
 };
-u32 D_800C8CA8[0xa] = {
+u32 sTexAnimRates[0xa] = {
     /* 0x000 */ 0x1, 0x7, 0x6, 0x5,
     /* 0x010 */ 0x4, 0x3, 0x2, 0x1,
     /* 0x020 */ 0x3C018010, 0xA0202F79,
 };
 u32 D_800C8CD0 = 0;
-u32 D_800C8CD4 = 0;
-u32 D_800C8CD8 = 0;
-u32 D_800C8CDC = 0;
+u32 sGhostData = 0;
+u32 gGhostRace = 0;
+u32 gDemoPlayback = 0;
 u32 D_800C8CE0 = 0;
-u32 D_800C8CE4 = 0;
-u32 D_800C8CE8 = 0;
-u32 D_800C8CEC = 0;
-u32 D_800C8CF0[0x4] = { 0x1 };
+u32 gActiveReplay = 0;
+u32 gReplayPlayback = 0;
+u32 sReplayRequest = 0;
+u32 gReplayRecording[0x4] = { 0x1 };
 u32 D_800C8D00[0x2] = { 0 };
 u32 D_800C8D08[0x2] = { 0 };
 u32 D_800C8D10[0x2] = { 0 };
 u32 D_800C8D18 = 0;
-u32 D_800C8D1C[0x13] = {
+u32 sFrontendLoaded[0x13] = {
     /* 0x000 */ 0x1, 0x41424344, 0x45464748, 0x494A4B4C,
     /* 0x010 */ 0x4D4E4F50, 0x51525354, 0x55565758, 0x595A6162,
     /* 0x020 */ 0x63646566, 0x6768696A, 0x6B6C6D6E, 0x6F707172,
@@ -3133,12 +3133,12 @@ u32 D_800C8DC0[0xe] = {
     /* 0x020 */ (u32)D_800D61E0, (u32)D_800D61D8, (u32)D_800D61D0, 0,
     /* 0x030 */ 0x102, 0x2010000,
 };
-u32 D_800C8DF8[0x2] = { 0x3F800000, 0x3F19999A };
-f32 D_800C8E00 = 20.0f;
-f32 D_800C8E04 = 0.3f;
-f32 D_800C8E08[0x3] = { 2.5f, 1.0f, 1.0f };
-f32 D_800C8E14 = 0.75f;
-u32 D_800C8E18[0x20] = {
+u32 sBikeTune[0x2] = { 0x3F800000, 0x3F19999A };
+f32 gLaneChangeFrames = 20.0f;
+f32 sBikeTuneRampBoost = 0.3f;
+f32 sBikeTuneLanding[0x3] = { 2.5f, 1.0f, 1.0f };
+f32 gBikeTuneSpringRate = 0.75f;
+u32 gBikeTuneDamping[0x20] = {
     /* 0x000 */ 0x3FCCCCCD, 0x3FC00000, 0x3F99999A, 0x4019999A,
     /* 0x010 */ 0x3F800000, 0x3F800000, 0x40400000, (u32)D_800D629C,
     /* 0x020 */ (u32)D_800D6290, (u32)D_800D6284, (u32)D_800D6278, (u32)D_800D626C,
@@ -3148,7 +3148,7 @@ u32 D_800C8E18[0x20] = {
     /* 0x060 */ (u32)D_800D61F8, (u32)D_800D632C, (u32)D_800D6320, (u32)D_800D6314,
     /* 0x070 */ (u32)D_800D6308, (u32)D_800D6300, (u32)D_800D62F8,
 };
-u32 D_800C8E98[0x50] = {
+u32 sRiderStatsTable[0x50] = {
     /* 0x000 */ 0x40800000, 0x40800000, 0x3FC00000, 0x3F99999A,
     /* 0x010 */ 0x3FC00000, 0x3F800000, 0x3F800000, 0x3E4CCCCD,
     /* 0x020 */ 0x3F8CCCCD, 0, 0x3F000000, 0x3F800000,
@@ -3170,25 +3170,25 @@ u32 D_800C8E98[0x50] = {
     /* 0x120 */ (u32)D_800D63A8, (u32)D_800D63A0, (u32)D_800D6398, (u32)D_800D6390,
     /* 0x130 */ (u32)D_800D6388, (u32)D_800D6380, (u32)D_800D6374,
 };
-f32 D_800C8FD8[0x11] = {
+f32 sSteerRateBySpeed[0x11] = {
     /* 0x000 */ 6.0f, 4.0f, 1.5f, 1.5f,
     /* 0x010 */ 1.0f, 0.7f, 0.5f, 0.5f,
     /* 0x020 */ 0.5f, 0.5f, 0.5f, 0.5f,
     /* 0x030 */ 0.5f, 0.5f, 0.5f, 0.5f,
     /* 0x040 */ 0.5f,
 };
-f32 D_800C901C[0xd] = {
+f32 sSteerMaxBySpeed[0xd] = {
     /* 0x000 */ 6.0f, 6.0f, 4.0f, 1.7f,
     /* 0x010 */ 1.5f, 0.7f, 0.5f, 0.3f,
     /* 0x020 */ 0.3f, 0.3f, 0.3f, 0.3f,
     /* 0x030 */ 0.3f,
 };
-f32 D_800C9050[0xc] = {
+f32 sSteerSpeedSteps[0xc] = {
     /* 0x000 */ 0.0f, 2.2222223f, 4.4444447f, 8.888889f,
     /* 0x010 */ 13.333334f, 17.777779f, 22.222223f, 26.666668f,
     /* 0x020 */ 31.111113f, 35.555557f, 40.000004f, 888.889f,
 };
-u32 D_800C9080[0x100] = {
+u32 gSurfaceTable[0x100] = {
     /* 0x000 */ 0x4D756400, 0, 0, 0,
     /* 0x010 */ 0x3CF5C28F, 0x3F800000, 0x3F800000, 0xBCA3D70A,
     /* 0x020 */ 0, 0x3F800000, 0x7, 0x40200000,
@@ -3254,18 +3254,18 @@ u32 D_800C9080[0x100] = {
     /* 0x3e0 */ 0, 0x3F800000, 0x7, 0x40200000,
     /* 0x3f0 */ 0x40200000, 0x40200000, 0, 0xFFFFFFFF,
 };
-u32 D_800C9480[0xc] = {
+u32 sStartLineOffsets[0xc] = {
     /* 0x000 */ 0, 0, 0xC0000000, 0,
     /* 0x010 */ 0x40000000, 0, 0xC0800000, 0,
     /* 0x020 */ 0x40800000, 0, 0x40C00000,
 };
-f32 D_800C94B0 = 1.0f;
-f32 D_800C94B4 = 1.0f;
-f32 D_800C94B8 = 0.04f;
-f32 D_800C94BC = 0.15f;
+f32 sSuspSpringScale = 1.0f;
+f32 sSuspDampScale = 1.0f;
+f32 sLeanTorqueGain = 0.04f;
+f32 sLeanTorqueDamping = 0.15f;
 u16 D_800C94C0[0x2] = { 0x4000 };
 f32 D_800C94C4 = 2500.0f;
-u32 D_800C94C8[0x20] = {
+u32 sBikeContactPoints[0x20] = {
     /* 0x000 */ 0x3E99999A, 0x3ECCCCCC, 0x3E800000, 0x3F000000,
     /* 0x010 */ 0xBE99999A, 0x3ECCCCCC, 0x3E800000, 0x3F000000,
     /* 0x020 */ 0x3E800000, 0xBE23D70A, 0, 0x3E99999A,
@@ -3276,108 +3276,108 @@ u32 D_800C94C8[0x20] = {
     /* 0x070 */ 0x3B83126F, 0xBECCCCCD, 0xBF19999A, 0x3DCCCCCD,
 };
 u8 D_800C9548[0x8] = { 0, 0x1, 0x4, 0x5, 0x1, 0, 0x5, 0x4 };
-u32 D_800C9550[0x4] = { 0x834, 0x5DC, 0x3E8, 0x3E8 };
-u32 D_800C9560[0x4] = { 0xFA0, 0xED8, 0xCB2, 0x9C4 };
-u32 D_800C9570 = 0;
+u32 gLoDetailThresh[0x4] = { 0x834, 0x5DC, 0x3E8, 0x3E8 };
+u32 gVisibleThresh[0x4] = { 0xFA0, 0xED8, 0xCB2, 0x9C4 };
+u32 gUserTrackLayout = 0;
 u32 D_800C9574[0x3] = { 0, 0xC0300F2, 0x2803821 };
-u32 D_800C9580 = 0;
-u32 D_800C9584 = 0;
-u8 D_800C9588[0x18] = {
+u32 sTexSegList = 0;
+u32 sTexSegListIndex = 0;
+u8 sTexOpaqueFogDL[0x18] = {
     /* 0x000 */ 0xE7, 0, 0, 0, 0, 0, 0, 0, 0xE2, 0, 0x1E, 0x1, 0, 0, 0, 0,
     /* 0x010 */ 0xDF,
 };
-u32 D_800C95A0[0x6] = {
+u32 sTexCutoutFogDL[0x6] = {
     /* 0x000 */ 0xE7000000, 0, 0xE2001E01, 0x1,
     /* 0x010 */ 0xDF000000,
 };
-u8 D_800C95B8[0x20] = {
+u8 sTexOpaqueDL[0x20] = {
     /* 0x000 */ 0xE7, 0, 0, 0, 0, 0, 0, 0, 0xE2, 0, 0x1E, 0x1, 0, 0, 0, 0,
     /* 0x010 */ 0xE2, 0, 0, 0x1C, 0, 0x44, 0x22, 0x30, 0xDF,
 };
-u8 D_800C95D8[0x20] = {
+u8 sTexCutoutDL[0x20] = {
     /* 0x000 */ 0xE7, 0, 0, 0, 0, 0, 0, 0, 0xE2, 0, 0x1E, 0x1, 0, 0, 0, 0x1,
     /* 0x010 */ 0xE2, 0, 0, 0x1C, 0, 0, 0x2, 0x30, 0xDF,
 };
-u32 D_800C95F8[0x10] = {
+u32 sSplashQuadVtx[0x10] = {
     /* 0x000 */ 0xFFB00000, 0xFFB00000, 0, 0,
     /* 0x010 */ 0x500000, 0xFFB00000, 0x10000000, 0,
     /* 0x020 */ 0x500000, 0x500000, 0x10001000, 0,
     /* 0x030 */ 0xFFB00000, 0x500000, 0x1000,
 };
-u32 D_800C9638 = 0;
-u32 D_800C963C = 0;
-u32 D_800C9640 = 0;
-u32 D_800C9644 = 0;
-u32 D_800C9648 = 0;
-u32 D_800C964C = 0x68;
-u32 D_800C9650 = 0xFFFFFFFF;
-u32 D_800C9654[0x6] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-u32 D_800C966C[0x6] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-u32 D_800C9684 = 0;
-f32 D_800C9688 = 0.02f;
-f32 D_800C968C = 0.5f;
-f32 D_800C9690 = 0.04f;
-f32 D_800C9694 = 0.5f;
-u32 D_800C9698[0x30] = {
-    /* 0x000 */ 0, (u32)func_80029CE0, 0, 0x80000,
-    /* 0x010 */ 0, (u32)func_8002D5A0, 0, 0x10000,
-    /* 0x020 */ 0, (u32)func_8002D604, 0, 0x10000,
-    /* 0x030 */ 0, (u32)func_8002D620, 0, 0x10000,
-    /* 0x040 */ 0, (u32)func_8002D49C, 0, 0x80000,
+u32 sPvsData = 0;
+u32 sPvsIndex = 0;
+u32 gTrackObjects = 0;
+u32 gTrackSections = 0;
+u32 gWaterModels = 0;
+u32 sCullSlope = 0x68;
+u32 gCamTargetOverride = 0xFFFFFFFF;
+u32 gCamTargets[0x6] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+u32 gCamLastModes[0x6] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+u32 gCamView = 0;
+f32 sCamSpringUp = 0.02f;
+f32 sCamDampUp = 0.5f;
+f32 sCamSpringDown = 0.04f;
+f32 sCamDampDown = 0.5f;
+u32 gCamModes[0x30] = {
+    /* 0x000 */ 0, (u32)cam_mode_soccer, 0, 0x80000,
+    /* 0x010 */ 0, (u32)cam_mode_chase_near, 0, 0x10000,
+    /* 0x020 */ 0, (u32)cam_mode_chase_mid, 0, 0x10000,
+    /* 0x030 */ 0, (u32)cam_mode_chase_far, 0, 0x10000,
+    /* 0x040 */ 0, (u32)cam_mode_side_view, 0, 0x80000,
     /* 0x050 */ 0, (u32)func_8002D528, 0, 0x80000,
-    /* 0x060 */ 0, (u32)func_8002A680, 0, 0x80000,
-    /* 0x070 */ 0, (u32)func_8002B210, 0, 0x80000,
-    /* 0x080 */ 0, (u32)func_8002D480, 0, 0x80000,
-    /* 0x090 */ 0, (u32)func_8002AE5C, 0, 0x80000,
-    /* 0x0a0 */ 0, (u32)func_8002D63C, 0, 0x80000,
-    /* 0x0b0 */ 0, (u32)func_8002D788, 0, 0x80000,
+    /* 0x060 */ 0, (u32)cam_mode_hill_climb, 0, 0x80000,
+    /* 0x070 */ 0, (u32)cam_mode_stunt_pip, 0, 0x80000,
+    /* 0x080 */ 0, (u32)cam_mode_chase_far_alt, 0, 0x80000,
+    /* 0x090 */ 0, (u32)cam_mode_fall_view, 0, 0x80000,
+    /* 0x0a0 */ 0, (u32)cam_mode_celebration, 0, 0x80000,
+    /* 0x0b0 */ 0, (u32)cam_mode_first_person, 0, 0x80000,
 };
-u32 D_800C9758 = 0x2000;
-u32 D_800C975C = 0x400;
-u32 D_800C9760 = 0x200;
-u32 D_800C9764[0xc] = {
+u32 sCamHillDist = 0x2000;
+u32 sCamHillHeight = 0x400;
+u32 sCamHillPitch = 0x200;
+u32 sCamFallViewPos[0xc] = {
     /* 0x000 */ 0xCA38, 0, 0xFFFF9EA0, 0x200,
     /* 0x010 */ 0, 0, (u32)D_800D6B84, (u32)D_800D6B80,
     /* 0x020 */ (u32)D_800D6B7C, (u32)D_800D6B78, (u32)D_800D6B74,
 };
-f32 D_800C9794[0x14] = {
+f32 sCamSideViewParams[0x14] = {
     /* 0x000 */ 21000.0f, 14000.0f, -3500.0f, 20480.0f,
     /* 0x010 */ 6144.0f, 0.0f, 0.0f, 0.0f,
     /* 0x040 */ [0x10] = 1.121e-41f,
 };
 u32 D_800C97E4 = 0xFFFFFFFF;
-u32 D_800C97E8[0x6] = {
+u32 sCamZoneOffset[0x6] = {
     /* 0x000 */ 0, 0, 0, 0x24843078,
     /* 0x010 */ 0x2821, 0xC003B44,
 };
-u32 D_800C9800[0x7] = {
+u32 gWallEdgeFlags[0x7] = {
     /* 0x000 */ 0, 0xC0000000, 0x4000, 0,
     /* 0x010 */ 0, 0xC0000000, 0x4000,
 };
-u32 D_800C981C[0x9] = {
+u32 sDesertBoxNormals[0x9] = {
     /* 0x000 */ 0xC0000000, 0x4000, 0, 0,
     /* 0x010 */ 0x40000000, 0xC000, 0x4000, 0x1,
     /* 0x020 */ 0xC003B38,
 };
-u32 D_800C9840 = 0;
-u8 D_800C9844[0xc] = { 0, 0xC0, 0, 0xC0, 0xC0, 0, 0xC0, 0xC0, 0xC0, 0xC0 };
-u32 D_800C9850[0x4] = { 0xA, 0xA, 0x8, 0x9 };
-u32 D_800C9860 = 0;
-u8 D_800C9864[0x20] = {
+u32 sStars = 0;
+u8 sFlareColors[0xc] = { 0, 0xC0, 0, 0xC0, 0xC0, 0, 0xC0, 0xC0, 0xC0, 0xC0 };
+u32 sFlareSizes[0x4] = { 0xA, 0xA, 0x8, 0x9 };
+u32 sSunList = 0;
+u8 sZDecodeShift[0x20] = {
     /* 0x000 */ 0, 0, 0, 0x6, 0, 0, 0, 0x5, 0, 0, 0, 0x4, 0, 0, 0, 0x3,
     /* 0x010 */ 0, 0, 0, 0x2, 0, 0, 0, 0x1,
 };
-u8 D_800C9884[0x2c] = {
+u8 sZDecodeAdd[0x2c] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0x2, 0, 0, 0, 0x3, 0, 0, 0, 0x3, 0x80, 0,
     /* 0x010 */ 0, 0x3, 0xC0, 0, 0, 0x3, 0xE0, 0, 0, 0x3, 0xF0, 0, 0, 0x3, 0xF8, 0,
     /* 0x020 */ 0x10, 0x40, 0, 0x6, 0x24, 0x2, 0, 0x10, 0x26, 0x31, 0, 0x1,
 };
-u32 D_800C98B0 = 0;
-u32 D_800C98B4[0x7] = {
+u32 gSkyMode = 0;
+u32 sSkyPrevClipHeight[0x7] = {
     /* 0x000 */ 0, 0, 0, 0,
     /* 0x010 */ 0x3C038010, 0x3C04800E, 0xC003AC0,
 };
-f32 D_800C98D0[0x1d] = {
+f32 sEngineTorqueCurve[0x1d] = {
     /* 0x000 */ 0.0f, 745.6999f, 1491.3998f, 2982.7996f,
     /* 0x010 */ 4474.199f, 5965.599f, 7456.999f, 9321.249f,
     /* 0x020 */ 11185.498f, 13422.598f, 16405.398f, 18642.498f,
@@ -3387,24 +3387,24 @@ f32 D_800C98D0[0x1d] = {
     /* 0x060 */ 18642.498f, 18642.498f, 18642.498f, 18642.498f,
     /* 0x070 */ 18642.498f,
 };
-f32 D_800C9944[0x4] = { 833.3333f, 500.0f, 365.85367f, 267.85715f };
-f32 D_800C9954[0x6] = {
+f32 sGearRatios[0x4] = { 833.3333f, 500.0f, 365.85367f, 267.85715f };
+f32 sEngineHeatRates[0x6] = {
     /* 0x000 */ -20.0f, 20.0f, 40.0f, -12.0f,
     /* 0x010 */ -8.0f, 20.0f,
 };
-f32 D_800C996C = 1.225f;
-f32 D_800C9970 = 0.75f;
-f32 D_800C9974 = 0.3f;
-f32 D_800C9978[0x6] = {
+f32 sTurboPowerScale = 1.225f;
+f32 sThrottlePowerScale = 0.75f;
+f32 sOverheatPowerScale = 0.3f;
+f32 sTurboTraction[0x6] = {
     /* 0x000 */ 4.0f, 0.0f, 0.0f, 1.664698e-39f,
     /* 0x010 */ 1.009384e-31f, 6.25634e-39f,
 };
-u32 D_800C9990 = 0;
-u8 D_800C9994[0x4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-u32 D_800C9998 = 0;
-u32 D_800C999C = 0;
-u32 D_800C99A0[0x4] = { 0x400040, 0x3FF0000, 0x400040, 0x3FF0000 };
-u32 D_800C99B0[0x10] = {
+u32 sRainEnabled = 0;
+u8 gParticleWhite[0x4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+u32 sDustCloudBike = 0;
+u32 sDirtFrameCount = 0;
+u32 sShadowViewport[0x4] = { 0x400040, 0x3FF0000, 0x400040, 0x3FF0000 };
+u32 sRiderBoneNames[0x10] = {
     /* 0x000 */ (u32)D_800D6E80, (u32)D_800D6E78, (u32)D_800D6E70, (u32)D_800D6E68,
     /* 0x010 */ (u32)D_800D6E60, (u32)D_800D6E58, (u32)D_800D6E50, (u32)D_800D6E48,
     /* 0x020 */ (u32)D_800D6E40, (u32)D_800D6E38, (u32)D_800D6E30, (u32)D_800D6E28,
@@ -3425,7 +3425,7 @@ u32 D_800C9A28[0x2] = { 0x7060406, 0xC000000 };
 u32 D_800C9A30[0x2] = { 0x7060406, 0xB000000 };
 u32 D_800C9A38 = 0x7061100;
 u8 D_800C9A3C[0x4] = { 0x1 };
-u32 D_800C9A40[0x111] = {
+u32 gRiderAnims[0x111] = {
     /* 0x000 */ 0x9, (u32)D_800D06DC, (u32)D_800D1138, 0,
     /* 0x010 */ 0, (u32)D_800C9A28, (u32)D_800D6F90, 0x8,
     /* 0x020 */ 0x5DC, 0x2, 0, 0x100,
@@ -3569,7 +3569,7 @@ u32 D_800C9E84[0x12b] = {
     /* 0x460 */ 0, 0, 0x10, 0,
     /* 0x4a4 */ [0x129] = 0xAC437930, 0xAC650000,
 };
-u32 D_800CA330[0x20] = {
+u32 sDesMarkerVtx[0x20] = {
     /* 0x000 */ 0xFE0C0000, 0, 0, 0,
     /* 0x010 */ 0x1F40000, 0, 0x8000000, 0,
     /* 0x020 */ 0x1F409C4, 0, 0x8001000, 0,
@@ -3579,10 +3579,10 @@ u32 D_800CA330[0x20] = {
     /* 0x060 */ 0x1F409C4, 0, 0x8001000, 0,
     /* 0x070 */ 0xFE0C09C4, 0, 0x1000,
 };
-u32 D_800CA3B0 = 0;
-u32 D_800CA3B4 = 0;
+u32 sDesArrowAngle = 0;
+u32 gDesWaypoint = 0;
 u32 D_800CA3B8 = 0;
-u32 D_800CA3BC[0x8] = {
+u32 sDesObjModels[0x8] = {
     /* 0x000 */ (u32)D_800D07FC, 0, (u32)D_800D0E70, 0,
     /* 0x010 */ (u32)D_800D08A8,
 };
@@ -3592,13 +3592,13 @@ u32 D_800CA3FC[0x5] = {
     /* 0x000 */ 0xFFFFFFFB, 0x5, 0xFFFFFFFF, 0x1,
     /* 0x010 */ 0x8C440000,
 };
-u32 D_800CA410 = 0;
-u32 D_800CA414[0xb] = {
+u32 gDesertFireCount = 0;
+u32 sFractalAmplitudes[0xb] = {
     /* 0x000 */ 0x1, 0x1, 0x2, 0x4,
     /* 0x010 */ 0x14, 0x2D, 0x5A, 0xBE,
     /* 0x020 */ 0x3C028010, 0x24427940, 0x121880,
 };
-u32 D_800CA440[0x2c] = {
+u32 sBikeCrashContactPoints[0x2c] = {
     /* 0x000 */ 0x3E99999A, 0x3ECCCCCC, 0x3E800000, 0x3ECCCCCD,
     /* 0x010 */ 0xBE99999A, 0x3ECCCCCC, 0x3E800000, 0x3ECCCCCD,
     /* 0x020 */ 0, 0xBE23D70A, 0x3E4CCCCD, 0x3ECCCCCD,
@@ -3611,7 +3611,7 @@ u32 D_800CA440[0x2c] = {
     /* 0x090 */ 0, 0x3ECCCCCC, 0, 0x3ECCCCCD,
     /* 0x0a0 */ 0, 0x3ECCCCCC, 0xBEE66666, 0x3ECCCCCD,
 };
-u32 D_800CA4F0[0x80] = {
+u32 sRiderCrashContactPoints[0x80] = {
     /* 0x000 */ 0x3E178D50, 0xBDCCCCCD, 0x3F333333, 0x3F000000,
     /* 0x010 */ 0x3E4ED917, 0xBE4CCCCD, 0x3F000000, 0x3F000000,
     /* 0x020 */ 0x3E45A1CB, 0x3F000000, 0x3E99999A, 0x3F000000,
@@ -3645,7 +3645,7 @@ u32 D_800CA4F0[0x80] = {
     /* 0x1e0 */ 0xBE3020C5, 0x3F000000, 0x3E99999A, 0x3F000000,
     /* 0x1f0 */ 0xBE50E560, 0, 0xBE20C49C, 0x3F000000,
 };
-char D_800CA6F0[0x4] = "B";
+char sDesertCheckpoints[0x4] = "B";
 u32 D_800CA6F4[0x1f] = {
     /* 0x000 */ 0x40F1999A, 0x43600000, 0xC3200000, 0x40DD1EB8,
     /* 0x010 */ 0xC33C0000, 0x42840000, 0x40DF0A3D, 0xC4084000,
@@ -3656,13 +3656,13 @@ u32 D_800CA6F4[0x1f] = {
     /* 0x060 */ 0xC0FDC28F, 0xC3010000, 0x42840000, 0x409FAE14,
     /* 0x070 */ 0xC2000000, 0x282A021, 0x92230006,
 };
-u32 D_800CA770 = 0;
-u32 D_800CA774[0x4] = { (u32)&D_800D0D38, (u32)&D_800D0D54, (u32)D_800D0D3C };
-u32 D_800CA784[0x6] = {
+u32 sFontSetLoaded = 0;
+u32 sRaceFontIds[0x4] = { (u32)&D_800D0D38, (u32)&D_800D0D54, (u32)D_800D0D3C };
+u32 sMenuFontIds[0x6] = {
     /* 0x000 */ (u32)&D_800D0D38, (u32)&D_800D0D54, (u32)D_800D0D3C, (u32)D_800D0D48,
     /* 0x010 */ (u32)D_800D0D64,
 };
-u8 D_800CA79C[0x73] = {
+u8 sFontColors[0x73] = {
     /* 0x000 */ 0, 0, 0, 0xFF, 0, 0, 0, 0xFF, 0, 0, 0, 0xFF, 0x10, 0x10, 0x10, 0xFF,
     /* 0x010 */ 0x10, 0x10, 0x10, 0xFF, 0x10, 0x10, 0x10, 0xFF, 0x70, 0x70, 0x70, 0xFF, 0xD0, 0xD0, 0xD0, 0xFF,
     /* 0x020 */ 0x40, 0x40, 0x40, 0xFF, 0x20, 0x20, 0x20, 0xFF, 0x4C, 0x4C, 0x4C, 0xFF, 0x60, 0x20, 0x20, 0xFF,
@@ -3676,21 +3676,21 @@ u8 D_800CA80F[0x11] = {
     /* 0x000 */ 0xFF, 0, 0, 0, 0xFF, 0x4C, 0x4C, 0x4C, 0xFF, 0x80, 0x80, 0x80, 0xFF, 0x10, 0x10, 0x10,
     /* 0x010 */ 0xFF,
 };
-u32 D_800CA820[0x6] = {
+u32 sPlaceClips[0x6] = {
     /* 0x000 */ 0x9B, 0x9E, 0x9D, 0x9C,
     /* 0x010 */ 0x9A, 0x9F,
 };
-u32 D_800CA838[0x2] = { 0x69, 0x6A };
-u32 D_800CA840 = 0x6B;
-u32 D_800CA844 = 0;
-u32 D_800CA848 = 0xC8;
+u32 sCrowdClips[0x2] = { 0x69, 0x6A };
+u32 sCrowdCheerClip = 0x6B;
+u32 sTunesActive = 0;
+u32 gStreamVolumes = 0xC8;
 u32 D_800CA84C = 0xC8;
-u32 D_800CA850 = 0xD2;
-u32 D_800CA854 = 0xD2;
-u32 D_800CA858 = 0;
-u32 D_800CA85C = 0;
-u32 D_800CA860 = 0;
-u32 D_800CA864[0x18] = {
+u32 gSpeechVolume = 0xD2;
+u32 gAmbientVolume = 0xD2;
+u32 sSpeechQueueCount = 0;
+u32 sStreamLock = 0;
+u32 sCurrentSong = 0;
+u32 sRiderNameClips[0x18] = {
     /* 0x000 */ 0xA7, 0xB5, 0xAC, 0xA3,
     /* 0x010 */ 0xB0, 0xA8, 0xA5, 0xB7,
     /* 0x020 */ 0xAF, 0xA1, 0xB3, 0xAB,
@@ -3698,22 +3698,22 @@ u32 D_800CA864[0x18] = {
     /* 0x040 */ 0xB2, 0xA9, 0xA6, 0xB6,
     /* 0x050 */ 0xAE, 0xA0, 0xB1, 0xAA,
 };
-u32 D_800CA8C4[0x3] = { 0x87, 0x84, 0x85 };
-u32 D_800CA8D0[0x2] = { 0x89, 0x86 };
-u32 D_800CA8D8[0x4] = { 0x8B, 0x8E, 0x90, 0x8D };
-u32 D_800CA8E8[0x3] = { 0x8A, 0x8C, 0x8F };
-u32 D_800CA8F4[0x3] = { 0xD6, 0xD8, 0xD4 };
-u32 D_800CA900[0x3] = { 0xD9, 0xD5, 0xD3 };
-u32 D_800CA90C[0x5] = {
+u32 sLeaderFirstLapClips[0x3] = { 0x87, 0x84, 0x85 };
+u32 sFinalLapClips[0x2] = { 0x89, 0x86 };
+u32 sTakesLeadClips[0x4] = { 0x8B, 0x8E, 0x90, 0x8D };
+u32 sStillLeadsClips[0x3] = { 0x8A, 0x8C, 0x8F };
+u32 sCrashClips[0x3] = { 0xD6, 0xD8, 0xD4 };
+u32 sCrashLandingClips[0x3] = { 0xD9, 0xD5, 0xD3 };
+u32 sTakeoutClips[0x5] = {
     /* 0x000 */ 0x7E, 0x7C, 0x7D, 0x490018,
     /* 0x010 */ 0x5012,
 };
-u32 D_800CA920 = 0;
+u32 gRaceExitCode = 0;
 u32 D_800CA924[0x3] = { 0 };
-u32 D_800CA930 = (u32)D_800F0638;
-u32 D_800CA934 = 0;
-u32 D_800CA938[0x8] = { 0x5, 0x3, 0x2, 0x1 };
-u32 D_800CA958[0x1b] = {
+u32 gSeason = (u32)sSeasonState;
+u32 gHudLevel = 0;
+u32 gRacePoints[0x8] = { 0x5, 0x3, 0x2, 0x1 };
+u32 sTrackPicIndex[0x1b] = {
     /* 0x000 */ 0x6, 0xF, 0xA, 0xB,
     /* 0x010 */ 0, 0x3, 0xC, 0x1,
     /* 0x020 */ 0xE, 0x2, 0x4, 0xD,
@@ -3721,7 +3721,7 @@ u32 D_800CA958[0x1b] = {
     /* 0x040 */ 0x8, 0x11, 0x9, 0x12,
     /* 0x050 */ 0x14, 0x15, 0x16, 0x17,
 };
-u32 D_800CA9C4 = 0;
+u32 gUnlockedTracks = 0;
 u32 D_800CA9C8[0x2d] = {
     /* 0x000 */ 0x5000000, 0x3, 0x1, 0x20003,
     /* 0x010 */ 0x40000, 0x1, 0x10001, 0x10001,
@@ -3735,11 +3735,11 @@ u32 D_800CA9C8[0x2d] = {
     /* 0x090 */ 0x5000000, 0, 0x4000A, 0x50009,
     /* 0x0a0 */ 0, 0x1, 0x10001, 0x10001,
 };
-u8 D_800CAA7C[0x24] = {
+u8 gCustomRound[0x24] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1,
 };
-u8 D_800CAAA0 = 0x11;
+u8 sTutorialRound = 0x11;
 u8 D_800CAAA1[0x23] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0x1A, 0, 0, 0, 0, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1, 0, 0x1, 0,
@@ -3825,7 +3825,7 @@ u32 D_800CAD24[0x30] = {
     /* 0x0a0 */ 0, (u32)D_800D80FC, (u32)D_800D80D4, (u32)D_800D80CC,
     /* 0x0b0 */ 0, (u32)D_800D809C, (u32)D_800D806C, (u32)D_800D8054,
 };
-u32 D_800CADE4[0xad] = {
+u32 gTutorialLessons[0xad] = {
     /* 0x000 */ 0x2, 0xA, 0xFFFFFFFF, 0x1000000,
     /* 0x010 */ (u32)D_800D82EC, 0x294, 0xBD000A, (u32)&D_800D0D58,
     /* 0x020 */ 0x4, (u32)D_800CAAC4, 0x2, 0xA,
@@ -3871,37 +3871,37 @@ u32 D_800CADE4[0xad] = {
     /* 0x2a0 */ 0xB, (u32)D_800CAD24, (u32)D_800D85B8, (u32)D_800D85B0,
     /* 0x2b0 */ (u32)D_800D85AC,
 };
-u32 D_800CB098[0x8] = {
+u32 sTutorialFailText[0x8] = {
     /* 0x000 */ (u32)D_800D88A8, (u32)D_800D8880, (u32)D_800D886C, (u32)D_800D8944,
     /* 0x010 */ (u32)D_800D893C, (u32)D_800D8934, (u32)D_800D892C, (u32)D_800D8924,
 };
-u32 D_800CB0B8[0x2] = { (u32)D_800D895C, (u32)D_800D894C };
-u32 D_800CB0C0[0x5] = {
+u32 sQuitConfirmItems[0x2] = { (u32)D_800D895C, (u32)D_800D894C };
+u32 sTutorialMenuItems[0x5] = {
     /* 0x000 */ (u32)D_800D8998, (u32)D_800D898C, (u32)D_800D8984, (u32)D_800D8978,
     /* 0x010 */ (u32)D_800D8968,
 };
-u32 D_800CB0D4[0x5] = {
+u32 sPauseMenuItems[0x5] = {
     /* 0x000 */ (u32)D_800D89CC, (u32)D_800D89C4, (u32)D_800D89B8, (u32)D_800D89B0,
     /* 0x010 */ (u32)D_800D89A0,
 };
-u32 D_800CB0E8[0x5] = {
+u32 sPauseMenuItemsSoccer[0x5] = {
     /* 0x000 */ (u32)D_800D89CC, (u32)D_800D89C4, (u32)D_800D89B8, (u32)D_800D89B0,
     /* 0x010 */ (u32)D_800D89E0,
 };
-u32 D_800CB0FC[0x3] = { (u32)D_800D89B8, (u32)D_800D8A04, (u32)D_800D89F0 };
-u32 D_800CB108[0x6] = {
+u32 sTestRideMenuItems[0x3] = { (u32)D_800D89B8, (u32)D_800D8A04, (u32)D_800D89F0 };
+u32 sPauseMenuItemsSeason[0x6] = {
     /* 0x000 */ (u32)D_800D89CC, (u32)D_800D89C4, (u32)D_800D89B8, (u32)D_800D8A14,
     /* 0x010 */ 0x3C0CF568, 0x358C1000,
 };
-u32 D_800CB120[0x4] = { 0, 0x356B8260, 0x3001821, 0x27180008 };
-f32 D_800CB130[0x12] = {
+u32 gIsDrawing[0x4] = { 0, 0x356B8260, 0x3001821, 0x27180008 };
+f32 sHardTurnSteerAngle[0x12] = {
     /* 0x000 */ 0.6f, 7.5531693e-07f, 0.008965492f, 3.5806738e-37f,
     /* 0x010 */ 869503300.0f, 0.0f, 869503300.0f, 0.0f,
     /* 0x020 */ 212.32031f, 0.0f, 2.1612108e+11f, 2.1990233e+12f,
     /* 0x030 */ 1.4293651e+13f, 0.0f, 829.36414f, 0.0f,
     /* 0x040 */ 51714384.0f,
 };
-u32 D_800CB178 = 0;
+u32 sDebugPage = 0;
 char D_800CB17C[0x58] = "file     \"spl.bin\"\r\n"
                         "resource \"SPL-CTR\"\r\n"
                         "#\r\n"
@@ -3912,7 +3912,7 @@ char D_800CB17C[0x58] = "file     \"spl.bin\"\r\n"
 char D_800CB1D4[0x1c] = "# number of spline nodes\r\n";
 char D_800CB1F0[0x18] = "endresource\r\nendfile\r\n";
 u32 D_800CB208[0x2] = { 0x90A3000F, 0x441025 };
-u32 D_800CB210[0x78] = {
+u32 gTracks[0x78] = {
     /* 0x000 */ 0x4B796F74, 0x6F2C204A, 0x6170616E, 0,
     /* 0x010 */ 0, 0, 0, 0x3,
     /* 0x020 */ 0x3F4CCCCD, 0x3F59999A, 0x3F666666, 0,
@@ -3988,7 +3988,7 @@ u32 D_800CB5D0[0x28] = {
     /* 0x080 */ (u32)D_800D0B08, (u32)D_800CCAB0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CB670[0x50] = {
+u32 sTrackLongIsland[0x50] = {
     /* 0x000 */ 0x4C6F6E67, 0x2049736C, 0x616E642C, 0x204E5900,
     /* 0x010 */ 0, 0, 0, 0x3,
     /* 0x020 */ 0x3F59999A, 0x3F63D70A, 0x3F70A3D7, 0,
@@ -4052,7 +4052,7 @@ u32 D_800CB7B0[0xa0] = {
     /* 0x260 */ (u32)&D_800D0A60, (u32)D_800CCAC8, 0xFFFF0000, 0,
     /* 0x270 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CBA30[0x50] = {
+u32 sTrackGravelPit[0x50] = {
     /* 0x000 */ 0x54686520, 0x47726176, 0x656C2050, 0x69740000,
     /* 0x010 */ 0, 0, 0, 0x2,
     /* 0x020 */ 0x3F59999A, 0x3F63D70A, 0x3F733333, 0x1,
@@ -4151,7 +4151,7 @@ u32 D_800CBF30[0x28] = {
     /* 0x080 */ (u32)&D_800D09EC, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000, 0, 0xFFFF0000,
 };
-u32 D_800CBFD0[0x28] = {
+u32 sTrackSoccer[0x28] = {
     /* 0x000 */ 0x536F6363, 0x65720000, 0, 0,
     /* 0x010 */ 0, 0, 0, 0x1,
     /* 0x020 */ 0x3F666666, 0x3F800000, 0x3F8CCCCD, 0,
@@ -4202,7 +4202,7 @@ u32 D_800CC1B8[0x26] = {
     /* 0x080 */ 0xFFFF0000, 0, 0xFFFF0000, 0,
     /* 0x090 */ 0xFFFF0000,
 };
-u32 D_800CC250[0x29] = {
+u32 sTrackTutorial[0x29] = {
     /* 0x000 */ 0x5475746F, 0x7269616C, 0, 0,
     /* 0x010 */ 0, 0, 0, 0x1,
     /* 0x020 */ 0x3F800000, 0x3F800000, 0x3F800000, 0,
@@ -4218,11 +4218,11 @@ u8 D_800CC2F4[0x18] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0x3F, 0x80,
 };
-u8 D_800CC30C[0x18] = {
+u8 sRiderSphereDesc[0x18] = {
     /* 0x000 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0x3F,
 };
-u8 D_800CC324[0x3a8] = {
+u8 sBikeSphereTreeDesc[0x3a8] = {
     /* 0x000 */ 0, 0, 0, 0x1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1, 0, 0, 0, 0x17,
     /* 0x020 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4283,7 +4283,7 @@ u8 D_800CC324[0x3a8] = {
     /* 0x390 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3E, 0xB8, 0x51, 0xEC,
     /* 0x3a0 */ 0x3F, 0x1E, 0xB8, 0x52, 0x3E, 0x19, 0x99, 0x9A,
 };
-u8 D_800CC6CC[0x3b4] = {
+u8 sBikeSphereTreeDescSoccer[0x3b4] = {
     /* 0x000 */ 0, 0, 0, 0x1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1, 0, 0, 0, 0x17,
     /* 0x020 */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4346,40 +4346,40 @@ u8 D_800CC6CC[0x3b4] = {
     /* 0x3b0 */ 0x37, 0xC8, 0x37, 0xBB,
 };
 u32 D_800CCA80[0x6] = {
-    /* 0x000 */ 0xB0001, (u32)func_80062018, 0x10F0001, (u32)func_80062090,
+    /* 0x000 */ 0xB0001, (u32)ai_route_lap_lt_or_wide, 0x10F0001, (u32)ai_route_never,
     /* 0x010 */ 0xFFFF0000,
 };
 u32 D_800CCA98[0x6] = {
-    /* 0x000 */ 0x7A0001, (u32)func_80061F80, 0x12C0001, (u32)func_80061F98,
+    /* 0x000 */ 0x7A0001, (u32)ai_route_lap_ge, 0x12C0001, (u32)ai_route_lap_le,
     /* 0x010 */ 0xFFFF0000,
 };
 u32 D_800CCAB0[0x6] = {
-    /* 0x000 */ 0x6D0001, (u32)func_80061FB0, 0xDE0001, (u32)func_80061FC8,
+    /* 0x000 */ 0x6D0001, (u32)ai_route_toggle, 0xDE0001, (u32)ai_route_lap_gt0,
     /* 0x010 */ 0xFFFF0000,
 };
-u32 D_800CCAC8[0x4] = { 0x260001, (u32)func_80062008, 0xFFFF0000 };
+u32 D_800CCAC8[0x4] = { 0x260001, (u32)ai_route_random, 0xFFFF0000 };
 u32 D_800CCAD8[0xa] = {
-    /* 0x000 */ 0x3E0001, (u32)func_80062008, 0xFFFF0000, 0,
-    /* 0x010 */ 0x20001, (u32)func_80062008, 0x8D0001, (u32)func_80062008,
+    /* 0x000 */ 0x3E0001, (u32)ai_route_random, 0xFFFF0000, 0,
+    /* 0x010 */ 0x20001, (u32)ai_route_random, 0x8D0001, (u32)ai_route_random,
     /* 0x020 */ 0xFFFF0000,
 };
 u32 D_800CCB00[0x8] = {
-    /* 0x000 */ 0x440001, (u32)func_80061FB0, 0xCB0001, (u32)func_80061FD4,
+    /* 0x000 */ 0x440001, (u32)ai_route_toggle, 0xCB0001, (u32)ai_route_toggle_from_lap,
     /* 0x010 */ 0xFFFF0000, 0, 0x33A33394, 0x33853376,
 };
 u32 D_800CCB20[0x7] = {
     /* 0x000 */ 0, 0, 0, 0,
     /* 0x010 */ 0x64, 0, 0x64,
 };
-u32 D_800CCB3C[0x9] = {
-    /* 0x000 */ 0x3, (u32)func_80062E08, (u32)func_80062E9C, (u32)func_80062998,
-    /* 0x010 */ (u32)func_80062EC0, (u32)func_80062EC8,
+u32 sHackLeftysMill[0x9] = {
+    /* 0x000 */ 0x3, (u32)hack_mill_init, (u32)hack_mill_exit, (u32)hack_mill_update,
+    /* 0x010 */ (u32)hack_mill_draw_pass1, (u32)hack_mill_draw_pass2,
 };
-u32 D_800CCB60[0x9] = {
-    /* 0x000 */ 0xD, (u32)func_80062244, (u32)func_80062ED0, (u32)func_80062588,
-    /* 0x010 */ (u32)func_80062F40, (u32)func_800626CC,
+u32 sHackGravelPit[0x9] = {
+    /* 0x000 */ 0xD, (u32)hack_gravel_pit_init, (u32)hack_gravel_pit_exit, (u32)hack_gravel_pit_update,
+    /* 0x010 */ (u32)hack_gravel_pit_draw_pass1, (u32)hack_gravel_pit_draw_pass2,
 };
-u32 D_800CCB84[0x3] = { (u32)D_800CCB60, (u32)D_800CCB3C };
+u32 sTrackHacks[0x3] = { (u32)sHackGravelPit, (u32)sHackLeftysMill };
 u32 D_800CCB90[0x20] = {
     /* 0x000 */ 0xFFFF54F8, 0xCA1D, 0xFFFEB1CE, 0xFFFFAF82,
     /* 0x010 */ 0, 0, 0, 0,
@@ -4390,7 +4390,7 @@ u32 D_800CCB90[0x20] = {
     /* 0x060 */ 0, 0, 0x3,
 };
 u32 D_800CCC10[0x4] = { (u32)D_800D0F84, (u32)D_800D0F94, (u32)D_800D0FA0, (u32)&D_800D0FAC };
-u8 D_800CCC20[0x80] = {
+u8 sFaultHexFont[0x80] = {
     /* 0x000 */ 0, 0x7E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x7E, 0, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,
     /* 0x010 */ 0, 0x7E, 0x6, 0x6, 0x7E, 0x60, 0x60, 0x7E, 0, 0x7E, 0x6, 0x6, 0x3E, 0x6, 0x6, 0x7E,
     /* 0x020 */ 0, 0x66, 0x66, 0x66, 0x7E, 0x6, 0x6, 0x6, 0, 0x7E, 0x60, 0x60, 0x7E, 0x6, 0x6, 0x7E,
@@ -4400,20 +4400,20 @@ u8 D_800CCC20[0x80] = {
     /* 0x060 */ 0, 0x3C, 0x66, 0x60, 0x60, 0x60, 0x66, 0x3C, 0, 0x78, 0x6C, 0x66, 0x66, 0x66, 0x6C, 0x78,
     /* 0x070 */ 0, 0x7E, 0x60, 0x60, 0x7C, 0x60, 0x60, 0x7E, 0, 0x7E, 0x60, 0x60, 0x7C, 0x60, 0x60, 0x60,
 };
-u32 D_800CCCA0 = 0;
-u32 D_800CCCA4 = 0x1;
-u32 D_800CCCA8 = 0xFFFFFFFF;
-u32 D_800CCCAC[0x3] = { 0x140, 0x200, 0x280 };
-u32 D_800CCCB8[0x3] = { 0xF0, 0xF0, 0x1E0 };
-u32 D_800CCCC4 = 0;
-u32 D_800CCCC8 = 0;
-u32 D_800CCCCC = 0;
-u32 D_800CCCD0[0x4] = { 0, 0x240B23F6, 0x23E123CD, 0x23B823A3 };
-u32 D_800CCCE0[0x4] = { 0, 0x2364234F, 0x233A2325, 0x231022FB };
-u32 D_800CCCF0 = 0x30;
-u32 D_800CCCF4 = 0x1D0;
+u32 sViBlackFrames = 0;
+u32 gViModeRequest = 0x1;
+u32 gViMode = 0xFFFFFFFF;
+u32 sViModeWidths[0x3] = { 0x140, 0x200, 0x280 };
+u32 sViModeHeights[0x3] = { 0xF0, 0xF0, 0x1E0 };
+u32 sSchedRetraceCount = 0;
+u32 sSchedSwapDeferred = 0;
+u32 gSchedFrameLimit = 0;
+u32 gInstanceMtx[0x4] = { 0, 0x240B23F6, 0x23E123CD, 0x23B823A3 };
+u32 sShatterCount[0x4] = { 0, 0x2364234F, 0x233A2325, 0x231022FB };
+u32 sMapBarStart = 0x30;
+u32 sMapBarEnd = 0x1D0;
 u8 D_800CCCF8[0x8] = { 0x4, 0x8, 0xC, 0xF8, 0xF8, 0xC, 0x8, 0x4 };
-u32 D_800CCD00[0x8] = {
+u32 sMapPos[0x8] = {
     /* 0x000 */ 0x10, 0x10, 0x80, 0x58,
     /* 0x010 */ 0xD0, 0x8E, 0x80, 0x58,
 };
@@ -4425,8 +4425,8 @@ u32 D_800CCD20[0x10] = {
 };
 u8 D_800CCD60[0x3] = { 0 };
 u8 D_800CCD63 = 0;
-u32 D_800CCD64 = 0;
-u32 D_800CCD68[0x16] = {
+u32 gCreditsMode = 0;
+u32 sLightningPatterns[0x16] = {
     /* 0x000 */ 0x1, 0, 0x1, 0,
     /* 0x010 */ 0, 0x1, 0, 0x5,
     /* 0x020 */ 0, 0, 0x1, 0,
@@ -4434,11 +4434,11 @@ u32 D_800CCD68[0x16] = {
     /* 0x040 */ 0, 0, 0, 0,
     /* 0x050 */ 0x1A4B1A34, 0x1A1D1A06,
 };
-f32 D_800CCDC0[0x8] = {
+f32 sExcite3DTimeScales[0x8] = {
     /* 0x000 */ 1.0f, 0.94f, 1.0f, 0.96f,
     /* 0x010 */ 1.0f, 1.0f, 1.0f, 1.0f,
 };
-u32 D_800CCDE0[0x50] = {
+u32 sSoccerBallContacts[0x50] = {
     /* 0x000 */ 0, 0, 0, 0x3E99999A,
     /* 0x010 */ 0, 0, 0, 0x3E99999A,
     /* 0x020 */ 0, 0, 0, 0x3E99999A,
@@ -4460,7 +4460,7 @@ u32 D_800CCDE0[0x50] = {
     /* 0x120 */ 0, 0, 0, 0x3E99999A,
     /* 0x130 */ 0, 0, 0, 0x3E99999A,
 };
-u32 D_800CCF20[0x1a] = {
+u32 sStuntInputSeqs[0x1a] = {
     /* 0x000 */ 0xC040500, 0, 0xC040205, 0,
     /* 0x010 */ 0xA050400, 0, 0xA050204, 0,
     /* 0x020 */ 0x8060300, 0, 0x8060203, 0,
@@ -4469,31 +4469,31 @@ u32 D_800CCF20[0x1a] = {
     /* 0x050 */ 0x3050604, 0, 0xF050604, 0x3050000,
     /* 0x060 */ 0xFF000000,
 };
-u32 D_800CCF88[0x12] = {
+u32 sStuntInputSeqsAlt[0x12] = {
     /* 0x000 */ 0xE040500, 0, 0xE040205, 0,
     /* 0x010 */ 0x4060300, 0, 0x4060203, 0,
     /* 0x020 */ 0x2040605, 0, 0x40305, 0,
     /* 0x030 */ 0x1050604, 0, 0xFF000000, 0,
     /* 0x040 */ 0x12D0114, 0xFB00E2,
 };
-f32 D_800CCFD0[0x4] = { 0.0f, -0.088f, -0.251f, -0.351f };
-u32 D_800CCFE0[0x4] = { 0, 0xFFCEFFB5, 0xFF9CFF83, 0xFF6AFF51 };
-u32 D_800CCFF0 = 0x64;
-u32 D_800CCFF4 = 0x64;
-u32 D_800CCFF8 = 0x3C;
-u32 D_800CCFFC = 0;
-u32 D_800CD000[0x6] = {
+f32 sPonytailNodeOffsets[0x4] = { 0.0f, -0.088f, -0.251f, -0.351f };
+u32 sAmbientZones[0x4] = { 0, 0xFFCEFFB5, 0xFF9CFF83, 0xFF6AFF51 };
+u32 sSnowSplatX = 0x64;
+u32 sSnowSplatY = 0x64;
+u32 sSnowSplatTimer = 0x3C;
+u32 sSnowflakes = 0;
+u32 sSnowflakeTexScale[0x6] = {
     /* 0x000 */ 0x2000, 0x1000, 0x800, 0x555,
     /* 0x010 */ 0x400,
 };
-u32 D_800CD018[0x1e] = {
+u32 sSnowSplatVtx[0x1e] = {
     /* 0x000 */ 0, 0x3E80000, 0, 0,
     /* 0x010 */ 0, 0x3E80000, 0x10000000, 0,
     /* 0x020 */ 0, 0x3E80000, 0x10001000, 0,
     /* 0x030 */ 0, 0x3E80000, 0x1000, 0,
     /* 0x040 */ 0xFA1FFA06, 0xF9EDF9D4, 0, 0,
-    /* 0x050 */ (u32)D_800E37C0, (u32)D_800E3FA0, (u32)D_800E4780, (u32)D_800E4F60,
-    /* 0x060 */ (u32)D_800E5740, (u32)D_800E5F20, (u32)D_800E6700, (u32)D_800E6EE0,
+    /* 0x050 */ (u32)gRiders, (u32)D_800E3FA0, (u32)D_800E4780, (u32)D_800E4F60,
+    /* 0x060 */ (u32)D_800E5740, (u32)D_800E5F20, (u32)sExtraRiders, (u32)D_800E6EE0,
     /* 0x070 */ 0xF7C7F7AE, 0xF795F77C,
 };
 u8 D_800CD090[0x28] = {
@@ -4501,7 +4501,7 @@ u8 D_800CD090[0x28] = {
     /* 0x010 */ 0, 0, 0, 0, 0, 0, 0, 0x1, 0, 0, 0, 0x2, 0, 0, 0, 0x3,
     /* 0x020 */ 0, 0, 0, 0x7, 0, 0, 0, 0x8,
 };
-u32 D_800CD0B8[0x24] = {
+u32 sMenuItemPicResIds[0x24] = {
     /* 0x000 */ (u32)&D_800D1454, (u32)&D_800D1458, (u32)&D_800D145C, (u32)&D_800D1460,
     /* 0x010 */ (u32)&D_800D1464, (u32)&D_800D1468, (u32)&D_800D14B0, (u32)&D_800D14B4,
     /* 0x020 */ (u32)&D_800D14BC, (u32)&D_800D14C0, (u32)&D_800D14C4, (u32)D_800D14CC,
@@ -4512,7 +4512,7 @@ u32 D_800CD0B8[0x24] = {
     /* 0x070 */ (u32)&D_800D1390, (u32)&D_800D1390, (u32)&D_800D13AC, (u32)&D_800D1384,
     /* 0x080 */ (u32)&D_800D1378, (u32)&D_800D137C, (u32)&D_800D1390, (u32)&D_800D1390,
 };
-u32 D_800CD148[0x18] = {
+u32 sTrackPicResIds[0x18] = {
     /* 0x000 */ (u32)&D_800D13D4, (u32)&D_800D13D8, (u32)&D_800D13DC, (u32)&D_800D13E4,
     /* 0x010 */ (u32)&D_800D13E8, (u32)&D_800D13F0, (u32)&D_800D13F8, (u32)&D_800D1400,
     /* 0x020 */ (u32)&D_800D1404, (u32)&D_800D13D0, (u32)&D_800D13B8, (u32)&D_800D137C,
@@ -4520,8 +4520,8 @@ u32 D_800CD148[0x18] = {
     /* 0x040 */ (u32)&D_800D13AC, (u32)&D_800D1390, (u32)&D_800D1420, (u32)&D_800D13FC,
     /* 0x050 */ (u32)&D_800D1480, (u32)&D_800D147C, (u32)&D_800D1474, (u32)&D_800D146C,
 };
-u32 D_800CD1A8 = 0;
-u32 D_800CD1AC[0x28] = {
+u32 sCheatMask = 0;
+u32 gKeyboardKeys[0x28] = {
     /* 0x000 */ (u32)D_800D925C, (u32)D_800D9258, (u32)D_800D9254, (u32)D_800D9250,
     /* 0x010 */ (u32)D_800D924C, (u32)D_800D9248, (u32)D_800D9244, (u32)D_800D9240,
     /* 0x020 */ (u32)D_800D923C, (u32)D_800D9238, (u32)D_800D9234, (u32)D_800D9230,
@@ -4533,92 +4533,92 @@ u32 D_800CD1AC[0x28] = {
     /* 0x080 */ (u32)D_800D91DC, (u32)D_800D91D8, (u32)D_800D91D4, (u32)D_800D91D0,
     /* 0x090 */ (u32)D_800D91CC, (u32)D_800D91C8, (u32)D_800D91C4, (u32)D_800D91C0,
 };
-s16 D_800CD24C[0xc] = {
+s16 sOptionsRowY[0xc] = {
     /* 0x000 */ 56, 79, 101, 123, 123, 146, 146, 168,
     /* 0x010 */ 168, 191, 191,
 };
-u32 D_800CD264[0x2] = { (u32)D_800D9264, (u32)D_800D9260 };
-u32 D_800CD26C[0x2] = { (u32)D_800D9270, (u32)D_800D9268 };
-u32 D_800CD274[0xb] = {
+u32 sOffOnStrings[0x2] = { (u32)D_800D9264, (u32)D_800D9260 };
+u32 gMonoStereoStrings[0x2] = { (u32)D_800D9270, (u32)D_800D9268 };
+u32 gOptionsLabels[0xb] = {
     /* 0x000 */ (u32)D_800D9304, (u32)D_800D92F8, (u32)D_800D92E8, (u32)D_800D92E0,
     /* 0x010 */ (u32)D_800D92CC, (u32)D_800D92BC, (u32)D_800D92AC, (u32)D_800D92A4,
     /* 0x020 */ (u32)D_800D929C, (u32)D_800D9288, (u32)D_800D9278,
 };
 u32 D_800CD2A0[0x4] = { 0, (u32)D_800CD9AC };
-u32 D_800CD2B0[0x4] = { 0, (u32)D_800CD980 };
-u32 D_800CD2C0[0x4] = { 0, (u32)D_800CD8A4 };
-u32 D_800CD2D0[0x1c] = {
-    /* 0x000 */ 0, (u32)D_800CD7C8, 0, 0,
-    /* 0x010 */ 0, (u32)D_800CD7C8, 0, 0,
-    /* 0x020 */ 0, (u32)D_800CD7C8, 0, 0,
-    /* 0x030 */ 0, (u32)D_800CD7C8, 0, 0,
-    /* 0x040 */ 0, (u32)D_800CD7C8, 0, 0,
-    /* 0x050 */ 0, (u32)D_800CD7C8, 0, 0,
-    /* 0x060 */ 0, 0, 0, (u32)func_80087EF8,
+u32 D_800CD2B0[0x4] = { 0, (u32)sScreenBootSplash };
+u32 D_800CD2C0[0x4] = { 0, (u32)sScreenTitle };
+u32 sSeasonRoundItems[0x1c] = {
+    /* 0x000 */ 0, (u32)sScreenRiderSelect, 0, 0,
+    /* 0x010 */ 0, (u32)sScreenRiderSelect, 0, 0,
+    /* 0x020 */ 0, (u32)sScreenRiderSelect, 0, 0,
+    /* 0x030 */ 0, (u32)sScreenRiderSelect, 0, 0,
+    /* 0x040 */ 0, (u32)sScreenRiderSelect, 0, 0,
+    /* 0x050 */ 0, (u32)sScreenRiderSelect, 0, 0,
+    /* 0x060 */ 0, 0, 0, (u32)shell_cb_tutorial,
 };
 u32 D_800CD340[0x4] = { 0 };
 u32 D_800CD350[0x8] = {
     /* 0x000 */ 0, 0, 0, 0,
-    /* 0x010 */ 0, (u32)D_800CD8A4,
+    /* 0x010 */ 0, (u32)sScreenTitle,
 };
-u32 D_800CD370[0x18] = {
-    /* 0x000 */ (u32)D_800D9358, (u32)D_800CD7C8, 0, (u32)func_80087E30,
-    /* 0x010 */ (u32)D_800D9348, (u32)D_800CD7C8, 0, (u32)func_80088198,
-    /* 0x020 */ (u32)D_800D9334, 0, 0, (u32)func_80088170,
-    /* 0x030 */ (u32)D_800D932C, 0, 0x10000, (u32)func_80073F84,
-    /* 0x040 */ (u32)D_800D9320, (u32)D_800CD7C8, 0, (u32)func_8008802C,
-    /* 0x050 */ (u32)D_800D9314, (u32)D_800CD7C8, 0, (u32)func_80087FB0,
+u32 gSpecialTracksItems[0x18] = {
+    /* 0x000 */ (u32)D_800D9358, (u32)sScreenRiderSelect, 0, (u32)shell_cb_desert,
+    /* 0x010 */ (u32)D_800D9348, (u32)sScreenRiderSelect, 0, (u32)shell_cb_stunt_course,
+    /* 0x020 */ (u32)D_800D9334, 0, 0, (u32)shell_cb_original_excitebike,
+    /* 0x030 */ (u32)D_800D932C, 0, 0x10000, (u32)shell_cb_soccer,
+    /* 0x040 */ (u32)D_800D9320, (u32)sScreenRiderSelect, 0, (u32)shell_cb_hill_climb,
+    /* 0x050 */ (u32)D_800D9314, (u32)sScreenRiderSelect, 0, (u32)shell_cb_excite3d,
 };
 u32 D_800CD3D0[0x18] = { 0 };
-u32 D_800CD430[0x50] = {
-    /* 0x000 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x010 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x020 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x030 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x040 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x050 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x060 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x070 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x080 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x090 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x0a0 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x0b0 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x0c0 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x0d0 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x0e0 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x0f0 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x100 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x110 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x120 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
-    /* 0x130 */ 0, (u32)D_800CD7C8, 0, (u32)func_80087E84,
+u32 sTrackListItems[0x50] = {
+    /* 0x000 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x010 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x020 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x030 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x040 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x050 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x060 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x070 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x080 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x090 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x0a0 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x0b0 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x0c0 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x0d0 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x0e0 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x0f0 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x100 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x110 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x120 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
+    /* 0x130 */ 0, (u32)sScreenRiderSelect, 0, (u32)shell_cb_select_track,
 };
-u32 D_800CD570[0x18] = {
-    /* 0x000 */ (u32)D_800D93A4, (u32)D_800CD744, 0x1000000, (u32)func_8007405C,
-    /* 0x010 */ (u32)D_800D9394, (u32)D_800CD7F4, 0x5000000, (u32)func_80087F9C,
-    /* 0x020 */ (u32)D_800D9388, (u32)D_800CD7F4, 0, (u32)func_80087EC8,
-    /* 0x030 */ (u32)D_800D9378, (u32)D_800CD770, 0, 0,
-    /* 0x040 */ (u32)D_800D9370, (u32)D_800CD718, 0, 0,
-    /* 0x050 */ (u32)D_800D9360, 0, 0x10010000, (u32)func_800880B8,
+u32 sMainMenuItems[0x18] = {
+    /* 0x000 */ (u32)D_800D93A4, (u32)sScreenSeason, 0x1000000, (u32)shell_cb_season,
+    /* 0x010 */ (u32)D_800D9394, (u32)sScreenBronzeTracks, 0x5000000, (u32)shell_cb_exhibition,
+    /* 0x020 */ (u32)D_800D9388, (u32)sScreenBronzeTracks, 0, (u32)shell_cb_time_trials,
+    /* 0x030 */ (u32)D_800D9378, (u32)sScreenSpecialTracks, 0, 0,
+    /* 0x040 */ (u32)D_800D9370, (u32)sScreenOptions, 0, 0,
+    /* 0x050 */ (u32)D_800D9360, 0, 0x10010000, (u32)shell_cb_custom_tracks,
 };
-u32 D_800CD5D0[0x4] = { 0, (u32)D_800CD79C };
+u32 D_800CD5D0[0x4] = { 0, (u32)sScreenMainMenu };
 u32 D_800CD5E0[0x4] = { 0 };
 u32 D_800CD5F0[0xc] = {
-    /* 0x000 */ 0, 0, 0, (u32)func_800880B8,
-    /* 0x010 */ 0, 0, 0, (u32)func_800880B8,
-    /* 0x020 */ 0, 0, 0, (u32)func_800880B8,
+    /* 0x000 */ 0, 0, 0, (u32)shell_cb_custom_tracks,
+    /* 0x010 */ 0, 0, 0, (u32)shell_cb_custom_tracks,
+    /* 0x020 */ 0, 0, 0, (u32)shell_cb_custom_tracks,
 };
 u32 D_800CD620[0x7] = {
     /* 0x000 */ (u32)&D_800D1488, (u32)&D_800D1484, (u32)&D_800D1488, (u32)&D_800D1484,
     /* 0x010 */ (u32)&D_800D1488, (u32)&D_800D1484, (u32)&D_800D1488,
 };
-u32 D_800CD63C[0x16] = {
+u32 sScreens[0x16] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800CD5D0,
     /* 0x010 */ 0x200000, 0x7, 0x10000, (u32)&D_800D1484,
     /* 0x020 */ 0, 0, 0, 0,
     /* 0x030 */ 0, 0, (u32)D_800CD5D0, 0x200000,
     /* 0x040 */ 0xD, 0x10000, (u32)&D_800D1488,
 };
-u32 D_800CD694[0xb] = {
+u32 sScreenSeasonStandings[0xb] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800CD5D0,
     /* 0x010 */ 0x200000, 0xE, 0x10000, (u32)&D_800D1488,
 };
@@ -4629,71 +4629,71 @@ u32 D_800CD6C0[0x16] = {
     /* 0x030 */ 0, 0, (u32)D_800CD340, 0x200000,
     /* 0x040 */ 0x9, 0x10000, (u32)&D_800D1488,
 };
-u32 D_800CD718[0xb] = {
+u32 sScreenOptions[0xb] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800CD340,
     /* 0x010 */ 0x22200000, 0x6, 0x10000, (u32)&D_800D1488,
 };
-u32 D_800CD744[0xb] = {
-    /* 0x000 */ 0, 0, 0, (u32)D_800CD2D0,
+u32 sScreenSeason[0xb] = {
+    /* 0x000 */ 0, 0, 0, (u32)sSeasonRoundItems,
     /* 0x010 */ 0x20A00000, 0x4, 0x60000, (u32)D_800CD620,
     /* 0x020 */ (u32)D_800EFD7C,
 };
-u32 D_800CD770[0xb] = {
-    /* 0x000 */ (u32)D_800D9378, 0, 0, (u32)D_800CD370,
+u32 sScreenSpecialTracks[0xb] = {
+    /* 0x000 */ (u32)D_800D9378, 0, 0, (u32)gSpecialTracksItems,
     /* 0x010 */ 0xA00006, 0x3, 0x60000, (u32)&D_800D1488,
     /* 0x020 */ (u32)D_800EFD78,
 };
-u32 D_800CD79C[0xb] = {
-    /* 0x000 */ (u32)D_800D93EC, 0, 0, (u32)D_800CD570,
+u32 sScreenMainMenu[0xb] = {
+    /* 0x000 */ (u32)D_800D93EC, 0, 0, (u32)sMainMenuItems,
     /* 0x010 */ 0xA00000, 0x3, 0x60000, (u32)&D_800D1484,
     /* 0x020 */ (u32)D_800EFD74,
 };
-u32 D_800CD7C8[0xb] = {
+u32 sScreenRiderSelect[0xb] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800CD3D0,
     /* 0x010 */ 0x2200000, 0x2, 0x60000,
 };
-u32 D_800CD7F4[0xb] = {
-    /* 0x000 */ (u32)D_800D93E4, 0, (u32)D_800CD820, (u32)D_800CD430,
+u32 sScreenBronzeTracks[0xb] = {
+    /* 0x000 */ (u32)D_800D93E4, 0, (u32)sScreenSilverTracks, (u32)sTrackListItems,
     /* 0x010 */ 0x20A0000C, 0xB, 0x50000, (u32)&D_800D1484,
     /* 0x020 */ (u32)D_800EFD84,
 };
-u32 D_800CD820[0xb] = {
-    /* 0x000 */ (u32)D_800D93DC, (u32)D_800CD7F4, (u32)D_800CD84C, (u32)D_800CD430,
+u32 sScreenSilverTracks[0xb] = {
+    /* 0x000 */ (u32)D_800D93DC, (u32)sScreenBronzeTracks, (u32)sScreenGoldTracks, (u32)sTrackListItems,
     /* 0x010 */ 0x20A00012, 0x5000B, 0x50000, (u32)&D_800D1488,
     /* 0x020 */ (u32)D_800EFD84,
 };
-u32 D_800CD84C[0xb] = {
-    /* 0x000 */ (u32)D_800D93D4, (u32)D_800CD820, (u32)D_800CD878, (u32)D_800CD430,
+u32 sScreenGoldTracks[0xb] = {
+    /* 0x000 */ (u32)D_800D93D4, (u32)sScreenSilverTracks, (u32)sScreenPlatinumTracks, (u32)sTrackListItems,
     /* 0x010 */ 0x20A00018, 0xA000B, 0x50000, (u32)&D_800D1484,
     /* 0x020 */ (u32)D_800EFD84,
 };
-u32 D_800CD878[0xb] = {
-    /* 0x000 */ (u32)D_800D93C8, (u32)D_800CD84C, 0, (u32)D_800CD430,
+u32 sScreenPlatinumTracks[0xb] = {
+    /* 0x000 */ (u32)D_800D93C8, (u32)sScreenGoldTracks, 0, (u32)sTrackListItems,
     /* 0x010 */ 0x20A0001E, 0xF000B, 0x50000, (u32)&D_800D1488,
     /* 0x020 */ (u32)D_800EFD84,
 };
-u32 D_800CD8A4[0xb] = {
+u32 sScreenTitle[0xb] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800CD5D0,
     /* 0x010 */ 0x2300000, 0, 0x10000,
 };
-u32 D_800CD8D0[0xb] = {
+u32 sScreenPak[0xb] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800CD350,
     /* 0x010 */ 0x2000000, 0xC, 0x10000, 0,
     /* 0x020 */ (u32)D_800F0154,
 };
-u32 D_800CD8FC[0xb] = {
+u32 sScreenRecords[0xb] = {
     /* 0x000 */ (u32)D_800D93C0, 0, 0, (u32)D_800CD5F0,
     /* 0x010 */ 0x20A00000, 0x12, 0x10000, (u32)&D_800D1484,
     /* 0x020 */ (u32)D_800F01C0,
 };
-u32 D_800CD928[0x16] = {
+u32 sScreenControllerSettings[0x16] = {
     /* 0x000 */ (u32)D_800D93AC, 0, 0, (u32)D_800CD340,
     /* 0x010 */ 0x2200000, 0x13, 0x40000, (u32)&D_800D1484,
     /* 0x020 */ 0, 0, 0, 0,
     /* 0x030 */ 0, 0, (u32)D_800CD5E0, 0x200000,
     /* 0x040 */ 0x14, 0x10000, (u32)&D_800D1484, (u32)D_800F0154,
 };
-u32 D_800CD980[0xb] = {
+u32 sScreenBootSplash[0xb] = {
     /* 0x000 */ 0, 0, 0, (u32)D_800CD2A0,
     /* 0x010 */ 0x2000000, 0x15, 0x10000, (u32)&D_800D14B8,
 };
@@ -4710,20 +4710,20 @@ u32 D_800CD9AC[0x2d] = {
     /* 0x090 */ (u32)D_800CD2A0, 0x2200000, 0x19, 0x10000,
     /* 0x0a0 */ (u32)&D_800D1484,
 };
-u16 D_800CDA60[0x8] = { 0, 0, 0x1FF, 0, 0, 0, 0x1FF };
-u32 D_800CDA70[0x9] = {
+u16 sShellViewport[0x8] = { 0, 0, 0x1FF, 0, 0, 0, 0x1FF };
+u32 gControlLabelPos[0x9] = {
     /* 0x000 */ 0xE30047, 0x9A004E, 0x9A0069, 0x9A0083,
     /* 0x010 */ 0xDF00A5, 0x163004D, 0x1630082, 0x163008C,
     /* 0x020 */ 0x1630098,
 };
-u32 D_800CDA94[0x3] = { 0x1630043, 0x1630057, 0x1630065 };
-u32 D_800CDAA0[0x7] = {
+u32 gCameraLabelPos[0x3] = { 0x1630043, 0x1630057, 0x1630065 };
+u32 gControlActionLabels[0x7] = {
     /* 0x000 */ (u32)D_800D9438, (u32)D_800D9430, (u32)D_800D9420, (u32)D_800D9418,
     /* 0x010 */ (u32)D_800D9410, (u32)D_800D9404, (u32)D_800D93FC,
 };
-u32 D_800CDABC[0x3] = { (u32)D_800D9458, (u32)D_800D944C, (u32)D_800D9440 };
+u32 gCameraButtonLabels[0x3] = { (u32)D_800D9458, (u32)D_800D944C, (u32)D_800D9440 };
 u32 D_800CDAC8 = (u32)D_800D9464;
-u32 D_800CDACC[0x24] = {
+u32 gControlConfigs[0x24] = {
     /* 0x000 */ 0, 0x1, 0x2, 0x1,
     /* 0x010 */ 0x2, 0x3, 0x4, 0x5,
     /* 0x020 */ 0x6, 0, 0x3, 0x2,
@@ -4736,8 +4736,8 @@ u32 D_800CDACC[0x24] = {
 };
 f32 D_800CDB5C = 150.0f;
 f32 D_800CDB60 = 120.0f;
-s16 D_800CDB64[0xa] = { 80, 20, 352, 150, 0, 0, 255, 128 };
-u32 D_800CDB78[0x84] = {
+s16 sTitleSceneRect[0xa] = { 80, 20, 352, 150, 0, 0, 255, 128 };
+u32 sRiderBios[0x84] = {
     /* 0x000 */ (u32)D_800D99CC, (u32)D_800D99B8, (u32)D_800D99B4, (u32)D_800D99A8,
     /* 0x010 */ (u32)D_800D99A0, (u32)&D_800D999C, (u32)D_800D9994, (u32)D_800D9988,
     /* 0x020 */ (u32)D_800D997C, (u32)D_800D9970, (u32)D_800D9954, (u32)D_800D9940,
@@ -4772,30 +4772,30 @@ u32 D_800CDB78[0x84] = {
     /* 0x1f0 */ 0, 0, 0, 0,
     /* 0x200 */ 0x4, 0x3, 0x4,
 };
-u32 D_800CDD88[0x4] = { (u32)D_800D99EC, (u32)D_800D99E0, (u32)D_800D99D8, (u32)D_800D9430 };
-u32 D_800CDD98[0x8] = {
+u32 sRiderStatLabels[0x4] = { (u32)D_800D99EC, (u32)D_800D99E0, (u32)D_800D99D8, (u32)D_800D9430 };
+u32 sRiderStatRatings[0x8] = {
     /* 0x000 */ (u32)D_800D9A18, (u32)D_800D9A10, (u32)D_800D9A08, (u32)D_800D9A00,
     /* 0x010 */ (u32)D_800D99F4, (u32)D_800D9A30, (u32)D_800D9A28, (u32)D_800D9A20,
 };
-u32 D_800CDDB8[0x3] = { (u32)D_800D9A4C, (u32)D_800D9A40, (u32)D_800D9A38 };
-u32 D_800CDDC4[0x3] = { (u32)D_800D9A6C, (u32)D_800D9A60, (u32)D_800D9A58 };
-u32 D_800CDDD0[0x3] = { (u32)D_800D9A80, (u32)D_800D9A40, (u32)D_800D9A74 };
-u32 D_800CDDDC[0x3] = { (u32)D_800D9A6C, (u32)D_800D9A40, (u32)D_800D9A74 };
-u32 D_800CDDE8[0x10] = {
+u32 sSeasonResultOptions[0x3] = { (u32)D_800D9A4C, (u32)D_800D9A40, (u32)D_800D9A38 };
+u32 sTimeTrialResultOptions[0x3] = { (u32)D_800D9A6C, (u32)D_800D9A60, (u32)D_800D9A58 };
+u32 sExhibitionResultOptions[0x3] = { (u32)D_800D9A80, (u32)D_800D9A40, (u32)D_800D9A74 };
+u32 sSpecialTrackResultOptions[0x3] = { (u32)D_800D9A6C, (u32)D_800D9A40, (u32)D_800D9A74 };
+u32 sDifficultyNames[0x10] = {
     /* 0x000 */ (u32)D_800D9AA0, (u32)D_800D9A98, (u32)D_800D9A90, (u32)D_800D9A8C,
     /* 0x010 */ 0x39, 0x40, 0xC5, 0x40,
     /* 0x020 */ 0x151, 0x40, 0x25, 0x85,
     /* 0x030 */ 0xB1, 0x85, 0x13D, 0x85,
 };
-u32 D_800CDE28[0x3] = { (u32)D_800D9B18, (u32)D_800D9AF0 };
-u32 D_800CDE34[0x4] = { (u32)D_800D9B84, (u32)D_800D9B5C, (u32)D_800D9B3C };
-u32 D_800CDE44[0x3] = { (u32)D_800D9BCC, (u32)D_800D9BA8 };
-u32 D_800CDE50[0x8] = {
+u32 sPakFewPagesMsg[0x3] = { (u32)D_800D9B18, (u32)D_800D9AF0 };
+u32 sPakMissingMsg[0x4] = { (u32)D_800D9B84, (u32)D_800D9B5C, (u32)D_800D9B3C };
+u32 sPakOkMsg[0x3] = { (u32)D_800D9BCC, (u32)D_800D9BA8 };
+u32 sBackupLostMsg[0x8] = {
     /* 0x000 */ (u32)&D_800D999C, (u32)D_800D9C00, (u32)D_800D9BF0, (u32)&D_800D999C,
     /* 0x010 */ 0, 0xED9DEDB5, 0xEDCDEDE5, 0xEDFDEE15,
 };
 u32 D_800CDE70 = 0;
-char D_800CDE74[0x34] = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#'*+,-./:=?@";
+char sPakCharset[0x34] = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#'*+,-./:=?@";
 u32 D_800CDEA8[0x6] = {
     /* 0x000 */ 0x436F6E74, 0x726F6C6C, 0x65722050, 0x616B8120,
     /* 0x010 */ 0x4C6F6164,
@@ -4808,8 +4808,8 @@ u32 D_800CDED8[0x6] = {
     /* 0x000 */ 0x436F6E74, 0x726F6C6C, 0x65722050, 0x616B8120,
     /* 0x010 */ 0x4D616E61, 0x67657200,
 };
-u32 D_800CDEF0[0x3] = { (u32)D_800CDED8, (u32)D_800CDEA8, (u32)D_800CDEC0 };
-u32 D_800CDEFC = (u32)D_800DA260;
+u32 sPakTitles[0x3] = { (u32)D_800CDED8, (u32)D_800CDEA8, (u32)D_800CDEC0 };
+u32 sPakGameName = (u32)D_800DA260;
 u32 D_800CDF00[0x4] = { (u32)D_800DA2B0, (u32)D_800DA288, (u32)D_800DA268 };
 u32 D_800CDF10[0x2] = { (u32)D_800DA2DC };
 u32 D_800CDF18[0x3] = { (u32)D_800DA328, (u32)D_800DA30C };
@@ -4834,8 +4834,8 @@ char D_800CDFFC[0x8] = "@A OK";
 char D_800CE004[0x18] = "@A Retry     @B Cancel";
 char D_800CE01C[0x18] = "@A Select    @B Cancel";
 char D_800CE034[0x28] = "@A Select    @B Continue without saving";
-u32 D_800CE05C[0x3] = { (u32)D_800DA694, (u32)D_800DA674, (u32)D_800DA650 };
-u32 D_800CE068[0x3f] = {
+u32 sPakModePrompts[0x3] = { (u32)D_800DA694, (u32)D_800DA674, (u32)D_800DA650 };
+u32 sPakMessages[0x3f] = {
     /* 0x000 */ 0, (u32)D_800DA6E8, (u32)D_800CE01C, (u32)D_800CDF00,
     /* 0x010 */ 0, (u32)D_800CDFE0, 0, (u32)D_800DA6D8,
     /* 0x020 */ (u32)D_800CDFCC, (u32)D_800CDF10, 0, (u32)D_800CDFFC,
@@ -4853,29 +4853,29 @@ u32 D_800CE068[0x3f] = {
     /* 0x0e0 */ (u32)D_800CDFE0, (u32)D_800CDFC0, 0, (u32)D_800CDFE0,
     /* 0x0f0 */ (u32)D_800CDFA4, 0, (u32)D_800CDFFC,
 };
-u32 D_800CE164 = 0;
-u32 D_800CE168[0x22] = {
+u32 sPakText = 0;
+u32 sPakNewNoteEntry[0x22] = {
     /* 0x040 */ [0x10] = 0x2A2A2063, 0x72656174, 0x65206E65, 0x77206E6F,
     /* 0x050 */ 0x7465202A, 0x2A000000, 0, 0,
     /* 0x060 */ 0, 0, 0, 0,
     /* 0x070 */ 0, 0x14, 0xB4, 0x64,
     /* 0x080 */ 0x18DA18F1, 0x19081920,
 };
-u32 D_800CE1F0[0x3] = { (u32)&D_800D1348, (u32)&D_800D134C, (u32)&D_800D1350 };
-u32 D_800CE1FC = 0;
-u32 D_800CE200[0x4] = { 0, 0x1A1D1A34, 0x1A4B1A62, 0x1A791A8F };
-u32 D_800CE210[0x3] = { 0xFFFFF060, 0xFFFFF060 };
-u32 D_800CE21C[0x3] = { 0xFFFFF060, 0xFFFFF060 };
-u32 D_800CE228[0x3] = { 0 };
-u32 D_800CE234[0x3] = { 0 };
-u32 D_800CE240[0xb] = {
+u32 sArnedTexResIds[0x3] = { (u32)&D_800D1348, (u32)&D_800D134C, (u32)&D_800D1350 };
+u32 sArnedCells = 0;
+u32 gGui[0x4] = { 0, 0x1A1D1A34, 0x1A4B1A62, 0x1A791A8F };
+u32 sEditCamTarget[0x3] = { 0xFFFFF060, 0xFFFFF060 };
+u32 sEditCamPos[0x3] = { 0xFFFFF060, 0xFFFFF060 };
+u32 sEditCamPosFixed[0x3] = { 0 };
+u32 sEditCamDelta[0x3] = { 0 };
+u32 sEditCamMoving[0xb] = {
     /* 0x000 */ 0, 0, 0x40006AB, 0,
     /* 0x010 */ 0x6AB, 0x4000001, 0x10000, 0xFC0006AB,
     /* 0x020 */ 0x1, 0x1F955, 0xFC000001,
 };
-u32 D_800CE26C = 0xF000F;
+u32 gEditArena = 0xF000F;
 u32 D_800CE270[0x4] = { (u32)&D_800D126C, (u32)&D_800D12DC };
-u32 D_800CE280[0x20] = {
+u32 gPieceTypes[0x20] = {
     /* 0x000 */ 0x20002, 0x20000, 0, 0xA0002,
     /* 0x010 */ 0x10000, 0x9088, 0, (u32)D_800DA9FC,
     /* 0x020 */ (u32)&D_800D1364, (u32)&D_800D135C, (u32)&D_800D1264, (u32)&D_800D1360,
@@ -4884,7 +4884,7 @@ u32 D_800CE280[0x20] = {
     /* 0x050 */ 0x10000, 0x88B8, 0, (u32)D_800DA9EC,
     /* 0x060 */ (u32)&D_800D1354, (u32)&D_800D12E0, (u32)&D_800D1270, (u32)&D_800D1344,
 };
-u32 D_800CE300[0x40] = {
+u32 gPieceTypesTurn[0x40] = {
     /* 0x000 */ 0x40004, 0x20002, 0x2, 0x90C0000,
     /* 0x010 */ 0, 0xCB20, 0, (u32)D_800DA9E0,
     /* 0x020 */ (u32)&D_800D12BC, (u32)&D_800D1288, (u32)&D_800D136C, (u32)&D_800D12A0,
@@ -4901,7 +4901,7 @@ u32 D_800CE300[0x40] = {
     /* 0x0d0 */ 0, 0xCB20, 0, (u32)D_800DA9BC,
     /* 0x0e0 */ (u32)&D_800D12D0, (u32)&D_800D129C, (u32)&D_800D1358, (u32)&D_800D12AC,
 };
-u32 D_800CE400[0xc0] = {
+u32 gPieceTypesJump[0xc0] = {
     /* 0x000 */ 0x20004, 0x20000, 0, 0x80002,
     /* 0x010 */ 0x10000, 0xCF08, 0, (u32)D_800DA9B0,
     /* 0x020 */ (u32)&D_800D12B0, (u32)&D_800D1278, (u32)&D_800D1268, (u32)&D_800D1308,
@@ -4950,7 +4950,7 @@ u32 D_800CE400[0xc0] = {
     /* 0x2d0 */ 0x10000, 0xCF08, 0, (u32)D_800DA920,
     /* 0x2e0 */ (u32)&D_800D1340, (u32)&D_800D1300, (u32)&D_800D1264, (u32)&D_800D131C,
 };
-u32 D_800CE700[0xad] = {
+u32 gPieceTypesUser[0xad] = {
     /* 0x000 */ 0x20004, 0x20000, 0, 0x480002,
     /* 0x010 */ 0x10000, 0xC350, 0, (u32)D_800DA910,
     /* 0x020 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
@@ -4996,27 +4996,27 @@ u32 D_800CE700[0xad] = {
     /* 0x2a0 */ (u32)&D_800D1254, (u32)&D_800D12E0, (u32)&D_800D1258, (u32)&D_800D1250,
 };
 u32 D_800CE9B4[0x3] = { 0 };
-u32 D_800CE9C0[0x10] = {
+u32 sEditViewRects[0x10] = {
     /* 0x000 */ 0x1A, 0x10, 0x1CC, 0xD1,
     /* 0x010 */ 0xA2, 0x10, 0x142, 0xD1,
     /* 0x020 */ 0x1A, 0x10, 0x60, 0xD1,
     /* 0x030 */ 0x7A, 0x10, 0x60, 0xD1,
 };
-u32 D_800CEA00[0x10] = {
+u32 sEditViewRectsBase[0x10] = {
     /* 0x000 */ 0x1A, 0x10, 0x1CC, 0xD1,
     /* 0x010 */ 0xA2, 0x10, 0x142, 0xD1,
     /* 0x020 */ 0x1A, 0x10, 0x60, 0xD1,
     /* 0x030 */ 0x7A, 0x10, 0x60, 0xD1,
 };
-u32 D_800CEA40 = 0;
-u32 D_800CEA44[0x11] = {
+u32 gEditor = 0;
+u32 sEditUserPieceMenuItems[0x11] = {
     /* 0x000 */ (u32)D_800DAA24, 0x10, 0, 0,
     /* 0x010 */ (u32)D_800DAA1C, 0x10, 0, 0,
     /* 0x020 */ (u32)D_800DAA0C, 0x10, 0, 0,
-    /* 0x030 */ (u32)D_800DAA2C, 0x30002, (u32)D_800CEA44, 0x1,
+    /* 0x030 */ (u32)D_800DAA2C, 0x30002, (u32)sEditUserPieceMenuItems, 0x1,
     /* 0x040 */ 0x20000,
 };
-u32 D_800CEA88[0x20] = {
+u32 sEditMainMenuItems[0x20] = {
     /* 0x000 */ (u32)D_800DAA8C, 0x10, 0, 0,
     /* 0x010 */ (u32)D_800DAA80, 0x10, 0, 0,
     /* 0x020 */ (u32)D_800DAA78, 0x10, 0, 0,
@@ -5026,36 +5026,36 @@ u32 D_800CEA88[0x20] = {
     /* 0x060 */ (u32)D_800DAA44, 0x10, 0, 0,
     /* 0x070 */ (u32)D_800DAA38, 0x10,
 };
-u32 D_800CEB08[0x4] = { (u32)D_800DAA98, 0x80001, (u32)D_800CEA88, 0x1 };
-s16 D_800CEB18[0x2] = { 1 };
-u32 D_800CEB1C[0xe] = {
+u32 sEditMainMenu[0x4] = { (u32)D_800DAA98, 0x80001, (u32)sEditMainMenuItems, 0x1 };
+s16 sEditMainMenuChoice[0x2] = { 1 };
+u32 sEditTrackMenuItems[0xe] = {
     /* 0x000 */ (u32)D_800DAAFC, 0x10, 0x20000, 0x3,
     /* 0x010 */ (u32)D_800DAAF0, 0x10, 0x40000, 0x3F,
     /* 0x020 */ (u32)D_800DAAE4, 0x10, 0xC0000, 0xFFF,
     /* 0x030 */ (u32)D_800DAAD4,
 };
-u32 D_800CEB54[0x12] = {
+u32 sEditUserPieceItemCount[0x12] = {
     /* 0x000 */ 0x10000, 0x1, (u32)D_800DAAC8, 0x10,
     /* 0x010 */ 0, 0, (u32)D_800DAABC, 0x10,
     /* 0x020 */ 0, 0, (u32)D_800DAAAC, 0x10,
     /* 0x030 */ 0, 0, (u32)D_800DAAA0, 0x10,
 };
-u32 D_800CEB9C[0x5] = { (u32)D_800DAB0C, 0x80000, (u32)D_800CEB1C, 0x1 };
-u32 D_800CEBB0[0x7] = {
+u32 sEditTrackMenu[0x5] = { (u32)D_800DAB0C, 0x80000, (u32)sEditTrackMenuItems, 0x1 };
+u32 sEditMultiUseWarning[0x7] = {
     /* 0x000 */ (u32)D_800DAC88, (u32)D_800DAC68, (u32)D_800DAC48, (u32)D_800DAC28,
     /* 0x010 */ (u32)D_800DAC0C, (u32)D_800DABFC,
 };
-u32 D_800CEBCC[0x5] = {
+u32 sEditSizeLockWarning[0x5] = {
     /* 0x000 */ (u32)D_800DACC8, (u32)D_800DACAC, (u32)D_800DACA4, 0,
     /* 0x010 */ 0x50C050E,
 };
-char D_800CEBE0[0x20] = "HOLD L AND Z BUTTONS TO EXIT";
-u32 D_800CEC00 = 0;
-u32 D_800CEC04 = 0;
-u32 D_800CEC08[0x4] = { 0x10001, 0xC001C001, 0x6010601, 0x310031 };
-u32 D_800CEC18 = 0x1;
-u32 D_800CEC1C = 0;
-u32 D_800CEC20[0x4] = { 0, 0x5660568, 0x56B056D, 0x5700572 };
+char sNesExitMsg[0x20] = "HOLD L AND Z BUTTONS TO EXIT";
+u32 sNesRestoreTimer = 0;
+u32 gNesActive = 0;
+u32 sNesBorderColors[0x4] = { 0x10001, 0xC001C001, 0x6010601, 0x310031 };
+u32 sNesAudioChunks = 0x1;
+u32 sNesInstrCount = 0;
+u32 sNesInstrPerFrame[0x4] = { 0, 0x5660568, 0x56B056D, 0x5700572 };
 u32 D_800CEC30 = (u32)D_800DAF50;
 u32 D_800CEC34 = (u32)D_800DAF54;
 u32 D_800CEC38 = (u32)D_800DAF58;
@@ -5113,395 +5113,395 @@ u32 D_800CED04 = (u32)D_800DB024;
 u32 D_800CED08 = (u32)D_800DB028;
 u32 D_800CED0C = (u32)D_800DB02C;
 u32 D_800CED10 = (u32)D_800DB030;
-u32 D_800CED14[0x4bb] = {
-    /* 0x000 */ (u32)&D_800CEC5C, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A29F0,
-    /* 0x010 */ 0x70001, 0, (u32)&D_800CECBC, (u32)func_800A3CC4,
-    /* 0x020 */ (u32)func_800A3CCC, (u32)func_800A3678, 0x60002, 0,
+u32 sNesOpcodeTable[0x4bb] = {
+    /* 0x000 */ (u32)&D_800CEC5C, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_brk,
+    /* 0x010 */ 0x70001, 0, (u32)&D_800CECBC, (u32)nes_am_indexed_indirect_stub,
+    /* 0x020 */ (u32)nes_am_indexed_indirect, (u32)nes_op_ora, 0x60002, 0,
     /* 0x030 */ 0, 0, 0, 0,
     /* 0x040 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x050 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x060 */ 0, 0, 0, 0,
-    /* 0x070 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)func_800A3ADC,
-    /* 0x080 */ (u32)func_800A3AE4, (u32)func_800A3678, 0x30002, 0,
-    /* 0x090 */ (u32)&D_800CEC38, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A2588,
+    /* 0x070 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)nes_am_zeropage_stub,
+    /* 0x080 */ (u32)nes_am_zeropage, (u32)nes_op_ora, 0x30002, 0,
+    /* 0x090 */ (u32)&D_800CEC38, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_asl,
     /* 0x0a0 */ 0x50002, 0, 0, 0,
     /* 0x0b0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x0c0 */ (u32)&D_800CECC4, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A2B14,
-    /* 0x0d0 */ 0x30001, 0, (u32)&D_800CECBC, (u32)func_800A3B58,
-    /* 0x0e0 */ (u32)func_800A3B60, (u32)func_800A3678, 0x20002, 0,
-    /* 0x0f0 */ (u32)&D_800CEC38, (u32)func_800A3A24, (u32)func_800A3A2C, (u32)func_800A2588,
+    /* 0x0c0 */ (u32)&D_800CECC4, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_php,
+    /* 0x0d0 */ 0x30001, 0, (u32)&D_800CECBC, (u32)nes_am_immediate_stub,
+    /* 0x0e0 */ (u32)nes_am_immediate, (u32)nes_op_ora, 0x20002, 0,
+    /* 0x0f0 */ (u32)&D_800CEC38, (u32)nes_am_accumulator_stub, (u32)nes_am_accumulator, (u32)nes_op_asl,
     /* 0x100 */ 0x20001, 0, 0, 0,
     /* 0x110 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x120 */ 0, 0, 0, 0,
-    /* 0x130 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)func_800A3A4C,
-    /* 0x140 */ (u32)func_800A3A54, (u32)func_800A3678, 0x40003, 0,
-    /* 0x150 */ (u32)&D_800CEC38, (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A2588,
+    /* 0x130 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)nes_am_absolute_stub,
+    /* 0x140 */ (u32)nes_am_absolute, (u32)nes_op_ora, 0x40003, 0,
+    /* 0x150 */ (u32)&D_800CEC38, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_asl,
     /* 0x160 */ 0x60003, 0, 0, 0,
     /* 0x170 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x180 */ (u32)&D_800CEC58, (u32)func_800A3F08, (u32)func_800A3F10, (u32)func_800A31B0,
-    /* 0x190 */ 0x20002, 0, (u32)&D_800CECBC, (u32)func_800A3D60,
-    /* 0x1a0 */ (u32)func_800A3D68, (u32)func_800A3678, 0x50002, 0,
+    /* 0x180 */ (u32)&D_800CEC58, (u32)nes_am_relative_stub, (u32)nes_am_relative, (u32)nes_op_bpl,
+    /* 0x190 */ 0x20002, 0, (u32)&D_800CECBC, (u32)nes_am_indirect_indexed_stub,
+    /* 0x1a0 */ (u32)nes_am_indirect_indexed, (u32)nes_op_ora, 0x50002, 0,
     /* 0x1b0 */ 0, 0, 0, 0,
     /* 0x1c0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x1d0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x1e0 */ 0, 0, 0, 0,
-    /* 0x1f0 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)func_800A3E00,
-    /* 0x200 */ (u32)func_800A3E08, (u32)func_800A3678, 0x40002, 0,
-    /* 0x210 */ (u32)&D_800CEC38, (u32)func_800A3E00, (u32)func_800A3E08, (u32)func_800A2588,
+    /* 0x1f0 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)nes_am_zeropage_x_stub,
+    /* 0x200 */ (u32)nes_am_zeropage_x, (u32)nes_op_ora, 0x40002, 0,
+    /* 0x210 */ (u32)&D_800CEC38, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_asl,
     /* 0x220 */ 0x60002, 0, 0, 0,
     /* 0x230 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x240 */ (u32)&D_800CEC68, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3240,
-    /* 0x250 */ 0x20001, 0, (u32)&D_800CECBC, (u32)func_800A3C28,
-    /* 0x260 */ (u32)func_800A3C30, (u32)func_800A3678, 0x40003, 0,
+    /* 0x240 */ (u32)&D_800CEC68, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_clc,
+    /* 0x250 */ 0x20001, 0, (u32)&D_800CECBC, (u32)nes_am_absolute_y_stub,
+    /* 0x260 */ (u32)nes_am_absolute_y, (u32)nes_op_ora, 0x40003, 0,
     /* 0x270 */ 0, 0, 0, 0,
     /* 0x280 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x290 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x2a0 */ 0, 0, 0, 0,
-    /* 0x2b0 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)func_800A3B8C,
-    /* 0x2c0 */ (u32)func_800A3B94, (u32)func_800A3678, 0x40003, 0,
-    /* 0x2d0 */ (u32)&D_800CEC38, (u32)func_800A3B8C, (u32)func_800A3B94, (u32)func_800A2588,
+    /* 0x2b0 */ 0xFFFFFFFF, 0, (u32)&D_800CECBC, (u32)nes_am_absolute_x_stub,
+    /* 0x2c0 */ (u32)nes_am_absolute_x, (u32)nes_op_ora, 0x40003, 0,
+    /* 0x2d0 */ (u32)&D_800CEC38, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_asl,
     /* 0x2e0 */ 0x70003, 0, 0, 0,
     /* 0x2f0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x300 */ (u32)&D_800CECA4, (u32)func_800A3F3C, (u32)func_800A3F44, (u32)func_800A3578,
-    /* 0x310 */ 0x60003, 0, (u32)&D_800CEC34, (u32)func_800A3CC4,
-    /* 0x320 */ (u32)func_800A3CCC, (u32)func_800A3014, 0x60002, 0,
+    /* 0x300 */ (u32)&D_800CECA4, (u32)nes_am_jump_absolute_stub, (u32)nes_am_jump_absolute, (u32)nes_op_jsr,
+    /* 0x310 */ 0x60003, 0, (u32)&D_800CEC34, (u32)nes_am_indexed_indirect_stub,
+    /* 0x320 */ (u32)nes_am_indexed_indirect, (u32)nes_op_and, 0x60002, 0,
     /* 0x330 */ 0, 0, 0, 0,
     /* 0x340 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x350 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x360 */ (u32)&D_800CEC4C, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A3118,
-    /* 0x370 */ 0x30002, 0, (u32)&D_800CEC34, (u32)func_800A3ADC,
-    /* 0x380 */ (u32)func_800A3AE4, (u32)func_800A3014, 0x30002, 0,
-    /* 0x390 */ (u32)&D_800CECD0, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A2750,
+    /* 0x360 */ (u32)&D_800CEC4C, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_bit,
+    /* 0x370 */ 0x30002, 0, (u32)&D_800CEC34, (u32)nes_am_zeropage_stub,
+    /* 0x380 */ (u32)nes_am_zeropage, (u32)nes_op_and, 0x30002, 0,
+    /* 0x390 */ (u32)&D_800CECD0, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_rol,
     /* 0x3a0 */ 0x50002, 0, 0, 0,
     /* 0x3b0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x3c0 */ (u32)&D_800CECCC, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A36FC,
-    /* 0x3d0 */ 0x40001, 0, (u32)&D_800CEC34, (u32)func_800A3B58,
-    /* 0x3e0 */ (u32)func_800A3B60, (u32)func_800A3014, 0x20002, 0,
-    /* 0x3f0 */ (u32)&D_800CECD0, (u32)func_800A3A24, (u32)func_800A3A2C, (u32)func_800A2750,
+    /* 0x3c0 */ (u32)&D_800CECCC, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_plp,
+    /* 0x3d0 */ 0x40001, 0, (u32)&D_800CEC34, (u32)nes_am_immediate_stub,
+    /* 0x3e0 */ (u32)nes_am_immediate, (u32)nes_op_and, 0x20002, 0,
+    /* 0x3f0 */ (u32)&D_800CECD0, (u32)nes_am_accumulator_stub, (u32)nes_am_accumulator, (u32)nes_op_rol,
     /* 0x400 */ 0x20001, 0, 0, 0,
     /* 0x410 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x420 */ (u32)&D_800CEC4C, (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A3118,
-    /* 0x430 */ 0x40003, 0, (u32)&D_800CEC34, (u32)func_800A3A4C,
-    /* 0x440 */ (u32)func_800A3A54, (u32)func_800A3014, 0x40003, 0,
-    /* 0x450 */ (u32)&D_800CECD0, (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A2750,
+    /* 0x420 */ (u32)&D_800CEC4C, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_bit,
+    /* 0x430 */ 0x40003, 0, (u32)&D_800CEC34, (u32)nes_am_absolute_stub,
+    /* 0x440 */ (u32)nes_am_absolute, (u32)nes_op_and, 0x40003, 0,
+    /* 0x450 */ (u32)&D_800CECD0, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_rol,
     /* 0x460 */ 0x60003, 0, 0, 0,
     /* 0x470 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x480 */ (u32)&D_800CEC50, (u32)func_800A3F08, (u32)func_800A3F10, (u32)func_800A3150,
-    /* 0x490 */ 0x20002, 0, (u32)&D_800CEC34, (u32)func_800A3D60,
-    /* 0x4a0 */ (u32)func_800A3D68, (u32)func_800A3014, 0x50002, 0,
+    /* 0x480 */ (u32)&D_800CEC50, (u32)nes_am_relative_stub, (u32)nes_am_relative, (u32)nes_op_bmi,
+    /* 0x490 */ 0x20002, 0, (u32)&D_800CEC34, (u32)nes_am_indirect_indexed_stub,
+    /* 0x4a0 */ (u32)nes_am_indirect_indexed, (u32)nes_op_and, 0x50002, 0,
     /* 0x4b0 */ 0, 0, 0, 0,
     /* 0x4c0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x4d0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x4e0 */ 0, 0, 0, 0,
-    /* 0x4f0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC34, (u32)func_800A3E00,
-    /* 0x500 */ (u32)func_800A3E08, (u32)func_800A3014, 0x40002, 0,
-    /* 0x510 */ (u32)&D_800CECD0, (u32)func_800A3E00, (u32)func_800A3E08, (u32)func_800A2750,
+    /* 0x4f0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC34, (u32)nes_am_zeropage_x_stub,
+    /* 0x500 */ (u32)nes_am_zeropage_x, (u32)nes_op_and, 0x40002, 0,
+    /* 0x510 */ (u32)&D_800CECD0, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_rol,
     /* 0x520 */ 0x60002, 0, 0, 0,
     /* 0x530 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x540 */ (u32)&D_800CECE4, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3804,
-    /* 0x550 */ 0x20001, 0, (u32)&D_800CEC34, (u32)func_800A3C28,
-    /* 0x560 */ (u32)func_800A3C30, (u32)func_800A3014, 0x40003, 0,
+    /* 0x540 */ (u32)&D_800CECE4, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_sec,
+    /* 0x550 */ 0x20001, 0, (u32)&D_800CEC34, (u32)nes_am_absolute_y_stub,
+    /* 0x560 */ (u32)nes_am_absolute_y, (u32)nes_op_and, 0x40003, 0,
     /* 0x570 */ 0, 0, 0, 0,
     /* 0x580 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x590 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x5a0 */ 0, 0, 0, 0,
-    /* 0x5b0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC34, (u32)func_800A3B8C,
-    /* 0x5c0 */ (u32)func_800A3B94, (u32)func_800A3014, 0x40003, 0,
-    /* 0x5d0 */ (u32)&D_800CECD0, (u32)func_800A3B8C, (u32)func_800A3B94, (u32)func_800A2750,
+    /* 0x5b0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC34, (u32)nes_am_absolute_x_stub,
+    /* 0x5c0 */ (u32)nes_am_absolute_x, (u32)nes_op_and, 0x40003, 0,
+    /* 0x5d0 */ (u32)&D_800CECD0, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_rol,
     /* 0x5e0 */ 0x70003, 0, 0, 0,
     /* 0x5f0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x600 */ (u32)&D_800CECD8, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A2BB8,
-    /* 0x610 */ 0x60001, 0, (u32)&D_800CEC90, (u32)func_800A3CC4,
-    /* 0x620 */ (u32)func_800A3CCC, (u32)func_800A3458, 0x60002, 0,
+    /* 0x600 */ (u32)&D_800CECD8, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_rti,
+    /* 0x610 */ 0x60001, 0, (u32)&D_800CEC90, (u32)nes_am_indexed_indirect_stub,
+    /* 0x620 */ (u32)nes_am_indexed_indirect, (u32)nes_op_eor, 0x60002, 0,
     /* 0x630 */ 0, 0, 0, 0,
     /* 0x640 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x650 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x660 */ 0, 0, 0, 0,
-    /* 0x670 */ 0xFFFFFFFF, 0, (u32)&D_800CEC90, (u32)func_800A3ADC,
-    /* 0x680 */ (u32)func_800A3AE4, (u32)func_800A3458, 0x30002, 0,
-    /* 0x690 */ (u32)&D_800CECB4, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A2928,
+    /* 0x670 */ 0xFFFFFFFF, 0, (u32)&D_800CEC90, (u32)nes_am_zeropage_stub,
+    /* 0x680 */ (u32)nes_am_zeropage, (u32)nes_op_eor, 0x30002, 0,
+    /* 0x690 */ (u32)&D_800CECB4, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_lsr,
     /* 0x6a0 */ 0x50002, 0, 0, 0,
     /* 0x6b0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x6c0 */ (u32)&D_800CECC0, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A36A4,
-    /* 0x6d0 */ 0x30001, 0, (u32)&D_800CEC90, (u32)func_800A3B58,
-    /* 0x6e0 */ (u32)func_800A3B60, (u32)func_800A3458, 0x20002, 0,
-    /* 0x6f0 */ (u32)&D_800CECB4, (u32)func_800A3A24, (u32)func_800A3A2C, (u32)func_800A2928,
-    /* 0x700 */ 0x20001, 0, (u32)&D_800CEC3C, (u32)func_800A3B58,
-    /* 0x710 */ (u32)func_800A3B60, (u32)func_800A265C, 0x20002, 0,
-    /* 0x720 */ (u32)&D_800CECA0, (u32)func_800A3F3C, (u32)func_800A3F44, (u32)func_800A3560,
-    /* 0x730 */ 0x30003, 0, (u32)&D_800CEC90, (u32)func_800A3A4C,
-    /* 0x740 */ (u32)func_800A3A54, (u32)func_800A3458, 0x40003, 0,
-    /* 0x750 */ (u32)&D_800CECB4, (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A2928,
+    /* 0x6c0 */ (u32)&D_800CECC0, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_pha,
+    /* 0x6d0 */ 0x30001, 0, (u32)&D_800CEC90, (u32)nes_am_immediate_stub,
+    /* 0x6e0 */ (u32)nes_am_immediate, (u32)nes_op_eor, 0x20002, 0,
+    /* 0x6f0 */ (u32)&D_800CECB4, (u32)nes_am_accumulator_stub, (u32)nes_am_accumulator, (u32)nes_op_lsr,
+    /* 0x700 */ 0x20001, 0, (u32)&D_800CEC3C, (u32)nes_am_immediate_stub,
+    /* 0x710 */ (u32)nes_am_immediate, (u32)nes_op_asr, 0x20002, 0,
+    /* 0x720 */ (u32)&D_800CECA0, (u32)nes_am_jump_absolute_stub, (u32)nes_am_jump_absolute, (u32)nes_op_jmp,
+    /* 0x730 */ 0x30003, 0, (u32)&D_800CEC90, (u32)nes_am_absolute_stub,
+    /* 0x740 */ (u32)nes_am_absolute, (u32)nes_op_eor, 0x40003, 0,
+    /* 0x750 */ (u32)&D_800CECB4, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_lsr,
     /* 0x760 */ 0x60003, 0, 0, 0,
     /* 0x770 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x780 */ (u32)&D_800CEC60, (u32)func_800A3F08, (u32)func_800A3F10, (u32)func_800A31E0,
-    /* 0x790 */ 0x20002, 0, (u32)&D_800CEC90, (u32)func_800A3D60,
-    /* 0x7a0 */ (u32)func_800A3D68, (u32)func_800A3458, 0x50002, 0,
+    /* 0x780 */ (u32)&D_800CEC60, (u32)nes_am_relative_stub, (u32)nes_am_relative, (u32)nes_op_bvc,
+    /* 0x790 */ 0x20002, 0, (u32)&D_800CEC90, (u32)nes_am_indirect_indexed_stub,
+    /* 0x7a0 */ (u32)nes_am_indirect_indexed, (u32)nes_op_eor, 0x50002, 0,
     /* 0x7b0 */ 0, 0, 0, 0,
     /* 0x7c0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x7d0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x7e0 */ 0, 0, 0, 0,
-    /* 0x7f0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC90, (u32)func_800A3E00,
-    /* 0x800 */ (u32)func_800A3E08, (u32)func_800A3458, 0x40002, 0,
-    /* 0x810 */ (u32)&D_800CECB4, (u32)func_800A3E00, (u32)func_800A3E08, (u32)func_800A2928,
+    /* 0x7f0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC90, (u32)nes_am_zeropage_x_stub,
+    /* 0x800 */ (u32)nes_am_zeropage_x, (u32)nes_op_eor, 0x40002, 0,
+    /* 0x810 */ (u32)&D_800CECB4, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_lsr,
     /* 0x820 */ 0x60002, 0, 0, 0,
     /* 0x830 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x840 */ (u32)&D_800CEC70, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3260,
-    /* 0x850 */ 0x20001, 0, (u32)&D_800CEC90, (u32)func_800A3C28,
-    /* 0x860 */ (u32)func_800A3C30, (u32)func_800A3458, 0x40003, 0,
+    /* 0x840 */ (u32)&D_800CEC70, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_cli,
+    /* 0x850 */ 0x20001, 0, (u32)&D_800CEC90, (u32)nes_am_absolute_y_stub,
+    /* 0x860 */ (u32)nes_am_absolute_y, (u32)nes_op_eor, 0x40003, 0,
     /* 0x870 */ 0, 0, 0, 0,
     /* 0x880 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x890 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x8a0 */ 0, 0, 0, 0,
-    /* 0x8b0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC90, (u32)func_800A3B8C,
-    /* 0x8c0 */ (u32)func_800A3B94, (u32)func_800A3458, 0x40003, 0,
-    /* 0x8d0 */ (u32)&D_800CECB4, (u32)func_800A3B8C, (u32)func_800A3B94, (u32)func_800A2928,
+    /* 0x8b0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC90, (u32)nes_am_absolute_x_stub,
+    /* 0x8c0 */ (u32)nes_am_absolute_x, (u32)nes_op_eor, 0x40003, 0,
+    /* 0x8d0 */ (u32)&D_800CECB4, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_lsr,
     /* 0x8e0 */ 0x70003, 0, 0, 0,
     /* 0x8f0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x900 */ (u32)&D_800CECDC, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A375C,
-    /* 0x910 */ 0x60001, 0, (u32)&D_800CEC30, (u32)func_800A3CC4,
-    /* 0x920 */ (u32)func_800A3CCC, (u32)func_800A2FB4, 0x60002, 0,
+    /* 0x900 */ (u32)&D_800CECDC, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_rts,
+    /* 0x910 */ 0x60001, 0, (u32)&D_800CEC30, (u32)nes_am_indexed_indirect_stub,
+    /* 0x920 */ (u32)nes_am_indexed_indirect, (u32)nes_op_adc, 0x60002, 0,
     /* 0x930 */ 0, 0, 0, 0,
     /* 0x940 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x950 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0x960 */ 0, 0, 0, 0,
-    /* 0x970 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)func_800A3ADC,
-    /* 0x980 */ (u32)func_800A3AE4, (u32)func_800A2FB4, 0x30002, 0,
-    /* 0x990 */ (u32)&D_800CECD4, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A283C,
+    /* 0x970 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)nes_am_zeropage_stub,
+    /* 0x980 */ (u32)nes_am_zeropage, (u32)nes_op_adc, 0x30002, 0,
+    /* 0x990 */ (u32)&D_800CECD4, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_ror,
     /* 0x9a0 */ 0x50002, 0, 0, 0,
     /* 0x9b0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x9c0 */ (u32)&D_800CECC8, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A36D0,
-    /* 0x9d0 */ 0x40001, 0, (u32)&D_800CEC30, (u32)func_800A3B58,
-    /* 0x9e0 */ (u32)func_800A3B60, (u32)func_800A2FB4, 0x20002, 0,
-    /* 0x9f0 */ (u32)&D_800CECD4, (u32)func_800A3A24, (u32)func_800A3A2C, (u32)func_800A283C,
+    /* 0x9c0 */ (u32)&D_800CECC8, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_pla,
+    /* 0x9d0 */ 0x40001, 0, (u32)&D_800CEC30, (u32)nes_am_immediate_stub,
+    /* 0x9e0 */ (u32)nes_am_immediate, (u32)nes_op_adc, 0x20002, 0,
+    /* 0x9f0 */ (u32)&D_800CECD4, (u32)nes_am_accumulator_stub, (u32)nes_am_accumulator, (u32)nes_op_ror,
     /* 0xa00 */ 0x20001, 0, 0, 0,
     /* 0xa10 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xa20 */ (u32)&D_800CECA0, (u32)func_800A3F7C, (u32)func_800A3F84, (u32)func_800A3560,
-    /* 0xa30 */ 0x50003, 0, (u32)&D_800CEC30, (u32)func_800A3A4C,
-    /* 0xa40 */ (u32)func_800A3A54, (u32)func_800A2FB4, 0x40003, 0,
-    /* 0xa50 */ (u32)&D_800CECD4, (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A283C,
+    /* 0xa20 */ (u32)&D_800CECA0, (u32)nes_am_jump_indirect_stub, (u32)nes_am_jump_indirect, (u32)nes_op_jmp,
+    /* 0xa30 */ 0x50003, 0, (u32)&D_800CEC30, (u32)nes_am_absolute_stub,
+    /* 0xa40 */ (u32)nes_am_absolute, (u32)nes_op_adc, 0x40003, 0,
+    /* 0xa50 */ (u32)&D_800CECD4, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_ror,
     /* 0xa60 */ 0x60003, 0, 0, 0,
     /* 0xa70 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xa80 */ (u32)&D_800CEC64, (u32)func_800A3F08, (u32)func_800A3F10, (u32)func_800A3210,
-    /* 0xa90 */ 0x20002, 0, (u32)&D_800CEC30, (u32)func_800A3D60,
-    /* 0xaa0 */ (u32)func_800A3D68, (u32)func_800A2FB4, 0x50002, 0,
+    /* 0xa80 */ (u32)&D_800CEC64, (u32)nes_am_relative_stub, (u32)nes_am_relative, (u32)nes_op_bvs,
+    /* 0xa90 */ 0x20002, 0, (u32)&D_800CEC30, (u32)nes_am_indirect_indexed_stub,
+    /* 0xaa0 */ (u32)nes_am_indirect_indexed, (u32)nes_op_adc, 0x50002, 0,
     /* 0xab0 */ 0, 0, 0, 0,
     /* 0xac0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0xad0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xae0 */ 0, 0, 0, 0,
-    /* 0xaf0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)func_800A3E00,
-    /* 0xb00 */ (u32)func_800A3E08, (u32)func_800A2FB4, 0x40002, 0,
-    /* 0xb10 */ (u32)&D_800CECD4, (u32)func_800A3E00, (u32)func_800A3E08, (u32)func_800A283C,
+    /* 0xaf0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)nes_am_zeropage_x_stub,
+    /* 0xb00 */ (u32)nes_am_zeropage_x, (u32)nes_op_adc, 0x40002, 0,
+    /* 0xb10 */ (u32)&D_800CECD4, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_ror,
     /* 0xb20 */ 0x60002, 0, 0, 0,
     /* 0xb30 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xb40 */ (u32)&D_800CECEC, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3834,
-    /* 0xb50 */ 0x20001, 0, (u32)&D_800CEC30, (u32)func_800A3C28,
-    /* 0xb60 */ (u32)func_800A3C30, (u32)func_800A2FB4, 0x40003, 0,
+    /* 0xb40 */ (u32)&D_800CECEC, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_sei,
+    /* 0xb50 */ 0x20001, 0, (u32)&D_800CEC30, (u32)nes_am_absolute_y_stub,
+    /* 0xb60 */ (u32)nes_am_absolute_y, (u32)nes_op_adc, 0x40003, 0,
     /* 0xb70 */ 0, 0, 0, 0,
     /* 0xb80 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0xb90 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xba0 */ 0, 0, 0, 0,
-    /* 0xbb0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)func_800A3B8C,
-    /* 0xbc0 */ (u32)func_800A3B94, (u32)func_800A2FB4, 0x40003, 0,
-    /* 0xbd0 */ (u32)&D_800CECD4, (u32)func_800A3B8C, (u32)func_800A3B94, (u32)func_800A283C,
+    /* 0xbb0 */ 0xFFFFFFFF, 0, (u32)&D_800CEC30, (u32)nes_am_absolute_x_stub,
+    /* 0xbc0 */ (u32)nes_am_absolute_x, (u32)nes_op_adc, 0x40003, 0,
+    /* 0xbd0 */ (u32)&D_800CECD4, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_ror,
     /* 0xbe0 */ 0x70003, 0, 0, 0,
     /* 0xbf0 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xc00 */ 0, 0, 0, 0,
-    /* 0xc10 */ 0xFFFFFFFF, 0, (u32)&D_800CECF0, (u32)func_800A3CC4,
-    /* 0xc20 */ (u32)func_800A40B8, (u32)func_800A3848, 0x60002, 0,
+    /* 0xc10 */ 0xFFFFFFFF, 0, (u32)&D_800CECF0, (u32)nes_am_indexed_indirect_stub,
+    /* 0xc20 */ (u32)nes_ea_indexed_indirect, (u32)nes_op_sta, 0x60002, 0,
     /* 0xc30 */ 0, 0, 0, 0,
     /* 0xc40 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0xc50 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xc60 */ (u32)&D_800CECF8, (u32)func_800A3ADC, (u32)func_800A4018, (u32)func_800A38F8,
-    /* 0xc70 */ 0x30002, 0, (u32)&D_800CECF0, (u32)func_800A3ADC,
-    /* 0xc80 */ (u32)func_800A4018, (u32)func_800A3848, 0x30002, 0,
-    /* 0xc90 */ (u32)&D_800CECF4, (u32)func_800A3ADC, (u32)func_800A4018, (u32)func_800A38A0,
+    /* 0xc60 */ (u32)&D_800CECF8, (u32)nes_am_zeropage_stub, (u32)nes_ea_zeropage, (u32)nes_op_sty,
+    /* 0xc70 */ 0x30002, 0, (u32)&D_800CECF0, (u32)nes_am_zeropage_stub,
+    /* 0xc80 */ (u32)nes_ea_zeropage, (u32)nes_op_sta, 0x30002, 0,
+    /* 0xc90 */ (u32)&D_800CECF4, (u32)nes_am_zeropage_stub, (u32)nes_ea_zeropage, (u32)nes_op_stx,
     /* 0xca0 */ 0x30002, 0, 0, 0,
     /* 0xcb0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xcc0 */ (u32)&D_800CEC8C, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3430,
+    /* 0xcc0 */ (u32)&D_800CEC8C, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_dey,
     /* 0xcd0 */ 0x20001, 0, 0, 0,
     /* 0xce0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xcf0 */ (u32)&D_800CED08, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A39BC,
+    /* 0xcf0 */ (u32)&D_800CED08, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_txa,
     /* 0xd00 */ 0x20001, 0, 0, 0,
     /* 0xd10 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xd20 */ (u32)&D_800CECF8, (u32)func_800A3A4C, (u32)func_800A3FE0, (u32)func_800A38F8,
-    /* 0xd30 */ 0x40003, 0, (u32)&D_800CECF0, (u32)func_800A3A4C,
-    /* 0xd40 */ (u32)func_800A3FE0, (u32)func_800A3848, 0x40003, 0,
-    /* 0xd50 */ (u32)&D_800CECF4, (u32)func_800A3A4C, (u32)func_800A3FE0, (u32)func_800A38A0,
+    /* 0xd20 */ (u32)&D_800CECF8, (u32)nes_am_absolute_stub, (u32)nes_ea_absolute, (u32)nes_op_sty,
+    /* 0xd30 */ 0x40003, 0, (u32)&D_800CECF0, (u32)nes_am_absolute_stub,
+    /* 0xd40 */ (u32)nes_ea_absolute, (u32)nes_op_sta, 0x40003, 0,
+    /* 0xd50 */ (u32)&D_800CECF4, (u32)nes_am_absolute_stub, (u32)nes_ea_absolute, (u32)nes_op_stx,
     /* 0xd60 */ 0x40003, 0, 0, 0,
     /* 0xd70 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xd80 */ (u32)&D_800CEC40, (u32)func_800A3F08, (u32)func_800A3F10, (u32)func_800A3040,
-    /* 0xd90 */ 0x20002, 0, (u32)&D_800CECF0, (u32)func_800A3D60,
-    /* 0xda0 */ (u32)func_800A40FC, (u32)func_800A3848, 0x60002, 0,
+    /* 0xd80 */ (u32)&D_800CEC40, (u32)nes_am_relative_stub, (u32)nes_am_relative, (u32)nes_op_bcc,
+    /* 0xd90 */ 0x20002, 0, (u32)&D_800CECF0, (u32)nes_am_indirect_indexed_stub,
+    /* 0xda0 */ (u32)nes_ea_indirect_indexed, (u32)nes_op_sta, 0x60002, 0,
     /* 0xdb0 */ 0, 0, 0, 0,
     /* 0xdc0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0xdd0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xde0 */ (u32)&D_800CECF8, (u32)func_800A3E00, (u32)func_800A4140, (u32)func_800A38F8,
-    /* 0xdf0 */ 0x40002, 0, (u32)&D_800CECF0, (u32)func_800A3E00,
-    /* 0xe00 */ (u32)func_800A4140, (u32)func_800A3848, 0x40002, 0,
-    /* 0xe10 */ (u32)&D_800CECF4, (u32)func_800A3E84, (u32)func_800A4168, (u32)func_800A38A0,
+    /* 0xde0 */ (u32)&D_800CECF8, (u32)nes_am_zeropage_x_stub, (u32)nes_ea_zeropage_x, (u32)nes_op_sty,
+    /* 0xdf0 */ 0x40002, 0, (u32)&D_800CECF0, (u32)nes_am_zeropage_x_stub,
+    /* 0xe00 */ (u32)nes_ea_zeropage_x, (u32)nes_op_sta, 0x40002, 0,
+    /* 0xe10 */ (u32)&D_800CECF4, (u32)nes_am_zeropage_y_stub, (u32)nes_ea_zeropage_y, (u32)nes_op_stx,
     /* 0xe20 */ 0x40002, 0, 0, 0,
     /* 0xe30 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xe40 */ (u32)&D_800CED10, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A39F0,
-    /* 0xe50 */ 0x20001, 0, (u32)&D_800CECF0, (u32)func_800A3C28,
-    /* 0xe60 */ (u32)func_800A4078, (u32)func_800A3848, 0x50003, 0,
-    /* 0xe70 */ (u32)&D_800CED0C, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A39E0,
+    /* 0xe40 */ (u32)&D_800CED10, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_tya,
+    /* 0xe50 */ 0x20001, 0, (u32)&D_800CECF0, (u32)nes_am_absolute_y_stub,
+    /* 0xe60 */ (u32)nes_ea_absolute_y, (u32)nes_op_sta, 0x50003, 0,
+    /* 0xe70 */ (u32)&D_800CED0C, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_txs,
     /* 0xe80 */ 0x20001, 0, 0, 0,
     /* 0xe90 */ 0, 0, 0xFFFFFFFF, 0,
     /* 0xea0 */ 0, 0, 0, 0,
-    /* 0xeb0 */ 0xFFFFFFFF, 0, (u32)&D_800CECF0, (u32)func_800A3B8C,
-    /* 0xec0 */ (u32)func_800A4038, (u32)func_800A3848, 0x50003, 0,
+    /* 0xeb0 */ 0xFFFFFFFF, 0, (u32)&D_800CECF0, (u32)nes_am_absolute_x_stub,
+    /* 0xec0 */ (u32)nes_ea_absolute_x, (u32)nes_op_sta, 0x50003, 0,
     /* 0xed0 */ 0, 0, 0, 0,
     /* 0xee0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0xef0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xf00 */ (u32)&D_800CECB0, (u32)func_800A3B58, (u32)func_800A3B60, (u32)func_800A363C,
-    /* 0xf10 */ 0x20002, 0, (u32)&D_800CECA8, (u32)func_800A3CC4,
-    /* 0xf20 */ (u32)func_800A3CCC, (u32)func_800A35D4, 0x60002, 0,
-    /* 0xf30 */ (u32)&D_800CECAC, (u32)func_800A3B58, (u32)func_800A3B60, (u32)func_800A3608,
+    /* 0xf00 */ (u32)&D_800CECB0, (u32)nes_am_immediate_stub, (u32)nes_am_immediate, (u32)nes_op_ldy,
+    /* 0xf10 */ 0x20002, 0, (u32)&D_800CECA8, (u32)nes_am_indexed_indirect_stub,
+    /* 0xf20 */ (u32)nes_am_indexed_indirect, (u32)nes_op_lda, 0x60002, 0,
+    /* 0xf30 */ (u32)&D_800CECAC, (u32)nes_am_immediate_stub, (u32)nes_am_immediate, (u32)nes_op_ldx,
     /* 0xf40 */ 0x20002, 0, 0, 0,
     /* 0xf50 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xf60 */ (u32)&D_800CECB0, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A363C,
-    /* 0xf70 */ 0x30002, 0, (u32)&D_800CECA8, (u32)func_800A3ADC,
-    /* 0xf80 */ (u32)func_800A3AE4, (u32)func_800A35D4, 0x30002, 0,
-    /* 0xf90 */ (u32)&D_800CECAC, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A3608,
+    /* 0xf60 */ (u32)&D_800CECB0, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_ldy,
+    /* 0xf70 */ 0x30002, 0, (u32)&D_800CECA8, (u32)nes_am_zeropage_stub,
+    /* 0xf80 */ (u32)nes_am_zeropage, (u32)nes_op_lda, 0x30002, 0,
+    /* 0xf90 */ (u32)&D_800CECAC, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_ldx,
     /* 0xfa0 */ 0x30002, 0, 0, 0,
     /* 0xfb0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0xfc0 */ (u32)&D_800CED00, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3974,
-    /* 0xfd0 */ 0x20001, 0, (u32)&D_800CECA8, (u32)func_800A3B58,
-    /* 0xfe0 */ (u32)func_800A3B60, (u32)func_800A35D4, 0x20002, 0,
-    /* 0xff0 */ (u32)&D_800CECFC, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3950,
+    /* 0xfc0 */ (u32)&D_800CED00, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_tay,
+    /* 0xfd0 */ 0x20001, 0, (u32)&D_800CECA8, (u32)nes_am_immediate_stub,
+    /* 0xfe0 */ (u32)nes_am_immediate, (u32)nes_op_lda, 0x20002, 0,
+    /* 0xff0 */ (u32)&D_800CECFC, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_tax,
     /* 0x1000 */ 0x20001, 0, 0, 0,
     /* 0x1010 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x1020 */ (u32)&D_800CECB0, (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A363C,
-    /* 0x1030 */ 0x40003, 0, (u32)&D_800CECA8, (u32)func_800A3A4C,
-    /* 0x1040 */ (u32)func_800A3A54, (u32)func_800A35D4, 0x40003, 0,
-    /* 0x1050 */ (u32)&D_800CECAC, (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A3608,
+    /* 0x1020 */ (u32)&D_800CECB0, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_ldy,
+    /* 0x1030 */ 0x40003, 0, (u32)&D_800CECA8, (u32)nes_am_absolute_stub,
+    /* 0x1040 */ (u32)nes_am_absolute, (u32)nes_op_lda, 0x40003, 0,
+    /* 0x1050 */ (u32)&D_800CECAC, (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_ldx,
     /* 0x1060 */ 0x40003, 0, 0, 0,
     /* 0x1070 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x1080 */ (u32)&D_800CEC44, (u32)func_800A3F08, (u32)func_800A3F10, (u32)func_800A3070,
-    /* 0x1090 */ 0x20002, 0, (u32)&D_800CECA8, (u32)func_800A3D60,
-    /* 0x10a0 */ (u32)func_800A3D68, (u32)func_800A35D4, 0x50002, 0,
+    /* 0x1080 */ (u32)&D_800CEC44, (u32)nes_am_relative_stub, (u32)nes_am_relative, (u32)nes_op_bcs,
+    /* 0x1090 */ 0x20002, 0, (u32)&D_800CECA8, (u32)nes_am_indirect_indexed_stub,
+    /* 0x10a0 */ (u32)nes_am_indirect_indexed, (u32)nes_op_lda, 0x50002, 0,
     /* 0x10b0 */ 0, 0, 0, 0,
     /* 0x10c0 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x10d0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x10e0 */ (u32)&D_800CECB0, (u32)func_800A3E00, (u32)func_800A3E08, (u32)func_800A363C,
-    /* 0x10f0 */ 0x40002, 0, (u32)&D_800CECA8, (u32)func_800A3E00,
-    /* 0x1100 */ (u32)func_800A3E08, (u32)func_800A35D4, 0x40002, 0,
-    /* 0x1110 */ (u32)&D_800CECAC, (u32)func_800A3E84, (u32)func_800A3E8C, (u32)func_800A3608,
+    /* 0x10e0 */ (u32)&D_800CECB0, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_ldy,
+    /* 0x10f0 */ 0x40002, 0, (u32)&D_800CECA8, (u32)nes_am_zeropage_x_stub,
+    /* 0x1100 */ (u32)nes_am_zeropage_x, (u32)nes_op_lda, 0x40002, 0,
+    /* 0x1110 */ (u32)&D_800CECAC, (u32)nes_am_zeropage_y_stub, (u32)nes_am_zeropage_y, (u32)nes_op_ldx,
     /* 0x1120 */ 0x40002, 0, 0, 0,
     /* 0x1130 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x1140 */ (u32)&D_800CEC74, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3270,
-    /* 0x1150 */ 0x20001, 0, (u32)&D_800CECA8, (u32)func_800A3C28,
-    /* 0x1160 */ (u32)func_800A3C30, (u32)func_800A35D4, 0x40003, 0,
-    /* 0x1170 */ (u32)&D_800CED04, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3998,
+    /* 0x1140 */ (u32)&D_800CEC74, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_clv,
+    /* 0x1150 */ 0x20001, 0, (u32)&D_800CECA8, (u32)nes_am_absolute_y_stub,
+    /* 0x1160 */ (u32)nes_am_absolute_y, (u32)nes_op_lda, 0x40003, 0,
+    /* 0x1170 */ (u32)&D_800CED04, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_tsx,
     /* 0x1180 */ 0x20001, 0, 0, 0,
     /* 0x1190 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x11a0 */ (u32)&D_800CECB0, (u32)func_800A3B8C, (u32)func_800A3B94, (u32)func_800A363C,
-    /* 0x11b0 */ 0x40003, 0, (u32)&D_800CECA8, (u32)func_800A3B8C,
-    /* 0x11c0 */ (u32)func_800A3B94, (u32)func_800A35D4, 0x40003, 0,
-    /* 0x11d0 */ (u32)&D_800CECAC, (u32)func_800A3C28, (u32)func_800A3C30, (u32)func_800A3608,
+    /* 0x11a0 */ (u32)&D_800CECB0, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_ldy,
+    /* 0x11b0 */ 0x40003, 0, (u32)&D_800CECA8, (u32)nes_am_absolute_x_stub,
+    /* 0x11c0 */ (u32)nes_am_absolute_x, (u32)nes_op_lda, 0x40003, 0,
+    /* 0x11d0 */ (u32)&D_800CECAC, (u32)nes_am_absolute_y_stub, (u32)nes_am_absolute_y, (u32)nes_op_ldx,
     /* 0x11e0 */ 0x40003, 0, 0, 0,
     /* 0x11f0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x1200 */ (u32)&D_800CEC80, (u32)func_800A3B58, (u32)func_800A3B60, (u32)func_800A3328,
-    /* 0x1210 */ 0x20002, 0, (u32)&D_800CEC78, (u32)func_800A3CC4,
-    /* 0x1220 */ (u32)func_800A3CCC, (u32)func_800A3280, 0x60002, 0,
+    /* 0x1200 */ (u32)&D_800CEC80, (u32)nes_am_immediate_stub, (u32)nes_am_immediate, (u32)nes_op_cpy,
+    /* 0x1210 */ 0x20002, 0, (u32)&D_800CEC78, (u32)nes_am_indexed_indirect_stub,
+    /* 0x1220 */ (u32)nes_am_indexed_indirect, (u32)nes_op_cmp, 0x60002, 0,
     /* 0x1230 */ 0, 0, 0, 0,
     /* 0x1240 */ 0xFFFFFFFF, 0, 0, 0,
     /* 0x1250 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x1260 */ (u32)&D_800CEC80, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A3328,
-    /* 0x1270 */ 0x30002, 0, (u32)&D_800CEC78, (u32)func_800A3ADC,
-    /* 0x1280 */ (u32)func_800A3AE4, (u32)func_800A3280, 0x30002, 0,
-    /* 0x1290 */ (u32)&D_800CEC84, (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A337C,
+    /* 0x1260 */ (u32)&D_800CEC80, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_cpy,
+    /* 0x1270 */ 0x30002, 0, (u32)&D_800CEC78, (u32)nes_am_zeropage_stub,
+    /* 0x1280 */ (u32)nes_am_zeropage, (u32)nes_op_cmp, 0x30002, 0,
+    /* 0x1290 */ (u32)&D_800CEC84, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_dec,
     /* 0x12a0 */ 0x50002, 0, 0, 0,
     /* 0x12b0 */ 0, 0, 0xFFFFFFFF, 0,
-    /* 0x12c0 */ (u32)&D_800CEC9C, (u32)func_800A3A14, (u32)func_800A3A1C, (u32)func_800A3538,
-    /* 0x12d0 */ 0x20001, 0, (u32)&D_800CEC78, (u32)func_800A3B58,
-    /* 0x12e0 */ (u32)func_800A3B60, (u32)func_800A3280, 0x20002,
+    /* 0x12c0 */ (u32)&D_800CEC9C, (u32)nes_am_implied_stub, (u32)nes_am_implied, (u32)nes_op_iny,
+    /* 0x12d0 */ 0x20001, 0, (u32)&D_800CEC78, (u32)nes_am_immediate_stub,
+    /* 0x12e0 */ (u32)nes_am_immediate, (u32)nes_op_cmp, 0x20002,
 };
-u32 D_800D0000[0x145] = {
-    /* 0x000 */ 0, (u32)&D_800CEC88, (u32)func_800A3A14, (u32)func_800A3A1C,
-    /* 0x010 */ (u32)func_800A3408, 0x20001, 0, 0,
+u32 sNesOpcodeTableTail[0x145] = {
+    /* 0x000 */ 0, (u32)&D_800CEC88, (u32)nes_am_implied_stub, (u32)nes_am_implied,
+    /* 0x010 */ (u32)nes_op_dex, 0x20001, 0, 0,
     /* 0x020 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x030 */ 0, (u32)&D_800CEC80, (u32)func_800A3A4C, (u32)func_800A3A54,
-    /* 0x040 */ (u32)func_800A3328, 0x40003, 0, (u32)&D_800CEC78,
-    /* 0x050 */ (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A3280, 0x40003,
-    /* 0x060 */ 0, (u32)&D_800CEC84, (u32)func_800A3A4C, (u32)func_800A3A54,
-    /* 0x070 */ (u32)func_800A337C, 0x60003, 0, 0,
+    /* 0x030 */ 0, (u32)&D_800CEC80, (u32)nes_am_absolute_stub, (u32)nes_am_absolute,
+    /* 0x040 */ (u32)nes_op_cpy, 0x40003, 0, (u32)&D_800CEC78,
+    /* 0x050 */ (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_cmp, 0x40003,
+    /* 0x060 */ 0, (u32)&D_800CEC84, (u32)nes_am_absolute_stub, (u32)nes_am_absolute,
+    /* 0x070 */ (u32)nes_op_dec, 0x60003, 0, 0,
     /* 0x080 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x090 */ 0, (u32)&D_800CEC54, (u32)func_800A3F08, (u32)func_800A3F10,
-    /* 0x0a0 */ (u32)func_800A3180, 0x20002, 0, (u32)&D_800CEC78,
-    /* 0x0b0 */ (u32)func_800A3D60, (u32)func_800A3D68, (u32)func_800A3280, 0x50002,
+    /* 0x090 */ 0, (u32)&D_800CEC54, (u32)nes_am_relative_stub, (u32)nes_am_relative,
+    /* 0x0a0 */ (u32)nes_op_bne, 0x20002, 0, (u32)&D_800CEC78,
+    /* 0x0b0 */ (u32)nes_am_indirect_indexed_stub, (u32)nes_am_indirect_indexed, (u32)nes_op_cmp, 0x50002,
     /* 0x0c0 */ 0, 0, 0, 0,
     /* 0x0d0 */ 0, 0xFFFFFFFF, 0, 0,
     /* 0x0e0 */ 0, 0, 0, 0xFFFFFFFF,
     /* 0x0f0 */ 0, 0, 0, 0,
     /* 0x100 */ 0, 0xFFFFFFFF, 0, (u32)&D_800CEC78,
-    /* 0x110 */ (u32)func_800A3E00, (u32)func_800A3E08, (u32)func_800A3280, 0x40002,
-    /* 0x120 */ 0, (u32)&D_800CEC84, (u32)func_800A3E00, (u32)func_800A3E08,
-    /* 0x130 */ (u32)func_800A337C, 0x60002, 0, 0,
+    /* 0x110 */ (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_cmp, 0x40002,
+    /* 0x120 */ 0, (u32)&D_800CEC84, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x,
+    /* 0x130 */ (u32)nes_op_dec, 0x60002, 0, 0,
     /* 0x140 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x150 */ 0, (u32)&D_800CEC6C, (u32)func_800A3A14, (u32)func_800A3A1C,
-    /* 0x160 */ (u32)func_800A3250, 0x20001, 0, (u32)&D_800CEC78,
-    /* 0x170 */ (u32)func_800A3C28, (u32)func_800A3C30, (u32)func_800A3280, 0x40003,
+    /* 0x150 */ 0, (u32)&D_800CEC6C, (u32)nes_am_implied_stub, (u32)nes_am_implied,
+    /* 0x160 */ (u32)nes_op_cld, 0x20001, 0, (u32)&D_800CEC78,
+    /* 0x170 */ (u32)nes_am_absolute_y_stub, (u32)nes_am_absolute_y, (u32)nes_op_cmp, 0x40003,
     /* 0x180 */ 0, 0, 0, 0,
     /* 0x190 */ 0, 0xFFFFFFFF, 0, 0,
     /* 0x1a0 */ 0, 0, 0, 0xFFFFFFFF,
     /* 0x1b0 */ 0, 0, 0, 0,
     /* 0x1c0 */ 0, 0xFFFFFFFF, 0, (u32)&D_800CEC78,
-    /* 0x1d0 */ (u32)func_800A3B8C, (u32)func_800A3B94, (u32)func_800A3280, 0x40003,
-    /* 0x1e0 */ 0, (u32)&D_800CEC84, (u32)func_800A3B8C, (u32)func_800A3B94,
-    /* 0x1f0 */ (u32)func_800A337C, 0x70003, 0, 0,
+    /* 0x1d0 */ (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_cmp, 0x40003,
+    /* 0x1e0 */ 0, (u32)&D_800CEC84, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x,
+    /* 0x1f0 */ (u32)nes_op_dec, 0x70003, 0, 0,
     /* 0x200 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x210 */ 0, (u32)&D_800CEC7C, (u32)func_800A3B58, (u32)func_800A3B60,
-    /* 0x220 */ (u32)func_800A32D4, 0x20002, 0, (u32)&D_800CECE0,
-    /* 0x230 */ (u32)func_800A3CC4, (u32)func_800A3CCC, (u32)func_800A37A8, 0x60002,
+    /* 0x210 */ 0, (u32)&D_800CEC7C, (u32)nes_am_immediate_stub, (u32)nes_am_immediate,
+    /* 0x220 */ (u32)nes_op_cpx, 0x20002, 0, (u32)&D_800CECE0,
+    /* 0x230 */ (u32)nes_am_indexed_indirect_stub, (u32)nes_am_indexed_indirect, (u32)nes_op_sbc, 0x60002,
     /* 0x240 */ 0, 0, 0, 0,
     /* 0x250 */ 0, 0xFFFFFFFF, 0, 0,
     /* 0x260 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x270 */ 0, (u32)&D_800CEC7C, (u32)func_800A3ADC, (u32)func_800A3AE4,
-    /* 0x280 */ (u32)func_800A32D4, 0x30002, 0, (u32)&D_800CECE0,
-    /* 0x290 */ (u32)func_800A3ADC, (u32)func_800A3AE4, (u32)func_800A37A8, 0x30002,
-    /* 0x2a0 */ 0, (u32)&D_800CEC94, (u32)func_800A3ADC, (u32)func_800A3AE4,
-    /* 0x2b0 */ (u32)func_800A3484, 0x50002, 0, 0,
+    /* 0x270 */ 0, (u32)&D_800CEC7C, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage,
+    /* 0x280 */ (u32)nes_op_cpx, 0x30002, 0, (u32)&D_800CECE0,
+    /* 0x290 */ (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage, (u32)nes_op_sbc, 0x30002,
+    /* 0x2a0 */ 0, (u32)&D_800CEC94, (u32)nes_am_zeropage_stub, (u32)nes_am_zeropage,
+    /* 0x2b0 */ (u32)nes_op_inc, 0x50002, 0, 0,
     /* 0x2c0 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x2d0 */ 0, (u32)&D_800CEC98, (u32)func_800A3A14, (u32)func_800A3A1C,
-    /* 0x2e0 */ (u32)func_800A3510, 0x20001, 0, (u32)&D_800CECE0,
-    /* 0x2f0 */ (u32)func_800A3B58, (u32)func_800A3B60, (u32)func_800A37A8, 0x20002,
-    /* 0x300 */ 0, (u32)&D_800CECB8, (u32)func_800A3A14, (u32)func_800A3A1C,
-    /* 0x310 */ (u32)func_800A3670, 0x20001, 0, 0,
+    /* 0x2d0 */ 0, (u32)&D_800CEC98, (u32)nes_am_implied_stub, (u32)nes_am_implied,
+    /* 0x2e0 */ (u32)nes_op_inx, 0x20001, 0, (u32)&D_800CECE0,
+    /* 0x2f0 */ (u32)nes_am_immediate_stub, (u32)nes_am_immediate, (u32)nes_op_sbc, 0x20002,
+    /* 0x300 */ 0, (u32)&D_800CECB8, (u32)nes_am_implied_stub, (u32)nes_am_implied,
+    /* 0x310 */ (u32)nes_op_nop, 0x20001, 0, 0,
     /* 0x320 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x330 */ 0, (u32)&D_800CEC7C, (u32)func_800A3A4C, (u32)func_800A3A54,
-    /* 0x340 */ (u32)func_800A32D4, 0x40003, 0, (u32)&D_800CECE0,
-    /* 0x350 */ (u32)func_800A3A4C, (u32)func_800A3A54, (u32)func_800A37A8, 0x40003,
-    /* 0x360 */ 0, (u32)&D_800CEC94, (u32)func_800A3A4C, (u32)func_800A3A54,
-    /* 0x370 */ (u32)func_800A3484, 0x60003, 0, 0,
+    /* 0x330 */ 0, (u32)&D_800CEC7C, (u32)nes_am_absolute_stub, (u32)nes_am_absolute,
+    /* 0x340 */ (u32)nes_op_cpx, 0x40003, 0, (u32)&D_800CECE0,
+    /* 0x350 */ (u32)nes_am_absolute_stub, (u32)nes_am_absolute, (u32)nes_op_sbc, 0x40003,
+    /* 0x360 */ 0, (u32)&D_800CEC94, (u32)nes_am_absolute_stub, (u32)nes_am_absolute,
+    /* 0x370 */ (u32)nes_op_inc, 0x60003, 0, 0,
     /* 0x380 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x390 */ 0, (u32)&D_800CEC48, (u32)func_800A3F08, (u32)func_800A3F10,
-    /* 0x3a0 */ (u32)func_800A30E8, 0x20002, 0, (u32)&D_800CECE0,
-    /* 0x3b0 */ (u32)func_800A3D60, (u32)func_800A3D68, (u32)func_800A37A8, 0x50002,
+    /* 0x390 */ 0, (u32)&D_800CEC48, (u32)nes_am_relative_stub, (u32)nes_am_relative,
+    /* 0x3a0 */ (u32)nes_op_beq, 0x20002, 0, (u32)&D_800CECE0,
+    /* 0x3b0 */ (u32)nes_am_indirect_indexed_stub, (u32)nes_am_indirect_indexed, (u32)nes_op_sbc, 0x50002,
     /* 0x3c0 */ 0, 0, 0, 0,
     /* 0x3d0 */ 0, 0xFFFFFFFF, 0, 0,
     /* 0x3e0 */ 0, 0, 0, 0xFFFFFFFF,
     /* 0x3f0 */ 0, 0, 0, 0,
     /* 0x400 */ 0, 0xFFFFFFFF, 0, (u32)&D_800CECE0,
-    /* 0x410 */ (u32)func_800A3E00, (u32)func_800A3E08, (u32)func_800A37A8, 0x40002,
-    /* 0x420 */ 0, (u32)&D_800CEC94, (u32)func_800A3E00, (u32)func_800A3E08,
-    /* 0x430 */ (u32)func_800A3484, 0x60002, 0, 0,
+    /* 0x410 */ (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x, (u32)nes_op_sbc, 0x40002,
+    /* 0x420 */ 0, (u32)&D_800CEC94, (u32)nes_am_zeropage_x_stub, (u32)nes_am_zeropage_x,
+    /* 0x430 */ (u32)nes_op_inc, 0x60002, 0, 0,
     /* 0x440 */ 0, 0, 0, 0xFFFFFFFF,
-    /* 0x450 */ 0, (u32)&D_800CECE8, (u32)func_800A3A14, (u32)func_800A3A1C,
-    /* 0x460 */ (u32)func_800A3818, 0x20001, 0, (u32)&D_800CECE0,
-    /* 0x470 */ (u32)func_800A3C28, (u32)func_800A3C30, (u32)func_800A37A8, 0x40003,
+    /* 0x450 */ 0, (u32)&D_800CECE8, (u32)nes_am_implied_stub, (u32)nes_am_implied,
+    /* 0x460 */ (u32)nes_op_sed, 0x20001, 0, (u32)&D_800CECE0,
+    /* 0x470 */ (u32)nes_am_absolute_y_stub, (u32)nes_am_absolute_y, (u32)nes_op_sbc, 0x40003,
     /* 0x480 */ 0, 0, 0, 0,
     /* 0x490 */ 0, 0xFFFFFFFF, 0, 0,
     /* 0x4a0 */ 0, 0, 0, 0xFFFFFFFF,
     /* 0x4b0 */ 0, 0, 0, 0,
     /* 0x4c0 */ 0, 0xFFFFFFFF, 0, (u32)&D_800CECE0,
-    /* 0x4d0 */ (u32)func_800A3B8C, (u32)func_800A3B94, (u32)func_800A37A8, 0x40003,
-    /* 0x4e0 */ 0, (u32)&D_800CEC94, (u32)func_800A3B8C, (u32)func_800A3B94,
-    /* 0x4f0 */ (u32)func_800A3484, 0x70003, 0, 0,
+    /* 0x4d0 */ (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x, (u32)nes_op_sbc, 0x40003,
+    /* 0x4e0 */ 0, (u32)&D_800CEC94, (u32)nes_am_absolute_x_stub, (u32)nes_am_absolute_x,
+    /* 0x4f0 */ (u32)nes_op_inc, 0x70003, 0, 0,
     /* 0x500 */ 0, 0, 0, 0xFFFFFFFF,
 };
-u8 D_800D0514[0xc0] = {
+u8 sNesRgbPalette[0xc0] = {
     /* 0x000 */ 0x75, 0x75, 0x75, 0x27, 0x1B, 0x8F, 0, 0, 0xAB, 0x47, 0, 0x9F, 0x8F, 0, 0x77, 0xAB,
     /* 0x010 */ 0, 0x13, 0xA7, 0, 0, 0x7F, 0xB, 0, 0x43, 0x2F, 0, 0, 0x47, 0, 0, 0x51,
     /* 0x020 */ 0, 0, 0x3F, 0x17, 0x1B, 0x3F, 0x5F, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -5516,23 +5516,23 @@ u8 D_800D0514[0xc0] = {
     /* 0x0b0 */ 0xBF, 0xB3, 0xFF, 0xCF, 0x9F, 0xFF, 0xF3,
 };
 u32 D_800D05D4 = 0;
-u16 D_800D05D8[0x4] = { 0x2000, 0x4000, 0x8000, 0xC000 };
-u32 D_800D05E0[0x10] = {
+u16 sNesDutyTable[0x4] = { 0x2000, 0x4000, 0x8000, 0xC000 };
+u32 sNesLengthTable[0x10] = {
     /* 0x000 */ 0x5, 0xA, 0x13, 0x28,
     /* 0x010 */ 0x50, 0x1E, 0x7, 0xD,
     /* 0x020 */ 0x6, 0xC, 0x18, 0x30,
     /* 0x030 */ 0x60, 0x24, 0x8, 0x10,
 };
-u32 D_800D0620[0x10] = {
+u32 sNesNoisePeriods[0x10] = {
     /* 0x000 */ 0x6D3D3, 0x369F3, 0x1B4F4, 0xDA7A,
     /* 0x010 */ 0x6D3D, 0x48D3, 0x369E, 0x2BB2,
     /* 0x020 */ 0x229C, 0x1B86, 0x1265, 0xDC3,
     /* 0x030 */ 0x92C, 0x6E1, 0x36F, 0x36A,
 };
-u32 D_800D0660[0x4] = { 0, 0x4E562D42, 0x44495A43 };
-u32 D_800D0670[0x4] = { 0, 0x1F131F14, 0x1F151F17, 0x1F181F19 };
-u32 D_800D0680 = 0;
-u32 D_800D0684[0xc] = {
+u32 sNesRowCallback[0x4] = { 0, 0x4E562D42, 0x44495A43 };
+u32 sNesCpuMemory[0x4] = { 0, 0x1F131F14, 0x1F151F17, 0x1F181F19 };
+u32 sPiecesResSet = 0;
+u32 sPieceRotations[0xc] = {
     /* 0x000 */ 0x2, 0, 0x10001, 0x20000,
     /* 0x010 */ 0x1F4, 0x1FFFF, 0x2, 0x1F401F4,
     /* 0x020 */ 0xFFFFFFFF, 0x20000, 0x1F40000, 0xFFFF0001,

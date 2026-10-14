@@ -1,6 +1,6 @@
 #include "boot.h"
 
-void boot_func_80001AC4(u16 *dst, u16 *src, s32 k) {
+void boot_fade_image(u16 *dst, u16 *src, s32 k) {
     s32 i = 0;
     s32 p, g, b;
     do {

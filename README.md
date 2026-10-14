@@ -28,7 +28,7 @@ build and reports where each byte came from):
 - the RSP microcode (rspboot, F3DEX2.NoN and F3DLX2.Rej xbus 2.08: text and data) in both images;
 - the game's assets, the ROM header and the IPL3 boot code (everything outside the code images);
 - three data blobs that are ROM content rather than program data, declared `extern` in src/data:
-  the boot loader's `D_8000CE10` (0x1000-byte bitmap), `D_8000DE10` (0x1688 bytes of SWD-compressed data) and the
+  the boot loader's `sBootFontBitmap` (0x1000-byte bitmap), `sBootSplashSwd` (0x1688 bytes of SWD-compressed data) and the
   unreferenced 1976 bytes at game 0x800DB8E0-0x800DC098 (a stale linker buffer);
 - 648 bytes of linker fill between objects (non-zero bytes no compiler or assembler produces; listed in
   build/out/restored_fill.txt after a build) and 80 bytes of segment markers.
@@ -82,8 +82,8 @@ python tools/build_all.py                  # build/out/excitebike64.z64, checked
 
 The steps of tools/build_all.py can also run on their own, on a copy of the extracted images: build_code.py (C),
 build_asm.py, build_libultra.py, build_data.py, then build_rom.py. To check edited functions quickly:
-`python tools/build_code.py build/test --only func_80000F0C` reports the bytes that differ from the original.
-`python tools/sn64.py func_80000F0C` lists the original function, `python tools/sn64.py file.c` the compiled one.
+`python tools/build_code.py build/test --only render_update_screen_layout` reports the bytes that differ from the original.
+`python tools/sn64.py render_update_screen_layout` lists the original function, `python tools/sn64.py file.c` the compiled one.
 
 ## Naming
 
@@ -126,7 +126,7 @@ docs/                compiler-notes.md: the compilers and how their output maps 
   documentation are welcome; tools/build_all.py checks that the build still matches.
 - Each function was matched with its own declarations, and they don't always agree: a global seen as a different
   struct, a function declared with other parameters. Where a function's code depends on its own view, it uses a
-  second name for the same symbol, the shared name plus `_<n>` (`D_800EFD70_3`, `func_800A2444_2`; same address,
+  second name for the same symbol, the shared name plus `_<n>` (`gGame_3`, `nes_read_io_2`; same address,
   listed in the symbol table). Struct names ending in `_<n>` are different layouts that functions gave the same
   name. Unifying these is part of naming the game's data.
 - 6 functions keep inline asm because the original holds instructions C does not produce (the `break 0x407` halts,

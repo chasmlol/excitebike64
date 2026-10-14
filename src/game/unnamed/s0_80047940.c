@@ -1,29 +1,29 @@
 #include "game.h"
 
-void func_80047940(void) {
+void desert_init(void) {
     s32 i;
     f32 sum;
     f32 dx, dz;
 
     sum = 0.0f;
-    D_800EE370[0] = sum;
+    sDesertCheckpointDist[0] = sum;
     for (i = 1; i < 10; i++) {
-        dx = D_800CA6F0[i].x - D_800CA6F0[i - 1].x;
-        dz = D_800CA6F0[i].z - D_800CA6F0[i - 1].z;
+        dx = sDesertCheckpoints[i].x - sDesertCheckpoints[i - 1].x;
+        dz = sDesertCheckpoints[i].z - sDesertCheckpoints[i - 1].z;
         sum += __builtin_sqrtf(dx * dx + dz * dz);
-        D_800EE370[i] = sum;
+        sDesertCheckpointDist[i] = sum;
     }
-    func_8004281C(0);
-    func_8005B218();
+    des_set_waypoint(0);
+    event_reset_places();
 }
 
-void func_80047A1C(void) {
+void desert_export_checkpoints(void) {
     s32 i;
-    D_800CA410 = 10;
+    gDesertFireCount = 10;
     for (i = 0; i < 10; i++) {
-        D_800EE068_2[i].x = D_800CA6F0[i].x * 1000.0f;
-        D_800EE068_2[i].z = D_800CA6F0[i].y * 1000.0f;
-        D_800EE068_2[i].y = D_800CA6F0[i].z * 1000.0f;
+        gDesertFires_2[i].x = sDesertCheckpoints[i].x * 1000.0f;
+        gDesertFires_2[i].z = sDesertCheckpoints[i].y * 1000.0f;
+        gDesertFires_2[i].y = sDesertCheckpoints[i].z * 1000.0f;
     }
 }
 
@@ -66,11 +66,11 @@ typedef struct {
     s32 f40;            /* 0x40 */
 } Game_18;
 
-extern Bike_27 D_800E37C0_50[];
-extern Game_18 D_800F05A8_17;
-extern Bike_27 *D_800F0C10_2[];
+extern Bike_27 gRiders_50[];
+extern Game_18 gEvent_17;
+extern Bike_27 *gRiderStandings_2[];
 
-void func_80047A90(void)
+void desert_update_race(void)
 {
     Bike_27 *b;
     Bike_27 *a;
@@ -81,32 +81,32 @@ void func_80047A90(void)
     s32 pad[4];
 
     d = 0.0f;
-    for (b = D_800E37C0_50; b < &D_800E37C0_50[D_800F05A8_17.n]; b++) {
+    for (b = gRiders_50; b < &gRiders_50[gEvent_17.n]; b++) {
         b->f44C = 1.0f;
         if (b->f7A5 != 0) {
             continue;
         }
-        if (b == D_800E37C0_50) {
-            dx = D_800CA6F0[b->wp].x - b->x;
-            ang = func_80013098(D_800CA6F0[b->wp].z - b->z, -dx);
-            func_80042620((s32)(ang * 32768.0f / 3.1415927f) - D_800E8000_2 & 0xFFFF);
+        if (b == gRiders_50) {
+            dx = sDesertCheckpoints[b->wp].x - b->x;
+            ang = math_atan2f(sDesertCheckpoints[b->wp].z - b->z, -dx);
+            des_set_arrow_angle((s32)(ang * 32768.0f / 3.1415927f) - gCamYaw_2 & 0xFFFF);
         }
         {
-            gx = b->x - D_800E37C0_50[0].x;
-            gz = b->z - D_800E37C0_50[0].z;
+            gx = b->x - gRiders_50[0].x;
+            gz = b->z - gRiders_50[0].z;
             e = __builtin_sqrtf(gx * gx + gz * gz);
         }
         if (b->f7A4 != 0) {
             if (e < 100.0f) {
                 b->f7A4 = 0;
-                func_80046CC0(b);
+                bike_respawn(b);
                 b->f620 = 1;
                 b->f621 = 1;
             } else {
-                dx = D_800CA6F0[b->wp].x - b->x;
-                dz = D_800CA6F0[b->wp].z - b->z;
+                dx = sDesertCheckpoints[b->wp].x - b->x;
+                dz = sDesertCheckpoints[b->wp].z - b->z;
                 d = __builtin_sqrtf(dx * dx + dz * dz);
-                ang = func_80013098(dz, dx);
+                ang = math_atan2f(dz, dx);
                 b->ang = ang * 32768.0f / 3.1415927f;
                 b->x += dx / d * 0.16666667f;
                 b->z += dz / d * 0.16666667f;
@@ -114,53 +114,53 @@ void func_80047A90(void)
         } else if (120.0f < e) {
             b->f7A4 = 1;
         }
-        dx = b->x - D_800CA6F0[b->wp].x;
-        dz = b->z - D_800CA6F0[b->wp].z;
+        dx = b->x - sDesertCheckpoints[b->wp].x;
+        dz = b->z - sDesertCheckpoints[b->wp].z;
         f = __builtin_sqrtf(dx * dx + dz * dz);
         b->dist = f;
         if (f < 1.0f) {
             if (++b->wp == 10) {
                 b->wp = 0;
                 if (b->f3FF == 0) {
-                    func_80050F7C(b - D_800E37C0_50);
-                    if (b == D_800E37C0_50) {
-                        D_800F05A8_17.f40 = 1;
+                    event_rider_finished(b - gRiders_50);
+                    if (b == gRiders_50) {
+                        gEvent_17.f40 = 1;
                     }
                 }
             } else {
-                gx = b->x - D_800CA6F0[b->wp].x;
-                gz = b->z - D_800CA6F0[b->wp].z;
+                gx = b->x - sDesertCheckpoints[b->wp].x;
+                gz = b->z - sDesertCheckpoints[b->wp].z;
                 b->dist = gx * gx + gz * gz;
             }
-            if (b == D_800E37C0_50) {
-                func_8004281C(b->wp);
+            if (b == gRiders_50) {
+                des_set_waypoint(b->wp);
             }
         }
-        b->f630 = D_800EE370[b->wp] - b->dist;
+        b->f630 = sDesertCheckpointDist[b->wp] - b->dist;
     }
     if (D_800E3EA8 == 0) {
         do {
             swapped = 0;
-            for (i = 0; i < D_800F05A8_17.n - 1; i++) {
-                a = D_800F0C10_2[i];
+            for (i = 0; i < gEvent_17.n - 1; i++) {
+                a = gRiderStandings_2[i];
                 if (a->f668 < 0) {
-                    c = D_800F0C10_2[i + 1];
+                    c = gRiderStandings_2[i + 1];
                     if (a->wp < c->wp || (a->wp == c->wp && a->dist > c->dist)) {
                         swapped = 1;
-                        D_800F0C10_2[i] = c;
-                        D_800F0C10_2[i + 1] = a;
+                        gRiderStandings_2[i] = c;
+                        gRiderStandings_2[i + 1] = a;
                     }
                 }
             }
         } while (swapped);
-        for (i = 0; i < D_800F05A8_17.n; i++) {
-            D_800F0C10_2[i]->f662 = i;
+        for (i = 0; i < gEvent_17.n; i++) {
+            gRiderStandings_2[i]->f662 = i;
         }
-        func_800635A4();
+        race_announce_position_changes();
     }
 }
 
-void func_80047F7C(u8 *s)
+void desert_ai_steer(u8 *s)
 {
     f32 v[3];
     f32 o[3];
@@ -169,13 +169,13 @@ void func_80047F7C(u8 *s)
     s8 *cp;
     u32 uVar;
 
-    v[0] = D_800CA6F0_2[s[0x402] * 3] - *(f32 *)(s + 0x48);
-    tp = &D_800CA6F0_2[s[0x402] * 3];
+    v[0] = sDesertCheckpoints_2[s[0x402] * 3] - *(f32 *)(s + 0x48);
+    tp = &sDesertCheckpoints_2[s[0x402] * 3];
     v[1] = tp[1] - *(f32 *)(s + 0x4C);
-    tp = &D_800CA6F0_2[s[0x402] * 3];
+    tp = &sDesertCheckpoints_2[s[0x402] * 3];
     v[2] = tp[2] - *(f32 *)(s + 0x50);
-    func_80013310(v, (f32 *)(s + 0xA0), o);
-    f3 = func_80013098(o[2], o[0]);
+    mtx3f_mul_vec3(v, (f32 *)(s + 0xA0), o);
+    f3 = math_atan2f(o[2], o[0]);
     sum = o[0] * o[0] + o[1] * o[1] + o[2] * o[2];
     f5 = __builtin_sqrtf(sum);
 
@@ -222,5 +222,5 @@ after:
 store:
     *(u32 *)(s + 0x5B0) = uVar;
 done:
-    func_8005C5BC(s, 1);
+    bike_update_steering(s, 1);
 }

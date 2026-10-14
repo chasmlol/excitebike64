@@ -137,17 +137,17 @@ typedef struct {
     u8 padE[2];
 } Bk;
 
-extern Player_8 D_800E37C0_16[];
-extern State_2 D_800EFD70_25;
-extern Blk500 *D_800E1878_3;
-extern Blk780 *D_800E1A78_4;
-extern Bk D_800C9698[];
-extern Opt_3 *D_800EFD64_17;
-extern Course D_800CADE4_7[];
-extern Track_6 *D_800EE498_3;
+extern Player_8 gRiders_16[];
+extern State_2 gGame_25;
+extern Blk500 *gBikeSkelTemplate_3;
+extern Blk780 *gRiderSkelTemplate_4;
+extern Bk gCamModes[];
+extern Opt_3 *gCurTrack_17;
+extern Course gTutorialLessons_7[];
+extern Track_6 *gPathNodes_3;
 extern Track_6 *trk_800EE498;
 
-void func_8001A190(void) {
+void bikes_init(void) {
     Vec3f unused[4];
     s32 i;
     s32 k;
@@ -166,18 +166,18 @@ void func_8001A190(void) {
     Player_8 *p;
     Vec3f *v;
 
-    func_8000ED10_2(D_800E3770, 0, 0x10);
-    if (D_800C8CE8 == 0) {
-        func_80065080();
+    mem_fill_2(gPlayerInputs, 0, 0x10);
+    if (gReplayPlayback == 0) {
+        race_apply_grid_order();
     } else {
-        func_80065048();
+        race_restore_grid_order();
     }
-    func_8006F620();
+    stunt_init_input_tables();
     i = 0;
-    D_800F0B30 = 0;
+    gAiRouteToggle = 0;
     D_800E76C0 = 0;
-    D_800E76C4 = 1;
-    D_800EE30C = 0;
+    gPhysTicks = 1;
+    gCrashSlowMotion = 0;
     D_800E7700 ^= 1;
     zero = 0.0f;
     D_800EE150.z = zero;
@@ -186,186 +186,186 @@ void func_8001A190(void) {
     D_800EE160.z = zero;
     D_800EE160.y = zero;
     D_800EE160.x = zero;
-    func_80061DCC();
-    func_80064CA8(D_800E7728);
-    func_80012B14();
+    collide_init_node_pool();
+    race_load_extra_rider_spawns(D_800E7728);
+    r250_init();
     D_800E7704 = 1;
-    D_800E76D0 = 0;
+    gRaceFrame = 0;
     for (; i < 8; i++) {
         z = 0.0f;
-        D_800C238C[i] = 0xFF;
-        D_800E37C0_16[i].f778 = -60;
-        if (D_800C8CD8 != 0 || (D_800E37C0_16[i].f6E8 == 0 && (D_800C2280 & 0x100))) {
-            D_800E37C0_16[i].f41D = 1;
+        gRiderAlpha[i] = 0xFF;
+        gRiders_16[i].f778 = -60;
+        if (gGhostRace != 0 || (gRiders_16[i].f6E8 == 0 && (gCheatFlags & 0x100))) {
+            gRiders_16[i].f41D = 1;
         }
-        D_800E37C0_16[i].f658 = func_800BC908(0x500, 0, "bikenew.c", 233);
-        D_800E37C0_16[i].f65C = func_800BC908(0x780, 0, "bikenew.c", 234);
-        *D_800E37C0_16[i].f658 = *D_800E1878_3;
-        *D_800E37C0_16[i].f65C = *D_800E1A78_4;
-        func_8000ED10_2(D_800E37C0_16[i].f3EB, -1, 0x10);
-        func_8000ED10_2(D_800E37C0_16[i].f3E4, -1, 6);
-        func_800361EC(&D_800E37C0_16[i].f644);
-        D_800E37C0_16[i].f420 = 0.0f;
-        D_800E37C0_16[i].f388 = 0;
-        D_800E37C0_16[i].f3D3 = -1;
-        D_800E37C0_16[i].f7A5 = 1;
-        D_800E37C0_16[i].f666 = 0x100;
-        D_800E37C0_16[i].f390[0] = z;
-        D_800E37C0_16[i].f390[1] = z;
-        D_800E37C0_16[i].f390[2] = z;
-        D_800E37C0_16[i].f390[3] = z;
-        D_800E37C0_16[i].f390[4] = z;
-        D_800E37C0_16[i].f390[5] = z;
-        D_800E37C0_16[i].f3D0 = -1;
-        D_800E37C0_16[i].f3D1 = -1;
-        D_800E37C0_16[i].f38C = 1.0f;
-        D_800E37C0_16[i].vel.x = D_800E37C0_16[i].dir.x * z;
-        D_800E37C0_16[i].vel.y = D_800E37C0_16[i].dir.y * D_800E37C0_16[i].f420;
-        D_800E37C0_16[i].vel.z = D_800E37C0_16[i].dir.z * D_800E37C0_16[i].f420;
-        r = func_8000EFE8();
-        D_800E37C0_16[i].f1B8 = z;
-        D_800E37C0_16[i].f1C5 = 1;
-        D_800E37C0_16[i].f348 = 3;
-        D_800E37C0_16[i].f349 = 0;
-        D_800E37C0_16[i].f1C0 = 250.0f;
-        D_800E37C0_16[i].f1C4 = D_800E37C0_16[i].f6E8 != 0;
-        D_800E37C0_16[i].f340 = 90.0f;
-        D_800E37C0_16[i].f344 = 45.0f;
-        D_800E37C0_16[i].f3C0 = r % 150;
-        if (D_800EFD70_25.f4C == 2) {
-            D_800E37C0_16[i].fC4 = func_80060270(D_800CC6CC);
+        gRiders_16[i].f658 = mem_alloc_dbg(0x500, 0, "bikenew.c", 233);
+        gRiders_16[i].f65C = mem_alloc_dbg(0x780, 0, "bikenew.c", 234);
+        *gRiders_16[i].f658 = *gBikeSkelTemplate_3;
+        *gRiders_16[i].f65C = *gRiderSkelTemplate_4;
+        mem_fill_2(gRiders_16[i].f3EB, -1, 0x10);
+        mem_fill_2(gRiders_16[i].f3E4, -1, 6);
+        engine_reset(&gRiders_16[i].f644);
+        gRiders_16[i].f420 = 0.0f;
+        gRiders_16[i].f388 = 0;
+        gRiders_16[i].f3D3 = -1;
+        gRiders_16[i].f7A5 = 1;
+        gRiders_16[i].f666 = 0x100;
+        gRiders_16[i].f390[0] = z;
+        gRiders_16[i].f390[1] = z;
+        gRiders_16[i].f390[2] = z;
+        gRiders_16[i].f390[3] = z;
+        gRiders_16[i].f390[4] = z;
+        gRiders_16[i].f390[5] = z;
+        gRiders_16[i].f3D0 = -1;
+        gRiders_16[i].f3D1 = -1;
+        gRiders_16[i].f38C = 1.0f;
+        gRiders_16[i].vel.x = gRiders_16[i].dir.x * z;
+        gRiders_16[i].vel.y = gRiders_16[i].dir.y * gRiders_16[i].f420;
+        gRiders_16[i].vel.z = gRiders_16[i].dir.z * gRiders_16[i].f420;
+        r = random_byte();
+        gRiders_16[i].f1B8 = z;
+        gRiders_16[i].f1C5 = 1;
+        gRiders_16[i].f348 = 3;
+        gRiders_16[i].f349 = 0;
+        gRiders_16[i].f1C0 = 250.0f;
+        gRiders_16[i].f1C4 = gRiders_16[i].f6E8 != 0;
+        gRiders_16[i].f340 = 90.0f;
+        gRiders_16[i].f344 = 45.0f;
+        gRiders_16[i].f3C0 = r % 150;
+        if (gGame_25.f4C == 2) {
+            gRiders_16[i].fC4 = collide_build_sphere_tree(sBikeSphereTreeDescSoccer);
         } else {
-            D_800E37C0_16[i].fC4 = func_80060270(D_800CC324);
+            gRiders_16[i].fC4 = collide_build_sphere_tree(sBikeSphereTreeDesc);
         }
-        D_800E37C0_16[i].f248 = func_80060270(D_800CC30C);
-        D_800E37C0_16[i].f1C8 = &D_800E37C0_16[i];
-        D_800E37C0_16[i].f34C = &D_800E37C0_16[i];
-        D_800E37C0_16[i].f588 = D_800C9080;
-        D_800E37C0_16[i].f4E4 = D_800C9080;
-        switch (D_800EFD70_25.f4C) {
+        gRiders_16[i].f248 = collide_build_sphere_tree(sRiderSphereDesc);
+        gRiders_16[i].f1C8 = &gRiders_16[i];
+        gRiders_16[i].f34C = &gRiders_16[i];
+        gRiders_16[i].f588 = gSurfaceTable;
+        gRiders_16[i].f4E4 = gSurfaceTable;
+        switch (gGame_25.f4C) {
         case 7:
-            D_800E37C0_16[i].f5AA = 6;
+            gRiders_16[i].f5AA = 6;
             break;
         case 2:
-            D_800E37C0_16[i].f5AA = 0;
+            gRiders_16[i].f5AA = 0;
             break;
         case 6:
-            if (i < D_800EFD70_25.f3C) {
-                c = D_800EFD70_25.f760[D_800EFD70_25.f2C8[i]];
+            if (i < gGame_25.f3C) {
+                c = gGame_25.f760[gGame_25.f2C8[i]];
             } else {
                 c = 2;
             }
             if (c != 4 && c != 2) {
                 c = 2;
             }
-            D_800E37C0_16[i].f5AA = c;
-            if (i < D_800EFD70_25.f3C) {
-                D_800EFD70_25.f760[D_800EFD70_25.f2C8[i]] = c;
+            gRiders_16[i].f5AA = c;
+            if (i < gGame_25.f3C) {
+                gGame_25.f760[gGame_25.f2C8[i]] = c;
             }
             break;
         default:
-            if (i < D_800EFD70_25.f3C) {
-                c = D_800EFD70_25.f760[D_800EFD70_25.f2C8[i]];
+            if (i < gGame_25.f3C) {
+                c = gGame_25.f760[gGame_25.f2C8[i]];
             } else {
                 c = 2;
             }
-            if (D_800C9698[c].fC & 8) {
+            if (gCamModes[c].fC & 8) {
                 c = 2;
             }
-            D_800E37C0_16[i].f5AA = c;
-            if (i < D_800EFD70_25.f3C) {
-                D_800EFD70_25.f760[D_800EFD70_25.f2C8[i]] = c;
+            gRiders_16[i].f5AA = c;
+            if (i < gGame_25.f3C) {
+                gGame_25.f760[gGame_25.f2C8[i]] = c;
             }
             break;
         }
-        func_8000ED10_2(D_800C966C, -1, 0x18);
-        D_800E37C0_16[i].f412 = 0x3000;
-        D_800E37C0_16[i].f5A8 = D_800E37C0_16[i].f5AA;
+        mem_fill_2(gCamLastModes, -1, 0x18);
+        gRiders_16[i].f412 = 0x3000;
+        gRiders_16[i].f5A8 = gRiders_16[i].f5AA;
     }
     i = 0;
-    if (D_800F05CA > 0) {
+    if (gEventNumRiders > 0) {
         do {
-            p = &D_800E37C0_16[i];
+            p = &gRiders_16[i];
             if (i < 4) {
-                D_800C9654[i] = i;
+                gCamTargets[i] = i;
             }
-            if (!(D_800EFD70_25.f0 & 0x81) && D_800CCD64 == 0 && i < D_800EFD70_25.f3C) {
+            if (!(gGame_25.f0 & 0x81) && gCreditsMode == 0 && i < gGame_25.f3C) {
                 p->f6E8 = 0;
             } else {
                 p->f6E8 = 1;
             }
-            func_8001AEB0(p, D_800EFD70_25.f1C[i]);
+            bike_apply_rider_stats(p, gGame_25.f1C[i]);
             p->f44C = 1.0f;
             p->f7A5 = 0;
             p->f420 = 0.0f;
-            switch (D_800EFD70_25.f4C) {
+            switch (gGame_25.f4C) {
             case 2:
-                if (D_800EFD70_25.f3C == 4) {
+                if (gGame_25.f3C == 4) {
                     switch (i) {
                     case 0:
-                        D_800E37C0_16[i].pos.x = -1.0f;
-                        D_800E37C0_16[i].pos.z = -10.0f;
-                        func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, 0.0f);
+                        gRiders_16[i].pos.x = -1.0f;
+                        gRiders_16[i].pos.z = -10.0f;
+                        quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, 0.0f);
                         break;
                     case 1:
-                        D_800E37C0_16[i].pos.x = 1.0f;
-                        D_800E37C0_16[i].pos.z = -10.0f;
-                        func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, 0.0f);
+                        gRiders_16[i].pos.x = 1.0f;
+                        gRiders_16[i].pos.z = -10.0f;
+                        quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, 0.0f);
                         break;
                     case 2:
-                        D_800E37C0_16[i].pos.x = 1.0f;
-                        D_800E37C0_16[i].pos.z = 10.0f;
-                        func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, 3.1415927f);
+                        gRiders_16[i].pos.x = 1.0f;
+                        gRiders_16[i].pos.z = 10.0f;
+                        quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, 3.1415927f);
                         break;
                     case 3:
-                        D_800E37C0_16[i].pos.x = -1.0f;
-                        D_800E37C0_16[i].pos.z = 10.0f;
-                        func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, 3.1415927f);
+                        gRiders_16[i].pos.x = -1.0f;
+                        gRiders_16[i].pos.z = 10.0f;
+                        quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, 3.1415927f);
                         break;
                     }
                 } else {
                     switch (i) {
                     case 0:
-                        D_800E37C0_16[i].pos.x = 0.01f;
-                        D_800E37C0_16[i].pos.z = -10.0f;
-                        func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, 0.00958738f);
+                        gRiders_16[i].pos.x = 0.01f;
+                        gRiders_16[i].pos.z = -10.0f;
+                        quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, 0.00958738f);
                         break;
                     case 1:
-                        D_800E37C0_16[i].pos.x = -0.015f;
-                        D_800E37C0_16[i].pos.z = 10.0f;
-                        func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, 3.15118f);
+                        gRiders_16[i].pos.x = -0.015f;
+                        gRiders_16[i].pos.z = 10.0f;
+                        quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, 3.15118f);
                         break;
                     }
                 }
                 break;
             case 4:
             case 5:
-                p->pos.x = D_800C9480[i].x;
-                p->pos.z = D_800C9480[i].z;
-                func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, 0.0f);
+                p->pos.x = sStartLineOffsets[i].x;
+                p->pos.z = sStartLineOffsets[i].z;
+                quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, 0.0f);
                 break;
             default:
-                if ((D_800EFD70_25.f0 & 0x11) == 0x11) {
-                    idx = i * D_800EE490 / 6;
-                } else if (D_800EFD70_25.f4C == 13 || D_800EFD70_25.f4C == 14
-                           || (D_800EFD70_25.f4C == 0 && (D_800EFD64_17->f50 & 2))) {
+                if ((gGame_25.f0 & 0x11) == 0x11) {
+                    idx = i * gPathNodeCount / 6;
+                } else if (gGame_25.f4C == 13 || gGame_25.f4C == 14
+                           || (gGame_25.f4C == 0 && (gCurTrack_17->f50 & 2))) {
                     idx = 1;
-                } else if (D_800EFD70_25.f4C == 9) {
-                    idx = D_800CADE4_7[D_800CA930_2->f64].f18;
+                } else if (gGame_25.f4C == 9) {
+                    idx = gTutorialLessons_7[gSeason_2->f64].f18;
                 } else {
-                    idx = D_800EE494;
+                    idx = gPathStartNode;
                 }
-                n = D_800F05CA;
-                if (D_800C8CD8 != 0 && n == 1) {
+                n = gEventNumRiders;
+                if (gGhostRace != 0 && n == 1) {
                     n = 2;
                 }
-                if (D_800EFD70_25.f0 & 0x90) {
+                if (gGame_25.f0 & 0x90) {
                     zero = 0.0f;
                 } else {
                     sc = 1.5f;
-                    zero = (D_800EE498_3[idx].f5C - D_800EE498_3[idx].f58) * 0.5f;
-                    cc = D_800F0CA0_2[i];
-                    if (D_800EFD64_17->f50 & 2) {
+                    zero = (gPathNodes_3[idx].f5C - gPathNodes_3[idx].f58) * 0.5f;
+                    cc = gGridOrder_2[i];
+                    if (gCurTrack_17->f50 & 2) {
                         sc = 1.1f;
                     }
                     zero += sc * ((f32)cc - (f32)(n - 1) * 0.5f);
@@ -374,25 +374,25 @@ void func_8001A190(void) {
                     p->f666 = 0x100;
                 }
                 p->f628 = idx;
-                if (D_800EFD70_25.f4C == 7) {
+                if (gGame_25.f4C == 7) {
                     p->f6B2 = idx;
                 }
                 k = idx;
-                if (D_800EFD70_25.f4C == 9 && D_800CA930_2->f64 == 5) {
+                if (gGame_25.f4C == 9 && gSeason_2->f64 == 5) {
                     k = idx + 1;
                 }
-                func_8001254C(D_800EE498_3[k].f18 * 1024.0f, D_800EE498_3[k].f14 * 1024.0f, (s16 *)&ang, &ratio);
-                func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
-                if (D_800EFD64_17->f2C == 0 && !(D_800EFD70_25.f0 & 0x10)) {
+                math_to_polar(gPathNodes_3[k].f18 * 1024.0f, gPathNodes_3[k].f14 * 1024.0f, (s16 *)&ang, &ratio);
+                quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
+                if (gCurTrack_17->f2C == 0 && !(gGame_25.f0 & 0x10)) {
                     ang = (ang + 0x1000) & ~0x3FFF;
-                    func_80013438((u8 *)&D_800E37C0_16[i].pos + 0x30, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
+                    quat_from_euler((u8 *)&gRiders_16[i].pos + 0x30, 0.0f, 0.0f, (f32)(s16)ang * 3.1415927f * 3.0517578e-05f);
                 }
-                if (D_800EFD70_25.f4C != 6) {
+                if (gGame_25.f4C != 6) {
                     a = (s16)ang >> 4;
-                    p->pos.x = trk_800EE498[idx].pos.x + (f32)D_800C2C60[a & 0xFFF] * zero * 6.1035156e-05f
-                             - (f32)D_800C2C60[(a - 0x400) & 0xFFF] * 1.5258789e-05f;
-                    p->pos.z = trk_800EE498[idx].pos.z + (f32)D_800C2C60[(a - 0x400) & 0xFFF] * zero * 6.1035156e-05f
-                             + (f32)D_800C2C60[a & 0xFFF] * 1.5258789e-05f;
+                    p->pos.x = trk_800EE498[idx].pos.x + (f32)gCosTable[a & 0xFFF] * zero * 6.1035156e-05f
+                             - (f32)gCosTable[(a - 0x400) & 0xFFF] * 1.5258789e-05f;
+                    p->pos.z = trk_800EE498[idx].pos.z + (f32)gCosTable[(a - 0x400) & 0xFFF] * zero * 6.1035156e-05f
+                             + (f32)gCosTable[a & 0xFFF] * 1.5258789e-05f;
                     p->f42C = zero;
                 } else {
                     p->pos.z = trk_800EE498[idx].pos.z;
@@ -402,35 +402,35 @@ void func_8001A190(void) {
                 p->f7A9 = i;
                 break;
             }
-            func_8001C780(p);
-            func_8001BC98(p);
-            func_8001FE1C(p);
+            bike_place_on_ground(p);
+            bike_update_suspension(p);
+            bike_update_render_pose(p);
             p->f34 = p->f22;
             for (j = 0; j < 11; j++) {
-                D_800E37C0_16[i].hist[j] = D_800E37C0_16[i].pos;
+                gRiders_16[i].hist[j] = gRiders_16[i].pos;
             }
             i++;
-        } while (i < D_800F05CA);
+        } while (i < gEventNumRiders);
     }
-    func_80064EB8(8);
-    func_800477B4(0.5f);
-    D_800E37BC = -5.0f;
-    func_80064A8C(D_800EFD70_25.f3C, D_800F05CA - D_800EFD70_25.f3C);
-    switch (D_800EFD70_25.f4C) {
+    race_init_standings(8);
+    bike_set_contact_friction(0.5f);
+    sBikeMaxReverseSpeed = -5.0f;
+    race_init_ai_skills(gGame_25.f3C, gEventNumRiders - gGame_25.f3C);
+    switch (gGame_25.f4C) {
     case 2:
-        D_800E37BC = -20.0f;
-        func_8006C28C(1);
+        sBikeMaxReverseSpeed = -20.0f;
+        soccer_ball_reset(1);
         break;
     case 5:
-        func_80047940();
+        desert_init();
         break;
     case 7:
-        func_800477B4(0.3f);
+        bike_set_contact_friction(0.3f);
         break;
     case 6:
-        D_800E37BC = 0.0f;
-        func_800477B4(0.6f);
-        func_8006B1A0();
+        sBikeMaxReverseSpeed = 0.0f;
+        bike_set_contact_friction(0.6f);
+        excite3d_init();
         break;
     }
     D_800C8DC0 = 1;
@@ -442,21 +442,21 @@ typedef struct {
     f32 f[10];
 } Rec28;
 
-extern Rec28 D_800C8E98[];
+extern Rec28 sRiderStatsTable[];
 
-void func_8001AEB0(u8 *a0, s32 a1)
+void bike_apply_rider_stats(u8 *a0, s32 a1)
 {
     if (a0[0x6E8] == 0) {
         FLD(a0, 0x1BC) = 250.0f;
-        FLD(a0, 0x7B8) = D_800C8E98[a1].f[0];
-        FLD(a0, 0x7BC) = D_800C8E98[a1].f[1] * (D_800C8DF8[14] * D_800C8DF8[5]) * 32.0f * FLD(a0, 0x7D0);
-        FLD(a0, 0x7C4) = D_800C8E98[a1].f[2] * D_800C8DF8[12] * 3.1415927f * 0.00390625f;
-        FLD(a0, 0x7C8) = D_800C8E98[a1].f[3] / 48.0f;
-        FLD(a0, 0x7D0) = D_800C8E98[a1].f[4] * 0.57f;
-        FLD(a0, 0x7C0) = D_800C8E98[a1].f[5];
-        FLD(a0, 0x7B4) = D_800C8E98[a1].f[6];
-        FLD(a0, 0x7D4) = D_800C8E98[a1].f[7];
-        FLD(a0, 0x7D8) = D_800C8E98[a1].f[8];
+        FLD(a0, 0x7B8) = sRiderStatsTable[a1].f[0];
+        FLD(a0, 0x7BC) = sRiderStatsTable[a1].f[1] * (sBikeTune[14] * sBikeTune[5]) * 32.0f * FLD(a0, 0x7D0);
+        FLD(a0, 0x7C4) = sRiderStatsTable[a1].f[2] * sBikeTune[12] * 3.1415927f * 0.00390625f;
+        FLD(a0, 0x7C8) = sRiderStatsTable[a1].f[3] / 48.0f;
+        FLD(a0, 0x7D0) = sRiderStatsTable[a1].f[4] * 0.57f;
+        FLD(a0, 0x7C0) = sRiderStatsTable[a1].f[5];
+        FLD(a0, 0x7B4) = sRiderStatsTable[a1].f[6];
+        FLD(a0, 0x7D4) = sRiderStatsTable[a1].f[7];
+        FLD(a0, 0x7D8) = sRiderStatsTable[a1].f[8];
         return;
     }
     FLD(a0, 0x1BC) = 250.0f;
@@ -465,18 +465,18 @@ void func_8001AEB0(u8 *a0, s32 a1)
     FLD(a0, 0x7C0) = 1.0f;
     {
         f32 k57 = 0.57f;
-        f32 t = D_800C8DF8[12] * 3.1415927f * 0.00390625f;
+        f32 t = sBikeTune[12] * 3.1415927f * 0.00390625f;
         FLD(a0, 0x7D0) = k57;
         FLD(a0, 0x7C8) = 0.020833334f;
         FLD(a0, 0x7C4) = t;
-        FLD(a0, 0x7BC) = D_800C8DF8[14] * D_800C8DF8[5] * 32.0f * k57;
+        FLD(a0, 0x7BC) = sBikeTune[14] * sBikeTune[5] * 32.0f * k57;
     }
-    if (D_800EFDBC == 0xF) {
+    if (gGameMode == 0xF) {
         FLD(a0, 0x7D8) = 0.7f;
     } else {
         FLD(a0, 0x7D8) = 1.0f;
     }
-    FLD(a0, 0x7B4) = D_800C8E98[a1].f[6];
+    FLD(a0, 0x7B4) = sRiderStatsTable[a1].f[6];
 }
 
 struct Obj_7 {
@@ -490,7 +490,7 @@ struct Obj_7 {
     f32 fb4;
 };
 
-f32 func_8001B05C(Obj_7 *o, f32 *p, f32 p3)
+f32 bike_wheel_ground_bisect(Obj_7 *o, f32 *p, f32 p3)
 {
     f32 t, step, d, b, tb, h, diff, sc, sc3, sc4, lim;
     f32 v[3];
@@ -509,11 +509,11 @@ f32 func_8001B05C(Obj_7 *o, f32 *p, f32 p3)
     v[1] = h;
     if (p[0] < h) n = 1; else n = 3;
     sc = 1000.0f;
-    n = func_8002E920((s32)(p[0] * sc), (s32)(p[1] * sc), (s32)(p[2] * sc));
+    n = height_get_ground((s32)(p[0] * sc), (s32)(p[1] * sc), (s32)(p[2] * sc));
     d = (f32)n / sc - p[1];
     if (0.0f < d) step = 1.0f;
     vp = v;
-    tbl = D_800EFD70_2;
+    tbl = gGame_2;
     lim = 10000.0f;
     sc3 = sc;
     do {
@@ -527,13 +527,13 @@ f32 func_8001B05C(Obj_7 *o, f32 *p, f32 p3)
         b = y + tb;
         if (tbl) n = 1; else n = 2;
         if (x < b) n = 1; else n = 2;
-        n = func_8002E920((s32)(vp[0] * sc3), (s32)(vp[1] * sc3), (s32)(vp[2] * sc3));
+        n = height_get_ground((s32)(vp[0] * sc3), (s32)(vp[1] * sc3), (s32)(vp[2] * sc3));
         h = (f32)n / sc3;
         if (lim < h) n = 3; else n = 4;
         if (step < h) n = 18; else n = 19;
         if (h < step) n = 20; else n = 21;
         if (d < h) n = 22; else n = 23;
-        if (D_800E8508 == 0) {
+        if (gGroundFound == 0) {
             o->b45 = -0x1c;
             return -2.0f;
         }
@@ -541,7 +541,7 @@ f32 func_8001B05C(Obj_7 *o, f32 *p, f32 p3)
     } while (0.0f < d * diff);
     if (0.0f < d) step = -step;
     lim = 0.0f;
-    tbl2 = D_800EFD70_2;
+    tbl2 = gGame_2;
     d = 10000.0f;
     step *= 0.5f;
     sc4 = 1000.0f;
@@ -565,7 +565,7 @@ f32 func_8001B05C(Obj_7 *o, f32 *p, f32 p3)
         m = (s32)step;
         if (k == m) h = t;
         if (tbl2) { h = b; n = 1; } else { h = x; n = 2; }
-        n = func_8002E920((s32)(vq[0] * sc4), (s32)(vq[1] * sc4), (s32)(vq[2] * sc4));
+        n = height_get_ground((s32)(vq[0] * sc4), (s32)(vq[1] * sc4), (s32)(vq[2] * sc4));
         h = (f32)n / sc4;
         if (d < h) n = 3; else n = 4;
         diff = h - b;
@@ -610,7 +610,7 @@ struct Wheel {
     s32 n94;
 };
 
-void func_8001B354(Bike_4 *b, Wheel *w, f32 dt, u8 flag)
+void bike_wheel_find_ground(Bike_4 *b, Wheel *w, f32 dt, u8 flag)
 {
     f32 P[3];
     Vec3f Q;
@@ -619,18 +619,18 @@ void func_8001B354(Bike_4 *b, Wheel *w, f32 dt, u8 flag)
     f32 t, dif, base, thr, k, ts, ds;
     s32 i;
 
-    D_800E80D4 = w->prev.y * 1000.0f;
+    gGroundHeight = w->prev.y * 1000.0f;
     P[0] = b->pos.x + b->vel.x * dt;
     P[1] = b->pos.y + b->vel.y * dt;
     P[2] = b->pos.z + b->vel.z * dt;
     t = w->f28;
-    D_800E8958 = w->w0;
+    gGroundArea = w->w0;
     Q.x = P[0] + t * b->dir.x;
     base = P[1] + t * b->dir.y;
     Q.z = P[2] + t * b->dir.z;
     i = 0;
     Q.y = b->pos.y;
-    L = (f32)func_8002E920(Q.x * 1000.0f, Q.y * 1000.0f, Q.z * 1000.0f) / 1000.0f;
+    L = (f32)height_get_ground(Q.x * 1000.0f, Q.y * 1000.0f, Q.z * 1000.0f) / 1000.0f;
     dif = L - base;
     thr = 0.002f;
     k = -1.0f;
@@ -641,21 +641,21 @@ void func_8001B354(Bike_4 *b, Wheel *w, f32 dt, u8 flag)
         ds = dif;
         t -= k * dif;
         if (t < -32.0f || 8.0f < t) {
-            t = func_8001B05C(b, P, thr);
+            t = bike_wheel_ground_bisect(b, P, thr);
             break;
         }
         Q.x = P[0] + t * b->dir.x;
         base = P[1] + t * b->dir.y;
         Q.z = P[2] + t * b->dir.z;
-        L = (f32)func_8002E920(Q.x * 1000.0f, Q.y * 1000.0f, Q.z * 1000.0f) / 1000.0f;
+        L = (f32)height_get_ground(Q.x * 1000.0f, Q.y * 1000.0f, Q.z * 1000.0f) / 1000.0f;
         dif = L - base;
         if (i++ >= 9) {
             if (i >= 17) {
                 t = w->f28 - 0.5f;
                 break;
             }
-            func_8002F4B0(A);
-            if (-0.2f < func_80013408(A, &b->dir.x)) {
+            height_get_ground_normal(A);
+            if (-0.2f < vec3_dot(A, &b->dir.x)) {
                 k = (t - ts) / ((dif - ds) * 2.0f);
             } else {
                 k = -1.0f;
@@ -666,11 +666,11 @@ void func_8001B354(Bike_4 *b, Wheel *w, f32 dt, u8 flag)
     }
     t += 0.5f;
     Q.y = L;
-    if (D_800E8508) {
-        w->p90 = D_800C9080 + ((D_800E84F8 << 2) & 0x3C0);
-        w->n94 = D_800E84F8;
-        w->w0 = D_800E8958;
-        func_8002F4B0(&w->n.x);
+    if (gGroundFound) {
+        w->p90 = gSurfaceTable + ((gGroundSurface << 2) & 0x3C0);
+        w->n94 = gGroundSurface;
+        w->w0 = gGroundArea;
+        height_get_ground_normal(&w->n.x);
         if (0.25f < w->f2C && 0.5f <= w->n.y && i >= 17) {
             w->f2C = 0.0f;
             b->b45 = 0x19;
@@ -719,7 +719,7 @@ struct Bike_5 {
     s32 unk780;
 };
 
-void func_8001B808(Bike_5 *b) {
+void bike_update_wheel_contacts(Bike_5 *b) {
     f32 diff = 1.0f;
     s32 idx;
     s32 t;
@@ -729,24 +729,24 @@ void func_8001B808(Bike_5 *b) {
         w = b->unk454;
         t = b->unk744;
     } while (0);
-    D_800E8D64 = 0;
-    D_800E84F8 = 0;
-    D_800E8958 = w;
+    gGroundTri = 0;
+    gGroundSurface = 0;
+    gGroundArea = w;
     if (t > 0) {
         s32 h;
         t = (s32)&b->pos;
 
-        h = func_8002E920((s32)(((f32 *)t)[b->unk45 >> 8] * 1000.0f), (s32)(((f32 *)t)[1] * 1000.0f), (s32)(((f32 *)t)[2] * 1000.0f));
+        h = height_get_ground((s32)(((f32 *)t)[b->unk45 >> 8] * 1000.0f), (s32)(((f32 *)t)[1] * 1000.0f), (s32)(((f32 *)t)[2] * 1000.0f));
 
         diff = b->pos.y - (f32)h / 1000.0f;
         idx = (D_800E84F4[1] >> 4) & 0xF;
         *(volatile s32 *)&b->unk780 = idx;
-        if ((D_800EFDBC == 7 || D_800EFD64 == D_800CBB70) && diff > 2.0f && (D_800C9080_2[idx].flags & 0x800)) {
-            func_800477F0_2(b, -25);
+        if ((gGameMode == 7 || gCurTrack == D_800CBB70) && diff > 2.0f && (gSurfaceTable_2[idx].flags & 0x800)) {
+            bike_queue_crash_2(b, -25);
             return;
         }
     } else {
-        b->unk780 = b->unk4E4 - D_800C9080_2;
+        b->unk780 = b->unk4E4 - gSurfaceTable_2;
     }
     if (diff < 1.0f) {
         if (b->unk520 < -2.0f || b->unk47C < -2.0f) {
@@ -754,8 +754,8 @@ void func_8001B808(Bike_5 *b) {
             b->unk47C = 0.0f;
         }
     }
-    func_8001B354(b, &b->unk4F8, 0.6f, diff > 1.5f);
-    func_8001B354(b, &b->unk454, -0.65f, diff > 1.5f);
+    bike_wheel_find_ground(b, &b->unk4F8, 0.6f, diff > 1.5f);
+    bike_wheel_find_ground(b, &b->unk454, -0.65f, diff > 1.5f);
     if (b->unk588->flags & 0x800) {
         b->unk45 = 0x1C;
         b->unk43C = b->unk54;
@@ -766,8 +766,8 @@ void func_8001B808(Bike_5 *b) {
     }
 }
 
-#define MAXRPM (D_800EFDBC == 6 ? D_800C8E14 * 20000.0f : 15000.0f)
-#define RATE (D_800EFDBC == 6 ? D_800C8E18 * 2000.0f : 2200.0f)
+#define MAXRPM (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f : 15000.0f)
+#define RATE (gGameMode == 6 ? gBikeTuneDamping * 2000.0f : 2200.0f)
 
 struct Rec_9 {
     s32 f00;
@@ -784,7 +784,7 @@ struct Rec_9 {
     f32 f2c;
 };
 
-void func_8001BA5C(Rec_9 *p, f32 x)
+void bike_wheel_spring_force(Rec_9 *p, f32 x)
 {
     f32 a, k, r, v;
 
@@ -801,28 +801,28 @@ void func_8001BA5C(Rec_9 *p, f32 x)
     }
 
     if (p->n04 <= 0) {
-        r = (p->f28 + 0.05f + p->f2c * 0.5f - x) * (MAXRPM * D_800C94B0);
-        v = p->f2c / D_800E76C8 * RATE * D_800C94B4;
+        r = (p->f28 + 0.05f + p->f2c * 0.5f - x) * (MAXRPM * sSuspSpringScale);
+        v = p->f2c / gPhysDeltaTime * RATE * sSuspDampScale;
         p->f1c = r + v;
         if (p->f1c < 0.0f) {
             p->f1c = 0.0f;
-            p->n04 = D_800E76C4;
+            p->n04 = gPhysTicks;
             p->f20 = p->f2c;
         } else {
-            p->n04 -= D_800E76C4;
+            p->n04 -= gPhysTicks;
             p->f24 = p->f28;
         }
         p->f1c *= k;
     } else {
-        p->f24 = p->f24 - p->f24 * (MAXRPM / RATE) * D_800E76C8;
-        p->n04 += D_800E76C4;
+        p->f24 = p->f24 - p->f24 * (MAXRPM / RATE) * gPhysDeltaTime;
+        p->n04 += gPhysTicks;
     }
 }
 
 #define F_2(off) (*(f32 *)(s + (off)))
 #define W(off) (*(s32 *)(s + (off)))
 
-void func_8001BC98(u8 *s)
+void bike_update_suspension(u8 *s)
 {
     f32 x;
     f32 m1;
@@ -834,40 +834,40 @@ void func_8001BC98(u8 *s)
     A3 = ((m1 / 1.25f) - 11.5199995f) * 14.700001f;
     B = ((m2 / 1.25f) + 11.5199995f) * 14.700001f;
     one = 1.0f;
-    fv2 = one - one / D_800C94B0;
+    fv2 = one - one / sSuspSpringScale;
     t1 = fv2 * B;
-    if (D_800EFDBC == 6) {
-        fs1v = t1 / (D_800C8E14 * 20000.0f);
+    if (gGameMode == 6) {
+        fs1v = t1 / (gBikeTuneSpringRate * 20000.0f);
     } else {
         fs1v = t1 / 15000.0f;
     }
     t2 = fv2 * A3;
-    if (D_800EFDBC == 6) {
-        t3 = t2 / (D_800C8E14 * 20000.0f);
+    if (gGameMode == 6) {
+        t3 = t2 / (gBikeTuneSpringRate * 20000.0f);
     } else {
         t3 = t2 / 15000.0f;
     }
-    func_8001BA5C((s32)(s + 0x4F8), t3);
+    bike_wheel_spring_force((s32)(s + 0x4F8), t3);
 
     if (((F_2(0x420) + 5.0f) * 250.0f * 30.0f) < F_2(0x514)) {
         W(0x520) = 0;
         W(0x47C) = 0;
-        func_800445B0(s, 0x1c);
+        bike_crash_begin(s, 0x1c);
     }
-    func_8001BA5C((s32)(s + 0x454), fs1v);
+    bike_wheel_spring_force((s32)(s + 0x454), fs1v);
     if (((F_2(0x420) + 5.0f) * 250.0f * 30.0f) < F_2(0x470)) {
         W(0x520) = 0;
         W(0x47C) = 0;
-        func_800445B0(s, 0x19);
+        bike_crash_begin(s, 0x19);
     }
     if (3675.0002f < F_2(0x514) || 3675.0002f < F_2(0x470)) {
-        if (0x78 < W(0x5C8) - D_800E76D0) {
-            func_800445B0(s, 0x1c);
+        if (0x78 < W(0x5C8) - gRaceFrame) {
+            bike_crash_begin(s, 0x1c);
         }
     } else {
-        W(0x5C8) = D_800E76D0;
+        W(0x5C8) = gRaceFrame;
     }
-    if (W(0x4FC) == D_800E76C4 || W(0x458) == D_800E76C4) {
+    if (W(0x4FC) == gPhysTicks || W(0x458) == gPhysTicks) {
         func_80022908(s);
     }
 }
@@ -910,7 +910,7 @@ struct Bike_6 {
     u32 flags;
 };
 
-void func_8001BEDC(Bike_6 *a, Cam *b)
+void bike_rear_tire_force(Bike_6 *a, Cam *b)
 {
     f32 q[3];
     f32 n[3];
@@ -927,15 +927,15 @@ void func_8001BEDC(Bike_6 *a, Cam *b)
     n[0] += a->v54[0];
     n[1] += a->v54[1];
     n[2] += a->v54[2];
-    side = func_80013408(n, b->v78);
-    ref = func_80013408(n, b->v84);
-    scale = D_800C8DF8[10];
+    side = vec3_dot(n, b->v78);
+    ref = vec3_dot(n, b->v84);
+    scale = sBikeTune[10];
     b->fA0 = scale * b->p90->f18;
-    s = D_800C8DF8[10];
+    s = sBikeTune[10];
     if (a->flags & 0x20000) {
-        k = D_800C9978 / s;
+        k = sTurboTraction / s;
     } else {
-        k = D_800C8DF8[11] / s;
+        k = sBikeTune[11] / s;
     }
     if (a->b41B == 1) {
         b->fA0 = b->fA0 / 3.0f;
@@ -950,8 +950,8 @@ void func_8001BEDC(Bike_6 *a, Cam *b)
     if (len > 0.0f) {
         b->fA0 = b->fA0 * (sq / (x2 + y2 / k));
     }
-    base = func_80013408(b->v6C, a->vAC);
-    t = b->f1C - func_80013408(&b->pos.x, a->vAC);
+    base = vec3_dot(b->v6C, a->vAC);
+    t = b->f1C - vec3_dot(&b->pos.x, a->vAC);
     t = t / base;
     v = t;
     if (t > 4000.0f) {
@@ -963,7 +963,7 @@ void func_8001BEDC(Bike_6 *a, Cam *b)
             v = 250.0f;
         }
     }
-    if (len < v * b->fA0 || D_800EFDBC == 15) {
+    if (len < v * b->fA0 || gGameMode == 15) {
         d[0] = b->v6C[0] * t;
         d[1] = b->v6C[1] * t;
         d[2] = b->v6C[2] * t;
@@ -1001,7 +1001,7 @@ void func_8001BEDC(Bike_6 *a, Cam *b)
             q[2] /= len3;
         }
     }
-    v = base + func_80013408(q, a->vAC) * b->fA0;
+    v = base + vec3_dot(q, a->vAC) * b->fA0;
     if (v < 0.5f) {
         v = 0.5f;
     }
@@ -1024,7 +1024,7 @@ void func_8001BEDC(Bike_6 *a, Cam *b)
     b->pos.x = t * b->v6C[0] + len * q[0];
     b->pos.y = t * b->v6C[1] + len * q[1];
     b->pos.z = t * b->v6C[2] + len * q[2];
-    b->f98 += ((a->f448 - b->f68) - func_80013408(&b->pos.x, b->v84)) / 9765.625f;
+    b->f98 += ((a->f448 - b->f68) - vec3_dot(&b->pos.x, b->v84)) / 9765.625f;
     if (b->f98 < 0.0f) {
         b->f98 = 0.0f;
     }
@@ -1040,11 +1040,11 @@ static inline f32 getHeight(V3 *p)
 {
     s32 k;
     if (((s32)p + 1) * 2 != (s32)p->x) k = ((s32 *)p)[12]; else k = ((s32 *)p)[13];
-    k = func_8002E920((s32)(p->x * 1000.0f), (s32)(p->y * 1000.0f), (s32)(p->z * 1000.0f));
+    k = height_get_ground((s32)(p->x * 1000.0f), (s32)(p->y * 1000.0f), (s32)(p->z * 1000.0f));
     return (f32)k / 1000.0f;
 }
 
-f32 func_8001C550(V3 *a, V3 *b, f32 t, f32 d, f32 *e)
+f32 bike_raycast_ground(V3 *a, V3 *b, f32 t, f32 d, f32 *e)
 {
     V3 pos;
     V3 ofs;
@@ -1080,7 +1080,7 @@ f32 func_8001C550(V3 *a, V3 *b, f32 t, f32 d, f32 *e)
             thr *= 2.0f;
         }
     }
-    func_8002F4B0(e);
+    height_get_ground_normal(e);
     return t;
 }
 
@@ -1101,7 +1101,7 @@ struct Bike_7 {
     f32 f520;
 };
 
-void func_8001C780(Bike_7 *b)
+void bike_place_on_ground(Bike_7 *b)
 {
     f32 tmp[8];
     f32 d[7];
@@ -1112,31 +1112,31 @@ void func_8001C780(Bike_7 *b)
 
     b->ang[0] = 0;
     b->ang[1] = 0;
-    func_80013568(b->rot, b->mtx);
-    func_80012250(b->mtx, &b->ang[0], &b->ang[1], &b->ang[2]);
-    r = func_8001C550(&b->pos, &b->up, 0.0f, 0.002f, tmp);
-    d[0] = b->up.x * -((r + 0.5f) - b->f1BC * 14.700001f / (D_800EFDBC == 6 ? D_800C8E14 * 20000.0f + D_800C8E14 * 20000.0f : 30000.0f));
-    d[1] = b->up.y * -((r + 0.5f) - b->f1BC * 14.700001f / (D_800EFDBC == 6 ? D_800C8E14 * 20000.0f + D_800C8E14 * 20000.0f : 30000.0f));
-    d[2] = b->up.z * -((r + 0.5f) - b->f1BC * 14.700001f / (D_800EFDBC == 6 ? D_800C8E14 * 20000.0f + D_800C8E14 * 20000.0f : 30000.0f));
+    quat_to_mtx3f(b->rot, b->mtx);
+    quat_to_angles(b->mtx, &b->ang[0], &b->ang[1], &b->ang[2]);
+    r = bike_raycast_ground(&b->pos, &b->up, 0.0f, 0.002f, tmp);
+    d[0] = b->up.x * -((r + 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    d[1] = b->up.y * -((r + 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
+    d[2] = b->up.z * -((r + 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
     b->pos.x -= d[0];
     b->pos.y -= d[1];
     b->pos.z -= d[2];
     i = 16;
     do {
-        func_80012250(b->mtx, &b->ang[0], &b->ang[1], &b->ang[2]);
-        func_80013568(b->rot, b->mtx);
-        func_8001B808(b);
+        quat_to_angles(b->mtx, &b->ang[0], &b->ang[1], &b->ang[2]);
+        quat_to_mtx3f(b->rot, b->mtx);
+        bike_update_wheel_contacts(b);
         a = (b->f520 - b->f47C) / 2.5f * 32768.0f / 3.1415927f;
         if (a > 0x1000) a = 0x1000;
         if (a < -0x1000) a = -0x1000;
         b->ang[0] -= a;
-        func_80013438(b->mtx, (f32)b->ang[0] * 3.1415927f * 3.0517578e-05f,
+        quat_from_euler(b->mtx, (f32)b->ang[0] * 3.1415927f * 3.0517578e-05f,
                       (f32)b->ang[1] * 3.1415927f * 3.0517578e-05f,
                       (f32)b->ang[2] * 3.1415927f * 3.0517578e-05f);
         df = b->f520 - b->f47C;
     } while ((0.0f < df ? 0.02f < df : 0.02f < -df) && i++ < 16);
-    func_8001B808(b);
-    r = (((b->f520 + b->f47C) * 0.5f) - b->f1BC * 14.700001f / (D_800EFDBC == 6 ? D_800C8E14 * 20000.0f + D_800C8E14 * 20000.0f : 30000.0f));
+    bike_update_wheel_contacts(b);
+    r = (((b->f520 + b->f47C) * 0.5f) - b->f1BC * 14.700001f / (gGameMode == 6 ? gBikeTuneSpringRate * 20000.0f + gBikeTuneSpringRate * 20000.0f : 30000.0f));
     d[0] = b->up.x * -r;
     d[1] = b->up.y * -r;
     d[2] = b->up.z * -r;
@@ -1148,7 +1148,7 @@ void func_8001C780(Bike_7 *b)
 #define FABS_GT(x, e) ((0.0f < (x)) ? ((e) < (x)) : ((e) < -(x)))
 #define LEN(o) __builtin_sqrtf((o)->f58 * (o)->f58 + (o)->f5c * (o)->f5c + (o)->f60 * (o)->f60)
 
-void func_8001CB80(Obj_8 *a0, f32 *a1)
+void bike_wheel_surface_bumps(Obj_8 *a0, f32 *a1)
 {
     f32 len, pos, acc, t, v, targ;
 
@@ -1157,7 +1157,7 @@ void func_8001CB80(Obj_8 *a0, f32 *a1)
     v = a0->f30 - a0->sub->s1c;
     if (FABS_GT(v, 0.001f)) {
         len = LEN(a0);
-        t = func_80013774(-len);
+        t = math_exp(-len);
         a0->f30 = pos = a0->f30 * t + (1.0f - t) * a0->sub->s1c;
     } else {
         pos = a0->f30 = a0->sub->s1c;
@@ -1166,10 +1166,10 @@ void func_8001CB80(Obj_8 *a0, f32 *a1)
         if (len < 0.0f) {
             len = LEN(a0);
         }
-        acc = (f32)(s32)(func_800138FC(a1) - 0x80) * 0.00390625f;
+        acc = (f32)(s32)(math_sin_rand(a1) - 0x80) * 0.00390625f;
         targ = -len * a0->sub->s24;
         acc *= a0->sub->s20;
-        t = func_80013774(targ);
+        t = math_exp(targ);
         acc = t * a0->f38 + (1.0f - t) * acc;
         a0->f38 = acc;
     }
@@ -1177,7 +1177,7 @@ void func_8001CB80(Obj_8 *a0, f32 *a1)
     a0->f28 += pos + acc;
 }
 
-void func_8001CDE0(u8 *p)
+void bike_update_brakes(u8 *p)
 {
     f32 a514;
     f32 f3, f5, a470;
@@ -1220,7 +1220,7 @@ void func_8001CDE0(u8 *p)
     } else {
         *(u8 *)(p + 0x6e9) = 1;
     }
-    if ((D_800F0600 & 0x10) == 0) {
+    if ((gEventFlags & 0x10) == 0) {
         if ((*(u32 *)(p + 0x5b0) & 0x20010) != 0 && f5 < 0.0f) {
             f32 m, q;
             m = f3 * -2572.5f;
@@ -1230,7 +1230,7 @@ void func_8001CDE0(u8 *p)
             return;
         }
         if (*(s16 *)(p + 0x416) == 0) {
-            if (f5 < D_800E37BC) {
+            if (f5 < sBikeMaxReverseSpeed) {
                 goto neg;
             }
             return;
@@ -1246,7 +1246,7 @@ neg:
     {
         f32 m, dv;
         m = f5 * 250.0f;
-        dv = D_800E76C8 + D_800E76C8;
+        dv = gPhysDeltaTime + gPhysDeltaTime;
         *(s16 *)(p + 0x412) = 0x3000;
         m = m / dv;
         *(f32 *)(p + 0x560) = m;
@@ -1280,7 +1280,7 @@ struct Bike_8 {
     f32 f7D8;
 };
 
-void func_8001D008(Bike_8 *p)
+void bike_update_drive_force(Bike_8 *p)
 {
     f32 a, b, t, x;
 
@@ -1302,7 +1302,7 @@ void func_8001D008(Bike_8 *p)
     if (p->f4FC < 0 && p->f458 < 0 && b < 10.0f) {
         x = p->f53C - p->f498;
         if (0.15f < x) {
-            if (D_800EFDBC == 7) {
+            if (gGameMode == 7) {
                 if (p->f5D2 >= 0) {
                     return;
                 }
@@ -1355,7 +1355,7 @@ struct Obj_9 {
     s32 f744;
 };
 
-void func_8001D130(Obj_9 *o, s32 a1)
+void bike_process_input(Obj_9 *o, s32 a1)
 {
     f32 fs0;
     f32 fs1;
@@ -1389,7 +1389,7 @@ void func_8001D130(Obj_9 *o, s32 a1)
             fs0 *= 0.25f;
         }
     }
-    if (D_800EFDBC == 6) {
+    if (gGameMode == 6) {
         x = D_800E37E2 - 0x8000;
         t = x;
         if (t > 0x2000 && 0.0f < fs0) {
@@ -1405,7 +1405,7 @@ void func_8001D130(Obj_9 *o, s32 a1)
             }
             if (t < -0x4000) {
 call:
-                func_80046CC0(o);
+                bike_respawn(o);
             }
         }
     }
@@ -1419,10 +1419,10 @@ call:
     }
     if (o->f5B0 & 0x20000) {
         if (!(o->f5B4 & 0x20000)) {
-            o->f5B8 = D_800E76D0;
+            o->f5B8 = gRaceFrame;
         }
     } else if (o->f5B4 & 0x20000) {
-        o->f5BC = D_800E76D0;
+        o->f5BC = gRaceFrame;
     }
     if ((o->f5B0 & 0x10000) && o->f41B == 0) {
         if (o->f5C0 >= 0) {
@@ -1481,7 +1481,7 @@ L37c:
             goto two;
         }
         if (o->f5B0 & 0x20000) {
-            if (D_800E76D0 - o->f5B8 < 30) {
+            if (gRaceFrame - o->f5B8 < 30) {
 two:
                 o->f5CF = 2;
             } else {
@@ -1496,7 +1496,7 @@ two:
         }
     }
 end:
-    func_8003F004(o, a1);
+    rider_update_input_history(o, a1);
 }
 
 #define F_3(p, o) (*(f32 *)((u8 *)(p) + (o)))
@@ -1507,9 +1507,9 @@ end:
 typedef struct Cam_8 Cam_8;
 typedef struct { u8 pad[0x28]; f32 f28; f32 f2C; } Glob_2;
 
-extern Glob_2 D_800C8DF8_2;
+extern Glob_2 sBikeTune_2;
 
-void func_8001D640(Bike_42 *b)
+void bike_update_tire_forces(Bike_42 *b)
 {
     Vec3f dir;
     Vec3f c;
@@ -1520,7 +1520,7 @@ void func_8001D640(Bike_42 *b)
 
     if (I(b, 0x458) <= 0) {
         F_3(b, 0x46C) = F_3(b, 0x448) - F_3(b, 0x4BC);
-        func_8001BEDC(b, (Cam_8 *)V(b, 0x454));
+        bike_rear_tire_force(b, (Cam_8 *)V(b, 0x454));
     } else {
         F_3(b, 0x4F0) = F_3(b, 0x448) = F_3(b, 0x4BC) = F_3(b, 0x45C) = F_3(b, 0x460) = F_3(b, 0x464) = 0.0f;
     }
@@ -1534,11 +1534,11 @@ void func_8001D640(Bike_42 *b)
     c.x += F_3(b, 0x54);
     c.y += F_3(b, 0x58);
     c.z += F_3(b, 0x5C);
-    d1 = func_80013408(&c.x, V(b, 0x570));
-    d2 = func_80013408(&c.x, V(b, 0x57C));
-    scale = D_800C8DF8_2.f28;
+    d1 = vec3_dot(&c.x, V(b, 0x570));
+    d2 = vec3_dot(&c.x, V(b, 0x57C));
+    scale = sBikeTune_2.f28;
     m = scale * (*(Sub **)((u8 *)b + 0x588))->f18;
-    ratio = D_800C8DF8_2.f2C / scale;
+    ratio = sBikeTune_2.f2C / scale;
     F_3(b, 0x598) = m;
     if (*((u8 *)b + 0x41B) == 1) {
         F_3(b, 0x598) = m / 3.0f;
@@ -1555,13 +1555,13 @@ void func_8001D640(Bike_42 *b)
     if (sl > 0.0f) {
         F_3(b, 0x598) = F_3(b, 0x598) * (ss / (x2 + y2 / ratio));
     }
-    t = func_80013408(V(b, 0x564), V(b, 0xAC));
-    f = F_3(b, 0x514) - func_80013408(V(b, 0x500), V(b, 0xAC));
+    t = vec3_dot(V(b, 0x564), V(b, 0xAC));
+    f = F_3(b, 0x514) - vec3_dot(V(b, 0x500), V(b, 0xAC));
     f /= t;
     v = f;
     if (v > 4000.0f) v = 4000.0f;
     if (v < MINSPD) v = MINSPD;
-    if (sl < v * F_3(b, 0x598) || D_800EFDBC == 15) {
+    if (sl < v * F_3(b, 0x598) || gGameMode == 15) {
         d.x = F_3(b, 0x564) * f;
         d.y = F_3(b, 0x568) * f;
         d.z = F_3(b, 0x56C) * f;
@@ -1598,7 +1598,7 @@ void func_8001D640(Bike_42 *b)
             dir.z /= n;
         }
     }
-    sp = t + func_80013408(&dir.x, V(b, 0xAC)) * F_3(b, 0x598);
+    sp = t + vec3_dot(&dir.x, V(b, 0xAC)) * F_3(b, 0x598);
     if (sp < 0.5f) sp = 0.5f;
     f = F_3(b, 0x514) / sp;
     if (f < 0.0f) f = 0.0f;
@@ -1610,7 +1610,7 @@ void func_8001D640(Bike_42 *b)
     F_3(b, 0x500) = f * F_3(b, 0x564) + sl * dir.x;
     F_3(b, 0x504) = f * F_3(b, 0x568) + sl * dir.y;
     F_3(b, 0x508) = f * F_3(b, 0x56C) + sl * dir.z;
-    F_3(b, 0x590) += (-func_80013408(V(b, 0x500), V(b, 0x57C)) - F_3(b, 0x560)) / 9765.625f;
+    F_3(b, 0x590) += (-vec3_dot(V(b, 0x500), V(b, 0x57C)) - F_3(b, 0x560)) / 9765.625f;
     if (F_3(b, 0x590) < 0.0f) F_3(b, 0x590) = 0.0f;
     e = F_3(b, 0x590) - d2;
     if (e > 10.0f) {
@@ -1633,7 +1633,7 @@ void func_8001D640(Bike_42 *b)
     f32 len = __builtin_sqrtf((v).x * (v).x + (v).y * (v).y + (v).z * (v).z); \
     if (len != 0.0f) { (v).x /= len; (v).y /= len; (v).z /= len; } }
 
-void func_8001DD10(Bike_9 *b)
+void bike_solve_tire_constraints(Bike_9 *b)
 {
     Vec3f out, in, t, c1, c2, v, c3, c4, u, s, q, r, p, w;
     f32 ra, rb, k, A, B, C, D, r0, x, y, det, d, e, f, g;
@@ -1647,7 +1647,7 @@ void func_8001DD10(Bike_9 *b)
     in.x = cosf(b->f5A0);
     in.y = 0.0f;
     in.z = sinf(b->f5A0);
-    func_8001327C(&in.x, &b->mA0.x, &out.x);
+    vec3_mul_mtx3f(&in.x, &b->mA0.x, &out.x);
     CROSS(t, out, b->v564);
     NORM(t);
     b->v57C = t;
@@ -1658,12 +1658,12 @@ void func_8001DD10(Bike_9 *b)
     CROSS(b->v4CC, b->v4C0, t);
     if (b->n4FC <= 0) {
         if (b->n458 <= 0) {
-            p.x = b->pos.x + (b->v500.x + b->v45C.x) * (D_800E76C8 / b->f1BC);
-            p.y = b->pos.y + (b->v500.y + b->v45C.y) * (D_800E76C8 / b->f1BC) - D_800E76C8 * 14.700001f;
-            p.z = b->pos.z + (b->v500.z + b->v45C.z) * (D_800E76C8 / b->f1BC);
+            p.x = b->pos.x + (b->v500.x + b->v45C.x) * (gPhysDeltaTime / b->f1BC);
+            p.y = b->pos.y + (b->v500.y + b->v45C.y) * (gPhysDeltaTime / b->f1BC) - gPhysDeltaTime * 14.700001f;
+            p.z = b->pos.z + (b->v500.z + b->v45C.z) * (gPhysDeltaTime / b->f1BC);
             CROSS(q, b->v544, b->v500);
             CROSS(r, b->v4A0, b->v45C);
-            k = D_800E76C8 / 250.0f;
+            k = gPhysDeltaTime / 250.0f;
             w.x = b->v88.x + (q.x + r.x) * k;
             w.y = b->v88.y + (q.y + r.y) * k;
             w.z = b->v88.z + (q.z + r.z) * k;
@@ -1671,31 +1671,31 @@ void func_8001DD10(Bike_9 *b)
             s.x += p.x;
             s.y += p.y;
             s.z += p.z;
-            ra = func_80013408(&s.x, &b->v4CC.x);
+            ra = vec3_dot(&s.x, &b->v4CC.x);
             CROSS(u, w, b->v544);
             u.x += p.x;
             u.y += p.y;
             u.z += p.z;
-            rb = func_80013408(&u.x, &b->v570.x);
+            rb = vec3_dot(&u.x, &b->v570.x);
             CROSS(t, b->v544, b->v570);
-            d = func_80013408(&t.x, &b->mB8.x);
+            d = vec3_dot(&t.x, &b->mB8.x);
             t.x -= d * b->mB8.x;
             t.y -= d * b->mB8.y;
             t.z -= d * b->mB8.z;
             CROSS(c1, t, b->v544);
             CROSS(c2, t, b->v4A0);
             CROSS(v, b->v4A0, b->v4CC);
-            d = func_80013408(&v.x, &b->mB8.x);
+            d = vec3_dot(&v.x, &b->mB8.x);
             v.x -= d * b->mB8.x;
             v.y -= d * b->mB8.y;
             v.z -= d * b->mB8.z;
             CROSS(c3, v, b->v544);
             CROSS(c4, v, b->v4A0);
-            r0 = func_80013408(&b->v4CC.x, &b->v570.x);
-            A = 1.0f / b->f1BC + func_80013408(&c1.x, &b->v570.x) / 250.0f;
-            B = r0 / b->f1BC + func_80013408(&c3.x, &b->v570.x) / 250.0f;
-            C = r0 / b->f1BC + func_80013408(&c2.x, &b->v4CC.x) / 250.0f;
-            D = 1.0f / b->f1BC + func_80013408(&c4.x, &b->v4CC.x) / 250.0f;
+            r0 = vec3_dot(&b->v4CC.x, &b->v570.x);
+            A = 1.0f / b->f1BC + vec3_dot(&c1.x, &b->v570.x) / 250.0f;
+            B = r0 / b->f1BC + vec3_dot(&c3.x, &b->v570.x) / 250.0f;
+            C = r0 / b->f1BC + vec3_dot(&c2.x, &b->v4CC.x) / 250.0f;
+            D = 1.0f / b->f1BC + vec3_dot(&c4.x, &b->v4CC.x) / 250.0f;
             if (b->n458 > 0) {
                 x = -rb / A;
                 y = 0.0f;
@@ -1706,8 +1706,8 @@ void func_8001DD10(Bike_9 *b)
                 x = (B * ra - D * rb) / (A * D - B * C);
                 y = (C * rb - A * ra) / (A * D - B * C);
             }
-            y /= D_800E76C8;
-            x /= D_800E76C8;
+            y /= gPhysDeltaTime;
+            x /= gPhysDeltaTime;
             b->f468 = y;
             b->f50C = x;
             b->v45C.x = b->v4CC.x * y + b->v4D8.x * (b->f448 - b->f4BC);
@@ -1721,11 +1721,11 @@ void func_8001DD10(Bike_9 *b)
         b->v45C.x = b->v4D8.x * (b->f448 - b->f4BC);
         b->v45C.y = b->v4D8.y * (b->f448 - b->f4BC);
         b->v45C.z = b->v4D8.z * (b->f448 - b->f4BC);
-        e = func_80013408(&b->pos.x, &b->v4CC.x) * (b->f1BC / D_800E76C8);
+        e = vec3_dot(&b->pos.x, &b->v4CC.x) * (b->f1BC / gPhysDeltaTime);
         b->v45C.x -= b->v4CC.x * e;
         b->v45C.y -= b->v4CC.y * e;
         b->v45C.z -= b->v4CC.z * e;
-        f = func_80013408(&b->pos.x, &b->v4D8.x);
+        f = vec3_dot(&b->pos.x, &b->v4D8.x);
         if (f > 0.0f) {
             g = 1.0f / (f + 20.0f);
         } else {
@@ -1737,7 +1737,7 @@ void func_8001DD10(Bike_9 *b)
     }
 }
 
-f32 func_8001E89C(u8 *p)
+f32 bike_calc_lean_torque(u8 *p)
 {
     struct { s16 h[2]; s32 w; } lo;
     f32 fVar2, fVar3, fVar4, fX, fR;
@@ -1768,7 +1768,7 @@ f32 func_8001E89C(u8 *p)
             }
         }
     }
-    func_8001254C((s32)(*(f32 *)(p + 0xA4) * 1000.0f), (s32)(*(f32 *)(p + 0xB0) * 1000.0f), lo.h, &lo.w);
+    math_to_polar((s32)(*(f32 *)(p + 0xA4) * 1000.0f), (s32)(*(f32 *)(p + 0xB0) * 1000.0f), lo.h, &lo.w);
     fVar4 = (f32)(s32)lo.h[0] * 0.001953125f;
 
     if (*(s32 *)(p + 0x744) < 0) {
@@ -1801,12 +1801,12 @@ f32 func_8001E89C(u8 *p)
     else if (fX < -12.0f) fX = -12.0f;
 
     if (*(u8 *)(p + 0x6E8) == 0) {
-        fX = D_800C94B8 * fX - D_800C94BC * *(f32 *)(p + 0x438);
+        fX = sLeanTorqueGain * fX - sLeanTorqueDamping * *(f32 *)(p + 0x438);
     } else {
         fX = fX * 0.015f - *(f32 *)(p + 0x438) * 0.1f;
     }
     fR = 0.0f;
-    if (D_800EFDBC != 0xF) fR = fX;
+    if (gGameMode != 0xF) fR = fX;
     return fR;
 }
 
@@ -1907,7 +1907,7 @@ struct Bike_10 {
     /* 0x7C4 */ f32 f7C4;
 };
 
-void func_8001EC90(Bike_10 *b) {
+void bike_compute_forces(Bike_10 *b) {
     Vec3f F;
     Vec3f T;
     Vec3f A;
@@ -1969,7 +1969,7 @@ void func_8001EC90(Bike_10 *b) {
         A.z -= b->v54.z * q;
     }
     save = b->f438;
-    func_80013310(&b->v88, b->mA0, &b->f430);
+    mtx3f_mul_vec3(&b->v88, b->mA0, &b->f430);
     b->f438 = save;
     c1.x = b->v4A0.y * b->v45C.z - b->v45C.y * b->v4A0.z;
     c1.y = b->v4A0.z * b->v45C.x - b->v45C.z * b->v4A0.x;
@@ -1980,13 +1980,13 @@ void func_8001EC90(Bike_10 *b) {
     T.x = c2.x + c1.x;
     T.y = c2.y + c1.y;
     T.z = c2.z + c1.z;
-    func_80013310(&T, b->mA0, &F);
+    mtx3f_mul_vec3(&T, b->mA0, &F);
     F.x += b->f434 * 250.0f * b->f438;
     p = &b->v48;
     if (b == 0) grav = 1.0f; else if (p == 0) grav = 2.0f; else if (b->f24 == b->f3AC) grav = 3.0f; else grav = 4.0f;
     grav = 14.700001f;
     if (b->f744 < 7
-        || (f32)func_8002E920(p->x * 1000.0f, p->y * 1000.0f, p->z * 1000.0f) / 1000.0f - b->v48.y + 0.5f > -0.2f
+        || (f32)height_get_ground(p->x * 1000.0f, p->y * 1000.0f, p->z * 1000.0f) / 1000.0f - b->v48.y + 0.5f > -0.2f
         || b->f45 != 0) {
         if (b->f416 == 0) {
             f32 t;
@@ -1995,7 +1995,7 @@ void func_8001EC90(Bike_10 *b) {
                 t = 3.0f;
             }
             F.x += t * 32.0f / 1000.0f * 1323.0001f;
-            if (D_800EFDBC != 7) {
+            if (gGameMode != 7) {
                 if (b->f4FC >= 8 && b->f478 == b->f47C && b->f430 < 0.0f) {
                     F.x += 8000.0f;
                 }
@@ -2007,7 +2007,7 @@ void func_8001EC90(Bike_10 *b) {
             n = -0x2800 - b->f414 * 3 - b->f24;
             F.x = ((f32)n * 3.1415927f * 3.0517578e-05f - b->f430 * 0.5f) * 15000.0f;
         } else {
-            n = func_80013098(1.3f, b->f498 - b->f53C) * 32768.0f / 3.1415927f - b->f24;
+            n = math_atan2f(1.3f, b->f498 - b->f53C) * 32768.0f / 3.1415927f - b->f24;
             if (b->f416 != 1) {
                 F.x = ((f32)n * 3.0f * 3.1415927f * 3.0517578e-05f - b->f430 * 0.5f) * 15000.0f;
             } else {
@@ -2038,10 +2038,10 @@ void func_8001EC90(Bike_10 *b) {
         }
         if (b->f3D0 == 15) {
             s32 r;
-            func_8001254C(-b->v54.x * 1000.0f, b->v54.z * 1000.0f, &ang, &ratio);
-            func_8001254C(-b->mA0[2][0] * 1000.0f, b->mA0[2][2] * 1000.0f, &ang2, &ratio);
+            math_to_polar(-b->v54.x * 1000.0f, b->v54.z * 1000.0f, &ang, &ratio);
+            math_to_polar(-b->mA0[2][0] * 1000.0f, b->mA0[2][2] * 1000.0f, &ang2, &ratio);
             b->f34 = ang;
-            r = func_8003F534(15, &tmp);
+            r = rider_anim_get_length(15, &tmp);
             ang += ((b->f3AC - (r << 8)) << 8) / r;
             ang -= ang2;
             if (ang > 0xC00) {
@@ -2050,8 +2050,8 @@ void func_8001EC90(Bike_10 *b) {
             b->v88.y = -((f32)ang * 3.1415927f * 3.0517578e-05f) * 60.0f;
         } else if (b->f420 > 5.0f) {
             f32 t;
-            func_8001254C(b->v54.x * 1000.0f, b->v54.z * 1000.0f, &ang, &ratio);
-            func_8001254C(b->mA0[2][0] * 1000.0f, b->mA0[2][2] * 1000.0f, &ang2, &ratio);
+            math_to_polar(b->v54.x * 1000.0f, b->v54.z * 1000.0f, &ang, &ratio);
+            math_to_polar(b->mA0[2][0] * 1000.0f, b->mA0[2][2] * 1000.0f, &ang2, &ratio);
             ang -= b->f622;
             ang -= ang2;
             t = (f32)ang * 6.1035156e-05f - b->v88.y * 0.25f;
@@ -2070,9 +2070,9 @@ void func_8001EC90(Bike_10 *b) {
     b->v60.x = A.x / b->f1BC;
     b->v60.y = A.y / b->f1BC;
     b->v60.z = A.z / b->f1BC;
-    F.z = func_8001E89C(b) * 64.0f * 250.0f;
-    F.x += F.z * b->f434 * D_800E76C8;
-    func_8001327C(&F, b->mA0, &T);
+    F.z = bike_calc_lean_torque(b) * 64.0f * 250.0f;
+    F.x += F.z * b->f434 * gPhysDeltaTime;
+    vec3_mul_mtx3f(&F, b->mA0, &T);
     b->v94.x = T.x / 250.0f;
     b->v94.y = T.y / 250.0f;
     b->v94.z = T.z / 250.0f;
@@ -2088,10 +2088,10 @@ void func_8001EC90(Bike_10 *b) {
             d.y /= len;
             d.z /= len;
         }
-        t = func_80013408(&d, &b->v88);
+        t = vec3_dot(&d, &b->v88);
         if (b->f41B == 2) {
             f32 q;
-            q = t / (2.0f * D_800E76C8);
+            q = t / (2.0f * gPhysDeltaTime);
             b->v94.x -= d.x * q;
             b->v94.y -= d.y * q;
             b->v94.z -= d.z * q;
@@ -2101,7 +2101,7 @@ void func_8001EC90(Bike_10 *b) {
             n = ABS(n);
             if ((f32)n < 1.5f) {
                 f32 s;
-                s = D_800E76C8 * 240.0f;
+                s = gPhysDeltaTime * 240.0f;
                 b->v94.x -= d.x * ((f32)b->f5D0 / s);
                 b->v94.y -= d.y * ((f32)b->f5D0 / s);
                 b->v94.z -= d.z * ((f32)b->f5D0 / s);
@@ -2121,11 +2121,11 @@ void func_8001EC90(Bike_10 *b) {
             d.y /= len;
             d.z /= len;
         }
-        t = func_80013408(&d, &b->v88);
+        t = vec3_dot(&d, &b->v88);
         m = b->f5D0;
         if ((t > 0.5f && m >= -3) || (t < -0.5f && m < 4)) {
             f32 q;
-            q = t / (2.0f * D_800E76C8);
+            q = t / (2.0f * gPhysDeltaTime);
             b->v94.x = -d.x * q;
             b->v94.y = -d.y * q;
             b->v94.z = -d.z * q;
@@ -2143,33 +2143,33 @@ void func_8001EC90(Bike_10 *b) {
             e.y /= len;
             e.z /= len;
         }
-        t = func_80013408(&e, &b->v88) / (D_800E76C8 * 16.0f);
+        t = vec3_dot(&e, &b->v88) / (gPhysDeltaTime * 16.0f);
         b->v94.x -= e.x * t;
         b->v94.y -= e.y * t;
         b->v94.z -= e.z * t;
     }
 }
 
-void func_8001FB40(u8 *param_1)
+void bike_integrate_velocity(u8 *param_1)
 {
     f32 len;
     f32 r;
 
-    *(f32 *)(param_1 + 0x54) = *(f32 *)(param_1 + 0x54) + *(f32 *)(param_1 + 0x60) * D_800E76C8;
-    *(f32 *)(param_1 + 0x58) = *(f32 *)(param_1 + 0x58) + *(f32 *)(param_1 + 0x64) * D_800E76C8;
-    *(f32 *)(param_1 + 0x5C) = *(f32 *)(param_1 + 0x5C) + *(f32 *)(param_1 + 0x68) * D_800E76C8;
-    *(f32 *)(param_1 + 0x88) = *(f32 *)(param_1 + 0x88) + *(f32 *)(param_1 + 0x94) * D_800E76C8;
-    *(f32 *)(param_1 + 0x8C) = *(f32 *)(param_1 + 0x8C) + *(f32 *)(param_1 + 0x98) * D_800E76C8;
-    *(f32 *)(param_1 + 0x90) = *(f32 *)(param_1 + 0x90) + *(f32 *)(param_1 + 0x9C) * D_800E76C8;
-    func_80013310((f32 *)(param_1 + 0x88), (f32 *)(param_1 + 0xA0), (f32 *)(param_1 + 0x430));
+    *(f32 *)(param_1 + 0x54) = *(f32 *)(param_1 + 0x54) + *(f32 *)(param_1 + 0x60) * gPhysDeltaTime;
+    *(f32 *)(param_1 + 0x58) = *(f32 *)(param_1 + 0x58) + *(f32 *)(param_1 + 0x64) * gPhysDeltaTime;
+    *(f32 *)(param_1 + 0x5C) = *(f32 *)(param_1 + 0x5C) + *(f32 *)(param_1 + 0x68) * gPhysDeltaTime;
+    *(f32 *)(param_1 + 0x88) = *(f32 *)(param_1 + 0x88) + *(f32 *)(param_1 + 0x94) * gPhysDeltaTime;
+    *(f32 *)(param_1 + 0x8C) = *(f32 *)(param_1 + 0x8C) + *(f32 *)(param_1 + 0x98) * gPhysDeltaTime;
+    *(f32 *)(param_1 + 0x90) = *(f32 *)(param_1 + 0x90) + *(f32 *)(param_1 + 0x9C) * gPhysDeltaTime;
+    mtx3f_mul_vec3((f32 *)(param_1 + 0x88), (f32 *)(param_1 + 0xA0), (f32 *)(param_1 + 0x430));
     len = *(f32 *)(param_1 + 0x54) * *(f32 *)(param_1 + 0x54)
         + *(f32 *)(param_1 + 0x58) * *(f32 *)(param_1 + 0x58)
         + *(f32 *)(param_1 + 0x5C) * *(f32 *)(param_1 + 0x5C);
     *(f32 *)(param_1 + 0x420) = __builtin_sqrtf(len);
-    r = func_80013408((f32 *)(param_1 + 0x54), (f32 *)(param_1 + 0xB8));
+    r = vec3_dot((f32 *)(param_1 + 0x54), (f32 *)(param_1 + 0xB8));
     *(f32 *)(param_1 + 0x424) = r;
     if (*(u8 *)(param_1 + 0x44) == 0 && *(s8 *)(param_1 + 0x3D0) != 0xF) {
-        func_80029B1C(param_1);
+        cam_calc_bike_yaw(param_1);
     }
 }
 
@@ -2181,7 +2181,7 @@ typedef struct {
     f32 one[2];
 } Locals;
 
-void func_8001FC60(Bike_11 *b)
+void bike_integrate_position(Bike_11 *b)
 {
     Locals L;
     f32 c;
@@ -2190,7 +2190,7 @@ void func_8001FC60(Bike_11 *b)
     s32 id;
     s32 i;
 
-    c = D_800E76C8 * 0.5f;
+    c = gPhysDeltaTime * 0.5f;
     L.zv[0] = L.zv[1] = L.zv[2] = 0.0f;
     k = -b->f438 * c;
     L.loc[0] = b->dir[0] * k;
@@ -2203,9 +2203,9 @@ void func_8001FC60(Bike_11 *b)
     if (b->f4FC <= 0 && b->f458 <= 0) {
         n = 6;
     }
-    func_800453D8(b->f48, D_800C94C8, n, 0);
+    phys_body_step(b->f48, sBikeContactPoints, n, 0);
     b->flags |= 1;
-    id = b - D_800E37C0_17;
+    id = b - gRiders_17;
     b->pos[0] -= L.loc[0];
     b->pos[1] -= L.loc[1];
     {
@@ -2213,11 +2213,11 @@ void func_8001FC60(Bike_11 *b)
         L.one[0] = 1.0f;
         b->pos[2] = t2 - L.loc[2];
     }
-    if (id == (D_800E76D0 & 7)) {
+    if (id == (gRaceFrame & 7)) {
         u8 *tb = D_800C9548;
-        u8 *t = (u8 *)(((D_800E76D0 >> 2) & 6) + (s32)tb);
-        if (func_80030658(b->pts[t[0]], b->pts[t[1]], D_800EE300, L.one, 0)) {
-            func_800445B0(b, 0x1C);
+        u8 *t = (u8 *)(((gRaceFrame >> 2) & 6) + (s32)tb);
+        if (height_raycast_walls(b->pts[t[0]], b->pts[t[1]], gContactNormal, L.one, 0)) {
+            bike_crash_begin(b, 0x1C);
         }
     }
 }
@@ -2226,7 +2226,7 @@ void func_8001FC60(Bike_11 *b)
 #define WD(o) (*(s32 *)((u8 *)b + (o)))
 #define PF(o) ((f32 *)((u8 *)b + (o)))
 
-void func_8001FE1C(Bike_42 *b)
+void bike_update_render_pose(Bike_42 *b)
 {
     f32 tmp[3];
     f32 q[4];
@@ -2239,9 +2239,9 @@ void func_8001FE1C(Bike_42 *b)
     x = FL(0x51C);
     y = FL(0x478);
     if (*((u8 *)b + 0x44) == 0) {
-        func_80013310(PF(0x564), PF(0xA0), tmp);
+        mtx3f_mul_vec3(PF(0x564), PF(0xA0), tmp);
         x += (1.0f - tmp[1] / __builtin_sqrtf(1.0f - tmp[0] * tmp[0])) * 0.25f;
-        func_80013310(PF(0x4C0), PF(0xA0), tmp);
+        mtx3f_mul_vec3(PF(0x4C0), PF(0xA0), tmp);
         y += (1.0f - tmp[1] / __builtin_sqrtf(1.0f - tmp[0] * tmp[0])) * 0.25f;
     }
     m = 0.0f;
@@ -2269,16 +2269,16 @@ void func_8001FE1C(Bike_42 *b)
     WD(0x30) = FL(0x5A0) * 32768.0f / 3.1415927f;
     *(Blk *)PF(0x370) = *(Blk *)PF(0x78);
     if (*((u8 *)b + 0x44) == 0) {
-        func_80012250(PF(0x78), &WD(0x24), &WD(0x28), &WD(0x2C));
+        quat_to_angles(PF(0x78), &WD(0x24), &WD(0x28), &WD(0x2C));
         if (*((s8 *)b + 0x3D0) == -1 || *((s8 *)b + 0x3D0) == 15) {
             v = WD(0x24);
             if (v > 0x3000) {
-                func_800445B0(b, 0x19);
+                bike_crash_begin(b, 0x19);
             } else if (v < -0x3000) {
-                func_800445B0(b, 0x1C);
+                bike_crash_begin(b, 0x1C);
             }
         }
-        func_8003E944(b);
+        bike_update_trick_offset(b);
         if (FL(0x3A8) != 0.0f) {
             q[0] = (1.0f - FL(0x3A8)) + FL(0x38C) * FL(0x3A8);
             q[1] = FL(0x390) * FL(0x3A8);
@@ -2289,13 +2289,13 @@ void func_8001FE1C(Bike_42 *b)
             q[1] /= len;
             q[2] /= len;
             q[3] /= len;
-            func_80013C20(PF(0x370), PF(0x78), q);
-            func_8001327C(PF(0x39C), PF(0xA0), o);
+            quat_mul(PF(0x370), PF(0x78), q);
+            vec3_mul_mtx3f(PF(0x39C), PF(0xA0), o);
             WD(0x0) = (f32)WD(0x0) + o[0] * (FL(0x3A8) * 1000.0f);
             WD(0x4) = (f32)WD(0x4) + o[1] * (FL(0x3A8) * 1000.0f);
             WD(0x8) = (f32)WD(0x8) + o[2] * (FL(0x3A8) * 1000.0f);
         }
-        func_80012250(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
+        quat_to_angles(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
         if (*((u8 *)b + 0x6E8) != 0) {
             v = WD(0x1C);
             if (v > 0x1800) {
@@ -2319,50 +2319,50 @@ void func_8001FE1C(Bike_42 *b)
             r1[1] = s * FL(0xB8);
             r1[2] = s * FL(0xBC);
             r1[3] = s * FL(0xC0);
-            func_80013C20(PF(0x370), r1, PF(0x370));
-            func_80012250(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
-        } else if ((WD(0x5B0) & 0x20000) && D_800E76D0 - WD(0x5B8) < 0x3C &&
+            quat_mul(PF(0x370), r1, PF(0x370));
+            quat_to_angles(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
+        } else if ((WD(0x5B0) & 0x20000) && gRaceFrame - WD(0x5B8) < 0x3C &&
                    ((*(Info **)((u8 *)b + 0x4E4))->f28 & 4) && WD(0x744) < 0 && FL(0x420) < 5.0f) {
             if (FL(0x420) > 2.0f) {
-                k = (f32)(WD(0x5B8) - (D_800E76D0 - 0x3C)) * 6.1035155e-07f / 60.0f;
+                k = (f32)(WD(0x5B8) - (gRaceFrame - 0x3C)) * 6.1035155e-07f / 60.0f;
             } else {
                 k = 1.2207031e-06f;
             }
-            ang = D_800C2C60[((((D_800E76D0 - WD(0x5B8)) << 13) >> 4) - 0x400) & 0xFFF];
+            ang = gCosTable[((((gRaceFrame - WD(0x5B8)) << 13) >> 4) - 0x400) & 0xFFF];
             ang *= k;
             r2[0] = cosf(ang);
             s2 = sinf(ang);
             r2[1] = s2 * FL(0xAC);
             r2[2] = s2 * FL(0xB0);
             r2[3] = s2 * FL(0xB4);
-            func_80013C20(PF(0x370), r2, PF(0x370));
-            func_80012250(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
+            quat_mul(PF(0x370), r2, PF(0x370));
+            quat_to_angles(PF(0x370), &WD(0x18), &WD(0x1C), &WD(0x20));
         }
     } else {
-        func_80013568(PF(0x224), PF(0x1FC));
+        quat_to_mtx3f(PF(0x224), PF(0x1FC));
         WD(0xC) = FL(0x1CC) * 1000.0f;
         WD(0x10) = FL(0x1D0) * 1000.0f;
         WD(0x14) = FL(0x1D4) * 1000.0f;
     }
     WD(0x30) = FL(0x5A0) * 32768.0f / 3.1415927f;
-    func_80013568(PF(0xA0), PF(0x78));
+    quat_to_mtx3f(PF(0xA0), PF(0x78));
 }
 
-void func_80020504(void *a0)
+void bike_handle_landing(void *a0)
 {
     u8 *s1 = (u8 *)a0;
     u8 *s0 = s1 + 0x54;
     f32 fs0, d;
     s32 iv, v1;
 
-    fs0 = func_80013408((f32 *)s0, (f32 *)(s1 + 0x4C0)) + func_80013408((f32 *)s0, (f32 *)(s1 + 0x564));
+    fs0 = vec3_dot((f32 *)s0, (f32 *)(s1 + 0x4C0)) + vec3_dot((f32 *)s0, (f32 *)(s1 + 0x564));
     if (s1[0x3D0] < 0x10 && *(s32 *)(s1 + 0x744) >= 0xB)
-        func_800445B0(s1, 0x1C);
+        bike_crash_begin(s1, 0x1C);
     *(s32 *)(s1 + 0x5C0) = 0;
     if (fs0 < -10.0f)
         *(s16 *)(s1 + 0x416) = 0;
-    if (D_800EFDBC == 0xF) {
-        *(f32 *)(s1 + 0x7B8) = D_800C8E08;
+    if (gGameMode == 0xF) {
+        *(f32 *)(s1 + 0x7B8) = sBikeTuneLanding;
         *(s32 *)(s1 + 0x8C) = 0;
     }
     if (*(s32 *)(s1 + 0x744) < 0x29)
@@ -2370,7 +2370,7 @@ void func_80020504(void *a0)
     d = *(f32 *)(s1 + 0x520) - *(f32 *)(s1 + 0x47C);
     *(f32 *)(s1 + 0x75C) = *(f32 *)(s1 + 0x758);
     if (d < -2.0f) {
-        func_800445B0(s1, 0x19);
+        bike_crash_begin(s1, 0x19);
         goto L178;
     }
     if (d < -0.8f) {
@@ -2412,7 +2412,7 @@ L1c0:
         *(s32 *)(s1 + 0x768) = 0;
     if (*(s32 *)(s1 + 0x768) >= 0x100)
         *(s32 *)(s1 + 0x768) = 0xFF;
-    v1 = D_800E76D0;
+    v1 = gRaceFrame;
     *(u8 *)(s1 + 0x764) = 0xFF;
     *(s32 *)(s1 + 0x5A0) = 0;
     *(s32 *)(s1 + 0x774) = v1;
@@ -2432,7 +2432,7 @@ struct Body {
     f32 f420;
 };
 
-f32 func_80020744(Body *p, f32 g, f32 t, f32 *out)
+f32 bike_predict_landing(Body *p, f32 g, f32 t, f32 *out)
 {
     f32 diff, prev, v, step, lim, w;
 
@@ -2441,7 +2441,7 @@ f32 func_80020744(Body *p, f32 g, f32 t, f32 *out)
     w = p->z + p->vz * t;
     out[2] = w;
     if (out == 0) w = 1.0f; else if (p == 0) w = 2.0f; else w = 3.0f;
-        diff = (f32)func_8002E920(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
+        diff = (f32)height_get_ground(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
     diff = (diff - out[1]) + 0.5f;
     v = p->vy + g * t;
     if (0.0f < v ? v < 0.1f : -v < 0.1f) v = 0.1f;
@@ -2459,7 +2459,7 @@ f32 func_80020744(Body *p, f32 g, f32 t, f32 *out)
         w = p->z + p->vz * t;
         out[2] = w;
         if (out == 0) w = 1.0f; else if (p == 0) w = 2.0f; else if (out == (f32 *)p) w = 4.0f; else if (out == &p->x) w = 5.0f; else if (out == &p->y) w = 6.0f; else w = 3.0f;
-                diff = (f32)func_8002E920(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
+                diff = (f32)height_get_ground(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
     diff = (diff - out[1]) + 0.5f;
         if (prev == diff) return t;
         v = step / (prev - diff);
@@ -2472,7 +2472,7 @@ f32 func_80020744(Body *p, f32 g, f32 t, f32 *out)
         out[2] = out[2] - p->vz * (0.5f / p->f420);
     }
     if (out == 0) diff = 1.0f; else if (p == 0) diff = 2.0f; else diff = 3.0f;
-        out[1] = (f32)func_8002E920(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
+        out[1] = (f32)height_get_ground(out[0] * 1000.0f, out[1] * 1000.0f, out[2] * 1000.0f) / 1000.0f;
     if (t < 0.0f) t = 0.0f;
     return t;
 }
@@ -2490,7 +2490,7 @@ struct Bike_12 {
     f32 dt;         /* 0x6F4 */
 };
 
-void func_80020B18(Bike_12 *b)
+void bike_align_to_ground(Bike_12 *b)
 {
     Vec3f n;
     Vec3f c;
@@ -2507,22 +2507,22 @@ void func_80020B18(Bike_12 *b)
     qd = v.z + b->vel.z * b->dt;
     v.z = qd;
     if (b == 0) q = 1.0f; else if (t == w) q = 2.0f; else q = 3.0f;
-    func_8002E920((s32)(v.x * 1000.0f), (s32)(v.y * 1000.0f), (s32)(v.z * 1000.0f));
-    func_8002F4B0(&n.x);
+    height_get_ground((s32)(v.x * 1000.0f), (s32)(v.y * 1000.0f), (s32)(v.z * 1000.0f));
+    height_get_ground_normal(&n.x);
     if (n.y < 0.5f) {
         return;
     }
     c.x = b->fAC.y * n.z - n.y * b->fAC.z;
     c.y = b->fAC.z * n.x - n.z * b->fAC.x;
     c.z = b->fAC.x * n.y - n.x * b->fAC.y;
-    len = func_80013408(&c.x, &b->fA0.x);
+    len = vec3_dot(&c.x, &b->fA0.x);
     c.x = b->fA0.x * len;
     c.y = b->fA0.y * len;
     c.z = b->fA0.z * len;
     if (len == 0.0f) {
         return;
     }
-    t = func_80013010((s32)(len * 16384.0f));
+    t = math_asini((s32)(len * 16384.0f));
     q = (f32)(s16)t * 3.1415927f * 3.0517578e-05f;
     th = b->dt;
     th += 0.1f;
@@ -2581,7 +2581,7 @@ struct Ent_12 {
     u8 b7A8;
 };
 
-void func_80020D38(Ent_12 *e)
+void bike_update_wheelie(Ent_12 *e)
 {
     s8 c;
 
@@ -2591,7 +2591,7 @@ void func_80020D38(Ent_12 *e)
     if (e->h416 == 0) {
         if (e->w744 < 0) {
             if (e->w4FC < 0 && e->f420 > 7.5f && (e->s588->flags & 0x20)) {
-                func_800445B0(e, 0x1C);
+                bike_crash_begin(e, 0x1C);
             }
             if ((e->btn & 0x20000) && !(e->prev & 0x20000) && abs(e->c5D0) < 3 &&
                 e->f424 > -1.0f && e->c5D2 < -4) {
@@ -2604,8 +2604,8 @@ void func_80020D38(Ent_12 *e)
             if (e->s4E4->flags & 0x20) {
                 e->h416 = 0xF;
             }
-            if (e->w458 <= 0 && func_80013408(&e->vAC.x, &e->v4C0.x) < 0.5f) {
-                func_800445B0(e, 0x19);
+            if (e->w458 <= 0 && vec3_dot(&e->vAC.x, &e->v4C0.x) < 0.5f) {
+                bike_crash_begin(e, 0x19);
             }
         }
         if (e->h416 < 0x10) {
@@ -2620,7 +2620,7 @@ void func_80020D38(Ent_12 *e)
                 }
                 e->h414 -= e->h414 / 64;
                 if (e->h414 > 0x400) {
-                    func_800445B0(e, 0x19);
+                    bike_crash_begin(e, 0x19);
                     e->pos.x -= e->vel.x * 5.0f;
                     e->pos.y -= e->vel.y * 5.0f;
                     e->pos.z -= e->vel.z * 5.0f;
@@ -2670,11 +2670,11 @@ typedef struct {
     u8 pad65[0x7];
 } Seg_4;
 
-extern Surf_3 D_800C9080_4[];
-extern Ent_13 D_800C9A40[];
-extern Seg_4 *D_800EE498_4;
+extern Surf_3 gSurfaceTable_4[];
+extern Ent_13 gRiderAnims[];
+extern Seg_4 *gPathNodes_4;
 
-void func_80021068(Bike_13 *b) {
+void bike_update_jump(Bike_13 *b) {
     volatile s32 pad[12];
     Vec3f t;
     Vec3f c;
@@ -2714,11 +2714,11 @@ void func_80021068(Bike_13 *b) {
                 if (b->f416 != 0 && b->f416 < 45) {
                     b->f416 = 0;
                 }
-                d1 = func_80013408(&b->fA0.x, &b->f88.x);
+                d1 = vec3_dot(&b->fA0.x, &b->f88.x);
                 b->f88.x -= d1 * b->fA0.x;
                 b->f88.y -= d1 * b->fA0.y;
                 b->f88.z -= d1 * b->fA0.z;
-                if (b->f6E8 == 0 && b->f44 == 0 && D_800E76D0 - b->f5B8 < 10 && (b->f5B0 & 0x20000)) {
+                if (b->f6E8 == 0 && b->f44 == 0 && gRaceFrame - b->f5B8 < 10 && (b->f5B0 & 0x20000)) {
                     sp = b->f420;
                     if (sp < 20.0f && b->f654 == 0) {
                         th = 5.0f;
@@ -2738,17 +2738,17 @@ void func_80021068(Bike_13 *b) {
                             b->f88.y -= b->fA0.y * 3.0f;
                             b->f88.z -= b->fA0.z * 3.0f;
                         }
-                        func_80011378(7, b - D_800E37C0_18, 0xC0, 0xC0, 1);
+                        snd_play_rider_sfx_pitch(7, b - gRiders_18, 0xC0, 0xC0, 1);
                     }
                 }
-                if (D_800EFDBC == 6) {
+                if (gGameMode == 6) {
                     Vec3f *q = &b->f74C;
                     if (b->f420 > 4.0f) {
-                    th = q->x; sp = q->z; if (b == 0) r = 0; func_8002E920(th * 1000.0f, q->y * 1000.0f, sp * 1000.0f);
-                    if (D_800C9080_4[(D_800E84F8 >> 4) & 0xF].f28 & 0x400) {
+                    th = q->x; sp = q->z; if (b == 0) r = 0; height_get_ground(th * 1000.0f, q->y * 1000.0f, sp * 1000.0f);
+                    if (gSurfaceTable_4[(gGroundSurface >> 4) & 0xF].f28 & 0x400) {
                         f32 k;
                         k = 10.0f;
-                        g = D_800C8E04 * k / b->f420 + 1.0f;
+                        g = sBikeTuneRampBoost * k / b->f420 + 1.0f;
                         b->vel.x *= g;
                         b->vel.y *= g;
                         b->vel.z *= g;
@@ -2775,26 +2775,26 @@ void func_80021068(Bike_13 *b) {
                 b->f734 = h;
                 b->f714 = h;
             }
-            b->f744 = D_800E76C4;
+            b->f744 = gPhysTicks;
         } else {
-            b->f744 += D_800E76C4;
+            b->f744 += gPhysTicks;
         }
         if (b->f744 >= 4) {
-            b->f718 = func_80020744(b, -19.29375f, b->f718, &b->f71C);
-            func_8002F4B0(&b->f728.x);
-            b->f6F8 = func_80020744(b, -10.106251f, b->f6F8, &b->f6FC);
-            func_8002F4B0(&b->f708.x);
+            b->f718 = bike_predict_landing(b, -19.29375f, b->f718, &b->f71C);
+            height_get_ground_normal(&b->f728.x);
+            b->f6F8 = bike_predict_landing(b, -10.106251f, b->f6F8, &b->f6FC);
+            height_get_ground_normal(&b->f708.x);
             b->f6F4 = (b->f6F8 + b->f718) * 0.5f;
             if (b->f5B0 & 0x10000) {
                 n = b->f5D0;
                 if (b->f3D0 == -1 && b->f6F4 > 0.5f) {
                     if (n > 10) {
-                        func_8006FE84(b, 16);
+                        stunt_start(b, 16);
                     } else if (n < -10) {
-                        func_8006FE84(b, 17);
+                        stunt_start(b, 17);
                     }
                     if (b->f3D0 != -1) {
-                        b->f3B0 = (f32)(D_800C9A40[b->f3D0].fC->f4 << 9) / (b->f6F4 * 60.0f);
+                        b->f3B0 = (f32)(gRiderAnims[b->f3D0].fC->f4 << 9) / (b->f6F4 * 60.0f);
                     }
                 }
                 if (b->f3D0 == 16) {
@@ -2837,9 +2837,9 @@ void func_80021068(Bike_13 *b) {
                 z /= len;
                 fs3 = b->f71C.y * 14.700001f;
                 fs4 = (x * b->f728.x + z * b->f728.z) / b->f728.y;
-                if (D_800EFDBC != 5) {
-                    b->f734 = func_8004B5F0(&b->f71C, b->f734, n, b->f6EB);
-                    if (D_800EE498_4[b->f734].f64 & 0x10) {
+                if (gGameMode != 5) {
+                    b->f734 = path_find_segment(&b->f71C, b->f734, n, b->f6EB);
+                    if (gPathNodes_4[b->f734].f64 & 0x10) {
                         fs3 -= 1000.0f;
                     }
                 }
@@ -2847,9 +2847,9 @@ void func_80021068(Bike_13 *b) {
                 e = b->f728.x * b->vel.x + b->f728.y * (b->vel.y - b->f718 * 17.640001f) + b->f728.z * b->vel.z;
                 x = (x * b->f708.x + z * b->f708.z) / b->f708.y;
                 fs3 -= e * e;
-                if (D_800EFDBC != 5) {
-                    b->f714 = func_8004B5F0(&b->f6FC, b->f714, n, b->f6EB);
-                    if (D_800EE498_4[b->f714].f64 & 0x10) {
+                if (gGameMode != 5) {
+                    b->f714 = path_find_segment(&b->f6FC, b->f714, n, b->f6EB);
+                    if (gPathNodes_4[b->f714].f64 & 0x10) {
                         fs2 -= 500.0f;
                     }
                 }
@@ -2877,7 +2877,7 @@ void func_80021068(Bike_13 *b) {
             }
         }
         if (b->f5CC != 0) {
-            func_80020B18(b);
+            bike_align_to_ground(b);
         } else if (b->f6F4 < 0.25f && b->vel.y < 0.0f && b->f744 >= 31 && b->f416 == 0) {
             if (b->f6E8 == 0) {
                 p = b->pos;
@@ -2886,12 +2886,12 @@ void func_80021068(Bike_13 *b) {
                 m = p.z + b->vel.z * b->f6F4;
                 p.z = m;
                 if (b == 0) e = 1.0f; else if (n == 0) e = 2.0f; else e = 3.0f;
-                p.y = (f32)func_8002E920(p.x * 1000.0f, p.y * 1000.0f, p.z * 1000.0f) / 1000.0f;
-                func_8002F4B0(&t.x);
+                p.y = (f32)height_get_ground(p.x * 1000.0f, p.y * 1000.0f, p.z * 1000.0f) / 1000.0f;
+                height_get_ground_normal(&t.x);
                 c.x = b->fAC.y * t.z - t.y * b->fAC.z;
                 c.y = b->fAC.z * t.x - t.z * b->fAC.x;
                 c.z = b->fAC.x * t.y - t.x * b->fAC.y;
-                d2 = func_80013408(&c.x, &b->fA0.x);
+                d2 = vec3_dot(&c.x, &b->fA0.x);
                 c2 = b->f7B8 * 10.0f;
                 if (d2 > 0.0f ? d2 < c2 : -d2 < c2) {
                     b->f5CC = 1;
@@ -2908,9 +2908,9 @@ void func_80021068(Bike_13 *b) {
         }
     } else {
         if (b->f744 > 0) {
-            func_80020504(b);
+            bike_handle_landing(b);
         } else {
-            b->f744 -= D_800E76C4;
+            b->f744 -= gPhysTicks;
         }
         if (b->f748 == 1) {
             b->f748 = 0;
@@ -2920,9 +2920,9 @@ void func_80021068(Bike_13 *b) {
     b->f6F0 = b->vel.y;
 }
 
-#define IDX(p) ((((s32)(p) - (s32)&D_800E37C0) * -0x41041041) >> 5)
+#define IDX(p) ((((s32)(p) - (s32)&gRiders) * -0x41041041) >> 5)
 
-void func_80021CF8(u8 *a2)
+void bike_update_alpha(u8 *a2)
 {
     s32 idx;
     s32 v;
@@ -2932,17 +2932,17 @@ void func_80021CF8(u8 *a2)
     s32 n;
     s32 *q;
 
-    base = D_800C238C;
+    base = gRiderAlpha;
     idx = IDX(a2);
     q = &base[idx];
-    if (D_800C8CD8 != 0 && D_800E3700 == idx) v = 0x80;
-    else if (D_800C8CDC != 0) {
+    if (gGhostRace != 0 && gGhostSlot == idx) v = 0x80;
+    else if (gDemoPlayback != 0) {
         if (idx == 0) v = 0x80; else { *q = 0xFF; goto L74; }
     } else v = 0xFF;
     *q = v;
 L74:
     if (a2[0x44] != 0 && a2[0x6E8] != 0 && *(s16 *)(a2 + 0x624) > 0x58) {
-        D_800C238C[IDX(a2)] = (0x78 - *(s16 *)(a2 + 0x624)) * 8;
+        gRiderAlpha[IDX(a2)] = (0x78 - *(s16 *)(a2 + 0x624)) * 8;
         return;
     }
     if (*(s8 *)(a2 + 0x620) != 0) {
@@ -2951,9 +2951,9 @@ L74:
         if ((s32)((u32)b << 24) <= 0) {
             c = a2[0x620] - 1;
             a2[0x620] = c;
-            if (c == 0 && D_800C8CD8 == 0) {
+            if (c == 0 && gGhostRace == 0) {
                 if (a2[0x6E8] == 0) {
-                    if ((D_800C2280 & 0x100) == 0) a2[0x41D] = 0;
+                    if ((gCheatFlags & 0x100) == 0) a2[0x41D] = 0;
                 } else {
                     a2[0x41D] = 0;
                 }
@@ -2962,7 +2962,7 @@ L74:
             a2[0x621] = n;
             if (n < 4) a2[0x621] = 4;
         }
-        if (a2[0x620] & 1) D_800C238C[IDX(a2)] = 0;
+        if (a2[0x620] & 1) gRiderAlpha[IDX(a2)] = 0;
     }
 }
 
@@ -2971,51 +2971,51 @@ typedef struct {
     s32 flags;
 } Game_11;
 
-extern Game_11 D_800F05A8_11;
+extern Game_11 gEvent_11;
 
-void func_80021EC8(Bike_14 *b, s32 n)
+void bike_update(Bike_14 *b, s32 n)
 {
     f32 t;
 
-    D_800E80D4 = 0;
-    D_800E84F8 = 0;
-    D_800E8D64 = 0;
-    D_800E8958 = 0;
-    D_800E76C4 = n;
-    D_800E76C8 = (f32)D_800E76C4 * b->f44C / 60.0f;
-    if (D_800EE30C != 0 && b->f6E8 != 0) {
-        D_800E76C8 *= 0.5f;
+    gGroundHeight = 0;
+    gGroundSurface = 0;
+    gGroundTri = 0;
+    gGroundArea = 0;
+    gPhysTicks = n;
+    gPhysDeltaTime = (f32)gPhysTicks * b->f44C / 60.0f;
+    if (gCrashSlowMotion != 0 && b->f6E8 != 0) {
+        gPhysDeltaTime *= 0.5f;
     }
-    func_80021CF8(b);
-    func_80036DF4(b);
+    bike_update_alpha(b);
+    particles_emit_water_splash(b);
     if (b->f44 == 0) {
         if (b->f45 > 0) {
             b->f5B0 = 0;
             if (b->f4FC < 10 && b->f458 < 10) {
-                func_800445B0(b, b->f45);
+                bike_crash_begin(b, b->f45);
             }
         }
         if (b->f45 < 0) {
-            func_800445B0(b, -b->f45);
+            bike_crash_begin(b, -b->f45);
         }
-        func_8001D130(b, n);
-        func_80020D38(b);
-        func_80021068(b);
+        bike_process_input(b, n);
+        bike_update_wheelie(b);
+        bike_update_jump(b);
         if (b->f6E8 != 0) {
-            func_8005B5F0(b);
+            ai_update_throttle(b);
             b->f5CF = 0;
             if (b->f420 > 5.0f) {
-                if (b->f41B != 0 || ((b->f5B0 & 0x20000) && D_800E76D0 - b->f5B8 < 30)) {
+                if (b->f41B != 0 || ((b->f5B0 & 0x20000) && gRaceFrame - b->f5B8 < 30)) {
                     b->f5CF = 2;
                 } else if (b->f41A | b->f419) {
                     b->f5CF = 1;
                 }
             }
-            func_8005B928(b);
+            ai_update_steering(b);
         } else {
-            func_8005C5BC(b, n);
+            bike_update_steering(b, n);
         }
-        if (D_800F05A8_11.flags & 0x10) {
+        if (gEvent_11.flags & 0x10) {
             b->f412 = 0x3000;
             b->f5B0 |= 0x20;
         }
@@ -3025,25 +3025,25 @@ void func_80021EC8(Bike_14 *b, s32 n)
             } else {
                 b->f5B0 = 0;
                 b->f5D0 = 0;
-                if (b - D_800E37C0_19 == 0) {
-                    D_800F05A8_11.flags |= 0x2000;
+                if (b - gRiders_19 == 0) {
+                    gEvent_11.flags |= 0x2000;
                 }
             }
         }
-        func_80035BAC(b - D_800E37C0_19, n);
-        func_8001D008(b);
-        func_8001CDE0(b);
-        func_8001DD10(b);
-        func_8006FB3C(b);
-        func_8001D640(b);
-        func_8001EC90(b);
+        engine_update(b - gRiders_19, n);
+        bike_update_drive_force(b);
+        bike_update_brakes(b);
+        bike_solve_tire_constraints(b);
+        stunt_update(b);
+        bike_update_tire_forces(b);
+        bike_compute_forces(b);
         if (b->f44 == 0) {
-            func_8001FC60(b);
-            func_8001FB40(b);
-            func_8001CB80(b->f4F8, b->f388);
-            func_8001CB80(b->f454, b->f388);
-            func_8001BC98(b);
-            switch (D_800EFDBC) {
+            bike_integrate_position(b);
+            bike_integrate_velocity(b);
+            bike_wheel_surface_bumps(b->f4F8, b->f388);
+            bike_wheel_surface_bumps(b->f454, b->f388);
+            bike_update_suspension(b);
+            switch (gGameMode) {
             case 2:
             case 4:
             case 5:
@@ -3051,10 +3051,10 @@ void func_80021EC8(Bike_14 *b, s32 n)
             case 14:
                 break;
             case 6:
-                func_8006BF04(b);
+                excite3d_update_progress(b);
                 break;
             default:
-                func_8004AC98(b);
+                path_update_bike(b);
                 break;
             }
             switch (b->f3FF) {
@@ -3063,8 +3063,8 @@ void func_80021EC8(Bike_14 *b, s32 n)
             case 1:
                 if (b->f3D0 == -1 && b->f420 < 8.0f && b->f744 < -30) {
                     b->f3FF = 2;
-                    func_8006FE84(b, b->f668 + 0x13);
-                    if (!(D_800EFD70 & 0x8000)) {
+                    stunt_start(b, b->f668 + 0x13);
+                    if (!(gGame & 0x8000)) {
                         b->f5AA = 10;
                     }
                 }
@@ -3072,7 +3072,7 @@ void func_80021EC8(Bike_14 *b, s32 n)
             case 2:
                 if (b->f3D0 < 0) {
                     b->f3FF = 3;
-                    if (D_800EFDBC == 5) {
+                    if (gGameMode == 5) {
                         b->f3FF = 0;
                         b->f6E8 = 1;
                         b->f5AA = b->f5A8;
@@ -3081,25 +3081,25 @@ void func_80021EC8(Bike_14 *b, s32 n)
                 break;
             }
         } else {
-            func_80044B60(b);
+            bike_crash_update(b);
         }
     } else {
         b->f5B0 = 0;
-        func_80035BAC(b - D_800E37C0_19, n);
-        func_80044B60(b);
+        engine_update(b - gRiders_19, n);
+        bike_crash_update(b);
     }
-    func_8001FE1C(b);
-    func_80036544(b);
+    bike_update_render_pose(b);
+    particles_emit_sparks(b);
 }
 
-u32 func_80022324(u32 a0, s32 a1)
+u32 bike_remap_buttons(u32 a0, s32 a1)
 {
     s8 *base;
     s32 c;
     u32 u2;
 
     if (a0 & 0x8000) a0 |= 0x20000;
-    base = (s8 *)D_800EFD70_26;
+    base = (s8 *)gGame_26;
     if (a1 < *(s32 *)(base + 0x3C))
         c = (s8)base[(s8)base[a1 + 0x2C8] + 0x50];
     else
@@ -3156,9 +3156,9 @@ typedef struct {
     u8 pad7A6[0x7E0 - 0x7A6];
 } Bike_15;
 
-extern Bike_15 D_800E37C0_20[];
+extern Bike_15 gRiders_20[];
 
-void func_80022448(s32 n) {
+void bikes_update(s32 n) {
     Bike_15 *b;
     s32 i;
     s32 v;
@@ -3167,16 +3167,16 @@ void func_80022448(s32 n) {
     f32 t, t2, tk, t2k;
     f32 x, y, z;
 
-    if (D_800F0600 & 0x800) {
+    if (gEventFlags & 0x800) {
         return;
     }
     for (i = 0; i < 8; i++) {
-        b = &D_800E37C0_20[i];
+        b = &gRiders_20[i];
         if (b->b6E8 == 0) {
             b->inPrev = b->in;
-            v = D_800E3770[i];
+            v = gPlayerInputs[i];
             b->in = v;
-            if (D_800C2364 != 0 && (D_800C8CD8 == 0 || i != D_800E3700)) {
+            if (gMirrorMode != 0 && (gGhostRace == 0 || i != gGhostSlot)) {
                 b->in = v ^ 0xC;
             }
         } else {
@@ -3187,26 +3187,26 @@ void func_80022448(s32 n) {
             b->inPrev = u;
         }
     }
-    D_800E76D0 += n;
+    gRaceFrame += n;
     if (D_800EE140 != 0) {
-        for (b = D_800E37C0_20; b < D_800E37C0_20 + 8; b++) {
+        for (b = gRiders_20; b < gRiders_20 + 8; b++) {
             if (b->b7A5 == 0) {
-                func_8001FE1C(b);
+                bike_update_render_pose(b);
             }
         }
     } else {
-        for (b = D_800E37C0_20; b < D_800E37C0_20 + 8; b++) {
+        for (b = gRiders_20; b < gRiders_20 + 8; b++) {
             if (b->b7A5 != 0) {
                 continue;
             }
             if (b->b7A4 != 0) {
-                func_8001FE1C(b);
+                bike_update_render_pose(b);
                 continue;
             }
             if (b->b6E8 != 0 && (b->s744 < -30 || (b->s744 >= 11 && b->f6F4 > 0.5f))
-                && !(b == D_800E37C0_20 && (D_800EFD70 & 0x81))) {
-                if (((D_800E76D0 ^ (b - D_800E37C0_20)) & 1) != 0) {
-                    func_80021EC8(b, 2);
+                && !(b == gRiders_20 && (gGame & 0x81))) {
+                if (((gRaceFrame ^ (b - gRiders_20)) & 1) != 0) {
+                    bike_update(b, 2);
                     b->fpos = b->prev;
                 } else {
                     t = b->time / 60.0f;
@@ -3225,42 +3225,42 @@ void func_80022448(s32 n) {
                 }
             } else {
                 for (i = 0; i < n; i++) {
-                    func_80021EC8(b, 1);
+                    bike_update(b, 1);
                 }
                 b->fpos = b->prev;
             }
         }
-        switch (D_800EFDBC) {
+        switch (gGameMode) {
         case 2:
-            func_8006C340();
+            soccer_ball_update();
             break;
         case 5:
-            func_80047A90();
+            desert_update_race();
             break;
         case 6:
-            func_8006B4EC();
+            excite3d_update();
             break;
         case 7:
         case 9:
         case 10:
             break;
         case 8:
-            func_800644E0();
-            func_80063768();
+            ai_update_lanes();
+            race_sort_positions();
             break;
         default:
-            func_80063D30();
+            race_update_riders();
             break;
         }
     }
-    func_80036230();
+    particles_update();
     D_800E76CC = 0;
 }
 
-float func_800228A0(float *p)
+float bike_get_ground_height(float *p)
 {
     float x = p[0];
-    int r = func_8002E920((int)(x * 1000.0f), (int)(p[1] * 1000.0f), (int)(p[2] * 1000.0f));
+    int r = height_get_ground((int)(x * 1000.0f), (int)(p[1] * 1000.0f), (int)(p[2] * 1000.0f));
     return (float)r / 1000.0f;
 }
 
@@ -3277,9 +3277,9 @@ void func_80022908(Obj_10 *p)
     s32 i;
     Vec3f out;
 
-    D_800E7708 = D_800E76D0;
+    D_800E7708 = gRaceFrame;
     for (i = 6; i < 8; i++) {
-        func_8001327C(&D_800C94C8_2[i].x, p->mtx, &out.x);
+        vec3_mul_mtx3f(&sBikeContactPoints_2[i].x, p->mtx, &out.x);
         p->pts[i].x = out.x + p->pos.x;
         p->pts[i].y = out.y + p->pos.y;
         p->pts[i].z = out.z + p->pos.z;
@@ -3293,25 +3293,25 @@ typedef struct {
     u8 pad2[0x7E0 - 0x660];
 } Rider_2;
 
-extern Rider_2 D_800E37C0_21[];
+extern Rider_2 gRiders_21[];
 
-void func_800229B8(void) {
+void bikes_free(void) {
     s32 i;
     for (i = 0; i < 8; i++) {
-        func_800BCB04(D_800E37C0_21[i].p658);
-        func_800BCB04(D_800E37C0_21[i].p65C);
+        mem_free(gRiders_21[i].p658);
+        mem_free(gRiders_21[i].p65C);
     }
     func_8005C8FC();
-    func_80061DA8();
-    func_80064D10();
+    collide_free_node_pool();
+    race_free_extra_rider_spawns();
 }
 
-void func_80022A24(u8 *p) {
-    func_8001CB80(p + 0x4F8, p + 0x388);
-    func_8001CB80(p + 0x454, p + 0x388);
+void bike_apply_surface_bumps(u8 *p) {
+    bike_wheel_surface_bumps(p + 0x4F8, p + 0x388);
+    bike_wheel_surface_bumps(p + 0x454, p + 0x388);
 }
 
-void func_80022A68(u8 *p)
+void bike_update_finish_celebration(u8 *p)
 {
     s32 st = *(u8 *)(p + 0x3FF);
 
@@ -3323,8 +3323,8 @@ void func_80022A68(u8 *p)
 arm1:
     if (*(s8 *)(p + 0x3D0) == -1 && *(f32 *)(p + 0x420) < 8.0f && *(s32 *)(p + 0x744) < -30) {
         *(u8 *)(p + 0x3FF) = 2;
-        func_8006FE84(p, *(s16 *)(p + 0x668) + 0x13);
-        if ((D_800EFD70 & 0x8000) == 0) {
+        stunt_start(p, *(s16 *)(p + 0x668) + 0x13);
+        if ((gGame & 0x8000) == 0) {
             *(u16 *)(p + 0x5AA) = 10;
         }
     }
@@ -3333,7 +3333,7 @@ arm1:
 arm2:
     if (*(s8 *)(p + 0x3D0) < 0) {
         *(u8 *)(p + 0x3FF) = 3;
-        if (D_800EFDBC == 5) {
+        if (gGameMode == 5) {
             *(u8 *)(p + 0x3FF) = 0;
             *(u8 *)(p + 0x6E8) = 1;
             *(u16 *)(p + 0x5AA) = *(u16 *)(p + 0x5A8);
@@ -3356,10 +3356,10 @@ struct Obj_11 {
     u8 b5cf;
 };
 
-void func_80022B50(Obj_11 *o) {
+void bike_update_dirt_spray(Obj_11 *o) {
     o->b5cf = 0;
     if (5.0f < o->f420) {
-        if (o->b41b != 0 || ((o->w5b0 & 0x20000) != 0 && (D_800E76D0 - o->w5b8 < 0x1E))) {
+        if (o->b41b != 0 || ((o->w5b0 & 0x20000) != 0 && (gRaceFrame - o->w5b8 < 0x1E))) {
             o->b5cf = 2;
             return;
         }

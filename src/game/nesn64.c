@@ -6,7 +6,7 @@
 typedef struct { u8 b[0x2812]; } B2812;
 typedef struct { u8 ram[0x10000]; u8 pad[0x4100]; u16 pc; u8 a, x, y, s, v, b, n, d, i, z, c, p; } Nes;
 
-extern B2812 *D_800F5A40;
+extern B2812 *sNesSnapshot;
 
 static inline void wr(s32 a, s32 v)
 {
@@ -14,7 +14,7 @@ static inline void wr(s32 a, s32 v)
         *(u8 *)((a & 0x7FF) + 0x80380000) = v;
     } else if (a > 0x7FFF) {
     } else {
-        func_800A2178(a, v);
+        nes_write_io(a, v);
     }
 }
 
@@ -25,7 +25,7 @@ static inline void wr_2(s32 a, s32 v)
         *(u8 *)(a + 0x80380000) = v;
     } else if (a > 0x7FFF) {
     } else {
-        func_800A2178(a, v);
+        nes_write_io(a, v);
     }
 }
 
@@ -35,7 +35,7 @@ static inline u32 rd(s32 a)
         a &= 0x7FF;
     } else if (a > 0x7FFF) {
     } else {
-        return func_800A2444_2(a);
+        return nes_read_io_2(a);
     }
     return *(u8 *)(a + 0x80380000);
 }
@@ -43,7 +43,7 @@ static inline u32 rd(s32 a)
 typedef struct { u8 b[0x4000]; } B4000;
 typedef struct { u8 b[0x2000]; } B2000;
 
-void func_8009F470(void)
+void nes_init(void)
 {
     s32 *obj;
     u8 *src;
@@ -53,21 +53,21 @@ void func_8009F470(void)
     u32 v, c;
     u16 *p;
 
-    D_800F5AA0 = 0;
-    if (func_800BF530(D_800DAF30, &obj) != 0) {
-        func_8000ECB8(1);
+    sNesFrameCount = 0;
+    if (res_open_set(D_800DAF30, &obj) != 0) {
+        fatal_halt(1);
     }
-    D_800F5A50 = (u8 *)0x80380000;
-    func_8000ED10(D_800F5A50, 0, 0x141C0);
-    src = func_800BF79C(obj, D_800D14D8);
-    *(B4000 *)(D_800F5A50 + 0x8000) = *(B4000 *)src;
-    *(B4000 *)(D_800F5A50 + 0xC000) = *(B4000 *)src;
-    *(B2000 *)(D_800F5A50 + 0x10000) = *(B2000 *)(src + 0x4000);
-    func_800A2F60(D_800F5A50, func_800A070C);
-    D_800F5A40 = func_800BC908(0x2812, 0, D_800DAF38, 0x9C);
-    *D_800F5A40 = *(B2812 *)(src + 0x6000);
-    func_800BFDD4(obj);
-    D_800F5A54 = func_800BC908(0x8000, 0, D_800DAF38, 0xA4);
+    sNesMemory = (u8 *)0x80380000;
+    mem_fill(sNesMemory, 0, 0x141C0);
+    src = res_load(obj, D_800D14D8);
+    *(B4000 *)(sNesMemory + 0x8000) = *(B4000 *)src;
+    *(B4000 *)(sNesMemory + 0xC000) = *(B4000 *)src;
+    *(B2000 *)(sNesMemory + 0x10000) = *(B2000 *)(src + 0x4000);
+    nes_cpu_reset(sNesMemory, nes_draw_bg_row);
+    sNesSnapshot = mem_alloc_dbg(0x2812, 0, D_800DAF38, 0x9C);
+    *sNesSnapshot = *(B2812 *)(src + 0x6000);
+    res_close_set(obj);
+    sNesChrTiles = mem_alloc_dbg(0x8000, 0, D_800DAF38, 0xA4);
     m = 0x80380000;
     t = 0x10000;
     for (i = 0; i < 0x2000; i += 0x10) {
@@ -84,26 +84,26 @@ void func_8009F470(void)
                     c |= 2;
                 }
                 v <<= 1;
-                D_800F5A54[k] = c << 4;
+                sNesChrTiles[k] = c << 4;
                 c = (v >> 7) & 1;
                 if (v & 0x8000) {
                     c |= 2;
                 }
                 v <<= 1;
-                D_800F5A54[k] |= c;
+                sNesChrTiles[k] |= c;
                 k++;
             }
             k += 4;
         }
     }
-    D_800F5A58 = func_800BC908(0x200, 0, D_800DAF38, 0xBF);
-    p = D_800F5A58;
+    sNesPalette = mem_alloc_dbg(0x200, 0, D_800DAF38, 0xBF);
+    p = sNesPalette;
     for (i = 0; i < 0x100; i++) {
-        j = D_800D0514[i * 3] >> 3;
+        j = sNesRgbPalette[i * 3] >> 3;
         j <<= 11;
-        n = D_800D0514[i * 3 + 1] >> 3;
+        n = sNesRgbPalette[i * 3 + 1] >> 3;
         n <<= 6;
-        k = D_800D0514[i * 3 + 2] >> 3;
+        k = sNesRgbPalette[i * 3 + 2] >> 3;
         k <<= 1;
         p[i] = j | n | k | 1;
         if (p[i] == 0x8685) {
@@ -111,17 +111,17 @@ void func_8009F470(void)
         }
     }
     for (i = 0; i < 2; i++) {
-        D_800F5A60[i] = func_800BC908(0x200, 0, D_800DAF38, 0xCC);
-        D_800F5A68[i] = func_800BC908(0x200, 0, D_800DAF38, 0xCD);
+        sNesBgTluts[i] = mem_alloc_dbg(0x200, 0, D_800DAF38, 0xCC);
+        sNesSpriteTluts[i] = mem_alloc_dbg(0x200, 0, D_800DAF38, 0xCD);
     }
-    D_800D0660 = 0;
+    sNesRowCallback = 0;
     for (i = 0; i < 3; i++) {
-        func_800A2D64();
+        nes_run_frame();
     }
-    D_800D0660 = func_800A070C;
-    D_800CEC04 = 1;
-    func_800A1484();
-    D_800CEC00 = 0;
+    sNesRowCallback = nes_draw_bg_row;
+    gNesActive = 1;
+    nes_audio_init();
+    sNesRestoreTimer = 0;
 }
 
 #define NES_4 ((u8 *)0x80380000)
@@ -137,7 +137,7 @@ typedef struct {
     Ch ch[4];
 } Nes_2;
 
-void func_8009FA04(volatile s32 *p)
+void nes_update_input(volatile s32 *p)
 {
     s32 w, v;
     s32 f;
@@ -157,11 +157,11 @@ void func_8009FA04(volatile s32 *p)
     if (w & 0x20) f |= 2;
     if (w & 0x8000) f |= 4;
     if (w & 0x40) f |= 8;
-    if (D_800CEC00 != 0) {
-        if (--D_800CEC00 == 0) {
-            __builtin_memcpy(NES_4, D_800F5A40_2, 0x800);
-            __builtin_memcpy(NES_4 + 0x12000, D_800F5A40_2 + 0x800, 0x2000);
-            m = D_800F5A40_2;
+    if (sNesRestoreTimer != 0) {
+        if (--sNesRestoreTimer == 0) {
+            __builtin_memcpy(NES_4, sNesSnapshot_2, 0x800);
+            __builtin_memcpy(NES_4 + 0x12000, sNesSnapshot_2 + 0x800, 0x2000);
+            m = sNesSnapshot_2;
             g = (u8 *)0x80390000;
             *(u16 *)(g + 0x4100) = *(u16 *)(m + 0x2800);
             *(u16 *)(g + 0x4114) = *(u16 *)(m + 0x2802);
@@ -190,7 +190,7 @@ void func_8009FA04(volatile s32 *p)
                 ((Nes_2 *)0x80380000)->ch[k].a = 0;
                 ((Nes_2 *)0x80380000)->ch[k].b = 0;
             }
-            __builtin_memcpy(NES_4 + 0x5E0, D_800F1BD4, 0x220);
+            __builtin_memcpy(NES_4 + 0x5E0, gSaveNesTrack, 0x220);
         }
     }
     v = *p;
@@ -202,38 +202,38 @@ void func_8009FA04(volatile s32 *p)
     if ((*p & 8) && lo > 8) f |= 0x80;
     *(u8 *)0x80394120 = f;
     if ((*p & 0x28000) == 0x28000) {
-        D_800CA920 = 2;
-        D_800C29CC_4[4] = 3;
+        gRaceExitCode = 2;
+        gCurGameState_4[4] = 3;
     }
 }
 
-Gfx *func_8009FDF4(s32 a0, s32 a1, Gfx *gdl)
+Gfx *nes_draw_setup(s32 a0, s32 a1, Gfx *gdl)
 {
-    func_80011490(a0 + 0x400, 0, 0, 0, 0, 0, 0, 0x100);
+    mtx_from_angles_pos_scale(a0 + 0x400, 0, 0, 0, 0, 0, 0, 0x100);
     gSPSegment(gdl++, 0, 0);
     gSPDisplayList(gdl++, D_800C2A38);
     gSPDisplayList(gdl++, D_800C2A00);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, D_800F13EC, D_800F13F0);
-    D_800F5A88.vp.vscale[0] = D_800F13EC * 2;
-    D_800F5A88.vp.vscale[1] = D_800F13F0 * 2;
-    D_800F5A88.vp.vtrans[0] = D_800F13EC * 2;
-    D_800F5A88.vp.vtrans[1] = D_800F13F0 * 2;
-    gSPViewport(gdl++, &D_800F5A88);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
+    sNesViewport.vp.vscale[0] = gScreenWidth * 2;
+    sNesViewport.vp.vscale[1] = gScreenHeight * 2;
+    sNesViewport.vp.vtrans[0] = gScreenWidth * 2;
+    sNesViewport.vp.vtrans[1] = gScreenHeight * 2;
+    gSPViewport(gdl++, &sNesViewport);
     gDPPipeSync(gdl++);
-    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, D_800F13EC, D_800C29D8[a1]);
-    if (D_800F5A98 != 0) {
-        D_800F5A98--;
+    gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, gScreenWidth, gFramebuffers[a1]);
+    if (sNesClearFrames != 0) {
+        sNesClearFrames--;
         gDPPipeSync(gdl++);
         gDPSetCycleType(gdl++, G_CYC_FILL);
         gDPSetFillColor(gdl++, 0);
-        gDPFillRectangle(gdl++, 0, 0, D_800F13EC - 1, D_800F13F0 - 1);
+        gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
     }
     gDPPipeSync(gdl++);
     gDPSetCycleType(gdl++, G_CYC_1CYCLE);
     gDPPipeSync(gdl++);
     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
     gDPSetColorDither(gdl++, G_CD_DISABLE);
-    if (D_800F5A98 != 0) {
+    if (sNesClearFrames != 0) {
         return gdl;
     }
     {
@@ -243,7 +243,7 @@ Gfx *func_8009FDF4(s32 a0, s32 a1, Gfx *gdl)
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetTextureFilter(gdl++, G_TF_POINT);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        gDPLoadTLUT_pal256(gdl++, D_800F5A58);
+        gDPLoadTLUT_pal256(gdl++, sNesPalette);
         return gdl;
     }
     return gdl;
@@ -259,95 +259,95 @@ typedef struct { s32 a; s32 b; s32 pad[7]; } Ent_87;
 typedef struct { u8 pad[0x2001]; u8 flags; u8 pad2[0x1412C - 0x2002]; Ent_87 e[4]; } Big_4;
 typedef struct { u8 pad[0x10000]; u8 buf[0x2800]; } Vram;
 
-extern Vram *D_800D0670_2;
-extern Blk_25 D_800F1BD4_2;
+extern Vram *sNesCpuMemory_2;
+extern Blk_25 gSaveNesTrack_2;
 
-void func_800A020C(s32 a0, s32 a1, Gfx **pgdl)
+void nes_draw_frame(s32 a0, s32 a1, Gfx **pgdl)
 {
     u8 *p;
     s32 k;
     s32 i;
     s32 t;
 
-    D_800F5A44 = *pgdl;
-    D_800F5A44 = func_8009FDF4(a0, a1, D_800F5A44);
-    if (D_800F5A98 != 0) {
-        *pgdl = D_800F5A44;
+    sNesGfx = *pgdl;
+    sNesGfx = nes_draw_setup(a0, a1, sNesGfx);
+    if (sNesClearFrames != 0) {
+        *pgdl = sNesGfx;
         return;
     }
     {
-        Gfx *g = D_800F5A44++;
+        Gfx *g = sNesGfx++;
         g->words.w0 = 0xED090000;
         g->words.w1 = 0x4703C0;
     }
-    D_800F5A48 = 0;
-    D_800F5A4C = -1;
-    func_800A2D64();
-    D_800F5AA0++;
-    D_800CEC20 = D_800CEC1C / D_800F5AA0;
-    gDPPipeSync(D_800F5A44++);
-    func_800A0D60(D_800CEC20);
-    gDPPipeSync(D_800F5A44++);
-    if (func_800A1AA0() != 0) {
+    sNesBgTlutLoaded = 0;
+    sNesLastTileKey = -1;
+    nes_run_frame();
+    sNesFrameCount++;
+    sNesInstrPerFrame = sNesInstrCount / sNesFrameCount;
+    gDPPipeSync(sNesGfx++);
+    nes_draw_sprites(sNesInstrPerFrame);
+    gDPPipeSync(sNesGfx++);
+    if (nes_should_show_exit_msg() != 0) {
         k = 0x2342;
-        if ((D_800F5AA0 / 30) & 1) {
-            if (D_800CEBE0[0] != 0) {
+        if ((sNesFrameCount / 30) & 1) {
+            if (sNesExitMsg[0] != 0) {
                 i = 0;
                 do {
-                    if (D_800CEBE0[i] != ' ') {
-                        D_800D0670_2->buf[k] = D_800CEBE0[i] - 0x37;
-                        D_800D0670_2->buf[k + 0x400] = D_800CEBE0[i] - 0x37;
+                    if (sNesExitMsg[i] != ' ') {
+                        sNesCpuMemory_2->buf[k] = sNesExitMsg[i] - 0x37;
+                        sNesCpuMemory_2->buf[k + 0x400] = sNesExitMsg[i] - 0x37;
                     }
                     i++;
                     k++;
-                } while (D_800CEBE0[i] != 0);
+                } while (sNesExitMsg[i] != 0);
             }
-            func_8000ED10(&D_800D0670_2->buf[0x23F0], 0x5F, 8);
+            mem_fill(&sNesCpuMemory_2->buf[0x23F0], 0x5F, 8);
         } else {
             t = 0;
-            if (D_800CEBE0[0] != 0) {
+            if (sNesExitMsg[0] != 0) {
                 do {
                     t++;
-                    D_800D0670_2->buf[k] = 0xFC;
-                    D_800D0670_2->buf[k + 0x400] = 0xFC;
+                    sNesCpuMemory_2->buf[k] = 0xFC;
+                    sNesCpuMemory_2->buf[k + 0x400] = 0xFC;
                     k++;
-                } while (D_800CEBE0[t] != 0);
+                } while (sNesExitMsg[t] != 0);
             }
         }
     }
     if (CART == 0xC661 || CART == 0xC66A) {
-        if (D_800CEC00 == 0) {
-            D_800CEC00 = 0x3C;
-            D_800F1BD4_2 = SAVE;
-            func_8006F5F8(0, 0);
+        if (sNesRestoreTimer == 0) {
+            sNesRestoreTimer = 0x3C;
+            gSaveNesTrack_2 = SAVE;
+            save_write(0, 0);
         }
     } else if (CART == 0xC641 || CART == 0xC69A) {
-        if (D_800CEC00 == 0) {
-            D_800CEC00 = 0x3C;
-            SAVE = D_800F1BD4_2;
+        if (sNesRestoreTimer == 0) {
+            sNesRestoreTimer = 0x3C;
+            SAVE = gSaveNesTrack_2;
         }
     }
-    if (!(FLAGS & 8) || D_800F5AA0 < 10) {
-        gDPPipeSync(D_800F5A44++);
-        gDPSetCycleType(D_800F5A44++, G_CYC_FILL);
+    if (!(FLAGS & 8) || sNesFrameCount < 10) {
+        gDPPipeSync(sNesGfx++);
+        gDPSetCycleType(sNesGfx++, G_CYC_FILL);
         t = FLAGS >> 5;
-        gDPSetFillColor(D_800F5A44++, D_800CEC08[t]);
+        gDPSetFillColor(sNesGfx++, sNesBorderColors[t]);
         {
-            Gfx *g = D_800F5A44++;
+            Gfx *g = sNesGfx++;
             g->words.w0 = 0xF64703C0;
             g->words.w1 = 0x90000;
         }
-        gDPPipeSync(D_800F5A44++);
-        gDPSetCycleType(D_800F5A44++, G_CYC_1CYCLE);
+        gDPPipeSync(sNesGfx++);
+        gDPSetCycleType(sNesGfx++, G_CYC_1CYCLE);
     }
-    if (D_800CEC00 != 0) {
+    if (sNesRestoreTimer != 0) {
         for (i = 0; i < 4; i++) {
             BIG->e[i].a = 0;
             BIG->e[i].b = 0;
         }
     }
-    *pgdl = D_800F5A44;
-    func_800A1898();
+    *pgdl = sNesGfx;
+    nes_audio_update();
 }
 
 #define NES_5 ((Nes_3 *)0x80380000)
@@ -357,7 +357,7 @@ typedef struct Nes_3 {
     u8 ppu[0x10000];
 } Nes_3;
 
-void func_800A070C(s32 row)
+void nes_draw_bg_row(s32 row)
 {
     s32 i, j, k, idx;
     u16 **pp;
@@ -369,30 +369,30 @@ void func_800A070C(s32 row)
     s32 col, x;
     s32 pal, key, ofs, tile, a, sh;
 
-    if ((NES_5->cpu[0x2001] & 8) && D_800F5AA0 >= 10) {
-        D_800F5A4C = -1;
-        if (D_800F5A48 == 0) {
+    if ((NES_5->cpu[0x2001] & 8) && sNesFrameCount >= 10) {
+        sNesLastTileKey = -1;
+        if (sNesBgTlutLoaded == 0) {
             k = 0x3F00;
             idx = 0;
             for (i = 0; i < 4; i++) {
                 for (j = 0; j < 4; j++) {
-                    D_800F5A60_2[D_800E30A8][idx] = D_800F5A58[NES_5->ppu[k]];
+                    sNesBgTluts_2[gGfxFrameIndex][idx] = sNesPalette[NES_5->ppu[k]];
                     k++;
                     if (j == 0) {
-                        D_800F5A60_2[D_800E30A8][idx] &= 0xFFFC;
+                        sNesBgTluts_2[gGfxFrameIndex][idx] &= 0xFFFC;
                     } else {
-                        D_800F5A60_2[D_800E30A8][idx] |= 3;
+                        sNesBgTluts_2[gGfxFrameIndex][idx] |= 3;
                     }
                     idx++;
                 }
                 idx += 12;
             }
-            D_800F5A48 = 1;
-            gDPPipeSync(D_800F5A44++);
-            gDPLoadTLUT_pal256(D_800F5A44++, D_800F5A60_2[D_800E30A8]);
+            sNesBgTlutLoaded = 1;
+            gDPPipeSync(sNesGfx++);
+            gDPLoadTLUT_pal256(sNesGfx++, sNesBgTluts_2[gGfxFrameIndex]);
         }
-        base = D_800F5A54;
-        gDPPipeSync(D_800F5A44++);
+        base = sNesChrTiles;
+        gDPPipeSync(sNesGfx++);
         if (NES_5->cpu[0x2000] & 0x10) {
             base += 0x4000;
         }
@@ -418,12 +418,12 @@ void func_800A070C(s32 row)
             sh <<= 1;
             pal = (ntp[a + 0x3C0] >> sh) & 3;
             key = tile | (pal << 8);
-            if (key != D_800F5A4C) {
-                gDPLoadTextureBlock_4b(D_800F5A44++, base + ofs, G_IM_FMT_CI, 16, 8, pal,
+            if (key != sNesLastTileKey) {
+                gDPLoadTextureBlock_4b(sNesGfx++, base + ofs, G_IM_FMT_CI, 16, 8, pal,
                                        G_TX_WRAP, G_TX_WRAP, 4, 3, G_TX_NOLOD, G_TX_NOLOD);
             }
-            D_800F5A4C = key;
-            gSPTextureRectangle(D_800F5A44++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
+            sNesLastTileKey = key;
+            gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
             x += 32;
             nt++;
             col++;
@@ -445,12 +445,12 @@ void func_800A070C(s32 row)
             sh <<= 1;
             pal = (ntp[a + 0x3C0] >> sh) & 3;
             key = tile | (pal << 8);
-            if (key != D_800F5A4C) {
-                gDPLoadTextureBlock_4b(D_800F5A44++, base + ofs, G_IM_FMT_CI, 16, 8, pal,
+            if (key != sNesLastTileKey) {
+                gDPLoadTextureBlock_4b(sNesGfx++, base + ofs, G_IM_FMT_CI, 16, 8, pal,
                                        G_TX_CLAMP, G_TX_CLAMP, 4, 3, G_TX_NOLOD, G_TX_NOLOD);
             }
-            D_800F5A4C = key;
-            gSPTextureRectangle(D_800F5A44++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
+            sNesLastTileKey = key;
+            gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
             x += 32;
             nt++;
             col++;
@@ -460,7 +460,7 @@ void func_800A070C(s32 row)
 
 #define OAM ((u8 *)0x80394000)
 
-void func_800A0D60(s32 arg0)
+void nes_draw_sprites(s32 arg0)
 {
     s32 i, j, x, k, s, idx;
     u16 **pp;
@@ -474,11 +474,11 @@ void func_800A0D60(s32 arg0)
     u8 *mem;
 
     if (NES[0x2001] & 0x10) {
-        base = D_800F5A54;
-        gDPPipeSync(D_800F5A44++);
-        gDPSetRenderMode(D_800F5A44++, 0x0C087008, 0);
-        gDPSetCombine(D_800F5A44++, 0xFFFFFF, 0xFFFCF279);
-        gDPSetAlphaCompare(D_800F5A44++, G_AC_THRESHOLD);
+        base = sNesChrTiles;
+        gDPPipeSync(sNesGfx++);
+        gDPSetRenderMode(sNesGfx++, 0x0C087008, 0);
+        gDPSetCombine(sNesGfx++, 0xFFFFFF, 0xFFFCF279);
+        gDPSetAlphaCompare(sNesGfx++, G_AC_THRESHOLD);
         if (NES[0x2000] & 8) {
             base += 0x4000;
         }
@@ -487,46 +487,46 @@ void func_800A0D60(s32 arg0)
         i = 0;
         mem = (u8 *)0x80380000;
         t = 0x10000;
-        pal = D_800F5A58;
-        pp = D_800F5A68;
+        pal = sNesPalette;
+        pp = sNesSpriteTluts;
     outer:
         for (j = 0; j < 4; j++) {
             x = pal[*(u8 *)(k + (s32)mem + t)] | 2;
-            pp[D_800E30A8][idx] = x;
+            pp[gGfxFrameIndex][idx] = x;
             k++;
             if (j == 0) {
-                pp[D_800E30A8][idx] &= 0xFFFE;
+                pp[gGfxFrameIndex][idx] &= 0xFFFE;
             }
             idx++;
         }
         idx += 12;
         if (++i < 4) goto outer;
-        gDPPipeSync(D_800F5A44++);
-        gDPLoadTLUT_pal256(D_800F5A44++, D_800F5A68[D_800E30A8]);
-        gDPPipeSync(D_800F5A44++);
+        gDPPipeSync(sNesGfx++);
+        gDPLoadTLUT_pal256(sNesGfx++, sNesSpriteTluts[gGfxFrameIndex]);
+        gDPPipeSync(sNesGfx++);
         for (i = 63; i >= 0; i--) {
             spr = OAM + i * 4;
             if (spr[0] < 0xF1 && !(spr[2] & 0x20)) {
                 j = spr[1] * 64;
-                gDPLoadTextureBlock_4b(D_800F5A44++, base + j, G_IM_FMT_CI, 16, 8, spr[2] & 3,
+                gDPLoadTextureBlock_4b(sNesGfx++, base + j, G_IM_FMT_CI, 16, 8, spr[2] & 3,
                                        G_TX_CLAMP, G_TX_CLAMP, 4, 3, G_TX_NOLOD, G_TX_NOLOD);
                 x = spr[3];
                 x = (x + 0x1C) * 4;
                 y = spr[0] + 1;
                 y <<= 2;
                 if (!(spr[2] & 0x40)) {
-                    gSPTextureRectangle(D_800F5A44++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
+                    gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 0, 0, 1 << 10, 1 << 10);
                 } else {
-                    gSPTextureRectangle(D_800F5A44++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 7 << 5, 0, -1 << 10, 1 << 10);
+                    gSPTextureRectangle(sNesGfx++, x, y, x + 32, y + 32, G_TX_RENDERTILE, 7 << 5, 0, -1 << 10, 1 << 10);
                 }
             }
         }
-        gDPPipeSync(D_800F5A44++);
-        gDPSetAlphaCompare(D_800F5A44++, G_AC_NONE);
+        gDPPipeSync(sNesGfx++);
+        gDPSetAlphaCompare(sNesGfx++, G_AC_NONE);
     }
 }
 
-void func_800A11BC(s32 param)
+void nes_draw_back_sprites(s32 param)
 {
     u8 *st;
     s32 bas;
@@ -541,7 +541,7 @@ void func_800A11BC(s32 param)
     st = (u8 *)0x80380000;
     if (st[0x2001] & 0x10) {
         osInvalDCache(0, 0x400000);
-        bas = D_800F5A54;
+        bas = sNesChrTiles;
         if (st[0x2000] & 8) {
             bas += 0x4000;
         }
@@ -553,7 +553,7 @@ void func_800A11BC(s32 param)
                 row = e->b1 << 6;
                 src = (u8 *)(bas + row);
                 col = e->b3 + 0x1c;
-                dst = D_800C29D8_2[param] + ((e->b0 + 1) * 0x140 + col);
+                dst = gFramebuffers_2[param] + ((e->b0 + 1) * 0x140 + col);
                 for (row = 0; row < 8; row++) {
                     col = e->b3 + 0x1c;
                     if (e->b2 & 0x40) {
@@ -561,13 +561,13 @@ void func_800A11BC(s32 param)
                         for (k = 0; k < 4; k++) {
                             v = *src & 0xF;
                             if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = D_800F5A68[param][v + t0];
+                                *dst = sNesSpriteTluts[param][v + t0];
                             }
                             dst++;
                             col++;
                             v = *src >> 4;
                             if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = D_800F5A68[param][v + t0];
+                                *dst = sNesSpriteTluts[param][v + t0];
                             }
                             dst++;
                             col++;
@@ -578,13 +578,13 @@ void func_800A11BC(s32 param)
                         for (k = 0; k < 4; k++) {
                             v = *src >> 4;
                             if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = D_800F5A68[param][v + t0];
+                                *dst = sNesSpriteTluts[param][v + t0];
                             }
                             dst++;
                             col++;
                             v = *src & 0xF;
                             if (v != 0 && col > 0x23 && col < 0x11c && !(*dst & 2)) {
-                                *dst = D_800F5A68[param][v + t0];
+                                *dst = sNesSpriteTluts[param][v + t0];
                             }
                             dst++;
                             col++;
@@ -596,23 +596,23 @@ void func_800A11BC(s32 param)
                 }
             }
         }
-        osWritebackDCache(D_800C29D8_2[param], 0x25800);
+        osWritebackDCache(gFramebuffers_2[param], 0x25800);
     }
 }
 
-void func_800A1484(void)
+void nes_audio_init(void)
 {
     s32 i;
     void *q;
 
-    D_800F5A70 = osAiSetFrequency(0x5622);
-    D_800F5A78 = ((D_800CEC18 * D_800F5A70) / 60 + 7) & -8;
+    sNesAudioFreq = osAiSetFrequency(0x5622);
+    sNesAudioFrameSamples = ((sNesAudioChunks * sNesAudioFreq) / 60 + 7) & -8;
     for (i = 0; i < 2; i++) {
-        q = func_800BC908(D_800F5A78 << 2, 0, D_800DAF38, 0x396);
-        D_800F5A80[i] = (s32)q;
-        func_8000ED10(q, 0, D_800F5A78 << 2);
+        q = mem_alloc_dbg(sNesAudioFrameSamples << 2, 0, D_800DAF38, 0x396);
+        sNesAudioBufs[i] = (s32)q;
+        mem_fill(q, 0, sNesAudioFrameSamples << 2);
     }
-    D_800F5A74 = 1;
+    sNesAudioBufIndex = 1;
 }
 
 #define SND ((SndMem *)0x80380000)
@@ -636,18 +636,18 @@ typedef struct {
     Chan_3 ch[4];
 } SndMem;
 
-void func_800A1570(s16 *p)
+void nes_apu_render(s16 *p)
 {
     s32 n, i, j, v;
     Chan_3 *c;
     s32 old;
 
-    n = D_800F5A78 / D_800CEC18;
-    if (D_800D0670 == 0) {
+    n = sNesAudioFrameSamples / sNesAudioChunks;
+    if (sNesCpuMemory == 0) {
         return;
     }
     if (!(SND->ch[2].flags & 8) || SND->ch[2].d >= SND->ch[2].c || SND->ch[2].vol == 0) {
-        func_8000ED10((u8 *)p, 0, n * 4);
+        mem_fill((u8 *)p, 0, n * 4);
     } else {
         for (j = 0; j < n * 2; j += 2) {
             SND->ch[2].pos += SND->ch[2].step;
@@ -681,7 +681,7 @@ void func_800A1570(s16 *p)
             old = SND->ch[3].pos;
             SND->ch[3].pos += SND->ch[3].step;
             if (SND->ch[3].pos < old) {
-                v = ((s32)func_8000EFE8() - 0x80) << 4;
+                v = ((s32)random_byte() - 0x80) << 4;
                 v = v * SND->ch[3].vol >> 16;
             }
             p[j] += v;
@@ -702,50 +702,50 @@ void func_800A1570(s16 *p)
     }
 }
 
-void func_800A1898(void)
+void nes_audio_update(void)
 {
     s32 i;
     s16 *p;
 
     osInvalDCache(0, 0x400000);
     if (osAiGetStatus_2() >= 0) {
-        p = (s16 *)D_800F5A80[D_800F5A74];
-        for (i = 0; i < D_800CEC18; i++) {
-            func_800A1570(p);
-            p += (D_800F5A78 / D_800CEC18) * 2;
+        p = (s16 *)sNesAudioBufs[sNesAudioBufIndex];
+        for (i = 0; i < sNesAudioChunks; i++) {
+            nes_apu_render(p);
+            p += (sNesAudioFrameSamples / sNesAudioChunks) * 2;
         }
-        osWritebackDCache((s16 *)D_800F5A80[D_800F5A74], D_800F5A78 << 2);
-        osAiSetNextBuffer((s16 *)D_800F5A80[D_800F5A74], D_800F5A78 << 2);
-        D_800F5A74 = D_800F5A74 ^ 1;
+        osWritebackDCache((s16 *)sNesAudioBufs[sNesAudioBufIndex], sNesAudioFrameSamples << 2);
+        osAiSetNextBuffer((s16 *)sNesAudioBufs[sNesAudioBufIndex], sNesAudioFrameSamples << 2);
+        sNesAudioBufIndex = sNesAudioBufIndex ^ 1;
     }
 }
 
-void func_800A19BC(void)
+void nes_exit(void)
 {
     s32 i;
 
-    func_800A1A68();
+    nes_audio_free();
     for (i = 0; i < 2; i++) {
-        func_800BCB04(D_800F5A60[i]);
-        func_800BCB04(D_800F5A68[i]);
+        mem_free(sNesBgTluts[i]);
+        mem_free(sNesSpriteTluts[i]);
     }
-    func_800BCB04(D_800F5A40);
-    func_800BCB04(D_800F5A54);
-    func_800BCB04(D_800F5A58);
-    D_800CEC04 = 0;
-    D_800CA920 = 6;
+    mem_free(sNesSnapshot);
+    mem_free(sNesChrTiles);
+    mem_free(sNesPalette);
+    gNesActive = 0;
+    gRaceExitCode = 6;
 }
 
-void func_800A1A68(void)
+void nes_audio_free(void)
 {
-    u32 *p = &D_800F5A80;
-    func_800BCB04(p[0]);
-    func_800BCB04(p[1]);
+    u32 *p = &sNesAudioBufs;
+    mem_free(p[0]);
+    mem_free(p[1]);
 }
 
-s32 func_800A1AA0(void)
+s32 nes_should_show_exit_msg(void)
 {
-    u8 *p = D_800F5A50 + 0x10000;
+    u8 *p = sNesMemory + 0x10000;
     if (p[0x2084] == 0x27 && p[0x2108] == 0x9A) {
         return 1;
     }
@@ -757,7 +757,7 @@ s32 func_800A1AA0(void)
 typedef struct { s32 a, b; u8 pad[0x1C]; } E;
 typedef struct { u8 cpu[0x10000]; u8 pad[0x412C]; E e[4]; } Nes_4;
 
-void func_800A1ADC(void)
+void nes_apu_reset_channels(void)
 {
     s32 i;
     for (i = 0; i < 4; i++) {
@@ -766,15 +766,15 @@ void func_800A1ADC(void)
     }
 }
 
-void func_800A1B0C(u8 *p)
+void nes_init_saved_track(u8 *p)
 {
-    func_8000ED10(p, 0x40, 0x220);
+    mem_fill(p, 0x40, 0x220);
     p[0] = 1;
     p[0xCF] = 9;
-    func_8000ED10(p + 0xD0, 0, 0x30);
+    mem_fill(p + 0xD0, 0, 0x30);
     p[0x100] = 1;
     p[0x1CF] = 9;
-    func_8000ED10(p + 0x1D0, 0, 0x50);
+    mem_fill(p + 0x1D0, 0, 0x50);
     *(s16 *)(p + 0x200) = 0x5A10;
     p[0x204] = 0x2D;
     *(s16 *)(p + 0x20C) = -0x73FF;
@@ -806,7 +806,7 @@ typedef struct {
     Rec_53 ch[5];
 } Nes_5;
 
-void func_800A1BA0(s32 idx, s32 mode)
+void nes_apu_update_square(s32 idx, s32 mode)
 {
     Rec_53 *r;
     s32 per;
@@ -823,7 +823,7 @@ void func_800A1BA0(s32 idx, s32 mode)
     per = (per << 15) / 22050;
     r->f0 = per;
     a0 = NES_7.ram[idx * 4 + 0x4000] >> 6;
-    r->f12 = D_800D05D8[a0];
+    r->f12 = sNesDutyTable[a0];
     a0 = NES_7.ram[idx * 4 + 0x4003] >> 3;
     if (a0 & 1) {
         a0 >>= 1;
@@ -833,7 +833,7 @@ void func_800A1BA0(s32 idx, s32 mode)
             r->f14 = a0;
         }
     } else {
-        r->f14 = D_800D05E0[a0 >> 1];
+        r->f14 = sNesLengthTable[a0 >> 1];
     }
     if (NES_7.ram[0x4000 + idx * 4] & 0x20) {
         r->f1c = 0;
@@ -881,7 +881,7 @@ typedef struct {
     s32 f20;
 } Chan_4;
 
-void func_800A1DCC(s32 n, s32 m)
+void nes_apu_update_triangle(s32 n, s32 m)
 {
     u8 *B;
     Chan_4 *c;
@@ -911,7 +911,7 @@ void func_800A1DCC(s32 n, s32 m)
             c->f14 = bVar1;
         }
     } else {
-        c->f14 = D_800D05E0[bVar1 >> 1];
+        c->f14 = sNesLengthTable[bVar1 >> 1];
     }
     if ((*(u8 *)(0x80384000 + n * 4) & 0x20) != 0) {
         c->f1c = 0;
@@ -922,7 +922,7 @@ void func_800A1DCC(s32 n, s32 m)
     if (m == 3) {
         c->f18 = 0;
     }
-    if (((D_80384015 >> n) & 1) != 0) {
+    if (((sNesReg4015 >> n) & 1) != 0) {
         c->f20 = c->f20 | 8;
     } else {
         c->f20 = c->f20 & ~8;
@@ -948,7 +948,7 @@ typedef struct {
     s32 f20;
 } Chan_5;
 
-void func_800A1F8C(s32 n, s32 m)
+void nes_apu_update_noise(s32 n, s32 m)
 {
     u8 *B;
     Chan_5 *c;
@@ -961,7 +961,7 @@ void func_800A1F8C(s32 n, s32 m)
     s32 e, mm;
     s32 *tb;
 
-    tb = D_800D0620;
+    tb = sNesNoisePeriods;
     B = (u8 *)0x80380000;
     k = n * 4 + 0x4002;
     v = tb[B[k] & 0xF];
@@ -978,7 +978,7 @@ void func_800A1F8C(s32 n, s32 m)
             c->f14 = b;
         }
     } else {
-        c->f14 = D_800D05E0[b >> 1];
+        c->f14 = sNesLengthTable[b >> 1];
     }
     if ((*(u8 *)(0x80384000 + n * 4) & 0x20) != 0) {
         c->f1C = 0;
@@ -989,7 +989,7 @@ void func_800A1F8C(s32 n, s32 m)
     if (m == 3) {
         c->f18 = 0;
     }
-    if (((D_80384015 >> n) & 1) != 0) {
+    if (((sNesReg4015 >> n) & 1) != 0) {
         c->f20 = c->f20 | 8;
     } else {
         c->f20 = c->f20 & ~8;
@@ -1040,7 +1040,7 @@ typedef struct {
     u32 strobe;
 } Nes_6;
 
-void func_800A2178(s32 addr, s32 value)
+void nes_write_io(s32 addr, s32 value)
 {
     s32 k;
     Page *src;
@@ -1086,18 +1086,18 @@ void func_800A2178(s32 addr, s32 value)
             NES_8.ram[addr] = value;
             k >>= 2;
             if (k < 2) {
-                func_800A1BA0(k, addr & 3);
+                nes_apu_update_square(k, addr & 3);
             } else if (k == 2) {
-                func_800A1DCC(2, addr & 3);
+                nes_apu_update_triangle(2, addr & 3);
             } else if (k == 3) {
-                func_800A1F8C(3, addr & 3);
+                nes_apu_update_noise(3, addr & 3);
             }
         }
     }
     NES_8.ram[addr] = value;
 }
 
-u32 func_800A2444(s32 code, s32 unused, u32 val)
+u32 nes_read_io(s32 code, s32 unused, u32 val)
 {
     u8 *ram;
     u8 *reg;
@@ -1147,9 +1147,9 @@ u32 func_800A2444(s32 code, s32 unused, u32 val)
     return *(u8 *)(code + 0x80380000);
 }
 
-void func_800A2588(void)
+void nes_op_asl(void)
 {
-    s32 addr = D_800F5BB0;
+    s32 addr = sNesEffAddr;
 
     if (addr == -1) {
         NES_2.c = NES_2.a & 0x80;
@@ -1157,22 +1157,22 @@ void func_800A2588(void)
         NES_2.z = NES_2.a == 0;
         NES_2.n = NES_2.a & 0x80;
     } else {
-        u32 v = D_800F5BB8 << 1;
-        NES_2.c = ((u8 *)&D_800F5BB8)[3] & 0x80;
-        D_800F5BB8 = v;
+        u32 v = sNesOperand << 1;
+        NES_2.c = ((u8 *)&sNesOperand)[3] & 0x80;
+        sNesOperand = v;
         if (addr < 0x2000) {
             NES_2.ram[addr & 0x7FF] = v;
         } else if (addr < 0x8000) {
-            func_800A2178(addr, v);
+            nes_write_io(addr, v);
         }
-        NES_2.z = (D_800F5BB8 & 0xFF) == 0;
-        NES_2.n = ((u8 *)&D_800F5BB8)[3] & 0x80;
+        NES_2.z = (sNesOperand & 0xFF) == 0;
+        NES_2.n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
 }
 
-void func_800A265C(void)
+void nes_op_asr(void)
 {
-    if (D_800F5BB0 == -1) {
+    if (sNesEffAddr == -1) {
         NES_2.c = NES_2.a & 1;
         NES_2.a >>= 1;
         if (NES_2.a & 0x40) {
@@ -1181,22 +1181,22 @@ void func_800A265C(void)
         NES_2.z = NES_2.a == 0;
         NES_2.n = NES_2.a & 0x80;
     } else {
-        NES_2.c = D_800F5BB8 & 1;
-        D_800F5BB8 >>= 1;
-        if (D_800F5BB8 & 0x40) {
-            D_800F5BB8 |= 0x80;
+        NES_2.c = sNesOperand & 1;
+        sNesOperand >>= 1;
+        if (sNesOperand & 0x40) {
+            sNesOperand |= 0x80;
         }
-        wr(D_800F5BB0, D_800F5BB8);
-        NES_2.z = (D_800F5BB8 & 0xFF) == 0;
-        NES_2.n = ((u8 *)&D_800F5BB8)[3] & 0x80;
+        wr(sNesEffAddr, sNesOperand);
+        NES_2.z = (sNesOperand & 0xFF) == 0;
+        NES_2.n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
 }
 
-void func_800A2750(void)
+void nes_op_rol(void)
 {
     s32 bit;
 
-    if (D_800F5BB0 == -1) {
+    if (sNesEffAddr == -1) {
         bit = NES_2.a & 0x80;
         NES_2.a <<= 1;
         if (NES_2.c) {
@@ -1206,23 +1206,23 @@ void func_800A2750(void)
         NES_2.z = NES_2.a == 0;
         NES_2.n = NES_2.a & 0x80;
     } else {
-        bit = D_800F5BB8 & 0x80;
-        D_800F5BB8 <<= 1;
+        bit = sNesOperand & 0x80;
+        sNesOperand <<= 1;
         if (NES_2.c) {
-            do { D_800F5BB8 |= 1; } while (0);
+            do { sNesOperand |= 1; } while (0);
         }
         NES_2.c = bit;
-        wr(D_800F5BB0, D_800F5BB8);
-        NES_2.z = (D_800F5BB8 & 0xFF) == 0;
-        NES_2.n = ((u8 *)&D_800F5BB8)[3] & 0x80;
+        wr(sNesEffAddr, sNesOperand);
+        NES_2.z = (sNesOperand & 0xFF) == 0;
+        NES_2.n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
 }
 
-void func_800A283C(void)
+void nes_op_ror(void)
 {
     s32 bit;
 
-    if (D_800F5BB0 == -1) {
+    if (sNesEffAddr == -1) {
         bit = NES_2.a & 1;
         NES_2.a >>= 1;
         if (NES_2.c) {
@@ -1232,21 +1232,21 @@ void func_800A283C(void)
         NES_2.z = NES_2.a == 0;
         NES_2.n = NES_2.a & 0x80;
     } else {
-        bit = D_800F5BB8 & 1;
-        D_800F5BB8 >>= 1;
+        bit = sNesOperand & 1;
+        sNesOperand >>= 1;
         if (NES_2.c) {
-            do { D_800F5BB8 |= 0x80; } while (0);
+            do { sNesOperand |= 0x80; } while (0);
         }
         NES_2.c = bit;
-        wr(D_800F5BB0, D_800F5BB8);
-        NES_2.z = (D_800F5BB8 & 0xFF) == 0;
-        NES_2.n = ((u8 *)&D_800F5BB8)[3] & 0x80;
+        wr(sNesEffAddr, sNesOperand);
+        NES_2.z = (sNesOperand & 0xFF) == 0;
+        NES_2.n = ((u8 *)&sNesOperand)[3] & 0x80;
     }
 }
 
-void func_800A2928(void)
+void nes_op_lsr(void)
 {
-    s32 a2 = D_800F5BB0;
+    s32 a2 = sNesEffAddr;
 
     if (a2 == -1) {
         u8 *g = (u8 *)0x80390000;
@@ -1258,27 +1258,27 @@ void func_800A2928(void)
         g[0x4108] = b & 0x80;
         return;
     } else {
-        u8 *pb = (u8 *)&D_800F5BB8;
+        u8 *pb = (u8 *)&sNesOperand;
         u8 lo = pb[3];
         s32 w;
 
         *(u8 *)0x8039410C = lo & 1;
-        w = D_800F5BB8 >> 1;
-        D_800F5BB8 = w;
+        w = sNesOperand >> 1;
+        sNesOperand = w;
         if (a2 < 0x2000) {
             *(u8 *)(0x80380000 + (a2 & 0x7FF)) = (u8)w;
         } else if (a2 <= 0x7FFF) {
-            func_800A2178(a2, w);
+            nes_write_io(a2, w);
         }
     }
     {
         u8 *t = (u8 *)0x80390000;
-        t[0x410B] = ((D_800F5BB8 & 0xFF) == 0);
-        t[0x4108] = ((u8 *)&D_800F5BB8)[3] & 0x80;
+        t[0x410B] = ((sNesOperand & 0xFF) == 0);
+        t[0x4108] = ((u8 *)&sNesOperand)[3] & 0x80;
     }
 }
 
-void func_800A29F0(void)
+void nes_op_brk(void)
 {
     NES_3->pc++;
     NES_3->ram[0x100 + NES_3->s] = NES_3->pc >> 8;
@@ -1294,7 +1294,7 @@ void func_800A29F0(void)
     NES_3->pc |= NES_3->ram[0xFFFF] << 8;
 }
 
-void func_800A2B14(void)
+void nes_op_php(void)
 {
     NES_2.p = (NES_2.n ? 0x80 : 0) | (NES_2.v ? 0x60 : 0x20)
         | (NES_2.b ? 0x10 : 0) | (NES_2.d ? 8 : 0) | (NES_2.i ? 4 : 0)
@@ -1303,14 +1303,14 @@ void func_800A2B14(void)
     NES_2.s--;
 }
 
-void func_800A2BB8(void)
+void nes_op_rti(void)
 {
     u32 v;
     u32 bits;
     u32 base;
 
     base = 0x80380100;
-    v = (u32)D_80394105 + 1;
+    v = (u32)sNesRegS + 1;
     *(u8 *)0x80394105 = v;
     v = v & 0xFF;
     bits = *(u8 *)(base | v);
@@ -1321,10 +1321,10 @@ void func_800A2BB8(void)
     *(u8 *)0x8039410A = bits & 0x4;
     *(u8 *)0x8039410B = bits & 0x2;
     *(u8 *)0x8039410C = bits & 0x1;
-    func_800A375C();
+    nes_op_rts();
 }
 
-void func_800A2C50(void)
+void nes_cpu_nmi(void)
 {
     NES_3->ram[0x100 + NES_3->s] = NES_3->pc >> 8;
     NES_3->s--;
@@ -1355,9 +1355,9 @@ typedef struct Ent_88 {
 
 typedef struct { u8 pad[0x4100]; u16 pc; u8 pad2[14]; u32 cyc; } Cpu;
 
-extern Ent_88 D_800CED14[];
+extern Ent_88 sNesOpcodeTable[];
 
-void func_800A2D64(void)
+void nes_run_frame(void)
 {
     s32 i = 0;
     s32 line;
@@ -1368,7 +1368,7 @@ void func_800A2D64(void)
     do {
         line = (i + 0xf0) % 0xf8;
         if (*(u32 *)0x80394110 < 0x78) {
-            Ent_88 *tb = D_800CED14;
+            Ent_88 *tb = sNesOpcodeTable;
             u8 *dseg = (u8 *)0x800D0000;
             do {
                 Ent_88 *e;
@@ -1387,13 +1387,13 @@ void func_800A2D64(void)
                 R2002 = 0x10;
             } else if (line == 0xf0) {
                 R2002 |= 0x80;
-                if (R2000 & 0x80) func_800A2C50();
+                if (R2000 & 0x80) nes_cpu_nmi();
             }
         }
-        if ((line & 7) == 4 && line < 0xf0 && D_800D0660_2 != 0) D_800D0660_2(line >> 3);
+        if ((line & 7) == 4 && line < 0xf0 && sNesRowCallback_2 != 0) sNesRowCallback_2(line >> 3);
         if (line == *(u8 *)0x80394000 && line < 0xf0) {
             R2002 |= 0x40;
-            if (R2000 & 0x40) func_800A2C50();
+            if (R2000 & 0x40) nes_cpu_nmi();
         }
         i++;
     } while (i < 0xf8);
@@ -1403,11 +1403,11 @@ void func_800A2D64(void)
     }
 }
 
-s32 func_800A2F60(s32 param_1, s32 param_2) {
+s32 nes_cpu_reset(s32 param_1, s32 param_2) {
     u8 *nes = (u8 *)0x80390000;
     u8 *ram = (u8 *)0x80388000;
-    D_800D0670 = param_1;
-    D_800D0660 = param_2;
+    sNesCpuMemory = param_1;
+    sNesRowCallback = param_2;
     nes[0x4106] = 0;
     nes[0x4107] = 0;
     nes[0x4109] = 0;
@@ -1418,12 +1418,12 @@ s32 func_800A2F60(s32 param_1, s32 param_2) {
     return 0;
 }
 
-void func_800A2FB4(void) {
+void nes_op_adc(void) {
     u8 *nes = (u8 *)0x80390000;
     u32 sum = nes[0x4102];
     u32 old = sum;
     u32 m = 0xFFFFFF80;
-    sum = sum + D_800F5BB8;
+    sum = sum + sNesOperand;
     if (nes[0x410C] != 0) {
         sum = sum + 1;
     }
@@ -1434,7 +1434,7 @@ void func_800A2FB4(void) {
     nes[0x4106] = (old ^ sum) & m;
 }
 
-void func_800A3014(void)
+void nes_op_and(void)
 {
     u8 *nes;
     u8 v;
@@ -1442,7 +1442,7 @@ void func_800A3014(void)
     u8 w;
 
     nes = (u8 *)0x80390000;
-    v = nes[0x4102] & D_800F5BBB;
+    v = nes[0x4102] & sNesOperand8;
     z = (v == 0);
     nes[0x4102] = v;
     w = v & 0x80;
@@ -1450,7 +1450,7 @@ void func_800A3014(void)
     nes[0x4108] = w;
 }
 
-void func_800A3040(void)
+void nes_op_bcc(void)
 {
     u8 *nes;
     u16 h;
@@ -1458,14 +1458,14 @@ void func_800A3040(void)
 
     nes = (u8 *)0x80390000;
     if (nes[0x410C] == 0) {
-        h = D_800F5BBA;
+        h = sNesOperand16;
         c = *(s32 *)(nes + 0x4110) + 2;
         *(u16 *)(nes + 0x4100) = h;
         *(s32 *)(nes + 0x4110) = c;
     }
 }
 
-void func_800A3070(void)
+void nes_op_bcs(void)
 {
     u8 *st;
     s32 a;
@@ -1480,12 +1480,12 @@ void func_800A3070(void)
     }
     st = (u8 *)0x80390000;
     if (st[0x410C] != 0) {
-        *(u16 *)(st + 0x4100) = D_800F5BB8;
+        *(u16 *)(st + 0x4100) = sNesOperand;
         *(s32 *)(st + 0x4110) += 2;
     }
 }
 
-void func_800A30E8(void)
+void nes_op_beq(void)
 {
     u8 *nes;
     u16 h;
@@ -1493,24 +1493,24 @@ void func_800A30E8(void)
 
     nes = (u8 *)0x80390000;
     if (nes[0x410B] != 0) {
-        h = D_800F5BBA;
+        h = sNesOperand16;
         c = *(s32 *)(nes + 0x4110) + 2;
         *(u16 *)(nes + 0x4100) = h;
         *(s32 *)(nes + 0x4110) = c;
     }
 }
 
-void func_800A3118(void) {
+void nes_op_bit(void) {
     u8 *nes = (u8 *)0x80390000;
-    nes[0x410B] = ((nes[0x4102] & D_800F5BB8) == 0);
+    nes[0x410B] = ((nes[0x4102] & sNesOperand) == 0);
     {
-        u8 b = ((u8 *)&D_800F5BB8)[3];
+        u8 b = ((u8 *)&sNesOperand)[3];
         nes[0x4108] = b & 0x80;
         nes[0x4106] = b & 0x40;
     }
 }
 
-void func_800A3150(void)
+void nes_op_bmi(void)
 {
     u8 *nes;
     u16 h;
@@ -1518,14 +1518,14 @@ void func_800A3150(void)
 
     nes = (u8 *)0x80390000;
     if (nes[0x4108] != 0) {
-        h = D_800F5BBA;
+        h = sNesOperand16;
         c = *(s32 *)(nes + 0x4110) + 2;
         *(u16 *)(nes + 0x4100) = h;
         *(s32 *)(nes + 0x4110) = c;
     }
 }
 
-void func_800A3180(void)
+void nes_op_bne(void)
 {
     u8 *nes;
     u16 h;
@@ -1533,14 +1533,14 @@ void func_800A3180(void)
 
     nes = (u8 *)0x80390000;
     if (nes[0x410b] == 0) {
-        h = D_800F5BBA;
+        h = sNesOperand16;
         c = *(s32 *)(nes + 0x4110) + 2;
         *(u16 *)(nes + 0x4100) = h;
         *(s32 *)(nes + 0x4110) = c;
     }
 }
 
-void func_800A31B0(void)
+void nes_op_bpl(void)
 {
     u8 *nes;
     u16 h;
@@ -1548,14 +1548,14 @@ void func_800A31B0(void)
 
     nes = (u8 *)0x80390000;
     if (nes[0x4108] == 0) {
-        h = D_800F5BBA;
+        h = sNesOperand16;
         c = *(s32 *)(nes + 0x4110) + 2;
         *(u16 *)(nes + 0x4100) = h;
         *(s32 *)(nes + 0x4110) = c;
     }
 }
 
-void func_800A31E0(void)
+void nes_op_bvc(void)
 {
     u8 *nes;
     u16 h;
@@ -1563,14 +1563,14 @@ void func_800A31E0(void)
 
     nes = (u8 *)0x80390000;
     if (nes[0x4106] == 0) {
-        h = D_800F5BBA;
+        h = sNesOperand16;
         c = *(s32 *)(nes + 0x4110) + 2;
         *(u16 *)(nes + 0x4100) = h;
         *(s32 *)(nes + 0x4110) = c;
     }
 }
 
-void func_800A3210(void)
+void nes_op_bvs(void)
 {
     u8 *nes;
     u16 h;
@@ -1578,37 +1578,37 @@ void func_800A3210(void)
 
     nes = (u8 *)0x80390000;
     if (nes[0x4106] != 0) {
-        h = D_800F5BBA;
+        h = sNesOperand16;
         c = *(s32 *)(nes + 0x4110) + 2;
         *(u16 *)(nes + 0x4100) = h;
         *(s32 *)(nes + 0x4110) = c;
     }
 }
 
-void func_800A3240(void)
+void nes_op_clc(void)
 {
     *(u8 *)0x8039410C = 0;
 }
 
-void func_800A3250(void)
+void nes_op_cld(void)
 {
     *(u8 *)0x80394109 = 0;
 }
 
-void func_800A3260(void)
+void nes_op_cli(void)
 {
     *(u8 *)0x8039410A = 0;
 }
 
-void func_800A3270(void)
+void nes_op_clv(void)
 {
     *(u8 *)0x80394106 = 0;
 }
 
-void func_800A3280(void) {
+void nes_op_cmp(void) {
     u8 *nes = (u8 *)0x80390000;
     s32 a = nes[0x4102];
-    s32 b = D_800F5BB8;
+    s32 b = sNesOperand;
     if (b < a) {
         nes[0x4108] = 0;
         nes[0x410C] = 1;
@@ -1626,10 +1626,10 @@ void func_800A3280(void) {
     nes[0x410B] = 0;
 }
 
-void func_800A32D4(void) {
+void nes_op_cpx(void) {
     u8 *nes = (u8 *)0x80390000;
     s32 a = nes[0x4103];
-    s32 b = D_800F5BB8;
+    s32 b = sNesOperand;
     if (b < a) {
         nes[0x4108] = 0;
         nes[0x410C] = 1;
@@ -1647,10 +1647,10 @@ void func_800A32D4(void) {
     nes[0x410B] = 0;
 }
 
-void func_800A3328(void) {
+void nes_op_cpy(void) {
     u8 *nes = (u8 *)0x80390000;
     s32 a = nes[0x4104];
-    s32 b = D_800F5BB8;
+    s32 b = sNesOperand;
     if (b < a) {
         nes[0x4108] = 0;
         nes[0x410C] = 1;
@@ -1668,18 +1668,18 @@ void func_800A3328(void) {
     nes[0x410B] = 0;
 }
 
-void func_800A337C(void)
+void nes_op_dec(void)
 {
     u8 *st;
 
-    D_800F5BB8 = D_800F5BB8 - 1;
-    wr_2(D_800F5BB0, D_800F5BB8);
+    sNesOperand = sNesOperand - 1;
+    wr_2(sNesEffAddr, sNesOperand);
     st = (u8 *)0x80390000;
-    st[0x410B] = (D_800F5BB8 & 0xFF) == 0;
-    st[0x4108] = D_800F5BB8 & 0x80;
+    st[0x410B] = (sNesOperand & 0xFF) == 0;
+    st[0x4108] = sNesOperand & 0x80;
 }
 
-void func_800A3408(void)
+void nes_op_dex(void)
 {
     u8 *nes = (u8 *)0x80390000;
     s32 v = nes[0x4103] + -1;
@@ -1690,7 +1690,7 @@ void func_800A3408(void)
     nes[0x4108] = m;
 }
 
-void func_800A3430(void)
+void nes_op_dey(void)
 {
     u8 *nes = (u8 *)0x80390000;
     s32 v = nes[0x4104] + -1;
@@ -1701,27 +1701,27 @@ void func_800A3430(void)
     nes[0x4108] = m;
 }
 
-void func_800A3458(void)
+void nes_op_eor(void)
 {
     u8 *nes = (u8 *)0x80390000;
-    u8 v = nes[0x4102] ^ D_800F5BBB;
+    u8 v = nes[0x4102] ^ sNesOperand8;
     nes[0x4102] = v;
     nes[0x410B] = (v == 0);
     nes[0x4108] = v & 0x80;
 }
 
-void func_800A3484(void) {
+void nes_op_inc(void) {
     u8 *nes;
-    s32 c = D_800F5BB8 + 1;
+    s32 c = sNesOperand + 1;
 
-    D_800F5BB8 = c;
-    wr_2(D_800F5BB0, c);
+    sNesOperand = c;
+    wr_2(sNesEffAddr, c);
     nes = (u8 *)0x80390000;
-    nes[0x410B] = (D_800F5BB8 & 0xFF) == 0;
-    nes[0x4108] = ((u8 *)&D_800F5BB8)[3] & 0x80;
+    nes[0x410B] = (sNesOperand & 0xFF) == 0;
+    nes[0x4108] = ((u8 *)&sNesOperand)[3] & 0x80;
 }
 
-void func_800A3510(void)
+void nes_op_inx(void)
 {
     u8 *nes = (u8 *)0x80390000;
     s32 v = nes[0x4103] + 1;
@@ -1732,7 +1732,7 @@ void func_800A3510(void)
     nes[0x4108] = m;
 }
 
-void func_800A3538(void)
+void nes_op_iny(void)
 {
     u8 *nes = (u8 *)0x80390000;
     s32 v = nes[0x4104] + 1;
@@ -1743,12 +1743,12 @@ void func_800A3538(void)
     nes[0x4108] = m;
 }
 
-void func_800A3560(void)
+void nes_op_jmp(void)
 {
-    *(u16 *)0x80394100 = D_800F5BBA;
+    *(u16 *)0x80394100 = sNesOperand16;
 }
 
-void func_800A3578(void) {
+void nes_op_jsr(void) {
     u8 *nes = (u8 *)0x80390000;
     u32 base = 0x80380000;
     u8 v;
@@ -1764,41 +1764,41 @@ void func_800A3578(void) {
     j += 0x100;
     *(u8 *)(base + j) = v;
     nes[0x4105] = nes[0x4105] - 1;
-    *(u16 *)(nes + 0x4100) = D_800F5BBA;
+    *(u16 *)(nes + 0x4100) = sNesOperand16;
 }
 
-void func_800A35D4(void)
+void nes_op_lda(void)
 {
     u8 *nes = (u8 *)0x80390000;
 
-    nes[0x4102] = D_800F5BB8;
-    nes[0x410B] = (D_800F5BB8 & 0xFF) == 0;
-    nes[0x4108] = D_800F5BB8 & 0x80;
+    nes[0x4102] = sNesOperand;
+    nes[0x410B] = (sNesOperand & 0xFF) == 0;
+    nes[0x4108] = sNesOperand & 0x80;
 }
 
-void func_800A3608(void)
+void nes_op_ldx(void)
 {
     u8 *nes = (u8 *)0x80390000;
-    s8 b = D_800F5BB8;
+    s8 b = sNesOperand;
     nes[0x4103] = b;
-    nes[0x410B] = (D_800F5BB8 & 0xFF) == 0;
+    nes[0x410B] = (sNesOperand & 0xFF) == 0;
     nes[0x4108] = b & 0x80;
 }
 
-void func_800A363C(void)
+void nes_op_ldy(void)
 {
     u8 *nes = (u8 *)0x80390000;
 
-    nes[0x4104] = D_800F5BB8;
-    nes[0x410B] = (D_800F5BB8 & 0xFF) == 0;
-    nes[0x4108] = D_800F5BB8 & 0x80;
+    nes[0x4104] = sNesOperand;
+    nes[0x410B] = (sNesOperand & 0xFF) == 0;
+    nes[0x4108] = sNesOperand & 0x80;
 }
 
-void func_800A3670(void)
+void nes_op_nop(void)
 {
 }
 
-void func_800A3678(void)
+void nes_op_ora(void)
 {
     u8 *nes;
     u8 v;
@@ -1806,7 +1806,7 @@ void func_800A3678(void)
     u8 w;
 
     nes = (u8 *)0x80390000;
-    v = nes[0x4102] | D_800F5BBB;
+    v = nes[0x4102] | sNesOperand8;
     z = (v == 0);
     nes[0x4102] = v;
     w = v & 0x80;
@@ -1814,7 +1814,7 @@ void func_800A3678(void)
     nes[0x4108] = w;
 }
 
-void func_800A36A4(void)
+void nes_op_pha(void)
 {
     u8 *nes;
     u32 a;
@@ -1825,7 +1825,7 @@ void func_800A36A4(void)
     nes[0x4105] = nes[0x4105] - 1;
 }
 
-void func_800A36D0(void)
+void nes_op_pla(void)
 {
     u8 *nes;
     u32 a;
@@ -1837,7 +1837,7 @@ void func_800A36D0(void)
 }
 
 /* 6502 PLP: pull the status byte from the stack page and split it into the flag bytes. */
-void func_800A36FC(void)
+void nes_op_plp(void)
 {
     u8 *st = (u8 *)0x80390000;
     u8 *ram = (u8 *)0x80380000;
@@ -1857,7 +1857,7 @@ void func_800A36FC(void)
 }
 
 /* 6502 RTS-style pull of a 16-bit word from the stack page. */
-void func_800A375C(void)
+void nes_op_rts(void)
 {
     u8 *st = (u8 *)0x80390000;
     u8 *ram = (u8 *)0x80380000;
@@ -1873,13 +1873,13 @@ void func_800A375C(void)
     *(u16 *)(st + 0x4100) = lo | (hi << 8);
 }
 
-void func_800A37A8(void)
+void nes_op_sbc(void)
 {
     u8 *nes = (u8 *)0x80390000;
     s32 r = nes[0x4102];
     s32 a = r;
     s32 x;
-    r = r - D_800F5BB8;
+    r = r - sNesOperand;
     if (nes[0x410C] == 0) {
         r = r - 1;
     }
@@ -1891,56 +1891,56 @@ void func_800A37A8(void)
     nes[0x4106] = x & -0x80;
 }
 
-void func_800A3804(void)
+void nes_op_sec(void)
 {
     *(u8 *)0x8039410C = 1;
 }
 
-void func_800A3818(void)
+void nes_op_sed(void)
 {
     *(u8 *)0x80394109 = 1;
-    func_8000ECB8(1);
+    fatal_halt(1);
 }
 
-void func_800A3834(void)
+void nes_op_sei(void)
 {
     *(u8 *)0x8039410A = 1;
 }
 
-void func_800A3848(void)
+void nes_op_sta(void)
 {
     u8 *nes = (u8 *)0x80390000;
-    s32 a = D_800F5BB0;
+    s32 a = sNesEffAddr;
     u32 v = nes[0x4102];
     if (a < 0x2000) {
         *(u8 *)((a & 0x7FF) + 0x80380000) = v;
     } else if (a < 0x8000) {
-        func_800A2178(a, v);
+        nes_write_io(a, v);
     }
 }
 
-void func_800A38A0(void) {
-    s32 a = D_800F5BB0;
+void nes_op_stx(void) {
+    s32 a = sNesEffAddr;
     u32 v = *(u8 *)0x80394103;
     if (a < 0x2000) {
         ((u8 *)0x80380000)[a & 0x7FF] = v;
     } else if (a < 0x8000) {
-        func_800A2178(a, v);
+        nes_write_io(a, v);
     }
 }
 
-void func_800A38F8(void) {
-    s32 addr = D_800F5BB0;
+void nes_op_sty(void) {
+    s32 addr = sNesEffAddr;
     s32 value = *(u8 *)0x80394104;
 
     if (addr < 0x2000) {
         ((u8 *)0x80380000)[addr & 0x7FF] = value;
     } else if (addr < 0x8000) {
-        func_800A2178(addr, value);
+        nes_write_io(addr, value);
     }
 }
 
-void func_800A3950(void)
+void nes_op_tax(void)
 {
     u8 *nes = (u8 *)0x80390000;
     u8 v = nes[0x4102];
@@ -1949,7 +1949,7 @@ void func_800A3950(void)
     nes[0x4108] = v & 0x80;
 }
 
-void func_800A3974(void)
+void nes_op_tay(void)
 {
     u8 *nes = (u8 *)0x80390000;
     u8 v = nes[0x4102];
@@ -1958,7 +1958,7 @@ void func_800A3974(void)
     nes[0x4108] = v & 0x80;
 }
 
-void func_800A3998(void)
+void nes_op_tsx(void)
 {
     u8 *nes = (u8 *)0x80390000;
     u8 v = nes[0x4105];
@@ -1967,7 +1967,7 @@ void func_800A3998(void)
     nes[0x4108] = v & 0x80;
 }
 
-void func_800A39BC(void)
+void nes_op_txa(void)
 {
     u8 *nes = (u8 *)0x80390000;
     u8 v = nes[0x4103];
@@ -1976,13 +1976,13 @@ void func_800A39BC(void)
     nes[0x4108] = v & 0x80;
 }
 
-void func_800A39E0(void)
+void nes_op_txs(void)
 {
     u8 *b = (u8 *)0x80390000;
     b[0x4105] = b[0x4103];
 }
 
-void func_800A39F0(void)
+void nes_op_tya(void)
 {
     u8 *nes = (u8 *)0x80390000;
     u8 v = nes[0x4104];
@@ -1991,49 +1991,49 @@ void func_800A39F0(void)
     nes[0x4108] = v & 0x80;
 }
 
-void func_800A3A14(void)
+void nes_am_implied_stub(void)
 {
 }
 
-void func_800A3A1C(void)
+void nes_am_implied(void)
 {
 }
 
-void func_800A3A24(void)
+void nes_am_accumulator_stub(void)
 {
 }
 
-void func_800A3A2C(void)
+void nes_am_accumulator(void)
 {
-    D_800F5BB0 = -1;
-    D_800F5BB8 = *(u8 *)0x80394102;
+    sNesEffAddr = -1;
+    sNesOperand = *(u8 *)0x80394102;
 }
 
-void func_800A3A4C(void)
+void nes_am_absolute_stub(void)
 {
 }
 
-void func_800A3A54(void) {
+void nes_am_absolute(void) {
     u8 *nes = (u8 *)0x80380000;
     s32 i = *(u16 *)0x80394100;
     u8 *p = nes + i;
     s32 a, r;
 
-    D_800F5BB0 = p[1] | (nes[(u16)(i + 2)] << 8);
-    a = D_800F5BB0;
+    sNesEffAddr = p[1] | (nes[(u16)(i + 2)] << 8);
+    a = sNesEffAddr;
     if (a < 0x2000) {
         a &= 0x7FF;
     } else if (a > 0x7FFF) {
     } else {
-        r = func_800A2444_2(a);
+        r = nes_read_io_2(a);
         goto store;
     }
     r = *(u8 *)(0x80380000 + a);
 store:
-    D_800F5BB8 = r;
+    sNesOperand = r;
 }
 
-void func_800A3ADC(void)
+void nes_am_zeropage_stub(void)
 {
 }
 
@@ -2043,25 +2043,25 @@ static inline s32 rd2(s32 a)
         a = a & 0x7FF;
     } else if (a > 0x7FFF) {
     } else {
-        return func_800A2444_2(a);
+        return nes_read_io_2(a);
     }
     return *(u8 *)(a + 0x80380000);
 }
 
-void func_800A3AE4(void)
+void nes_am_zeropage(void)
 {
     s32 a = *(u8 *)(*(u16 *)0x80394100 + 0x80380001);
     s32 r;
-    D_800F5BB0 = a;
+    sNesEffAddr = a;
     r = rd2(a);
-    D_800F5BB8 = r;
+    sNesOperand = r;
 }
 
-void func_800A3B58(void)
+void nes_am_immediate_stub(void)
 {
 }
 
-void func_800A3B60(void)
+void nes_am_immediate(void)
 {
     u8 *nes;
     u8 *ram;
@@ -2069,16 +2069,16 @@ void func_800A3B60(void)
 
     nes = (u8 *)0x80390000;
     ram = (u8 *)0x80380000;
-    D_800F5BB0 = -1;
+    sNesEffAddr = -1;
     idx = *(u16 *)(nes + 0x4100);
-    D_800F5BB8 = ram[idx + 1];
+    sNesOperand = ram[idx + 1];
 }
 
-void func_800A3B8C(void)
+void nes_am_absolute_x_stub(void)
 {
 }
 
-void func_800A3B94(void) {
+void nes_am_absolute_x(void) {
     u8 *st = (u8 *)0x80390000;
     u8 *nes = (u8 *)0x80380000;
     s32 i = *(u16 *)(st + 0x4100);
@@ -2086,25 +2086,25 @@ void func_800A3B94(void) {
     s32 s, r, a;
 
     s = (p[1] | (nes[(u16)(i + 2)] << 8)) + st[0x4103];
-    D_800F5BB0 = s;
+    sNesEffAddr = s;
     a = (u16)s;
     if (a < 0x2000) {
         a &= 0x7FF;
     } else if (a > 0x7FFF) {
     } else {
-        r = func_800A2444_2(a);
+        r = nes_read_io_2(a);
         goto store;
     }
     r = *(u8 *)(0x80380000 + a);
 store:
-    D_800F5BB8 = r;
+    sNesOperand = r;
 }
 
-void func_800A3C28(void)
+void nes_am_absolute_y_stub(void)
 {
 }
 
-void func_800A3C30(void)
+void nes_am_absolute_y(void)
 {
     u8 *st = (u8 *)0x80390000;
     u8 *nes = (u8 *)0x80380000;
@@ -2114,18 +2114,18 @@ void func_800A3C30(void)
     s32 a;
 
     a = (p[1] | (nes[(u16)(i + 2)] << 8)) + st[0x4104];
-    D_800F5BB0 = a;
+    sNesEffAddr = a;
     r = rd((u16)a);
-    D_800F5BB8 = r;
+    sNesOperand = r;
 }
 
-void func_800A3CC4(void)
+void nes_am_indexed_indirect_stub(void)
 {
 }
 
-void func_800A3CCC(void)
+void nes_am_indexed_indirect(void)
 {
-    u32 *out = &D_800F5BB0;
+    u32 *out = &sNesEffAddr;
     u8 *nes = (u8 *)0x80380000;
     u8 *st = (u8 *)0x80390000;
     s32 i = *(u16 *)(st + 0x4100);
@@ -2137,16 +2137,16 @@ void func_800A3CCC(void)
     *out = a;
     *out = nes[a] | (nes[(u16)(a + 1)] << 8);
     r = rd(*out);
-    D_800F5BB8 = r;
+    sNesOperand = r;
 }
 
-void func_800A3D60(void)
+void nes_am_indirect_indexed_stub(void)
 {
 }
 
-void func_800A3D68(void)
+void nes_am_indirect_indexed(void)
 {
-    u32 *out = &D_800F5BB0;
+    u32 *out = &sNesEffAddr;
     u8 *nes = (u8 *)0x80380000;
     u8 *st = (u8 *)0x80390000;
     s32 i = *(u16 *)(st + 0x4100);
@@ -2159,33 +2159,33 @@ void func_800A3D68(void)
     b = (nes[a] | (nes[(u16)(a + 1)] << 8)) + st[0x4104];
     *out = b;
     r = rd((u16)b);
-    D_800F5BB8 = r;
+    sNesOperand = r;
 }
 
-void func_800A3E00(void)
+void nes_am_zeropage_x_stub(void)
 {
 }
 
-void func_800A3E08(void) {
+void nes_am_zeropage_x(void) {
     u8 *st = (u8 *)0x80390000;
     u8 *nes = (u8 *)0x80380000;
     s32 a, r;
 
-    D_800F5BB0 = nes[*(u16 *)(st + 0x4100) + 1] + st[0x4103];
-    a = D_800F5BB0;
+    sNesEffAddr = nes[*(u16 *)(st + 0x4100) + 1] + st[0x4103];
+    a = sNesEffAddr;
     if (a < 0x2000) {
         a &= 0x7FF;
     } else if (a > 0x7FFF) {
     } else {
-        r = func_800A2444_2(a);
+        r = nes_read_io_2(a);
         goto store;
     }
     r = *(u8 *)(0x80380000 + a);
 store:
-    D_800F5BB8 = r;
+    sNesOperand = r;
 }
 
-void func_800A3E84(void)
+void nes_am_zeropage_y_stub(void)
 {
 }
 
@@ -2194,53 +2194,53 @@ static inline u32 rd2_2(s32 a)
     if (a < 0x2000) {
         a &= 0x7FF;
     } else if (a <= 0x7FFF) {
-        return func_800A2444_3(a);
+        return nes_read_io_3(a);
     }
     return *(u8 *)(a + 0x80380000);
 }
 
-void func_800A3E8C(void)
+void nes_am_zeropage_y(void)
 {
     u8 *st = (u8 *)0x80390000;
     u8 *ram = (u8 *)0x80380000;
     s32 a;
     a = ram[*(u16 *)(st + 0x4100) + 1] + st[0x4104];
-    D_800F5BB0 = a;
-    D_800F5BB8_2 = rd2_2(a);
+    sNesEffAddr = a;
+    sNesOperand_2 = rd2_2(a);
 }
 
-void func_800A3F08(void)
+void nes_am_relative_stub(void)
 {
 }
 
-void func_800A3F10(void)
+void nes_am_relative(void)
 {
-    s32 *dst = &D_800F5BB8;
+    s32 *dst = &sNesOperand;
     u32 a = *(u16 *)0x80394100;
     s32 v = a + *(s8 *)(a + 0x80380000 + 1) + 2;
     *dst = v & 0xFFFF;
 }
 
-void func_800A3F3C(void)
+void nes_am_jump_absolute_stub(void)
 {
 }
 
-void func_800A3F44(void)
+void nes_am_jump_absolute(void)
 {
-    u32 *out = &D_800F5BB8;
+    u32 *out = &sNesOperand;
     u8 *nes = (u8 *)0x80380000;
     s32 i = *(u16 *)0x80394100;
     u8 *p = nes + i;
     *out = p[1] | (nes[(u16)(i + 2)] << 8);
 }
 
-void func_800A3F7C(void)
+void nes_am_jump_indirect_stub(void)
 {
 }
 
-void func_800A3F84(void)
+void nes_am_jump_indirect(void)
 {
-    u32 *out = &D_800F5BB8;
+    u32 *out = &sNesOperand;
     u8 *nes = (u8 *)0x80380000;
     s32 i = *(u16 *)0x80394100;
     u8 *p = nes + i;
@@ -2252,24 +2252,24 @@ void func_800A3F84(void)
     *out = w;
 }
 
-void func_800A3FE0(void)
+void nes_ea_absolute(void)
 {
-    s32 *dst = &D_800F5BB0;
+    s32 *dst = &sNesEffAddr;
     u8 *base = (u8 *)0x80380000;
     u32 h = *(u16 *)0x80394100;
     u8 *p = (u8 *)((u32)base + h);
     *dst = (u32)p[1] | ((u32)base[(u16)(h + 2)] << 8);
 }
 
-void func_800A4018(void)
+void nes_ea_zeropage(void)
 {
     u32 a = *(u16 *)0x80394100;
-    D_800F5BB0 = *(u8 *)(a + 0x80380000 + 1);
+    sNesEffAddr = *(u8 *)(a + 0x80380000 + 1);
 }
 
-void func_800A4038(void)
+void nes_ea_absolute_x(void)
 {
-    u32 *out = &D_800F5BB0;
+    u32 *out = &sNesEffAddr;
     u8 *nes = (u8 *)0x80380000;
     u8 *st = (u8 *)0x80390000;
     s32 i = *(u16 *)(st + 0x4100);
@@ -2277,9 +2277,9 @@ void func_800A4038(void)
     *out = (p[1] | (nes[(u16)(i + 2)] << 8)) + st[0x4103];
 }
 
-void func_800A4078(void)
+void nes_ea_absolute_y(void)
 {
-    u32 *out = &D_800F5BB0;
+    u32 *out = &sNesEffAddr;
     u8 *nes = (u8 *)0x80380000;
     u8 *st = (u8 *)0x80390000;
     s32 i = *(u16 *)(st + 0x4100);
@@ -2287,9 +2287,9 @@ void func_800A4078(void)
     *out = (p[1] | (nes[(u16)(i + 2)] << 8)) + st[0x4104];
 }
 
-void func_800A40B8(void)
+void nes_ea_indexed_indirect(void)
 {
-    u32 *out = &D_800F5BB0;
+    u32 *out = &sNesEffAddr;
     u8 *nes = (u8 *)0x80380000;
     u8 *st = (u8 *)0x80390000;
     s32 i = *(u16 *)(st + 0x4100);
@@ -2303,22 +2303,22 @@ void func_800A40B8(void)
 
 static inline u32 rd_2(u32 addr) { return RAM[addr]; }
 
-void func_800A40FC(void)
+void nes_ea_indirect_indexed(void)
 {
     u8 *st = (u8 *)0x80390000;
     u32 a = rd_2(*(u16 *)(st + 0x4100) + 1);
-    D_800F5BB0 = a;
-    D_800F5BB0 = (rd_2(a) | (rd_2(a + 1) << 8)) + st[0x4104];
+    sNesEffAddr = a;
+    sNesEffAddr = (rd_2(a) | (rd_2(a + 1) << 8)) + st[0x4104];
 }
 
-void func_800A4140(void)
+void nes_ea_zeropage_x(void)
 {
     u8 *nes = (u8 *)0x80390000;
     u32 a = *(u16 *)(nes + 0x4100);
-    D_800F5BB0 = *(u8 *)(a + 0x80380000 + 1) + nes[0x4103];
+    sNesEffAddr = *(u8 *)(a + 0x80380000 + 1) + nes[0x4103];
 }
 
-void func_800A4168(void)
+void nes_ea_zeropage_y(void)
 {
     u8 *nes;
     u8 *ram;
@@ -2327,40 +2327,40 @@ void func_800A4168(void)
     nes = (u8 *)0x80390000;
     ram = (u8 *)0x80380000;
     idx = *(u16 *)(nes + 0x4100);
-    D_800F5BB0 = ram[idx + 1] + nes[0x4104];
+    sNesEffAddr = ram[idx + 1] + nes[0x4104];
 }
 
-void func_800A4190(s32 p, u8 v)
+void nes_apu_write(s32 p, u8 v)
 {
     s32 u;
 
     ((u8 *)0x80380000)[p] = v;
     u = (p - 0x4000) >> 2;
     if (u < 2) {
-        func_800A1BA0(u, p & 3);
+        nes_apu_update_square(u, p & 3);
     } else if (u == 2) {
-        func_800A1DCC(2, p & 3);
+        nes_apu_update_triangle(2, p & 3);
     } else if (u == 3) {
-        func_800A1F8C(3, p & 3);
+        nes_apu_update_noise(3, p & 3);
     }
 }
 
-s32 func_800A4204(s32 addr)
+s32 nes_cpu_read(s32 addr)
 {
     addr &= 0xFFFF;
     if (addr < 0x2000) {
         addr &= 0x7FF;
     } else if (addr < 0x8000) {
-        return func_800A2444_4(addr);
+        return nes_read_io_4(addr);
     }
     return *(u8 *)(addr + 0x80380000);
 }
 
-void func_800A4254(s32 addr, s32 val) {
+void nes_cpu_write(s32 addr, s32 val) {
     if (addr < 0x2000) {
         u8 *ram = (u8 *)0x80380000;
         ram[addr & 0x7FF] = val;
     } else if (addr < 0x8000) {
-        func_800A2178(addr, val);
+        nes_write_io(addr, val);
     }
 }

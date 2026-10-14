@@ -1,18 +1,18 @@
 #include "boot.h"
 
-void boot_func_80000450(void)
+void boot_main(void)
 {
     __osInitialize_common();
     __osInitialize_autodetect();
-    osCreateThread(&D_80011600, 1, boot_func_800004A8, NULL, &D_800137B0, 8);
-    osStartThread(&D_80011600);
+    osCreateThread(&sBootIdleThread, 1, boot_idle, NULL, &sBootMainThread, 8);
+    osStartThread(&sBootIdleThread);
     for (;;) {
     }
 }
 
-void boot_func_800004A8(s32 param_1) {
-    osCreateThread(&D_800137B0, 3, (void *)boot_func_800010D0, param_1, &D_80015960, 10);
-    osStartThread(&D_800137B0);
+void boot_idle(s32 param_1) {
+    osCreateThread(&sBootMainThread, 3, (void *)boot_thread_main, param_1, &sBootMainThreadStackEnd, 10);
+    osStartThread(&sBootMainThread);
     osSetThreadPri((void *)0, 0);
     while (1) {
     }

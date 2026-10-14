@@ -22,38 +22,38 @@ typedef struct Ent_61 {
     s32 **names;
 } Ent_61;
 
-extern Ent_61 *D_800F0B58_2;
-extern Ent_61 *D_800CCB84[];
+extern Ent_61 *sCurTrackHack_2;
+extern Ent_61 *sTrackHacks[];
 
-void func_800620A0(void)
+void hacks_init(void)
 {
     s32 key;
     Ent_61 **pp;
     s32 i;
 
-    key = D_800EFD64_7 - D_800CB210_3;
-    D_800F0B58_2 = NULL;
-    for (i = 0; D_800CCB84[i] != NULL; i++) {
-        if (D_800CCB84[i]->key == key) {
-            D_800F0B58_2 = D_800CCB84[i];
+    key = gCurTrack_7 - gTracks_3;
+    sCurTrackHack_2 = NULL;
+    for (i = 0; sTrackHacks[i] != NULL; i++) {
+        if (sTrackHacks[i]->key == key) {
+            sCurTrackHack_2 = sTrackHacks[i];
             break;
         }
     }
-    if (D_800F0B58_2 != NULL) {
+    if (sCurTrackHack_2 != NULL) {
         D_800F0B40[0] = NULL;
         D_800F0B40[1] = NULL;
-        D_800F0B60 = NULL;
-        if (D_800F0B58_2->n6 != 0) {
-            D_800F0B40[0] = func_800BC908(D_800F0B58_2->n6 << 7, 0, D_800D8C10, 0x9f);
-            D_800F0B40[1] = (u8 *)D_800F0B40[0] + (D_800F0B58_2->n6 << 6);
+        sHackResources = NULL;
+        if (sCurTrackHack_2->n6 != 0) {
+            D_800F0B40[0] = mem_alloc_dbg(sCurTrackHack_2->n6 << 7, 0, D_800D8C10, 0x9f);
+            D_800F0B40[1] = (u8 *)D_800F0B40[0] + (sCurTrackHack_2->n6 << 6);
         }
-        if (D_800F0B58_2->n7 != 0) {
-            D_800F0B60 = func_800BC908(D_800F0B58_2->n7 << 2, 0, D_800D8C10, 0xa4);
-            for (i = 0; i < D_800F0B58_2->n7; i++) {
-                D_800F0B60[i] = func_800BF79C(D_800E7728, *D_800F0B58_2->names[i]);
+        if (sCurTrackHack_2->n7 != 0) {
+            sHackResources = mem_alloc_dbg(sCurTrackHack_2->n7 << 2, 0, D_800D8C10, 0xa4);
+            for (i = 0; i < sCurTrackHack_2->n7; i++) {
+                sHackResources[i] = res_load(D_800E7728, *sCurTrackHack_2->names[i]);
             }
         }
-        D_800F0B58_2->fn();
+        sCurTrackHack_2->fn();
     }
 }
 
@@ -62,7 +62,7 @@ typedef struct {
     s32 data;
 } Res_4;
 
-void func_80062244(void)
+void hack_gravel_pit_init(void)
 {
     s32 i, j;
     s32 r, cx, cy, t;
@@ -74,34 +74,34 @@ void func_80062244(void)
     D_800CCB20 = 0;
     for (i = 0; i < 2; i++) {
         p = &D_800CCB90[i];
-        func_8001254C(p->x1 - p->x0, p->y1 - p->y0, &p->ang, &sp18);
+        math_to_polar(p->x1 - p->x0, p->y1 - p->y0, &p->ang, &sp18);
         cx = (p->x0 + p->x1) / 2;
         cy = (p->y0 + p->y1) / 2;
         sp18 = p->n * 0x2CEC;
-        p->f10 = cx + D_800C2C60[(((s16)p->ang >> 4) - 0x400) & 0xFFF] * sp18 / 0x4000;
-        p->f18 = cy + D_800C2C60[p->ang >> 4] * sp18 / 0x4000;
-        p->f1C = cx - D_800C2C60[(((s16)p->ang >> 4) - 0x400) & 0xFFF] * sp18 / 0x4000;
-        p->f24 = cy - D_800C2C60[p->ang >> 4] * sp18 / 0x4000;
-        p->f14 = func_8002E920(cx, 50000, cy);
-        p->f20 = func_8002E920(cx, 50000, cy);
-        p->f2C = D_800E8958;
+        p->f10 = cx + gCosTable[(((s16)p->ang >> 4) - 0x400) & 0xFFF] * sp18 / 0x4000;
+        p->f18 = cy + gCosTable[p->ang >> 4] * sp18 / 0x4000;
+        p->f1C = cx - gCosTable[(((s16)p->ang >> 4) - 0x400) & 0xFFF] * sp18 / 0x4000;
+        p->f24 = cy - gCosTable[p->ang >> 4] * sp18 / 0x4000;
+        p->f14 = height_get_ground(cx, 50000, cy);
+        p->f20 = height_get_ground(cx, 50000, cy);
+        p->f2C = gGroundArea;
         for (j = 0; j < p->n; j++) {
             p->arr[j] = (j << 8) / p->n;
             p->idx[j] = j;
         }
-        p->buf = func_800BC908(p->n << 9, 0, "hacks.c", 0x116);
+        p->buf = mem_alloc_dbg(p->n << 9, 0, "hacks.c", 0x116);
     }
     for (i = 0; i < 4; i++) {
-        res = func_800BF79C(D_800E7728, *D_800CCC10[i]);
+        res = res_load(D_800E7728, *D_800CCC10[i]);
         sp18 = res->data - (s32)res;
-        t = func_800BD924(res);
+        t = mem_get_size(res);
         d = 0x1E000;
-        memcpy(D_800C29E0 + d, res->data, t - sp18);
+        memcpy(gZBuffer + d, res->data, t - sp18);
         d = 0;
-        func_800BD798(res, sp18, d, "hacks.c", 0x124);
+        mem_realloc_dbg(res, sp18, d, "hacks.c", 0x124);
         e = 0x1E000;
-        res->data = D_800C29E0 + e;
-        func_80014B84(&D_800F0B48[i], res, D_800E7808, 0xC);
+        res->data = gZBuffer + e;
+        prim_alloc_dl(&sGravelPitModels[i], res, sObjectSegs, 0xC);
     }
 }
 
@@ -125,9 +125,9 @@ typedef struct {
 } Player_20;
 
 extern Ent_62 D_800CCB90_2[];
-extern Player_20 D_800E37C0_77[];
+extern Player_20 gRiders_77[];
 
-void func_80062588(void)
+void hack_gravel_pit_update(void)
 {
     s32 j;
     s32 i;
@@ -138,14 +138,14 @@ void func_80062588(void)
         for (i = 0; i < e->count; i++) {
             if (++e->t[i] >= 0x100) {
                 e->t[i] = 0;
-                e->v[i] = func_8000EFE8() & 3;
+                e->v[i] = random_byte() & 3;
             }
         }
     }
 
     for (i = 0; i < 8; i++) {
-        if (D_800E37C0_77[i].f7A5 == 0 && D_800E37C0_77[i].f6E8 == 0 && D_800E37C0_77[i].f3D0 != -1 && D_800E37C0_77[i].f3D0 < 16) {
-            if (D_800E15E0[i] == D_800CCB90_2[0].id || D_800E15E0[i] == D_800CCB90_2[1].id) {
+        if (gRiders_77[i].f7A5 == 0 && gRiders_77[i].f6E8 == 0 && gRiders_77[i].f3D0 != -1 && gRiders_77[i].f3D0 < 16) {
+            if (gRiderSection[i] == D_800CCB90_2[0].id || gRiderSection[i] == D_800CCB90_2[1].id) {
                 D_800CCB20 = 300;
             }
         }
@@ -177,9 +177,9 @@ typedef struct {
     Obj e[1];
 } Hdr_8;
 
-extern Hdr_8 *D_800C9644_8;
+extern Hdr_8 *gTrackSections_8;
 
-Gfx *func_800626CC(Gfx *gdl, s32 unused, s32 p3, s32 p4)
+Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
 {
     s32 i, k;
     s32 *v;
@@ -200,20 +200,20 @@ Gfx *func_800626CC(Gfx *gdl, s32 unused, s32 p3, s32 p4)
     gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
 
     i = 0;
-    tab = D_800E8090;
+    tab = gCamPos;
     v = tab + (sh + p4);
     for (; i < 2; i++) {
         c = &D_800CCB90[i];
-        if ((D_800C9644_8->e[c->idx].mask >> sh) & 1) {
+        if ((gTrackSections_8->e[c->idx].mask >> sh) & 1) {
             k = 0;
             if (c->cnt > 0) {
-                tbl = D_800F0B48;
+                tbl = sGravelPitModels;
                 do {
                     x = c->x0 + (c->x1 - c->x0) * c->sk[k] / 256;
                     z = c->z0 + (c->z1 - c->z0) * c->sk[k] / 256;
                     y = c->y0;
                     m = &c->base[p3 * (c->cnt << 2) + p4 * c->cnt + k];
-                    func_80011490(m, 0, 0, 0x8000 - c->sh30, x - v[0], y - v[1], z - v[2], 0x100);
+                    mtx_from_angles_pos_scale(m, 0, 0, 0x8000 - c->sh30, x - v[0], y - v[1], z - v[2], 0x100);
                     gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                     gSPDisplayList(gdl++, tbl[c->bt[k]]);
                     k++;
@@ -244,10 +244,10 @@ typedef struct {
 
 typedef struct { u8 pad[0x1A]; s16 h; u8 pad2[0x40 - 0x1C]; } Obj_44;
 
-extern Bike_37 D_800E37C0_78[];
-extern Obj_44 *D_800CCCD0;
+extern Bike_37 gRiders_78[];
+extern Obj_44 *gInstanceMtx;
 
-void func_80062998(void)
+void hack_mill_update(void)
 {
     s32 c, s;
     s32 i, j, m;
@@ -259,23 +259,23 @@ void func_80062998(void)
     s32 dx, dz, a, v, t, r, w;
     s32 ang;
 
-    k = ((u8 *)D_800F143C)[0xE] >> 4;
-    c = D_800C2C60[k | 0xC00];
-    s = D_800C2C60[k];
-    for (m = 0; m < D_800F0B5C; m++) {
-        D_800F0B64[m].z = 0;
+    k = ((u8 *)gInstanceItems)[0xE] >> 4;
+    c = gCosTable[k | 0xC00];
+    s = gCosTable[k];
+    for (m = 0; m < sMillObjCount; m++) {
+        sMillObjState[m].z = 0;
     }
     for (m = 0; m < 8; m++) {
-        if (D_800E37C0_78[m].b7A5 != 0 || D_800E37C0_78[m].s458 >= 0x15 || D_800E37C0_78[m].s4FC >= 0x15) continue;
-        for (i = 0; i < D_800F0B5C; i++) {
-            dx = (s32)(D_800E37C0_78[m].f538 * 1000.0f) - D_800F143C[i].x;
+        if (gRiders_78[m].b7A5 != 0 || gRiders_78[m].s458 >= 0x15 || gRiders_78[m].s4FC >= 0x15) continue;
+        for (i = 0; i < sMillObjCount; i++) {
+            dx = (s32)(gRiders_78[m].f538 * 1000.0f) - gInstanceItems[i].x;
             if ((u32)(dx + 0x10000) > 0x20000) continue;
-            dz = (s32)(D_800E37C0_78[m].f540 * 1000.0f) - D_800F143C[i].z;
+            dz = (s32)(gRiders_78[m].f540 * 1000.0f) - gInstanceItems[i].z;
             if ((u32)(dz + 0x10000) > 0x20000) continue;
             a = (dx * c + dz * s) >> 14;
-            dx = (s32)(D_800E37C0_78[m].f494 * 1000.0f) - D_800F143C[i].x;
+            dx = (s32)(gRiders_78[m].f494 * 1000.0f) - gInstanceItems[i].x;
             if ((u32)(dx + 0x10000) > 0x20000) continue;
-            dz = (s32)(D_800E37C0_78[m].f49C * 1000.0f) - D_800F143C[i].z;
+            dz = (s32)(gRiders_78[m].f49C * 1000.0f) - gInstanceItems[i].z;
             if ((u32)(dz + 0x10000) > 0x20000) continue;
             v = (dx * c + dz * s) >> 14;
             if (a > 0 && v < 0) {
@@ -301,15 +301,15 @@ void func_80062998(void)
                 if (r >= 0x100) r = 0xFF;
             }
 store:
-            if (D_800F0B64[i].z < r) D_800F0B64[i].z = r;
+            if (sMillObjState[i].z < r) sMillObjState[i].z = r;
         }
     }
     i = 0;
-    if (D_800F0B5C > 0) {
+    if (sMillObjCount > 0) {
         do {
-            e = &D_800F0B64[i];
+            e = &sMillObjState[i];
             t = e->z;
-            w = (D_800C2C60[(((D_800E76D0 << 9) + i * 0x1000) >> 4) & 0xFFF] * (0xFF - t)) >> 15;
+            w = (gCosTable[(((gRaceFrame << 9) + i * 0x1000) >> 4) & 0xFFF] * (0xFF - t)) >> 15;
             w -= t;
             w /= 2;
             w -= 200;
@@ -318,16 +318,16 @@ store:
             } else {
                 e->y = w;
             }
-            D_800CCCD0[i].h = (e->x + e->y) >> 4;
+            gInstanceMtx[i].h = (e->x + e->y) >> 4;
             i++;
-        } while (i < D_800F0B5C);
+        } while (i < sMillObjCount);
     }
 }
 
-void func_80062D0C(void)
+void hacks_update(void)
 {
-    if (D_800F0B58 != 0) {
-        ((void (*)(void))(*(u32 *)(D_800F0B58 + 0xC)))();
+    if (sCurTrackHack != 0) {
+        ((void (*)(void))(*(u32 *)(sCurTrackHack + 0xC)))();
     }
 }
 
@@ -342,32 +342,32 @@ typedef struct Obj_45 {
     s32 f1c;
 } Obj_45;
 
-extern Obj_45 *D_800F0B58_3;
+extern Obj_45 *sCurTrackHack_3;
 
-void func_80062D38(void) {
-    if (D_800F0B58_3 != NULL) {
-        if (D_800F0B58_3->f1c != 0) {
-            func_800BCB04((void *)D_800F0B60);
+void hacks_exit(void) {
+    if (sCurTrackHack_3 != NULL) {
+        if (sCurTrackHack_3->f1c != 0) {
+            mem_free((void *)sHackResources);
         }
-        if (D_800F0B58_3->f18 != 0) {
-            func_800BCB04(D_800F0B40);
+        if (sCurTrackHack_3->f18 != 0) {
+            mem_free(D_800F0B40);
         }
-        D_800F0B58_3->f8();
+        sCurTrackHack_3->f8();
     }
 }
 
-s32 func_80062DA0(s32 a0, Dyn *arg1, s32 arg2, s32 arg3)
+s32 hacks_draw_pass2(s32 a0, Dyn *arg1, s32 arg2, s32 arg3)
 {
-    if (D_800F0B58 != 0) {
-        a0 = ((s32 (*)(s32))(*(u32 *)(D_800F0B58 + 0x14)))(a0);
+    if (sCurTrackHack != 0) {
+        a0 = ((s32 (*)(s32))(*(u32 *)(sCurTrackHack + 0x14)))(a0);
     }
     return a0;
 }
 
-s32 func_80062DD4(s32 x, Dyn *arg1, s32 arg2, s32 arg3)
+s32 hacks_draw_pass1(s32 x, Dyn *arg1, s32 arg2, s32 arg3)
 {
-    if (D_800F0B58_4 != 0) {
-        x = ((s32 (*)(s32))(D_800F0B58_4[0x10 / 4]))(x);
+    if (sCurTrackHack_4 != 0) {
+        x = ((s32 (*)(s32))(sCurTrackHack_4[0x10 / 4]))(x);
     }
     return x;
 }
@@ -378,7 +378,7 @@ typedef struct {
     s32 pad;
 } Rec_34;
 
-void func_80062E08(void)
+void hack_mill_init(void)
 {
     s32 i;
     s32 n;
@@ -386,14 +386,14 @@ void func_80062E08(void)
     Rec_34 *out;
     s32 *e;
 
-    D_800F0B5C = D_800F1430[1];
-    D_800F0B64 = (s32 *)func_800BC908(D_800F0B5C * 12, 0, D_800D8C10, 0x1B1);
+    sMillObjCount = gInstanceHeader[1];
+    sMillObjState = (s32 *)mem_alloc_dbg(sMillObjCount * 12, 0, D_800D8C10, 0x1B1);
     i = 0;
-    n = D_800F0B5C;
+    n = sMillObjCount;
     if (n > 0) {
         cnt = n;
-        out = (Rec_34 *)D_800F0B64;
-        e = D_800F143C;
+        out = (Rec_34 *)sMillObjState;
+        e = gInstanceItems;
         do {
             s32 v = e[1];
             e += 4;
@@ -405,17 +405,17 @@ void func_80062E08(void)
     }
 }
 
-void func_80062E9C(void)
+void hack_mill_exit(void)
 {
-    func_800BCB04(D_800F0B64);
+    mem_free(sMillObjState);
 }
 
-s32 func_80062EC0(s32 x)
+s32 hack_mill_draw_pass1(s32 x)
 {
     return x;
 }
 
-void *func_80062EC8(void *p)
+void *hack_mill_draw_pass2(void *p)
 {
     return p;
 }
@@ -425,7 +425,7 @@ typedef struct {
     u32 v;
 } Blk_17;
 
-void func_80062ED0(void) {
+void hack_gravel_pit_exit(void) {
     s32 i = 0;
     Blk_17 *p = D_800CCB90;
     u32 *q;
@@ -434,20 +434,20 @@ void func_80062ED0(void) {
         u32 v = p->v;
         p++;
         i++;
-        func_800BCB04(v);
+        mem_free(v);
     } while (i < 2);
 
     i = 0;
-    q = D_800F0B48;
+    q = sGravelPitModels;
     do {
         u32 v = *q;
         q++;
         i++;
-        func_800BCB04(v);
+        mem_free(v);
     } while (i < 4);
 }
 
-s32 func_80062F40(s32 x)
+s32 hack_gravel_pit_draw_pass1(s32 x)
 {
     return x;
 }

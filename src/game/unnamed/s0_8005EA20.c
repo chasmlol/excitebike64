@@ -1,54 +1,54 @@
 #include "game.h"
 
-void func_8005EA20(u8 *param_1, s32 param_2)
+void replay_record_start(u8 *param_1, s32 param_2)
 {
-    func_8000ED10(D_800F0850, 0, 0xc0);
-    func_8000ED10(D_800F093C, 0, 6);
-    func_8000ED10(D_800F0944, 0, 6);
-    func_8000ED10(D_800F091C, 0, 6);
-    D_800F0A30 = 0;
-    D_800F0A3C = (s32)param_1;
-    D_800F0954 = (s32)param_1;
-    D_800F0950 = param_2;
-    D_800F0910 = param_2;
-    D_800F0A28 = 8;
-    D_800F0A34 = 0;
-    D_800F094C = 0;
-    func_8000ED10(param_1, 0, param_2);
-    func_8005EB68(0x7b, 8);
-    func_8005EB68(0, 8);
-    func_8005EB68(0, 8);
-    func_8005EB68(0, 8);
-    func_8005F924();
-    D_800F0A1C = D_800EFDAC;
-    D_800F0924 = D_800F0954;
-    func_8005EB68(0, 8);
-    func_8005EB68(0, 8);
-    func_8005EB68(0, 8);
+    mem_fill(sReplayRecDeltas, 0, 0xc0);
+    mem_fill(sReplayRecPrevStickX, 0, 6);
+    mem_fill(sReplayRecPrevStickY, 0, 6);
+    mem_fill(sReplayRecPrevButtons, 0, 6);
+    sReplayRecBlockFrame = 0;
+    gReplayBuf = (s32)param_1;
+    gReplayWritePtr = (s32)param_1;
+    gReplayBufSize = param_2;
+    sReplayBytesLeft = param_2;
+    sReplayWriteBitsLeft = 8;
+    sReplayOverflow = 0;
+    sReplayRecFrames = 0;
+    mem_fill(param_1, 0, param_2);
+    replay_write_bits(0x7b, 8);
+    replay_write_bits(0, 8);
+    replay_write_bits(0, 8);
+    replay_write_bits(0, 8);
+    replay_write_header();
+    sReplayRecPlayers = gNumPlayers;
+    sReplayFrameCountPtr = gReplayWritePtr;
+    replay_write_bits(0, 8);
+    replay_write_bits(0, 8);
+    replay_write_bits(0, 8);
 }
 
-void func_8005EB68(s32 v, s32 n)
+void replay_write_bits(s32 v, s32 n)
 {
     s32 b;
 
-    if (D_800F0A34 != 0) {
+    if (sReplayOverflow != 0) {
         return;
     }
     while (1) {
         v &= ((1 << n) - 1) << (8 - n);
         b = v & 0xFF;
-        { s32 sh = 8 - D_800F0A28; *D_800F0954_2 |= b >> sh; }
-        if (n < D_800F0A28) {
-            D_800F0A28 -= n;
+        { s32 sh = 8 - sReplayWriteBitsLeft; *gReplayWritePtr_2 |= b >> sh; }
+        if (n < sReplayWriteBitsLeft) {
+            sReplayWriteBitsLeft -= n;
             return;
         }
-        n -= D_800F0A28;
-        v = b << D_800F0A28;
-        D_800F0A28 = 8;
-        D_800F0954_2++;
-        D_800F0910--;
-        if (D_800F0910 == 0) {
-            D_800F0A34 = 1;
+        n -= sReplayWriteBitsLeft;
+        v = b << sReplayWriteBitsLeft;
+        sReplayWriteBitsLeft = 8;
+        gReplayWritePtr_2++;
+        sReplayBytesLeft--;
+        if (sReplayBytesLeft == 0) {
+            sReplayOverflow = 1;
         }
     }
 }
@@ -60,19 +60,19 @@ typedef struct {
     u8 pad;
 } Ent_60;
 
-extern Ent_60 D_800F0850_2[][8];
+extern Ent_60 sReplayRecDeltas_2[][8];
 
-void func_8005EC14(u32 *p)
+void replay_record_frame(u32 *p)
 {
     s32 i, j, k;
     s32 x, y, bits, c, v, a, n;
     u32 w;
 
-    if (D_800F0A34 != 0) {
+    if (sReplayOverflow != 0) {
         return;
     }
-    D_800F094C++;
-    for (i = 0; i < D_800F0A1C; i++) {
+    sReplayRecFrames++;
+    for (i = 0; i < sReplayRecPlayers; i++) {
         w = p[i];
         x = (w >> 24) & 0xF;
         if (w & 4) x = -x;
@@ -84,62 +84,62 @@ void func_8005EC14(u32 *p)
         if (w & 0x100) bits |= 8;
         c = bits;
         if (w & 0x10000) c |= 0x10;
-        D_800F0850_2[i][D_800F0A30].x = x - D_800F093C[i];
-        D_800F0850_2[i][D_800F0A30].y = y - D_800F0944[i];
-        D_800F0850_2[i][D_800F0A30].bits = D_800F091C[i] ^ c;
-        D_800F093C[i] = x;
-        D_800F0944[i] = y;
-        D_800F091C[i] = c;
+        sReplayRecDeltas_2[i][sReplayRecBlockFrame].x = x - sReplayRecPrevStickX[i];
+        sReplayRecDeltas_2[i][sReplayRecBlockFrame].y = y - sReplayRecPrevStickY[i];
+        sReplayRecDeltas_2[i][sReplayRecBlockFrame].bits = sReplayRecPrevButtons[i] ^ c;
+        sReplayRecPrevStickX[i] = x;
+        sReplayRecPrevStickY[i] = y;
+        sReplayRecPrevButtons[i] = c;
     }
-    D_800F0A30++;
-    if (D_800F0A30 != 8) {
+    sReplayRecBlockFrame++;
+    if (sReplayRecBlockFrame != 8) {
         return;
     }
-    D_800F0A30 = 0;
-    for (i = 0; i < D_800F0A1C; i++) {
+    sReplayRecBlockFrame = 0;
+    for (i = 0; i < sReplayRecPlayers; i++) {
         for (j = 0; j < 8; j++) {
-            if (D_800F0850_2[i][j].bits != 0) break;
+            if (sReplayRecDeltas_2[i][j].bits != 0) break;
         }
         if (j == 8) {
-            func_8005EB68(0, 1);
+            replay_write_bits(0, 1);
         } else {
-            func_8005EB68(0x80, 1);
+            replay_write_bits(0x80, 1);
             for (j = 0; j < 8; j++) {
                 for (k = 0; k < 5; k++) {
-                    if ((D_800F0850_2[i][j].bits >> k) & 1) {
-                        func_8005EB68(((k << 4) | ~0x7F) & 0xF0, 4);
+                    if ((sReplayRecDeltas_2[i][j].bits >> k) & 1) {
+                        replay_write_bits(((k << 4) | ~0x7F) & 0xF0, 4);
                     }
                 }
-                func_8005EB68(0, 1);
+                replay_write_bits(0, 1);
             }
         }
         for (j = 0; j < 8; j++) {
-            if (D_800F0850_2[i][j].x != 0 || D_800F0850_2[i][j].y != 0) break;
+            if (sReplayRecDeltas_2[i][j].x != 0 || sReplayRecDeltas_2[i][j].y != 0) break;
         }
         if (j == 8) {
-            func_8005EB68(0, 1);
+            replay_write_bits(0, 1);
             continue;
         }
-        func_8005EB68(0x80, 1);
+        replay_write_bits(0x80, 1);
         for (j = 0; j < 8; j++) {
-            if (D_800F0850_2[i][j].x != 0) break;
+            if (sReplayRecDeltas_2[i][j].x != 0) break;
         }
         if (j == 8) {
-            func_8005EB68(0, 1);
+            replay_write_bits(0, 1);
         } else {
-            func_8005EB68(0x80, 1);
+            replay_write_bits(0x80, 1);
             for (j = 0; j < 8; j++) {
-                if (D_800F0850_2[i][j].x == 0) {
+                if (sReplayRecDeltas_2[i][j].x == 0) {
                     a = 0;
                     n = 1;
                 } else {
-                    func_8005EB68(0x80, 1);
-                    v = D_800F0850_2[i][j].x;
+                    replay_write_bits(0x80, 1);
+                    v = sReplayRecDeltas_2[i][j].x;
                     if (v > 0) {
-                        func_8005EB68(0x80, 1);
+                        replay_write_bits(0x80, 1);
                         v &= 0x1F;
                     } else {
-                        func_8005EB68(0, 1);
+                        replay_write_bits(0, 1);
                         v = -v;
                         v &= 0x1F;
                     }
@@ -148,28 +148,28 @@ void func_8005EC14(u32 *p)
                     else if (v == 3) { a = 0x60; n = 4; }
                     else { a = v << 2; a |= ~0x7F; a &= 0xFC; n = 6; }
                 }
-                func_8005EB68(a, n);
+                replay_write_bits(a, n);
             }
         }
         for (j = 0; j < 8; j++) {
-            if (D_800F0850_2[i][j].y != 0) break;
+            if (sReplayRecDeltas_2[i][j].y != 0) break;
         }
         if (j == 8) {
-            func_8005EB68(0, 1);
+            replay_write_bits(0, 1);
         } else {
-            func_8005EB68(0x80, 1);
+            replay_write_bits(0x80, 1);
             for (j = 0; j < 8; j++) {
-                if (D_800F0850_2[i][j].y == 0) {
+                if (sReplayRecDeltas_2[i][j].y == 0) {
                     a = 0;
                     n = 1;
                 } else {
-                    func_8005EB68(0x80, 1);
-                    v = D_800F0850_2[i][j].y;
+                    replay_write_bits(0x80, 1);
+                    v = sReplayRecDeltas_2[i][j].y;
                     if (v > 0) {
-                        func_8005EB68(0x80, 1);
+                        replay_write_bits(0x80, 1);
                         v &= 0x1F;
                     } else {
-                        func_8005EB68(0, 1);
+                        replay_write_bits(0, 1);
                         v = -v;
                         v &= 0x1F;
                     }
@@ -178,14 +178,14 @@ void func_8005EC14(u32 *p)
                     else if (v == 3) { a = 0x60; n = 4; }
                     else { a = v << 2; a |= ~0x7F; a &= 0xFC; n = 6; }
                 }
-                func_8005EB68(a, n);
+                replay_write_bits(a, n);
             }
         }
     }
-    D_800F0A20 = ((D_800F0954 - D_800F0A3C) * 100) / D_800F0950;
+    sReplayPercentUsed = ((gReplayWritePtr - gReplayBuf) * 100) / gReplayBufSize;
 }
 
-s32 func_8005F188(void)
+s32 replay_record_finish(void)
 {
     u32 buf[6];
     s32 i;
@@ -193,30 +193,30 @@ s32 func_8005F188(void)
     s32 acc;
     u8 *p;
 
-    D_800F0924_2[0] = D_800F094C;
-    D_800F0924_2[1] = D_800F094C >> 8;
-    D_800F0924_2[2] = D_800F094C >> 16;
-    func_8000ED10((u8 *)buf, 0, 0x18);
-    while (D_800F0A30 != 0) {
-        func_8005EC14(buf);
+    sReplayFrameCountPtr_2[0] = sReplayRecFrames;
+    sReplayFrameCountPtr_2[1] = sReplayRecFrames >> 8;
+    sReplayFrameCountPtr_2[2] = sReplayRecFrames >> 16;
+    mem_fill((u8 *)buf, 0, 0x18);
+    while (sReplayRecBlockFrame != 0) {
+        replay_record_frame(buf);
     }
-    if (D_800F0A28 != 8) {
-        func_8005EB68(0, D_800F0A28);
+    if (sReplayWriteBitsLeft != 8) {
+        replay_write_bits(0, sReplayWriteBitsLeft);
     }
     acc = 0;
-    n = D_800F0954_2 - D_800F0A3C_2 - 4;
-    p = D_800F0A3C_2 + 4;
+    n = gReplayWritePtr_2 - gReplayBuf_2 - 4;
+    p = gReplayBuf_2 + 4;
     for (i = 0; i < n; i++) {
         acc += p[i] << (i % 8);
     }
     acc &= 0xFFFFFF;
-    D_800F0A3C_2[1] = acc;
-    D_800F0A3C_2[2] = acc >> 8;
-    D_800F0A3C_2[3] = acc >> 16;
-    if (D_800F0A34 != 0) {
+    gReplayBuf_2[1] = acc;
+    gReplayBuf_2[2] = acc >> 8;
+    gReplayBuf_2[3] = acc >> 16;
+    if (sReplayOverflow != 0) {
         return -1;
     }
-    return D_800F0954_2 - D_800F0A3C_2;
+    return gReplayWritePtr_2 - gReplayBuf_2;
 }
 
 #define RB() rb()
@@ -228,39 +228,39 @@ typedef struct {
     u8 d;
 } Cell_5;
 
-extern Cell_5 D_800F0A40[][8];
+extern Cell_5 sReplayPlayDeltas[][8];
 
 static inline s32 rb(void)
 {
-    u8 *p = D_800F0A38;
+    u8 *p = sReplayReadPtr;
     s32 b = *p;
-    s32 c = D_800F0A24 - 1;
+    s32 c = sReplayReadBitPos - 1;
     s32 bit;
 
-    D_800F0A24 = c;
+    sReplayReadBitPos = c;
     bit = (b >> c) & 1;
     if (c == 0) {
-        D_800F0A38 = p + 1;
-        D_800F0A24 = 8;
+        sReplayReadPtr = p + 1;
+        sReplayReadBitPos = 8;
     }
     return bit;
 }
 
-void func_8005F2D8(void)
+void replay_decode_block(void)
 {
     s32 i, j, k, n, s;
     u32 v, f;
     s32 x, y, z;
 
-    for (i = 0; i < D_800F0A18; i++) {
-        func_8000ED10((u8 *)D_800F0A40[i], 0, 0x20);
+    for (i = 0; i < sReplayPlayPlayers; i++) {
+        mem_fill((u8 *)sReplayPlayDeltas[i], 0, 0x20);
         if (RB()) {
             for (j = 0; j < 8; j++) {
                 while (RB()) {
                     k = RB() << 2;
                     k |= RB() << 1;
                     k |= RB();
-                    D_800F0A40[i][j].c |= 1 << k;
+                    sReplayPlayDeltas[i][j].c |= 1 << k;
                 }
             }
         }
@@ -277,7 +277,7 @@ void func_8005F2D8(void)
                         while (RB()) n++;
                     }
                     if (s == 0) n = -n;
-                    D_800F0A40[i][j].a = n;
+                    sReplayPlayDeltas[i][j].a = n;
                 }
             }
             if (RB()) {
@@ -292,20 +292,20 @@ void func_8005F2D8(void)
                         while (RB()) n++;
                     }
                     if (s == 0) n = -n;
-                    D_800F0A40[i][j].b = n;
+                    sReplayPlayDeltas[i][j].b = n;
                 }
             }
         }
     }
 
-    for (i = 0; i < D_800F0A18; i++) {
+    for (i = 0; i < sReplayPlayPlayers; i++) {
         for (j = 0; j < 8; j++) {
-            x = D_800F0928_2[i] + D_800F0A40[i][j].a;
-            y = D_800F0930_2[i] + D_800F0A40[i][j].b;
-            z = D_800F0914_2[i] ^ D_800F0A40[i][j].c;
-            D_800F0928_2[i] = x;
-            D_800F0930_2[i] = y;
-            D_800F0914_2[i] = z;
+            x = sReplayStickX_2[i] + sReplayPlayDeltas[i][j].a;
+            y = sReplayStickY_2[i] + sReplayPlayDeltas[i][j].b;
+            z = sReplayButtons_2[i] ^ sReplayPlayDeltas[i][j].c;
+            sReplayStickX_2[i] = x;
+            sReplayStickY_2[i] = y;
+            sReplayButtons_2[i] = z;
             k = (z & 1) << 4;
             if (z & 2) k |= 0x20;
             if (z & 4) k |= 0x20000;
@@ -327,35 +327,35 @@ void func_8005F2D8(void)
                 k |= 1;
                 k |= (y & 0xF) << 28;
             }
-            D_800F0958[i][j] = k;
+            sReplayInputs[i][j] = k;
         }
     }
-    D_800F0A2C = 8;
+    sReplayBlockFramesLeft = 8;
 }
 
-void func_8005F924(void)
+void replay_write_header(void)
 {
     s32 i;
     u8 *q;
     u8 *p;
     u32 lo, hi;
 
-    func_8005EB68(D_800EFD70_2[0x3F], 8);
-    func_8005EB68(D_800EFD70_2[0x47], 8);
-    func_8005EB68(D_800EFD70_2[0x13], 8);
-    func_8005EB68(D_800EFD70_2[0x43], 8);
+    replay_write_bits(gGame_2[0x3F], 8);
+    replay_write_bits(gGame_2[0x47], 8);
+    replay_write_bits(gGame_2[0x13], 8);
+    replay_write_bits(gGame_2[0x43], 8);
     for (i = 0; i < 6; i++) {
-        q = D_800EFD70_2 + i;
+        q = gGame_2 + i;
         lo = q[0x43C] & 0xF;
         hi = (q[0x7AA] & 0xF) << 4;
-        func_8005EB68(hi | lo, 8);
+        replay_write_bits(hi | lo, 8);
     }
     for (i = 0; i < 6; i++) {
-        p = D_800EFD70_2;
-        if (D_800E3700 == i) {
-            func_8005EB68(((s32)p[i * 4 + 0x1F] | -0x80) & 0xFF, 8);
+        p = gGame_2;
+        if (gGhostSlot == i) {
+            replay_write_bits(((s32)p[i * 4 + 0x1F] | -0x80) & 0xFF, 8);
         } else {
-            func_8005EB68(p[i * 4 + 0x1F], 8);
+            replay_write_bits(p[i * 4 + 0x1F], 8);
         }
     }
 }
@@ -369,7 +369,7 @@ typedef struct {
     u8 hi[6];
 } Tab_6;
 
-extern Tab_6 D_800EFD70_45;
+extern Tab_6 gGame_45;
 
 static inline s32 getbits(s32 n)
 {
@@ -381,44 +381,44 @@ static inline s32 getbits(s32 n)
     v = 0;
     for (j = 0; j < n; j++) {
         v <<= 1;
-        b = *D_800F0A38;
-        c = D_800F0A24 - 1;
-        D_800F0A24 = c;
+        b = *sReplayReadPtr;
+        c = sReplayReadBitPos - 1;
+        sReplayReadBitPos = c;
         b = b >> c;
         b = b & 1;
         if (c == 0) {
-            D_800F0A38++;
-            D_800F0A24 = 8;
+            sReplayReadPtr++;
+            sReplayReadBitPos = 8;
         }
         v |= b;
     }
     return v;
 }
 
-void func_8005FA18(void)
+void replay_read_header(void)
 {
     s32 i;
     s32 n;
 
-    D_800EFDAC = getbits(8);
+    gNumPlayers = getbits(8);
     D_800EFDB4 = getbits(8);
     getbits(8);
     getbits(8);
     for (i = 0; i < 6; i++) {
         n = getbits(8);
-        D_800EFD70_45.lo[i] = n & 0xF;
-        D_800EFD70_45.hi[i] = (n >> 4) & 0xF;
+        gGame_45.lo[i] = n & 0xF;
+        gGame_45.hi[i] = (n >> 4) & 0xF;
     }
     for (i = 0; i < 6; i++) {
         n = getbits(8);
-        D_800EFD70_45.w[i] = n & 0x7F;
+        gGame_45.w[i] = n & 0x7F;
         if (n & 0x80) {
-            D_800E3700 = i;
+            gGhostSlot = i;
         }
     }
 }
 
-void func_8005FC68(void)
+void replay_skip_header(void)
 {
     s32 i;
     s32 j;
@@ -428,53 +428,53 @@ void func_8005FC68(void)
 
     i = 0;
     do {
-        v = D_800F0A38;
-        c = D_800F0A24;
+        v = sReplayReadPtr;
+        c = sReplayReadBitPos;
         c = c - 1;
-        D_800F0A24 = c;
+        sReplayReadBitPos = c;
         if (c == 0) {
             w = v + 1;
-            D_800F0A38 = w;
-            D_800F0A24 = 8;
+            sReplayReadPtr = w;
+            sReplayReadBitPos = 8;
         }
         i++;
     } while (i < 8);
     i = 0;
     do {
-        v = D_800F0A38;
-        c = D_800F0A24;
+        v = sReplayReadPtr;
+        c = sReplayReadBitPos;
         c = c - 1;
-        D_800F0A24 = c;
+        sReplayReadBitPos = c;
         if (c == 0) {
             w = v + 1;
-            D_800F0A38 = w;
-            D_800F0A24 = 8;
+            sReplayReadPtr = w;
+            sReplayReadBitPos = 8;
         }
         i++;
     } while (i < 8);
     i = 0;
     do {
-        v = D_800F0A38;
-        c = D_800F0A24;
+        v = sReplayReadPtr;
+        c = sReplayReadBitPos;
         c = c - 1;
-        D_800F0A24 = c;
+        sReplayReadBitPos = c;
         if (c == 0) {
             w = v + 1;
-            D_800F0A38 = w;
-            D_800F0A24 = 8;
+            sReplayReadPtr = w;
+            sReplayReadBitPos = 8;
         }
         i++;
     } while (i < 8);
     i = 0;
     do {
-        v = D_800F0A38;
-        c = D_800F0A24;
+        v = sReplayReadPtr;
+        c = sReplayReadBitPos;
         c = c - 1;
-        D_800F0A24 = c;
+        sReplayReadBitPos = c;
         if (c == 0) {
             w = v + 1;
-            D_800F0A38 = w;
-            D_800F0A24 = 8;
+            sReplayReadPtr = w;
+            sReplayReadBitPos = 8;
         }
         i++;
     } while (i < 8);
@@ -482,14 +482,14 @@ void func_8005FC68(void)
     do {
         i = 0;
         do {
-            v = D_800F0A38;
-            c = D_800F0A24;
+            v = sReplayReadPtr;
+            c = sReplayReadBitPos;
             c = c - 1;
-            D_800F0A24 = c;
+            sReplayReadBitPos = c;
             if (c == 0) {
                 w = v + 1;
-                D_800F0A38 = w;
-                D_800F0A24 = 8;
+                sReplayReadPtr = w;
+                sReplayReadBitPos = 8;
             }
             i++;
         } while (i < 8);
@@ -499,14 +499,14 @@ void func_8005FC68(void)
     do {
         i = 0;
         do {
-            v = D_800F0A38;
-            c = D_800F0A24;
+            v = sReplayReadPtr;
+            c = sReplayReadBitPos;
             c = c - 1;
-            D_800F0A24 = c;
+            sReplayReadBitPos = c;
             if (c == 0) {
                 w = v + 1;
-                D_800F0A38 = w;
-                D_800F0A24 = 8;
+                sReplayReadPtr = w;
+                sReplayReadBitPos = 8;
             }
             i++;
         } while (i < 8);
@@ -514,65 +514,65 @@ void func_8005FC68(void)
     } while (j < 6);
 }
 
-void func_8005FE10(s32 param_1)
+void replay_play_start(s32 param_1)
 {
     s32 u;
 
-    D_800F0A2C = 0;
-    D_800F0A38 = param_1;
-    D_800F0A24 = 8;
-    D_800F0A38 = param_1 + 4;
-    func_8005FA18();
-    D_800F0A18 = D_800EFDAC;
-    D_800F0938 = func_80060204(8);
-    u = func_80060204(8);
-    D_800F0938 = D_800F0938 + u * 0x100;
-    u = func_80060204(8);
-    D_800F0938 = D_800F0938 + u * 0x10000;
-    func_8000ED10(&D_800F0928[0], 0, 6);
-    func_8000ED10(&D_800F0930[0], 0, 6);
-    func_8000ED10(&D_800F0914[0], 0, 6);
+    sReplayBlockFramesLeft = 0;
+    sReplayReadPtr = param_1;
+    sReplayReadBitPos = 8;
+    sReplayReadPtr = param_1 + 4;
+    replay_read_header();
+    sReplayPlayPlayers = gNumPlayers;
+    sReplayFramesLeft = replay_read_bits(8);
+    u = replay_read_bits(8);
+    sReplayFramesLeft = sReplayFramesLeft + u * 0x100;
+    u = replay_read_bits(8);
+    sReplayFramesLeft = sReplayFramesLeft + u * 0x10000;
+    mem_fill(&sReplayStickX[0], 0, 6);
+    mem_fill(&sReplayStickY[0], 0, 6);
+    mem_fill(&sReplayButtons[0], 0, 6);
 }
 
-void func_8005FEE0(s32 param_1)
+void replay_play_start_keep_setup(s32 param_1)
 {
     s32 u;
 
-    D_800F0A2C = 0;
-    D_800F0A38 = param_1;
-    D_800F0A24 = 8;
-    D_800F0A38 = param_1 + 4;
-    func_8005FC68();
-    D_800F0A18 = D_800EFDAC;
-    D_800F0938 = func_80060204(8);
-    u = func_80060204(8);
-    D_800F0938 = D_800F0938 + u * 0x100;
-    u = func_80060204(8);
-    D_800F0938 = D_800F0938 + u * 0x10000;
-    func_8000ED10(&D_800F0928[0], 0, 6);
-    func_8000ED10(&D_800F0930[0], 0, 6);
-    func_8000ED10(&D_800F0914[0], 0, 6);
+    sReplayBlockFramesLeft = 0;
+    sReplayReadPtr = param_1;
+    sReplayReadBitPos = 8;
+    sReplayReadPtr = param_1 + 4;
+    replay_skip_header();
+    sReplayPlayPlayers = gNumPlayers;
+    sReplayFramesLeft = replay_read_bits(8);
+    u = replay_read_bits(8);
+    sReplayFramesLeft = sReplayFramesLeft + u * 0x100;
+    u = replay_read_bits(8);
+    sReplayFramesLeft = sReplayFramesLeft + u * 0x10000;
+    mem_fill(&sReplayStickX[0], 0, 6);
+    mem_fill(&sReplayStickY[0], 0, 6);
+    mem_fill(&sReplayButtons[0], 0, 6);
 }
 
-s32 func_8005FFB0(s32 *dst)
+s32 replay_play_frame(s32 *dst)
 {
     s32 i;
 
-    if (D_800F0938 == 0) {
+    if (sReplayFramesLeft == 0) {
         return 1;
     }
-    if (D_800F0A2C == 0) {
-        func_8005F2D8();
+    if (sReplayBlockFramesLeft == 0) {
+        replay_decode_block();
     }
-    for (i = 0; i < D_800F0A18; i++) {
-        dst[i] = D_800F0958[i][8 - D_800F0A2C];
+    for (i = 0; i < sReplayPlayPlayers; i++) {
+        dst[i] = sReplayInputs[i][8 - sReplayBlockFramesLeft];
     }
-    D_800F0A2C--;
-    D_800F0938--;
+    sReplayBlockFramesLeft--;
+    sReplayFramesLeft--;
     return 0;
 }
 
-s32 func_80060078(u8 *s, u32 *a1, u32 *a2, u32 *a3)
+s32 replay_get_info(u8 *s, u32 *a1, u32 *a2, u32 *a3)
 {
     u32 v;
 
@@ -589,7 +589,7 @@ s32 func_80060078(u8 *s, u32 *a1, u32 *a2, u32 *a3)
     return 0;
 }
 
-s32 func_800600D4(u8 *p, s32 n)
+s32 replay_validate(u8 *p, s32 n)
 {
     s32 sum;
     s32 i;
@@ -617,7 +617,7 @@ s32 func_800600D4(u8 *p, s32 n)
     return (hdr ^ sum) != 0;
 }
 
-u32 func_80060170(u8 *p, s32 n)
+u32 calc_checksum24(u8 *p, s32 n)
 {
     s32 i;
     u32 acc = 0;
@@ -629,40 +629,40 @@ u32 func_80060170(u8 *p, s32 n)
     return acc;
 }
 
-s32 func_800601C4(void)
+s32 replay_read_bit(void)
 {
-    u8 *p = D_800F0A38;
+    u8 *p = sReplayReadPtr;
     s32 byte = *p;
-    s32 n = D_800F0A24 - 1;
+    s32 n = sReplayReadBitPos - 1;
     s32 bit;
 
-    D_800F0A24 = n;
+    sReplayReadBitPos = n;
     bit = byte >> n;
     bit = bit & 1;
     if (n == 0) {
-        D_800F0A38 = p + 1;
-        D_800F0A24 = 8;
+        sReplayReadPtr = p + 1;
+        sReplayReadBitPos = 8;
     }
     return bit;
 }
 
-s32 func_80060204(s32 n)
+s32 replay_read_bits(s32 n)
 {
     s32 r = 0;
     s32 i;
 
     for (i = 0; i < n; i++) {
-        u8 *p = D_800F0A38;
+        u8 *p = sReplayReadPtr;
         s32 byte = *p;
-        s32 c = D_800F0A24 - 1;
+        s32 c = sReplayReadBitPos - 1;
         s32 bit;
 
         r = r << 1;
-        D_800F0A24 = c;
+        sReplayReadBitPos = c;
         bit = (byte >> c) & 1;
         if (c == 0) {
-            D_800F0A38 = p + 1;
-            D_800F0A24 = 8;
+            sReplayReadPtr = p + 1;
+            sReplayReadBitPos = 8;
         }
         r = r | bit;
     }

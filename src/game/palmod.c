@@ -33,12 +33,12 @@ typedef struct {
     s16 x3, z3;
 } Rec_41;
 
-extern Racer D_800E37C0_2[];
-extern Player D_800DC150[];
-extern Rec_40 *D_800F14D0;
-extern Rec_41 *D_800F14F0;
+extern Racer gRiders_2[];
+extern Player gRiderGfx[];
+extern Rec_40 *sPalModEntries;
+extern Rec_41 *sFlashTris;
 
-void func_80067B80(void)
+void map_init(void)
 {
     s32 i;
     Spot *p;
@@ -50,8 +50,8 @@ void func_80067B80(void)
     s32 k;
     s32 x, y;
 
-    D_800F1458 = 0;
-    switch (D_800EFDBC) {
+    sMapImage = 0;
+    switch (gGameMode) {
     case 2:
     case 3:
     case 4:
@@ -63,41 +63,41 @@ void func_80067B80(void)
     case 14:
         break;
     default:
-        if ((D_800EFD70 & 0x8000) == 0) {
-            for (i = 0; i < D_800EE490; i++) {
-                if (D_800EE498_2[i].x < D_800F1468.x || i == 0) {
-                    D_800F1468.x = D_800EE498_2[i].x;
+        if ((gGame & 0x8000) == 0) {
+            for (i = 0; i < gPathNodeCount; i++) {
+                if (gPathNodes_2[i].x < sMapBoundsMin.x || i == 0) {
+                    sMapBoundsMin.x = gPathNodes_2[i].x;
                 }
-                if (D_800EE498_2[i].z < D_800F1468.z || i == 0) {
-                    D_800F1468.z = D_800EE498_2[i].z;
+                if (gPathNodes_2[i].z < sMapBoundsMin.z || i == 0) {
+                    sMapBoundsMin.z = gPathNodes_2[i].z;
                 }
-                if (D_800EE498_2[i].x > D_800F1470.x || i == 0) {
-                    D_800F1470.x = D_800EE498_2[i].x;
+                if (gPathNodes_2[i].x > sMapBoundsMax.x || i == 0) {
+                    sMapBoundsMax.x = gPathNodes_2[i].x;
                 }
-                if (D_800EE498_2[i].z > D_800F1470.z || i == 0) {
-                    D_800F1470.z = D_800EE498_2[i].z;
+                if (gPathNodes_2[i].z > sMapBoundsMax.z || i == 0) {
+                    sMapBoundsMax.z = gPathNodes_2[i].z;
                 }
             }
-            x = D_800CCD00[(D_800C2594 - 1) * 2];
-            wA = D_800F13EC;
-            hA = D_800F13F0;
-            wB = D_800F13EC;
-            hB = D_800F13F0;
-            y = D_800CCD00[(D_800C2594 - 1) * 2 + 1];
-            D_800F14B8 = wB / 5;
-            D_800F145C = (x * wA) / 0x140;
-            D_800F14BC = (hB * 0x40) / 0xF0;
-            D_800F1460 = (y * hA) / 0xF0;
-            if (D_800EFDBC == 7) {
-                D_800F14B8 = D_800F14B8 + D_800F14B8 / 2;
-                D_800F14BC = D_800F14BC + D_800F14BC / 2;
+            x = sMapPos[(gNumViews - 1) * 2];
+            wA = gScreenWidth;
+            hA = gScreenHeight;
+            wB = gScreenWidth;
+            hB = gScreenHeight;
+            y = sMapPos[(gNumViews - 1) * 2 + 1];
+            sMapW = wB / 5;
+            sMapX = (x * wA) / 0x140;
+            sMapH = (hB * 0x40) / 0xF0;
+            sMapY = (y * hA) / 0xF0;
+            if (gGameMode == 7) {
+                sMapW = sMapW + sMapW / 2;
+                sMapH = sMapH + sMapH / 2;
             }
-            if (D_800CCCA8 == 2) {
-                D_800F1460 = D_800F1460 + 0x34;
+            if (gViMode == 2) {
+                sMapY = sMapY + 0x34;
             }
-            D_800F1450 = 0x10000 / D_800F14B8;
-            D_800F1454 = 0x10000 / D_800F14BC;
-            func_80069158();
+            D_800F1450 = 0x10000 / sMapW;
+            D_800F1454 = 0x10000 / sMapH;
+            map_build_image();
         }
         break;
     }
@@ -107,23 +107,23 @@ typedef struct {
     Quad r[4];
 } Ent40_3;
 
-extern Ent40_3 D_800E1718_11[];
+extern Ent40_3 gViewRects_11[];
 
-Gfx *func_80067E4C(Gfx *gdl)
+Gfx *map_draw_progress_bar(Gfx *gdl)
 {
     s32 i;
-    s32 n = D_800C2594;
+    s32 n = gNumViews;
 
-    if (D_800C2388 == 0) {
-        D_800CCCF0 = D_800E1718_11[n - 1].r[0].a + 4;
-        D_800CCCF4 = D_800E1718_11[n - 1].r[1].a + D_800E1718_11[n - 1].r[1].c - 8;
+    if (gSplitVertical == 0) {
+        sMapBarStart = gViewRects_11[n - 1].r[0].a + 4;
+        sMapBarEnd = gViewRects_11[n - 1].r[1].a + gViewRects_11[n - 1].r[1].c - 8;
     } else {
-        D_800CCCF0 = D_800E1718_11[n - 1].r[0].b + 6;
-        D_800CCCF4 = D_800E1718_11[n - 1].r[n - 1].b + D_800E1718_11[n - 1].r[n - 1].d - 12;
+        sMapBarStart = gViewRects_11[n - 1].r[0].b + 6;
+        sMapBarEnd = gViewRects_11[n - 1].r[n - 1].b + gViewRects_11[n - 1].r[n - 1].d - 12;
     }
 
     gDPPipeSync(gdl++);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, D_800F13EC, D_800F13F0);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gSPClearGeometryMode(gdl++, G_ZBUFFER);
     gDPSetRenderMode(gdl++, 0x00404240, 0);
@@ -131,17 +131,17 @@ Gfx *func_80067E4C(Gfx *gdl)
     gDPSetTextureLUT(gdl++, G_TT_NONE);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
 
-    if (D_800C2388 == 0) {
-        gDPLoadTextureBlock(gdl++, D_800F1478, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 8, 0,
+    if (gSplitVertical == 0) {
+        gDPLoadTextureBlock(gdl++, sMapBarTex, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 8, 0,
                             G_TX_WRAP, G_TX_WRAP, 3, 3, G_TX_NOLOD, G_TX_NOLOD);
-        gSPTextureRectangle(gdl++, D_800CCCF0 << 2, 116 << 2, D_800CCCF4 << 2, 124 << 2,
+        gSPTextureRectangle(gdl++, sMapBarStart << 2, 116 << 2, sMapBarEnd << 2, 124 << 2,
                             G_TX_RENDERTILE, 0, 0, 0, 0x400);
     } else {
         gDPLoadTextureBlock(gdl++, D_800CCCF8, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 1, 0,
                             G_TX_WRAP, G_TX_WRAP, 3, 0, G_TX_NOLOD, G_TX_NOLOD);
-        gSPTextureRectangle(gdl++, (D_800F13EC * 252 / 512) << 2, D_800CCCF0 << 2,
-                            (D_800F13EC * 260 / 512) << 2, D_800CCCF4 << 2,
-                            G_TX_RENDERTILE, 0, 0, 0x80000 / D_800F13EC, 0);
+        gSPTextureRectangle(gdl++, (gScreenWidth * 252 / 512) << 2, sMapBarStart << 2,
+                            (gScreenWidth * 260 / 512) << 2, sMapBarEnd << 2,
+                            G_TX_RENDERTILE, 0, 0, 0x80000 / gScreenWidth, 0);
     }
 
     gDPPipeSync(gdl++);
@@ -149,19 +149,19 @@ Gfx *func_80067E4C(Gfx *gdl)
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
 
     for (i = 0; i < 6; i++) {
-        if (D_800E37C0_2[i].f7A5 == 0) {
-            if (D_800E37C0_2[i].f44 == 0 || D_800E76D0 % 8 >= 4) {
-                if (D_800E37C0_2[i].f6E8 != 0) {
-                    gdl = func_800685D8(gdl, i, 0);
+        if (gRiders_2[i].f7A5 == 0) {
+            if (gRiders_2[i].f44 == 0 || gRaceFrame % 8 >= 4) {
+                if (gRiders_2[i].f6E8 != 0) {
+                    gdl = map_draw_progress_marker(gdl, i, 0);
                 }
             }
         }
     }
     for (i = 0; i < 6; i++) {
-        if (D_800E37C0_2[i].f7A5 == 0) {
-            if (D_800E37C0_2[i].f44 == 0 || D_800E76D0 % 8 >= 4) {
-                if (D_800E37C0_2[i].f6E8 == 0) {
-                    gdl = func_800685D8(gdl, i, 1);
+        if (gRiders_2[i].f7A5 == 0) {
+            if (gRiders_2[i].f44 == 0 || gRaceFrame % 8 >= 4) {
+                if (gRiders_2[i].f6E8 == 0) {
+                    gdl = map_draw_progress_marker(gdl, i, 1);
                 }
             }
         }
@@ -198,7 +198,7 @@ Gfx *func_80067E4C(Gfx *gdl)
         _g->words.w1 = (_SHIFTL_2((ulx), 14, 10) | _SHIFTL_2((uly), 2, 10)); \
     }
 
-Gfx *func_80068484(Gfx *gdl, s32 player, s32 big)
+Gfx *map_draw_rider_dot(Gfx *gdl, s32 player, s32 big)
 {
     s32 x;
     s32 y;
@@ -206,9 +206,9 @@ Gfx *func_80068484(Gfx *gdl, s32 player, s32 big)
     s32 cy;
     Gfx *g;
 
-    func_80068F38(player, &x, &y);
+    map_get_rider_pos(player, &x, &y);
     gDPPipeSync_2(gdl++);
-    gDPSetPrimColor_2(gdl, 0, 0, D_800DC150[player].r, D_800DC150[player].g, D_800DC150[player].b, 255);
+    gDPSetPrimColor_2(gdl, 0, 0, gRiderGfx[player].r, gRiderGfx[player].g, gRiderGfx[player].b, 255);
     g = gdl + 1;
     cx = x;
     cy = y;
@@ -236,9 +236,9 @@ typedef struct {
     u8 pad640[0x7E0 - 0x640];
 } Rider_5;
 
-extern Node_19 *D_800EE498_27;
+extern Node_19 *gPathNodes_27;
 
-Gfx *func_800685D8(Gfx *gdl, s32 idx, s32 half)
+Gfx *map_draw_progress_marker(Gfx *gdl, s32 idx, s32 half)
 {
     Rider_5 *r;
     Rider_5 *rb;
@@ -249,13 +249,13 @@ Gfx *func_800685D8(Gfx *gdl, s32 idx, s32 half)
     s32 k;
     f32 f;
 
-    rb = D_800E37C0;
+    rb = gRiders;
     r = &rb[idx];
     k = r->node;
-    a = &D_800EE498_27[k];
+    a = &gPathNodes_27[k];
     v = a->pos;
     k = a->next;
-    b = &D_800EE498_27[k];
+    b = &gPathNodes_27[k];
     if (b->pos < a->pos) {
         f = r->frac;
         if (f < 0.0f) {
@@ -268,7 +268,7 @@ Gfx *func_800685D8(Gfx *gdl, s32 idx, s32 half)
     } else {
         v = b->pos;
     }
-    if (D_800C2388 != 0) {
+    if (gSplitVertical != 0) {
         v -= 0x3DD3;
         v = (v * 0x8000) / 0x422D;
     }
@@ -279,15 +279,15 @@ Gfx *func_800685D8(Gfx *gdl, s32 idx, s32 half)
     if (v > 0x8000) {
         v = 0x8000;
     }
-    if (D_800C2388 != 0) {
+    if (gSplitVertical != 0) {
         v = 0x7FFF - v;
     }
-    v = (v * (D_800CCCF4 - D_800CCCF0)) >> 15;
-    v += D_800CCCF0;
-    if (D_800C2388 == 0) {
+    v = (v * (sMapBarEnd - sMapBarStart)) >> 15;
+    v += sMapBarStart;
+    if (gSplitVertical == 0) {
         Gfx *g = gdl;
 
-        gDPSetPrimColor(g++, 0, 0, D_800DC150[idx].r, D_800DC150[idx].g, D_800DC150[idx].b, 255);
+        gDPSetPrimColor(g++, 0, 0, gRiderGfx[idx].r, gRiderGfx[idx].g, gRiderGfx[idx].b, 255);
         if (half) {
             gDPFillRectangle(g++, v - 4, 117, v + 4, 123);
         } else {
@@ -297,12 +297,12 @@ Gfx *func_800685D8(Gfx *gdl, s32 idx, s32 half)
     } else {
         Gfx *g;
 
-        h = D_800F13EC / 2;
+        h = gScreenWidth / 2;
         if (v > 0xD5) {
             v = 0xD5;
         }
         g = gdl;
-        gDPSetPrimColor(g++, 0, 0, D_800DC150[idx].r, D_800DC150[idx].g, D_800DC150[idx].b, 255);
+        gDPSetPrimColor(g++, 0, 0, gRiderGfx[idx].r, gRiderGfx[idx].g, gRiderGfx[idx].b, 255);
         if (half) {
             gDPFillRectangle(g++, h - 4, v - 3, h + 4, v + 3);
         } else {
@@ -315,17 +315,17 @@ Gfx *func_800685D8(Gfx *gdl, s32 idx, s32 half)
 
 #define WD(pkt, a, b) { Gfx *_g = (Gfx *)(pkt); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-Gfx *func_80068910(Gfx *gdl, Dyn *arg1, s32 arg2) {
+Gfx *map_draw_minimap(Gfx *gdl, Dyn *arg1, s32 arg2) {
     Racer *e;
     s32 i;
 
-    if (D_800CA934 != 0 || D_800F1458 == 0 || (D_800EFD70_8.f0 & 0x81) || D_800C2384 != 0) {
+    if (gHudLevel != 0 || sMapImage == 0 || (gGame_8.f0 & 0x81) || gInsetViewActive != 0) {
         return gdl;
     }
-    if (D_800C2594 >= 2) {
-        return func_80067E4C(gdl);
+    if (gNumViews >= 2) {
+        return map_draw_progress_bar(gdl);
     }
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, D_800F13EC, D_800F13F0);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
     gDPPipeSync(gdl++);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
@@ -336,31 +336,31 @@ Gfx *func_80068910(Gfx *gdl, Dyn *arg1, s32 arg2) {
     gDPSetBlendColor(gdl++, 0, 0, 0, 0x10);
     gDPSetAlphaCompare(gdl++, G_AC_THRESHOLD);
     gDPSetPrimColor(gdl++, 0, 0, 255, 255, 255, 0x60);
-    gDPLoadTextureBlock(gdl++, D_800F1458 + 8, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
+    gDPLoadTextureBlock(gdl++, sMapImage + 8, G_IM_FMT_IA, G_IM_SIZ_8b, 64, 64, 0,
                         G_TX_CLAMP, G_TX_CLAMP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
-    gSPTextureRectangle(gdl++, D_800F145C * 4, D_800F1460 * 4,
-                        (D_800F145C + D_800F14B8) * 4, (D_800F1460 + D_800F14BC) * 4,
+    gSPTextureRectangle(gdl++, sMapX * 4, sMapY * 4,
+                        (sMapX + sMapW) * 4, (sMapY + sMapH) * 4,
                         G_TX_RENDERTILE, 0, 0, D_800F1452, D_800F1456);
     gDPPipeSync(gdl++);
     WD(gdl++, 0xE200001C, 0x0C084000);
     WD(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
 
-    e = D_800E37C0_2;
+    e = gRiders_2;
     for (i = 0; i < 6; i++) {
-        if (D_800E37C0_2[i].f7A5 != 0) continue;
-        if (D_800E37C0_2[i].f44 != 0 && D_800E76D0 % 8 < 4) continue;
-        if (D_800E37C0_2[i].f6E8 != 0 || (D_800EFD70_8.f4C == 8 && i != D_800C8CE0)) {
-            gdl = func_80068484(gdl, i, 0);
+        if (gRiders_2[i].f7A5 != 0) continue;
+        if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
+        if (gRiders_2[i].f6E8 != 0 || (gGame_8.f4C == 8 && i != D_800C8CE0)) {
+            gdl = map_draw_rider_dot(gdl, i, 0);
         }
     }
-    e = D_800E37C0_2;
+    e = gRiders_2;
     for (i = 0; i < 6; i++) {
-        if (D_800E37C0_2[i].f7A5 != 0) continue;
-        if (D_800E37C0_2[i].f44 != 0 && D_800E76D0 % 8 < 4) continue;
-        if (D_800E37C0_2[i].f6E8 != 0) continue;
-        if (D_800EFD70_8.f4C == 8 && i != D_800C8CE0) continue;
-        gdl = func_80068484(gdl, i, 1);
+        if (gRiders_2[i].f7A5 != 0) continue;
+        if (gRiders_2[i].f44 != 0 && gRaceFrame % 8 < 4) continue;
+        if (gRiders_2[i].f6E8 != 0) continue;
+        if (gGame_8.f4C == 8 && i != D_800C8CE0) continue;
+        gdl = map_draw_rider_dot(gdl, i, 1);
     }
     gDPPipeSync(gdl++);
     return gdl;
@@ -370,9 +370,9 @@ typedef struct { f32 x, y; } V2;
 typedef struct { u8 pad[0x628]; s16 obj; u8 pad2[0x63C - 0x62A]; f32 t; u8 pad3[0x7E0 - 0x640]; } Player_25;
 typedef struct { u8 pad[0x46]; s16 next; u8 pad2[0x6C - 0x48]; } Obj_50;
 
-extern Obj_50 *D_800EE498_28;
+extern Obj_50 *gPathNodes_28;
 
-void func_80068F38(s32 player, s32 *px, s32 *py)
+void map_get_rider_pos(s32 player, s32 *px, s32 *py)
 {
     Player_25 *pl;
     Player_25 *base;
@@ -384,14 +384,14 @@ void func_80068F38(s32 player, s32 *px, s32 *py)
     f32 fy, nx, ny, dx, dy;
     s32 p, q;
 
-    base = D_800E37C0;
+    base = gRiders;
     pl = &base[player];
-    cx = (D_800F1468_2[0] + D_800F1470_2[0]) * 0.5f;
-    cy = (D_800F1468_2[1] + D_800F1470_2[1]) * 0.5f;
-    o = &D_800EE498_28[pl->obj];
-    o2 = &D_800EE498_28[o->next];
-    func_80069A84((f32 *)o, &a.x, &a.y);
-    func_80069A84((f32 *)o2, &b.x, &b.y);
+    cx = (sMapBoundsMin_2[0] + sMapBoundsMax_2[0]) * 0.5f;
+    cy = (sMapBoundsMin_2[1] + sMapBoundsMax_2[1]) * 0.5f;
+    o = &gPathNodes_28[pl->obj];
+    o2 = &gPathNodes_28[o->next];
+    map_get_node_pos((f32 *)o, &a.x, &a.y);
+    map_get_node_pos((f32 *)o2, &b.x, &b.y);
     t = pl->t;
     if (t < 0.0f) {
         t = 0.0f;
@@ -402,12 +402,12 @@ void func_80068F38(s32 player, s32 *px, s32 *py)
     dx = t * (b.x - a.x);
     dy = t * (b.y - a.y);
     nx = a.x + dx;
-    t = (nx - cx) * (f32)D_800F1458_2[0];
+    t = (nx - cx) * (f32)sMapImage_2[0];
     ny = a.y + dy;
-    fy = (ny - cy) * (f32)D_800F1458_2[1];
+    fy = (ny - cy) * (f32)sMapImage_2[1];
     t *= 6.1035156e-05f;
     fy *= 6.1035156e-05f;
-    w = D_800F14B8;
+    w = sMapW;
     x = (s32)t;
     p = x * w;
     a.x = nx;
@@ -418,14 +418,14 @@ void func_80068F38(s32 player, s32 *px, s32 *py)
         p += 0x7F;
     }
     x = p >> 7;
-    h = D_800F14BC;
+    h = sMapH;
     q = y * h;
     if (q < 0) {
         q += 0x7F;
     }
     y = q >> 7;
-    x += D_800F145C + w / 2;
-    y += D_800F1460 + h / 2;
+    x += sMapX + w / 2;
+    y += sMapY + h / 2;
     *px = x;
     *py = y;
 }
@@ -446,9 +446,9 @@ typedef struct {
 typedef struct { s32 sx, sy; u8 data[0x1000]; } MapImg;
 typedef struct { u8 pad[0x4C]; s32 f4C; } Race_6;
 
-extern MapImg *D_800F1458_3;
-extern Node_20 *D_800EE498_29;
-extern Race_6 D_800EFD70_47;
+extern MapImg *sMapImage_3;
+extern Node_20 *gPathNodes_29;
+extern Race_6 gGame_47;
 
 static inline void getpos(Node_20 *n, f32 *x, f32 *z) {
     f32 h = (n->f58 - n->f5C) * 0.5f;
@@ -475,7 +475,7 @@ static inline void stamp(u16 *brush, u16 *map, s32 cx, s32 cy) {
     }
 }
 
-void func_80069158(void) {
+void map_build_image(void) {
     f32 px, pz;
     f32 mx, my;
     f32 sx, sy, r, len, dx, dz, x0f;
@@ -490,47 +490,47 @@ void func_80069158(void) {
     Node_20 *m;
 
     for (i = 0; i < 64; i++) {
-        D_800F1478[i] = D_800CCCF8[i / 8];
+        sMapBarTex[i] = D_800CCCF8[i / 8];
     }
-    D_800F1458_3 = func_800BC908(0x1003, 0, (s32)D_800D8DCC, 0x23E);
-    for (i = 0; i < D_800EE490; i++) {
-        if (D_800EE498_29[i].x < D_800F1468.x || i == 0) D_800F1468.x = D_800EE498_29[i].x;
-        if (D_800EE498_29[i].z < D_800F1468.z || i == 0) D_800F1468.z = D_800EE498_29[i].z;
-        if (D_800EE498_29[i].x > D_800F1470.x || i == 0) D_800F1470.x = D_800EE498_29[i].x;
-        if (D_800EE498_29[i].z > D_800F1470.z || i == 0) D_800F1470.z = D_800EE498_29[i].z;
+    sMapImage_3 = mem_alloc_dbg(0x1003, 0, (s32)D_800D8DCC, 0x23E);
+    for (i = 0; i < gPathNodeCount; i++) {
+        if (gPathNodes_29[i].x < sMapBoundsMin.x || i == 0) sMapBoundsMin.x = gPathNodes_29[i].x;
+        if (gPathNodes_29[i].z < sMapBoundsMin.z || i == 0) sMapBoundsMin.z = gPathNodes_29[i].z;
+        if (gPathNodes_29[i].x > sMapBoundsMax.x || i == 0) sMapBoundsMax.x = gPathNodes_29[i].x;
+        if (gPathNodes_29[i].z > sMapBoundsMax.z || i == 0) sMapBoundsMax.z = gPathNodes_29[i].z;
     }
-    mx = (D_800F1468.x + D_800F1470.x) * 0.5f;
-    my = (D_800F1468.z + D_800F1470.z) * 0.5f;
-    sx = 118.0f / (D_800F1470.x - D_800F1468.x);
-    sy = 118.0f / (D_800F1470.z - D_800F1468.z);
+    mx = (sMapBoundsMin.x + sMapBoundsMax.x) * 0.5f;
+    my = (sMapBoundsMin.z + sMapBoundsMax.z) * 0.5f;
+    sx = 118.0f / (sMapBoundsMax.x - sMapBoundsMin.x);
+    sy = 118.0f / (sMapBoundsMax.z - sMapBoundsMin.z);
     if (sx < sy) sy = sx; else sx = sy;
     r = sx / sy;
     if (r > 0.8f && r < 1.2f) {
         sx /= 1.3f;
         sy /= 1.3f;
     }
-    D_800F1458_3->sx = sx * 16384.0f;
-    D_800F1458_3->sy = sy * 16384.0f;
+    sMapImage_3->sx = sx * 16384.0f;
+    sMapImage_3->sy = sy * 16384.0f;
     steps = sx * 6.0f;
     if (steps < 2) steps = 2;
 
-    brush = D_800C29E0_2;
+    brush = gZBuffer_2;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j++) {
             brush[i * 16 + j] = (u32)(dist(i, j) * 256.0f);
         }
     }
-    map = D_800C29E0_2 + 0x100;
-    func_8000ED10((u8 *)map, 0xFF, 0x8000);
+    map = gZBuffer_2 + 0x100;
+    mem_fill((u8 *)map, 0xFF, 0x8000);
 
-    for (i = 0; i < D_800EE490; i++) {
-        n = (Node_20 *)(i * sizeof(Node_20) + (u32)D_800EE498_29);
+    for (i = 0; i < gPathNodeCount; i++) {
+        n = (Node_20 *)(i * sizeof(Node_20) + (u32)gPathNodes_29);
         j = n->f46;
-        if (j == 0 && D_800EFD70_47.f4C == 7) break;
+        if (j == 0 && gGame_47.f4C == 7) break;
         getpos(n, &px, &pz);
         x0 = (px - mx) * sx + 64.0f;
         y0 = 64.0f - (pz - my) * sy;
-        getpos(&D_800EE498_29[j], &px, &pz);
+        getpos(&gPathNodes_29[j], &px, &pz);
         cx = (px - mx) * sx + 64.0f;
         y1 = 64.0f - (pz - my) * sy;
         for (t = 0; t < steps; t++) {
@@ -538,11 +538,11 @@ void func_80069158(void) {
         }
     }
 
-    j = D_800EE498_29[D_800EE494].f46;
-    x0 = (D_800EE498_29[D_800EE494].x - mx) * sx + 64.0f;
-    y0 = 64.0f - (D_800EE498_29[D_800EE494].z - my) * sy;
-    px = D_800EE498_29[j].x - D_800EE498_29[D_800EE494].x;
-    pz = D_800EE498_29[j].z - D_800EE498_29[D_800EE494].z;
+    j = gPathNodes_29[gPathStartNode].f46;
+    x0 = (gPathNodes_29[gPathStartNode].x - mx) * sx + 64.0f;
+    y0 = 64.0f - (gPathNodes_29[gPathStartNode].z - my) * sy;
+    px = gPathNodes_29[j].x - gPathNodes_29[gPathStartNode].x;
+    pz = gPathNodes_29[j].z - gPathNodes_29[gPathStartNode].z;
     len = __builtin_sqrtf(px * px + pz * pz);
     if (len > 0.0f) {
         px /= len;
@@ -583,23 +583,23 @@ void func_80069158(void) {
             lo = (a & 15) + (b & 15) + (cc & 15) + (d & 15);
             t >>= 2;
             lo >>= 2;
-            D_800F1458_3->data[k] = (t << 4) | lo;
+            sMapImage_3->data[k] = (t << 4) | lo;
             k++;
         }
         x += 128;
     }
 }
 
-void func_80069A84(f32 *a, f32 *b, f32 *c)
+void map_get_node_pos(f32 *a, f32 *b, f32 *c)
 {
     f32 t = (a[0x16] - a[0x17]) * 0.5f;
     b[0] = a[0] - a[5] * t;
     c[0] = a[2] - a[6] * t;
 }
 
-Gfx *func_80069AC8(Gfx *gdl, s32 idx, s32 flag, s32 x, s32 y) {
-    gDPSetPrimColor(gdl++, 0, 0, D_800DC150_11[idx][0x21C], D_800DC150_11[idx][0x21D],
-                    D_800DC150_11[idx][0x21E], 255);
+Gfx *map_draw_dot(Gfx *gdl, s32 idx, s32 flag, s32 x, s32 y) {
+    gDPSetPrimColor(gdl++, 0, 0, gRiderGfx_11[idx][0x21C], gRiderGfx_11[idx][0x21D],
+                    gRiderGfx_11[idx][0x21E], 255);
     if (flag != 0) {
         gDPFillRectangle(gdl++, x - 4, y - 3, x + 4, y + 3);
     } else {
@@ -608,7 +608,7 @@ Gfx *func_80069AC8(Gfx *gdl, s32 idx, s32 flag, s32 x, s32 y) {
     return gdl;
 }
 
-void func_80069BC8(u16 *dst, u16 *src, s32 x, s32 y) {
+void map_stamp_brush(u16 *dst, u16 *src, s32 x, s32 y) {
     s32 i4;
     s32 i2;
     s32 k;
@@ -631,45 +631,45 @@ void func_80069BC8(u16 *dst, u16 *src, s32 x, s32 y) {
     }
 }
 
-void func_80069C6C(void) {
-    if (D_800F1458 != 0) {
-        func_800BCB04(D_800F1458);
-        D_800F1458 = 0;
+void map_free(void) {
+    if (sMapImage != 0) {
+        mem_free(sMapImage);
+        sMapImage = 0;
     }
 }
 
-void func_80069CA0(Obj_51 *a, s32 b)
+void palmod_register(Obj_51 *a, s32 b)
 {
     s32 i;
     s32 k;
     s32 save;
 
     if (a != NULL && a->src != NULL) {
-        if (D_800F14C0 >= D_800F14D8) func_8000ECB8(1);
-        D_800F14D0[D_800F14C0].val = b;
-        D_800F14D0[D_800F14C0].obj = a;
-        D_800F14D0[D_800F14C0].buf = func_800BC908(0x500, 0, D_800D8E10, 0x8C);
-        D_800F14D0[D_800F14C0].src = a->src;
-        D_800F14D0[D_800F14C0].dst = D_800F14D0[D_800F14C0].buf + 0x300;
-        __builtin_memcpy(D_800F14D0[D_800F14C0].dst, D_800F14D0[D_800F14C0].src, 0x200);
+        if (sPalModCount >= sPalModMax) fatal_halt(1);
+        sPalModEntries[sPalModCount].val = b;
+        sPalModEntries[sPalModCount].obj = a;
+        sPalModEntries[sPalModCount].buf = mem_alloc_dbg(0x500, 0, D_800D8E10, 0x8C);
+        sPalModEntries[sPalModCount].src = a->src;
+        sPalModEntries[sPalModCount].dst = sPalModEntries[sPalModCount].buf + 0x300;
+        __builtin_memcpy(sPalModEntries[sPalModCount].dst, sPalModEntries[sPalModCount].src, 0x200);
         k = 0;
         for (i = 0; i < 0x100; i++) {
-            if (D_800C2280 & 0x80) {
-                D_800F14D0[D_800F14C0].buf[k++] = (a->src[i] >> 6) & 0x1F;
-                D_800F14D0[D_800F14C0].buf[k++] = (a->src[i] >> 1) & 0x1F;
-                D_800F14D0[D_800F14C0].buf[k++] = a->src[i] >> 11;
+            if (gCheatFlags & 0x80) {
+                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 6) & 0x1F;
+                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 1) & 0x1F;
+                sPalModEntries[sPalModCount].buf[k++] = a->src[i] >> 11;
             } else {
-                D_800F14D0[D_800F14C0].buf[k++] = a->src[i] >> 11;
-                D_800F14D0[D_800F14C0].buf[k++] = (a->src[i] >> 6) & 0x1F;
-                D_800F14D0[D_800F14C0].buf[k++] = (a->src[i] >> 1) & 0x1F;
+                sPalModEntries[sPalModCount].buf[k++] = a->src[i] >> 11;
+                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 6) & 0x1F;
+                sPalModEntries[sPalModCount].buf[k++] = (a->src[i] >> 1) & 0x1F;
             }
         }
-        i = D_800E1B70;
-        D_800E1B70 = 0;
-        func_8006AA9C(a->src, D_800F14D0[D_800F14C0].buf);
-        D_800E1B70 = i;
-        __builtin_memcpy(D_800F14D0[D_800F14C0].dst, a->src, 0x200);
-        D_800F14C0++;
+        i = gDesaturation;
+        gDesaturation = 0;
+        palmod_desaturate_rgb(a->src, sPalModEntries[sPalModCount].buf);
+        gDesaturation = i;
+        __builtin_memcpy(sPalModEntries[sPalModCount].dst, a->src, 0x200);
+        sPalModCount++;
     }
 }
 
@@ -680,7 +680,7 @@ typedef struct {
     u16 *dst[2];
 } PalEnt_2;
 
-extern PalEnt_2 *D_800F14D0_2;
+extern PalEnt_2 *sPalModEntries_2;
 
 static inline void put(u16 *d, s32 *r, s32 *g, s32 *b) {
     *d = (*r << 11) | (*g << 6) | (*b << 1) | (*d & 1);
@@ -699,7 +699,7 @@ static inline void sepia(s32 v, s32 *r, s32 *g, s32 *b) {
     }
 }
 
-void func_8006A0AC(void) {
+void palmod_update(void) {
     s32 i, j, k;
     u16 *dst;
     u8 *src;
@@ -707,42 +707,42 @@ void func_8006A0AC(void) {
     s32 r0, g0, b0;
     s32 v;
 
-    for (i = 0; i < D_800F14C0; i++) {
-        D_800F14D0_2[i].f8->f4 = (s32)D_800F14D0_2[i].dst[D_800E30A8];
+    for (i = 0; i < sPalModCount; i++) {
+        sPalModEntries_2[i].f8->f4 = (s32)sPalModEntries_2[i].dst[gGfxFrameIndex];
     }
-    if (((D_800EFD64_6 - (s32)D_800CB210) * -0x33333333 >> 5) == 11 && D_800E1898 == 1 && D_800E3710 == 0) {
-        if (D_800F14E8 != 0) {
-            D_800F14E8--;
+    if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) == 11 && gNumScreens == 1 && gPauseMenu == 0) {
+        if (gLightningFlash != 0) {
+            gLightningFlash--;
         }
-        if ((s32)func_8000EFE8() % 80 == 0 && D_800F14E0 < 0) {
-            D_800F14E0 = 0;
-            D_800F14DC = (s32)func_8000EFE8() % 2;
-            func_8004F270(0x67, -1, 1);
+        if ((s32)random_byte() % 80 == 0 && sLightningFrame < 0) {
+            sLightningFrame = 0;
+            sLightningPattern = (s32)random_byte() % 2;
+            tunes_play_speech(0x67, -1, 1);
         }
-        if (D_800F14E0 < 0) {
-            D_800F14E8 = 0;
+        if (sLightningFrame < 0) {
+            gLightningFlash = 0;
         } else {
-            s32 n = D_800F14E0;
-            D_800F14E0 = n + 1;
-            D_800F14E8 = D_800CCD68[D_800F14DC][n];
-            if (D_800F14E0 == 10) {
-                D_800F14E0 = -1;
+            s32 n = sLightningFrame;
+            sLightningFrame = n + 1;
+            gLightningFlash = sLightningPatterns[sLightningPattern][n];
+            if (sLightningFrame == 10) {
+                sLightningFrame = -1;
             }
         }
-        if (D_800E3710 != 0) {
-            D_800F14E8 = 0;
+        if (gPauseMenu != 0) {
+            gLightningFlash = 0;
         }
-        v = D_800F14E8 != 0;
-        if (v != D_800F14C8[D_800E30A8]) {
-            D_800F14C8[D_800E30A8] = v;
-            for (i = 0; i < D_800F14C0; i++) {
-                dst = D_800F14D0_2[i].dst[D_800E30A8];
-                src = D_800F14D0_2[i].src;
+        v = gLightningFlash != 0;
+        if (v != sPalModState[gGfxFrameIndex]) {
+            sPalModState[gGfxFrameIndex] = v;
+            for (i = 0; i < sPalModCount; i++) {
+                dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
+                src = sPalModEntries_2[i].src;
                 for (k = 0; k < 256; k++) {
                     r0 = *src++;
                     g0 = *src++;
                     b0 = *src++;
-                    if (D_800F14E8 != 0) {
+                    if (gLightningFlash != 0) {
                         r0 = (r0 + g0 + b0) / 3;
                         r0 *= 3;
                         if (r0 >= 32) {
@@ -758,20 +758,20 @@ void func_8006A0AC(void) {
                 }
             }
         }
-    } else if (D_800C2358 != 0) {
-        if (D_800E1B70 != 0) {
-            for (i = 0; i < D_800F14C0; i++) {
+    } else if (gPodiumMode != 0) {
+        if (gDesaturation != 0) {
+            for (i = 0; i < sPalModCount; i++) {
                 s32 r, g, b, a, dr, dg, db;
-                u16 *dst = D_800F14D0_2[i].dst[D_800E30A8];
-                u8 *src = D_800F14D0_2[i].src;
+                u16 *dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
+                u8 *src = sPalModEntries_2[i].src;
                 for (j1 = 0; j1 < 256; j1++) {
                     r = *src++;
                     g = *src++;
                     b = *src++;
                     a = (r + g + b) / 3;
-                    r += (a - r) * D_800E1B70 >> 8;
-                    g += (a - g) * D_800E1B70 >> 8;
-                    b += (a - b) * D_800E1B70 >> 8;
+                    r += (a - r) * gDesaturation >> 8;
+                    g += (a - g) * gDesaturation >> 8;
+                    b += (a - b) * gDesaturation >> 8;
                     a = (r << 11) | (g << 6) | (b << 1);
                     a |= *dst & 1;
                     *dst = a;
@@ -779,14 +779,14 @@ void func_8006A0AC(void) {
                 }
             }
         }
-    } else if (((D_800EFD64_6 - (s32)D_800CB210) * -0x33333333 >> 5) != 20) {
-        if (D_800CCD64 != 0) {
+    } else if (((gCurTrack_6 - (s32)gTracks) * -0x33333333 >> 5) != 20) {
+        if (gCreditsMode != 0) {
             k = -123;
-            if (D_800F14C8[D_800E30A8] != k) {
-                D_800F14C8[D_800E30A8] = k;
-                for (i = 0; i < D_800F14C0; i++) {
-                    dst = D_800F14D0_2[i].dst[D_800E30A8];
-                    src = D_800F14D0_2[i].src;
+            if (sPalModState[gGfxFrameIndex] != k) {
+                sPalModState[gGfxFrameIndex] = k;
+                for (i = 0; i < sPalModCount; i++) {
+                    dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
+                    src = sPalModEntries_2[i].src;
                     for (j = 0; j < 256; j++) {
                         r0 = *src++;
                         g0 = *src++;
@@ -798,8 +798,8 @@ void func_8006A0AC(void) {
                     }
                 }
             }
-        } else if (((Cfg *)D_800EFD64_6)->f2C == 1) {
-            k = (D_800E8E9C - 25) * 3;
+        } else if (((Cfg *)gCurTrack_6)->f2C == 1) {
+            k = (gSunGlare - 25) * 3;
             if (k < 0) {
                 k = 0;
             }
@@ -807,11 +807,11 @@ void func_8006A0AC(void) {
                 k = 100;
             }
             D_800CCD60 = k;
-            if (k != D_800F14C8[D_800E30A8]) {
-                D_800F14C8[D_800E30A8] = k;
-                for (i = 0; i < D_800F14C0; i++) {
-                    dst = D_800F14D0_2[i].dst[D_800E30A8];
-                    src = D_800F14D0_2[i].src;
+            if (k != sPalModState[gGfxFrameIndex]) {
+                sPalModState[gGfxFrameIndex] = k;
+                for (i = 0; i < sPalModCount; i++) {
+                    dst = sPalModEntries_2[i].dst[gGfxFrameIndex];
+                    src = sPalModEntries_2[i].src;
                     for (j = 0; j < 256; j++) {
                         r0 = *src++;
                         g0 = *src++;
@@ -828,41 +828,41 @@ void func_8006A0AC(void) {
     }
 }
 
-void func_8006A8B0(s32 p)
+void palmod_init(s32 p)
 {
     D_800CCD60 = 0;
-    D_800F14C0 = 0;
-    D_800F14C8[0] = -1;
-    D_800F14C8[1] = -1;
-    D_800F14E0 = -1;
+    sPalModCount = 0;
+    sPalModState[0] = -1;
+    sPalModState[1] = -1;
+    sLightningFrame = -1;
     if (p != 0) {
-        D_800F14D8 = 0x10;
+        sPalModMax = 0x10;
     } else {
-        D_800F14D8 = 8;
+        sPalModMax = 8;
     }
-    D_800F14D0 = (s32)func_800BC908(D_800F14D8 * 0x14, 0, D_800D8E10, 0x74);
+    sPalModEntries = (s32)mem_alloc_dbg(sPalModMax * 0x14, 0, D_800D8E10, 0x74);
 }
 
 typedef struct {
     s32 w0, w1, w2, w3, w4;
 } Ent_70;
 
-extern Ent_70 *D_800F14D0_3;
+extern Ent_70 *sPalModEntries_3;
 
-void func_8006A944(void)
+void palmod_free(void)
 {
     s32 i;
 
-    for (i = 0; i < D_800F14C0; i++) {
-        func_800BCB04(D_800F14D0_3[i].w0);
+    for (i = 0; i < sPalModCount; i++) {
+        mem_free(sPalModEntries_3[i].w0);
     }
     D_800F14D4 = 0;
     D_800F14E4 = 0;
-    D_800F14C0 = 0;
-    func_800BCB04((s32)D_800F14D0_3);
+    sPalModCount = 0;
+    mem_free((s32)sPalModEntries_3);
 }
 
-void func_8006A9DC(s32 a0, s32 *a1, s32 *a2, s32 *a3)
+void palmod_sepia(s32 a0, s32 *a1, s32 *a2, s32 *a3)
 {
     s32 t;
     s32 d;
@@ -899,7 +899,7 @@ void func_8006A9DC(s32 a0, s32 *a1, s32 *a2, s32 *a3)
     *a3 = 0;
 }
 
-void func_8006AA9C(u16 *dst, u8 *src)
+void palmod_desaturate_rgb(u16 *dst, u8 *src)
 {
     s32 i;
     s32 r, g, b, c;
@@ -909,9 +909,9 @@ void func_8006AA9C(u16 *dst, u8 *src)
         g = *src++;
         b = *src++;
         c = (r + g + b) / 3;
-        r += ((c - r) * D_800E1B70) >> 8;
-        g += ((c - g) * D_800E1B70) >> 8;
-        b += ((c - b) * D_800E1B70) >> 8;
+        r += ((c - r) * gDesaturation) >> 8;
+        g += ((c - g) * gDesaturation) >> 8;
+        b += ((c - b) * gDesaturation) >> 8;
         c = (r << 11) | (g << 6) | (b << 1);
         c |= *dst & 1;
         *dst = c;
@@ -919,7 +919,7 @@ void func_8006AA9C(u16 *dst, u8 *src)
     }
 }
 
-void func_8006AB64(u16 *dst, u16 *src)
+void palmod_desaturate_pal(u16 *dst, u16 *src)
 {
     s32 i;
     u32 v;
@@ -931,11 +931,11 @@ void func_8006AB64(u16 *dst, u16 *src)
         b = (v << 2) & 0xF8;
         v = (v >> 8) & 8;
         avg = (s32)(v + g + b) / 3;
-        v += ((avg - (s32)v) * D_800E1B70) >> 8;
+        v += ((avg - (s32)v) * gDesaturation) >> 8;
         v = (s32)v >> 3;
-        g += ((avg - g) * D_800E1B70) >> 8;
+        g += ((avg - g) * gDesaturation) >> 8;
         g >>= 3;
-        b += ((avg - b) * D_800E1B70) >> 8;
+        b += ((avg - b) * gDesaturation) >> 8;
         b >>= 3;
         avg = (v << 11) | (g << 6) | (b << 1);
         avg |= *dst & 1;
@@ -952,9 +952,9 @@ typedef struct {
     s32 pad18, pad1C;
 } Ent_71;
 
-extern Ent_71 *D_800C9644_9;
+extern Ent_71 *gTrackSections_9;
 
-void func_8006AC40(s32 arg0)
+void flash_init(s32 arg0)
 {
     Rec_41 *list;
     Rec_41 *r;
@@ -965,7 +965,7 @@ void func_8006AC40(s32 arg0)
     s32 best;
     s32 bi;
 
-    D_800F14F0 = list = (Rec_41 *)func_8005AED8(D_800D1590);
+    sFlashTris = list = (Rec_41 *)track_res_get(D_800D1590);
     if (list == NULL) {
         return;
     }
@@ -976,9 +976,9 @@ void func_8006AC40(s32 arg0)
         r = &recs[i];
         cx = (r->v[0][0] + r->v[1][0] + r->v[2][0] + r->x3) / 4;
         cz = (r->v[0][2] + r->v[1][2] + r->v[2][2] + r->z3) / 4;
-        for (j = 0; j < D_800C9644_9->count; j++) {
-            dx = (D_800C9644_9[j].x0 + D_800C9644_9[j].x1) / 2 - cx;
-            dz = (D_800C9644_9[j].z0 + D_800C9644_9[j].z1) / 2 - cz;
+        for (j = 0; j < gTrackSections_9->count; j++) {
+            dx = (gTrackSections_9[j].x0 + gTrackSections_9[j].x1) / 2 - cx;
+            dz = (gTrackSections_9[j].z0 + gTrackSections_9[j].z1) / 2 - cz;
             dx /= 4;
             dz /= 4;
             dx = dx * dx + dz * dz;
@@ -990,8 +990,8 @@ void func_8006AC40(s32 arg0)
         r->best = bi;
     }
 end:
-    D_800F14F8 = func_800BC908(D_800F14F0->count << 2, 0, D_800D8E20, 0x6F);
-    D_800F14F4 = 0;
+    sFlashCandidates = mem_alloc_dbg(sFlashTris->count << 2, 0, D_800D8E20, 0x6F);
+    sFlashTimer = 0;
 }
 
 typedef struct {
@@ -1004,32 +1004,32 @@ typedef struct {
 
 typedef struct { u16 n; BikeTri t[1]; } Tbl_5;
 
-extern BikeTri **D_800F14F8_2;
+extern BikeTri **sFlashCandidates_2;
 
-void func_8006ADF0(void)
+void flash_update(void)
 {
-    Tbl_5 *tbl = D_800F14F0;
+    Tbl_5 *tbl = sFlashTris;
     s32 i;
     s32 j;
     s32 o;
     Tbl_5 *b;
 
-    if (tbl != 0 && D_800F14F4 != 0 && D_800C2594 == 1) {
-        D_800F14F4 = D_800F14F4 - 1;
-        D_800F14FC = 0;
+    if (tbl != 0 && sFlashTimer != 0 && gNumViews == 1) {
+        sFlashTimer = sFlashTimer - 1;
+        sFlashCandidateCount = 0;
         i = 0;
         if (tbl->n != 0) {
             b = tbl;
             do {
                 j = b->t[i].idx;
                 o = j * 32;
-                if (((ObjInfo *)((s32)D_800C9644_10 + o))->flags & 1) {
-                    D_800F14F8_2[D_800F14FC++] = &b->t[i];
+                if (((ObjInfo *)((s32)gTrackSections_10 + o))->flags & 1) {
+                    sFlashCandidates_2[sFlashCandidateCount++] = &b->t[i];
                 }
                 i++;
             } while (i < b->n);
         }
-        if (D_800F14FC != 0) {
+        if (sFlashCandidateCount != 0) {
             i = 0;
             do {
                 BikeTri *s;
@@ -1037,10 +1037,10 @@ void func_8006ADF0(void)
                 f32 v[4];
                 s32 w[16];
                 i++;
-                j = (s32)func_8000EFE8() % D_800F14FC;
-                s = D_800F14F8_2[j];
-                a = (s32)func_8000EFE8() % 255;
-                b = (s32)func_8000EFE8() % 255;
+                j = (s32)random_byte() % sFlashCandidateCount;
+                s = sFlashCandidates_2[j];
+                a = (s32)random_byte() % 255;
+                b = (s32)random_byte() % 255;
                 v[0] = s->x0;
                 v[1] = s->y0;
                 v[2] = s->z0;
@@ -1056,20 +1056,20 @@ void func_8006ADF0(void)
                 w[0] = 0;
                 w[1] = 0;
                 w[2] = 0;
-                func_80036374(5, 0, v, w, &D_800C9994);
+                particle_spawn(5, 0, v, w, &gParticleWhite);
             } while (i < 1);
         }
     }
 }
 
-void func_8006B160(void)
+void flash_free(void)
 {
-    if (D_800F14F0 != 0) {
-        func_800BCB04(D_800F14F8);
+    if (sFlashTris != 0) {
+        mem_free(sFlashCandidates);
     }
 }
 
-void func_8006B190(s32 x)
+void flash_start(s32 x)
 {
-    D_800F14F4 = x;
+    sFlashTimer = x;
 }

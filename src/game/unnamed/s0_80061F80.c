@@ -1,36 +1,36 @@
 #include "game.h"
 
-s32 func_80061F80(s8 *p, s16 v)
+s32 ai_route_lap_ge(s8 *p, s16 v)
 {
     return *(s16 *)(p + 0x660) >= v;
 }
 
-s32 func_80061F98(u8 *a0, s16 a1)
+s32 ai_route_lap_le(u8 *a0, s16 a1)
 {
     return *(s16 *)(a0 + 0x660) <= a1;
 }
 
-u8 func_80061FB0(void)
+u8 ai_route_toggle(void)
 {
-    D_800F0B30 = D_800F0B30 ^ 1;
-    return D_800F0B30;
+    gAiRouteToggle = gAiRouteToggle ^ 1;
+    return gAiRouteToggle;
 }
 
-s32 func_80061FC8(u8 *a0)
+s32 ai_route_lap_gt0(u8 *a0)
 {
     return *(s16 *)(a0 + 0x660) > 0;
 }
 
-u8 func_80061FD4(s8 *p, s16 v)
+u8 ai_route_toggle_from_lap(s8 *p, s16 v)
 {
     if (*(s16 *)(p + 0x660) < v) {
         return 0;
     }
-    D_800F0B30 = D_800F0B30 ^ 1;
-    return D_800F0B30;
+    gAiRouteToggle = gAiRouteToggle ^ 1;
+    return gAiRouteToggle;
 }
 
-s32 func_80062008(void) {
+s32 ai_route_random(void) {
     return D_800E76D3 & 1;
 }
 
@@ -43,11 +43,11 @@ struct Obj_43 {
     s16 x660;
 };
 
-s32 func_80062018(Obj_43 *p, s16 s) {
+s32 ai_route_lap_lt_or_wide(Obj_43 *p, s16 s) {
     return p->x660 < s || ABS(p->f42C) > 0.5f;
 }
 
-s32 func_80062090(void)
+s32 ai_route_never(void)
 {
     return 0;
 }

@@ -3,83 +3,83 @@
 typedef struct { s32 v; } S1;
 typedef struct { u8 pad[0x2C]; s32 f2c; } Obj_26;
 
-extern Obj_26 *D_800EFD64_24;
+extern Obj_26 *gCurTrack_24;
 
-void func_80033E30(s32 arg0)
+void sky_scan_zbuffer(s32 arg0)
 {
     s32 i, x, y, m;
     Rect *r;
     Rect *q;
     S1 *p;
 
-    if ((D_800EFD70 & 0x10000) == 0) {
+    if ((gGame & 0x10000) == 0) {
         return;
     }
-    m = D_800C2594 - 1;
-    for (i = 0; i < D_800C2594; i++) {
-        if (D_800EFD64_24->f2c == 0) {
-            D_800E8EE0[i] = ((Rect *)(D_800E1718_3 + (m * 64 + i * 16)))->h;
+    m = gNumViews - 1;
+    for (i = 0; i < gNumViews; i++) {
+        if (gCurTrack_24->f2c == 0) {
+            sSkyClipHeight[i] = ((Rect *)(gViewRects_3 + (m * 64 + i * 16)))->h;
         } else {
-            D_800E8EE0[i] = 0;
-            y = ((Rect *)(D_800E1718_3 + (m * 64 + i * 16)))->y;
-            r = (Rect *)(D_800E1718_3 + (m * 64 + i * 16));
+            sSkyClipHeight[i] = 0;
+            y = ((Rect *)(gViewRects_3 + (m * 64 + i * 16)))->y;
+            r = (Rect *)(gViewRects_3 + (m * 64 + i * 16));
             if (y < r->y + r->h) {
             yl:
-                p = (S1 *)&D_800E8EE0[i];
+                p = (S1 *)&sSkyClipHeight[i];
                 for (x = r->x; x < r->x + r->w; x += 8) {
-                    if (*(u16 *)((u32)D_800C29E0 + ((y * D_800F13EC + x) << 1)) > 0xFFEF) {
+                    if (*(u16 *)((u32)gZBuffer + ((y * gScreenWidth + x) << 1)) > 0xFFEF) {
                         p->v = y - r->y;
                     }
                 }
                 y += 16;
                 if (y < r->y + r->h) goto yl;
             }
-            D_800E8EE0[i] += 16;
-            if (D_800C98B4[i] > 16 && D_800E8EE0[i] < D_800C98B4[i] - 16) {
-                D_800E8EE0[i] = D_800C98B4[i] - 16;
+            sSkyClipHeight[i] += 16;
+            if (sSkyPrevClipHeight[i] > 16 && sSkyClipHeight[i] < sSkyPrevClipHeight[i] - 16) {
+                sSkyClipHeight[i] = sSkyPrevClipHeight[i] - 16;
             }
-            q = (Rect *)(D_800E1718_3 + (m * 64 + i * 16));
-            if (D_800E8EE0[i] > q->h) {
-                D_800E8EE0[i] = q->h;
+            q = (Rect *)(gViewRects_3 + (m * 64 + i * 16));
+            if (sSkyClipHeight[i] > q->h) {
+                sSkyClipHeight[i] = q->h;
             }
-            if (D_800E8EE0[i] < q->h / 2) {
-                D_800E8EE0[i] = q->h;
+            if (sSkyClipHeight[i] < q->h / 2) {
+                sSkyClipHeight[i] = q->h;
             }
         }
-        D_800C98B4[i] = D_800E8EE0[i];
+        sSkyPrevClipHeight[i] = sSkyClipHeight[i];
     }
 }
 
-void func_80033FF0(void)
+void sky_update_scroll(void)
 {
     s32 i;
     s32 t;
     s32 v;
     s32 n;
 
-    if (D_800DC144_4 != 0) {
-        t = D_800DC144_4[9];
+    if (gSkyImage_4 != 0) {
+        t = gSkyImage_4[9];
         if (t == 0) {
             t = 0x100;
         }
         i = 0;
-        if (i < D_800C2594) {
-        n = D_800C2594;
+        if (i < gNumViews) {
+        n = gNumViews;
         do {
-            D_800E8EC0[i] = 0x80;
-            D_800E8ED0[i] = 0x68;
-            v = D_800E8000[i] & 0x1FFF;
-            if (D_800C2364 != 0) {
+            sSkyScaleX[i] = 0x80;
+            sSkyScaleY[i] = 0x68;
+            v = gCamYaw[i] & 0x1FFF;
+            if (gMirrorMode != 0) {
                 v = 0x2000 - v;
             }
-            D_800E8EA0[i] = (v / 32 - t) & 0xFF;
-            v = D_800E7978[i];
+            sSkyScrollX[i] = (v / 32 - t) & 0xFF;
+            v = gCamPitch[i];
             v = v / 32;
             v += 0x80;
-            if (D_800EFD64 == D_800CC070) {
+            if (gCurTrack == D_800CC070) {
                 v -= 0x50;
             }
-            D_800E8EB0[i] = v;
+            sSkyScrollY[i] = v;
             i++;
         } while (i < n);
         }
@@ -179,24 +179,24 @@ static inline Gfx *drawTexA(Gfx *g, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, Gf
     return gdl;
 }
 
-Gfx *func_80034100(s32 a, s32 b, s32 *tex, Gfx *gdl)
+Gfx *sky_draw_strip(s32 a, s32 b, s32 *tex, Gfx *gdl)
 {
     s32 rw, rh, xoff, yoff, tw, th, x0, y0;
     s32 y;
     Gfx *p;
     Gfx *q;
 
-    rh = D_800E1718[D_800C2594 - 1][b].h;
-    rw = D_800E1718[D_800C2594 - 1][b].w;
-    tw = (rw << 7) / D_800E8EC0[b];
-    th = (rh * 4) / D_800E8ED0[b];
-    yoff = (a - D_800E8EB0[b]) * (rh / 2) / D_800E8ED0[b];
-    xoff = D_800E8EA0[b] * (rw / 2) / D_800E8EC0[b];
+    rh = gViewRects[gNumViews - 1][b].h;
+    rw = gViewRects[gNumViews - 1][b].w;
+    tw = (rw << 7) / sSkyScaleX[b];
+    th = (rh * 4) / sSkyScaleY[b];
+    yoff = (a - sSkyScrollY[b]) * (rh / 2) / sSkyScaleY[b];
+    xoff = sSkyScrollX[b] * (rw / 2) / sSkyScaleX[b];
     yoff += rh / 2;
-    x0 = D_800E1718[D_800C2594 - 1][b].x;
-    y0 = D_800E1718[D_800C2594 - 1][b].y;
-    q = drawTex(gdl, x0 + xoff - tw, y0 + yoff, tw, th + 1, 0, 0, gdl, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw, y0 + D_800E8EE0[b] - 1, tex);
-    gdl = drawTex(q, x0 + xoff, y0 + yoff, tw, th + 1, 0, 0, q, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw, y0 + D_800E8EE0[b] - 1, tex);
+    x0 = gViewRects[gNumViews - 1][b].x;
+    y0 = gViewRects[gNumViews - 1][b].y;
+    q = drawTex(gdl, x0 + xoff - tw, y0 + yoff, tw, th + 1, 0, 0, gdl, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw, y0 + sSkyClipHeight[b] - 1, tex);
+    gdl = drawTex(q, x0 + xoff, y0 + yoff, tw, th + 1, 0, 0, q, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw, y0 + sSkyClipHeight[b] - 1, tex);
     if (a == 0) {
         y = y0 + yoff;
         while (y > 0) {
@@ -204,22 +204,22 @@ Gfx *func_80034100(s32 a, s32 b, s32 *tex, Gfx *gdl)
         }
         for (; y < y0 + yoff; y += th) {
             p = gdl;
-            p = drawTexA(p, x0 + xoff - tw, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + D_800E8EE0[b] - 1, (p = gdl = 0, tex));
+            p = drawTexA(p, x0 + xoff - tw, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, (p = gdl = 0, tex));
             gdl = p;
-            gdl = drawTex(gdl, x0 + xoff, y, tw, th + 1, 0, 0, gdl, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + D_800E8EE0[b] - 1, tex);
+            gdl = drawTex(gdl, x0 + xoff, y, tw, th + 1, 0, 0, gdl, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, tex);
         }
     }
     if (a == 0xF8) {
-        for (y = y0 + yoff + th; y < y0 + D_800E8EE0[b]; y += th) {
+        for (y = y0 + yoff + th; y < y0 + sSkyClipHeight[b]; y += th) {
             p = gdl;
-            p = drawTexA(p, x0 + xoff - tw, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + D_800E8EE0[b] - 1, (p = gdl = 0, tex));
-            gdl = drawTex(p, x0 + xoff, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + D_800E8EE0[b] - 1, tex);
+            p = drawTexA(p, x0 + xoff - tw, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, (p = gdl = 0, tex));
+            gdl = drawTex(p, x0 + xoff, y, tw, th + 1, 0, 0, p, 0x40000 / tw, 0x2000 / th, x0, y0, x0 + rw - 1, y0 + sSkyClipHeight[b] - 1, tex);
         }
     }
     return gdl;
 }
 
-Gfx *func_80035178(Gfx *gdl, s32 unused, u8 *s)
+Gfx *sky_draw(Gfx *gdl, s32 unused, u8 *s)
 {
     Gfx *g0, *g1, *g2, *g3, *g4, *g5, *g6, *g7, *g8, *q0, *q1, *q2;
     s32 n;
@@ -240,19 +240,19 @@ Gfx *func_80035178(Gfx *gdl, s32 unused, u8 *s)
     g7 = gdl++; ((u32 *)g7)[0] = 0xE3001201; ((u32 *)g7)[1] = 0;
     g8 = gdl++; ((u32 *)g8)[0] = 0xE3001801; ((u32 *)g8)[1] = 0x80;
 
-    if (D_800C2384 == 0) {
+    if (gInsetViewActive == 0) {
         for (i = 0; i < n; i += 8) {
             local = *(s32 *)(s + 0xC) + i * 0x100;
-            for (j = 0; j < D_800C2594; j++) {
-                gdl = func_80034100(i, j, &local, gdl);
+            for (j = 0; j < gNumViews; j++) {
+                gdl = sky_draw_strip(i, j, &local, gdl);
             }
         }
     } else {
         D_800E8EE4 = D_800E1774;
-        for (j = 0; j < D_800C2594; j++) {
+        for (j = 0; j < gNumViews; j++) {
             for (i = 0; i < n; i += 8) {
                 local = *(s32 *)(s + 0xC) + i * 0x100;
-                gdl = func_80034100(i, j, &local, gdl);
+                gdl = sky_draw_strip(i, j, &local, gdl);
             }
         }
     }
@@ -265,35 +265,35 @@ Gfx *func_80035178(Gfx *gdl, s32 unused, u8 *s)
 
 typedef struct { s32 f0, f4, f8, fc; } G1718;
 
-extern G1718 D_800E1718_9;
+extern G1718 gViewRects_9;
 
-s32 func_800353EC(s32 *outx, s32 *outy, s32 p3, s32 p4)
+s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 p3, s32 p4)
 {
     s32 x, y, z, w;
     s32 t;
     s32 m;
 
-    if (D_800C98B0 == 1) {
-        t = (D_800E1718_9.f8 << 7) / D_800E8EC0[p4];
+    if (gSkyMode == 1) {
+        t = (gViewRects_9.f8 << 7) / sSkyScaleX[p4];
         x = (s16)(D_800E8002 - 0x7AEC);
         m = x * t;
-        t = (D_800E1718_9.fc << 2) / D_800E8ED0[p4];
+        t = (gViewRects_9.fc << 2) / sSkyScaleY[p4];
         x = m / 8192;
-        y = D_800E7978[p4];
+        y = gCamPitch[p4];
         y = 45 - y * t / 1024;
-        y = 0xB9 - D_800E8EB0[p4];
+        y = 0xB9 - sSkyScrollY[p4];
     } else {
-        if (D_800EFD64_7 - D_800CB210_3 == 1) {
-            if (func_80033AC8(300, 0x14, 50, &x, &y, &z, &w, p3, p4)) {
+        if (gCurTrack_7 - gTracks_3 == 1) {
+            if (project_to_screen(300, 0x14, 50, &x, &y, &z, &w, p3, p4)) {
                 return 1;
             }
         } else {
-            if (func_80033AC8(0, 0x14, -300, &x, &y, &z, &w, p3, p4)) {
+            if (project_to_screen(0, 0x14, -300, &x, &y, &z, &w, p3, p4)) {
                 return 1;
             }
         }
     }
-    if (x < -50 || y < -50 || D_800F13EC < x || D_800F13F0 + 50 < y) {
+    if (x < -50 || y < -50 || gScreenWidth < x || gScreenHeight + 50 < y) {
         return 1;
     }
     *outx = x;
@@ -305,11 +305,11 @@ void func_80035630(void)
 {
 }
 
-void func_80035638(void) {
-    func_8000ED10(D_800E8EE0, 0, 0x10);
+void sky_reset_clip(void) {
+    mem_fill(sSkyClipHeight, 0, 0x10);
 }
 
-Gfx *func_80035660(Gfx *gdl, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, s32 du, s32 dv,
+Gfx *sky_texrect(Gfx *gdl, s32 x, s32 y, s32 w, s32 h, s32 u, s32 v, s32 du, s32 dv,
                    s32 x0, s32 y0, s32 x1, s32 y1, u32 *flag)
 {
     if (x1 < x + w) {

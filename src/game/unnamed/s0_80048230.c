@@ -1,41 +1,41 @@
 #include "game.h"
 
-void func_80048230(void *arc)
+void font_load_race_set(void *arc)
 {
-    if (D_800CA770 != 2) {
-        if (D_800CA770 != 0 && func_800C1DEC() != 0) {
-            func_8000ECB8(1);
+    if (sFontSetLoaded != 2) {
+        if (sFontSetLoaded != 0 && font_unload() != 0) {
+            fatal_halt(1);
         }
-        while (func_80065858() != 0) {
+        while (sched_get_current_task() != 0) {
         }
-        D_800D5870 = D_800C29E0;
-        if (func_800C06D0(arc, D_800CA774, D_800CA79C) != 0) {
-            func_8000ECB8(1);
+        gFontLoadBuffer = gZBuffer;
+        if (font_load(arc, sRaceFontIds, sFontColors) != 0) {
+            fatal_halt(1);
         }
-        D_800D5870 = 0;
-        D_800CA770 = 2;
+        gFontLoadBuffer = 0;
+        sFontSetLoaded = 2;
     }
 }
 
-void func_800482D0(u32 *param_1)
+void font_load_menu_set(u32 *param_1)
 {
-    if (D_800CA770 != 1) {
-        if (D_800CA770 != 0 && func_800C1DEC() != 0) {
-            func_8000ECB8(1);
+    if (sFontSetLoaded != 1) {
+        if (sFontSetLoaded != 0 && font_unload() != 0) {
+            fatal_halt(1);
         }
-        if (func_800C06D0(param_1, D_800CA784, D_800CA79C) != 0) {
-            func_8000ECB8(1);
+        if (font_load(param_1, sMenuFontIds, sFontColors) != 0) {
+            fatal_halt(1);
         }
-        D_800CA770 = 1;
+        sFontSetLoaded = 1;
     }
 }
 
-void func_8004834C(void) {
-    func_800C1DEC();
-    D_800CA770 = 0;
+void font_unload_set(void) {
+    font_unload();
+    sFontSetLoaded = 0;
 }
 
-Gfx *func_80048370(Gfx *g)
+Gfx *font_gfx_setup(Gfx *g)
 {
     Gfx *p0, *p1, *p2, *p3, *p4, *p5;
     p0 = g++;

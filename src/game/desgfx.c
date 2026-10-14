@@ -7,46 +7,46 @@ typedef struct {
     u8 pad[0x1C - 12];
 } Elem;
 
-extern B1A8 *D_800ED7AC;
-extern Elem D_800EA7C8[];
+extern B1A8 *sDesPatches;
+extern Elem sDesObjects[];
 
 typedef struct { s32 *name; s32 val; } NP;
 
-extern NP D_800CA3BC[];
+extern NP sDesObjModels[];
 
-void func_8003F6A0(void)
+void des_init(void)
 {
     s32 i;
 
-    D_800C23F0 = 0x4000;
-    D_800E783C = func_800BF79C(D_800E7728, D_800D0B68);
-    for (i = 0; D_800CA3BC[i].name != 0; i++) {
-        D_800CA3BC[i].val = func_800BF79C(D_800E7728, *D_800CA3BC[i].name);
+    gFarClip = 0x4000;
+    gTerrainTexSet = res_load(D_800E7728, D_800D0B68);
+    for (i = 0; sDesObjModels[i].name != 0; i++) {
+        sDesObjModels[i].val = res_load(D_800E7728, *sDesObjModels[i].name);
     }
-    D_800E781C = func_800BF79C(D_800E7728, D_800D1014);
-    D_800ED7AC = func_800BC908(0x19e10, 0, D_800D6FD0, 0xe9);
+    gObjectTexSet = res_load(D_800E7728, D_800D1014);
+    sDesPatches = mem_alloc_dbg(0x19e10, 0, D_800D6FD0, 0xe9);
     for (i = 0; i < 0xfa; i++) {
-        D_800ED7AC[i].f198 = 0;
+        sDesPatches[i].f198 = 0;
     }
-    D_800EA990 = func_800BC908(0x40000, 0, D_800D6FD0, 0xed);
-    func_80044314(D_800EA990);
-    func_80044358();
+    gDesertHeightMap = mem_alloc_dbg(0x40000, 0, D_800D6FD0, 0xed);
+    fractal_init(gDesertHeightMap);
+    fractal_reset();
     for (i = 0; i < 0x10; i++) {
-        D_800EA9A8[i] = func_800422AC(i);
+        sDesPatchDLs[i] = des_build_patch_dl(i);
     }
-    func_8000ED10_2(D_800EBE08, -1, 0x1800);
-    func_8000ED10_2(D_800EA998, 0, 0xc);
-    D_800EB9E8 = 0xfa;
+    mem_fill_2(sDesPatchGrid, -1, 0x1800);
+    mem_fill_2(D_800EA998, 0, 0xc);
+    sDesFreePatchCount = 0xfa;
     for (i = 0xf9; i >= 0; i--) {
-        D_800ED7C8[i] = i;
+        sDesFreePatches[i] = i;
     }
-    D_800EBDF8[0] = func_800BC908(0x400, 0, D_800D6FD0, 0xfe);
-    D_800EBDF8[1] = func_800BC908(0x400, 0, D_800D6FD0, 0xff);
-    D_800EBE04 = func_800BF79C(D_800E7728, D_800D0DF0);
-    D_800EA988 = func_800BF79C(D_800E7728, D_800D0C50);
-    D_800EDBB4 = func_800BC908(0x80, 0, D_800D6FD0, 0x104);
-    D_800EDFD0 = func_800BF79C(D_800E7728, D_800D07C4);
-    D_800EA98C = func_800BF79C(D_800E7728, D_800D0BC8);
+    sDesObjMtx[0] = mem_alloc_dbg(0x400, 0, D_800D6FD0, 0xfe);
+    sDesObjMtx[1] = mem_alloc_dbg(0x400, 0, D_800D6FD0, 0xff);
+    sDesArrowTex = res_load(D_800E7728, D_800D0DF0);
+    sDesArrowModel = res_load(D_800E7728, D_800D0C50);
+    sDesArrowMtx = mem_alloc_dbg(0x80, 0, D_800D6FD0, 0x104);
+    sDesMarkerAnim = res_load(D_800E7728, D_800D07C4);
+    D_800EA98C = res_load(D_800E7728, D_800D0BC8);
 }
 
 typedef struct {
@@ -58,9 +58,9 @@ typedef struct {
     u8 pad2[0x1A8 - 0x1A2];
 } Obj_32;
 
-extern Obj_32 *D_800ED7AC_2;
+extern Obj_32 *sDesPatches_2;
 
-void func_8003F8FC(s32 arg0)
+void des_update_view(s32 arg0)
 {
     s32 i;
     s32 j;
@@ -68,49 +68,49 @@ void func_8003F8FC(s32 arg0)
     Mtx m1;
     Mtx m2;
 
-    D_800CA3B8 = D_800E76D0 / 4;
-    func_800443F0(100);
-    D_800ED698 = D_800E8090_2.x;
-    D_800ED69C = D_800E8090_2.y;
-    D_800ED6A0 = D_800E8090_2.z;
-    func_8004262C(D_800ED698, 0x1F400, &D_800EDFD4, &D_800EBDF0);
-    func_8004262C(D_800ED6A0, 0x1F400, &D_800EDFD8, &D_800EBDF4);
-    func_80042830(D_800ED698, D_800ED6A0);
-    func_80040DBC();
-    func_800417B8();
-    D_800EB9EC = 0;
+    D_800CA3B8 = gRaceFrame / 4;
+    fractal_generate_step(100);
+    sDesCamX = gCamPos_2.x;
+    sDesCamY = gCamPos_2.y;
+    sDesCamZ = gCamPos_2.z;
+    divmod_floor(sDesCamX, 0x1F400, &D_800EDFD4, &D_800EBDF0);
+    divmod_floor(sDesCamZ, 0x1F400, &D_800EDFD8, &D_800EBDF4);
+    fractal_update_tiles(sDesCamX, sDesCamZ);
+    des_calc_lod_grid();
+    des_update_patches();
+    sDesBlockCount = 0;
     for (i = 0; i < 250; i++) {
-        if (D_800ED7AC_2[i].active != 0) {
-            for (j = 0; j < D_800EB9EC; j++) {
-                if (D_800ED6A8[j] == D_800ED7AC_2[i].x && D_800ED728[j] == D_800ED7AC_2[i].y) {
-                    D_800ED7AC_2[i].slot = j;
+        if (sDesPatches_2[i].active != 0) {
+            for (j = 0; j < sDesBlockCount; j++) {
+                if (D_800ED6A8[j] == sDesPatches_2[i].x && D_800ED728[j] == sDesPatches_2[i].y) {
+                    sDesPatches_2[i].slot = j;
                     break;
                 }
             }
-            if (j == D_800EB9EC) {
-                D_800ED6A8[j] = D_800ED7AC_2[i].x;
-                D_800ED728[j] = D_800ED7AC_2[i].y;
-                func_80011490(&D_800EA9E8[D_800E30A8][j], 0, 0, 0,
-                              (D_800ED7AC_2[i].x - D_800EDFD4) * 0x1F400 - D_800EBDF0 + 64000,
-                              -D_800ED69C,
-                              (D_800ED7AC_2[i].y - D_800EDFD8) * 0x1F400 - D_800EBDF4 + 64000,
+            if (j == sDesBlockCount) {
+                D_800ED6A8[j] = sDesPatches_2[i].x;
+                D_800ED728[j] = sDesPatches_2[i].y;
+                mtx_from_angles_pos_scale(&sDesBlockMtx[gGfxFrameIndex][j], 0, 0, 0,
+                              (sDesPatches_2[i].x - D_800EDFD4) * 0x1F400 - D_800EBDF0 + 64000,
+                              -sDesCamY,
+                              (sDesPatches_2[i].y - D_800EDFD8) * 0x1F400 - D_800EBDF4 + 64000,
                               0x100);
-                D_800ED7AC_2[i].slot = D_800EB9EC;
-                D_800EB9EC++;
+                sDesPatches_2[i].slot = sDesBlockCount;
+                sDesBlockCount++;
             }
         }
     }
-    D_800ED608 = func_80043F24(D_800ED698, D_800ED6A0, D_800E8000_2, 0x1F400, D_800EA7C8, 0x10);
-    for (i = 0; i < D_800ED608; i++) {
-        func_80011490(&D_800EBDF8[D_800E30A8][i], 0, 0, 0,
-                      D_800EA7C8[i].x - D_800ED698, D_800EA7C8[i].y - D_800ED69C, D_800EA7C8[i].z - D_800ED6A0, 0x10);
+    sDesObjectCount = fractal_get_visible_objects(sDesCamX, sDesCamZ, gCamYaw_2, 0x1F400, sDesObjects, 0x10);
+    for (i = 0; i < sDesObjectCount; i++) {
+        mtx_from_angles_pos_scale(&sDesObjMtx[gGfxFrameIndex][i], 0, 0, 0,
+                      sDesObjects[i].x - sDesCamX, sDesObjects[i].y - sDesCamY, sDesObjects[i].z - sDesCamZ, 0x10);
     }
-    if (D_800CA3B0 >= 0) {
-        func_80011490(&m1, 0, 0, D_800CA3B0, 0, 0, 0, 0x10);
-        func_80011490(&m2, -0x1000, 0, 0, -70, -55, 300, 10);
-        func_800120A4(&m1, &m2, &D_800EDBB4_2[D_800E30A8]);
+    if (sDesArrowAngle >= 0) {
+        mtx_from_angles_pos_scale(&m1, 0, 0, sDesArrowAngle, 0, 0, 0, 0x10);
+        mtx_from_angles_pos_scale(&m2, -0x1000, 0, 0, -70, -55, 300, 10);
+        mtx_mul(&m1, &m2, &sDesArrowMtx_2[gGfxFrameIndex]);
     }
-    func_80011490(&D_800ED610[D_800E30A8], 0, 0, D_800E8000_2, 0, 0, 1000, 0x100);
+    mtx_from_angles_pos_scale(&D_800ED610[gGfxFrameIndex], 0, 0, gCamYaw_2, 0, 0, 1000, 0x100);
 }
 
 typedef struct Patch {
@@ -134,9 +134,9 @@ typedef struct TexSet_2 {
     u8 *img;
 } TexSet_2;
 
-extern TexSet_2 *D_800E783C_3;
+extern TexSet_2 *gTerrainTexSet_3;
 
-Gfx *func_8003FD4C(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
+Gfx *des_draw_near_terrain(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
 {
     s32 i, j;
     s16 id;
@@ -149,22 +149,22 @@ Gfx *func_8003FD4C(Gfx *gdl, Mtx *m, s32 arg2, s32 arg3)
     gSPSetGeometryMode(gdl++, 0x200004);
     gDPSetCombine(gdl++, 0x121824, 0xFF33FFFF);
     gDPSetRenderMode(gdl++, 0x552230, 0);
-    gDPLoadTLUT_pal256(gdl++, D_800E783C_3->pal);
+    gDPLoadTLUT_pal256(gdl++, gTerrainTexSet_3->pal);
     D_800EBE00 = -1;
-    gDPLoadTextureBlock_4b(gdl++, D_800E783C_3->img, G_IM_FMT_CI, 64, 64, 0,
+    gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet_3->img, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP, G_TX_WRAP, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
     for (j = 0; j < 1; j++) {
         for (i = 0; i < 0x400; i++) {
-            id = D_800EBE08[j][i];
+            id = sDesPatchGrid[j][i];
             if (id != -1) {
-                p = (Patch *)(id * 0x1A8 + (s32)D_800ED7AC);
+                p = (Patch *)(id * 0x1A8 + (s32)sDesPatches);
                 if (p->vis == 1) {
                     if (p->mtx != D_800EBE00) {
-                        gSPMatrix(gdl++, &D_800EA9E8[D_800E30A8][p->mtx], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+                        gSPMatrix(gdl++, &sDesBlockMtx[gGfxFrameIndex][p->mtx], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
                         D_800EBE00 = p->mtx;
                     }
                     gSPVertex(gdl++, p->v, 25, 0);
-                    gSPDisplayList(gdl++, D_800EA9A8[p->dl]);
+                    gSPDisplayList(gdl++, sDesPatchDLs[p->dl]);
                 }
             }
         }
@@ -182,11 +182,11 @@ typedef struct { u32 pad0; void *pal; u32 pad8; void *tex; } TexSet_3;
 typedef struct { u8 pad[0x19A]; u8 f19A; u8 f19B; u8 pad19C[4]; s8 f1A0; u8 pad1A1[7]; } Obj_33;
 typedef struct { u8 pad[0x14]; s32 f14; u8 pad18[4]; } Ent1C_2;
 
-extern TexSet_3 *D_800E783C_4;
-extern TexSet_3 *D_800E781C_5;
-extern Ent1C_2 D_800EA7C8_2[];
+extern TexSet_3 *gTerrainTexSet_4;
+extern TexSet_3 *gObjectTexSet_5;
+extern Ent1C_2 sDesObjects_2[];
 
-Gfx *func_80040190(Gfx *gdl, s32 a1, s32 a2, s32 a3)
+Gfx *des_draw_terrain(Gfx *gdl, s32 a1, s32 a2, s32 a3)
 {
     FogCfg *fc;
     s32 i, k, j;
@@ -199,47 +199,47 @@ Gfx *func_80040190(Gfx *gdl, s32 a1, s32 a2, s32 a3)
     gDPPipeSync(gdl++);
     gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPSetGeometryMode(gdl++, G_FOG);
-    gDPSetFogColor(gdl++, D_800DC0E0_2.r, D_800DC0E0_2.g, D_800DC0E0_2.b, 255);
-    fc = D_800EFD64;
-    gSPFogPosition(gdl++, fc->fmin[D_800C2594 - 1], fc->fmax[D_800C2594 - 1]);
+    gDPSetFogColor(gdl++, gFogColor_2.r, gFogColor_2.g, gFogColor_2.b, 255);
+    fc = gCurTrack;
+    gSPFogPosition(gdl++, fc->fmin[gNumViews - 1], fc->fmax[gNumViews - 1]);
     RAW(gdl++, 0xFC127E24, 0xFFFFF9FC);
     RAW(gdl++, 0xE200001C, 0xC8004030);
     D_800EBE00 = -1;
-    gDPLoadTLUT_pal256(gdl++, D_800E783C_4->pal);
-    gDPLoadTextureBlock_4b(gdl++, D_800E783C_4->tex, G_IM_FMT_CI, 64, 64, 0,
+    gDPLoadTLUT_pal256(gdl++, gTerrainTexSet_4->pal);
+    gDPLoadTextureBlock_4b(gdl++, gTerrainTexSet_4->tex, G_IM_FMT_CI, 64, 64, 0,
                            G_TX_WRAP | G_TX_NOMIRROR, G_TX_WRAP | G_TX_NOMIRROR, 6, 6, G_TX_NOLOD, G_TX_NOLOD);
-    gSPViewport(gdl++, &D_800E19C0[a3 + 4]);
-    for (j = 0; j < D_800EB9EC; j++) {
+    gSPViewport(gdl++, &gViewports[a3 + 4]);
+    for (j = 0; j < sDesBlockCount; j++) {
         D_800EBE00 = 0;
         for (k = 0; k < 3; k++) {
             for (i = 0; i < 0x400; i++) {
-                v = D_800EBE08[k][i];
+                v = sDesPatchGrid[k][i];
                 if (v != -1) {
-                    o = (Obj_33 *)(v * sizeof(Obj_33) + (u32)D_800ED7AC);
+                    o = (Obj_33 *)(v * sizeof(Obj_33) + (u32)sDesPatches);
                     if (o->f1A0 == j && (k != 0 || o->f19A == 0)) {
                         if (D_800EBE00 == 0) {
-                            gSPMatrix(gdl++, &D_800EA9E8[D_800E30A8][j], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+                            gSPMatrix(gdl++, &sDesBlockMtx[gGfxFrameIndex][j], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
                             D_800EBE00 = 1;
                         }
                         gSPVertex(gdl++, o, 25, 0);
-                        { Gfx **dl = D_800EA9A8; gSPDisplayList(gdl++, dl[o->f19B]); }
+                        { Gfx **dl = sDesPatchDLs; gSPDisplayList(gdl++, dl[o->f19B]); }
                     }
                 }
             }
         }
     }
     gDPPipeSync(gdl++);
-    func_80014A68((s32)D_80042718);
+    prim_set_tex_mode_callback((s32)D_80042718);
     gSPClearGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
     gSPClearGeometryMode(gdl++, G_FOG);
     RAW(gdl++, 0xFCFFFFFF, 0xFFFCF87C);
     RAW(gdl++, 0xE200001C, 0x00442230);
-    gDPLoadTLUT_pal256(gdl++, D_800E781C_5->pal);
-    for (i = 0; i < D_800ED608; i++) {
-        gSPMatrix(gdl++, &D_800EBDF8[a2][i], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        gdl = func_80013D70(0, D_800CA3BC_2[D_800EA7C8_2[i].f14].f4, &D_800E781C_5, gdl);
+    gDPLoadTLUT_pal256(gdl++, gObjectTexSet_5->pal);
+    for (i = 0; i < sDesObjectCount; i++) {
+        gSPMatrix(gdl++, &sDesObjMtx[a2][i], G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+        gdl = prim_build_dl(0, sDesObjModels_2[sDesObjects_2[i].f14].f4, &gObjectTexSet_5, gdl);
     }
-    func_80014A68(0);
+    prim_set_tex_mode_callback(0);
     gDPPipeSync(gdl++);
     return gdl;
 }
@@ -248,7 +248,7 @@ Gfx *func_80040190(Gfx *gdl, s32 a1, s32 a2, s32 a3)
 
 typedef struct { u32 pad[5]; u32 f5; u32 f6; } Ent_40;
 
-Gfx *func_800408A4(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
+Gfx *des_draw_waypoint_marker(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
 {
     Gfx *w;
     u32 *g;
@@ -269,16 +269,16 @@ Gfx *func_800408A4(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
     PKT(gdl, 0xE3001001, 0);
     PKT(gdl, 0xFC30B261, 0xFF67FFFF);
 
-    n = D_800ED608;
+    n = sDesObjectCount;
     i = 0;
     if (n > 0) {
         w = gdl;
         do {
-            u8 *q = (u8 *)D_800EA7C8 + i * 0x1C;
-            if (*(u32 *)(q + 0x14) == 2 && *(u32 *)(q + 0x18) == D_800CA3B4) {
-                PKT(w, 0xDA380003, D_800EBDF8_2[idx] + i * 0x40);
+            u8 *q = (u8 *)sDesObjects + i * 0x1C;
+            if (*(u32 *)(q + 0x14) == 2 && *(u32 *)(q + 0x18) == gDesWaypoint) {
+                PKT(w, 0xDA380003, sDesObjMtx_2[idx] + i * 0x40);
                 PKT(w, 0xDA380001, (u32)((u8 *)D_800ED610 + idx * 0x40));
-                uVar9 = D_800CA3B8 % *(puVar3 = D_800EDFD0);
+                uVar9 = D_800CA3B8 % *(puVar3 = sDesMarkerAnim);
                 uVar1 = uVar9 * 2 + puVar3[1];
                 uVar1 = *(u16 *)uVar1;
                 r = (uVar1 >> 11) << 3;
@@ -295,24 +295,24 @@ Gfx *func_800408A4(Gfx *gdl, s32 p2, s32 idx, s32 arg3)
                 PKT(w, 0xE7000000, 0);
                 PKT(w, 0xF5680800, 0x00098250);
                 PKT(w, 0xF2000000, 0x0007C0FC);
-                PKT(w, 0x01004008, (u32)D_800CA330);
+                PKT(w, 0x01004008, (u32)sDesMarkerVtx);
                 gdl = gdl + 12;
                 PKT(w, 0x06000204, 0x406);
             }
             i = i + 1;
-        } while (i < D_800ED608);
+        } while (i < sDesObjectCount);
     }
     return gdl;
 }
 
 #define PKT_2(a, b) { Blk_2 *_g = gdl++; _g->w0 = (a); _g->w1 = (b); }
 
-Blk_2 *func_80040B64(Blk_2 *gdl, s32 p2, s32 arg2, s32 arg3)
+Blk_2 *des_draw_arrow(Blk_2 *gdl, s32 p2, s32 arg2, s32 arg3)
 {
     s32 off;
     Blk_2 *puVar3;
 
-    if (D_800CA3B0 < 0) {
+    if (sDesArrowAngle < 0) {
         return gdl;
     }
     {
@@ -322,38 +322,38 @@ Blk_2 *func_80040B64(Blk_2 *gdl, s32 p2, s32 arg2, s32 arg3)
         PKT_2(0xD7000002, 0x80008000)
         PKT_2(0xE3000C00, 0x00080000)
         PKT_2(0xD9FFFFFE, 0)
-        PKT_2(0xFD100000, D_800EBE04_2[1])
+        PKT_2(0xFD100000, sDesArrowTex_2[1])
         PKT_2(0xE8000000, 0)
         PKT_2(0xF5000100, 0x07000000)
         PKT_2(0xE6000000, 0)
         PKT_2(0xF0000000, 0x073FC000)
         PKT_2(0xE7000000, 0)
-        off = D_800E30A8 * 0x40;
-        PKT_2(0xDA380003, (u32)(D_800EDBB4 + off))
+        off = gGfxFrameIndex * 0x40;
+        PKT_2(0xDA380003, (u32)(sDesArrowMtx + off))
         PKT_2(0xDA380007, (u32)(D_800E1938_2 + off))
-        gdl = (Blk_2 *)func_80013D70(0, D_800EA988, (s32)&D_800EBE04_2, gdl);
+        gdl = (Blk_2 *)prim_build_dl(0, sDesArrowModel, (s32)&sDesArrowTex_2, gdl);
         PKT_2(0xDA380003, p2 + 0x400)
         return gdl;
     }
 }
 
-#define G D_800EB9F0
+#define G sDesLodGrid
 
-void func_80040DBC(void) {
+void des_calc_lod_grid(void) {
     s32 i, j, a, k;
     s32 x, z, u, v, h;
     s32 s, c, n, xx;
     s32 d = 4000;
     s32 w, m;
 
-    a = D_800ED698 >> 4;
-    h = D_800ED6A0 >> 4;
+    a = sDesCamX >> 4;
+    h = sDesCamZ >> 4;
     D_800EA7C0 = xx = a / d;
     D_800ED7A8 = a - D_800EA7C0 * d + (((u32)a & 1) >> 1);
     w = D_800E8002;
     w >>= 4;
-    s = D_800C2C60[w] + (((u32)&D_800C2C60[w] & 1) >> 1);
-    c = D_800C2C60[(w - 0x400) & 0xFFF];
+    s = gCosTable[w] + (((u32)&gCosTable[w] & 1) >> 1);
+    c = gCosTable[(w - 0x400) & 0xFFF];
     if (D_800ED7A8 < 0) {
         D_800ED7A8 += d;
         D_800EA7C0 -= 1;
@@ -424,54 +424,54 @@ void func_80040DBC(void) {
             if (G[m] & 8) { G[kc] &= 0xFB; G[kc + 1] &= 0xFB; G[kc + 32] &= 0xFB; G[kc + 33] &= 0xFB; }
         }
     }
-    func_8000ED10(D_800EDBD0, 0, 0x400);
+    mem_fill(sDesSeamFlags, 0, 0x400);
     for (i = 2; i < 32; i += 2) {
         for (j = 2; j < 32; j += 2) {
             s32 r = (((i >> 1) + 8) << 5) + 8;
             m = r + (j >> 1);
             n = (i - D_800EDBBC) * 32 + (j - D_800EDBB0);
-            if (D_800EB9F0[m + 32] & 2) {
-                if (D_800EB9F0[n + 32] & 1) D_800EDBD0[n + 32] |= 0x10;
-                if (D_800EB9F0[n + 33] & 1) D_800EDBD0[n + 33] |= 0x10;
+            if (sDesLodGrid[m + 32] & 2) {
+                if (sDesLodGrid[n + 32] & 1) sDesSeamFlags[n + 32] |= 0x10;
+                if (sDesLodGrid[n + 33] & 1) sDesSeamFlags[n + 33] |= 0x10;
             }
-            if (D_800EB9F0[m - 32] & 2) {
-                if (D_800EB9F0[n] & 1) D_800EDBD0[n] |= 0x20;
-                if (D_800EB9F0[n + 1] & 1) D_800EDBD0[n + 1] |= 0x20;
+            if (sDesLodGrid[m - 32] & 2) {
+                if (sDesLodGrid[n] & 1) sDesSeamFlags[n] |= 0x20;
+                if (sDesLodGrid[n + 1] & 1) sDesSeamFlags[n + 1] |= 0x20;
             }
-            if (D_800EB9F0[m + 1] & 2) {
-                if (D_800EB9F0[n + 1] & 1) D_800EDBD0[n + 1] |= 0x40;
-                if (D_800EB9F0[n + 33] & 1) D_800EDBD0[n + 33] |= 0x40;
+            if (sDesLodGrid[m + 1] & 2) {
+                if (sDesLodGrid[n + 1] & 1) sDesSeamFlags[n + 1] |= 0x40;
+                if (sDesLodGrid[n + 33] & 1) sDesSeamFlags[n + 33] |= 0x40;
             }
-            if (D_800EB9F0[m - 1] & 2) {
-                if (D_800EB9F0[n] & 1) D_800EDBD0[n] |= 0x80;
-                if (D_800EB9F0[n + 32] & 1) D_800EDBD0[n + 32] |= 0x80;
+            if (sDesLodGrid[m - 1] & 2) {
+                if (sDesLodGrid[n] & 1) sDesSeamFlags[n] |= 0x80;
+                if (sDesLodGrid[n + 32] & 1) sDesSeamFlags[n + 32] |= 0x80;
             }
             n = (i - D_800EDBC4) * 32 + (j - D_800EDBB8);
-            if (D_800EB9F0[m + 32] & 4) {
-                if (D_800EB9F0[n + 32] & 2) D_800EDBD0[n + 32] |= 1;
-                if (D_800EB9F0[n + 33] & 2) D_800EDBD0[n + 33] |= 1;
+            if (sDesLodGrid[m + 32] & 4) {
+                if (sDesLodGrid[n + 32] & 2) sDesSeamFlags[n + 32] |= 1;
+                if (sDesLodGrid[n + 33] & 2) sDesSeamFlags[n + 33] |= 1;
             }
-            if (D_800EB9F0[m - 32] & 4) {
-                if (D_800EB9F0[n] & 2) D_800EDBD0[n] |= 2;
-                if (D_800EB9F0[n + 1] & 2) D_800EDBD0[n + 1] |= 2;
+            if (sDesLodGrid[m - 32] & 4) {
+                if (sDesLodGrid[n] & 2) sDesSeamFlags[n] |= 2;
+                if (sDesLodGrid[n + 1] & 2) sDesSeamFlags[n + 1] |= 2;
             }
-            if (D_800EB9F0[m + 1] & 4) {
-                if (D_800EB9F0[n + 1] & 2) D_800EDBD0[n + 1] |= 4;
-                if (D_800EB9F0[n + 33] & 2) D_800EDBD0[n + 33] |= 4;
+            if (sDesLodGrid[m + 1] & 4) {
+                if (sDesLodGrid[n + 1] & 2) sDesSeamFlags[n + 1] |= 4;
+                if (sDesLodGrid[n + 33] & 2) sDesSeamFlags[n + 33] |= 4;
             }
-            if (D_800EB9F0[m - 1] & 4) {
-                if (D_800EB9F0[n] & 2) D_800EDBD0[n] |= 8;
-                if (D_800EB9F0[n + 32] & 2) D_800EDBD0[n + 32] |= 8;
+            if (sDesLodGrid[m - 1] & 4) {
+                if (sDesLodGrid[n] & 2) sDesSeamFlags[n] |= 8;
+                if (sDesLodGrid[n + 32] & 2) sDesSeamFlags[n + 32] |= 8;
             }
         }
     }
 }
 
-#define REC(h) (&D_800ED7AC_3[h])
+#define REC(h) (&sDesPatches_3[h])
 
 typedef struct { u8 pad[0x190]; s32 x; s32 y; s8 life; u8 p199; u8 near; u8 snd; u8 p19c[5]; u8 vis; u8 p1a2[6]; } Rec_23;
 
-extern Rec_23 *D_800ED7AC_3;
+extern Rec_23 *sDesPatches_3;
 
 static inline void divmod(s32 v, s32 d, s32 *q, s32 *r)
 {
@@ -483,13 +483,13 @@ static inline void divmod(s32 v, s32 d, s32 *q, s32 *r)
     }
 }
 
-void func_800417B8(void)
+void des_update_patches(void)
 {
     s32 qx0, rx, qy0, ry, qx, qy;
     s32 i, j, h, s3, wx, wy, b, dr, dc;
 
-    divmod(D_800ED698 >> 4, 500, &qx0, &rx);
-    divmod(D_800ED6A0 >> 4, 500, &qy0, &ry);
+    divmod(sDesCamX >> 4, 500, &qx0, &rx);
+    divmod(sDesCamZ >> 4, 500, &qy0, &ry);
 
     for (i = 0; i < 3; i++) {
         j = 1 << i;
@@ -506,37 +506,37 @@ void func_800417B8(void)
 
     for (i = 0; i < 3; i++) {
         for (j = 0; j < 0x400; j++) {
-            h = D_800EBE08[i][j];
+            h = sDesPatchGrid[i][j];
             if (h != -1 && REC(h)->life <= 0)
-                D_800EBE08[i][j] = -1;
+                sDesPatchGrid[i][j] = -1;
         }
     }
 
-    D_800EB9E8 = 0;
+    sDesFreePatchCount = 0;
     for (i = 0; i < 250; i++) {
         if (REC(i)->life <= 0) {
-            D_800ED7C8[D_800EB9E8++] = i;
+            sDesFreePatches[sDesFreePatchCount++] = i;
         }
     }
 
     for (i = 0; i < 3; i++) {
-        divmod(D_800ED698 >> 4, 500 << i, &qx, &rx);
-        divmod(D_800ED6A0 >> 4, 500 << i, &qy, &ry);
+        divmod(sDesCamX >> 4, 500 << i, &qx, &rx);
+        divmod(sDesCamZ >> 4, 500 << i, &qy, &ry);
         s3 = D_800EA998_2[i];
         wy = (qy - 16) * (500 << i);
         for (j = 0; j < 0x20; j++) {
             s32 k;
             wx = (qx - 16) * (500 << i);
             for (k = 0; k < 0x20; k++) {
-                if ((D_800EB9F0_2[0][j * 32 + k] >> i) & 1) {
-                    s32 t = D_800EBE08[i][s3];
+                if ((sDesLodGrid_2[0][j * 32 + k] >> i) & 1) {
+                    s32 t = sDesPatchGrid[i][s3];
                     s32 n;
                     if (t == -1) {
-                        if (D_800EB9E8 == 0) goto out; h = D_800ED7C8[--D_800EB9E8]; D_800EBE08[i][s3] = h; func_80041E90(h, wx, wy, i);
+                        if (sDesFreePatchCount == 0) goto out; h = sDesFreePatches[--sDesFreePatchCount]; sDesPatchGrid[i][s3] = h; des_build_patch(h, wx, wy, i);
                     } else {
                         h = t;
                         if (REC(h)->x != wx || REC(h)->y != wy) {
-                            if (D_800EB9E8 == 0) goto out; h = D_800ED7C8[--D_800EB9E8]; D_800EBE08[i][s3] = h; func_80041E90(h, wx, wy, i);
+                            if (sDesFreePatchCount == 0) goto out; h = sDesFreePatches[--sDesFreePatchCount]; sDesPatchGrid[i][s3] = h; des_build_patch(h, wx, wy, i);
                         } else {
                             REC(h)->life = 2;
                         }
@@ -553,7 +553,7 @@ void func_800417B8(void)
                     else
                         REC(h)->near = 0;
                 } else {
-                    D_800EBE08[i][s3] = -1;
+                    sDesPatchGrid[i][s3] = -1;
                 }
                 s3 = (s3 + 1) & 0x3ff;
                 wx += 500 << i;
@@ -568,10 +568,10 @@ out:
     for (i = 0; i < 2; i++) {
         s3 = D_800EA998_2[i];
         for (j = 0; j < 0x400; j++) {
-            h = D_800EBE08[i][s3];
+            h = sDesPatchGrid[i][s3];
             if (h != -1) {
-                Rec_23 *r = (Rec_23 *)(h * 0x1a8 + (u32)D_800ED7AC_3);
-                u8 x = D_800EDBD0[j];
+                Rec_23 *r = (Rec_23 *)(h * 0x1a8 + (u32)sDesPatches_3);
+                u8 x = sDesSeamFlags[j];
                 if (i == 0)
                     r->snd = x >> 4;
                 else
@@ -594,7 +594,7 @@ typedef struct Patch_2 {
     u8 pad1A0[8];
 } Patch_2;
 
-extern Patch_2 *D_800ED7AC_4;
+extern Patch_2 *sDesPatches_4;
 
 static __inline__ void fdiv(s32 x, s32 d, s32 *q, s32 *r)
 {
@@ -606,15 +606,15 @@ static __inline__ void fdiv(s32 x, s32 d, s32 *q, s32 *r)
     }
 }
 
-void func_80041E90(s32 n, s32 x, s32 y, s32 mode)
+void des_build_patch(s32 n, s32 x, s32 y, s32 mode)
 {
     s32 a, b, c, d;
     s32 tx, ty, px, pz, col, row, k;
     s32 h, s;
     Vtx *v;
 
-    D_800ED7AC_4[n].x = x;
-    D_800ED7AC_4[n].y = y;
+    sDesPatches_4[n].x = x;
+    sDesPatches_4[n].y = y;
     fdiv(x, 125, &a, &b);
     tx = a;
     fdiv(y, 125, &a, &b);
@@ -626,28 +626,28 @@ void func_80041E90(s32 n, s32 x, s32 y, s32 mode)
     fdiv(y, 8000, &d, &a);
     pz = a - 4000;
     k = 0;
-    D_800ED7AC_4[n].mode = mode;
-    D_800ED7AC_4[n].type = 2;
-    D_800ED7AC_4[n].bx = c;
-    D_800ED7AC_4[n].by = d;
+    sDesPatches_4[n].mode = mode;
+    sDesPatches_4[n].type = 2;
+    sDesPatches_4[n].bx = c;
+    sDesPatches_4[n].by = d;
     row = ty;
     for (a = 0; a < 5; a++) {
         s32 xx = x;
         col = tx;
         for (b = 0; b < 5; b++) {
-            D_800ED7AC_4[n].v[k].v.ob[0] = xx;
-            D_800ED7AC_4[n].v[k].v.ob[1] = D_800EA990[((row & 0x1FF) << 9) | (col & 0x1FF)] * 4;
-            D_800ED7AC_4[n].v[k].v.ob[2] = pz;
-            s = D_800EA990[((row & 0x1FF) << 9) | (col & 0x1FF)];
-            s = (D_800EA990[(((row + 1) & 0x1FF) << 9) | (col & 0x1FF)] - s) * 8 + 0x80;
+            sDesPatches_4[n].v[k].v.ob[0] = xx;
+            sDesPatches_4[n].v[k].v.ob[1] = gDesertHeightMap[((row & 0x1FF) << 9) | (col & 0x1FF)] * 4;
+            sDesPatches_4[n].v[k].v.ob[2] = pz;
+            s = gDesertHeightMap[((row & 0x1FF) << 9) | (col & 0x1FF)];
+            s = (gDesertHeightMap[(((row + 1) & 0x1FF) << 9) | (col & 0x1FF)] - s) * 8 + 0x80;
             if (s < 0) s = 0;
             if (s > 255) s = 255;
-            D_800ED7AC_4[n].v[k].v.cn[0] = s * 245 / 256 + 10;
-            D_800ED7AC_4[n].v[k].v.cn[1] = s * 230 / 256 + 25;
-            D_800ED7AC_4[n].v[k].v.cn[2] = s * 170 / 256 + 85;
-            D_800ED7AC_4[n].v[k].v.tc[0] = (b << 10) << mode;
-            D_800ED7AC_4[n].v[k].v.tc[1] = (a << 10) << mode;
-            D_800ED7AC_4[n].v[k].v.cn[3] = 255;
+            sDesPatches_4[n].v[k].v.cn[0] = s * 245 / 256 + 10;
+            sDesPatches_4[n].v[k].v.cn[1] = s * 230 / 256 + 25;
+            sDesPatches_4[n].v[k].v.cn[2] = s * 170 / 256 + 85;
+            sDesPatches_4[n].v[k].v.tc[0] = (b << 10) << mode;
+            sDesPatches_4[n].v[k].v.tc[1] = (a << 10) << mode;
+            sDesPatches_4[n].v[k].v.cn[3] = 255;
             k++;
             xx += 125 << mode;
             col += 1 << mode;
@@ -657,9 +657,9 @@ void func_80041E90(s32 n, s32 x, s32 y, s32 mode)
     }
 }
 
-s32 func_800422AC(s32 mask)
+s32 des_build_patch_dl(s32 mask)
 {
-    Gfx *gdl = D_800C29E0;
+    Gfx *gdl = gZBuffer;
     s32 i, j, k, b, c;
 
     for (i = 0; i < 2; i++) {
@@ -686,39 +686,39 @@ s32 func_800422AC(s32 mask)
     }
 
     gSPEndDisplayList(gdl++);
-    i = (u8 *)gdl - (u8 *)D_800C29E0;
-    gdl = func_800BC908(i, 0, (s32)D_800D6FD0, 0x508);
-    memcpy(gdl, D_800C29E0, i);
+    i = (u8 *)gdl - (u8 *)gZBuffer;
+    gdl = mem_alloc_dbg(i, 0, (s32)D_800D6FD0, 0x508);
+    memcpy(gdl, gZBuffer, i);
     return (s32)gdl;
 }
 
-void func_80042584(void)
+void des_free(void)
 {
     s32 i;
     s32 *p;
 
-    func_800BCB04(D_800ED7AC);
-    func_800BCB04(D_800EA990);
-    func_800BCB04(D_800EBDF8[0]);
-    func_800BCB04(D_800EBDF8[1]);
+    mem_free(sDesPatches);
+    mem_free(gDesertHeightMap);
+    mem_free(sDesObjMtx[0]);
+    mem_free(sDesObjMtx[1]);
     i = 0;
-    func_800BCB04(D_800EE138);
-    func_800BCB04(D_800EDBB4);
-    p = D_800EA9A8;
+    mem_free(gDesertTiles);
+    mem_free(sDesArrowMtx);
+    p = sDesPatchDLs;
     do {
         s32 v = *p;
         p++;
         i++;
-        func_800BCB04(v);
+        mem_free(v);
     } while (i < 16);
 }
 
-void func_80042620(s32 a0)
+void des_set_arrow_angle(s32 a0)
 {
-    D_800CA3B0 = a0;
+    sDesArrowAngle = a0;
 }
 
-void func_8004262C(s32 a, s32 b, s32 *q, s32 *r)
+void divmod_floor(s32 a, s32 b, s32 *q, s32 *r)
 {
     s32 quo = a / b;
     s32 rem;
@@ -731,7 +731,7 @@ void func_8004262C(s32 a, s32 b, s32 *q, s32 *r)
     }
 }
 
-void func_80042694(s32 param_1, s32 param_2)
+void des_bbox_add(s32 param_1, s32 param_2)
 {
     if (param_1 < D_800ED7B4) {
         D_800ED7B4 = param_1;
@@ -747,7 +747,7 @@ void func_80042694(s32 param_1, s32 param_2)
     }
 }
 
-void func_800426EC(void)
+void des_bbox_reset(void)
 {
     D_800ED7B8 = 999;
     D_800ED7B4 = 999;
@@ -757,7 +757,7 @@ void func_800426EC(void)
 
 #define PKT_3(a, b) { Gfx *_g = (Gfx *)(gdl++); _g->words.w0 = (a); _g->words.w1 = (b); }
 
-Gfx *func_80042718(Gfx *gdl, s32 x)
+Gfx *des_tex_mode_callback(Gfx *gdl, s32 x)
 {
     Gfx *p0;
     Gfx *p1;
@@ -781,7 +781,7 @@ Gfx *func_80042718(Gfx *gdl, s32 x)
     return gdl;
 }
 
-void func_8004281C(s32 x)
+void des_set_waypoint(s32 x)
 {
-    D_800CA3B4 = x;
+    gDesWaypoint = x;
 }

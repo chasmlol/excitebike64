@@ -114,7 +114,7 @@ def extent(img, entry, limit, jt_targets):
                 break
             if i.isJrNotRa():
                 # Switch cases, not function pointers that happen to point into range (a stack-allocating prologue
-                # is never a case label; func_80077C3C swallowed the function its pointer table named).
+                # is never a case label; shell_update swallowed the function its pointer table named).
                 todo.extend(t for t in jt_targets if entry < t < limit and not is_prologue(img, t))
                 seen.add(a + 4)
                 break
@@ -180,9 +180,9 @@ def split_image(img, spec, ignore=()):
     refs = code_refs(img, ranges, not_code) | jt
     # Data words pointing at a stack-allocating prologue are function pointers: those functions start there.
     seeds |= {t for t in jt if is_prologue(img, t)}
-    # After a call to a function that never returns (func_8000ECB8: `break 0x407; j .`), GCC emits no epilogue, so
+    # After a call to a function that never returns (fatal_halt: `break 0x407; j .`), GCC emits no epilogue, so
     # a function pointed to from data, or starting with a prologue, right after the call's delay slot begins there
-    # (func_800A3818 had swallowed the NES opcode handler at 0x800A3834).
+    # (nes_op_sed had swallowed the NES opcode handler at 0x800A3834).
     for lo, hi in ranges:
         for a in range(lo, hi, 4):
             w = img.word(a)
@@ -324,7 +324,7 @@ def mark_duplicates(recs, game_recs, img):
     for r in recs:
         if "exclude" not in r:
             # an identical copy first: the skeleton masks every addiu immediate, so toupper (-0x61/-0x20) and
-            # tolower (-0x41/+0x20) looked alike and boot_func_800006EC was paired with the wrong one
+            # tolower (-0x41/+0x20) looked alike and boot_char_to_lower was paired with the wrong one
             twin = exact.get(img.data[r["address"] - VRAM:r["address"] - VRAM + r["size"]]) or \
                 seen.get(skeleton(img, r["address"], r["size"]))
             if twin:

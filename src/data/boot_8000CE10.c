@@ -5,11 +5,11 @@
 #include "data.h"
 
 /* 0x8000ce10-0x8000de10 (4096 bytes): a bitmap, copied from the ROM at build time */
-extern u8 D_8000CE10[0x1000];
+extern u8 sBootFontBitmap[0x1000];
 /* 0x8000de10-0x8000f498 (5768 bytes): SWD-compressed data, copied from the ROM at build time */
-extern u8 D_8000DE10[0x1688];
+extern u8 sBootSplashSwd[0x1688];
 u8 D_8000F498[0x8] = { 0x8C, 0x8C, 0, 0x18, 0x8C, 0x8D, 0, 0x1C };
-u32 D_8000F4A0 = 0x7FFFFFFF;
+u32 sSnMemRegions = 0x7FFFFFFF;
 u32 D_8000F4A4 = 0;
 u32 D_8000F4A8[0x4] = { 0x803FFFFF, 0x3, 0x9FFFFFFF };
 u32 D_8000F4B8[0xe] = {

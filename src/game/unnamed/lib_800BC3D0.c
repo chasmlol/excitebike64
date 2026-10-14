@@ -16,7 +16,7 @@ static __inline__ void addhex(char *b, u32 r)
     u32 *tab;
     u32 q;
 
-    tab = D_800D56C0;
+    tab = sHexDigitDivisors;
     p = s;
     do {
         q = r / *tab;
@@ -28,9 +28,9 @@ static __inline__ void addhex(char *b, u32 r)
         r -= q * *tab;
         tab++;
         p++;
-    } while ((s32)tab < (s32)(D_800D56C0 + 8));
+    } while ((s32)tab < (s32)(sHexDigitDivisors + 8));
     s[8] = 0;
-    func_8000ED30(b, s);
+    str_cat(b, s);
 }
 
 static __inline__ void adddec(char *b, u32 r)
@@ -42,7 +42,7 @@ static __inline__ void adddec(char *b, u32 r)
     s32 i;
 
     r = (u16)r;
-    tab = D_800D56E0;
+    tab = sDecDigitDivisors;
     p = s;
     do {
         q = r / *tab;
@@ -54,7 +54,7 @@ static __inline__ void adddec(char *b, u32 r)
         r -= q * *tab;
         tab++;
         p++;
-    } while ((s32)tab < (s32)(D_800D56E0 + 5));
+    } while ((s32)tab < (s32)(sDecDigitDivisors + 5));
     s[5] = 0;
     for (i = 0; i < 4; i++) {
         if (s[i] != '0') {
@@ -62,34 +62,34 @@ static __inline__ void adddec(char *b, u32 r)
         }
         s[i] = ' ';
     }
-    func_8000ED30(b, s);
+    str_cat(b, s);
 }
 
-void func_800BC3D0(s32 arg0, s32 arg1, s32 arg2, s32 arg3)
+void mem_report(s32 arg0, s32 arg1, s32 arg2, s32 arg3)
 {
     char buf[0x50];
     s32 n;
     s32 v;
 
     sprintf(buf, "\n");
-    func_8000EFB0_2(buf);
+    debug_log_2(buf);
     v = 0;
-    n = func_800BCEB8(D_80100640, D_80100644, 1);
+    n = mem_dump_blocks(sMemHeapStart, sMemHeapEnd, 1);
     if (n > 0) {
         v = n;
     }
     if (v >= 0) {
         strcpy(buf, "Total Memory Used == 0x");
-        addhex(buf, D_8010063C << 4);
-        func_8000ED30(buf, "\n");
-        func_8000EFB0_2(buf);
+        addhex(buf, sMemUsedUnits << 4);
+        str_cat(buf, "\n");
+        debug_log_2(buf);
 
         strcpy(buf, "Total Memory Free == 0x");
-        addhex(buf, D_80100634 << 4);
-        func_8000ED30(buf, " in ");
+        addhex(buf, gMemFreeUnits << 4);
+        str_cat(buf, " in ");
         adddec(buf, (u16)v);
-        func_8000ED30(buf, " block(s)\n");
-        func_8000EFB0_2(buf);
+        str_cat(buf, " block(s)\n");
+        debug_log_2(buf);
     }
 }
 
@@ -101,7 +101,7 @@ static inline void AddHex(char *s, u32 v)
     u32 q;
     char c;
 
-    tp = D_800D56C0;
+    tp = sHexDigitDivisors;
     dp = dig;
     do {
         q = v / *tp;
@@ -111,9 +111,9 @@ static inline void AddHex(char *s, u32 v)
         v -= q * *tp;
         tp++;
         dp++;
-    } while ((s32)tp < (s32)&D_800D56C0[8]);
+    } while ((s32)tp < (s32)&sHexDigitDivisors[8]);
     dig[8] = 0;
-    func_8000ED30(s, dig);
+    str_cat(s, dig);
 }
 
 static inline void AddDec(char *s, u16 v)
@@ -126,7 +126,7 @@ static inline void AddDec(char *s, u16 v)
     u32 x = v;
     s32 i;
 
-    tp = D_800D56E0;
+    tp = sDecDigitDivisors;
     dp = dig;
     do {
         q = x / *tp;
@@ -136,41 +136,41 @@ static inline void AddDec(char *s, u16 v)
         x -= q * *tp;
         tp++;
         dp++;
-    } while ((s32)tp < (s32)&D_800D56E0[5]);
+    } while ((s32)tp < (s32)&sDecDigitDivisors[5]);
     dig[5] = 0;
     for (i = 0; i < 4 && dig[i] == '0'; i++) dig[i] = ' ';
-    func_8000ED30(s, dig);
+    str_cat(s, dig);
 }
 
-void func_800BC66C(void)
+void mem_report_totals(void)
 {
     char buf[0x50];
     s32 n;
     s32 s0;
 
     sprintf(buf, "\n");
-    func_8000EFB0(buf);
+    debug_log(buf);
     s0 = 0;
-    n = func_800BCEB8(D_80100640, D_80100644, s0);
+    n = mem_dump_blocks(sMemHeapStart, sMemHeapEnd, s0);
     if (n > 0) s0 = n;
     if (s0 < 0) return;
 
     strcpy(buf, "Total Memory Used == 0x");
-    AddHex(buf, D_8010063C << 4);
-    func_8000ED30(buf, "\n");
-    func_8000EFB0(buf);
+    AddHex(buf, sMemUsedUnits << 4);
+    str_cat(buf, "\n");
+    debug_log(buf);
 
     strcpy(buf, "Total Memory Free == 0x");
-    AddHex(buf, D_80100634 << 4);
-    func_8000ED30(buf, " in ");
+    AddHex(buf, gMemFreeUnits << 4);
+    str_cat(buf, " in ");
     AddDec(buf, s0);
-    func_8000ED30(buf, " block(s)\n");
-    func_8000EFB0(buf);
+    str_cat(buf, " block(s)\n");
+    debug_log(buf);
 }
 
 #define CHECK(b) ((b)->check = 0xB562439F - ((u32)(b)->next + (u32)(b)->prev + (b)->size))
 
-void *func_800BC908(s32 size, u32 flags, s32 owner, s32 tag)
+void *mem_alloc_dbg(s32 size, u32 flags, s32 owner, s32 tag)
 {
     Blk_4 *sent;
     Blk_4 *b;
@@ -182,7 +182,7 @@ void *func_800BC908(s32 size, u32 flags, s32 owner, s32 tag)
     if (size == 0) {
         return 0;
     }
-    sent = D_80100648;
+    sent = sMemFreeList;
     n = ((u32)(size + 15) >> 4) + 1;
     if (!(flags & 1)) {
         b = sent->next;
@@ -238,14 +238,14 @@ found:
     }
     b->next = (Blk_4 *)owner;
     b->size = n;
-    tag = (tag << 16) | D_80100630 | 1;
-    D_80100630 = (D_80100630 + 2) & 0xFFFE;
+    tag = (tag << 16) | sMemAllocSerial | 1;
+    sMemAllocSerial = (sMemAllocSerial + 2) & 0xFFFE;
     b->prev = (Blk_4 *)tag;
-    D_80100634 -= n;
+    gMemFreeUnits -= n;
     b->check = 0xB562439F - ((u32)b->next + (u32)b->prev + n);
-    D_8010063C += n;
-    if (D_80100638 < D_8010063C) {
-        D_80100638 = D_8010063C;
+    sMemUsedUnits += n;
+    if (sMemPeakUsedUnits < sMemUsedUnits) {
+        sMemPeakUsedUnits = sMemUsedUnits;
     }
     return b + 1;
 }
@@ -257,7 +257,7 @@ typedef struct Blk_28 {
     u32 sum;
 } Blk_28;
 
-void func_800BCB04(void *ptr)
+void mem_free(void *ptr)
 {
     Blk_28 *p;
     Blk_28 *a;
@@ -287,11 +287,11 @@ void func_800BCB04(void *ptr)
     if (!((s32)p->prev & 1)) {
         goto alr;
     }
-    a = D_80100648;
+    a = sMemFreeList;
     p->prev = NULL;
     n = a->next;
-    D_80100634 += p->size;
-    D_8010063C -= p->size;
+    gMemFreeUnits += p->size;
+    sMemUsedUnits -= p->size;
     if (a == n) {
         goto insert;
     }
@@ -335,15 +335,15 @@ overrun:
 alr:
     m = D_800DB2BC;
 call:
-    func_8000EFB0_3(m, size, sum, flag);
-    func_800BC3D0_2();
+    debug_log_3(m, size, sum, flag);
+    mem_report_2();
 }
 
 #define BLK_CHECK(b) ((b)->check = 0xB562439F - ((u32)(b)->next + (u32)(b)->prev + (b)->size))
 
-extern Blk_4 **D_80100648_2;
+extern Blk_4 **sMemFreeList_2;
 
-void *func_800BCCF0(void *ptr, s32 size, s32 tag, s32 id)
+void *mem_alloc_at_dbg(void *ptr, s32 size, s32 tag, s32 id)
 {
     Blk_4 *hdr;
     Blk_4 *b;
@@ -363,7 +363,7 @@ void *func_800BCCF0(void *ptr, s32 size, s32 tag, s32 id)
     units = (units + size + 15) >> 4;
     } while (0);
     lim = hdr + units;
-    first = b = *D_80100648_2;
+    first = b = *sMemFreeList_2;
     for (;;) {
         size = b->size;
         if (hdr < b || (end = b + size) < lim) {
@@ -394,28 +394,28 @@ void *func_800BCCF0(void *ptr, s32 size, s32 tag, s32 id)
                 next->prev = prev;
             }
             do {
-                size = D_80100630;
+                size = sMemAllocSerial;
                 id = (id << 16) | size | 1;
                 size += 2;
                 size &= 0xFFFE;
-                D_80100630 = size;
+                sMemAllocSerial = size;
                 BLK_CHECK(prev);
             } while (0);
             {
                 s32 t;
                 u32 pv;
-                t = D_80100634;
+                t = gMemFreeUnits;
                 pv = (u32)next->prev;
-                D_80100634 = t - units;
+                gMemFreeUnits = t - units;
                 next->check = 0xB562439F - ((u32)next->next + pv + next->size + ((u16)pv >> 16));
             }
             hdr->next = (Blk_4 *)tag;
             hdr->prev = (Blk_4 *)id;
             hdr->size = units;
             BLK_CHECK(hdr);
-            D_8010063C += units;
-            if (D_80100638 < D_8010063C) {
-                D_80100638 = D_8010063C;
+            sMemUsedUnits += units;
+            if (sMemPeakUsedUnits < sMemUsedUnits) {
+                sMemPeakUsedUnits = sMemUsedUnits;
             }
             return ptr;
         }
@@ -436,13 +436,13 @@ static inline void AddHex_2(char *s, u32 v)
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        s32 q = v / D_800D56C0[i];
+        s32 q = v / sHexDigitDivisors[i];
         if (q < 10) dig[i] = q + '0';
         else dig[i] = q + '7';
-        v -= q * D_800D56C0[i];
+        v -= q * sHexDigitDivisors[i];
     }
     dig[8] = 0;
-    func_8000ED30(s, dig);
+    str_cat(s, dig);
 }
 
 static inline void AddDec_2(char *s, u32 v)
@@ -452,20 +452,20 @@ static inline void AddDec_2(char *s, u32 v)
 
     v &= 0xFFFF;
     for (i = 0; i < 5; i++) {
-        s32 q = v / D_800D56E0[i];
+        s32 q = v / sDecDigitDivisors[i];
         if (q < 10) dig[i] = q + '0';
         else dig[i] = q + '7';
-        v -= q * D_800D56E0[i];
+        v -= q * sDecDigitDivisors[i];
     }
     dig[5] = 0;
     for (i = 0; i < 4; i++) {
         if (dig[i] != '0') break;
         dig[i] = ' ';
     }
-    func_8000ED30(s, dig);
+    str_cat(s, dig);
 }
 
-s32 func_800BCEB8(s32 a, u32 b, s32 c)
+s32 mem_dump_blocks(s32 a, u32 b, s32 c)
 {
     char buf[0x50];
     s32 count;
@@ -475,7 +475,7 @@ s32 func_800BCEB8(s32 a, u32 b, s32 c)
     char *f;
 
     sprintf(buf, "\n");
-    func_8000EFB0_2(buf);
+    debug_log_2(buf);
     count = 0;
     if (a == 0) {
         return count;
@@ -485,9 +485,9 @@ s32 func_800BCEB8(s32 a, u32 b, s32 c)
         if ((u32)p->file + p->info + p->size + p->chk != 0xB562439F) {
             strcpy(buf, " Addr 0x");
             AddHex_2(buf, (u32)p);
-            func_8000ED30(buf, " Size ?????????? - Corrupt\n");
+            str_cat(buf, " Size ?????????? - Corrupt\n");
             if (c) {
-                func_8000EFB0_2(buf);
+                debug_log_2(buf);
             }
             count = -1;
             break;
@@ -495,25 +495,25 @@ s32 func_800BCEB8(s32 a, u32 b, s32 c)
         if (!(p->info & 1)) {
             strcpy(buf, " Addr 0x");
             AddHex_2(buf, (u32)p);
-            func_8000ED30(buf, " Size 0x");
+            str_cat(buf, " Size 0x");
             AddHex_2(buf, p->size << 4);
-            func_8000ED30(buf, " - Free\n");
+            str_cat(buf, " - Free\n");
             if (c) {
-                func_8000EFB0_2(buf);
+                debug_log_2(buf);
             }
             count++;
             continue;
         }
-        if ((p->info & 0xFFFE) < D_8010064C) {
+        if ((p->info & 0xFFFE) < sMemReportMark) {
             continue;
         }
         f = p->file;
         if (f == 0) {
             strcpy(buf, " Addr 0x");
             AddHex_2(buf, (u32)p);
-            func_8000ED30(buf, " Size 0x");
+            str_cat(buf, " Size 0x");
             AddHex_2(buf, p->size << 4);
-            func_8000ED30(buf, " - Time ");
+            str_cat(buf, " - Time ");
             AddDec_2(buf, (p->info & 0xFFFE) >> 1);
         } else {
             s = f;
@@ -525,64 +525,64 @@ s32 func_800BCEB8(s32 a, u32 b, s32 c)
             s++;
             strcpy(buf, " Addr 0x");
             AddHex_2(buf, (u32)p);
-            func_8000ED30(buf, " Size 0x");
+            str_cat(buf, " Size 0x");
             AddHex_2(buf, p->size << 4);
-            func_8000ED30(buf, " - Time ");
+            str_cat(buf, " - Time ");
             AddDec_2(buf, (p->info & 0xFFFE) >> 1);
-            func_8000ED30(buf, " Line ");
+            str_cat(buf, " Line ");
             AddDec_2(buf, *(u16 *)&p->info);
-            func_8000ED30(buf, " File ");
-            func_8000ED30(buf, s);
+            str_cat(buf, " File ");
+            str_cat(buf, s);
         }
-        func_8000ED30(buf, "\n");
+        str_cat(buf, "\n");
         if (c) {
-            func_8000EFB0_2(buf);
+            debug_log_2(buf);
         }
     }
     sprintf(buf, "\n");
     if (c) {
-        func_8000EFB0_2(buf);
+        debug_log_2(buf);
     }
     return count;
 }
 
-void func_800BD678(void)
+void mem_report_clear_mark(void)
 {
-    D_8010064C = 0;
+    sMemReportMark = 0;
 }
 
-void func_800BD684(void)
+void mem_report_set_mark(void)
 {
-    D_8010064C = D_80100630;
+    sMemReportMark = sMemAllocSerial;
 }
 
-s32 func_800BD698(s32 p0, s32 p1, s32 a, s32 b)
+s32 mem_init(s32 p0, s32 p1, s32 a, s32 b)
 {
     s32 sum;
     s32 *pa;
     s32 *pb;
 
-    pa = &D_80100640;
-    pb = &D_80100644;
-    D_80100638 = 0;
-    D_8010063C = 0;
-    D_80100634 = 0;
-    D_80100630 = 2;
+    pa = &sMemHeapStart;
+    pb = &sMemHeapEnd;
+    sMemPeakUsedUnits = 0;
+    sMemUsedUnits = 0;
+    gMemFreeUnits = 0;
+    sMemAllocSerial = 2;
     *pa = a;
     sum = a + b;
-    D_80100644 = sum;
-    D_80100648 = func_800BDA54(pa, pb);
-    D_80100634 = D_80100634 + ((D_80100644 - D_80100640) >> 4);
+    sMemHeapEnd = sum;
+    sMemFreeList = mem_format_heap(pa, pb);
+    gMemFreeUnits = gMemFreeUnits + ((sMemHeapEnd - sMemHeapStart) >> 4);
     return 0;
 }
 
-s32 *func_800BD730(s32 a0, s32 a1, s32 a2, s32 a3) {
+s32 *mem_calloc_dbg(s32 a0, s32 a1, s32 a2, s32 a3) {
     s32 *p = 0;
     s32 k;
     if (a0 == 0) {
         return 0;
     }
-    p = func_800BC908(a0, a1, a2, a3);
+    p = mem_alloc_dbg(a0, a1, a2, a3);
     if (p != 0) {
         s32 *q = p;
         k = p[-2] - 1;
@@ -598,7 +598,7 @@ s32 *func_800BD730(s32 a0, s32 a1, s32 a2, s32 a3) {
     return p;
 }
 
-s32 *func_800BD798(s32 *p, u32 size, s32 a, s32 b, s32 c)
+s32 *mem_realloc_dbg(s32 *p, u32 size, s32 a, s32 b, s32 c)
 {
     Blk *blk;
     Blk *nb;
@@ -613,7 +613,7 @@ s32 *func_800BD798(s32 *p, u32 size, s32 a, s32 b, s32 c)
         if (p == 0) {
             return 0;
         }
-        func_800BCB04(p);
+        mem_free(p);
         return 0;
     }
     if (p != 0) {
@@ -634,11 +634,11 @@ s32 *func_800BD798(s32 *p, u32 size, s32 a, s32 b, s32 c)
             }
             blk->w[2] = need;
             blk->w[3] = 0xB562439F - (blk->w[0] + blk->w[1] + need);
-            func_800BCB04(nb + 1);
+            mem_free(nb + 1);
             return p;
         }
     }
-    q = func_800BC908(size, a, b, c);
+    q = mem_alloc_dbg(size, a, b, c);
     if (q != 0 && p != 0) {
         src = p;
         dst = q;
@@ -646,13 +646,13 @@ s32 *func_800BD798(s32 *p, u32 size, s32 a, s32 b, s32 c)
         while (--need != -1) {
             *dst++ = *src++;
         }
-        func_800BCB04(p);
+        mem_free(p);
     }
     return q;
 }
 
-s32 func_800BD8E0(void) {
-    s32 r = func_800BDB44(D_80100640, D_80100644, D_80100648);
+s32 mem_check(void) {
+    s32 r = mem_validate(sMemHeapStart, sMemHeapEnd, sMemFreeList);
 
     if (r < 0) {
         while (1) {
@@ -661,7 +661,7 @@ s32 func_800BD8E0(void) {
     return 0;
 }
 
-s32 func_800BD924(s32 *p)
+s32 mem_get_size(s32 *p)
 {
     s32 *h = p - 4;
     s32 *t;
@@ -689,30 +689,30 @@ bad_tail:
 bad_free:
     msg = D_800DB364;
 fail:
-    func_8000EFB0_3(msg);
-    func_800BC3D0_2();
+    debug_log_3(msg);
+    mem_report_2();
     return -1;
 }
 
-void func_800BD9D4(s32 a, s32 b) {
-    func_800BC908(a, b, 0, 0);
+void mem_alloc(s32 a, s32 b) {
+    mem_alloc_dbg(a, b, 0, 0);
 }
 
-void func_800BD9F4(u32 a, u32 b) {
-    func_800BD730(a, b, 0, 0);
+void mem_calloc(u32 a, u32 b) {
+    mem_calloc_dbg(a, b, 0, 0);
 }
 
-void func_800BDA14(s32 *a, s32 b, s32 c) {
-    func_800BD798(a, b, c, 0, 0);
+void mem_realloc(s32 *a, s32 b, s32 c) {
+    mem_realloc_dbg(a, b, c, 0, 0);
 }
 
-void func_800BDA34(s32 a, s32 b) {
-    func_800BCCF0(a, b, 0, 0);
+void mem_alloc_at(s32 a, s32 b) {
+    mem_alloc_at_dbg(a, b, 0, 0);
 }
 
 #define BLOCK_SUM(b) ((u32)(b)->next + (b)->unk4 + (b)->size)
 
-Block *func_800BDA54(Block **start, Block **end)
+Block *mem_format_heap(Block **start, Block **end)
 {
     Block *p = *start;
     Block *e = *end;
@@ -749,7 +749,7 @@ Block *func_800BDA54(Block **start, Block **end)
 
 #define BLOCK_SUM_2(b) ((u32)(b)->next + (b)->unk4 + (b)->size + (b)->check)
 
-s32 func_800BDB44(Block *start, Block *end, Block *list) {
+s32 mem_validate(Block *start, Block *end, Block *list) {
     Block *b;
     s32 n = 0x400;
 
@@ -786,14 +786,14 @@ done:
     return 0x400 - n;
 }
 
-void func_800BDC2C(char *a0, u32 a1)
+void str_cat_hex(char *a0, u32 a1)
 {
     u32 *a2;
     char *a3;
     char buf[9];
     s32 q;
 
-    a2 = D_800D56C0;
+    a2 = sHexDigitDivisors;
     a3 = buf;
     do {
         q = (s32)(a1 / *a2);
@@ -805,7 +805,7 @@ void func_800BDC2C(char *a0, u32 a1)
         a1 = a1 - q * *a2;
         a2 = a2 + 1;
         a3 = a3 + 1;
-    } while ((s32)a2 < (s32)(D_800D56C0 + 8));
+    } while ((s32)a2 < (s32)(sHexDigitDivisors + 8));
     buf[8] = 0;
-    func_8000ED30(a0, buf);
+    str_cat(a0, buf);
 }

@@ -34,8 +34,8 @@ u32 D_800D6CA4[0x3] = { 0 };
 u32 D_800D6CF4[0x3] = { 0 };
 char D_800D6D00[0x8] = "mud2.c";
 /* 0x800d6d08-0x800d6df4 (236 bytes): literals of the C (build_code.py) */
-char D_800D6DF4[0xc] = "shadow.c";
-char D_800D6E00[0x10] = "skel.c";
+char sStrShadowC[0xc] = "shadow.c";
+char sStrSkelC[0x10] = "skel.c";
 char D_800D6E10[0x8] = "rfoot";
 char D_800D6E18[0x8] = "rshin";
 char D_800D6E20[0x8] = "rthigh";
@@ -98,7 +98,7 @@ u32 D_800D71C8[0x2] = { 0 };
 /* 0x800d71d0-0x800d7224 (84 bytes): literals of the C (build_code.py) */
 u32 D_800D7224[0x3] = { 0 };
 /* 0x800d7230-0x800d7250 (32 bytes): literals of the C (build_code.py) */
-char D_800D7250[0x8] = "path.c";
+char sStrPathFile[0x8] = "path.c";
 /* 0x800d7258-0x800d7328 (208 bytes): literals of the C (build_code.py) */
 u32 D_800D7328[0x2] = { 0 };
 char D_800D7330[0x8] = "BIG.RAW";
@@ -346,7 +346,7 @@ char D_800D8B64[0x4] = "big";
 char D_800D8B90[0x8] = "decal.c";
 /* 0x800d8b98-0x800d8b9c (4 bytes): literals of the C (build_code.py) */
 u32 D_800D8B9C = 0;
-char D_800D8BA0[0xc] = "collide.c";
+char sStrCollideC[0xc] = "collide.c";
 /* 0x800d8bac-0x800d8bf8 (76 bytes): literals of the C (build_code.py) */
 u32 D_800D8BF8[0x2] = { 0 };
 /* 0x800d8c00-0x800d8c08 (8 bytes): literals of the C (build_code.py) */
@@ -357,7 +357,7 @@ u32 D_800D8C1C = 0x30002;
 u32 D_800D8D34[0x3] = { 0x800A3DD8, 0x800A3084, 0x50002 };
 /* 0x800d8d40-0x800d8d44 (4 bytes): literals of the C (build_code.py) */
 u32 D_800D8D44[0x3] = { 0 };
-char D_800D8D50[0x10] = "instance.c";
+char sStrInstanceC[0x10] = "instance.c";
 char D_800D8D60[0xc] = "shatter.c";
 /* 0x800d8d6c-0x800d8d74 (8 bytes): literals of the C (build_code.py) */
 u32 D_800D8D74[0x3] = { 0 };
@@ -395,7 +395,7 @@ u32 D_800D911C = 0;
 /* 0x800d9120-0x800d913c (28 bytes): literals of the C (build_code.py) */
 u32 D_800D913C = 0;
 /* 0x800d9140-0x800d9178 (56 bytes): literals of the C (build_code.py) */
-char D_800D9178[0x14] = "ponytail.c";
+char sStrPonytailC[0x14] = "ponytail.c";
 u32 D_800D918C = 0xFFFFFFFF;
 u8 D_800D9190[0x10] = {
     0x73, 0x6E, 0x6F, 0x77, 0x2E, 0x63, 0, 0x5C, 0x80, 0xA, 0x3A, 0x84, 0x80, 0xA, 0x3A, 0x8C,
@@ -827,14 +827,14 @@ char D_800DAAFC[0x10] = "Add Straight";
 char D_800DAB0C[0x8] = "Edit";
 /* 0x800dab14-0x800dab1b (7 bytes): literals of the C (build_code.py) */
 u8 D_800DAB1B = 0;
-char D_800DAB1C[0x8] = "edit.c";
-char D_800DAB24[0xc] = "resource";
-char D_800DAB30[0x4] = "ARN";
-char D_800DAB34[0x4] = "N64";
-char D_800DAB38[0x8] = "Pieces";
+char sStrEditFile[0x8] = "edit.c";
+char sStrEditResource[0xc] = "resource";
+char sStrEditArn[0x4] = "ARN";
+char sStrEditN64[0x4] = "N64";
+char sStrEditPieces[0x8] = "Pieces";
 /* 0x800dab40-0x800dabe8 (168 bytes): literals of the C (build_code.py) */
-char D_800DABE8[0x10] = "Track Name: ";
-char D_800DABF8[0x4] = "_";
+char sStrTrackNameLabel[0x10] = "Track Name: ";
+char sStrNameUnderline[0x4] = "_";
 char D_800DABFC[0x10] = "of this piece.";
 char D_800DAC0C[0x1c] = "you can not change the size";
 char D_800DAC28[0x20] = "will be edited at once. Also,";
@@ -938,22 +938,22 @@ char D_800DB028[0x4] = "TXA";
 char D_800DB02C[0x4] = "TXS";
 char D_800DB030[0x4] = "TYA";
 u32 D_800DB034[0x3] = { 0x50, 0x51, 0x52 };
-char D_800DB040[0xc] = "UsrTrk.c";
-char D_800DB04C[0x4] = "ARN";
-char D_800DB050[0x4] = "WAL";
-char D_800DB054[0xc] = "Pieces";
+char sStrUsrTrkFile[0xc] = "UsrTrk.c";
+char sStrUsrTrkArn[0x4] = "ARN";
+char sStrUsrTrkWal[0x4] = "WAL";
+char sStrUsrTrkPieces[0xc] = "Pieces";
 /* 0x800db060-0x800db160 (256 bytes): libultra data (build_libultra.py) */
-u32 D_800DB160[0x4] = { 0x2E2E2F53, 0x46582E43, 0x1FFF, 0xB };
-char D_800DB170[0x10] = "../softmix.c";
-char D_800DB180[0x4] = "SFX";
-char D_800DB184[0x20] = "Warning: no SFX resource set\n";
-char D_800DB1A4[0x18] = "Opened resource set\n";
-char D_800DB1BC[0x4] = "SAM";
-char D_800DB1C0[0x8] = "%s.16";
-char D_800DB1C8[0x8] = "%s.08";
-char D_800DB1D0[0x4] = "rb";
-char D_800DB1D4[0xc] = "SAM-%s.16";
-char D_800DB1E0[0x10] = "SAM-%s.08";
+u32 sStrSfxFile[0x4] = { 0x2E2E2F53, 0x46582E43, 0x1FFF, 0xB };
+char sStrSoftmixFile[0x10] = "../softmix.c";
+char sStrSfxResSet[0x4] = "SFX";
+char sStrNoSfxResSet[0x20] = "Warning: no SFX resource set\n";
+char sStrOpenedResSet[0x18] = "Opened resource set\n";
+char sStrSamType[0x4] = "SAM";
+char sStrSampleFile16[0x8] = "%s.16";
+char sStrSampleFile08[0x8] = "%s.08";
+char sStrModeRb[0x4] = "rb";
+char sStrSamName16[0xc] = "SAM-%s.16";
+char sStrSamName08[0x10] = "SAM-%s.08";
 char D_800DB1F0[0x10] = "n64snd.c";
 /* 0x800db200-0x800db247 (71 bytes): literals of the C (build_code.py) */
 u8 D_800DB247 = 0;
@@ -1053,15 +1053,15 @@ u32 D_800DB628[0xa4] = {
     /* 0x270 */ 0x5420001, 0x200A0000, 0x20C6FFFF, 0x14C0FFE3,
     /* 0x280 */ 0x808C0000, 0x3E00008,
 };
-u32 D_800DB8B8 = 0x1;
-u32 D_800DB8BC = 0x1;
-u32 D_800DB8C0 = 0x1;
-u32 D_800DB8C4 = 0x1;
-u32 D_800DB8C8 = 0x1;
-u32 D_800DB8CC = 0x1;
+u32 sMixVoices = 0x1;
+u32 sMixNumVoices = 0x1;
+u32 sMixCount = 0x1;
+u32 sMixSrc = 0x1;
+u32 sMixDst = 0x1;
+u32 sMixVolumeTable = 0x1;
 u32 D_800DB8D0 = 0x1;
-u32 D_800DB8D4 = 0x1;
-u32 D_800DB8D8 = 0x1;
+u32 sMixClampMin = 0x1;
+u32 sMixClampMax = 0x1;
 u8 D_800DB8DC = 0x1;
 u8 D_800DB8DD[0x3] = { 0x1 };
 /* 0x800db8e0-0x800dc098 (1976 bytes): unreferenced stale linker buffer, copied from the ROM at build time */

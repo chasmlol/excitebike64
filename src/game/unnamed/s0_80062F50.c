@@ -38,11 +38,11 @@ typedef struct {
     u8 b[6];
 } Blob6;
 
-extern Bike_39 *D_800F0BE0[];
-extern Rec_35 D_800F0B70[];
-extern Rec_36 D_800F0C30[];
-extern Blob6 D_800F0BD0;
-extern Blob6 D_800F0CA0;
+extern Bike_39 *sRidersByLapPos[];
+extern Rec_35 sRiderQueueBehind[];
+extern Rec_36 sRiderQueueAhead[];
+extern Blob6 sGridOrderSaved;
+extern Blob6 gGridOrder;
 
 struct Spawn {
     s16 _0;
@@ -118,9 +118,9 @@ typedef struct {
     u8 pad7B4[0x7E0 - 0x7B4];
 } Bike_38;
 
-extern Bike_38 D_800E37C0_79[8];
+extern Bike_38 gRiders_79[8];
 
-void func_80062F50(Spawn *sp)
+void race_spawn_extra_rider(Spawn *sp)
 {
     Bike_38 *b;
     s32 track;
@@ -131,15 +131,15 @@ void func_80062F50(Spawn *sp)
     Vec3f unused;
 
     if (D_800F1BC4 & 0x10) return;
-    if (D_800F0600 & 0x200) return;
+    if (gEventFlags & 0x200) return;
 
-    b = &D_800E37C0_79[6];
+    b = &gRiders_79[6];
     track = sp->track;
     sp->track = -1;
-    for (; b < &D_800E37C0_79[8]; b++) {
+    for (; b < &gRiders_79[8]; b++) {
         if (b->b7A5 != 0) break;
     }
-    if (b == &D_800E37C0_79[8]) return;
+    if (b == &gRiders_79[8]) return;
 
     b->b3D1 = -1;
     b->b7A5 = 0;
@@ -155,23 +155,23 @@ void func_80062F50(Spawn *sp)
     b->w648 = 0;
     b->w4FC = 0;
     b->w458 = 0;
-    b->w7B0 = D_800E76D0;
+    b->w7B0 = gRaceFrame;
     b->pos.x = (f32)sp->x / 1000.0f;
     b->pos.z = (f32)sp->z / 1000.0f;
     b->pos.y = 0.0f;
-    b->pos.y = func_800228A0(&b->pos);
+    b->pos.y = bike_get_ground_height(&b->pos);
     for (i = 0; i < 20; i++) {
         b->hist[i] = b->pos;
     }
-    b->h628 = func_8004B5F0(&b->pos, track, 15, 0);
-    b->f42C = func_8004A944(&b->pos, b->h628);
-    b->f63C = D_800EE4A0;
-    f = func_8004A944(&b->pos, b->h628);
+    b->h628 = path_find_segment(&b->pos, track, 15, 0);
+    b->f42C = path_get_lateral_offset(&b->pos, b->h628);
+    b->f63C = gPathSegmentT;
+    f = path_get_lateral_offset(&b->pos, b->h628);
     b->f42C = f;
-    D_800F0C08[b - &D_800E37C0_79[6]] = f;
-    func_80013438(&b->quat, 0.0f, 0.0f, -func_80013098(D_800EE484, D_800EE480));
-    func_8001C780(b);
-    func_80013568(b->mtx, &b->quat);
+    sExtraRiderLanes[b - &gRiders_79[6]] = f;
+    quat_from_euler(&b->quat, 0.0f, 0.0f, -math_atan2f(gPathTangentZ, gPathTangentX));
+    bike_place_on_ground(b);
+    quat_to_mtx3f(b->mtx, &b->quat);
     b->sx = b->mx * ((f32)sp->scale / 1000.0f);
     b->sy = b->my * ((f32)sp->scale / 1000.0f);
     b->sz = b->mz * ((f32)sp->scale / 1000.0f);
@@ -190,24 +190,24 @@ void func_80062F50(Spawn *sp)
     b->f1B8 = 1.0f;
     b->b3D0 = -1;
     b->quat2 = b->quat;
-    b->pos.y = func_800228A0(&b->pos) + 0.0f + 0.5f
-        - (D_800EFDBC == 6 ? 3675.0002f / (2.0f * (D_800C8E14 * 20000.0f)) : 0.12250001f);
+    b->pos.y = bike_get_ground_height(&b->pos) + 0.0f + 0.5f
+        - (gGameMode == 6 ? 3675.0002f / (2.0f * (gBikeTuneSpringRate * 20000.0f)) : 0.12250001f);
     b->w744 = 4;
-    func_8001B808(b);
-    func_8001B808(b);
-    func_8001BC98(b);
-    idx = b - D_800E37C0_79;
-    func_8005E9A4(idx);
-    func_8002DA48(idx, 0);
+    bike_update_wheel_contacts(b);
+    bike_update_wheel_contacts(b);
+    bike_update_suspension(b);
+    idx = b - gRiders_79;
+    decal_end_track(idx);
+    cam_set_frozen(idx, 0);
     spd = sp->spd;
     b->b6E8 = 2;
     b->b1C4 = 1;
     b->f44C = (f32)spd / 29491.0f;
-    func_8001FE1C(b);
-    func_8001AEB0(b, 0);
+    bike_update_render_pose(b);
+    bike_apply_rider_stats(b, 0);
 }
 
-s32 func_8006333C(Player_21 *p, Player_21 *q)
+s32 race_try_despawn_extra_rider(Player_21 *p, Player_21 *q)
 {
     s16 ang;
     s32 ratio;
@@ -221,7 +221,7 @@ s32 func_8006333C(Player_21 *p, Player_21 *q)
     if (q->f7A5 != 0) {
         goto fail;
     }
-    dt = D_800E76D0 - q->f7B0;
+    dt = gRaceFrame - q->f7B0;
     if (dt >= 0xB4) {
         goto ok;
     }
@@ -240,7 +240,7 @@ ok:
     if (dx * dx + dz * dz < 225.0f) {
         goto fail;
     }
-    func_8001254C((s32)(-dx * 1024.0f), (s32)(dz * 1024.0f), &ang, &ratio);
+    math_to_polar((s32)(-dx * 1024.0f), (s32)(dz * 1024.0f), &ang, &ratio);
     ang -= p->ang;
     if ((ang < 0 ? -ang : ang) < 0x1800) {
         goto fail;
@@ -262,24 +262,24 @@ struct Player_22 {
     u8 pad3[0x7E0 - 0x664];
 };
 
-extern Tbl_4 *D_800F0CA8_2;
-extern Player_22 D_800E6700[2];
+extern Tbl_4 *sExtraRiderSpawns_2;
+extern Player_22 sExtraRiders[2];
 
-void func_80063488(Player_22 *p)
+void race_update_extra_riders(Player_22 *p)
 {
     Player_22 *q;
 
-    if (D_800EFDBC == 8) return;
-    if (D_800F0CA8_2 != NULL && p->f662 < 2) {
-        Ent_63 *e = D_800F0CA8_2->e;
+    if (gGameMode == 8) return;
+    if (sExtraRiderSpawns_2 != NULL && p->f662 < 2) {
+        Ent_63 *e = sExtraRiderSpawns_2->e;
         while (e->key < p->f660) e++;
         while (e->key == p->f660) {
-            if (e >= &D_800F0CA8_2->e[D_800F0CA8_2->count]) break;
-            if (e->id == p->f628) func_80062F50(e);
+            if (e >= &sExtraRiderSpawns_2->e[sExtraRiderSpawns_2->count]) break;
+            if (e->id == p->f628) race_spawn_extra_rider(e);
             e++;
         }
     }
-    for (q = D_800E6700; q < &D_800E6700[2]; q++) func_8006333C(p, q);
+    for (q = sExtraRiders; q < &sExtraRiders[2]; q++) race_try_despawn_extra_rider(p, q);
 }
 
 typedef struct {
@@ -293,16 +293,16 @@ typedef struct {
     u8 pad6E9[0x7E0 - 0x6E9];
 } Ent_64;
 
-extern Ent_64 D_800E37C0_80[];
+extern Ent_64 gRiders_80[];
 
-void func_800635A4(void)
+void race_announce_position_changes(void)
 {
     Ent_64 *p;
     s32 v;
     s32 idx;
 
-    if (D_800F05A8_37.f2C < 0x78) return;
-    for (p = D_800E37C0_80; p < D_800E37C0_80 + D_800EFD70_9.count; p++) {
+    if (gEvent_37.f2C < 0x78) return;
+    for (p = gRiders_80; p < gRiders_80 + gGame_9.count; p++) {
         v = p->f668 >= 0 ? p->f668 : p->f662;
         if (v != p->f664) {
             if (p->f666 > 0x180) {
@@ -311,8 +311,8 @@ void func_800635A4(void)
             p->f666 -= 0x20;
             if (p->f666 <= 0) {
                 if (p->f6E8 == 0 && p->f668 < 0) {
-                    if (D_800E76D0 - D_800EFD28[p - D_800E37C0_80] > 300 && D_800F05A8_37.f2C > 600) {
-                        func_8004E6D8(p - D_800E37C0_80, v, p->f664);
+                    if (gRaceFrame - gAnnounceTimes[p - gRiders_80] > 300 && gEvent_37.f2C > 600) {
+                        announce_place_change(p - gRiders_80, v, p->f664);
                     }
                 }
                 p->f666 = 1;
@@ -331,10 +331,10 @@ typedef struct {
     s16 count;
 } Race_5;
 
-extern Bike_39 *D_800F0C10_4[];
-extern Race_5 D_800F05A8_38;
+extern Bike_39 *gRiderStandings_4[];
+extern Race_5 gEvent_38;
 
-void func_80063768(void)
+void race_sort_positions(void)
 {
     u8 swapped;
     s32 i;
@@ -343,40 +343,40 @@ void func_80063768(void)
     do {
         swapped = 0;
         for (i = 0; i < 7; i++) {
-            if (D_800F0BE0[i]->f62C > D_800F0BE0[i + 1]->f62C) {
+            if (sRidersByLapPos[i]->f62C > sRidersByLapPos[i + 1]->f62C) {
                 swapped = 1;
-                t = D_800F0BE0[i];
-                D_800F0BE0[i] = D_800F0BE0[i + 1];
-                D_800F0BE0[i + 1] = t;
+                t = sRidersByLapPos[i];
+                sRidersByLapPos[i] = sRidersByLapPos[i + 1];
+                sRidersByLapPos[i + 1] = t;
             }
         }
     } while (swapped);
 
     do {
         swapped = 0;
-        for (i = 0; i < D_800F05A8_38.count - 1; i++) {
-            if (D_800F0C10_4[i]->f630 < D_800F0C10_4[i + 1]->f630
-                && (D_800F0C10_4[i]->b7A5 | D_800F0C10_4[i + 1]->b7A5) == 0
-                && D_800F0C10_4[i]->h668 < 0) {
+        for (i = 0; i < gEvent_38.count - 1; i++) {
+            if (gRiderStandings_4[i]->f630 < gRiderStandings_4[i + 1]->f630
+                && (gRiderStandings_4[i]->b7A5 | gRiderStandings_4[i + 1]->b7A5) == 0
+                && gRiderStandings_4[i]->h668 < 0) {
                 swapped = 1;
-                t = D_800F0C10_4[i];
-                D_800F0C10_4[i] = D_800F0C10_4[i + 1];
-                D_800F0C10_4[i + 1] = t;
+                t = gRiderStandings_4[i];
+                gRiderStandings_4[i] = gRiderStandings_4[i + 1];
+                gRiderStandings_4[i + 1] = t;
             }
         }
     } while (swapped);
 
-    for (i = 0; i < D_800F05A8_38.count; i++) {
-        D_800F0C10_4[i]->h662 = i;
+    for (i = 0; i < gEvent_38.count; i++) {
+        gRiderStandings_4[i]->h662 = i;
     }
-    if (D_800F05D4 > 120) {
-        func_800635A4();
+    if (gEventTime > 120) {
+        race_announce_position_changes();
     }
 }
 
-extern Ent_65 D_800E37C0_81[];
+extern Ent_65 gRiders_81[];
 
-void func_800638E8(Ent_65 *p, Ent_65 *p2, s32 p3)
+void race_queue_rider_behind(Ent_65 *p, Ent_65 *p2, s32 p3)
 {
     s32 i;
 
@@ -384,20 +384,20 @@ void func_800638E8(Ent_65 *p, Ent_65 *p2, s32 p3)
         p->f7A5 = 1;
         return;
     }
-    if (D_800F0C10_5[p3 - 1]->f6E8 == 1 && D_800F0C10_5[p3 - 1]->f7A5 == 0) {
+    if (gRiderStandings_5[p3 - 1]->f6E8 == 1 && gRiderStandings_5[p3 - 1]->f7A5 == 0) {
         p->f7A5 = 1;
         p->f630 = -1000000.0f;
-        for (i = D_800F0C04; i > 0; i--) {
-            D_800F0B70[i] = D_800F0B70[i - 1];
+        for (i = sRiderQueueBehindCount; i > 0; i--) {
+            sRiderQueueBehind[i] = sRiderQueueBehind[i - 1];
         }
-        D_800F0B70[0].idx = p - D_800E37C0_81;
-        D_800F0B70[0].e = D_800F0C10_5[p3 - 1];
-        D_800F0B70[0].d = p2->f630 - D_800F0C10_5[p3 - 1]->f630 - 20.0f;
-        D_800F0C04++;
+        sRiderQueueBehind[0].idx = p - gRiders_81;
+        sRiderQueueBehind[0].e = gRiderStandings_5[p3 - 1];
+        sRiderQueueBehind[0].d = p2->f630 - gRiderStandings_5[p3 - 1]->f630 - 20.0f;
+        sRiderQueueBehindCount++;
     }
 }
 
-void func_80063A24(u8 *a, u8 *b, s32 n)
+void race_queue_rider_ahead(u8 *a, u8 *b, s32 n)
 {
     u8 *p;
     s32 i;
@@ -406,19 +406,19 @@ void func_80063A24(u8 *a, u8 *b, s32 n)
         a[0x7A5] = 1;
         return;
     }
-    p = D_800F0C10[n + 1];
+    p = gRiderStandings[n + 1];
     if (p[0x6E8] == 1 && p[0x7A5] == 0) {
         a[0x7A5] = 1;
-        i = D_800F0BDC;
+        i = sRiderQueueAheadCount;
         *(f32 *)(a + 0x630) = 1000000.0f;
         while (i > 0) {
-            D_800F0C30[i] = D_800F0C30[i - 1];
+            sRiderQueueAhead[i] = sRiderQueueAhead[i - 1];
             i = i - 1;
         }
-        *(s16 *)&D_800F0C30[0] = (s16)(((s32)a - (s32)D_800E37C0) * -0x41041041 >> 5);
-        D_800F0C30[0].w1 = (s32)D_800F0C10[n + 1];
-        D_800F0C30[0].f2 = (*(f32 *)(D_800F0C10[n + 1] + 0x630) - *(f32 *)(b + 0x630)) - 20.0f;
-        D_800F0BDC = D_800F0BDC + 1;
+        *(s16 *)&sRiderQueueAhead[0] = (s16)(((s32)a - (s32)gRiders) * -0x41041041 >> 5);
+        sRiderQueueAhead[0].w1 = (s32)gRiderStandings[n + 1];
+        sRiderQueueAhead[0].f2 = (*(f32 *)(gRiderStandings[n + 1] + 0x630) - *(f32 *)(b + 0x630)) - 20.0f;
+        sRiderQueueAheadCount = sRiderQueueAheadCount + 1;
     }
 }
 
@@ -434,9 +434,9 @@ typedef struct {
     u8 p4[0x7E0 - 0x7A6];
 } Ent_66;
 
-extern Ent_66 D_800E37C0_82[];
+extern Ent_66 gRiders_82[];
 
-void func_80063B60(u8 *p1, s16 *p2, f32 p3, s32 *p4)
+void race_reinsert_queued_rider(u8 *p1, s16 *p2, f32 p3, s32 *p4)
 {
     s32 v4;
     s32 idx;
@@ -451,11 +451,11 @@ void func_80063B60(u8 *p1, s16 *p2, f32 p3, s32 *p4)
         while (0.0f < p3) {
             {
                 s32 off = idx * 0x6c;
-                r = (u8 *)(off + (s32)D_800EE498);
+                r = (u8 *)(off + (s32)gPathNodes);
             }
             idx = *(s16 *)(r + 0x46);
             p3 = p3 - *(f32 *)(r + 0xc);
-            if (idx == D_800EE488) {
+            if (idx == gPathFinishNode) {
                 v4 = v4 + 1;
             }
         }
@@ -464,20 +464,20 @@ void func_80063B60(u8 *p1, s16 *p2, f32 p3, s32 *p4)
         while (p3 < 0.0f) {
             {
                 s32 off = idx * 0x6c;
-                r = (u8 *)(off + (s32)D_800EE498);
+                r = (u8 *)(off + (s32)gPathNodes);
             }
             idx = *(s16 *)(r + 0x4a);
             p3 = p3 + *(f32 *)(r + 0xc);
-            if (idx == D_800EE488) {
+            if (idx == gPathFinishNode) {
                 v4 = v4 - 1;
             }
         }
     }
-    D_800E37C0_82[*p2].f660 = v4;
-    D_800E37C0_82[*p2].f6ED = 0;
-    D_800E37C0_82[*p2].f7A5 = 0;
-    D_800E37C0_82[*p2].f626 = idx;
-    func_80046CC0(&D_800E37C0_82[*p2]);
+    gRiders_82[*p2].f660 = v4;
+    gRiders_82[*p2].f6ED = 0;
+    gRiders_82[*p2].f7A5 = 0;
+    gRiders_82[*p2].f626 = idx;
+    bike_respawn(&gRiders_82[*p2]);
     cnt = *p4 - 1;
     *p4 = cnt;
     for (i = 0; i < *p4; i++) {
@@ -528,13 +528,13 @@ typedef struct {
     f32 f20[4];
 } Tune;
 
-extern Player_23 D_800E37C0_83[];
-extern Mode_4 D_800F05A8_39;
-extern Cfg_9 D_800EFD70_46;
-extern Tune *D_800EFD64_33;
-extern Player_23 *D_800F0C10_6[];
+extern Player_23 gRiders_83[];
+extern Mode_4 gEvent_39;
+extern Cfg_9 gGame_46;
+extern Tune *gCurTrack_33;
+extern Player_23 *gRiderStandings_6[];
 
-void func_80063D30(void)
+void race_update_riders(void)
 {
     Player_23 *list[4];
     Player_23 **lp;
@@ -553,57 +553,57 @@ void func_80063D30(void)
     f32 e;
     f32 g;
 
-    func_80063768();
+    race_sort_positions();
     n1 = 0;
     n0 = 0;
     sum0 = 0.0f;
     sum1 = 0.0f;
-    for (i = 0; i < D_800F05A8_39.h22; i++) {
-        if (D_800E37C0_83[i].b7A5 == 0) {
-            switch (D_800E37C0_83[i].b6E8) {
+    for (i = 0; i < gEvent_39.h22; i++) {
+        if (gRiders_83[i].b7A5 == 0) {
+            switch (gRiders_83[i].b6E8) {
             case 0:
-                list[n0] = &D_800E37C0_83[i];
+                list[n0] = &gRiders_83[i];
                 n0++;
-                sum0 += D_800E37C0_83[i].f630;
+                sum0 += gRiders_83[i].f630;
                 break;
             case 1:
                 n1++;
-                sum1 += D_800E37C0_83[i].f630;
+                sum1 += gRiders_83[i].f630;
                 break;
             }
         }
     }
     if (n0 != 0) {
-        t = D_800E76D0;
-        if (t - D_800EECB8 > 0x384) {
+        t = gRaceFrame;
+        if (t - gLastSpeechTime > 0x384) {
             best = t;
             idx = -1;
             if (n0 >= 2) {
-                for (i = 0; i < D_800EFDAC; i++) {
-                    if (D_800EFD28[i] < best) {
-                        best = D_800EFD28[i];
+                for (i = 0; i < gNumPlayers; i++) {
+                    if (gAnnounceTimes[i] < best) {
+                        best = gAnnounceTimes[i];
                         idx = i;
                     }
                 }
                 if (idx >= 0) {
-                    if (D_800E37C0_83[idx].f62C > 150.0f || (D_800E37C0_83[idx].h662 != 0 && D_800E37C0_83[idx].h660 != D_800F05A8_39.h20 - 1)) {
-                        func_8004D1F4(idx, D_800E37C0_83[idx].h662 + 1);
+                    if (gRiders_83[idx].f62C > 150.0f || (gRiders_83[idx].h662 != 0 && gRiders_83[idx].h660 != gEvent_39.h20 - 1)) {
+                        announce_place(idx, gRiders_83[idx].h662 + 1);
                     }
                 }
             } else {
-                pl = D_800E37C0_83;
-                if (!(t - D_800EFD28[0] > 0x4B0 && (pl->f62C > 150.0f || (pl->h662 != 0 && pl->h660 != D_800F05A8_39.h20 - 1)))) {
+                pl = gRiders_83;
+                if (!(t - gAnnounceTimes[0] > 0x4B0 && (pl->f62C > 150.0f || (pl->h662 != 0 && pl->h660 != gEvent_39.h20 - 1)))) {
                     if (pl->h662 != 0) {
-                        pl = D_800F0C10_6[pl->h662 - 1];
+                        pl = gRiderStandings_6[pl->h662 - 1];
                     } else {
-                        pl = D_800F0C10_6[pl->h662 + 1];
+                        pl = gRiderStandings_6[pl->h662 + 1];
                     }
                 }
-                func_8004D1F4(pl - D_800E37C0_83, pl->h662 + 1);
+                announce_place(pl - gRiders_83, pl->h662 + 1);
             }
         }
-        if (D_800F05A8_39.w2C == 300) {
-            func_8004EADC(D_800F0C10_6[0] - D_800E37C0_83);
+        if (gEvent_39.w2C == 300) {
+            announce_early_leader(gRiderStandings_6[0] - gRiders_83);
         }
     }
     if (n1 != 0) {
@@ -617,13 +617,13 @@ void func_80063D30(void)
     if (n1 == 0) {
         sum1 = sum0;
     }
-    if (D_800EFD70_46.w0 & 0x10) {
+    if (gGame_46.w0 & 0x10) {
         k = 0;
-        for (i = 0; i < D_800F05A8_39.h22; i++) {
-            pl = D_800F0C10_6[i];
+        for (i = 0; i < gEvent_39.h22; i++) {
+            pl = gRiderStandings_6[i];
             if (pl->b6E8 == 1) {
                 e = pl->f630 - sum1;
-                e += (D_800EE48C / n1) * (k - (n1 - 1) * 0.5f);
+                e += (gPathLapLength / n1) * (k - (n1 - 1) * 0.5f);
                 f = 1.0f - e / 100.0f;
                 if (f < 0.9f) {
                     f = 0.9f;
@@ -642,8 +642,8 @@ void func_80063D30(void)
         }
     } else if (n0 == 0) {
         k = 0;
-        for (i = 0; i < D_800F05A8_39.h22; i++) {
-            pl = D_800F0C10_6[i];
+        for (i = 0; i < gEvent_39.h22; i++) {
+            pl = gRiderStandings_6[i];
             if (pl->b6E8 == 1) {
                 e = pl->f630 - sum1;
                 e -= (k - (n1 - 1) * 0.5f) * 0.01f;
@@ -663,15 +663,15 @@ void func_80063D30(void)
                 k++;
             }
         }
-    } else if (D_800EFD70_46.w4C != 8 && D_800F05A8_39.w0 >= 5) {
+    } else if (gGame_46.w4C != 8 && gEvent_39.w0 >= 5) {
         d = ((sum1 - sum0) - 30.0f) * 0.00390625f;
         if (d > 0.15f) {
             d = 0.15f;
         } else if (d < -0.15f) {
             d = -0.15f;
         }
-        for (i = 0; i < D_800F05A8_39.h22; i++) {
-            pl = &D_800E37C0_83[i];
+        for (i = 0; i < gEvent_39.h22; i++) {
+            pl = &gRiders_83[i];
             if (pl->b6E8 != 0) {
                 f = 0.0f;
                 if (n1 >= 2) {
@@ -684,12 +684,12 @@ void func_80063D30(void)
                 f += 1.0f - d;
                 if (pl->b3FF) {
                     f = 1.0f;
-                } else if (D_800C2280 & 0x1000) {
-                    f *= D_800EFD64_33->f20[2] + 0.05f;
+                } else if (gCheatFlags & 0x1000) {
+                    f *= gCurTrack_33->f20[2] + 0.05f;
                 } else {
-                    g = D_800EFD64_33->f20[D_800EFD70_46.w410 - 1];
+                    g = gCurTrack_33->f20[gGame_46.w410 - 1];
                     f *= g;
-                    if (D_800F05A8_39.w58 & 0x200) {
+                    if (gEvent_39.w58 & 0x200) {
                         f = g * 1.15f;
                     }
                 }
@@ -719,10 +719,10 @@ void func_80063D30(void)
             }
         }
     }
-    if (D_800EFDAC == 1 && n0 == 1) {
-        func_80063488((u8 *)list[0]);
+    if (gNumPlayers == 1 && n0 == 1) {
+        race_update_extra_riders((u8 *)list[0]);
     }
-    func_800644E0();
+    ai_update_lanes();
 }
 
 #define NEAR(r, x, top, done)                           {                                                       Player_24 *q_;                                         f32 v_, k_;                                     top:                                                    q_ = *l;                                            if (q_->human != 0) { v_ = q_->lane; k_ = 0.999f; } else { v_ = q_->f638; k_ = 0.999f; } v_ = v_ - (x);                                      l++;                                                if (v_ < k_ && (k_ = -k_) < v_) {                              r = 1;                                              goto done;                                      }                                                   if (*l != NULL) {                                       goto top;                                       }                                                   r = 0;                                          done:;                                              }
@@ -757,9 +757,9 @@ typedef struct {
     u8 pad60[0x6C - 0x60];
 } TrackNode;
 
-extern Player_24 D_800E6700_2[];
+extern Player_24 sExtraRiders_2[];
 
-void func_800644E0(void)
+void ai_update_lanes(void)
 {
     Player_24 *list[8];
     Player_24 *p;
@@ -789,19 +789,19 @@ void func_800644E0(void)
     f32 x;
 
     for (i = 0; i < 8; i++) {
-        p = D_800F0BE0[i];
+        p = sRidersByLapPos[i];
         if (p->human == 0 || p->f7A5 != 0) {
             continue;
         }
-        if (p >= D_800E6700_2) {
-            p->lane = D_800F0C08[p - D_800E6700_2];
+        if (p >= sExtraRiders_2) {
+            p->lane = sExtraRiderLanes[p - sExtraRiders_2];
         }
         lo = -20.0f;
         hi = 20.0f;
         node = p->node;
         j = 6;
         do {
-            t = (TrackNode *)(node * sizeof(TrackNode) + (u32)D_800EE498);
+            t = (TrackNode *)(node * sizeof(TrackNode) + (u32)gPathNodes);
             if (lo < -t->f58) {
                 lo = -t->f58;
             }
@@ -824,13 +824,13 @@ void func_800644E0(void)
             if (i == j) {
                 continue;
             }
-            q = D_800F0BE0[j];
+            q = sRidersByLapPos[j];
             if (q->f7A5 != 0) {
                 continue;
             }
             d = p->prog - q->prog + 1.0f;
             if (d < 0.0f) {
-                d += D_800EE48C;
+                d += gPathLapLength;
             }
             if (d > 5.0f) {
                 continue;
@@ -907,7 +907,7 @@ void func_800644E0(void)
                 continue;
             }
         }
-        if (p < D_800E6700_2) {
+        if (p < sExtraRiders_2) {
             if (p->lane > 0.0f) {
                 p->lane -= 0.02f;
             } else {
@@ -924,28 +924,28 @@ typedef struct {
     u8 unk454[0x7E0 - 0x454];
 } Racer_2;
 
-extern Racer_2 D_800E37C0_84[];
+extern Racer_2 gRiders_84[];
 
-void func_80064A8C(s32 arg0, s32 count) {
+void race_init_ai_skills(s32 arg0, s32 count) {
     s32 i;
 
 
     for (i = 0; i < count; i++) {
         if (count == 1) {
-            D_800E37C0_84[D_800F0C90[i]].unk450 = 0.0f;
+            gRiders_84[sAiRiderOrder[i]].unk450 = 0.0f;
         } else {
-            D_800E37C0_84[D_800F0C90[i]].unk450 = (i - (count - 1) * 0.5f) / ((count - 1) * 5.0f);
+            gRiders_84[sAiRiderOrder[i]].unk450 = (i - (count - 1) * 0.5f) / ((count - 1) * 5.0f);
         }
-        if (D_800E37C0_84[D_800F0C90[i]].unk450 == 0.1f) {
-            D_800E37C0_84[D_800F0C90[i]].unk450 += 0.01f;
+        if (gRiders_84[sAiRiderOrder[i]].unk450 == 0.1f) {
+            gRiders_84[sAiRiderOrder[i]].unk450 += 0.01f;
         } else {
-            D_800E37C0_84[D_800F0C90[i]].unk450 -= 0.01f;
+            gRiders_84[sAiRiderOrder[i]].unk450 -= 0.01f;
         }
-        D_800E37C0_84[D_800F0C90[i]].unk44C = 1.03f - D_800E37C0_84[D_800F0C90[i]].unk450;
+        gRiders_84[sAiRiderOrder[i]].unk44C = 1.03f - gRiders_84[sAiRiderOrder[i]].unk450;
     }
 }
 
-void func_80064B9C(s32 p1, s32 n)
+void race_jitter_ai_order(s32 p1, s32 n)
 {
     s32 arr[8];
     s32 *p;
@@ -962,8 +962,8 @@ void func_80064B9C(s32 p1, s32 n)
         val = i;
         do {
             *p = val;
-            a = func_8000EFE8();
-            b = func_8000EFE8();
+            a = random_byte();
+            b = random_byte();
             val += 100;
             i++;
             *p = *p + (a + b);
@@ -974,9 +974,9 @@ void func_80064B9C(s32 p1, s32 n)
         flag = 0;
         for (i = 0; i < n; i++) {
             if (arr[i] > arr[i + 1]) {
-                t = D_800F0C90[i];
-                D_800F0C90[i] = D_800F0C90[i + 1];
-                D_800F0C90[i + 1] = t;
+                t = sAiRiderOrder[i];
+                sAiRiderOrder[i] = sAiRiderOrder[i + 1];
+                sAiRiderOrder[i + 1] = t;
                 t = arr[i];
                 arr[i] = arr[i + 1];
                 arr[i + 1] = t;
@@ -993,24 +993,24 @@ typedef struct {
     u32 flags;
 } Obj_46;
 
-extern Obj_46 *D_800EFD64_34;
+extern Obj_46 *gCurTrack_34;
 
-void func_80064CA8(s32 arg0)
+void race_load_extra_rider_spawns(s32 arg0)
 {
-    if (D_800EFD64_34->state != 2 && (D_800EFD64_34->flags & 2) == 0) {
-        D_800F0BD8 = func_8005B58C(D_800D14E8);
-        D_800F0CA8 = func_8005AED8(D_800D14E8);
+    if (gCurTrack_34->state != 2 && (gCurTrack_34->flags & 2) == 0) {
+        D_800F0BD8 = track_res_find(D_800D14E8);
+        sExtraRiderSpawns = track_res_get(D_800D14E8);
     }
 }
 
-void func_80064D10(void)
+void race_free_extra_rider_spawns(void)
 {
-    if (D_800F0CA8 != 0) {
-        D_800F0CA8 = 0;
+    if (sExtraRiderSpawns != 0) {
+        sExtraRiderSpawns = 0;
     }
 }
 
-void func_80064D28(s32 a, s32 b)
+void race_set_grid_order(s32 a, s32 b)
 {
     s32 n = a + b;
     s32 i;
@@ -1019,13 +1019,13 @@ void func_80064D28(s32 a, s32 b)
 
     if (n < 3) {
         u8 *r;
-        D_800F0C98[0] = 0;
-        r = D_800F0C98;
+        sGridOrderNext[0] = 0;
+        r = sGridOrderNext;
         r[1] = 1;
         return;
     }
     for (i = 0; i < n; i++) {
-        q = D_800F0C98 + i;
+        q = sGridOrderNext + i;
         if (i & 1) {
             *q = half + i / 2;
         } else {
@@ -1034,26 +1034,26 @@ void func_80064D28(s32 a, s32 b)
     }
 }
 
-void func_80064DB8(void)
+void race_reset_grid_order(void)
 {
-    func_8000ED10(D_800F0C98, 0, 8);
-    D_800F0C98[1] = 1;
+    mem_fill(sGridOrderNext, 0, 8);
+    sGridOrderNext[1] = 1;
 }
 
-void func_80064DF4(s32 arg0, s32 count)
+void race_randomize_ai_order(s32 arg0, s32 count)
 {
     s32 i, k;
 
     for (i = 0; i < count; i++) {
-        D_800F0C90[i] = (((s32)func_8000EFE8() * count) >> 8) + arg0;
+        sAiRiderOrder[i] = (((s32)random_byte() * count) >> 8) + arg0;
         for (k = 0; k < i; k++) {
-            if (D_800F0C90[k] == D_800F0C90[i]) {
+            if (sAiRiderOrder[k] == sAiRiderOrder[i]) {
                 i--;
                 break;
             }
         }
     }
-    func_80064A8C(arg0, count);
+    race_init_ai_skills(arg0, count);
 }
 
 typedef struct {
@@ -1061,14 +1061,14 @@ typedef struct {
     s16 rest[5];
 } Ent12;
 
-void func_80064EB8(s32 arg0) {
+void race_init_standings(s32 arg0) {
     s32 i = 0;
     s16 m1 = -1;
-    Ent12 *p0 = D_800F0C30;
-    Ent12 *p1 = D_800F0B70;
-    u8 **p2 = D_800F0C10;
-    u8 **p3 = D_800F0BE0;
-    u8 *v = D_800E37C0;
+    Ent12 *p0 = sRiderQueueAhead;
+    Ent12 *p1 = sRiderQueueBehind;
+    u8 **p2 = gRiderStandings;
+    u8 **p3 = sRidersByLapPos;
+    u8 *v = gRiders;
     do {
         *p3 = v;
         *p2 = v;
@@ -1082,8 +1082,8 @@ void func_80064EB8(s32 arg0) {
         i++;
         v += 0x7E0;
     } while (i < 8);
-    D_800F0BDC = 0;
-    D_800F0C04 = 0;
+    sRiderQueueAheadCount = 0;
+    sRiderQueueBehindCount = 0;
 }
 
 typedef struct {
@@ -1092,26 +1092,26 @@ typedef struct {
     f32 thr;
 } Ent_67;
 
-extern Ent_67 D_800F0C30_2;
-extern Ent_67 D_800F0B70_2;
+extern Ent_67 sRiderQueueAhead_2;
+extern Ent_67 sRiderQueueBehind_2;
 
-void func_80064F30(u8 *p)
+void race_update_rider_queues(u8 *p)
 {
     f32 a, b, d;
-    if (D_800F0BDC > 0) {
-        b = *(f32 *)(D_800F0C30_2.obj + 0x630);
+    if (sRiderQueueAheadCount > 0) {
+        b = *(f32 *)(sRiderQueueAhead_2.obj + 0x630);
         a = *(f32 *)(p + 0x630);
         d = b - a;
-        if (d < D_800F0C30_2.thr) {
-            func_80063B60(p, &D_800F0C30_2, 70.0f, &D_800F0BDC);
+        if (d < sRiderQueueAhead_2.thr) {
+            race_reinsert_queued_rider(p, &sRiderQueueAhead_2, 70.0f, &sRiderQueueAheadCount);
         }
     }
-    if (D_800F0C04 > 0) {
+    if (sRiderQueueBehindCount > 0) {
         b = *(f32 *)(p + 0x630);
-        a = *(f32 *)(D_800F0B70_2.obj + 0x630);
+        a = *(f32 *)(sRiderQueueBehind_2.obj + 0x630);
         d = b - a;
-        if (d < D_800F0B70_2.thr) {
-            func_80063B60(p, &D_800F0B70_2, -30.0f, &D_800F0C04);
+        if (d < sRiderQueueBehind_2.thr) {
+            race_reinsert_queued_rider(p, &sRiderQueueBehind_2, -30.0f, &sRiderQueueBehindCount);
         }
     }
 }
@@ -1125,7 +1125,7 @@ struct Obj_47 {
     u8 b6E8;
 };
 
-s32 func_80064FE0(Obj_47 **p, f32 x)
+s32 ai_lane_is_blocked(Obj_47 **p, f32 x)
 {
     f32 d, k;
     Obj_47 *o;
@@ -1149,19 +1149,19 @@ s32 func_80064FE0(Obj_47 **p, f32 x)
     return 0;
 }
 
-void func_80065048(void)
+void race_restore_grid_order(void)
 {
-    D_800F0CA0 = D_800F0BD0;
+    gGridOrder = sGridOrderSaved;
 }
 
-extern Blob6 D_800F0C98_2;
+extern Blob6 sGridOrderNext_2;
 
-void func_80065080(void) {
-    D_800F0CA0 = D_800F0C98_2;
-    D_800F0BD0 = D_800F0CA0;
+void race_apply_grid_order(void) {
+    gGridOrder = sGridOrderNext_2;
+    sGridOrderSaved = gGridOrder;
 }
 
-void func_800650E4(void)
+void race_grid_from_standings(void)
 {
     s32 i;
     s32 j;
@@ -1170,16 +1170,16 @@ void func_800650E4(void)
     Cnt *t;
     u8 *hb;
 
-    func_8000ED10_3(D_800F0C98, -1, 6);
-    if (D_800EFDBC == 1) {
-        Cnt *p = &D_800F05A8;
+    mem_fill_3(sGridOrderNext, -1, 6);
+    if (gGameMode == 1) {
+        Cnt *p = &gEvent;
         i = 0;
         if (p->n > 0) {
             t = p;
             do {
                 j = 0;
                 if (t->n > 0) {
-                    arr = D_800CA930;
+                    arr = gSeason;
                     hb = (u8 *)0x800F0000;
                     __asm__ __volatile__("" : "+r"(hb));
                     n = *(s16 *)(hb + 0x5CA);
@@ -1193,7 +1193,7 @@ inner:
                     }
                 }
 store:
-                D_800F0C98[i] = (u8)j;
+                sGridOrderNext[i] = (u8)j;
                 i++;
             } while (i < t->n);
         }

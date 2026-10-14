@@ -1,6 +1,6 @@
 #include "boot.h"
 
-void boot_func_80000824(s32 n, char *s)
+void boot_int_to_str(s32 n, char *s)
 {
     s32 p;
 

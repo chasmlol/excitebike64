@@ -21,11 +21,11 @@ typedef struct {
     s16 h26;
 } Mode;
 
-extern Prof *D_800CA930_5;
+extern Prof *gSeason_5;
 extern BikeX D_800E3E20[];
-extern Mode D_800F05A8_5;
+extern Mode gEvent_5;
 
-#define CUR (D_800CADE4_8[*(s16 *)(D_800CA930 + 0x64)])
+#define CUR (gTutorialLessons_8[*(s16 *)(gSeason + 0x64)])
 
 typedef struct {
     s32 f00;
@@ -51,17 +51,17 @@ typedef struct {
     u8 p2[0x28 - 0x18];
 } Ent_54;
 
-extern Blk_13 D_800F05A8_18;
-extern Ent_54 D_800CADE4_8[];
+extern Blk_13 gEvent_18;
+extern Ent_54 gTutorialLessons_8[];
 
-void func_8004F9B0(s32 a0)
+void tutorial_init_lesson(s32 a0)
 {
     Blk_13 *s;
 
-    func_80064DB8();
-    s = &D_800F05A8_18;
+    race_reset_grid_order();
+    s = &gEvent_18;
     if (s->f7c == 0) {
-        s->f7c = func_800BC908(0x80, 0, (s32)D_800D7340, 0x16D);
+        s->f7c = mem_alloc_dbg(0x80, 0, (s32)D_800D7340, 0x16D);
     }
     D_800F0180 = 1;
     if (CUR.fl & 4) {
@@ -71,71 +71,71 @@ void func_8004F9B0(s32 a0)
         s->f58 &= ~0x1000;
     }
     if (CUR.fl & 8) {
-        D_800F05A8_18.f26 = 0x3F;
-        D_800F05A8_18.f00 = 1;
-        D_800F05A8_18.f58 |= 0x10;
+        gEvent_18.f26 = 0x3F;
+        gEvent_18.f00 = 1;
+        gEvent_18.f58 |= 0x10;
     } else {
-        D_800F05A8_18.f58 &= ~0x10;
+        gEvent_18.f58 &= ~0x10;
     }
-    D_800F05A8_18.f58 &= ~0x4000;
+    gEvent_18.f58 &= ~0x4000;
     if (CUR.fl & 8) {
-        D_800F05A8_18.f58 |= 0x18800;
-        D_800F05A8_18.f80 = 600;
+        gEvent_18.f58 |= 0x18800;
+        gEvent_18.f80 = 600;
         if (CUR.fl & 2) {
-            D_800F05A8_18.f2c = 0;
-        } else if (D_800C8CE4 == 0) {
-            D_800F05A8_18.f2c = CUR.w14;
+            gEvent_18.f2c = 0;
+        } else if (gActiveReplay == 0) {
+            gEvent_18.f2c = CUR.w14;
         }
     } else {
-        D_800F05A8_18.f00 = 0xE;
-        D_800F05A8_18.f2c = 0;
+        gEvent_18.f00 = 0xE;
+        gEvent_18.f2c = 0;
     }
-    if (D_800C8CE4 == 0) {
-        D_800F05A8_18.f70 = 5;
-        D_800F05A8_18.f58 &= ~0x40;
+    if (gActiveReplay == 0) {
+        gEvent_18.f70 = 5;
+        gEvent_18.f58 &= ~0x40;
     } else {
-        D_800F05A8_18.f26 = 0x3F;
-        D_800F05A8_18.f70 = 0;
-        D_800F05A8_18.f78 = 0x3C;
-        D_800F05A8_18.f58 |= 0x40;
+        gEvent_18.f26 = 0x3F;
+        gEvent_18.f70 = 0;
+        gEvent_18.f78 = 0x3C;
+        gEvent_18.f58 |= 0x40;
     }
     D_800F0738 = 0;
-    D_800F06AC = 0;
-    D_800F0746 = 0;
+    gTutorialResult = 0;
+    gTutorialMenuForced = 0;
 }
 
-void func_8004FBE8(void)
+void tutorial_check_lesson_skip(void)
 {
-    if (D_800E36F8 == 5) {
-        if (((D_800E30B0 & 0x200) != 0) && ((D_800E25B0 & 0x200) == 0)) {
-            if (*(s16 *)(D_800CA930 + 0x64) < 1) {
+    if (gRacePhase == 5) {
+        if (((gPadInput & 0x200) != 0) && ((gPadInputPrev & 0x200) == 0)) {
+            if (*(s16 *)(gSeason + 0x64) < 1) {
                 return;
             }
             D_800F0618 = 3;
-            D_800E36F8 = 6;
-            D_800E374C = -1;
-            func_8001102C(1);
+            gRacePhase = 6;
+            gRacePhaseTimer = -1;
+            snd_play_menu_sound(1);
             return;
         }
-        if ((D_800E30B0 & 0x400) == 0) {
+        if ((gPadInput & 0x400) == 0) {
             return;
         }
-        if ((D_800E25B0 & 0x400) != 0) {
+        if ((gPadInputPrev & 0x400) != 0) {
             return;
         }
-        if (func_800595A4() == 0) {
+        if (tutorial_next_lesson_unlocked() == 0) {
             return;
         }
         D_800F0618 = 4;
-        D_800E36F8 = 6;
-        D_800E374C = -1;
-        func_8001102C(1);
+        gRacePhase = 6;
+        gRacePhaseTimer = -1;
+        snd_play_menu_sound(1);
     }
 }
 
-#define G_6 D_800F05A8_19
-#define TB (D_800CADE4_9[D_800CA930_5->f64])
-#define SEG(i) ((Seg_13 *)((s32)((i) * 0x6C) + (s32)D_800EE498))
+#define G_6 gEvent_19
+#define TB (gTutorialLessons_9[gSeason_5->f64])
+#define SEG(i) ((Seg_13 *)((s32)((i) * 0x6C) + (s32)gPathNodes))
 
 typedef struct {
     u32 state;      /* 0x00 */
@@ -191,29 +191,29 @@ typedef struct {
     u8 p4C[0x20];
 } Seg_13;
 
-extern Race_2 D_800F05A8_19;
-extern Track_11 D_800CADE4_9[];
-extern Bike_29 D_800E37C0_54[];
+extern Race_2 gEvent_19;
+extern Track_11 gTutorialLessons_9[];
+extern Bike_29 gRiders_54[];
 
-void func_8004FCBC(void)
+void tutorial_update(void)
 {
     s32 i;
 
     D_800E43EC = 1.0375f;
     if (!(G_6.f58 & 0x800)) {
         if ((TB.fl & 8) && (G_6.state < 5 || G_6.state == 15 || G_6.state == 14)) {
-            func_800515A8();
+            event_update_countdown();
         }
         if (G_6.f26 == 0x2B && G_6.state == 1 && (G_6.f58 & 0x8000)) {
             G_6.f80 = 300;
             G_6.f58 |= 0x10800;
         }
     } else {
-        func_80010F40();
+        snd_stop_all_riders();
     }
     if (G_6.state == 5) {
         G_6.f58 &= ~0x10;
-        if (D_800C8CE4 != 0 && D_800C238C_2 != 0xFF) {
+        if (gActiveReplay != 0 && gRiderAlpha_2 != 0xFF) {
             G_6.f70 = 1;
             G_6.state = 14;
         } else {
@@ -222,7 +222,7 @@ void func_8004FCBC(void)
         }
     }
     if (G_6.state >= 5 && !(G_6.f58 & 0x800)) {
-        if (D_800C8CE4 == 0) {
+        if (gActiveReplay == 0) {
             if (TB.fl & 2) {
                 G_6.f2c++;
             } else if (!(D_800E3E50 & 0x10)) {
@@ -231,8 +231,8 @@ void func_8004FCBC(void)
         } else {
             for (i = 0; i < TB.n; i++) {
                 if (G_6.f2c == TB.list[i].v) {
-                    func_80010F40();
-                    func_8000D0D8();
+                    snd_stop_all_riders();
+                    rumble_stop_all();
                     G_6.f80 = 1800;
                     G_6.f58 |= 0x800;
                     break;
@@ -250,14 +250,14 @@ void func_8004FCBC(void)
         G_6.f78--;
     }
     if (G_6.state < 5) {
-        func_8004FBE8();
+        tutorial_check_lesson_skip();
         return;
     }
     switch (G_6.state) {
     case 13:
         switch (G_6.f70) {
         case 0:
-            if ((D_800E30B0 & 0x10) && !(D_800E25B0 & 0x10)) {
+            if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10)) {
                 G_6.f70 = 2;
                 G_6.f78 = 59 - G_6.f78;
             } else if (G_6.f78 == 0) {
@@ -265,12 +265,12 @@ void func_8004FCBC(void)
             }
             break;
         case 1:
-            if ((D_800E30B0 & 0x10) && !(D_800E25B0 & 0x10)) {
+            if ((gPadInput & 0x10) && !(gPadInputPrev & 0x10)) {
                 G_6.f70 = 2;
                 G_6.f78 = 60;
                 G_6.f58 = (G_6.f58 & ~0x10) | 0x40;
             } else {
-                func_8004FBE8();
+                tutorial_check_lesson_skip();
             }
             break;
         case 2:
@@ -292,126 +292,126 @@ void func_8004FCBC(void)
             }
             break;
         case 1:
-            if ((D_800E30B0 & 0x40) && !(D_800E25B0 & 0x40)) {
+            if ((gPadInput & 0x40) && !(gPadInputPrev & 0x40)) {
                 G_6.f70 = 6;
-                D_800E36F8 = 6;
-                D_800E374C = -1;
-                D_800C8CE4 = 0;
-                D_800C8CDC = 0;
-                D_800E37A8 = 0;
-                D_800C8CF0 = 0;
+                gRacePhase = 6;
+                gRacePhaseTimer = -1;
+                gActiveReplay = 0;
+                gDemoPlayback = 0;
+                sDemoActive = 0;
+                gReplayRecording = 0;
                 return;
             }
-            if (D_800E37C0_54[0].f628 == TB.f1A) {
-                if (D_800E37C0_54[0].f690 & 0x10) {
+            if (gRiders_54[0].f628 == TB.f1A) {
+                if (gRiders_54[0].f690 & 0x10) {
                     if (G_6.f58 & 0x2000) {
-                        func_800229B8();
-                        func_8005E9BC();
-                        func_8000ED10((u8 *)D_800E37C0_54, 0, sizeof(Bike_29) * 8);
-                        func_8004F9B0(0);
-                        func_8001A190();
-                        func_8005FE10(D_800C8CE4);
+                        bikes_free();
+                        decal_clear_all();
+                        mem_fill((u8 *)gRiders_54, 0, sizeof(Bike_29) * 8);
+                        tutorial_init_lesson(0);
+                        bikes_init();
+                        replay_play_start(gActiveReplay);
                         G_6.f58 = (G_6.f58 | 0x80) & ~0x2000;
                     }
                 } else {
-                    D_800E37C0_54[0].f690 |= 0x10;
+                    gRiders_54[0].f690 |= 0x10;
                     G_6.f58 &= ~0x2000;
                 }
                 return;
             }
-            if ((TB.fl & 4) && D_800E37C0_54[1].f628 >= TB.f1A &&
-                (TB.f18 < TB.f1A || (D_800E37C0_54[1].f628 < TB.f18 - 2 && TB.f1A < TB.f18))) {
-                D_800E37C0_54[1].f690 |= 0x10;
+            if ((TB.fl & 4) && gRiders_54[1].f628 >= TB.f1A &&
+                (TB.f18 < TB.f1A || (gRiders_54[1].f628 < TB.f18 - 2 && TB.f1A < TB.f18))) {
+                gRiders_54[1].f690 |= 0x10;
                 return;
             }
             break;
         case 5:
-            if (D_800E37C0_54[0].f628 == TB.f1A) {
-                D_800E37C0_54[0].f690 |= 0x10;
+            if (gRiders_54[0].f628 == TB.f1A) {
+                gRiders_54[0].f690 |= 0x10;
             }
-            if ((G_6.f58 & 0x2000) && D_800E3710 != 5) {
-                D_800E3768 = 0;
-                D_800E3710 = 5;
-                D_800F0746 = 1;
+            if ((G_6.f58 & 0x2000) && gPauseMenu != 5) {
+                gPauseMenuCursor = 0;
+                gPauseMenu = 5;
+                gTutorialMenuForced = 1;
             }
             break;
         }
-        func_8004FBE8();
+        tutorial_check_lesson_skip();
         break;
     case 15:
         if (TB.fl & 2) {
             if (G_6.f2c >= 3 && D_800F0738 == 0) {
                 D_800F0738 = 2;
             }
-            if (D_800E37C0_54[0].f3FB == 0 && D_800E37C0_54[0].f3D2 == TB.list[D_800F0738].v) {
+            if (gRiders_54[0].f3FB == 0 && gRiders_54[0].f3D2 == TB.list[D_800F0738].v) {
                 D_800F0738++;
             }
             if (D_800F0738 >= 10) {
-                if (D_800F0600 & 0x2000) {
-                    D_800F06AC = 1;
-                    if (((D_800E30B0 & 0x40) && !(D_800E25B0 & 0x40)) ||
-                        ((D_800E30B0 & 0x10) && !(D_800E25B0 & 0x10))) {
+                if (gEventFlags & 0x2000) {
+                    gTutorialResult = 1;
+                    if (((gPadInput & 0x40) && !(gPadInputPrev & 0x40)) ||
+                        ((gPadInput & 0x10) && !(gPadInputPrev & 0x10))) {
                         if (D_800F0738 == 10) {
                             D_800F0738 = 11;
                         } else if (D_800F0738 == 11) {
-                            D_800CA930_5->f0[1] = TB.fD + 1;
+                            gSeason_5->f0[1] = TB.fD + 1;
                             D_800F1BC1 = D_800CAAA1;
-                            func_8005AFFC();
-                            D_800CA920 = 2;
-                            D_800E3710 = 0;
-                            D_800EFD70 &= ~4;
+                            event_request_exit();
+                            gRaceExitCode = 2;
+                            gPauseMenu = 0;
+                            gGame &= ~4;
                             return;
                         }
                     }
                     if (D_800F0738 < 10) {
                         D_800F0738 = 10;
                     }
-                } else if (!(D_800E37C0_54[0].f690 & 0x10)) {
-                    D_800E37C0_54[0].f690 |= 0x10;
+                } else if (!(gRiders_54[0].f690 & 0x10)) {
+                    gRiders_54[0].f690 |= 0x10;
                 }
             }
         }
-        func_8004FBE8();
+        tutorial_check_lesson_skip();
         if (D_800E3DE8 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
-            if (func_8005AFFC() != 0) {
+            if (event_request_exit() != 0) {
                 D_800F0618 = 6;
-                D_800C8CE4 = 0;
-                D_800C8CDC = 0;
-                D_800E37A8 = 0;
-                D_800C8CF0 = 0;
+                gActiveReplay = 0;
+                gDemoPlayback = 0;
+                sDemoActive = 0;
+                gReplayRecording = 0;
             }
             return;
         }
-        if ((u32)(D_800E37C0_54[0].f628 - TB.f1A) < 10 || (G_6.f58 & 0x2000)) {
-            if (D_800E37C0_54[0].f690 & 0x10) {
-                if (D_800CA930_5->f64 < 16 && TB.fD != D_800CADE4_9[D_800CA930_5->f64 + 1].fD &&
-                    func_8005AF90_2()) {
-                    if (TB.fD == D_800CA930_5->f0[1]) {
-                        D_800CA930_5->f0[1] = TB.fD + 1;
+        if ((u32)(gRiders_54[0].f628 - TB.f1A) < 10 || (G_6.f58 & 0x2000)) {
+            if (gRiders_54[0].f690 & 0x10) {
+                if (gSeason_5->f64 < 16 && TB.fD != gTutorialLessons_9[gSeason_5->f64 + 1].fD &&
+                    tutorial_lesson_passed_2()) {
+                    if (TB.fD == gSeason_5->f0[1]) {
+                        gSeason_5->f0[1] = TB.fD + 1;
                         D_800F1BC1 = D_800CAAA1;
                     }
                 }
                 if ((G_6.f58 & 0x2000) && D_800F0738 == 0) {
-                    func_80010F40();
+                    snd_stop_all_riders();
                     G_6.f58 &= ~0x2000;
-                    D_800F06AC = func_8005AF90_2() ? 1 : -1;
-                    D_800E3710 = 5;
-                    D_800E3768 = func_8005AF90_2() ? 3 : 0;
+                    gTutorialResult = tutorial_lesson_passed_2() ? 1 : -1;
+                    gPauseMenu = 5;
+                    gPauseMenuCursor = tutorial_lesson_passed_2() ? 3 : 0;
                 }
             } else {
-                D_800E37C0_54[0].f690 |= 0x10;
+                gRiders_54[0].f690 |= 0x10;
             }
-        } else if (D_800E37C0_54[0].f628 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
+        } else if (gRiders_54[0].f628 == SEG(SEG(TB.f18)->f4A)->f4A && !(TB.fl & 2)) {
             G_6.f70 = 6;
-            D_800E36F8 = 6;
-            D_800E374C = -1;
-            D_800C8CE4 = 0;
-            D_800C8CDC = 0;
-            D_800E37A8 = 0;
-            D_800C8CF0 = 0;
-        } else if ((TB.fl & 4) && D_800E37C0_54[1].f628 >= TB.f1A &&
-                   (TB.f18 < TB.f1A || (D_800E37C0_54[1].f628 < TB.f18 - 2 && TB.f1A < TB.f18))) {
-            D_800E37C0_54[1].f690 |= 0x10;
+            gRacePhase = 6;
+            gRacePhaseTimer = -1;
+            gActiveReplay = 0;
+            gDemoPlayback = 0;
+            sDemoActive = 0;
+            gReplayRecording = 0;
+        } else if ((TB.fl & 4) && gRiders_54[1].f628 >= TB.f1A &&
+                   (TB.f18 < TB.f1A || (gRiders_54[1].f628 < TB.f18 - 2 && TB.f1A < TB.f18))) {
+            gRiders_54[1].f690 |= 0x10;
         }
         break;
     }
@@ -478,118 +478,118 @@ typedef struct {
 
 typedef struct { s32 n; s32 f4; s32 *p; } Alloc;
 
-extern Game_19 D_800F05A8_20;
-extern Cfg_8 D_800EFD70_36;
-extern Track_12 *D_800EFD64_28;
-extern Race_3 *D_800CA930_9;
-extern Track_12 D_800CB210_10[];
+extern Game_19 gEvent_20;
+extern Cfg_8 gGame_36;
+extern Track_12 *gCurTrack_28;
+extern Race_3 *gSeason_9;
+extern Track_12 gTracks_10[];
 extern Alloc D_800CA924_2;
-extern Bike_30 D_800E37C0_55[];
+extern Bike_30 gRiders_55[];
 
-void func_80050838(s32 a0, s32 a1)
+void event_init(s32 a0, s32 a1)
 {
     Bike_30 *b;
     s32 i;
     s32 j;
 
-    D_800F0520 = -1;
-    func_8000ED10_2(D_800F05A8_20.f30, -1, 12);
-    if (D_800EFD70_36.mode == 1) {
-        for (i = 0; i < D_800F05A8_20.f22; i++) {
-            D_800CA930_9->b66[i] = 0;
+    sRaceEndFrame = -1;
+    mem_fill_2(gEvent_20.f30, -1, 12);
+    if (gGame_36.mode == 1) {
+        for (i = 0; i < gEvent_20.f22; i++) {
+            gSeason_9->b66[i] = 0;
         }
     }
-    D_800CA920 = 6;
-    *(V7 *)((u8 *)&D_800F05A8_20 + 4) = D_800EFD64_28->v;
-    D_800EFD64_28->f50 &= ~0x180;
-    D_800F05A8_20.f88 = -1;
-    D_800F05A8_20.f58 = 0;
-    D_800F05A8_20.f40 = 0;
-    D_800F05A8_20.f28 = 0;
-    D_800F05A8_20.f44 = 0;
-    D_800F05A8_20.f4C = 0;
-    D_800F05A8_20.f22 = a0;
-    D_800F05A8_20.f20 = a1;
-    if (D_800EFD70_36.mode == 1 && !(D_800EFD70_36.flags & 0x81) &&
-        D_800CA930_9->p - D_800CA9C8 == 4) {
-        D_800F05A8_20.f58 = 0x200;
-        D_800F05A8_20.f22 = 2;
-        D_800E370C = 2;
+    gRaceExitCode = 6;
+    *(V7 *)((u8 *)&gEvent_20 + 4) = gCurTrack_28->v;
+    gCurTrack_28->f50 &= ~0x180;
+    gEvent_20.f88 = -1;
+    gEvent_20.f58 = 0;
+    gEvent_20.f40 = 0;
+    gEvent_20.f28 = 0;
+    gEvent_20.f44 = 0;
+    gEvent_20.f4C = 0;
+    gEvent_20.f22 = a0;
+    gEvent_20.f20 = a1;
+    if (gGame_36.mode == 1 && !(gGame_36.flags & 0x81) &&
+        gSeason_9->p - D_800CA9C8 == 4) {
+        gEvent_20.f58 = 0x200;
+        gEvent_20.f22 = 2;
+        gNumRiders = 2;
     }
-    D_800F05A8_20.f26 = 0x96;
-    if (D_800CCD64 != 0 || (D_800EFD70_36.flags & 0x81) ||
-        D_800EFD70_36.mode == 0xD || D_800EFD70_36.mode == 0xE) {
-        D_800F05A8_20.state = 5;
+    gEvent_20.f26 = 0x96;
+    if (gCreditsMode != 0 || (gGame_36.flags & 0x81) ||
+        gGame_36.mode == 0xD || gGame_36.mode == 0xE) {
+        gEvent_20.state = 5;
     } else {
-        if ((D_800EFD70_36.mode == 0 || D_800EFD70_36.mode == 1) &&
-            D_800EFD64_28 - D_800CB210_10 != 9) {
-            D_800F05A8_20.state = 0;
-            D_800F05A8_20.f26 = 0x100;
+        if ((gGame_36.mode == 0 || gGame_36.mode == 1) &&
+            gCurTrack_28 - gTracks_10 != 9) {
+            gEvent_20.state = 0;
+            gEvent_20.f26 = 0x100;
         } else {
-            D_800F05A8_20.state = 1;
-            D_800F05A8_20.f26 = 0x96;
+            gEvent_20.state = 1;
+            gEvent_20.f26 = 0x96;
         }
-        D_800F05A8_20.f58 |= 0x10;
+        gEvent_20.f58 |= 0x10;
     }
-    D_800F05A8_20.f2C = 0;
-    D_800F05A8_20.f3C = (D_800EFD70_36.flags & 0x81) != 0;
-    func_8000ED10_2(D_800E37C0_55, 0, 0x3F00);
-    D_800EFD70_36.flags &= ~4;
+    gEvent_20.f2C = 0;
+    gEvent_20.f3C = (gGame_36.flags & 0x81) != 0;
+    mem_fill_2(gRiders_55, 0, 0x3F00);
+    gGame_36.flags &= ~4;
     if (D_800CA924_2.n > 0 && D_800CA924_2.f4 == 0) {
-        D_800CA924_2.p = func_800BD730(D_800CA924_2.n * 4, 0, (s32)D_800D7340, 0x6D9);
+        D_800CA924_2.p = mem_calloc_dbg(D_800CA924_2.n * 4, 0, (s32)D_800D7340, 0x6D9);
     }
-    switch (D_800EFD70_36.mode) {
+    switch (gGame_36.mode) {
     case 2:
-        D_800F05A8_20.f26 = 0xB4;
-        D_800F05A8_20.state = 6;
-        D_800F05A8_20.f6E = 0;
-        D_800F05A8_20.f68 = 0;
-        D_800F05A8_20.f6A = 0;
-        D_800F05A8_20.f6C = 0;
-        D_800F05A8_20.f58 |= 0x10;
+        gEvent_20.f26 = 0xB4;
+        gEvent_20.state = 6;
+        gEvent_20.f6E = 0;
+        gEvent_20.f68 = 0;
+        gEvent_20.f6A = 0;
+        gEvent_20.f6C = 0;
+        gEvent_20.f58 |= 0x10;
         break;
     case 5:
-        D_800F05A8_20.f58 |= 0x10;
-        func_80064DB8();
+        gEvent_20.f58 |= 0x10;
+        race_reset_grid_order();
         break;
     case 7:
-        D_800F05A8_20.f48 = -1;
-        D_800F05A8_20.f58 |= 0x10;
-        func_80064DB8();
-        for (b = D_800E37C0_55; b < &D_800E37C0_55[D_800EFD70_36.f3C]; b++) {
+        gEvent_20.f48 = -1;
+        gEvent_20.f58 |= 0x10;
+        race_reset_grid_order();
+        for (b = gRiders_55; b < &gRiders_55[gGame_36.f3C]; b++) {
             b->f69C = 0x1C20;
         }
         break;
     case 9:
-        func_8004F9B0(1);
+        tutorial_init_lesson(1);
         break;
     case 10:
-        D_800F05A8_20.f2C = 0x1C20;
-        D_800F05A8_20.f58 |= 0x10;
-        func_80064DB8();
+        gEvent_20.f2C = 0x1C20;
+        gEvent_20.f58 |= 0x10;
+        race_reset_grid_order();
         break;
     case 0xD:
     case 0xE:
         break;
     default:
-        if (D_800F05A8_20.state == 8) {
-            func_80064D28(2, 0);
+        if (gEvent_20.state == 8) {
+            race_set_grid_order(2, 0);
         }
-        D_800F05A8_20.f24 = 0;
-        for (j = 0; j < D_800F05A8_20.f22; j++) {
+        gEvent_20.f24 = 0;
+        for (j = 0; j < gEvent_20.f22; j++) {
             D_800E3E20[j].f8 = -1;
         }
         break;
     }
 }
 
-#define S (&D_800F05A8_21)
+#define S (&gEvent_21)
 
 typedef struct { s32 f0; s32 arr[4]; u8 b[4][3]; u8 pad20[0xC]; s32 val; } SS;
 
-extern SS D_800F05A8_21;
+extern SS gEvent_21;
 
-s32 func_80050CF4(s32 *p)
+s32 event_check_record_time(s32 *p)
 {
     u8 ret = 0;
     s32 i;
@@ -598,13 +598,13 @@ s32 func_80050CF4(s32 *p)
     u8 *src;
 
     if (((u8 *)p)[0x6E8] != 0) goto done;
-    if (D_800C8CE8 != 0) goto done;
-    if (D_800EFDBC == 1 && D_800CA930_4 != 0 && ((*D_800CA930_4 - (s32)D_800CA9C8) * 0x38E38E39 >> 2) == 5) goto done;
-    ch = D_800EFD64_3;
+    if (gReplayPlayback != 0) goto done;
+    if (gGameMode == 1 && gSeason_4 != 0 && ((*gSeason_4 - (s32)D_800CA9C8) * 0x38E38E39 >> 2) == 5) goto done;
+    ch = gCurTrack_3;
     if (ch[0x14] & 2) goto done;
     if (S->val >= S->arr[2]) goto done;
-    if (D_800EFD70_4[19] == 8 && p != D_800E37C0_56 + D_800C8CE0 * 0x1f8) goto done;
-    if (D_800EFD70_4[16] != *(s16 *)((u8 *)ch + 0x1E)) goto done;
+    if (gGame_4[19] == 8 && p != gRiders_56 + D_800C8CE0 * 0x1f8) goto done;
+    if (gGame_4[16] != *(s16 *)((u8 *)ch + 0x1E)) goto done;
 
     ret = S->val < S->arr[0];
     for (i = 0; i < 3; i++) {
@@ -621,14 +621,14 @@ s32 func_80050CF4(s32 *p)
     S->arr[i] = S->val;
     S->b[i][0] = 0xFF;
     S->b[i][1] = 0xFF;
-    S->b[i][2] = (D_800EFDBC == 8) ? 0 : (u8)(((u32)((s32)p - (s32)D_800E37C0_56) * 0xBEFBEFBFu) >> 5);
-    D_800EFD64_3[0x14] |= 0x100;
-    if (ret) func_8004EE2C((((s32)p - (s32)D_800E37C0_56) * -0x41041041) >> 5);
+    S->b[i][2] = (gGameMode == 8) ? 0 : (u8)(((u32)((s32)p - (s32)gRiders_56) * 0xBEFBEFBFu) >> 5);
+    gCurTrack_3[0x14] |= 0x100;
+    if (ret) announce_record((((s32)p - (s32)gRiders_56) * -0x41041041) >> 5);
 done:
     return ret;
 }
 
-u32 func_80050F7C(s32 p0)
+u32 event_rider_finished(s32 p0)
 {
     s32 p = p0;
     u8 *s0;
@@ -653,28 +653,28 @@ u32 func_80050F7C(s32 p0)
     if (rv >= 0) {
         return rv;
     }
-    v = D_800F05A8_2;
+    v = gEvent_2;
     *(u8 *)(v + *(s16 *)(v + 0x24) + 0x50) = p;
     a0 = *(u16 *)(v + 0x24);
     *(u16 *)(v + 0x24) = a0 + 1;
     *(u16 *)(s0 + 8) = a0;
     *(s32 *)(s0 + 0x2C) = *(s32 *)(v + 0x2C);
-    if (*(u8 *)(D_800E3E20_2 + a1 + 0x88) == 0 && D_800C8CE8 == 0) {
-        if ((D_800EFDBC != 8 || p == D_800C8CE0) && D_800E1898 == 1) {
+    if (*(u8 *)(D_800E3E20_2 + a1 + 0x88) == 0 && gReplayPlayback == 0) {
+        if ((gGameMode != 8 || p == D_800C8CE0) && gNumScreens == 1) {
             func_8001106C();
         }
     }
-    s2 = D_800E37C0 + ((((p << 6) - p)) << 5);
-    t1 = func_80050CF4(s2);
-    if ((*(s32 *)D_800EFD70_2 & 0x8000) == 0) {
-        a2 = *(s32 *)(D_800EFD70_2 + 0x4C);
+    s2 = gRiders + ((((p << 6) - p)) << 5);
+    t1 = event_check_record_time(s2);
+    if ((*(s32 *)gGame_2 & 0x8000) == 0) {
+        a2 = *(s32 *)(gGame_2 + 0x4C);
         if (a2 == 1) {
-            { s32 ix = (p * 7 + *(s16 *)(D_800CA930 + 0x64)) * 2; *(u16 *)(D_800CA930 + ix + 0x10) = *(u16 *)(s0 + 8); }
+            { s32 ix = (p * 7 + *(s16 *)(gSeason + 0x64)) * 2; *(u16 *)(gSeason + ix + 0x10) = *(u16 *)(s0 + 8); }
             ti = *(s16 *)(s0 + 8);
             ti = (s16)ti;
-            tb = (u8 *)(D_800CA938 + ti * 4);
+            tb = (u8 *)(gRacePoints + ti * 4);
             {
-                u8 *pp = D_800CA930 + p;
+                u8 *pp = gSeason + p;
                 pp[0x66] = tb[3];
             }
             if (s2[0x6E8] != 0) {
@@ -684,17 +684,17 @@ u32 func_80050F7C(s32 p0)
             if (a1 != a2) {
                 goto L19c;
             }
-            q = *(u8 **)D_800CA930 + (*(s32 *)(D_800EFD70_2 + 0x410) - 1);
-            q[4] = q[4] | (a1 << *(s16 *)(D_800CA930 + 0x64));
+            q = *(u8 **)gSeason + (*(s32 *)(gGame_2 + 0x410) - 1);
+            q[4] = q[4] | (a1 << *(s16 *)(gSeason + 0x64));
         }
     }
 L19c:
     {
-        u8 *bse = D_800E37C0;
+        u8 *bse = gRiders;
         w = bse + (((p << 6) - p) << 5);
     }
     if (w[0x6E8] == 0) {
-        u8 *vb = D_800F05A8_2;
+        u8 *vb = gEvent_2;
         if (*(s16 *)(vb + 0x24) == 1) {
             *(s32 *)(vb + 0x44) = p;
         }
@@ -710,7 +710,7 @@ L19c:
     }
 L1fc:
     {
-        u8 *bse2 = D_800E37C0;
+        u8 *bse2 = gRiders;
         w2 = bse2 + (((p << 6) - p) << 5);
     }
     w2[0x3FF] = 1;
@@ -764,12 +764,12 @@ typedef struct G64 {
     u32 f50;
 } G64;
 
-extern G64 *D_800EFD64_29;
-extern Ctl_11 D_800EFD70_37;
-extern Bike_31 D_800E37C0_57[];
-extern Blk_14 D_800F05A8_22;
+extern G64 *gCurTrack_29;
+extern Ctl_11 gGame_37;
+extern Bike_31 gRiders_57[];
+extern Blk_14 gEvent_22;
 
-void func_800511B8(s32 p)
+void event_rider_lap_completed(s32 p)
 {
     s32 st = 0;
     Rec_31 *b;
@@ -777,7 +777,7 @@ void func_800511B8(s32 p)
     s32 i;
     s16 v;
 
-    switch (D_800EFDBC) {
+    switch (gGameMode) {
     case 2:
     case 3:
     case 4:
@@ -787,32 +787,32 @@ void func_800511B8(s32 p)
     case 14:
         return;
     }
-    b = &D_800E37C0_57[p].r;
-    if (b->cnt < D_800F05A8_22.nlaps) {
-        if (D_800E37C0_57[p].r.f6E8 == 0 && D_800C8CE8 == 0 && D_800EFDBC != 7 && D_800EFDBC != 5 &&
-            !(D_800EFD64_29->f50 & 2) && (t = b->times[b->cnt]) < D_800F05A8_22.best &&
-            (D_800EFDBC != 8 || p == D_800C8CE0)) {
-            D_800F05A8_22.best = t;
-            D_800F05A8_22.f1D = 0xFF;
-            D_800F05A8_22.f1E = 0xFF;
-            D_800F05A8_22.f1F = (D_800EFDBC == 8) ? 0 : p;
+    b = &gRiders_57[p].r;
+    if (b->cnt < gEvent_22.nlaps) {
+        if (gRiders_57[p].r.f6E8 == 0 && gReplayPlayback == 0 && gGameMode != 7 && gGameMode != 5 &&
+            !(gCurTrack_29->f50 & 2) && (t = b->times[b->cnt]) < gEvent_22.best &&
+            (gGameMode != 8 || p == D_800C8CE0)) {
+            gEvent_22.best = t;
+            gEvent_22.f1D = 0xFF;
+            gEvent_22.f1E = 0xFF;
+            gEvent_22.f1F = (gGameMode == 8) ? 0 : p;
             st = 3;
-            D_800EFD64_29->f50 |= 0x80;
+            gCurTrack_29->f50 |= 0x80;
         }
-        if (D_800EFD70_37.flags & 0x81) {
+        if (gGame_37.flags & 0x81) {
             goto end;
         }
-        v = D_800F05A8_22.arr[b->cnt];
+        v = gEvent_22.arr[b->cnt];
         if (v == -1) {
-            D_800F05A8_22.arr[b->cnt] = ((u16 *)&D_800F05A8_22.f2C)[1];
+            gEvent_22.arr[b->cnt] = ((u16 *)&gEvent_22.f2C)[1];
         } else {
-            b->f670 = v - D_800F05A8_22.f2C;
+            b->f670 = v - gEvent_22.f2C;
             b->f66C = 0x78;
             if (b->f662 == 1) {
-                for (i = 0; i < D_800EFD70_37.n; i++) {
-                    if (b->cnt < D_800E37C0_57[i].r.cnt + D_800E37C0_57[i].r.f6ED) {
-                        D_800E37C0_57[i].r.f66C = 0x78;
-                        D_800E37C0_57[i].r.f670 = -b->f670;
+                for (i = 0; i < gGame_37.n; i++) {
+                    if (b->cnt < gRiders_57[i].r.cnt + gRiders_57[i].r.f6ED) {
+                        gRiders_57[i].r.f66C = 0x78;
+                        gRiders_57[i].r.f670 = -b->f670;
                         break;
                     }
                 }
@@ -820,49 +820,49 @@ void func_800511B8(s32 p)
         }
         b->f66A = 0x78;
         ((volatile Rec_31 *)b)->cnt++;
-        if (b->cnt != D_800F05A8_22.nlaps) {
+        if (b->cnt != gEvent_22.nlaps) {
             if (st != 3) {
-                if (D_800EFDBC == 8 && D_800C238C[p] == 0xFF) {
+                if (gGameMode == 8 && gRiderAlpha[p] == 0xFF) {
                     st = 1;
                 } else if (b->f662 == 0) {
                     st = 2;
-                } else if (D_800E37C0_57[p].r.f6E8 == 0 && b->f670 < -300) {
+                } else if (gRiders_57[p].r.f6E8 == 0 && b->f670 < -300) {
                     st = 1;
                 }
             }
-        } else if ((u8)func_80050F7C(p)) {
+        } else if ((u8)event_rider_finished(p)) {
             if (st != 3) {
-                if (b->f668 == 0 && D_800F05A8_22.f22 >= 2 && st == 0) {
+                if (b->f668 == 0 && gEvent_22.f22 >= 2 && st == 0) {
                     st = 4;
-                } else if (D_800E37C0_57[p].r.f6E8 == 0) {
+                } else if (gRiders_57[p].r.f6E8 == 0) {
                     st = 5;
                 }
             }
-        } else if (p < D_800EFDAC) {
+        } else if (p < gNumPlayers) {
             st = 6;
         }
     }
 end:
-    if (D_800C8CD8 != 0 && D_800E3700 == p) {
+    if (gGhostRace != 0 && gGhostSlot == p) {
         st = 0;
     }
     switch (st) {
     case 1:
-        if (D_800C8CD8 == 0 || p != D_800E3700) {
-            func_8004CD78(b->cnt - 1);
+        if (gGhostRace == 0 || p != gGhostSlot) {
+            announce_lap(b->cnt - 1);
         }
         break;
     case 2:
-        func_8004CE80(p, b->cnt - 1);
+        announce_leader_lap(p, b->cnt - 1);
         break;
     case 3:
-        func_8004ECB4(p);
+        announce_best_lap(p);
         break;
     case 4:
-        func_8004D7DC(p);
+        announce_winner(p);
         break;
     case 5:
-        func_8004E960(p);
+        announce_finish(p);
         break;
     case 6:
         break;
@@ -877,36 +877,36 @@ typedef struct {
     s32 flags;
 } Ctl_12;
 
-extern Ctl_12 D_800F05A8_23;
+extern Ctl_12 gEvent_23;
 
-void func_800515A8(void)
+void event_update_countdown(void)
 {
-    if (D_800F05A8_23.timer != 0 && --D_800F05A8_23.timer == 0) {
-        switch (D_800F05A8_23.state) {
+    if (gEvent_23.timer != 0 && --gEvent_23.timer == 0) {
+        switch (gEvent_23.state) {
         case 0:
-            D_800F05A8_23.timer = 150;
-            D_800F05A8_23.state = 1;
+            gEvent_23.timer = 150;
+            gEvent_23.state = 1;
             break;
         case 1:
-            D_800F05A8_23.timer = 36;
-            D_800F05A8_23.state = 2;
-            func_8004F270(0x6F, 5, 1);
+            gEvent_23.timer = 36;
+            gEvent_23.state = 2;
+            tunes_play_speech(0x6F, 5, 1);
             break;
         case 2:
-            D_800F05A8_23.timer = 36;
-            D_800F05A8_23.state = 3;
-            func_8004F270(0x6D, 6, 1);
+            gEvent_23.timer = 36;
+            gEvent_23.state = 3;
+            tunes_play_speech(0x6D, 6, 1);
             break;
         case 3:
-            D_800F05A8_23.timer = 36;
-            D_800F05A8_23.state = 4;
-            func_8004F270(0x6E, 7, 1);
+            gEvent_23.timer = 36;
+            gEvent_23.state = 4;
+            tunes_play_speech(0x6E, 7, 1);
             break;
         case 4:
-            D_800F05A8_23.timer = 15;
-            D_800F05A8_23.state = 5;
-            D_800F05A8_23.flags &= ~0x10;
-            func_8004F270(0x70, 8, 1);
+            gEvent_23.timer = 15;
+            gEvent_23.state = 5;
+            gEvent_23.flags &= ~0x10;
+            tunes_play_speech(0x70, 8, 1);
             break;
         }
     }
@@ -936,39 +936,39 @@ typedef struct {
     u8 pad6E9[0x7E0 - 0x6E9];
 } Rider_3;
 
-extern Game_20 D_800F05A8_24;
-extern Rider_3 D_800E37C0_58[];
+extern Game_20 gEvent_24;
+extern Rider_3 gRiders_58[];
 
-void func_800516DC(void)
+void event_update_hillclimb(void)
 {
     Game_20 *g;
     Game_20 *g2;
     Rider_3 *r;
     u8 flag;
 
-    func_800515A8();
-    g = &D_800F05A8_24;
+    event_update_countdown();
+    g = &gEvent_24;
     if (!(g->flags & 0x10) && g->f40 == 0) {
         g->tick++;
     }
     flag = 1;
-    for (r = D_800E37C0_58; r < &D_800E37C0_58[D_800F05A8_24.count]; r++) {
+    for (r = gRiders_58; r < &gRiders_58[gEvent_24.count]; r++) {
         if (r->f66A != 0) {
             r->f66A--;
             r->f69C += 30;
         }
-        if (D_800F05A8_24.tick == r->f69C && r->done == 0) {
+        if (gEvent_24.tick == r->f69C && r->done == 0) {
             r->done = 1;
             r->f668 = 5;
             r->f6E8 = 1;
         }
         if (r->done == 0) flag = 0;
     }
-    D_800F05E8 = flag;
+    gEventAllFinished = flag;
     if (flag) {
-        if (((D_800E3770_2 & 0x40) && !(D_800E36E0 & 0x40)) ||
-            ((D_800E3770_2 & 0x10) && !(D_800E36E0 & 0x10))) {
-            func_8005AFFC();
+        if (((gPlayerInputs_2 & 0x40) && !(gPlayerInputsPrev & 0x40)) ||
+            ((gPlayerInputs_2 & 0x10) && !(gPlayerInputsPrev & 0x10))) {
+            event_request_exit();
         }
     }
 }
@@ -1010,76 +1010,76 @@ typedef struct {
     s32 flags;
 } Hud;
 
-extern Game_21 D_800EFD70_38;
-extern Hud *D_800EFD64_30;
-extern Rank D_800F05A8_25;
-extern Player_12 D_800E37C0_59[];
+extern Game_21 gGame_38;
+extern Hud *gCurTrack_30;
+extern Rank gEvent_25;
+extern Player_12 gRiders_59[];
 
-void func_8005183C(void)
+void event_update_stunt(void)
 {
     Rank *q;
     Game_21 *g;
     Player_12 *e;
     s32 i, j, k;
 
-    func_800515A8();
-    if (D_800F05A8_25.flags & 0x10) return;
-    if (--D_800F05A8_25.timer > 0) return;
-    if (((D_800E3770_2 & 0x40) && !(D_800E36E0 & 0x40)) ||
-        ((D_800E3770_2 & 0x10) && !(D_800E36E0 & 0x10))) {
-        if (D_800E36F8 == 5) {
-            D_800E36F8 = 6;
-            D_800E374C = 0x14;
+    event_update_countdown();
+    if (gEvent_25.flags & 0x10) return;
+    if (--gEvent_25.timer > 0) return;
+    if (((gPlayerInputs_2 & 0x40) && !(gPlayerInputsPrev & 0x40)) ||
+        ((gPlayerInputs_2 & 0x10) && !(gPlayerInputsPrev & 0x10))) {
+        if (gRacePhase == 5) {
+            gRacePhase = 6;
+            gRacePhaseTimer = 0x14;
         }
     }
-    D_800F05A8_25.timer = 0;
-    if (D_800F05A8_25.done) return;
-    for (i = 0; i < D_800EFD70_38.n; i++) {
-        e = &D_800E37C0_59[i];
+    gEvent_25.timer = 0;
+    if (gEvent_25.done) return;
+    for (i = 0; i < gGame_38.n; i++) {
+        e = &gRiders_59[i];
         if (e->finished) continue;
-        if (D_800C8CE8) continue;
-        if (D_800EFD70_38.mode == 1 && D_800CA930_10 != NULL && *D_800CA930_10 - D_800CA9C8 == 5) continue;
-        if (e->key > D_800F05A8_25.key[2]) {
+        if (gReplayPlayback) continue;
+        if (gGame_38.mode == 1 && gSeason_10 != NULL && *gSeason_10 - D_800CA9C8 == 5) continue;
+        if (e->key > gEvent_25.key[2]) {
             for (j = 0; j < 3; j++) {
-                if (e->key >= D_800F05A8_25.key[j]) {
+                if (e->key >= gEvent_25.key[j]) {
                     for (k = 1; k >= j; k--) {
-                        D_800F05A8_25.key[k + 1] = D_800F05A8_25.key[k];
-                        D_800F05A8_25.tri[k + 1][0] = D_800F05A8_25.tri[k][0];
-                        D_800F05A8_25.tri[k + 1][1] = D_800F05A8_25.tri[k][1];
-                        D_800F05A8_25.tri[k + 1][2] = D_800F05A8_25.tri[k][2];
+                        gEvent_25.key[k + 1] = gEvent_25.key[k];
+                        gEvent_25.tri[k + 1][0] = gEvent_25.tri[k][0];
+                        gEvent_25.tri[k + 1][1] = gEvent_25.tri[k][1];
+                        gEvent_25.tri[k + 1][2] = gEvent_25.tri[k][2];
                     }
                     break;
                 }
             }
-            D_800F05A8_25.key[j] = e->key;
-            D_800F05A8_25.tri[j][2] = e - D_800E37C0_59;
-            D_800F05A8_25.tri[j][0] = 0xFF;
-            D_800F05A8_25.tri[j][1] = 0xFF;
-            D_800EFD64_30->flags |= 0x100;
+            gEvent_25.key[j] = e->key;
+            gEvent_25.tri[j][2] = e - gRiders_59;
+            gEvent_25.tri[j][0] = 0xFF;
+            gEvent_25.tri[j][1] = 0xFF;
+            gCurTrack_30->flags |= 0x100;
         }
     }
-    D_800F05A8_25.done = 1;
-    for (j = 0; j < D_800EFD70_38.n; j++) {
-        D_800E37C0_59[j].finished = 1;
+    gEvent_25.done = 1;
+    for (j = 0; j < gGame_38.n; j++) {
+        gRiders_59[j].finished = 1;
     }
-    D_800E37C0_59[0].f3FF = 1;
-    *(volatile s16 *)&D_800E37C0_59[0].f668 = 1;
-    if (D_800EFDAC == 2) {
-        if (D_800E37C0_59[0].key > D_800E37C0_59[1].key) {
-            D_800E37C0_59[0].f668 = 0;
-            D_800E37C0_59[1].f668 = 5;
-        } else if (D_800E37C0_59[0].key == D_800E37C0_59[1].key) {
-            D_800E37C0_59[0].f668 = 1;
-            D_800E37C0_59[1].f668 = 1;
+    gRiders_59[0].f3FF = 1;
+    *(volatile s16 *)&gRiders_59[0].f668 = 1;
+    if (gNumPlayers == 2) {
+        if (gRiders_59[0].key > gRiders_59[1].key) {
+            gRiders_59[0].f668 = 0;
+            gRiders_59[1].f668 = 5;
+        } else if (gRiders_59[0].key == gRiders_59[1].key) {
+            gRiders_59[0].f668 = 1;
+            gRiders_59[1].f668 = 1;
         } else {
-            D_800E37C0_59[0].f668 = 5;
-            D_800E37C0_59[1].f668 = 0;
+            gRiders_59[0].f668 = 5;
+            gRiders_59[1].f668 = 0;
         }
         D_800E439F = 1;
     }
 }
 
-#define PRESSED(i, b) ((D_800E3770[i] & (b)) && !(D_800E36E0_3[i] & (b)))
+#define PRESSED(i, b) ((gPlayerInputs[i] & (b)) && !(gPlayerInputsPrev_3[i] & (b)))
 
 typedef struct {
     s32 state;
@@ -1108,130 +1108,130 @@ typedef struct {
     u8 b[0x7E0];
 } Ent_55;
 
-extern Game_22 D_800F05A8_26;
-extern Ctl_13 D_800EFD70_39;
-extern Ent_55 D_800E37C0_60[];
+extern Game_22 gEvent_26;
+extern Ctl_13 gGame_39;
+extern Ent_55 gRiders_60[];
 
-void func_80051B6C(void)
+void event_update_soccer(void)
 {
     s32 i;
     s32 j;
 
-    if (D_800F05A8_26.f40 == 0) {
-        D_800F05A8_26.t28 = 180;
-    } else if (D_800F05A8_26.t28 != 0) {
-        D_800F05A8_26.t28--;
+    if (gEvent_26.f40 == 0) {
+        gEvent_26.t28 = 180;
+    } else if (gEvent_26.t28 != 0) {
+        gEvent_26.t28--;
     }
-    if (D_800F05A8_26.t6C != 0) {
-        if (--D_800F05A8_26.t6C == 0) {
-            for (i = 0; i < D_800EFD70_39.nplayers; i++) {
-                func_80046CC0(&D_800E37C0_60[i]);
+    if (gEvent_26.t6C != 0) {
+        if (--gEvent_26.t6C == 0) {
+            for (i = 0; i < gGame_39.nplayers; i++) {
+                bike_respawn(&gRiders_60[i]);
             }
-            func_8006C28C(0);
-            D_800F05A8_26.flags &= ~0x1F;
+            soccer_ball_reset(0);
+            gEvent_26.flags &= ~0x1F;
         }
         return;
     }
-    if (D_800F05A8_26.state == 7 || D_800F05A8_26.state == 9 || D_800F05A8_26.state == 11) {
-        if (!(D_800F05A8_26.flags & 0xF)) {
-            if (D_800F1510_2[0] >= -24.0f && D_800F1510_2[0] < 23.0f && D_800F1510_2[2] >= 79.0f && D_800F1510_2[2] < 87.0f &&
-                D_800F1510_2[1] >= 0.0f && D_800F1510_2[1] < 6.2f) {
-                D_800F05A8_26.t6C = 180;
-                D_800F05A8_26.c68++;
-                func_8004EFA4();
+    if (gEvent_26.state == 7 || gEvent_26.state == 9 || gEvent_26.state == 11) {
+        if (!(gEvent_26.flags & 0xF)) {
+            if (gSoccerBall_2[0] >= -24.0f && gSoccerBall_2[0] < 23.0f && gSoccerBall_2[2] >= 79.0f && gSoccerBall_2[2] < 87.0f &&
+                gSoccerBall_2[1] >= 0.0f && gSoccerBall_2[1] < 6.2f) {
+                gEvent_26.t6C = 180;
+                gEvent_26.c68++;
+                announce_goal();
                 D_800E3F68 = 1;
-                D_800F05A8_26.flags |= 0x11;
-                if ((D_800F05A8_26.f6E >> ((D_800EFDAC - 1) >> 1)) == 1) {
-                    D_800F05A8_26.flags |= 0x20;
+                gEvent_26.flags |= 0x11;
+                if ((gEvent_26.f6E >> ((gNumPlayers - 1) >> 1)) == 1) {
+                    gEvent_26.flags |= 0x20;
                 } else {
-                    D_800F05A8_26.flags &= ~0x20;
+                    gEvent_26.flags &= ~0x20;
                 }
-            } else if (D_800F1510_2[0] >= -24.0f && D_800F1510_2[0] < 23.0f && D_800F1510_2[2] >= -80.0f && D_800F1510_2[2] < -73.0f &&
-                       D_800F1510_2[1] >= 0.0f && D_800F1510_2[1] < 6.2f) {
-                D_800F05A8_26.t6C = 180;
-                D_800F05A8_26.c6A++;
-                func_8004EFA4();
+            } else if (gSoccerBall_2[0] >= -24.0f && gSoccerBall_2[0] < 23.0f && gSoccerBall_2[2] >= -80.0f && gSoccerBall_2[2] < -73.0f &&
+                       gSoccerBall_2[1] >= 0.0f && gSoccerBall_2[1] < 6.2f) {
+                gEvent_26.t6C = 180;
+                gEvent_26.c6A++;
+                announce_goal();
                 D_800E4748 = 1;
-                D_800F05A8_26.flags |= 0x12;
-                if ((D_800F05A8_26.f6E >> ((D_800EFDAC - 1) >> 1)) == 0) {
-                    D_800F05A8_26.flags |= 0x20;
+                gEvent_26.flags |= 0x12;
+                if ((gEvent_26.f6E >> ((gNumPlayers - 1) >> 1)) == 0) {
+                    gEvent_26.flags |= 0x20;
                 } else {
-                    D_800F05A8_26.flags &= ~0x20;
+                    gEvent_26.flags &= ~0x20;
                 }
             }
         }
     }
-    switch (D_800F05A8_26.state) {
+    switch (gEvent_26.state) {
     case 6:
-        if (--D_800F05A8_26.t26 == 0) {
-            D_800F05A8_26.state = 7;
-            D_800F05A8_26.t2C = 0x2A30;
-            D_800F05A8_26.flags &= ~0x10;
+        if (--gEvent_26.t26 == 0) {
+            gEvent_26.state = 7;
+            gEvent_26.t2C = 0x2A30;
+            gEvent_26.flags &= ~0x10;
         }
         break;
     case 7:
-        if (--D_800F05A8_26.t2C == 0) {
+        if (--gEvent_26.t2C == 0) {
             j = 0;
-            D_800F05A8_26.state = 8;
-            D_800F05A8_26.t26 = 240;
-            D_800F05A8_26.flags |= 0x10;
-            for (; j < D_800EFD70_39.nplayers; j++) {
-                func_80046CC0(&D_800E37C0_60[j]);
+            gEvent_26.state = 8;
+            gEvent_26.t26 = 240;
+            gEvent_26.flags |= 0x10;
+            for (; j < gGame_39.nplayers; j++) {
+                bike_respawn(&gRiders_60[j]);
             }
-            func_8006C28C(0);
+            soccer_ball_reset(0);
         }
         break;
     case 8:
-        if (--D_800F05A8_26.t26 == 0) {
-            D_800F05A8_26.state = 9;
-            D_800F05A8_26.t2C = 0x2A30;
-            D_800F05A8_26.flags &= ~0x10;
+        if (--gEvent_26.t26 == 0) {
+            gEvent_26.state = 9;
+            gEvent_26.t2C = 0x2A30;
+            gEvent_26.flags &= ~0x10;
         }
         break;
     case 9:
-        if (--D_800F05A8_26.t2C == 0) {
-            D_800F05A8_26.flags |= 0x10;
-            if (D_800F05A8_26.c68 == D_800F05A8_26.c6A) {
-                D_800F05A8_26.state = 10;
-                D_800F05A8_26.t26 = 240;
+        if (--gEvent_26.t2C == 0) {
+            gEvent_26.flags |= 0x10;
+            if (gEvent_26.c68 == gEvent_26.c6A) {
+                gEvent_26.state = 10;
+                gEvent_26.t26 = 240;
             } else {
-                D_800F05A8_26.state = 12;
-                D_800F05A8_26.t26 = 600;
-                D_800F05A8_26.f40 = 1;
+                gEvent_26.state = 12;
+                gEvent_26.t26 = 600;
+                gEvent_26.f40 = 1;
             }
-            for (i = 0; i < D_800EFD70_39.nplayers; i++) {
-                func_80046CC0(&D_800E37C0_60[i]);
+            for (i = 0; i < gGame_39.nplayers; i++) {
+                bike_respawn(&gRiders_60[i]);
             }
-            func_8006C28C(0);
+            soccer_ball_reset(0);
         }
         break;
     case 10:
-        if (--D_800F05A8_26.t26 == 0) {
-            D_800F05A8_26.state = 11;
-            D_800F05A8_26.t2C = 0x1C20;
-            D_800F05A8_26.flags &= ~0x10;
+        if (--gEvent_26.t26 == 0) {
+            gEvent_26.state = 11;
+            gEvent_26.t2C = 0x1C20;
+            gEvent_26.flags &= ~0x10;
         }
         break;
     case 11:
-        if (--D_800F05A8_26.t2C == 0) {
+        if (--gEvent_26.t2C == 0) {
             j = 0;
-            D_800F05A8_26.state = 12;
-            D_800F05A8_26.f40 = 1;
-            D_800F05A8_26.t26 = 600;
-            D_800F05A8_26.flags |= 0x10;
-            for (; j < D_800EFD70_39.nplayers; j++) {
-                func_80046CC0(&D_800E37C0_60[j]);
+            gEvent_26.state = 12;
+            gEvent_26.f40 = 1;
+            gEvent_26.t26 = 600;
+            gEvent_26.flags |= 0x10;
+            for (; j < gGame_39.nplayers; j++) {
+                bike_respawn(&gRiders_60[j]);
             }
-            func_8006C28C(0);
+            soccer_ball_reset(0);
         }
         break;
     case 12:
         if (PRESSED(0, 0x40) || PRESSED(1, 0x40) || PRESSED(2, 0x40) || PRESSED(3, 0x40) ||
             (D_800F05D0 == 0 &&
              (PRESSED(0, 0x10) || PRESSED(1, 0x10) || PRESSED(2, 0x10) || PRESSED(3, 0x10)))) {
-            if (D_800E36F8 == 5) {
-                D_800E36F8 = 6;
-                D_800E374C = 20;
+            if (gRacePhase == 5) {
+                gRacePhase = 6;
+                gRacePhaseTimer = 20;
             }
         }
         break;
@@ -1285,12 +1285,12 @@ typedef struct {
     u8 f6C[8];
 } Race_4;
 
-extern Game_23 D_800F05A8_27;
-extern Player_13 D_800E37C0_61[];
-extern Player_13 *D_800F0C10_3[];
-extern Race_4 *D_800CA930_11;
+extern Game_23 gEvent_27;
+extern Player_13 gRiders_61[];
+extern Player_13 *gRiderStandings_3[];
+extern Race_4 *gSeason_11;
 
-void func_800521F4(void) {
+void event_update_race(void) {
     s32 i, j, k, m;
     s32 cnt, n1;
     s32 pad[8];
@@ -1301,27 +1301,27 @@ void func_800521F4(void) {
     Player_13 *p;
     Sub_10 *q;
 
-    func_800515A8();
+    event_update_countdown();
     n1 = 0;
     cnt = n1;
-    if (!(D_800F05A8_27.f58 & 0x10)) {
-        D_800F05A8_27.f2C++;
+    if (!(gEvent_27.f58 & 0x10)) {
+        gEvent_27.f2C++;
     }
     *(s32 *)buf = 0;
-    for (m = 0; m < D_800F05A8_27.f22; m++) {
-        q = &D_800E37C0_61[m].sub;
-        if ((D_800E37C0_61[m].f690 & 8) || (D_800C8CD8 != 0 && D_800E3700 == m) || D_800E37C0_61[m].f6E8 == 0) {
+    for (m = 0; m < gEvent_27.f22; m++) {
+        q = &gRiders_61[m].sub;
+        if ((gRiders_61[m].f690 & 8) || (gGhostRace != 0 && gGhostSlot == m) || gRiders_61[m].f6E8 == 0) {
             cnt++;
         }
-        if (D_800E37C0_61[m].sub.f8 == -1 && m < cnt) {
+        if (gRiders_61[m].sub.f8 == -1 && m < cnt) {
             n1++;
         }
-        if (q->f8 != -1 || D_800E37C0_61[m].f6E8 != 0) {
+        if (q->f8 != -1 || gRiders_61[m].f6E8 != 0) {
             buf[m] = 1;
         }
-        if (D_800F05A8_27.f0 == 5) {
+        if (gEvent_27.f0 == 5) {
             s32 k = q->f0;
-            if (k < D_800F05A8_27.f20) {
+            if (k < gEvent_27.f20) {
                 q->f14[k]++;
             }
         }
@@ -1329,101 +1329,101 @@ void func_800521F4(void) {
     for (m = 0; m < cnt; m++) {
         if (!buf[m]) break;
     }
-    if (!((m == cnt && n1 == 0 && D_800EFD70_8.f4C != 8) || (D_800EFD70_8.f4C == 8 && buf[D_800C8CE0]))) return;
-    if (D_800EFD70_8.f0 & 0x81) return;
-    if (D_800CA920 == 3) return;
-    if (D_800F05A8_27.f40 == 0) {
-        D_800F05A8_27.f28 = 180;
-    } else if (D_800F05A8_27.f28 != 0) {
-        D_800F05A8_27.f28--;
+    if (!((m == cnt && n1 == 0 && gGame_8.f4C != 8) || (gGame_8.f4C == 8 && buf[D_800C8CE0]))) return;
+    if (gGame_8.f0 & 0x81) return;
+    if (gRaceExitCode == 3) return;
+    if (gEvent_27.f40 == 0) {
+        gEvent_27.f28 = 180;
+    } else if (gEvent_27.f28 != 0) {
+        gEvent_27.f28--;
     }
-    D_800F05E8 = 1;
-    D_800CA920 = 2;
-    if (D_800F0520 == -1) {
-        D_800F0520 = D_800E76D0;
+    gEventAllFinished = 1;
+    gRaceExitCode = 2;
+    if (sRaceEndFrame == -1) {
+        sRaceEndFrame = gRaceFrame;
     }
-    if (D_800C8CE8 == 0 && D_800E36F8 == 5) {
-        if ((D_800E30B0_2[0] & 0x40) && !(D_800E25B0_2[0] & 0x40)) goto go;
-        if ((D_800E30B0_2[1] & 0x40) && !(D_800E25B0_2[1] & 0x40)) goto go;
-        if ((D_800E30B0_2[2] & 0x40) && !(D_800E25B0_2[2] & 0x40)) goto go;
-        if ((D_800E30B0_2[3] & 0x40) && !(D_800E25B0_2[3] & 0x40)) goto go;
-        if (D_800CCD64 != 0 && (D_800EFD70_8.f0 & 0x01000000) && (D_800E30B0_2[0] & 0x20) && !(D_800E25B0_2[0] & 0x20)) goto go;
-        if (D_800F05D0 != 0 && D_800CCD64 == 0) goto end;
-        if ((D_800E30B0_2[0] & 0x10) && !(D_800E25B0_2[0] & 0x10)) goto go;
-        if ((D_800E30B0_2[1] & 0x10) && !(D_800E25B0_2[1] & 0x10)) goto go;
-        if ((D_800E30B0_2[2] & 0x10) && !(D_800E25B0_2[2] & 0x10)) goto go;
-        if (!(D_800E30B0_2[3] & 0x10) || (D_800E25B0_2[3] & 0x10)) goto end;
+    if (gReplayPlayback == 0 && gRacePhase == 5) {
+        if ((gPadInput_2[0] & 0x40) && !(gPadInputPrev_2[0] & 0x40)) goto go;
+        if ((gPadInput_2[1] & 0x40) && !(gPadInputPrev_2[1] & 0x40)) goto go;
+        if ((gPadInput_2[2] & 0x40) && !(gPadInputPrev_2[2] & 0x40)) goto go;
+        if ((gPadInput_2[3] & 0x40) && !(gPadInputPrev_2[3] & 0x40)) goto go;
+        if (gCreditsMode != 0 && (gGame_8.f0 & 0x01000000) && (gPadInput_2[0] & 0x20) && !(gPadInputPrev_2[0] & 0x20)) goto go;
+        if (D_800F05D0 != 0 && gCreditsMode == 0) goto end;
+        if ((gPadInput_2[0] & 0x10) && !(gPadInputPrev_2[0] & 0x10)) goto go;
+        if ((gPadInput_2[1] & 0x10) && !(gPadInputPrev_2[1] & 0x10)) goto go;
+        if ((gPadInput_2[2] & 0x10) && !(gPadInputPrev_2[2] & 0x10)) goto go;
+        if (!(gPadInput_2[3] & 0x10) || (gPadInputPrev_2[3] & 0x10)) goto end;
     go:
-        if (D_800CCD64 != 0) {
-            func_8001102C(2);
+        if (gCreditsMode != 0) {
+            snd_play_menu_sound(2);
         }
-        if (D_800E36F8 == 5) {
-            D_800E36F8 = 6;
-            D_800E374C = 20;
+        if (gRacePhase == 5) {
+            gRacePhase = 6;
+            gRacePhaseTimer = 20;
         }
-        for (k = 0; k < D_800F05A8_27.f22; k++) {
-            if (D_800E37C0_61[k].sub.f8 == -1) {
-                f = D_800E37C0_61[k].f630 / (D_800EE48C * D_800F05A8_27.f20);
+        for (k = 0; k < gEvent_27.f22; k++) {
+            if (gRiders_61[k].sub.f8 == -1) {
+                f = gRiders_61[k].f630 / (gPathLapLength * gEvent_27.f20);
                 if (f <= 0.1f) {
                     f = 0.1f;
                 } else if (f > 1.0f) {
                     f = 1.0f;
                 }
-                f = D_800F05A8_27.f2C / f;
-                D_800E37C0_61[k].sub.f2C = f;
+                f = gEvent_27.f2C / f;
+                gRiders_61[k].sub.f2C = f;
             }
         }
-        for (k = 0; k < D_800F05A8_27.f22; k++) {
-            if (D_800E37C0_61[k].sub.f8 == -1) {
-                D_800E37C0_61[k].sub.f8 = 0;
-                for (j = 0; j < D_800F05A8_27.f22; j++) {
-                    if ((j != k && k < j && D_800E37C0_61[j].sub.f2C < D_800E37C0_61[k].sub.f2C) ||
-                        (j < k && D_800E37C0_61[j].sub.f2C <= D_800E37C0_61[k].sub.f2C)) {
-                        D_800E37C0_61[k].sub.f8++;
+        for (k = 0; k < gEvent_27.f22; k++) {
+            if (gRiders_61[k].sub.f8 == -1) {
+                gRiders_61[k].sub.f8 = 0;
+                for (j = 0; j < gEvent_27.f22; j++) {
+                    if ((j != k && k < j && gRiders_61[j].sub.f2C < gRiders_61[k].sub.f2C) ||
+                        (j < k && gRiders_61[j].sub.f2C <= gRiders_61[k].sub.f2C)) {
+                        gRiders_61[k].sub.f8++;
                     }
                 }
-                if (D_800EFD70_8.f4C == 1) {
-                    D_800CA930_11->f66[k] += D_800CA938_2[D_800E37C0_61[k].sub.f8].b3;
+                if (gGame_8.f4C == 1) {
+                    gSeason_11->f66[k] += gRacePoints_2[gRiders_61[k].sub.f8].b3;
                 }
             }
-            D_800F05A8_27.f50[D_800E37C0_61[k].sub.f8] = k;
+            gEvent_27.f50[gRiders_61[k].sub.f8] = k;
         }
-        D_800F05A8_27.f24 = D_800F05A8_27.f22;
-        if (D_800EFD70_8.f4C == 1) {
-            for (i = 0; i < D_800F05A8_27.f22; i++) {
-                D_800CA930_11->f4[i] += D_800CA930_11->f66[i];
-                D_800CA930_11->f6C[i] = i;
+        gEvent_27.f24 = gEvent_27.f22;
+        if (gGame_8.f4C == 1) {
+            for (i = 0; i < gEvent_27.f22; i++) {
+                gSeason_11->f4[i] += gSeason_11->f66[i];
+                gSeason_11->f6C[i] = i;
             }
-            for (i = 0; i < D_800F05A8_27.f22; i++) {
+            for (i = 0; i < gEvent_27.f22; i++) {
                 j = i;
                 if (i != 0) {
-                    s = D_800CA930_11->f4[D_800CA930_11->f6C[i - 1]];
+                    s = gSeason_11->f4[gSeason_11->f6C[i - 1]];
                 }
-                t = D_800CA930_11->f4[D_800CA930_11->f6C[i]];
+                t = gSeason_11->f4[gSeason_11->f6C[i]];
                 while (j != 0 && s < t) {
-                    tmp = D_800CA930_11->f6C[j];
-                    D_800CA930_11->f6C[j] = D_800CA930_11->f6C[j - 1];
-                    D_800CA930_11->f6C[j - 1] = tmp;
+                    tmp = gSeason_11->f6C[j];
+                    gSeason_11->f6C[j] = gSeason_11->f6C[j - 1];
+                    gSeason_11->f6C[j - 1] = tmp;
                     j--;
                     if (j != 0) {
-                        s = D_800CA930_11->f4[D_800CA930_11->f6C[j - 1]];
+                        s = gSeason_11->f4[gSeason_11->f6C[j - 1]];
                     }
                 }
             }
         }
     }
 end:
-    if (D_800C29CC->f10 == 3) {
+    if (gCurGameState->f10 == 3) {
         s = -1;
-        for (i = D_800F05A8_27.f24; i < D_800F05A8_27.f22; i++) {
-            q = &D_800F0C10_3[i]->sub;
+        for (i = gEvent_27.f24; i < gEvent_27.f22; i++) {
+            q = &gRiderStandings_3[i]->sub;
             if (q->f8 == s) {
-                D_800F05A8_27.f50[D_800F05A8_27.f24] = i;
-                q->f8 = D_800F05A8_27.f24++;
-                q->f2C = (D_800F05A8_27.f2C * D_800F0C10_3[0]->f630) / D_800E37C0_61[i].f630;
-                if (D_800EFD70_8.f4C == 1 + (((u32)&D_800E37C0_61 & 1) >> 1)) {
-                    D_800CA930_11->f10[(D_800F0C10_3[i] - D_800E37C0_61) * 7 + D_800CA930_11->f64] = q->f8;
-                    D_800CA930_11->f66[D_800F0C10_3[i] - D_800E37C0_61] = ((Pts *)((u32)D_800CA938_2 | (((u32)D_800CA938_2 & 1) >> 1)))[q->f8].b3;
+                gEvent_27.f50[gEvent_27.f24] = i;
+                q->f8 = gEvent_27.f24++;
+                q->f2C = (gEvent_27.f2C * gRiderStandings_3[0]->f630) / gRiders_61[i].f630;
+                if (gGame_8.f4C == 1 + (((u32)&gRiders_61 & 1) >> 1)) {
+                    gSeason_11->f10[(gRiderStandings_3[i] - gRiders_61) * 7 + gSeason_11->f64] = q->f8;
+                    gSeason_11->f66[gRiderStandings_3[i] - gRiders_61] = ((Pts *)((u32)gRacePoints_2 | (((u32)gRacePoints_2 & 1) >> 1)))[q->f8].b3;
                 }
             }
         }
@@ -1454,78 +1454,78 @@ typedef struct {
     s32 w88;
 } Ctl_14;
 
-extern Ctl2 D_800EFD70_40;
-extern Ctl_14 D_800F05A8_28;
+extern Ctl2 gGame_40;
+extern Ctl_14 gEvent_28;
 
-void func_80052A6C(s32 arg0)
+void event_update(s32 arg0)
 {
     s32 i;
     s32 *p;
 
-    if ((D_800EFD70_40.w00 & 0x80) == 0) {
+    if ((gGame_40.w00 & 0x80) == 0) {
         s32 bits;
         i = 0;
-        bits = D_800C292C;
-        for (p = D_800E3770; i < 4; i++, p++) {
+        bits = gContMask;
+        for (p = gPlayerInputs; i < 4; i++, p++) {
             if (((bits >> i) & 1) != 0 && *p != 0) break;
         }
         if (i == 4) {
-            D_800F05A8_28.w4C = D_800F05A8_28.w4C + 1;
+            gEvent_28.w4C = gEvent_28.w4C + 1;
         } else {
-            D_800F05A8_28.w4C = 0;
+            gEvent_28.w4C = 0;
         }
     }
-    switch (D_800EFD70_40.w4C) {
+    switch (gGame_40.w4C) {
     case 2:
-        func_80051B6C();
+        event_update_soccer();
         break;
     case 5:
-        func_800515A8();
-        if (D_800F05A8_28.w40 == 0) {
-            if ((D_800F05A8_28.w58 & 0x10) != 0) break;
-            D_800F05A8_28.w2C = D_800F05A8_28.w2C + 1;
-            if (D_800F05A8_28.w2C == 0x34bc0) {
-                func_80050F7C(0);
-                D_800F05A8_28.w40 = 1;
+        event_update_countdown();
+        if (gEvent_28.w40 == 0) {
+            if ((gEvent_28.w58 & 0x10) != 0) break;
+            gEvent_28.w2C = gEvent_28.w2C + 1;
+            if (gEvent_28.w2C == 0x34bc0) {
+                event_rider_finished(0);
+                gEvent_28.w40 = 1;
             }
-        } else if ((D_800E3770[0] & 0x40) != 0) {
-            if ((D_800E36E0 & 0x40) == 0) {
-                func_8005AFFC();
+        } else if ((gPlayerInputs[0] & 0x40) != 0) {
+            if ((gPlayerInputsPrev & 0x40) == 0) {
+                event_request_exit();
             }
             break;
         }
         break;
     case 7:
-        func_800516DC();
+        event_update_hillclimb();
         break;
     case 9:
-        func_8004FCBC();
+        tutorial_update();
         break;
     case 10:
-        func_8005183C();
+        event_update_stunt();
         break;
     default:
-        func_800521F4();
+        event_update_race();
     case 0xd:
     case 0xe:
         break;
     }
-    if (D_800EFD70_40.w4C < 2 && D_800F05A8_28.w24 > 0 && D_800F05A8_28.p50 < D_800EFD70_40.w3C &&
-        D_800F05A8_28.w88 != -2 && (D_800EFD70_40.w3C == 1 || D_800EFD70_40.w4C == 8)) {
-        D_800F05A8_28.w88 = D_800F05A8_28.w88 + 1;
-        if (D_800EFD70_40.w3C >= 3) {
-            if (D_800F05A8_28.w88 >= 100) goto store;
-        } else if (D_800F05A8_28.w88 >= 0x8c) {
+    if (gGame_40.w4C < 2 && gEvent_28.w24 > 0 && gEvent_28.p50 < gGame_40.w3C &&
+        gEvent_28.w88 != -2 && (gGame_40.w3C == 1 || gGame_40.w4C == 8)) {
+        gEvent_28.w88 = gEvent_28.w88 + 1;
+        if (gGame_40.w3C >= 3) {
+            if (gEvent_28.w88 >= 100) goto store;
+        } else if (gEvent_28.w88 >= 0x8c) {
             goto store;
         }
         return;
 store:
-        D_800F05A8_28.w88 = -2;
+        gEvent_28.w88 = -2;
     }
     return;
 }
 
-void func_80052C90(void)
+void event_hud_init(void)
 {
     s32 iVar2;
     s32 iVar3;
@@ -1535,10 +1535,10 @@ void func_80052C90(void)
     s32 t13;
     u8 *s2;
 
-    if (D_800EFDBC == 9) {
-        D_800F06B0 = (u16 *)func_800BC908(0x200, 0, D_800D7340, 0xB4B);
-        *D_800F06B0 = 0;
-        puVar4 = D_800F06B0 + 1;
+    if (gGameMode == 9) {
+        sGreyPalette = (u16 *)mem_alloc_dbg(0x200, 0, D_800D7340, 0xB4B);
+        *sGreyPalette = 0;
+        puVar4 = sGreyPalette + 1;
         iVar3 = 1;
         do {
             iVar2 = iVar3 >> 4;
@@ -1547,31 +1547,31 @@ void func_80052C90(void)
             iVar3 = iVar3 + 1;
         } while (iVar3 < 0x100);
     }
-    D_800EFD60 = func_800BF79C(D_800E7728, D_800D0D00);
-    s2 = D_800EFD70_2;
+    sCountdownTextures = res_load(D_800E7728, D_800D0D00);
+    s2 = gGame_2;
     if (1 < *(s32 *)(s2 + 0x3C)) {
-        D_800F0524 = func_800BF79C(D_800E7728, D_800D11B0);
+        sTempGaugeTextures = res_load(D_800E7728, D_800D11B0);
     }
     if (*(s32 *)(s2 + 0x4C) == 9) {
-        *(s32 *)(s2 + 0x730) = func_800BF79C(D_800E7728, D_800D09F8);
-        D_800F0740 = func_800BF79C(D_800E7728, D_800D10E8);
-        D_800EFD6C = func_800BF79C(D_800E7728, D_800D0DEC);
-        D_800EFD68 = func_800BF79C(D_800E7728, D_800D09D4);
+        *(s32 *)(s2 + 0x730) = res_load(D_800E7728, D_800D09F8);
+        D_800F0740 = res_load(D_800E7728, D_800D10E8);
+        D_800EFD6C = res_load(D_800E7728, D_800D0DEC);
+        D_800EFD68 = res_load(D_800E7728, D_800D09D4);
     }
-    func_800BFC40(D_800D8424, func_80014D20);
+    res_register_type(D_800D8424, prim_n64_relocate);
     if (*(s32 *)(s2 + 0x3C) == 1) {
-        D_800F0730[0] = func_800BC908(0x1c0, 0, D_800D7340, 0xB6B);
-        D_800F0730[1] = func_800BC908(0x1c0, 0, D_800D7340, 0xB6C);
+        D_800F0730[0] = mem_alloc_dbg(0x1c0, 0, D_800D7340, 0xB6B);
+        D_800F0730[1] = mem_alloc_dbg(0x1c0, 0, D_800D7340, 0xB6C);
     }
-    t13 = *(volatile s32 *)&D_800F13F0;
-    guPerspective(auStack_50, D_800F0744, 33.0f, 320.0f / (f32)t13, 50.0f, 4192.0f, 1.0f);
+    t13 = *(volatile s32 *)&gScreenHeight;
+    guPerspective(auStack_50, sHudPerspNorm, 33.0f, 320.0f / (f32)t13, 50.0f, 4192.0f, 1.0f);
     iVar3 = 0;
     if (*(s32 *)(s2 + 0x4C) == 2) {
-        D_800F0528 = func_800BF79C(D_800E7728, D_800D1084);
+        sSoccerMapTexture = res_load(D_800E7728, D_800D1084);
     }
     for (i = 0; i < 0x1E; i++) {
-        D_800F0530[i] = func_800C1E60(0, 0x40, 2, 2, 0);
-        D_800F06B8[i] = func_800C1E60(0, 0x40, 2, 2, 0);
+        gHudTextObjs[i] = font_text_create(0, 0x40, 2, 2, 0);
+        gMenuTextObjs[i] = font_text_create(0, 0x40, 2, 2, 0);
     }
 }
 
@@ -1580,7 +1580,7 @@ typedef struct { char c[2]; } Str2;
 
 extern Str9 D_800D8438;
 
-void func_80052F30(s32 param_1, char *param_2)
+void event_format_time(s32 param_1, char *param_2)
 {
     char buf[32];
 
@@ -1588,58 +1588,58 @@ void func_80052F30(s32 param_1, char *param_2)
         *(Str9 *)param_2 = D_800D8438;
         return;
     }
-    func_8000EE30(param_1 / 0xE10, buf);
+    int_to_str(param_1 / 0xE10, buf);
     if (strlen(buf) == 1) {
         *(Str2 *)param_2 = *(Str2 *)D_800D8444;
-        func_8000ED30(param_2, buf);
+        str_cat(param_2, buf);
     } else {
-        func_8000EF8C(param_2, buf);
+        str_copy(param_2, buf);
     }
-    func_8000ED30(param_2, D_800D8448);
-    func_8000EE30((param_1 / 60) % 60, buf);
+    str_cat(param_2, D_800D8448);
+    int_to_str((param_1 / 60) % 60, buf);
     if (strlen(buf) == 1) {
-        func_8000ED30(param_2, D_800D8444);
-        func_8000ED30(param_2, buf);
+        str_cat(param_2, D_800D8444);
+        str_cat(param_2, buf);
     } else {
-        func_8000ED30(param_2, buf);
+        str_cat(param_2, buf);
     }
-    func_8000ED30(param_2, D_800D844C);
-    func_8000EE30(((param_1 % 60) * 100) / 60, buf);
+    str_cat(param_2, D_800D844C);
+    int_to_str(((param_1 % 60) * 100) / 60, buf);
     if (strlen(buf) == 1) {
-        func_8000ED30(param_2, D_800D8444);
-        func_8000ED30(param_2, buf);
+        str_cat(param_2, D_800D8444);
+        str_cat(param_2, buf);
     } else {
-        func_8000ED30(param_2, buf);
+        str_cat(param_2, buf);
     }
 }
 
-void func_8005313C(s32 param_1, char *param_2)
+void event_format_time_short(s32 param_1, char *param_2)
 {
     s32 iVar1;
     char acStack_30[32];
 
     *param_2 = 0;
     if (param_1 > 0xe0f) {
-        func_8000EE30(param_1 / 0xe10, param_2);
-        func_8000ED30(param_2, D_800D8448);
+        int_to_str(param_1 / 0xe10, param_2);
+        str_cat(param_2, D_800D8448);
     }
-    func_8000EE30((param_1 / 0x3c) % 0x3c, acStack_30);
+    int_to_str((param_1 / 0x3c) % 0x3c, acStack_30);
     iVar1 = strlen(acStack_30);
     if ((iVar1 == 1) && (param_1 > 0xe0f)) {
-        func_8000ED30(param_2, D_800D8444);
+        str_cat(param_2, D_800D8444);
     }
-    func_8000ED30(param_2, acStack_30);
-    func_8000ED30(param_2, D_800D844C);
-    func_8000EE30(((param_1 % 0x3c) * 100) / 0x3c, acStack_30);
+    str_cat(param_2, acStack_30);
+    str_cat(param_2, D_800D844C);
+    int_to_str(((param_1 % 0x3c) * 100) / 0x3c, acStack_30);
     iVar1 = strlen(acStack_30);
     if (iVar1 == 1) {
-        func_8000ED30(param_2, D_800D8444);
+        str_cat(param_2, D_800D8444);
     }
-    func_8000ED30(param_2, acStack_30);
+    str_cat(param_2, acStack_30);
     return;
 }
 
-void func_800532D4(u8 *p, s32 n, s32 arg2)
+void event_set_place_text(u8 *p, s32 n, s32 arg2)
 {
     char buf[0x28];
     s32 m;
@@ -1647,7 +1647,7 @@ void func_800532D4(u8 *p, s32 n, s32 arg2)
     s32 off;
     Quad *r;
 
-    if (D_800F05CA >= 2) {
+    if (gEventNumRiders >= 2) {
         buf[0] = n + 0x31;
         m = n;
         if (m > 3) {
@@ -1655,17 +1655,17 @@ void func_800532D4(u8 *p, s32 n, s32 arg2)
         }
         buf[1] = m + 0x7B;
         strcpy(buf + 2, " Place");
-        func_800C1F2C(p, buf);
+        font_text_add(p, buf);
     } else {
-        func_800C1F2C(p, "Finished");
+        font_text_add(p, "Finished");
     }
-    base = D_800E1718;
-    off = D_800C2598 * 16 + (D_800E1898 - 1) * 64;
+    base = gViewRects;
+    off = gCurView * 16 + (gNumScreens - 1) * 64;
     r = (Quad *)(base + off);
-    func_800C0ACC(p, r->a + r->c / 2, r->b + r->d / 2);
+    font_draw_text(p, r->a + r->c / 2, r->b + r->d / 2);
 }
 
-Gfx *func_800533D0(Gfx *gdl, s32 p1, s32 p2, s32 p3)
+Gfx *event_draw_hud_testride(Gfx *gdl, s32 p1, s32 p2, s32 p3)
 {
     char buf[32];
     s32 x;
@@ -1673,36 +1673,36 @@ Gfx *func_800533D0(Gfx *gdl, s32 p1, s32 p2, s32 p3)
     f32 fa;
     s32 *tab;
 
-    func_800C2224();
-    if (D_800E2038 & 0x20) {
-        func_800C1E60(D_800F0530_2, 0x40, 1, 2, 0x10);
-        func_800C1F2C(D_800F0530_2, "Testing User Track");
-        tab = D_800E1718_4;
-        x = D_800F13EC * 0x12;
+    font_reset_queue();
+    if (gFrameCounter & 0x20) {
+        font_text_create(gHudTextObjs_2, 0x40, 1, 2, 0x10);
+        font_text_add(gHudTextObjs_2, "Testing User Track");
+        tab = gViewRects_4;
+        x = gScreenWidth * 0x12;
         if (x < 0) {
             x = x + 0x1ff;
         }
-        func_800C0ACC(D_800F0530_2, D_800E1718_4[0] + (x >> 9), tab[1] + (D_800F13F0 * 0x11) / 0xf0);
+        font_draw_text(gHudTextObjs_2, gViewRects_4[0] + (x >> 9), tab[1] + (gScreenHeight * 0x11) / 0xf0);
     }
-    fa = D_800E37C0_62[0x108 + p3 * 0x1f8];
+    fa = gRiders_62[0x108 + p3 * 0x1f8];
     if (0.0f < fa) {
-        func_8000EE30((s32)(fa * 3600.0f / 1612.9f), buf);
+        int_to_str((s32)(fa * 3600.0f / 1612.9f), buf);
     } else {
-        func_8000EE30((s32)(-fa * 3600.0f / 1612.9f), buf);
+        int_to_str((s32)(-fa * 3600.0f / 1612.9f), buf);
     }
-    func_800C1E60(D_800F0530_2, 0x40, 3, 2, 0x12);
-    func_800C1F2C(D_800F0530_2, buf);
+    font_text_create(gHudTextObjs_2, 0x40, 3, 2, 0x12);
+    font_text_add(gHudTextObjs_2, buf);
     x = 0x1ba;
-    if (D_800CCCA8 == 2) {
+    if (gViMode == 2) {
         x = 0x228;
     }
     y = 0xd6;
-    if (D_800CCCA8 == 2) {
+    if (gViMode == 2) {
         y = 0x180;
     }
-    func_800C0ACC(D_800F0530_2, x, y);
-    gdl = func_800C1394(gdl);
-    gdl = func_80009754(gdl, p1, p2, p3);
+    font_draw_text(gHudTextObjs_2, x, y);
+    gdl = font_render(gdl);
+    gdl = render_draw_temp_gauge(gdl, p1, p2, p3);
     return gdl;
 }
 
@@ -1724,9 +1724,9 @@ typedef struct {
     u8 pad6A0[0x7E0 - 0x6A0];
 } Player_14;
 
-extern Player_14 D_800E37C0_63[];
+extern Player_14 gRiders_63[];
 
-Gfx *func_800535B8(Gfx *gdl, s32 a1, s32 a2, s32 pl)
+Gfx *event_draw_hud_hillclimb(Gfx *gdl, s32 a1, s32 a2, s32 pl)
 {
     char buf[32];
     f32 v;
@@ -1734,101 +1734,101 @@ Gfx *func_800535B8(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     s32 t;
     s32 *p;
 
-    func_800C2224();
-    func_800C1E60(D_800F0530[0], 0x40, 1, 2, 0x20);
-    func_800C1E60(D_800F0530[1], 0x40, 1, 2, 0x20);
-    func_800C1E60(D_800F0530[2], 0x40, 1, 4, 0x20);
-    func_800C1E60(D_800F0530[3], 0x40, 1, 4, 0x20);
-    func_800C1E60(D_800F0530[7], 0x40, 1, 6, 0x20);
-    func_800C1E60(D_800F0530[8], 0x40, 1, 6, 0x20);
-    if (D_800CCCA8 == 2) {
-        func_800C1D54(0x10000, 0x20000, 0, 0);
+    font_reset_queue();
+    font_text_create(gHudTextObjs[0], 0x40, 1, 2, 0x20);
+    font_text_create(gHudTextObjs[1], 0x40, 1, 2, 0x20);
+    font_text_create(gHudTextObjs[2], 0x40, 1, 4, 0x20);
+    font_text_create(gHudTextObjs[3], 0x40, 1, 4, 0x20);
+    font_text_create(gHudTextObjs[7], 0x40, 1, 6, 0x20);
+    font_text_create(gHudTextObjs[8], 0x40, 1, 6, 0x20);
+    if (gViMode == 2) {
+        font_set_scale(0x10000, 0x20000, 0, 0);
     }
-    if (D_800C2594 == 1) {
-        func_800C1E60(D_800F0530[6], 0x40, 3, 2, 0x12);
-        v = D_800E37C0_63[pl].f420;
-        func_8000EE30((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
-        func_800C1F2C(D_800F0530[6], buf);
+    if (gNumViews == 1) {
+        font_text_create(gHudTextObjs[6], 0x40, 3, 2, 0x12);
+        v = gRiders_63[pl].f420;
+        int_to_str((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
+        font_text_add(gHudTextObjs[6], buf);
         x1 = 0x1BA;
-        if (D_800CCCA8 == 2) {
+        if (gViMode == 2) {
             x1 = 0x228;
         }
         y1 = 0xD6;
-        if (D_800CCCA8 == 2) {
+        if (gViMode == 2) {
             y1 = 0x180;
         }
-        func_800C0ACC(D_800F0530[6], x1, y1);
-        gdl = func_80009754(gdl, a1, a2, pl);
-        func_800C1E60(D_800F0530[4], 0x40, 1, 2, 0x20);
-        func_800C1E60(D_800F0530[5], 0x40, 1, 4, 0x20);
-        func_80052F30(D_800E37C0_63[pl].w69C - D_800F05D4, buf);
-        func_800C1F2C(D_800F0530[4], "Time:");
-        func_800C0ACC(D_800F0530[4], 0x23, D_800CCCA8 == 2 ? 0x180 : 0xD6);
-        func_800C1F2C(D_800F0530[5], buf);
-        func_800C0ACC(D_800F0530[5], 100, D_800CCCA8 == 2 ? 0x180 : 0xD6);
+        font_draw_text(gHudTextObjs[6], x1, y1);
+        gdl = render_draw_temp_gauge(gdl, a1, a2, pl);
+        font_text_create(gHudTextObjs[4], 0x40, 1, 2, 0x20);
+        font_text_create(gHudTextObjs[5], 0x40, 1, 4, 0x20);
+        event_format_time(gRiders_63[pl].w69C - gEventTime, buf);
+        font_text_add(gHudTextObjs[4], "Time:");
+        font_draw_text(gHudTextObjs[4], 0x23, gViMode == 2 ? 0x180 : 0xD6);
+        font_text_add(gHudTextObjs[5], buf);
+        font_draw_text(gHudTextObjs[5], 100, gViMode == 2 ? 0x180 : 0xD6);
     } else {
-        func_800C1E60(D_800F0530[4], 0x40, 2, 2, 0x20);
-        func_800C1E60(D_800F0530[5], 0x40, 2, 4, 0x20);
-        t = -D_800F05D4 + D_800E37C0_63[pl].w69C;
-        if (D_800E37C0_63[pl].b3FF) {
-            t = D_800E37C0_63[pl].w68C;
+        font_text_create(gHudTextObjs[4], 0x40, 2, 2, 0x20);
+        font_text_create(gHudTextObjs[5], 0x40, 2, 4, 0x20);
+        t = -gEventTime + gRiders_63[pl].w69C;
+        if (gRiders_63[pl].b3FF) {
+            t = gRiders_63[pl].w68C;
         }
         if (t < 0) {
             t = 0;
         }
-        func_80052F30(t, buf);
-        func_800C1F2C(D_800F0530[4], "Time:");
-        func_800C0ACC(D_800F0530[4], D_800E1718_5[D_800E1898 - 1][pl][0] + 10, 0x1E);
-        func_800C1F2C(D_800F0530[5], buf);
-        func_800C0ACC(D_800F0530[5], D_800E1718_5[D_800E1898 - 1][pl][0] + 0x32, 0x1E);
-        func_800C1E60(D_800F0530[6], 0x40, 3, 2, 0x12);
-        v = D_800E37C0_63[pl].f420;
-        func_8000EE30((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
-        func_800C1F2C(D_800F0530[6], buf);
-        func_800C0ACC(D_800F0530[6],
-                      D_800E1718_5[D_800E1898 - 1][pl][0] + D_800E1718_5[D_800E1898 - 1][pl][2] - 0x2D,
-                      D_800E1718_5[D_800E1898 - 1][pl][1] + D_800E1718_5[D_800E1898 - 1][pl][3] - 0xB);
-        gdl = func_8005A4C8(gdl, a1, a2, pl);
+        event_format_time(t, buf);
+        font_text_add(gHudTextObjs[4], "Time:");
+        font_draw_text(gHudTextObjs[4], gViewRects_5[gNumScreens - 1][pl][0] + 10, 0x1E);
+        font_text_add(gHudTextObjs[5], buf);
+        font_draw_text(gHudTextObjs[5], gViewRects_5[gNumScreens - 1][pl][0] + 0x32, 0x1E);
+        font_text_create(gHudTextObjs[6], 0x40, 3, 2, 0x12);
+        v = gRiders_63[pl].f420;
+        int_to_str((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
+        font_text_add(gHudTextObjs[6], buf);
+        font_draw_text(gHudTextObjs[6],
+                      gViewRects_5[gNumScreens - 1][pl][0] + gViewRects_5[gNumScreens - 1][pl][2] - 0x2D,
+                      gViewRects_5[gNumScreens - 1][pl][1] + gViewRects_5[gNumScreens - 1][pl][3] - 0xB);
+        gdl = event_draw_temp_gauge(gdl, a1, a2, pl);
     }
-    if (D_800F05A8_5.h26 != 0 && D_800F05A8_5.w0 != 0 && (D_800F05A8_5.w0 != 1 || D_800F05A8_5.h26 < 0x5B)) {
-        gdl = func_80054ED0(gdl, pl);
+    if (gEvent_5.h26 != 0 && gEvent_5.w0 != 0 && (gEvent_5.w0 != 1 || gEvent_5.h26 < 0x5B)) {
+        gdl = event_draw_countdown(gdl, pl);
     }
-    if (D_800E37C0_63[pl].h66A != 0 && D_800E3710 == 0) {
-        func_800C1E60(D_800F0530[7], 0x40, 1, 4, 0x21);
-        func_800C1F2C(D_800F0530[7], "Stage Clear!");
-        func_800C0ACC(D_800F0530[7],
-                      D_800E1718_5[D_800E1898 - 1][pl][0] + D_800E1718_5[D_800E1898 - 1][pl][2] / 2,
-                      D_800E1718_5[D_800E1898 - 1][pl][1] + D_800E1718_5[D_800E1898 - 1][pl][3] / 2);
+    if (gRiders_63[pl].h66A != 0 && gPauseMenu == 0) {
+        font_text_create(gHudTextObjs[7], 0x40, 1, 4, 0x21);
+        font_text_add(gHudTextObjs[7], "Stage Clear!");
+        font_draw_text(gHudTextObjs[7],
+                      gViewRects_5[gNumScreens - 1][pl][0] + gViewRects_5[gNumScreens - 1][pl][2] / 2,
+                      gViewRects_5[gNumScreens - 1][pl][1] + gViewRects_5[gNumScreens - 1][pl][3] / 2);
     }
-    if (D_800E37C0_63[pl].b3FF) {
-        func_800C1E60(D_800F0530[7], 0x40, 1, 4, 0x21);
-        if (D_800F05E8 == 0 || pl != 0) {
-            func_800C1F2C(D_800F0530[7], "Game Over");
+    if (gRiders_63[pl].b3FF) {
+        font_text_create(gHudTextObjs[7], 0x40, 1, 4, 0x21);
+        if (gEventAllFinished == 0 || pl != 0) {
+            font_text_add(gHudTextObjs[7], "Game Over");
         } else {
-            func_800C1F2C(D_800F0530[7], D_800D84A8);
+            font_text_add(gHudTextObjs[7], D_800D84A8);
         }
-        func_800C0ACC(D_800F0530[7],
-                      D_800E1718_5[D_800E1898 - 1][pl][0] + D_800E1718_5[D_800E1898 - 1][pl][2] / 2,
-                      D_800E1718_5[D_800E1898 - 1][pl][1] + D_800E1718_5[D_800E1898 - 1][pl][3] / 2);
+        font_draw_text(gHudTextObjs[7],
+                      gViewRects_5[gNumScreens - 1][pl][0] + gViewRects_5[gNumScreens - 1][pl][2] / 2,
+                      gViewRects_5[gNumScreens - 1][pl][1] + gViewRects_5[gNumScreens - 1][pl][3] / 2);
     }
-    if (D_800EFD70 & 0x20000000) {
+    if (gGame & 0x20000000) {
         s32 *p1;
         s32 *p2;
         s32 *p3;
-        p1 = func_800C1E60(D_800F0530[9], 0x20, 2, 2, 0x10);
-        func_8005CD30(buf, D_800E37C0_63[0].f48, 5);
-        func_800C1F2C(p1, buf);
-        func_800C0ACC(p1, 0x28, 0x1E);
-        p2 = func_800C1E60(D_800F0530[10], 0x20, 2, 2, 0x10);
-        func_8005CD30(buf, D_800E37C0_63[0].f50, 5);
-        func_800C1F2C(p2, buf);
-        func_800C0ACC(p2, 0x28, 0x28);
-        p3 = func_800C1E60(D_800F0530[10], 0x20, 2, 2, 0x10);
-        func_8000EE30(D_800E2060, buf);
-        func_800C1F2C(p3, buf);
-        func_800C0ACC(p3, 0x28, 0x32);
+        p1 = font_text_create(gHudTextObjs[9], 0x20, 2, 2, 0x10);
+        debug_ftoa(buf, gRiders_63[0].f48, 5);
+        font_text_add(p1, buf);
+        font_draw_text(p1, 0x28, 0x1E);
+        p2 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, 0x10);
+        debug_ftoa(buf, gRiders_63[0].f50, 5);
+        font_text_add(p2, buf);
+        font_draw_text(p2, 0x28, 0x28);
+        p3 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, 0x10);
+        int_to_str(gDebugFreeMem, buf);
+        font_text_add(p3, buf);
+        font_draw_text(p3, 0x28, 0x32);
     }
-    return func_800C1394(gdl);
+    return font_render(gdl);
 }
 
 typedef struct {
@@ -1863,13 +1863,13 @@ typedef struct {
     u8 pad66A[0x7E0 - 0x66A];
 } Player_15;
 
-extern Txt *D_800F0530_3[];
-extern Player_15 D_800E37C0_64[];
-extern Trick D_800C9A40_11[];
+extern Txt *gHudTextObjs_3[];
+extern Player_15 gRiders_64[];
+extern Trick gRiderAnims_11[];
 
-Gfx *func_80053D58(Gfx *gdl, s32 a1, s32 a2, s32 pl)
+Gfx *event_draw_hud_stunt(Gfx *gdl, s32 a1, s32 a2, s32 pl)
 {
-    Player_15 *p = &D_800E37C0_64[pl];
+    Player_15 *p = &gRiders_64[pl];
     char buf[40];
     s32 idx, t;
     s32 x, y, ty, yt, yy;
@@ -1881,46 +1881,46 @@ Gfx *func_80053D58(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     s8 d;
     f32 v;
 
-    func_800C2224();
-    if (D_800EFDAC >= 2) {
-        if (D_800F05E8 != 0) {
-            func_800C1E60(D_800F0530_3[7], 0x40, 1, 4, 0x21);
+    font_reset_queue();
+    if (gNumPlayers >= 2) {
+        if (gEventAllFinished != 0) {
+            font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
             switch (p->h668) {
             case 0:
-                func_800C1F2C(D_800F0530_3[7], "Winner");
+                font_text_add(gHudTextObjs_3[7], "Winner");
                 break;
             case 1:
-                func_800C1F2C(D_800F0530_3[7], D_800D84E0);
+                font_text_add(gHudTextObjs_3[7], D_800D84E0);
                 break;
             default:
-                func_800C1F2C(D_800F0530_3[7], D_800D84E4);
+                font_text_add(gHudTextObjs_3[7], D_800D84E4);
                 break;
             }
-            func_800C0ACC(D_800F0530_3[7],
-                          D_800E1718[D_800E1898 - 1][pl].x + D_800E1718[D_800E1898 - 1][pl].w / 2,
-                          D_800E1718[D_800E1898 - 1][pl].y + D_800E1718[D_800E1898 - 1][pl].h / 2);
+            font_draw_text(gHudTextObjs_3[7],
+                          gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w / 2,
+                          gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h / 2);
         }
-        yt = D_800E1718[D_800E1898 - 1][pl].y + D_800E1718[D_800E1898 - 1][pl].h - 11;
-        func_800C1E60(D_800F0530_3[0], 0x40, 2, 2, 0x20);
-        func_800C1E60(D_800F0530_3[1], 0x40, 2, 4, 0x20);
+        yt = gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h - 11;
+        font_text_create(gHudTextObjs_3[0], 0x40, 2, 2, 0x20);
+        font_text_create(gHudTextObjs_3[1], 0x40, 2, 4, 0x20);
         idx = -1;
         do {
         } while (0);
-        func_80052F30(D_800F05D4, buf);
-        func_800C1F2C(D_800F0530_3[0], "Time:");
-        func_800C0ACC(D_800F0530_3[0], 0x3C, yt);
-        func_800C1F2C(D_800F0530_3[1], buf);
-        func_800C0ACC(D_800F0530_3[1], 100, yt);
-        xa = D_800E1718[D_800E1898 - 1][pl].x + D_800E1718[D_800E1898 - 1][pl].w - 20;
-        yy = D_800E1718[D_800E1898 - 1][pl].y;
-        func_800C1E60(D_800F0530_3[4], 0x40, 2, 2, 0x22);
-        func_800C1F2C(D_800F0530_3[4], "Total");
+        event_format_time(gEventTime, buf);
+        font_text_add(gHudTextObjs_3[0], "Time:");
+        font_draw_text(gHudTextObjs_3[0], 0x3C, yt);
+        font_text_add(gHudTextObjs_3[1], buf);
+        font_draw_text(gHudTextObjs_3[1], 100, yt);
+        xa = gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w - 20;
+        yy = gViewRects[gNumScreens - 1][pl].y;
+        font_text_create(gHudTextObjs_3[4], 0x40, 2, 2, 0x22);
+        font_text_add(gHudTextObjs_3[4], "Total");
         ty = yy + 8;
-        func_800C0ACC(D_800F0530_3[4], xa, ty);
-        func_800C1E60(D_800F0530_3[5], 0x40, 2, 4, 0x22);
-        func_8000EE30(p->w3C8, buf);
-        func_800C1F2C(D_800F0530_3[5], buf);
-        func_800C0ACC(D_800F0530_3[5], xa, yy + 16);
+        font_draw_text(gHudTextObjs_3[4], xa, ty);
+        font_text_create(gHudTextObjs_3[5], 0x40, 2, 4, 0x22);
+        int_to_str(p->w3C8, buf);
+        font_text_add(gHudTextObjs_3[5], buf);
+        font_draw_text(gHudTextObjs_3[5], xa, yy + 16);
         c = p->b3D0;
         if (c < 16) {
             idx = (s8)c;
@@ -1931,73 +1931,73 @@ Gfx *func_80053D58(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             }
         }
         if (idx >= 0) {
-            func_800C1E60(D_800F0530_3[2], 0x40, 2, 2, 0x21);
+            font_text_create(gHudTextObjs_3[2], 0x40, 2, 2, 0x21);
             x3 = 0x100;
-            func_800C1F2C(D_800F0530_3[2], D_800C9A40_11[idx].name);
+            font_text_add(gHudTextObjs_3[2], gRiderAnims_11[idx].name);
             y3 = ty + 8;
-            func_800C1E60(D_800F0530_3[3], 0x40, 2, 4, 0x21);
-            func_8000EE30(p->w3C4, buf);
-            func_800C1F2C(D_800F0530_3[3], buf);
+            font_text_create(gHudTextObjs_3[3], 0x40, 2, 4, 0x21);
+            int_to_str(p->w3C4, buf);
+            font_text_add(gHudTextObjs_3[3], buf);
             ax = 0x100;
             ay = ty;
             if (p->b3FB >= 2) {
                 k = p->b3FB * 8;
-                x3 = (x3 * k + (xa - (D_800F0530_3[3]->w18 >> 1)) * (256 - k)) >> 8;
+                x3 = (x3 * k + (xa - (gHudTextObjs_3[3]->w18 >> 1)) * (256 - k)) >> 8;
                 for (i = 0; i < p->b3EA; i++) {
                     if (idx == p->s3EB[i]) {
                         break;
                     }
                 }
                 if (i == p->b3EA) {
-                    ax = (ax * k + ((D_800F0530_3[4]->w18 >> 1) + 0x23) * (256 - k)) >> 8;
+                    ax = (ax * k + ((gHudTextObjs_3[4]->w18 >> 1) + 0x23) * (256 - k)) >> 8;
                     ay = (ay * k + (ty + i * 8) * (256 - k)) / 256;
                 }
             }
-            func_800C0ACC(D_800F0530_3[2], ax, ay);
-            func_800C0ACC(D_800F0530_3[3], x3, y3);
+            font_draw_text(gHudTextObjs_3[2], ax, ay);
+            font_draw_text(gHudTextObjs_3[3], x3, y3);
         }
         for (i = 0; i < p->b3EA; i++) {
-            func_800C1E60(D_800F0530_3[i + 8], 0x40, 2, 2, 0x20);
-            func_800C1F2C(D_800F0530_3[i + 8], D_800C9A40_11[p->s3EB[i]].name);
-            func_800C0ACC(D_800F0530_3[i + 8], 0x3C, ty + i * 8);
+            font_text_create(gHudTextObjs_3[i + 8], 0x40, 2, 2, 0x20);
+            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->s3EB[i]].name);
+            font_draw_text(gHudTextObjs_3[i + 8], 0x3C, ty + i * 8);
         }
-        func_800C1E60(D_800F0530_3[6], 0x40, 3, 2, 0x12);
+        font_text_create(gHudTextObjs_3[6], 0x40, 3, 2, 0x12);
         v = p->f420;
-        func_8000EE30((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
-        func_800C1F2C(D_800F0530_3[6], buf);
-        func_800C0ACC(D_800F0530_3[6],
-                      D_800E1718[D_800E1898 - 1][pl].x + D_800E1718[D_800E1898 - 1][pl].w - 0x2D,
-                      D_800E1718[D_800E1898 - 1][pl].y + D_800E1718[D_800E1898 - 1][pl].h - 0xB);
-        gdl = func_8005A4C8(gdl, a1, a2, pl);
+        int_to_str((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
+        font_text_add(gHudTextObjs_3[6], buf);
+        font_draw_text(gHudTextObjs_3[6],
+                      gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w - 0x2D,
+                      gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h - 0xB);
+        gdl = event_draw_temp_gauge(gdl, a1, a2, pl);
     } else {
-        if (D_800CCCA8 == 2) {
-            func_800C1D54(0x10000, 0x20000, 0, 0);
+        if (gViMode == 2) {
+            font_set_scale(0x10000, 0x20000, 0, 0);
         }
-        func_800C1E60(D_800F0530_3[0], 0x40, 1, 2, 0x10);
-        func_800C1E60(D_800F0530_3[1], 0x40, 1, 4, 0x10);
-        func_80052F30(D_800F05D4, buf);
-        func_800C1F2C(D_800F0530_3[0], "Time:");
-        func_800C0ACC(D_800F0530_3[0], 0x23, D_800CCCA8 == 2 ? 0x180 : 0xD6);
-        func_800C1F2C(D_800F0530_3[1], buf);
-        func_800C0ACC(D_800F0530_3[1], 100, D_800CCCA8 == 2 ? 0x180 : 0xD6);
+        font_text_create(gHudTextObjs_3[0], 0x40, 1, 2, 0x10);
+        font_text_create(gHudTextObjs_3[1], 0x40, 1, 4, 0x10);
+        event_format_time(gEventTime, buf);
+        font_text_add(gHudTextObjs_3[0], "Time:");
+        font_draw_text(gHudTextObjs_3[0], 0x23, gViMode == 2 ? 0x180 : 0xD6);
+        font_text_add(gHudTextObjs_3[1], buf);
+        font_draw_text(gHudTextObjs_3[1], 100, gViMode == 2 ? 0x180 : 0xD6);
         y = 0x19;
-        x = D_800F13EC - 62;
-        if (D_800CCCA8 == 2) {
+        x = gScreenWidth - 62;
+        if (gViMode == 2) {
             y = 0x69;
         }
-        func_800C1E60(D_800F0530_3[4], 0x40, 1, 2, 0x22);
-        func_800C1F2C(D_800F0530_3[4], "Total");
-        func_800C0ACC(D_800F0530_3[4], x, y);
-        if (D_800CCCA8 == 2) {
+        font_text_create(gHudTextObjs_3[4], 0x40, 1, 2, 0x22);
+        font_text_add(gHudTextObjs_3[4], "Total");
+        font_draw_text(gHudTextObjs_3[4], x, y);
+        if (gViMode == 2) {
             y += 0x19;
         } else {
             y += 0xC;
         }
-        func_800C1E60(D_800F0530_3[5], 0x40, 1, 4, 0x22);
-        func_8000EE30(p->w3C8, buf);
-        func_800C1F2C(D_800F0530_3[5], buf);
-        func_800C0ACC(D_800F0530_3[5], x, y);
-        if (D_800CCCA8 == 2) {
+        font_text_create(gHudTextObjs_3[5], 0x40, 1, 4, 0x22);
+        int_to_str(p->w3C8, buf);
+        font_text_add(gHudTextObjs_3[5], buf);
+        font_draw_text(gHudTextObjs_3[5], x, y);
+        if (gViMode == 2) {
             by = 0x69;
             dy = 0x14;
         } else {
@@ -2015,18 +2015,18 @@ Gfx *func_80053D58(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             }
         }
         if (idx >= 0) {
-            func_800C1E60(D_800F0530_3[2], 0x40, 1, 2, 0x21);
-            func_800C1F2C(D_800F0530_3[2], D_800C9A40_11[idx].name);
-            func_800C1E60(D_800F0530_3[3], 0x40, 1, 4, 0x21);
-            func_8000EE30(p->w3C4, buf);
-            func_800C1F2C(D_800F0530_3[3], buf);
-            x3 = D_800F13EC / 2;
+            font_text_create(gHudTextObjs_3[2], 0x40, 1, 2, 0x21);
+            font_text_add(gHudTextObjs_3[2], gRiderAnims_11[idx].name);
+            font_text_create(gHudTextObjs_3[3], 0x40, 1, 4, 0x21);
+            int_to_str(p->w3C4, buf);
+            font_text_add(gHudTextObjs_3[3], buf);
+            x3 = gScreenWidth / 2;
             y3 = D_800E171C + 0x28;
-            ax = D_800F13EC / 2;
+            ax = gScreenWidth / 2;
             ay = D_800E171C + 0x14;
             if (p->b3FB >= 2) {
                 k = p->b3FB * 8;
-                x3 = (x3 * k + (x - (D_800F0530_3[3]->w18 >> 1)) * (256 - k)) >> 8;
+                x3 = (x3 * k + (x - (gHudTextObjs_3[3]->w18 >> 1)) * (256 - k)) >> 8;
                 y3 = (y3 * k + y * (256 - k)) / 256;
                 for (i = 0; i < p->b3EA; i++) {
                     if (idx == p->s3EB[i]) {
@@ -2034,43 +2034,43 @@ Gfx *func_80053D58(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                     }
                 }
                 if (i == p->b3EA) {
-                    ax = (ax * k + ((D_800F0530_3[4]->w18 >> 1) + 0x23) * (256 - k)) >> 8;
+                    ax = (ax * k + ((gHudTextObjs_3[4]->w18 >> 1) + 0x23) * (256 - k)) >> 8;
                     ay = (ay * k + (by + i * dy) * (256 - k)) / 256;
                 }
             }
-            func_800C0ACC(D_800F0530_3[2], ax, ay);
-            func_800C0ACC(D_800F0530_3[3], x3, y3);
+            font_draw_text(gHudTextObjs_3[2], ax, ay);
+            font_draw_text(gHudTextObjs_3[3], x3, y3);
         }
-        v = D_800E37C0_64[pl].f420;
-        func_8000EE30((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
-        func_800C1E60(D_800F0530_3[6], 0x40, 3, 2, 0x12);
-        func_800C1F2C(D_800F0530_3[6], buf);
+        v = gRiders_64[pl].f420;
+        int_to_str((s32)((v > 0.0f ? v * 3600.0f : -v * 3600.0f) / 1612.9f), buf);
+        font_text_create(gHudTextObjs_3[6], 0x40, 3, 2, 0x12);
+        font_text_add(gHudTextObjs_3[6], buf);
         x1 = 0x1BA;
-        if (D_800CCCA8 == 2) {
+        if (gViMode == 2) {
             x1 = 0x228;
         }
         y1 = 0xD6;
-        if (D_800CCCA8 == 2) {
+        if (gViMode == 2) {
             y1 = 0x180;
         }
-        func_800C0ACC(D_800F0530_3[6], x1, y1);
+        font_draw_text(gHudTextObjs_3[6], x1, y1);
         for (i = 0; i < p->b3EA; i++) {
-            func_800C1E60(D_800F0530_3[i + 8], 0x40, 2, 2, 0x20);
-            func_800C1F2C(D_800F0530_3[i + 8], D_800C9A40_11[p->s3EB[i]].name);
-            func_800C0ACC(D_800F0530_3[i + 8], 0x23, by + i * dy);
+            font_text_create(gHudTextObjs_3[i + 8], 0x40, 2, 2, 0x20);
+            font_text_add(gHudTextObjs_3[i + 8], gRiderAnims_11[p->s3EB[i]].name);
+            font_draw_text(gHudTextObjs_3[i + 8], 0x23, by + i * dy);
         }
-        if (D_800F05E8 != 0) {
-            func_800C1E60(D_800F0530_3[7], 0x40, 1, 4, 0x21);
-            func_800C1F2C(D_800F0530_3[7], D_800E3BBF >= 3 ? "Press START to Continue" : "Game Over");
-            func_800C0ACC(D_800F0530_3[7],
-                          D_800E1718[D_800E1898 - 1][pl].x + D_800E1718[D_800E1898 - 1][pl].w / 2,
-                          D_800E1718[D_800E1898 - 1][pl].y + D_800E1718[D_800E1898 - 1][pl].h / 2);
+        if (gEventAllFinished != 0) {
+            font_text_create(gHudTextObjs_3[7], 0x40, 1, 4, 0x21);
+            font_text_add(gHudTextObjs_3[7], D_800E3BBF >= 3 ? "Press START to Continue" : "Game Over");
+            font_draw_text(gHudTextObjs_3[7],
+                          gViewRects[gNumScreens - 1][pl].x + gViewRects[gNumScreens - 1][pl].w / 2,
+                          gViewRects[gNumScreens - 1][pl].y + gViewRects[gNumScreens - 1][pl].h / 2);
         }
     }
-    gdl = func_800C1394(gdl);
-    gdl = func_80009754(gdl, a1, a2, pl);
-    if (D_800F05A8_5.h26 != 0 && D_800F05A8_5.w0 != 0 && (D_800F05A8_5.w0 != 1 || D_800F05A8_5.h26 < 0x5B)) {
-        gdl = func_80054ED0(gdl, pl);
+    gdl = font_render(gdl);
+    gdl = render_draw_temp_gauge(gdl, a1, a2, pl);
+    if (gEvent_5.h26 != 0 && gEvent_5.w0 != 0 && (gEvent_5.w0 != 1 || gEvent_5.h26 < 0x5B)) {
+        gdl = event_draw_countdown(gdl, pl);
     }
     return gdl;
 }
@@ -2086,10 +2086,10 @@ typedef struct {
 
 typedef struct { s32 f0; u8 pad[0x22]; s16 f26; } Obj5A8;
 
-extern Rec37_3 D_800E37C0_65[];
-extern Obj5A8 D_800F05A8_29;
+extern Rec37_3 gRiders_65[];
+extern Obj5A8 gEvent_29;
 
-Gfx *func_800549E4(Gfx *gdl, s32 a1, s32 a2, s32 idx)
+Gfx *event_draw_hud_gates(Gfx *gdl, s32 a1, s32 a2, s32 idx)
 {
     char buf[32];
     f32 fv;
@@ -2108,65 +2108,65 @@ Gfx *func_800549E4(Gfx *gdl, s32 a1, s32 a2, s32 idx)
     PKT(0xE200001C, 0x00404240);
     PKT(0xD9FFFFFE, 0);
     PKT(0xD7000002, 0x80008000);
-    gdl = func_80009754(gdl, a1, a2, idx);
-    func_800C2224();
-    gdl = func_80055658(gdl, 0, func_800C1E60(D_800F0544, 0x20, 3, 2, 0x21));
+    gdl = render_draw_temp_gauge(gdl, a1, a2, idx);
+    font_reset_queue();
+    gdl = event_draw_position(gdl, 0, font_text_create(D_800F0544, 0x20, 3, 2, 0x21));
 
-    fv = D_800E37C0_65[idx].f420;
-    func_8000EE30((s32)(((0.0f < fv) ? fv * 3600.0f : -fv * 3600.0f) / 1612.9f), buf);
+    fv = gRiders_65[idx].f420;
+    int_to_str((s32)(((0.0f < fv) ? fv * 3600.0f : -fv * 3600.0f) / 1612.9f), buf);
 
-    func_800C1E60(D_800F0530[0], 0x40, 3, 2, 0x12);
-    func_800C1F2C(D_800F0530[0], buf);
+    font_text_create(gHudTextObjs[0], 0x40, 3, 2, 0x12);
+    font_text_add(gHudTextObjs[0], buf);
     x = 0x1BA;
-    if (*(volatile s32 *)&D_800CCCA8 == 2) x = 0x228;
+    if (*(volatile s32 *)&gViMode == 2) x = 0x228;
     yy = 0xD6;
-    if (*(volatile s32 *)&D_800CCCA8 == 2) yy = 0x180;
-    func_800C0ACC(D_800F0530[0], x, yy);
+    if (*(volatile s32 *)&gViMode == 2) yy = 0x180;
+    font_draw_text(gHudTextObjs[0], x, yy);
 
-    if (D_800CA934 <= 0) {
-        func_800C1E60(D_800F0530[1], 0x40, 1, 2, 0x20);
-        func_800C1E60(D_800F0530[2], 0x40, 1, 4, 0x20);
-        func_80052F30(D_800F05D4, buf);
-        y = D_800E1718_10[D_800E1898 - 1][idx].b;
-        func_800C1F2C(D_800F0530[1], D_800D8484);
+    if (gHudLevel <= 0) {
+        font_text_create(gHudTextObjs[1], 0x40, 1, 2, 0x20);
+        font_text_create(gHudTextObjs[2], 0x40, 1, 4, 0x20);
+        event_format_time(gEventTime, buf);
+        y = gViewRects_10[gNumScreens - 1][idx].b;
+        font_text_add(gHudTextObjs[1], D_800D8484);
         z = y + 0x14;
-        func_800C0ACC(D_800F0530[1], 0x23, z);
-        func_800C1F2C(D_800F0530[2], buf);
-        func_800C0ACC(D_800F0530[2], 100, z);
-        func_800C1E60(D_800F0530[3], 0x40, 1, 2, 0x20);
-        func_800C1E60(D_800F0530[4], 0x40, 1, 4, 0x20);
-        func_8000EE30(D_800E3BC2 + 1, buf);
+        font_draw_text(gHudTextObjs[1], 0x23, z);
+        font_text_add(gHudTextObjs[2], buf);
+        font_draw_text(gHudTextObjs[2], 100, z);
+        font_text_create(gHudTextObjs[3], 0x40, 1, 2, 0x20);
+        font_text_create(gHudTextObjs[4], 0x40, 1, 4, 0x20);
+        int_to_str(D_800E3BC2 + 1, buf);
         n = strlen(buf);
-        func_8000EE30(10, buf + n + 1);
+        int_to_str(10, buf + n + 1);
         p = buf;
         n = strlen(p);
         p += n;
         *p = '/';
-        if (D_800CCCA8 == 2) z = y + 0x2C;
+        if (gViMode == 2) z = y + 0x2C;
         else z = y + 0x20;
-        func_800C1F2C(D_800F0530_4[3], D_800D850C);
-        func_800C0ACC(D_800F0530_4[3], 0x23, z);
-        func_800C1F2C(D_800F0530_4[4], buf);
-        func_800C0ACC(D_800F0530_4[4], 100, z);
+        font_text_add(gHudTextObjs_4[3], D_800D850C);
+        font_draw_text(gHudTextObjs_4[3], 0x23, z);
+        font_text_add(gHudTextObjs_4[4], buf);
+        font_draw_text(gHudTextObjs_4[4], 100, z);
     }
 
-    if (D_800E37C0_65[0].f668 != -1) {
-        h = func_800C1E60(D_800F0548, 0x20, 1, 4, 0x21);
-        if (D_800E37C0_65[0].f3FF == 0) {
-            func_800C1F2C(h, D_800D84A8);
-            func_800C0ACC(h,
-                          D_800E1718_10[D_800E1898 - 1][idx].a + D_800E1718_10[D_800E1898 - 1][idx].c / 2,
-                          D_800E1718_10[D_800E1898 - 1][idx].b + D_800E1718_10[D_800E1898 - 1][idx].d / 2);
+    if (gRiders_65[0].f668 != -1) {
+        h = font_text_create(D_800F0548, 0x20, 1, 4, 0x21);
+        if (gRiders_65[0].f3FF == 0) {
+            font_text_add(h, D_800D84A8);
+            font_draw_text(h,
+                          gViewRects_10[gNumScreens - 1][idx].a + gViewRects_10[gNumScreens - 1][idx].c / 2,
+                          gViewRects_10[gNumScreens - 1][idx].b + gViewRects_10[gNumScreens - 1][idx].d / 2);
         } else {
-            func_800532D4(h, D_800E37C0_65[0].f668, idx);
+            event_set_place_text(h, gRiders_65[0].f668, idx);
         }
     }
 
-    gdl = func_80055658(gdl, 0, func_800C1E60(D_800F0544, 0x20, 3, 2, 0x21));
-    gdl = func_800C1394(gdl);
-    if (D_800F05A8_29.f26 != 0 && D_800F05A8_29.f0 != 0 &&
-        (D_800F05A8_29.f0 != 1 || D_800F05A8_29.f26 < 0x5B)) {
-        gdl = func_80054ED0(gdl, idx);
+    gdl = event_draw_position(gdl, 0, font_text_create(D_800F0544, 0x20, 3, 2, 0x21));
+    gdl = font_render(gdl);
+    if (gEvent_29.f26 != 0 && gEvent_29.f0 != 0 &&
+        (gEvent_29.f0 != 1 || gEvent_29.f26 < 0x5B)) {
+        gdl = event_draw_countdown(gdl, idx);
     }
     return gdl;
 }
@@ -2174,10 +2174,10 @@ Gfx *func_800549E4(Gfx *gdl, s32 a1, s32 a2, s32 idx)
 typedef struct { s32 unk0; u16 *col; Img_2 img[5]; } Hud_3;
 typedef struct { s32 mode; u8 pad[0x22]; s16 t; } State_5;
 
-extern State_5 D_800F05A8_30;
-extern Hud_3 *D_800EFD60_2;
+extern State_5 gEvent_30;
+extern Hud_3 *sCountdownTextures_2;
 
-Gfx *func_80054ED0(Gfx *gdl, s32 a)
+Gfx *event_draw_countdown(Gfx *gdl, s32 a)
 {
     f32 scale;
     s32 alpha;
@@ -2186,18 +2186,18 @@ Gfx *func_80054ED0(Gfx *gdl, s32 a)
     s32 sw, dsdx, th;
     s32 *r;
 
-    if (D_800F05A8_30.mode == 5 && D_800F05A8_30.t == 0)
+    if (gEvent_30.mode == 5 && gEvent_30.t == 0)
         return gdl;
     if (D_800C8CE0 != 0)
         a = 0;
-    switch (D_800F05A8_30.mode) {
+    switch (gEvent_30.mode) {
     default:
         return gdl;
     case 1: {
         f32 v;
-        col = D_800EFD60_2->col[4];
-        img = &D_800EFD60_2->img[4];
-        scale = D_800F05A8_30.t + 10;
+        col = sCountdownTextures_2->col[4];
+        img = &sCountdownTextures_2->img[4];
+        scale = gEvent_30.t + 10;
         scale /= 100.0f;
         scale *= 2.0f;
         if (scale > 1.0f)
@@ -2212,36 +2212,36 @@ Gfx *func_80054ED0(Gfx *gdl, s32 a)
     }
     case 2: {
         f32 v;
-        scale = D_800F05A8_30.t + 10;
+        scale = gEvent_30.t + 10;
         scale /= 46.0f;
-        img = &D_800EFD60_2->img[2];
+        img = &sCountdownTextures_2->img[2];
         v = scale * 100.0f;
         v += 0.0f;
-        col = D_800EFD60_2->col[2];
+        col = sCountdownTextures_2->col[2];
         scale *= 3.0f;
         alpha = v;
         break;
     }
     case 3: {
         f32 v;
-        scale = D_800F05A8_30.t + 10;
+        scale = gEvent_30.t + 10;
         scale /= 46.0f;
-        img = &D_800EFD60_2->img[1];
+        img = &sCountdownTextures_2->img[1];
         v = scale * 100.0f;
         v += 0.0f;
-        col = D_800EFD60_2->col[1];
+        col = sCountdownTextures_2->col[1];
         scale *= 3.0f;
         alpha = v;
         break;
     }
     case 4: {
         f32 v;
-        scale = D_800F05A8_30.t + 10;
+        scale = gEvent_30.t + 10;
         scale /= 46.0f;
-        img = &D_800EFD60_2->img[0];
+        img = &sCountdownTextures_2->img[0];
         v = scale * 100.0f;
         v += 0.0f;
-        col = D_800EFD60_2->col[0];
+        col = sCountdownTextures_2->col[0];
         scale *= 3.0f;
         alpha = v;
         break;
@@ -2249,10 +2249,10 @@ Gfx *func_80054ED0(Gfx *gdl, s32 a)
     case 5:
     case 14:
     case 15:
-        scale = D_800F05A8_30.t + 1;
+        scale = gEvent_30.t + 1;
         scale *= 0.0625f;
-        img = &D_800EFD60_2->img[3];
-        col = D_800EFD60_2->col[3];
+        img = &sCountdownTextures_2->img[3];
+        col = sCountdownTextures_2->col[3];
         alpha = scale * 120.0f;
         scale = 3.5f - scale * 3.0f;
         break;
@@ -2260,7 +2260,7 @@ Gfx *func_80054ED0(Gfx *gdl, s32 a)
 
     sw = scale * (img->w * 8.0f);
     dsdx = 1024.0f / scale;
-    if (D_800F05A8_30.mode == 1)
+    if (gEvent_30.mode == 1)
         th = scale * img->h * 0.5f;
     else
         th = scale * img->h;
@@ -2282,14 +2282,14 @@ Gfx *func_80054ED0(Gfx *gdl, s32 a)
     gDPPipeSync(gdl++);
     gDPSetPrimColor(gdl++, 0, 0, (col >> 8) & 0xF8, (col >> 3) & 0xF8, (col << 2) & 0xF8, alpha);
     {
-        u8 *t = (u8 *)D_800E1718;
-        r = (s32 *)((a << 4) + ((D_800E1898 - 1) << 6) + t);
+        u8 *t = (u8 *)gViewRects;
+        r = (s32 *)((a << 4) + ((gNumScreens - 1) << 6) + t);
     }
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, r[0], r[1], r[0] + r[2] - 1, r[1] + r[3] - 1);
     gSPTextureRectangle(gdl++, (r[0] + r[2] / 2 - sw / 2) << 2, (r[1] + r[3] / 2 - th / 2) << 2,
                         (r[0] + r[2] / 2 + sw / 2) << 2, (r[1] + r[3] / 2 + th / 2) << 2,
                         G_TX_RENDERTILE, 0, (img->h - 1) << 5, dsdx,
-                        D_800F05A8_30.mode == 1 ? -(dsdx * 2) : -dsdx);
+                        gEvent_30.mode == 1 ? -(dsdx * 2) : -dsdx);
     gDPPipeSync(gdl++);
     return gdl;
 }
@@ -2301,9 +2301,9 @@ typedef struct {
     u8 pad2[0x7E0 - 0x668];
 } Player_16;
 
-void *func_80055658(void *param_1, s32 param_2, void *param_3)
+void *event_draw_position(void *param_1, s32 param_2, void *param_3)
 {
-    Player_16 *base = D_800E37C0;
+    Player_16 *base = gRiders;
     Player_16 *pl = &base[param_2];
     s32 a = pl->ang;
     char buf[3];
@@ -2311,30 +2311,30 @@ void *func_80055658(void *param_1, s32 param_2, void *param_3)
     if (a > 0x180) {
         a = 0x300 - a;
     }
-    param_1 = func_800C1394(param_1);
-    func_800C2224();
+    param_1 = font_render(param_1);
+    font_reset_queue();
     buf[0] = ((u8 *)&pl->num)[1] + '1';
     buf[1] = (pl->num < 3) ? ((u8 *)&pl->num)[1] + ':' : '=';
     buf[2] = 0;
-    func_800C1F2C(param_3, buf);
-    if (D_800CCCA8 == 2) {
-        func_800C1D54(a << 9, a << 9, 0, 0);
-        func_800C0ACC(param_3, D_800E1718[D_800E1898 - 1][D_800C2598].x + D_800E1718[D_800E1898 - 1][D_800C2598].w - 0x3C,
-                      D_800E1718[D_800E1898 - 1][D_800C2598].y + 0x14);
-        param_1 = func_800C1394(param_1);
-        func_800C1D54(0x10000, 0x20000, 0, 0);
+    font_text_add(param_3, buf);
+    if (gViMode == 2) {
+        font_set_scale(a << 9, a << 9, 0, 0);
+        font_draw_text(param_3, gViewRects[gNumScreens - 1][gCurView].x + gViewRects[gNumScreens - 1][gCurView].w - 0x3C,
+                      gViewRects[gNumScreens - 1][gCurView].y + 0x14);
+        param_1 = font_render(param_1);
+        font_set_scale(0x10000, 0x20000, 0, 0);
     } else {
-        func_800C1D54(a << 8, a << 8, 0, 0);
-        func_800C0ACC(param_3, D_800E1718[D_800E1898 - 1][D_800C2598].x + D_800E1718[D_800E1898 - 1][D_800C2598].w - 0x28,
-                      D_800E1718[D_800E1898 - 1][D_800C2598].y + 0xA);
-        param_1 = func_800C1394(param_1);
-        func_800C1D54(0x10000, 0x10000, 0, 0);
+        font_set_scale(a << 8, a << 8, 0, 0);
+        font_draw_text(param_3, gViewRects[gNumScreens - 1][gCurView].x + gViewRects[gNumScreens - 1][gCurView].w - 0x28,
+                      gViewRects[gNumScreens - 1][gCurView].y + 0xA);
+        param_1 = font_render(param_1);
+        font_set_scale(0x10000, 0x10000, 0, 0);
     }
-    func_800C2224();
+    font_reset_queue();
     return param_1;
 }
 
-#define VP D_800E1718[D_800E1898 - 1][D_800C2598]
+#define VP gViewRects[gNumScreens - 1][gCurView]
 
 typedef struct {
     u8 pad0[4];
@@ -2393,11 +2393,11 @@ typedef struct {
     s32 w4C;
 } Game_24;
 
-extern Player_17 D_800E37C0_66[];
-extern Mode_2 D_800F05A8_31;
-extern Game_24 D_800EFD70_41;
+extern Player_17 gRiders_66[];
+extern Mode_2 gEvent_31;
+extern Game_24 gGame_41;
 
-Gfx *func_8005581C(Gfx *gdl, s32 a1, s32 a2, s32 pl)
+Gfx *event_draw_hud_race(Gfx *gdl, s32 a1, s32 a2, s32 pl)
 {
     char buf[88];
     char *p;
@@ -2417,85 +2417,85 @@ Gfx *func_8005581C(Gfx *gdl, s32 a1, s32 a2, s32 pl)
     s32 x, y;
     s32 xa, xb, yy, dy;
 
-    lp = &D_800E37C0_66[(D_800C9650 == -1) ? pl + D_800C8CE0 : D_800C9650].lap;
-    if (D_800E1898 == 1 && D_800C9650 != -1) {
-        pl = D_800C9650;
+    lp = &gRiders_66[(gCamTargetOverride == -1) ? pl + D_800C8CE0 : gCamTargetOverride].lap;
+    if (gNumScreens == 1 && gCamTargetOverride != -1) {
+        pl = gCamTargetOverride;
     }
-    func_800C2224();
-    if (D_800CCCA8 == 2) {
-        func_800C1D54(0x10000, 0x20000, 0, 0);
+    font_reset_queue();
+    if (gViMode == 2) {
+        font_set_scale(0x10000, 0x20000, 0, 0);
     }
-    if (D_800E1898 < 3) {
-        tPlace = func_800C1E60(D_800F0530[0], 0x20, 3, 2, 0x21);
-        if (D_800E1898 == 1) {
-            tSpeed = func_800C1E60(D_800F0530[1], 0x20, 3, 2, 0x12);
+    if (gNumScreens < 3) {
+        tPlace = font_text_create(gHudTextObjs[0], 0x20, 3, 2, 0x21);
+        if (gNumScreens == 1) {
+            tSpeed = font_text_create(gHudTextObjs[1], 0x20, 3, 2, 0x12);
         } else {
-            tSpeed = func_800C1E60(D_800F0530[1], 0x20, 3, 2, 0x11);
+            tSpeed = font_text_create(gHudTextObjs[1], 0x20, 3, 2, 0x11);
         }
-        tRace = func_800C1E60(D_800F0530[2], 0x20, 2, 2, 0x10);
-        tBest = func_800C1E60(D_800F0530[3], 0x20, 2, 2, 0x10);
-        tRaceL = func_800C1E60(D_800F0530[4], 0x20, 2, 2, 0x10);
-        tBestL = func_800C1E60(D_800F0530[5], 0x20, 2, 2, 0x10);
-        if (D_800F05A8_31.h26 != 0 && D_800F05A8_31.w0 == 5) {
-            tMsg = func_800C1E60(D_800F0530[6], 0x20, 1, 2, 0x21);
+        tRace = font_text_create(gHudTextObjs[2], 0x20, 2, 2, 0x10);
+        tBest = font_text_create(gHudTextObjs[3], 0x20, 2, 2, 0x10);
+        tRaceL = font_text_create(gHudTextObjs[4], 0x20, 2, 2, 0x10);
+        tBestL = font_text_create(gHudTextObjs[5], 0x20, 2, 2, 0x10);
+        if (gEvent_31.h26 != 0 && gEvent_31.w0 == 5) {
+            tMsg = font_text_create(gHudTextObjs[6], 0x20, 1, 2, 0x21);
         } else {
-            tMsg = func_800C1E60(D_800F0530[6], 0x20, 1, 4, 0x21);
+            tMsg = font_text_create(gHudTextObjs[6], 0x20, 1, 4, 0x21);
         }
-        if (lp->hA != 0 || lp->h0 == D_800F05A8_31.h20) {
+        if (lp->hA != 0 || lp->h0 == gEvent_31.h20) {
             if (lp->hA != 0) {
                 lp->hA--;
             }
-            tLap = func_800C1E60(D_800F0530[7], 0x20, 2, 4, 0x10);
-            tLapL = func_800C1E60(D_800F0530[8], 0x20, 2, 4, 0x10);
+            tLap = font_text_create(gHudTextObjs[7], 0x20, 2, 4, 0x10);
+            tLapL = font_text_create(gHudTextObjs[8], 0x20, 2, 4, 0x10);
         } else {
-            tLap = func_800C1E60(D_800F0530[7], 0x20, 2, 2, 0x10);
-            tLapL = func_800C1E60(D_800F0530[8], 0x20, 2, 2, 0x10);
+            tLap = font_text_create(gHudTextObjs[7], 0x20, 2, 2, 0x10);
+            tLapL = font_text_create(gHudTextObjs[8], 0x20, 2, 2, 0x10);
         }
-        if (D_800EFD70_41.w0 & 0x20000000) {
+        if (gGame_41.w0 & 0x20000000) {
             Txt_2 *t1, *t2, *t3;
-            t1 = func_800C1E60(D_800F0530[9], 0x20, 2, 2, 0x10);
-            func_8005CD30(buf, D_800E37C0_66[0].f48, 5);
-            func_800C1F2C(t1, buf);
-            func_800C0ACC(t1, 0x28, 0x1E);
-            t2 = func_800C1E60(D_800F0530[10], 0x20, 2, 2, 0x10);
-            func_8005CD30(buf, D_800E37C0_66[0].f50, 5);
-            func_800C1F2C(t2, buf);
-            func_800C0ACC(t2, 0x28, 0x28);
-            t3 = func_800C1E60(D_800F0530[10], 0x20, 2, 2, 0x10);
-            func_8000EE30(D_800E2060, buf);
-            func_800C1F2C(t3, buf);
-            func_800C0ACC(t3, 0x28, 0x32);
+            t1 = font_text_create(gHudTextObjs[9], 0x20, 2, 2, 0x10);
+            debug_ftoa(buf, gRiders_66[0].f48, 5);
+            font_text_add(t1, buf);
+            font_draw_text(t1, 0x28, 0x1E);
+            t2 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, 0x10);
+            debug_ftoa(buf, gRiders_66[0].f50, 5);
+            font_text_add(t2, buf);
+            font_draw_text(t2, 0x28, 0x28);
+            t3 = font_text_create(gHudTextObjs[10], 0x20, 2, 2, 0x10);
+            int_to_str(gDebugFreeMem, buf);
+            font_text_add(t3, buf);
+            font_draw_text(t3, 0x28, 0x32);
         }
-        if (D_800EFD70_41.w4C == 6 && D_800F05A8_31.w2C == 0) {
-            t = func_800C1E60(D_800F0530[19], 0x20, 2, 2, 0x11);
-            func_800C1F2C(t, "Press Up C Button for side view");
-            func_800C0ACC(t, 0x100, 0x28);
+        if (gGame_41.w4C == 6 && gEvent_31.w2C == 0) {
+            t = font_text_create(gHudTextObjs[19], 0x20, 2, 2, 0x11);
+            font_text_add(t, "Press Up C Button for side view");
+            font_draw_text(t, 0x100, 0x28);
         }
     } else {
-        tPlace = func_800C1E60(D_800F0530[0], 8, 2, 2, 0x12);
-        tSpeed = func_800C1E60(D_800F0530[1], 0x20, 2, 2, 0x12);
-        tRace = func_800C1E60(D_800F0530[2], 0x20, 2, 2, 0x10);
-        tBest = func_800C1E60(D_800F0530[3], 0x20, 2, 2, 0x10);
-        tRaceL = func_800C1E60(D_800F0530[4], 0x20, 2, 2, 0x10);
-        tBestL = func_800C1E60(D_800F0530[5], 0x20, 2, 2, 0x10);
-        tLap = func_800C1E60(D_800F0530[6], 0x20, 2, 4, 0x10);
-        tLapL = func_800C1E60(D_800F0530[7], 0x20, 2, 4, 0x10);
-        if (D_800F05A8_31.h26 != 0 && D_800F05A8_31.w0 == 5) {
-            tMsg = func_800C1E60(D_800F0530[8], 0x20, 1, 2, 0x21);
+        tPlace = font_text_create(gHudTextObjs[0], 8, 2, 2, 0x12);
+        tSpeed = font_text_create(gHudTextObjs[1], 0x20, 2, 2, 0x12);
+        tRace = font_text_create(gHudTextObjs[2], 0x20, 2, 2, 0x10);
+        tBest = font_text_create(gHudTextObjs[3], 0x20, 2, 2, 0x10);
+        tRaceL = font_text_create(gHudTextObjs[4], 0x20, 2, 2, 0x10);
+        tBestL = font_text_create(gHudTextObjs[5], 0x20, 2, 2, 0x10);
+        tLap = font_text_create(gHudTextObjs[6], 0x20, 2, 4, 0x10);
+        tLapL = font_text_create(gHudTextObjs[7], 0x20, 2, 4, 0x10);
+        if (gEvent_31.h26 != 0 && gEvent_31.w0 == 5) {
+            tMsg = font_text_create(gHudTextObjs[8], 0x20, 1, 2, 0x21);
         } else {
-            tMsg = func_800C1E60(D_800F0530[8], 0x20, 1, 4, 0x21);
+            tMsg = font_text_create(gHudTextObjs[8], 0x20, 1, 4, 0x21);
         }
     }
     if (lp->h8 != -1) {
-        func_800532D4(tMsg, lp->h8, pl);
+        event_set_place_text(tMsg, lp->h8, pl);
     }
-    if (D_800C8CE8 == 0) {
-        if (D_800F05A8_31.h26 != 0 && D_800F05A8_31.w0 != 0 && (D_800F05A8_31.w0 != 1 || D_800F05A8_31.h26 < 0x5B)) {
-            gdl = func_80054ED0(gdl, pl);
-        } else if (D_800E3710 == 0 && lp->h8 == -1) {
-            if (D_800E37C0_66[pl].lap.hC != 0) {
-                v = D_800E37C0_66[pl].lap.w10;
-                D_800E37C0_66[pl].lap.hC--;
+    if (gReplayPlayback == 0) {
+        if (gEvent_31.h26 != 0 && gEvent_31.w0 != 0 && (gEvent_31.w0 != 1 || gEvent_31.h26 < 0x5B)) {
+            gdl = event_draw_countdown(gdl, pl);
+        } else if (gPauseMenu == 0 && lp->h8 == -1) {
+            if (gRiders_66[pl].lap.hC != 0) {
+                v = gRiders_66[pl].lap.w10;
+                gRiders_66[pl].lap.hC--;
                 if (v < 0) {
                     v = -v;
                     buf[0] = '+';
@@ -2505,84 +2505,84 @@ Gfx *func_8005581C(Gfx *gdl, s32 a1, s32 a2, s32 pl)
                     tMsg->w4 = 7;
                 }
                 buf[1] = 0;
-                func_8005313C(v, buf + 1);
-                func_800C1F2C(tMsg, buf);
-                func_800C0ACC(tMsg, VP.x + VP.w / 2, VP.y + VP.h / 4);
-            } else if (((D_800E37C0_66[pl].h7AC - 1) & 0x20) == 0) {
-                func_800C1F2C(tMsg, "Off Course");
-                func_800C0ACC(tMsg, VP.x + VP.w / 2, VP.y + VP.h / 2);
-            } else if (D_800E37C0_66[pl].b6EE != 0 && (D_800E76D0 & 0x20)) {
-                func_800C1F2C(tMsg, "Wrong Way");
-                func_800C0ACC(tMsg, VP.x + VP.w / 2, VP.y + VP.h / 2);
+                event_format_time_short(v, buf + 1);
+                font_text_add(tMsg, buf);
+                font_draw_text(tMsg, VP.x + VP.w / 2, VP.y + VP.h / 4);
+            } else if (((gRiders_66[pl].h7AC - 1) & 0x20) == 0) {
+                font_text_add(tMsg, "Off Course");
+                font_draw_text(tMsg, VP.x + VP.w / 2, VP.y + VP.h / 2);
+            } else if (gRiders_66[pl].b6EE != 0 && (gRaceFrame & 0x20)) {
+                font_text_add(tMsg, "Wrong Way");
+                font_draw_text(tMsg, VP.x + VP.w / 2, VP.y + VP.h / 2);
             }
         }
-        switch (D_800E1898) {
+        switch (gNumScreens) {
         case 1:
             gDPPipeSync(gdl++);
             gDPSetCycleType(gdl++, G_CYC_1CYCLE);
             gDPSetRenderMode(gdl++, 0x404240, 0);
             gDPPipeSync(gdl++);
-            if (D_800F05A8_31.h22 >= 2) {
-                gdl = func_80055658(gdl, pl, tPlace);
+            if (gEvent_31.h22 >= 2) {
+                gdl = event_draw_position(gdl, pl, tPlace);
             }
-            f = D_800E37C0_66[pl].f420;
-            func_8000EE30((s32)(((0.0f < f) ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
-            func_800C1F2C(tSpeed, buf);
+            f = gRiders_66[pl].f420;
+            int_to_str((s32)(((0.0f < f) ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
+            font_text_add(tSpeed, buf);
             x = 0x1BA;
-            if (D_800CCCA8 == 2) {
+            if (gViMode == 2) {
                 x = 0x228;
             }
             y = 0xD6;
-            if (D_800CCCA8 == 2) {
+            if (gViMode == 2) {
                 y = 0x180;
             }
-            func_800C0ACC(tSpeed, x, y);
-            if (lp->h0 == D_800F05A8_31.h20) {
-                func_80052F30(lp->w2C, buf);
+            font_draw_text(tSpeed, x, y);
+            if (lp->h0 == gEvent_31.h20) {
+                event_format_time(lp->w2C, buf);
             } else {
-                func_80052F30(D_800F05A8_31.w2C, buf);
+                event_format_time(gEvent_31.w2C, buf);
             }
-            if (D_800CA934 < 2) {
-                func_800C1F2C(tRace, buf);
-                func_800C1F2C(tRaceL, "Race: ");
+            if (gHudLevel < 2) {
+                font_text_add(tRace, buf);
+                font_text_add(tRaceL, "Race: ");
                 xa = VP.x + 0x43;
                 xb = VP.x + 0x14;
-                if (D_800CCCA8 != 2) {
+                if (gViMode != 2) {
                     yy = VP.y + VP.h - 0x1C;
                     dy = 10;
                 } else {
                     yy = VP.y + VP.h - 0x38;
                     dy = 0x14;
                 }
-                if (D_800EFD64_8->w50 & 2) {
+                if (gCurTrack_8->w50 & 2) {
                     yy += dy;
                 }
-                func_800C0ACC(tRaceL, xb, yy);
-                func_800C0ACC(tRace, xa, yy);
+                font_draw_text(tRaceL, xb, yy);
+                font_draw_text(tRace, xa, yy);
                 yy += dy;
                 __builtin_strcpy(buf, "Lap ");
                 p = buf;
-                if (lp->hA != 0 || lp->h0 == D_800F05A8_31.h20) {
-                    func_8000EE30(lp->h0, p + strlen(p));
+                if (lp->hA != 0 || lp->h0 == gEvent_31.h20) {
+                    int_to_str(lp->h0, p + strlen(p));
                 } else {
-                    func_8000EE30(lp->h0 + 1, p + strlen(p));
+                    int_to_str(lp->h0 + 1, p + strlen(p));
                 }
-                func_8000ED30(p, ": ");
-                func_800C1F2C(tLapL, buf);
-                func_80052F30(lp->w14[(lp->hA != 0 || lp->h0 == D_800F05A8_31.h20) ? lp->h0 - 1 : lp->h0], buf);
-                func_800C1F2C(tLap, buf);
-                func_800C0ACC(tLapL, xb, yy);
-                func_800C0ACC(tLap, xa, yy);
+                str_cat(p, ": ");
+                font_text_add(tLapL, buf);
+                event_format_time(lp->w14[(lp->hA != 0 || lp->h0 == gEvent_31.h20) ? lp->h0 - 1 : lp->h0], buf);
+                font_text_add(tLap, buf);
+                font_draw_text(tLapL, xb, yy);
+                font_draw_text(tLap, xa, yy);
                 yy += dy;
-                if (!(D_800EFD64_8->w50 & 2)) {
-                    func_80052F30(D_800F05A8_31.w10, buf);
-                    func_800C1F2C(tBestL, "Best: ");
-                    func_800C1F2C(tBest, buf);
-                    func_800C0ACC(tBestL, xb, yy);
-                    func_800C0ACC(tBest, xa, yy);
+                if (!(gCurTrack_8->w50 & 2)) {
+                    event_format_time(gEvent_31.w10, buf);
+                    font_text_add(tBestL, "Best: ");
+                    font_text_add(tBest, buf);
+                    font_draw_text(tBestL, xb, yy);
+                    font_draw_text(tBest, xa, yy);
                 }
             }
-            gdl = func_800C1394(gdl);
+            gdl = font_render(gdl);
             gDPPipeSync(gdl++);
             gDPSetTexturePersp(gdl++, G_TP_NONE);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
@@ -2590,84 +2590,84 @@ Gfx *func_8005581C(Gfx *gdl, s32 a1, s32 a2, s32 pl)
             gDPSetRenderMode(gdl++, 0x404240, 0);
             gSPClearGeometryMode(gdl++, G_ZBUFFER);
             gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
-            gdl = func_80009754(gdl, a1, a2, D_800C2598);
+            gdl = render_draw_temp_gauge(gdl, a1, a2, gCurView);
             break;
         case 2:
             gDPPipeSync(gdl++);
             gDPSetCycleType(gdl++, G_CYC_1CYCLE);
             gDPPipeSync(gdl++);
-            gdl = func_80055658(gdl, pl, tPlace);
-            if (D_800CA934 < 2) {
-                f = D_800E37C0_66[pl].f420;
-                func_8000EE30((s32)(((0.0f < f) ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
-                func_800C1F2C(tSpeed, buf);
-                func_800C0ACC(tSpeed, VP.x + VP.w - 0x2D, VP.y + VP.h - 0xB);
-                if (lp->h0 == D_800F05A8_31.h20) {
-                    func_80052F30(lp->w2C, buf);
+            gdl = event_draw_position(gdl, pl, tPlace);
+            if (gHudLevel < 2) {
+                f = gRiders_66[pl].f420;
+                int_to_str((s32)(((0.0f < f) ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
+                font_text_add(tSpeed, buf);
+                font_draw_text(tSpeed, VP.x + VP.w - 0x2D, VP.y + VP.h - 0xB);
+                if (lp->h0 == gEvent_31.h20) {
+                    event_format_time(lp->w2C, buf);
                 } else {
-                    func_80052F30(D_800F05A8_31.w2C, buf);
+                    event_format_time(gEvent_31.w2C, buf);
                 }
-                func_800C1F2C(tRace, buf);
-                func_800C1F2C(tRaceL, "Race: ");
-                func_800C0ACC(tRaceL, VP.x + 10, VP.y + VP.h - 0x12);
-                func_800C0ACC(tRace, VP.x + 0x43, VP.y + VP.h - 0x12);
+                font_text_add(tRace, buf);
+                font_text_add(tRaceL, "Race: ");
+                font_draw_text(tRaceL, VP.x + 10, VP.y + VP.h - 0x12);
+                font_draw_text(tRace, VP.x + 0x43, VP.y + VP.h - 0x12);
             }
             __builtin_strcpy(buf, "Lap ");
             p = buf;
-            if (lp->hA != 0 || lp->h0 == D_800F05A8_31.h20) {
-                func_8000EE30(lp->h0, p + strlen(p));
+            if (lp->hA != 0 || lp->h0 == gEvent_31.h20) {
+                int_to_str(lp->h0, p + strlen(p));
             } else {
-                func_8000EE30(lp->h0 + 1, p + strlen(p));
+                int_to_str(lp->h0 + 1, p + strlen(p));
             }
-            func_8000ED30(p, ": ");
-            func_800C1F2C(tLapL, buf);
-            func_800C0ACC(tLapL, VP.x + 10, VP.y + VP.h - 8);
-            func_80052F30(lp->w14[(lp->hA != 0 || lp->h0 == D_800F05A8_31.h20) ? lp->h0 - 1 : lp->h0], buf);
-            func_800C1F2C(tLap, buf);
-            func_800C0ACC(tLap, VP.x + 0x43, VP.y + VP.h - 8);
-            gdl = func_8005A4C8(func_800C1394(gdl), a1, a2, pl);
+            str_cat(p, ": ");
+            font_text_add(tLapL, buf);
+            font_draw_text(tLapL, VP.x + 10, VP.y + VP.h - 8);
+            event_format_time(lp->w14[(lp->hA != 0 || lp->h0 == gEvent_31.h20) ? lp->h0 - 1 : lp->h0], buf);
+            font_text_add(tLap, buf);
+            font_draw_text(tLap, VP.x + 0x43, VP.y + VP.h - 8);
+            gdl = event_draw_temp_gauge(font_render(gdl), a1, a2, pl);
             break;
         default:
             gDPPipeSync(gdl++);
             gDPSetCycleType(gdl++, G_CYC_1CYCLE);
             gDPPipeSync(gdl++);
-            buf[0] = D_800E37C0_66[pl].lap.u2.b[1] + '1';
-            buf[1] = (D_800E37C0_66[pl].lap.u2.h < 3) ? D_800E37C0_66[pl].lap.u2.b[1] + '{' : '~';
+            buf[0] = gRiders_66[pl].lap.u2.b[1] + '1';
+            buf[1] = (gRiders_66[pl].lap.u2.h < 3) ? gRiders_66[pl].lap.u2.b[1] + '{' : '~';
             buf[2] = 0;
-            func_800C1F2C(tPlace, buf);
-            func_800C0ACC(tPlace, VP.x + VP.w - 10, VP.y + 13);
-            f = D_800E37C0_66[pl].f420;
-            func_8000EE30((s32)(((0.0f < f) ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
-            func_800C1F2C(tSpeed, buf);
-            func_800C1F2C(tSpeed, "mph");
-            func_800C0ACC(tSpeed, VP.x + VP.w - 10, VP.y + VP.h - 6);
-            gdl = func_8005A4C8(func_800C1394(gdl), a1, a2, pl);
+            font_text_add(tPlace, buf);
+            font_draw_text(tPlace, VP.x + VP.w - 10, VP.y + 13);
+            f = gRiders_66[pl].f420;
+            int_to_str((s32)(((0.0f < f) ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
+            font_text_add(tSpeed, buf);
+            font_text_add(tSpeed, "mph");
+            font_draw_text(tSpeed, VP.x + VP.w - 10, VP.y + VP.h - 6);
+            gdl = event_draw_temp_gauge(font_render(gdl), a1, a2, pl);
             break;
         }
     } else {
-        gdl = func_800C1394(gdl);
+        gdl = font_render(gdl);
     }
-    if (D_800F05A8_31.w40 != 0 && D_800C2598 == D_800E1898 - 1) {
-        gDPSetScissor(gdl++, G_SC_NON_INTERLACE, D_800E1718[0][0].x, D_800E1718[0][0].y,
-                      D_800E1718[0][0].x + D_800E1718[0][0].w - 1, D_800E1718[0][0].y + D_800E1718[0][0].h - 1);
-        func_800C1E60(D_800F06B8[0], 0x40, 1, 2, 0x21);
-        func_800C1E60(D_800F06B8[1], 0x40, 1, 2, 0x21);
-        func_800C1F2C(D_800F06B8[0], "Press START to Continue");
-        if (D_800E1898 == 1) {
-            func_800C0ACC(D_800F06B8[0], D_800E1718[0][0].x + D_800E1718[0][0].w / 2,
-                          D_800E1718[0][0].y + D_800E1718[0][0].h / 2 + 0x17);
+    if (gEvent_31.w40 != 0 && gCurView == gNumScreens - 1) {
+        gDPSetScissor(gdl++, G_SC_NON_INTERLACE, gViewRects[0][0].x, gViewRects[0][0].y,
+                      gViewRects[0][0].x + gViewRects[0][0].w - 1, gViewRects[0][0].y + gViewRects[0][0].h - 1);
+        font_text_create(gMenuTextObjs[0], 0x40, 1, 2, 0x21);
+        font_text_create(gMenuTextObjs[1], 0x40, 1, 2, 0x21);
+        font_text_add(gMenuTextObjs[0], "Press START to Continue");
+        if (gNumScreens == 1) {
+            font_draw_text(gMenuTextObjs[0], gViewRects[0][0].x + gViewRects[0][0].w / 2,
+                          gViewRects[0][0].y + gViewRects[0][0].h / 2 + 0x17);
         } else {
             gDPPipeSync(gdl++);
             gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0xA0);
             gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
             gDPSetRenderMode(gdl++, 0x404240, 0);
             gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_OFF);
-            gDPFillRectangle(gdl++, D_800F13EC * 0, D_800E1718[0][0].y + D_800E1718[0][0].h / 2 - 7,
-                             D_800F13EC - 1, D_800E1718[0][0].y + D_800E1718[0][0].h / 2 + 7);
-            func_800C0ACC(D_800F06B8[0], D_800E1718[0][0].x + D_800E1718[0][0].w / 2,
-                          D_800E1718[0][0].y + D_800E1718[0][0].h / 2);
+            gDPFillRectangle(gdl++, gScreenWidth * 0, gViewRects[0][0].y + gViewRects[0][0].h / 2 - 7,
+                             gScreenWidth - 1, gViewRects[0][0].y + gViewRects[0][0].h / 2 + 7);
+            font_draw_text(gMenuTextObjs[0], gViewRects[0][0].x + gViewRects[0][0].w / 2,
+                          gViewRects[0][0].y + gViewRects[0][0].h / 2);
         }
-        gdl = func_800C1394(gdl);
+        gdl = font_render(gdl);
     }
     gDPPipeSync(gdl++);
     return gdl;
@@ -2697,11 +2697,11 @@ typedef struct {
     s32 w3C;
 } Game_25;
 
-extern Player_18 D_800E37C0_67[];
-extern Mode_3 D_800F05A8_32;
-extern Game_25 D_800EFD70_42;
+extern Player_18 gRiders_67[];
+extern Mode_3 gEvent_32;
+extern Game_25 gGame_42;
 
-Gfx *func_80056C94(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
+Gfx *event_draw_hud_soccer(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     char buf[32];
     char msg[64];
     s32 cx;
@@ -2709,11 +2709,11 @@ Gfx *func_80056C94(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     s32 n;
     s32 team;
 
-    func_800C2224();
+    font_reset_queue();
     if (p3 == 0) {
-        gDPSetScissor(gdl++, G_SC_NON_INTERLACE, D_800E1718[0][0].x, D_800E1718[0][0].y,
-                      D_800E1718[0][0].x + D_800E1718[0][0].w - 1, D_800E1718[0][0].y + D_800E1718[0][0].h - 1);
-        if (D_800F05A8_32.w0 == 7 || D_800F05A8_32.w0 == 9 || D_800F05A8_32.w0 == 11) {
+        gDPSetScissor(gdl++, G_SC_NON_INTERLACE, gViewRects[0][0].x, gViewRects[0][0].y,
+                      gViewRects[0][0].x + gViewRects[0][0].w - 1, gViewRects[0][0].y + gViewRects[0][0].h - 1);
+        if (gEvent_32.w0 == 7 || gEvent_32.w0 == 9 || gEvent_32.w0 == 11) {
             gDPSetPrimColor(gdl++, 0, 0, 0xE6, 0xE6, 0xE6, 0xE6);
             gDPRaw(gdl++, 0xE3000C00, 0);
             gDPRaw(gdl++, 0xD7000002, 0x80008000);
@@ -2722,158 +2722,158 @@ Gfx *func_80056C94(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
             gDPRaw(gdl++, 0xE200001C, 0x404240);
             cx = 0x100;
             cy = 0x78;
-            if (D_800EFDAC == 4) {
+            if (gNumPlayers == 4) {
                 cx = 0x13C;
             }
-            gdl = func_8000A690((cx - D_800F0528_2[8] * 4) | 1, cy - (D_800F0528_2[9] >> 1) - 1, D_800F0528_2 + 8, gdl,
+            gdl = render_draw_image((cx - sSoccerMapTexture_2[8] * 4) | 1, cy - (sSoccerMapTexture_2[9] >> 1) - 1, sSoccerMapTexture_2 + 8, gdl,
                                 p2, 1, 1, 6, 0);
             gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFDF6FB);
             gDPRaw(gdl++, 0xE200001C, 0x404240);
             gDPRaw(gdl++, 0xD7000000, 0x80008000);
             gDPSetPrimColor(gdl++, 0, 0, 0x00, 0x28, 0xFF, 0xFF);
-            gDPFillRectangle(gdl++, cx + D_800E37C0_67[0].f50 * 0.25f / 0.625f - 2.0f, cy + D_800E37C0_67[0].f48 * 0.25f - 2.0f,
-                             cx + D_800E37C0_67[0].f50 * 0.25f / 0.625f + 2.0f, cy + D_800E37C0_67[0].f48 * 0.25f + 2.0f);
+            gDPFillRectangle(gdl++, cx + gRiders_67[0].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[0].f48 * 0.25f - 2.0f,
+                             cx + gRiders_67[0].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[0].f48 * 0.25f + 2.0f);
             gDPSetPrimColor(gdl++, 0, 0, 0xFA, 0xFA, 0x28, 0xFF);
-            gDPFillRectangle(gdl++, cx + D_800E37C0_67[1].f50 * 0.25f / 0.625f - 2.0f, cy + D_800E37C0_67[1].f48 * 0.25f - 2.0f,
-                             cx + D_800E37C0_67[1].f50 * 0.25f / 0.625f + 2.0f, cy + D_800E37C0_67[1].f48 * 0.25f + 2.0f);
-            if (D_800EFDAC == 4) {
+            gDPFillRectangle(gdl++, cx + gRiders_67[1].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[1].f48 * 0.25f - 2.0f,
+                             cx + gRiders_67[1].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[1].f48 * 0.25f + 2.0f);
+            if (gNumPlayers == 4) {
                 gDPSetPrimColor(gdl++, 0, 0, 0x28, 0xFA, 0x28, 0xFF);
-                gDPFillRectangle(gdl++, cx + D_800E37C0_67[2].f50 * 0.25f / 0.625f - 2.0f, cy + D_800E37C0_67[2].f48 * 0.25f - 2.0f,
-                                 cx + D_800E37C0_67[2].f50 * 0.25f / 0.625f + 2.0f, cy + D_800E37C0_67[2].f48 * 0.25f + 2.0f);
+                gDPFillRectangle(gdl++, cx + gRiders_67[2].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[2].f48 * 0.25f - 2.0f,
+                                 cx + gRiders_67[2].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[2].f48 * 0.25f + 2.0f);
                 gDPSetPrimColor(gdl++, 0, 0, 0xFA, 0x28, 0x28, 0xFF);
-                gDPFillRectangle(gdl++, cx + D_800E37C0_67[3].f50 * 0.25f / 0.625f - 2.0f, cy + D_800E37C0_67[3].f48 * 0.25f - 2.0f,
-                                 cx + D_800E37C0_67[3].f50 * 0.25f / 0.625f + 2.0f, cy + D_800E37C0_67[3].f48 * 0.25f + 2.0f);
+                gDPFillRectangle(gdl++, cx + gRiders_67[3].f50 * 0.25f / 0.625f - 2.0f, cy + gRiders_67[3].f48 * 0.25f - 2.0f,
+                                 cx + gRiders_67[3].f50 * 0.25f / 0.625f + 2.0f, cy + gRiders_67[3].f48 * 0.25f + 2.0f);
             }
             gDPSetPrimColor(gdl++, 0, 0, 0xFA, 0xFA, 0xFA, 0xFF);
-            gDPFillRectangle(gdl++, cx + D_800F1510.z * 0.25f / 0.625f - 1.0f, cy + D_800F1510.x * 0.25f - 1.0f,
-                             cx + D_800F1510.z * 0.25f / 0.625f + 1.0f, cy + D_800F1510.x * 0.25f + 1.0f);
+            gDPFillRectangle(gdl++, cx + gSoccerBall.z * 0.25f / 0.625f - 1.0f, cy + gSoccerBall.x * 0.25f - 1.0f,
+                             cx + gSoccerBall.z * 0.25f / 0.625f + 1.0f, cy + gSoccerBall.x * 0.25f + 1.0f);
         }
-        switch (D_800F05A8_32.w0) {
+        switch (gEvent_32.w0) {
         case 6:
-            func_800C1E60(D_800F0530[0], 0x40, 1, 4, 0x21);
-            if (D_800EFDAC == 2) {
-                func_800C1F2C(D_800F0530[0], "One on One Soccer: First Half");
+            font_text_create(gHudTextObjs[0], 0x40, 1, 4, 0x21);
+            if (gNumPlayers == 2) {
+                font_text_add(gHudTextObjs[0], "One on One Soccer: First Half");
             } else {
-                func_800C1F2C(D_800F0530[0], D_800D865C);
+                font_text_add(gHudTextObjs[0], D_800D865C);
             }
-            func_800C0ACC(D_800F0530[0], D_800F13EC / 2, D_800F13F0 / 2);
+            font_draw_text(gHudTextObjs[0], gScreenWidth / 2, gScreenHeight / 2);
             break;
         case 8:
         case 10:
         case 12:
-            func_800C1E60(D_800F0530[0], 0x40, 1, 6, 0x21);
-            switch (D_800F05A8_32.w0) {
+            font_text_create(gHudTextObjs[0], 0x40, 1, 6, 0x21);
+            switch (gEvent_32.w0) {
             case 10:
-                func_800C1F2C(D_800F0530[0], "Full Time Draw : Overtime Required");
+                font_text_add(gHudTextObjs[0], "Full Time Draw : Overtime Required");
                 break;
             case 8:
-                func_800C1F2C(D_800F0530[0], "Half Time");
+                font_text_add(gHudTextObjs[0], "Half Time");
                 break;
             case 12:
-                func_800C1F2C(D_800F0530[0], "Final");
+                font_text_add(gHudTextObjs[0], "Final");
                 break;
             }
-            func_800C0ACC(D_800F0530[0], D_800F13EC / 2, D_800F13F0 / 2 - 13);
-            func_800C1E60(D_800F0530[1], 0x40, 1, 2, 0x20);
-            func_800C1E60(D_800F0530[2], 0x40, 1, 2, 0x20);
-            func_800C1E60(D_800F0530[3], 0x40, 1, 4, 0x20);
-            func_800C1E60(D_800F0530[4], 0x40, 1, 4, 0x20);
-            func_800C1F2C(D_800F0530[1], "Team 1:");
-            func_800C1F2C(D_800F0530[2], "Team 2:");
-            func_8000EE30(D_800F05A8_32.h68, buf);
-            func_800C1F2C(D_800F0530[3], buf);
-            func_8000EE30(D_800F05A8_32.h6A, buf);
-            func_800C1F2C(D_800F0530[4], buf);
-            func_800C0ACC(D_800F0530[1], D_800F13EC / 2 - 45, D_800F13F0 / 2);
-            func_800C0ACC(D_800F0530[2], D_800F13EC / 2 - 45, D_800F13F0 / 2 + 13);
-            func_800C0ACC(D_800F0530[3], D_800F13EC / 2 + 39, D_800F13F0 / 2);
-            func_800C0ACC(D_800F0530[4], D_800F13EC / 2 + 39, D_800F13F0 / 2 + 13);
-            if (D_800F05A8_32.w0 == 12) {
-                func_800C1E60(D_800F0530[0], 0x40, 1, 4, 0x21);
-                func_800C1F2C(D_800F0530[0], "Press START To Continue");
-                func_800C0ACC(D_800F0530[0], D_800F13EC / 2,
-                              D_800E1718[D_800E1898 - 1][0].y + D_800E1718[D_800E1898 - 1][0].h / 2);
-                func_800C0ACC(D_800F0530[0], D_800F13EC / 2,
-                              D_800E1718[D_800E1898 - 1][D_800E1898 - 1].y +
-                                  D_800E1718[D_800E1898 - 1][D_800E1898 - 1].h / 2);
+            font_draw_text(gHudTextObjs[0], gScreenWidth / 2, gScreenHeight / 2 - 13);
+            font_text_create(gHudTextObjs[1], 0x40, 1, 2, 0x20);
+            font_text_create(gHudTextObjs[2], 0x40, 1, 2, 0x20);
+            font_text_create(gHudTextObjs[3], 0x40, 1, 4, 0x20);
+            font_text_create(gHudTextObjs[4], 0x40, 1, 4, 0x20);
+            font_text_add(gHudTextObjs[1], "Team 1:");
+            font_text_add(gHudTextObjs[2], "Team 2:");
+            int_to_str(gEvent_32.h68, buf);
+            font_text_add(gHudTextObjs[3], buf);
+            int_to_str(gEvent_32.h6A, buf);
+            font_text_add(gHudTextObjs[4], buf);
+            font_draw_text(gHudTextObjs[1], gScreenWidth / 2 - 45, gScreenHeight / 2);
+            font_draw_text(gHudTextObjs[2], gScreenWidth / 2 - 45, gScreenHeight / 2 + 13);
+            font_draw_text(gHudTextObjs[3], gScreenWidth / 2 + 39, gScreenHeight / 2);
+            font_draw_text(gHudTextObjs[4], gScreenWidth / 2 + 39, gScreenHeight / 2 + 13);
+            if (gEvent_32.w0 == 12) {
+                font_text_create(gHudTextObjs[0], 0x40, 1, 4, 0x21);
+                font_text_add(gHudTextObjs[0], "Press START To Continue");
+                font_draw_text(gHudTextObjs[0], gScreenWidth / 2,
+                              gViewRects[gNumScreens - 1][0].y + gViewRects[gNumScreens - 1][0].h / 2);
+                font_draw_text(gHudTextObjs[0], gScreenWidth / 2,
+                              gViewRects[gNumScreens - 1][gNumScreens - 1].y +
+                                  gViewRects[gNumScreens - 1][gNumScreens - 1].h / 2);
             }
             break;
         default:
-            func_800C1E60(D_800F0530[0], 0x40, 1, 2, 0x20);
-            func_800C1E60(D_800F0530[1], 0x40, 1, 2, 0x20);
-            func_800C1E60(D_800F0530[2], 0x40, 1, 4, 0x20);
-            func_800C1E60(D_800F0530[3], 0x40, 1, 4, 0x20);
-            func_800C1F2C(D_800F0530[0], "Team 1:");
-            func_800C1F2C(D_800F0530[1], "Team 2:");
-            func_8000EE30(D_800F05A8_32.h68, buf);
-            func_800C1F2C(D_800F0530[2], buf);
-            func_8000EE30(D_800F05A8_32.h6A, buf);
-            func_800C1F2C(D_800F0530[3], buf);
-            if (D_800EFDAC == 4) {
-                func_800C0ACC(D_800F0530[0], D_800F13EC / 2 - 45, 30);
-                func_800C0ACC(D_800F0530[1], D_800F13EC / 2 - 45, D_800F13F0 - 30);
-                func_800C0ACC(D_800F0530[2], D_800F13EC / 2 + 39, 30);
-                func_800C0ACC(D_800F0530[3], D_800F13EC / 2 + 39, D_800F13F0 - 30);
+            font_text_create(gHudTextObjs[0], 0x40, 1, 2, 0x20);
+            font_text_create(gHudTextObjs[1], 0x40, 1, 2, 0x20);
+            font_text_create(gHudTextObjs[2], 0x40, 1, 4, 0x20);
+            font_text_create(gHudTextObjs[3], 0x40, 1, 4, 0x20);
+            font_text_add(gHudTextObjs[0], "Team 1:");
+            font_text_add(gHudTextObjs[1], "Team 2:");
+            int_to_str(gEvent_32.h68, buf);
+            font_text_add(gHudTextObjs[2], buf);
+            int_to_str(gEvent_32.h6A, buf);
+            font_text_add(gHudTextObjs[3], buf);
+            if (gNumPlayers == 4) {
+                font_draw_text(gHudTextObjs[0], gScreenWidth / 2 - 45, 30);
+                font_draw_text(gHudTextObjs[1], gScreenWidth / 2 - 45, gScreenHeight - 30);
+                font_draw_text(gHudTextObjs[2], gScreenWidth / 2 + 39, 30);
+                font_draw_text(gHudTextObjs[3], gScreenWidth / 2 + 39, gScreenHeight - 30);
             } else {
-                func_800C0ACC(D_800F0530[0], 65, D_800F13F0 / 2 - 7);
-                func_800C0ACC(D_800F0530[1], 65, D_800F13F0 / 2 + 7);
-                func_800C0ACC(D_800F0530[2], 150, D_800F13F0 / 2 - 7);
-                func_800C0ACC(D_800F0530[3], 150, D_800F13F0 / 2 + 7);
+                font_draw_text(gHudTextObjs[0], 65, gScreenHeight / 2 - 7);
+                font_draw_text(gHudTextObjs[1], 65, gScreenHeight / 2 + 7);
+                font_draw_text(gHudTextObjs[2], 150, gScreenHeight / 2 - 7);
+                font_draw_text(gHudTextObjs[3], 150, gScreenHeight / 2 + 7);
             }
-            func_800C1E60(D_800F0530[4], 0x40, 1, 2, 0x22);
-            func_800C1E60(D_800F0530[5], 0x40, 1, 4, 0x22);
-            switch (D_800F05A8_32.w0) {
+            font_text_create(gHudTextObjs[4], 0x40, 1, 2, 0x22);
+            font_text_create(gHudTextObjs[5], 0x40, 1, 4, 0x22);
+            switch (gEvent_32.w0) {
             case 11:
-                func_800C1F2C(D_800F0530[4], "Overtime");
+                font_text_add(gHudTextObjs[4], "Overtime");
                 break;
             case 7:
-                func_800C1F2C(D_800F0530[4], "First Half");
+                font_text_add(gHudTextObjs[4], "First Half");
                 break;
             case 9:
-                func_800C1F2C(D_800F0530[4], "Second Half");
+                font_text_add(gHudTextObjs[4], "Second Half");
                 break;
             }
-            func_80052F30(D_800F05A8_32.w2C, buf);
-            func_800C1F2C(D_800F0530[5], buf);
-            if (D_800EFDAC == 4) {
-                func_800C0ACC(D_800F0530[4], D_800F13EC / 2 - 10, D_800F13F0 / 2 - 7);
-                func_800C0ACC(D_800F0530[5], D_800F13EC / 2 - 10, D_800F13F0 / 2 + 7);
+            event_format_time(gEvent_32.w2C, buf);
+            font_text_add(gHudTextObjs[5], buf);
+            if (gNumPlayers == 4) {
+                font_draw_text(gHudTextObjs[4], gScreenWidth / 2 - 10, gScreenHeight / 2 - 7);
+                font_draw_text(gHudTextObjs[5], gScreenWidth / 2 - 10, gScreenHeight / 2 + 7);
             } else {
-                func_800C0ACC(D_800F0530[4], D_800F13EC - 65, D_800F13F0 / 2 - 7);
-                func_800C0ACC(D_800F0530[5], D_800F13EC - 65, D_800F13F0 / 2 + 7);
+                font_draw_text(gHudTextObjs[4], gScreenWidth - 65, gScreenHeight / 2 - 7);
+                font_draw_text(gHudTextObjs[5], gScreenWidth - 65, gScreenHeight / 2 + 7);
             }
             break;
         }
     }
-    n = D_800F05A8_32.w58 & 0xF;
+    n = gEvent_32.w58 & 0xF;
     if (n != 0) {
         team = n - 1;
-        func_800C1E60(D_800F0530[7], 0x40, D_800EFD70_42.w3C == 4 ? 2 : 1, 4, 0x21);
-        if (team == (p3 >> ((D_800EFD70_42.w3C - 1) >> 1))) {
-            if (D_800F05A8_32.w58 & 0x20) {
-                func_800C1F2C(D_800F0530[7], "Team ");
-                func_8000EE30((team ^ 1) + 1, buf);
-                func_800C1F2C(D_800F0530[7], buf);
-                func_800C1F2C(D_800F0530[7], " scored for you!");
+        font_text_create(gHudTextObjs[7], 0x40, gGame_42.w3C == 4 ? 2 : 1, 4, 0x21);
+        if (team == (p3 >> ((gGame_42.w3C - 1) >> 1))) {
+            if (gEvent_32.w58 & 0x20) {
+                font_text_add(gHudTextObjs[7], "Team ");
+                int_to_str((team ^ 1) + 1, buf);
+                font_text_add(gHudTextObjs[7], buf);
+                font_text_add(gHudTextObjs[7], " scored for you!");
             } else {
-                func_800C1F2C(D_800F0530[7], D_800D871C);
+                font_text_add(gHudTextObjs[7], D_800D871C);
             }
         } else {
-            if (D_800F05A8_32.w58 & 0x20) {
+            if (gEvent_32.w58 & 0x20) {
                 strcpy(msg, "You helped team ");
-                func_8000EE30(n, msg + strlen(msg));
-                func_8000ED30(msg, " score!");
+                int_to_str(n, msg + strlen(msg));
+                str_cat(msg, " score!");
             } else {
                 strcpy(msg, "Team ");
-                func_8000EE30(n, msg + strlen(msg));
-                func_8000ED30(msg, " scored!");
+                int_to_str(n, msg + strlen(msg));
+                str_cat(msg, " scored!");
             }
-            func_800C1F2C(D_800F054C, msg);
+            font_text_add(D_800F054C, msg);
         }
-        func_800C0ACC(D_800F054C, D_800E1718[D_800E1898 - 1][p3].x + D_800E1718[D_800E1898 - 1][p3].w / 2,
-                      D_800E1718[D_800E1898 - 1][p3].y + D_800E1718[D_800E1898 - 1][p3].h / 2);
+        font_draw_text(D_800F054C, gViewRects[gNumScreens - 1][p3].x + gViewRects[gNumScreens - 1][p3].w / 2,
+                      gViewRects[gNumScreens - 1][p3].y + gViewRects[gNumScreens - 1][p3].h / 2);
     }
-    return func_800C1394(gdl);
+    return font_render(gdl);
 }
 
 #define gDPWords(pkt, a, b) \
@@ -2900,30 +2900,30 @@ typedef struct {
     Font *font;
 } Hud_4;
 
-extern Hud_4 D_800EFD70_43;
+extern Hud_4 gGame_43;
 
-Gfx *func_80058294(Gfx *gdl, s32 arg1, u8 *str, s32 x, s32 y) {
+Gfx *event_draw_glyph_string(Gfx *gdl, s32 arg1, u8 *str, s32 x, s32 y) {
     while (*str != 0) {
         s32 w; s32 hh;
 
         gDPWords(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPWords(gdl++, 0xE3001001, 0x8000);
-        gDPWords(gdl++, 0xFD100000, (u32)D_800EFD70_43.font->palette);
+        gDPWords(gdl++, 0xFD100000, (u32)gGame_43.font->palette);
         gDPWords(gdl++, 0xE8000000, 0);
         gDPWords(gdl++, 0xF5000100, 0x07000000);
         gDPWords(gdl++, 0xE6000000, 0);
         gDPWords(gdl++, 0xF0000000, 0x073FC000);
         gDPWords(gdl++, 0xE7000000, 0);
-        w = D_800EFD70_43.font->glyphs[*str].w << 3;
-        hh = D_800EFD70_43.font->glyphs[*str].h;
-        gdl = func_8000A690(x, y - (hh >> 1), &D_800EFD70_43.font->glyphs[*str], gdl, arg1, 1, 1, 3, 0);
+        w = gGame_43.font->glyphs[*str].w << 3;
+        hh = gGame_43.font->glyphs[*str].h;
+        gdl = render_draw_image(x, y - (hh >> 1), &gGame_43.font->glyphs[*str], gdl, arg1, 1, 1, 3, 0);
         str++;
         x += w;
     }
     return gdl;
 }
 
-#define CUR_FLAGS (D_800CADE4_10[D_800CA930_5->f64].flags)
+#define CUR_FLAGS (gTutorialLessons_10[gSeason_5->f64].flags)
 
 typedef struct {
     s32 val;
@@ -2961,11 +2961,11 @@ typedef struct {
     u8 pad2[0x3BC];
 } Bike_32;
 
-extern Track_13 D_800CADE4_10[];
-extern Game_26 D_800F05A8_33;
-extern Bike_32 D_800E37C0_68[];
+extern Track_13 gTutorialLessons_10[];
+extern Game_26 gEvent_33;
+extern Bike_32 gRiders_68[];
 
-Gfx *func_80058438(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
+Gfx *tutorial_draw_hud(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
 {
     Track_13 *trk;
     Entry_4 *e;
@@ -2990,95 +2990,95 @@ Gfx *func_80058438(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
     s32 cx;
     u8 *g;
 
-    trk = &D_800CADE4_10[D_800CA930_5->f64];
-    func_800C2224();
+    trk = &gTutorialLessons_10[gSeason_5->f64];
+    font_reset_queue();
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetPrimColor(gdl++, 0, 0, 0xD2, 0xD2, 0xD2, 0xFF);
     gDPRaw(gdl++, 0xE200001C, 0x404240);
-    if (D_800F05A8_33.state == 0xD) {
-        if (D_800F05A8_33.f70 == 0) {
-            off = -(D_800F05A8_33.f78 * 2);
+    if (gEvent_33.state == 0xD) {
+        if (gEvent_33.f70 == 0) {
+            off = -(gEvent_33.f78 * 2);
         } else {
             off = 0;
-            if (D_800F05A8_33.f70 == 2) {
-                off = -((60 - D_800F05A8_33.f78) * 2);
+            if (gEvent_33.f70 == 2) {
+                off = -((60 - gEvent_33.f78) * 2);
             }
         }
         gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800EFD68_2 + 4));
-        cx = D_800F13EC / 2;
+        cx = gScreenWidth / 2;
         w = D_800EFD68_2[0x10] * 4 - 10;
-        gdl = func_8000A690(cx - w, off + 0x1E, D_800EFD68_2 + 0x10, gdl, arg2, 1, 1, 3, 0);
+        gdl = render_draw_image(cx - w, off + 0x1E, D_800EFD68_2 + 0x10, gdl, arg2, 1, 1, 3, 0);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
-        gdl = func_8000A690(D_800F13EC / 2 - D_800EFD6C_2[0x18] * 4, off + 0x1A, D_800EFD6C_2 + 0x18, gdl, arg2, 1, 1, 6, 0);
-        func_800C1E60(D_800F0530[i], 0x40, 1, 2, 0x20);
-        func_800C1F2C(D_800F0530[i], trk->name);
-        func_800C0ACC(D_800F0530[i], 0x4D - i * 3, i * 13 + 0x44 + off);
-        func_800C1E60(D_800F0530[3], 0x40, 1, 2, 0x21);
+        gdl = render_draw_image(gScreenWidth / 2 - D_800EFD6C_2[0x18] * 4, off + 0x1A, D_800EFD6C_2 + 0x18, gdl, arg2, 1, 1, 6, 0);
+        font_text_create(gHudTextObjs[i], 0x40, 1, 2, 0x20);
+        font_text_add(gHudTextObjs[i], trk->name);
+        font_draw_text(gHudTextObjs[i], 0x4D - i * 3, i * 13 + 0x44 + off);
+        font_text_create(gHudTextObjs[3], 0x40, 1, 2, 0x21);
         __builtin_memcpy(buf, D_800D88D0, 9);
         buf[strlen(buf) - 1] += trk->num;
-        func_800C1F2C(D_800F0530[3], buf);
-        func_800C0ACC(D_800F0530[3], D_800F13EC / 2 + 3, off + 0x29);
+        font_text_add(gHudTextObjs[3], buf);
+        font_draw_text(gHudTextObjs[3], gScreenWidth / 2 + 3, off + 0x29);
     } else {
-        if (D_800C8CE4 != 0) {
-            if (D_800E2038 & 0x20) {
-                func_800C1E60(D_800F0530[5], 0x40, 1, 2, 0x20);
-                func_800C1F2C(D_800F0530[5], "Press START");
-                func_800C0ACC(D_800F0530[5], 0x2F, 0x2D);
+        if (gActiveReplay != 0) {
+            if (gFrameCounter & 0x20) {
+                font_text_create(gHudTextObjs[5], 0x40, 1, 2, 0x20);
+                font_text_add(gHudTextObjs[5], "Press START");
+                font_draw_text(gHudTextObjs[5], 0x2F, 0x2D);
             }
         } else {
             flags = CUR_FLAGS;
             if (flags & 4) {
-                func_800C1E60(D_800F0530[0], 0x40, 2, 6, 0x20);
-                if (D_800F05A8_33.f58 & 0x1000) {
-                    func_800C1F2C(D_800F0530[0], "Takedown Required");
+                font_text_create(gHudTextObjs[0], 0x40, 2, 6, 0x20);
+                if (gEvent_33.f58 & 0x1000) {
+                    font_text_add(gHudTextObjs[0], "Takedown Required");
                 } else {
-                    func_800C1F2C(D_800F0530[0], "Takedown Complete");
+                    font_text_add(gHudTextObjs[0], "Takedown Complete");
                 }
-                func_800C0ACC(D_800F0530[0], 0x21, 0x2D);
+                font_draw_text(gHudTextObjs[0], 0x21, 0x2D);
             } else if (flags & 8) {
               if (!(flags & 2)) {
-                func_800C1E60(D_800F0530[0], 0x40, 1, 6, 0x20);
-                v = D_800F05A8_33.f2C;
+                font_text_create(gHudTextObjs[0], 0x40, 1, 6, 0x20);
+                v = gEvent_33.f2C;
                 if (v < 0) {
                     v = -v;
                 }
-                func_8005313C(v, buf);
-                func_800C1F2C(D_800F0530[0], "Time: ");
-                func_800C1F2C(D_800F0530[0], buf);
-                if (D_800F05A8_33.f2C < 0) {
-                    D_800F0530[0][1] = 8;
+                event_format_time_short(v, buf);
+                font_text_add(gHudTextObjs[0], "Time: ");
+                font_text_add(gHudTextObjs[0], buf);
+                if (gEvent_33.f2C < 0) {
+                    gHudTextObjs[0][1] = 8;
                 }
-                func_800C0ACC(D_800F0530[0], 0x21, 0x2D);
+                font_draw_text(gHudTextObjs[0], 0x21, 0x2D);
               }
             }
         }
-        func_800C1E60(D_800F0530[1], 0x40, 1, 4, 0x20);
-        func_800C1F2C(D_800F0530[1], trk->name);
-        func_800C0ACC(D_800F0530[1], 0x3D, 0x20);
+        font_text_create(gHudTextObjs[1], 0x40, 1, 4, 0x20);
+        font_text_add(gHudTextObjs[1], trk->name);
+        font_draw_text(gHudTextObjs[1], 0x3D, 0x20);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         if ((CUR_FLAGS & 2) && D_800F0738 >= 2 && D_800F0738 < 10) {
-            func_800C1E60(D_800F0530[2], 0x40, 2, 2, 0x20);
-            func_800C1F2C(D_800F0530[2], trk->entries[D_800F0738].str[0]);
-            func_800C0ACC(D_800F0530[2], 0x140, 0x28);
+            font_text_create(gHudTextObjs[2], 0x40, 2, 2, 0x20);
+            font_text_add(gHudTextObjs[2], trk->entries[D_800F0738].str[0]);
+            font_draw_text(gHudTextObjs[2], 0x140, 0x28);
             p = gdl;
             gDPSetTextureLUT(p++, G_TT_NONE);
             gDPRaw(p++, 0xFC119623, 0xFF2FFFFF);
             k = 27;
             x0 = 0x2EE;
             g = D_800EFD6C_2 + 0x58;
-            p = func_8000A690(x0 - g[0] * k * 8 - D_800EFD6C_2[0x60] * 8, 0x1C, D_800EFD6C_2 + 0x60, p, arg2, 1, 1, 6, 0);
+            p = render_draw_image(x0 - g[0] * k * 8 - D_800EFD6C_2[0x60] * 8, 0x1C, D_800EFD6C_2 + 0x60, p, arg2, 1, 1, 6, 0);
             for (m = 0; m < 27; m++) {
-                p = func_8000A690(x0 - (k - m) * g[0] * 8, 0x1C, g, p, arg2, 1, 1, 6, 0);
+                p = render_draw_image(x0 - (k - m) * g[0] * 8, 0x1C, g, p, arg2, 1, 1, 6, 0);
             }
-            gdl = func_80058294(p, arg2, trk->entries[D_800F0738].str[1], 0x140, 0x40);
+            gdl = event_draw_glyph_string(p, arg2, trk->entries[D_800F0738].str[1], 0x140, 0x40);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         } else {
-            if (D_800F06AC == 1) {
+            if (gTutorialResult == 1) {
                 if (D_800F0738 == 0) {
                     i = trk->count - 1;
                 } else {
@@ -3086,25 +3086,25 @@ Gfx *func_80058438(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
                 }
                 goto show;
             }
-            if (D_800F06AC == -1) {
+            if (gTutorialResult == -1) {
                 for (j = 0; j < 3; j++) {
-                    func_800C1E60(D_800F0530[j + 2], 0x40, 2, 2, 0x20);
-                    func_800C1F2C(D_800F0530[j + 2], D_800CB098[j]);
-                    func_800C0ACC(D_800F0530[j + 2], 0x20, 0xB2 + j * 9);
+                    font_text_create(gHudTextObjs[j + 2], 0x40, 2, 2, 0x20);
+                    font_text_add(gHudTextObjs[j + 2], sTutorialFailText[j]);
+                    font_draw_text(gHudTextObjs[j + 2], 0x20, 0xB2 + j * 9);
                 }
             } else {
-                if (D_800C8CE4 == 0 && !(D_800F05A8_33.f58 & 0x8000)) {
+                if (gActiveReplay == 0 && !(gEvent_33.f58 & 0x8000)) {
                     goto skip;
                 }
-                if (!(D_800F05A8_33.f58 & 0x800)) {
+                if (!(gEvent_33.f58 & 0x800)) {
                     goto skip;
                 }
                 for (i = 0; i < trk->count; i++) {
-                    d = trk->entries[i].val - D_800F05D4;
+                    d = trk->entries[i].val - gEventTime;
                     if (d <= 0) {
-                        d = D_800F05D4 - trk->entries[i].val;
+                        d = gEventTime - trk->entries[i].val;
                     }
-                    if (d >= 3 && !(D_800F0600 & 0x8000)) {
+                    if (d >= 3 && !(gEventFlags & 0x8000)) {
                         continue;
                     }
                     {
@@ -3117,9 +3117,9 @@ Gfx *func_80058438(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
                             }
                         }
                         for (j = 0; j < n; j++) {
-                            func_800C1E60(D_800F0530[j + 2], 0x40, 2, 2, 0x20);
-                            func_800C1F2C(D_800F0530[j + 2], trk->entries[i].str[j]);
-                            func_800C0ACC(D_800F0530[j + 2], 0x20, 0xBB - (n - 1) * 9 / 2 + j * 9);
+                            font_text_create(gHudTextObjs[j + 2], 0x40, 2, 2, 0x20);
+                            font_text_add(gHudTextObjs[j + 2], trk->entries[i].str[j]);
+                            font_draw_text(gHudTextObjs[j + 2], 0x20, 0xBB - (n - 1) * 9 / 2 + j * 9);
                         }
                         break;
                     }
@@ -3127,68 +3127,68 @@ Gfx *func_80058438(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3)
             }
             img = D_800EFD6C_2 + 0x30;
             for (i = 0; i < 19; i++) {
-                gdl = func_8000A690(i * img[0] * 8 + 0x10, 0xA9, img, gdl, arg2, 1, 1, 6, 0);
+                gdl = render_draw_image(i * img[0] * 8 + 0x10, 0xA9, img, gdl, arg2, 1, 1, 6, 0);
             }
-            p = func_8000A690(img[0] * 0x98 + 0x10, 0xA9, D_800EFD6C_2 + 0x38, gdl, arg2, 1, 1, 6, 0);
-            gdl = func_80058294(p, arg2, D_800C9A3C, 0x136, 0xC3);
+            p = render_draw_image(img[0] * 0x98 + 0x10, 0xA9, D_800EFD6C_2 + 0x38, gdl, arg2, 1, 1, 6, 0);
+            gdl = event_draw_glyph_string(p, arg2, D_800C9A3C, 0x136, 0xC3);
             gDPSetTextureLUT(gdl++, G_TT_NONE);
             gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
         }
     skip:
-        if (D_800F05A8_33.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
+        if (gEvent_33.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
             img = D_800EFD6C_2 + 0x30;
         } else {
             img = D_800EFD6C_2 + 0x40;
         }
         for (i = 0; i < 9; i++) {
-            gdl = func_8000A690(i * img[0] * 8 + 0x10, 0x14, img, gdl, arg2, 1, 1, 6, 0);
+            gdl = render_draw_image(i * img[0] * 8 + 0x10, 0x14, img, gdl, arg2, 1, 1, 6, 0);
         }
-        if (D_800F05A8_33.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
+        if (gEvent_33.state == 0xE || ((CUR_FLAGS & 8) && !(CUR_FLAGS & 2))) {
             img2 = D_800EFD6C_2 + 0x38;
         } else {
             img2 = D_800EFD6C_2 + 0x48;
         }
-        gdl = func_8000A690(img[0] * 0x48 + 0x10, 0x14, img2, gdl, arg2, 1, 1, 6, 0);
+        gdl = render_draw_image(img[0] * 0x48 + 0x10, 0x14, img2, gdl, arg2, 1, 1, 6, 0);
         gDPRaw(gdl++, 0xE200001C, 0x404240);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
         gDPRaw(gdl++, 0xFCFFFFFF, 0xFFFCF279);
         gDPSetTexturePersp(gdl++, G_TP_NONE);
         gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-        if (D_800CA930_5->f64 > 0) {
+        if (gSeason_5->f64 > 0) {
             gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
         } else {
-            gDPLoadTLUT_pal256(gdl++, D_800F06B0);
+            gDPLoadTLUT_pal256(gdl++, sGreyPalette);
         }
-        gdl = func_8000A690(0x21, 0x1B, D_800F0740 + 0x20, gdl, arg2, 1, 1, 3, 0);
-        if (D_800CA930_5->f64 < 16 && D_800CADE4_10[D_800CA930_5->f64 + 1].num <= D_800CA930_5->f0[1]) {
+        gdl = render_draw_image(0x21, 0x1B, D_800F0740 + 0x20, gdl, arg2, 1, 1, 3, 0);
+        if (gSeason_5->f64 < 16 && gTutorialLessons_10[gSeason_5->f64 + 1].num <= gSeason_5->f0[1]) {
             gDPLoadTLUT_pal256(gdl++, *(u32 *)(D_800F0740 + 4));
         } else {
-            gDPLoadTLUT_pal256(gdl++, D_800F06B0);
+            gDPLoadTLUT_pal256(gdl++, sGreyPalette);
         }
-        gdl = func_8000A690(0x96, 0x1B, D_800F0740 + 0x10, gdl, arg2, 1, 1, 3, 0);
+        gdl = render_draw_image(0x96, 0x1B, D_800F0740 + 0x10, gdl, arg2, 1, 1, 3, 0);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
         gDPRaw(gdl++, 0xFC119623, 0xFF2FFFFF);
     }
-    gdl = func_80009754(gdl, arg1, arg2, 0);
-    func_800C1E60(D_800F0530[6], 0x40, 3, 2, 0x12);
-    f = D_800E37C0_68[arg3].f420;
-    func_8000EE30((s32)((f > 0.0f ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
-    func_800C1F2C(D_800F0530[6], buf);
+    gdl = render_draw_temp_gauge(gdl, arg1, arg2, 0);
+    font_text_create(gHudTextObjs[6], 0x40, 3, 2, 0x12);
+    f = gRiders_68[arg3].f420;
+    int_to_str((s32)((f > 0.0f ? f * 3600.0f : -f * 3600.0f) / 1612.9f), buf);
+    font_text_add(gHudTextObjs[6], buf);
     x = 0x1BA;
-    if (D_800CCCA8 == 2) {
+    if (gViMode == 2) {
         x = 0x228;
     }
     y = 0xD6;
-    if (D_800CCCA8 == 2) {
+    if (gViMode == 2) {
         y = 0x180;
     }
-    func_800C0ACC(D_800F0530[6], x, y);
-    if ((CUR_FLAGS & 8) && D_800F05A8_33.f26 != 0
-        && (D_800F05A8_33.state < 5 || D_800F05A8_33.state == 15 || D_800F05A8_33.state == 14)
-        && (D_800F05A8_33.state != 1 || D_800F05A8_33.f26 < 0x5B)) {
-        gdl = func_80054ED0(gdl, arg3);
+    font_draw_text(gHudTextObjs[6], x, y);
+    if ((CUR_FLAGS & 8) && gEvent_33.f26 != 0
+        && (gEvent_33.state < 5 || gEvent_33.state == 15 || gEvent_33.state == 14)
+        && (gEvent_33.state != 1 || gEvent_33.f26 < 0x5B)) {
+        gdl = event_draw_countdown(gdl, arg3);
     }
-    return func_800C1394(gdl);
+    return font_render(gdl);
 }
 
 typedef struct {
@@ -3197,8 +3197,8 @@ typedef struct {
     s16 idx;
 } Ctl_15;
 
-s32 func_800595A4(void) {
-    Ctl_15 *c = D_800CA930;
+s32 tutorial_next_lesson_unlocked(void) {
+    Ctl_15 *c = gSeason;
     s32 a1 = c->idx;
     s32 n = a1 + 1;
     u8 v1, v0;
@@ -3206,17 +3206,17 @@ s32 func_800595A4(void) {
     if (n > 16) {
         return 0;
     }
-    v1 = D_800CADE4[a1 * 0x28 + 0xD];
-    v0 = D_800CADE4[n * 0x28 + 0xD];
+    v1 = gTutorialLessons[a1 * 0x28 + 0xD];
+    v0 = gTutorialLessons[n * 0x28 + 0xD];
     if (v1 == v0) {
         return 1;
     }
     return v1 < c->hdr[1];
 }
 
-#define ROWS (D_800EFDAC_2[0] >= 2 ? 6 : 9)
-#define COLS (D_800EFDAC_2[0] >= 3 ? 8 : 12)
-#define RECT (D_800E1718[D_800C2594 - 1][D_800F05F8])
+#define ROWS (gNumPlayers_2[0] >= 2 ? 6 : 9)
+#define COLS (gNumPlayers_2[0] >= 3 ? 8 : 12)
+#define RECT (gViewRects[gNumViews - 1][D_800F05F8])
 
 typedef struct Plr_7 {
     u8 pad0[0x64];
@@ -3229,10 +3229,10 @@ typedef struct Trk_10 {
     u8 pad20[0x28 - 0x20];
 } Trk_10;
 
-extern Plr_7 *D_800CA930_12;
-extern Trk_10 D_800CADE4_11[];
+extern Plr_7 *gSeason_12;
+extern Trk_10 gTutorialLessons_11[];
 
-Gfx *func_80059614(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
+Gfx *event_draw_hud(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     int i;
     int j;
     s32 a;
@@ -3240,41 +3240,41 @@ Gfx *func_80059614(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
     s32 sp;
     int n;
 
-    if (D_800CA934 != 3 || D_800EFDBC == 9) {
-        switch (D_800EFDBC) {
+    if (gHudLevel != 3 || gGameMode == 9) {
+        switch (gGameMode) {
         case 2:
-            if (D_800E3710 == 0) {
-                gdl = func_80056C94(gdl, p1, p2, p3);
+            if (gPauseMenu == 0) {
+                gdl = event_draw_hud_soccer(gdl, p1, p2, p3);
             }
             break;
         case 5:
-            gdl = func_800549E4(gdl, p1, p2, p3);
+            gdl = event_draw_hud_gates(gdl, p1, p2, p3);
             break;
         case 7:
-            gdl = func_800535B8(gdl, p1, p2, p3);
+            gdl = event_draw_hud_hillclimb(gdl, p1, p2, p3);
             break;
         case 10:
-            gdl = func_80053D58(gdl, p1, p2, p3);
+            gdl = event_draw_hud_stunt(gdl, p1, p2, p3);
             break;
         case 13:
         case 14:
-            gdl = func_800533D0(gdl, p1, p2, p3);
+            gdl = event_draw_hud_testride(gdl, p1, p2, p3);
             break;
         case 9:
-            gdl = func_80058438(gdl, p1, p2, p3);
+            gdl = tutorial_draw_hud(gdl, p1, p2, p3);
             break;
         default:
-            gdl = func_8005581C(gdl, p1, p2, p3);
+            gdl = event_draw_hud_race(gdl, p1, p2, p3);
             break;
         }
-    } else if (D_800C8CE8 == 0) {
-        gdl = func_80054ED0(gdl, p3);
+    } else if (gReplayPlayback == 0) {
+        gdl = event_draw_countdown(gdl, p3);
     }
     if (D_800F0630 >= 0 || D_800F0630 == -2) {
         gDPSetRenderMode(gdl++, 0x404240, 0);
         gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_OFF);
-        gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, D_800F13EC - 1, D_800F13F0 - 1);
+        gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth - 1, gScreenHeight - 1);
         prev = 35;
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, prev);
         for (i = 0; i < ROWS; i++) {
@@ -3288,9 +3288,9 @@ Gfx *func_80059614(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
                     } else if (n >= 30) {
                         a = 35;
                     } else if (n < 15) {
-                        a = (D_800C2C60[(((n << 14) / 15 >> 4) - 0x400) & 0xFFF] * 15) >> 12;
+                        a = (gCosTable[(((n << 14) / 15 >> 4) - 0x400) & 0xFFF] * 15) >> 12;
                     } else {
-                        a = ((D_800C2C60[(((n - 15) << 14) / 15 >> 4) & 0xFFF] * 25) >> 14) + 35;
+                        a = ((gCosTable[(((n - 15) << 14) / 15 >> 4) & 0xFFF] * 25) >> 14) + 35;
                     }
                 }
                 if (a != prev) {
@@ -3314,9 +3314,9 @@ Gfx *func_80059614(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
                     } else if (n >= 30) {
                         a = 35;
                     } else if (n < 15) {
-                        a = (D_800C2C60[(((n << 14) / 15 >> 4) - 0x400) & 0xFFF] * 255) >> 14;
+                        a = (gCosTable[(((n << 14) / 15 >> 4) - 0x400) & 0xFFF] * 255) >> 14;
                     } else {
-                        a = ((D_800C2C60[(((n - 15) << 14) / 15 >> 4) & 0xFFF] * 55) >> 12) + 35;
+                        a = ((gCosTable[(((n - 15) << 14) / 15 >> 4) & 0xFFF] * 55) >> 12) + 35;
                     }
                 }
                 if (a != prev) {
@@ -3329,72 +3329,72 @@ Gfx *func_80059614(Gfx *gdl, s32 p1, s32 p2, s32 p3) {
         }
     }
     sp = 14;
-    if (D_800CCCA8_2 == 2) {
-        func_800C1D54(0x10000, 0x20000, 0, 1);
+    if (gViMode_2 == 2) {
+        font_set_scale(0x10000, 0x20000, 0, 1);
         sp = 28;
     }
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, D_800E1718[0][0].x, D_800E1718[0][0].y,
-                  D_800E1718[0][0].x + D_800E1718[0][0].w - 1, D_800E1718[0][0].y + D_800E1718[0][0].h - 1);
-    func_800C2224();
-    switch (D_800E3710) {
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, gViewRects[0][0].x, gViewRects[0][0].y,
+                  gViewRects[0][0].x + gViewRects[0][0].w - 1, gViewRects[0][0].y + gViewRects[0][0].h - 1);
+    font_reset_queue();
+    switch (gPauseMenu) {
     case 6:
         for (n = 0; n < 3; n++) {
-            func_800C1E60(D_800F06B8[n], 0x40, 1, n == D_800E3768 ? 4 : 2, 1);
-            func_800C1F2C(D_800F06B8[n], D_800CB0FC[n]);
-            func_800C0ACC(D_800F06B8[n], D_800E1718[0][0].x + D_800E1718[0][0].w / 2,
-                          D_800E1718[0][0].y + D_800E1718[0][0].h / 2 - sp + sp * n);
+            font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 1);
+            font_text_add(gMenuTextObjs[n], sTestRideMenuItems[n]);
+            font_draw_text(gMenuTextObjs[n], gViewRects[0][0].x + gViewRects[0][0].w / 2,
+                          gViewRects[0][0].y + gViewRects[0][0].h / 2 - sp + sp * n);
         }
         break;
     case 1:
-        for (n = 0; n < (D_800EFDBC == 1 ? 4 : 5); n++) {
-            func_800C1E60(D_800F06B8[n], 0x40, 1, n == D_800E3768 ? 4 : 2, 0x11);
-            if (D_800EFDBC == 1) {
-                func_800C1F2C(D_800F06B8[n], D_800CB108[n]);
-            } else if (D_800EFDBC == 2) {
-                func_800C1F2C(D_800F06B8[n], D_800CB0E8[n]);
+        for (n = 0; n < (gGameMode == 1 ? 4 : 5); n++) {
+            font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 0x11);
+            if (gGameMode == 1) {
+                font_text_add(gMenuTextObjs[n], sPauseMenuItemsSeason[n]);
+            } else if (gGameMode == 2) {
+                font_text_add(gMenuTextObjs[n], sPauseMenuItemsSoccer[n]);
             } else {
-                func_800C1F2C(D_800F06B8[n], D_800CB0D4[n]);
+                font_text_add(gMenuTextObjs[n], sPauseMenuItems[n]);
             }
-            func_800C0ACC(D_800F06B8[n], D_800E1718[0][0].x + D_800E1718[0][0].w / 2,
-                          D_800E1718[0][0].y + D_800E1718[0][0].h / 2 - sp * 2 + sp * n);
+            font_draw_text(gMenuTextObjs[n], gViewRects[0][0].x + gViewRects[0][0].w / 2,
+                          gViewRects[0][0].y + gViewRects[0][0].h / 2 - sp * 2 + sp * n);
         }
         break;
     case 5:
         if (D_800F0618 != 6) {
             s32 k;
-            k = D_800E1718[0][0].y + D_800E1718[0][0].h / 2 - sp * 2;
+            k = gViewRects[0][0].y + gViewRects[0][0].h / 2 - sp * 2;
             for (n = 0; n < 5; n++) {
-                if (n == 1 && D_800CADE4_11[D_800CA930_12->h64].f1C == 0) {
+                if (n == 1 && gTutorialLessons_11[gSeason_12->h64].f1C == 0) {
                     continue;
                 }
-                if (n == 3 && func_800595A4() == 0) {
+                if (n == 3 && tutorial_next_lesson_unlocked() == 0) {
                     continue;
                 }
-                if (n == 4 && D_800CA930_12->h64 == 0) {
+                if (n == 4 && gSeason_12->h64 == 0) {
                     continue;
                 }
-                func_800C1E60(D_800F06B8[n], 0x40, 1, n == D_800E3768 ? 4 : 2, 1);
-                func_800C1F2C(D_800F06B8[n], D_800CB0C0[n]);
-                func_800C0ACC(D_800F06B8[n], D_800E1718[0][0].x + D_800E1718[0][0].w / 2, k);
+                font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 1);
+                font_text_add(gMenuTextObjs[n], sTutorialMenuItems[n]);
+                font_draw_text(gMenuTextObjs[n], gViewRects[0][0].x + gViewRects[0][0].w / 2, k);
                 k += sp;
             }
         }
         break;
     case 4:
         for (n = 0; n < 2; n++) {
-            func_800C1E60(D_800F06B8[n], 0x40, 1, n == D_800E3768 ? 4 : 2, 1);
-            func_800C1F2C(D_800F06B8[n], D_800CB0B8[n]);
-            func_800C0ACC(D_800F06B8[n], D_800E1718[0][0].x + D_800E1718[0][0].w / 2,
-                          D_800E1718[0][0].y + D_800E1718[0][0].h / 2 + sp * n);
+            font_text_create(gMenuTextObjs[n], 0x40, 1, n == gPauseMenuCursor ? 4 : 2, 1);
+            font_text_add(gMenuTextObjs[n], sQuitConfirmItems[n]);
+            font_draw_text(gMenuTextObjs[n], gViewRects[0][0].x + gViewRects[0][0].w / 2,
+                          gViewRects[0][0].y + gViewRects[0][0].h / 2 + sp * n);
         }
         break;
     }
-    gdl = func_800C1394(gdl);
-    func_800C1D54(0x10000, 0x10000, 0, 0);
+    gdl = font_render(gdl);
+    font_set_scale(0x10000, 0x10000, 0, 0);
     return gdl;
 }
 
-#define RP_2(T, n) ((Rect *)(((D_800C2598 << 4) + (((n) - 1) << 6)) + (u8 *)T))
+#define RP_2(T, n) ((Rect *)(((gCurView << 4) + (((n) - 1) << 6)) + (u8 *)T))
 #define RX(T, n) (RP_2(T, n)->x + RP_2(T, n)->w)
 #define RY(T, n) (RP_2(T, n)->y + RP_2(T, n)->h)
 #define R8(c) (((c) >> 8) & 0xF8)
@@ -3415,11 +3415,11 @@ typedef struct {
     u8 pad655[0x7E0 - 0x655];
 } Player_19;
 
-extern HudTex *D_800F0524_2;
-extern HudTex *D_800F0524_3[];
-extern Player_19 D_800E37C0_69[];
+extern HudTex *sTempGaugeTextures_2;
+extern HudTex *sTempGaugeTextures_3[];
+extern Player_19 gRiders_69[];
 
-Gfx *func_8005A4C8(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
+Gfx *event_draw_temp_gauge(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     s32 fp, n, bar, k;
     u16 col;
     Img_6 *img;
@@ -3427,9 +3427,9 @@ Gfx *func_8005A4C8(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
 
 
     fp = -54;
-    n = D_800E1898;
+    n = gNumScreens;
     if (n == 2) fp = -46;
-    bar = D_800E37C0_69[pl].f648 * 38.0f / 12000.0f;
+    bar = gRiders_69[pl].f648 * 38.0f / 12000.0f;
     if (bar >= 39) bar = 38;
     GW(gdl++, 0xE7000000, 0);
     GW(gdl++, 0xE3000C00, 0);
@@ -3442,25 +3442,25 @@ Gfx *func_8005A4C8(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
     GW(gdl++, 0xE3001001, 0);
     GW(gdl++, 0xFC119623, 0xFF2FFFFF);
     GW(gdl++, 0xE200001C, 0x00404240);
-    GW(gdl++, 0xFA000000, DIM(D_800F0524_2->pal[0], 0x8C));
-    { Rect *tab = D_800C2494_3; gdl = func_8000A690(RX(tab, n) - 24, RY(tab, n) + fp, &D_800F0524_2->img[0], gdl, a2, 1, 1, 6, 0); }
-    GW(gdl++, 0xFA000000, DIM(D_800F0524_2->pal[4], 0xA0));
-    gdl = func_8000A690(RX(D_800C2494_3, D_800E1898) - 24, RY(D_800C2494_3, D_800E1898) + fp, &D_800F0524_2->img[4], gdl, a2, 1, 1, 6, 0);
-    bar++; GW(gdl++, 0xFA000000, DIM(D_800F0524_2->pal[3], 0x8C));
-    gdl = func_8000A690(RX(D_800C2494_3, D_800E1898) - 24, RY(D_800C2494_3, D_800E1898) + fp, &D_800F0524_2->img[3], gdl, a2, 1, 1, 6, 0);
+    GW(gdl++, 0xFA000000, DIM(sTempGaugeTextures_2->pal[0], 0x8C));
+    { Rect *tab = gViewLayouts_3; gdl = render_draw_image(RX(tab, n) - 24, RY(tab, n) + fp, &sTempGaugeTextures_2->img[0], gdl, a2, 1, 1, 6, 0); }
+    GW(gdl++, 0xFA000000, DIM(sTempGaugeTextures_2->pal[4], 0xA0));
+    gdl = render_draw_image(RX(gViewLayouts_3, gNumScreens) - 24, RY(gViewLayouts_3, gNumScreens) + fp, &sTempGaugeTextures_2->img[4], gdl, a2, 1, 1, 6, 0);
+    bar++; GW(gdl++, 0xFA000000, DIM(sTempGaugeTextures_2->pal[3], 0x8C));
+    gdl = render_draw_image(RX(gViewLayouts_3, gNumScreens) - 24, RY(gViewLayouts_3, gNumScreens) + fp, &sTempGaugeTextures_2->img[3], gdl, a2, 1, 1, 6, 0);
     for (k = 0; k < 3; k++) {
         switch (k) {
         case 0:
-            img = &D_800F0524_2->img[0];
-            col = D_800F0524_2->pal[0];
+            img = &sTempGaugeTextures_2->img[0];
+            col = sTempGaugeTextures_2->pal[0];
             break;
         case 1:
-            img = &D_800F0524_2->img[4];
-            col = D_800F0524_2->pal[4];
+            img = &sTempGaugeTextures_2->img[4];
+            col = sTempGaugeTextures_2->pal[4];
             break;
         case 2:
-            img = &D_800F0524_2->img[3];
-            col = D_800F0524_2->pal[3];
+            img = &sTempGaugeTextures_2->img[3];
+            col = sTempGaugeTextures_2->pal[3];
             break;
         }
         GW(gdl++, 0xFD680000 | ((img->w * 8 - 1) & 0xFFF), img->addr);
@@ -3472,26 +3472,26 @@ Gfx *func_8005A4C8(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
         GW(gdl++, 0xF2000000, ((((img->w << 5) - 4) & 0xFFF) << 12) | (((bar - 1) * 4) & 0xFFF));
         GW(gdl++, 0xE7000000, 0);
         GW(gdl++, 0xFA000000, (((col >> 8) & 0xF8) << 24) | (((col >> 3) & 0xF8) << 16) | ((col << 10) & 0xF800) | 0xFF);
-        r = RP_2(D_800E1718, D_800E1898);
-        GW(gdl++, 0xE4000000 | ((((r->x + r->w) * 4 + (img->w * 8 - 24) * (D_800F13EC << 2) / 512) & 0xFFF) << 12) |
-                      (((r->y + r->h) * 4 + (fp + img->h) * (D_800F13F0 << 2) / 240) & 0xFFF),
-           ((((r->x + r->w) * 4 + -24 * (D_800F13EC * 4) / 512) & 0xFFF) << 12) |
-               (((r->y + r->h) * 4 + (fp + img->h - bar) * (D_800F13F0 << 2) / 240) & 0xFFF));
+        r = RP_2(gViewRects, gNumScreens);
+        GW(gdl++, 0xE4000000 | ((((r->x + r->w) * 4 + (img->w * 8 - 24) * (gScreenWidth << 2) / 512) & 0xFFF) << 12) |
+                      (((r->y + r->h) * 4 + (fp + img->h) * (gScreenHeight << 2) / 240) & 0xFFF),
+           ((((r->x + r->w) * 4 + -24 * (gScreenWidth * 4) / 512) & 0xFFF) << 12) |
+               (((r->y + r->h) * 4 + (fp + img->h - bar) * (gScreenHeight << 2) / 240) & 0xFFF));
         GW(gdl++, 0xE1000000, ((bar - 1) << 5) & 0xFFFF);
-        GW(gdl++, 0xF1000000, ((D_800F13EC == 640) ? 0x03330000 : 0x04000000) | ((D_800F13F0 == 240) ? 0xFC00 : 0xFE00));
+        GW(gdl++, 0xF1000000, ((gScreenWidth == 640) ? 0x03330000 : 0x04000000) | ((gScreenHeight == 240) ? 0xFC00 : 0xFE00));
         GW(gdl++, 0xE7000000, 0);
     }
-    if (D_800E37C0_69[pl].f654) {
-        HudTex *h = D_800F0524_3[0]; GW(gdl++, 0xFA000000, (((h->pal[2] >> 8) & 0xF8) << 24) | (((D_800E2038 << 3) & 0x100) ? ((D_800E2038 << 3) & 0xFF) : (0xFF ^ ((D_800E2038 << 3) & 0xFF))));
-            { Rect *tab = D_800C2494_3; gdl = func_8000A690(RX(tab, D_800E1898) - 24, RY(tab, D_800E1898) + fp, &D_800F0524_2->img[2], gdl, a2, 1, 1, 6, 0); }
+    if (gRiders_69[pl].f654) {
+        HudTex *h = sTempGaugeTextures_3[0]; GW(gdl++, 0xFA000000, (((h->pal[2] >> 8) & 0xF8) << 24) | (((gFrameCounter << 3) & 0x100) ? ((gFrameCounter << 3) & 0xFF) : (0xFF ^ ((gFrameCounter << 3) & 0xFF))));
+            { Rect *tab = gViewLayouts_3; gdl = render_draw_image(RX(tab, gNumScreens) - 24, RY(tab, gNumScreens) + fp, &sTempGaugeTextures_2->img[2], gdl, a2, 1, 1, 6, 0); }
     }
-    GW(gdl++, 0xFA000000, (((D_800F0524_2->pal[1] >> 8) & 0xF8) << 24) | (((D_800F0524_2->pal[1] >> 3) & 0xF8) << 16) | ((D_800F0524_2->pal[1] << 10) & 0xF800) | 0x82);
-    { Rect *tab = D_800C2494_3; return func_8000A690(RX(tab, D_800E1898) - 24, RY(tab, D_800E1898) + fp, &D_800F0524_2->img[1], gdl, a2, 1, 1, 6, 0); }
+    GW(gdl++, 0xFA000000, (((sTempGaugeTextures_2->pal[1] >> 8) & 0xF8) << 24) | (((sTempGaugeTextures_2->pal[1] >> 3) & 0xF8) << 16) | ((sTempGaugeTextures_2->pal[1] << 10) & 0xF800) | 0x82);
+    { Rect *tab = gViewLayouts_3; return render_draw_image(RX(tab, gNumScreens) - 24, RY(tab, gNumScreens) + fp, &sTempGaugeTextures_2->img[1], gdl, a2, 1, 1, 6, 0); }
 }
 
-s32 func_8005AE38(void)
+s32 tutorial_has_prev_lesson(void)
 {
-    return *(s16 *)(D_800CA930 + 0x64) != 0;
+    return *(s16 *)(gSeason + 0x64) != 0;
 }
 
 typedef struct {
@@ -3502,23 +3502,23 @@ typedef struct {
 
 extern Ctr_2 D_800CA924_3;
 
-void func_8005AE4C(void)
+void event_exit(void)
 {
-    if (0 < D_800CA924_3.limit && (D_800EFD70 & 4) == 0) {
+    if (0 < D_800CA924_3.limit && (gGame & 4) == 0) {
         D_800CA924_3.counter = D_800CA924_3.counter + 1;
         if (D_800CA924_3.counter == D_800CA924_3.limit) {
-            func_800BCB04(D_800CA924_3.arg);
+            mem_free(D_800CA924_3.arg);
         }
     }
-    if (D_800EFDBC == 9 && D_800F0624 != 0) {
-        func_800BCB04(D_800F0624);
+    if (gGameMode == 9 && D_800F0624 != 0) {
+        mem_free(D_800F0624);
     }
-    func_8006F5F8(1, 0);
+    save_write(1, 0);
 }
 
-u32 func_8005AED8(s32 key)
+u32 track_res_get(s32 key)
 {
-    Pair_4 *p = D_800F073C;
+    Pair_4 *p = sTrackResMap;
     s32 idx;
     if (p == NULL) {
         idx = -1;
@@ -3535,36 +3535,36 @@ found:
     if (idx < 0) {
         return 0;
     }
-    return func_800BF79C(D_800E7728, idx);
+    return res_load(D_800E7728, idx);
 }
 
-s32 func_8005AF4C(s32 *p) {
+s32 track_res_load_map(s32 *p) {
     s32 r = 0;
     if (p != NULL) {
-        D_800F073C = func_800BF79C(D_800E7728, *p);
-        r = D_800F073C != 0;
+        sTrackResMap = res_load(D_800E7728, *p);
+        r = sTrackResMap != 0;
     }
     return r;
 }
 
-u32 func_8005AF90(void) {
-    u8 *e = D_800CADE4;
-    s16 idx = *(s16 *)(D_800CA930 + 0x64);
+u32 tutorial_lesson_passed(void) {
+    u8 *e = gTutorialLessons;
+    s16 idx = *(s16 *)(gSeason + 0x64);
     e = e + idx * 40;
     if (e[0xC] & 4) {
-        return ((D_800F0600 >> 12) ^ 1) & 1;
+        return ((gEventFlags >> 12) ^ 1) & 1;
     }
     if (*(u32 *)(e + 0x1C) != 0) {
         return 0;
     }
-    return ~D_800F05D4_3 >> 31;
+    return ~gEventTime_3 >> 31;
 }
 
-s32 func_8005AFFC(void)
+s32 event_request_exit(void)
 {
-    if (D_800E36F8 == 5) {
-        D_800E36F8 = 6;
-        D_800E374C = 0x14;
+    if (gRacePhase == 5) {
+        gRacePhase = 6;
+        gRacePhaseTimer = 0x14;
         return 1;
     }
     return 0;
@@ -3575,36 +3575,36 @@ typedef struct {
     s32 w58;
 } G_2;
 
-extern G_2 D_800F05A8_34;
+extern G_2 gEvent_34;
 
-void func_8005B030(void) {
-    D_800F05A8_34.w58 |= 0x10;
-    func_80064DB8();
+void event_gates_init(void) {
+    gEvent_34.w58 |= 0x10;
+    race_reset_grid_order();
 }
 
-void func_8005B05C(void)
+void event_stop_sounds_rumble(void)
 {
-    func_80010F40();
-    func_8000D0D8();
+    snd_stop_all_riders();
+    rumble_stop_all();
 }
 
-void func_8005B080(void)
+void event_update_gates(void)
 {
     s32 *g;
 
-    func_800515A8();
-    g = D_800F05A8_3;
+    event_update_countdown();
+    g = gEvent_3;
     if (g[0x40 / 4] == 0) {
         if ((g[0x58 / 4] & 0x10) == 0) {
             s32 n = g[0x2C / 4] + 1;
             g[0x2C / 4] = n;
             if (n == 0x34BC0) {
-                func_80050F7C(0);
+                event_rider_finished(0);
                 g[0x40 / 4] = 1;
             }
         }
-    } else if ((D_800E3770_2 & 0x40) != 0 && (D_800E36E0 & 0x40) == 0) {
-        func_8005AFFC();
+    } else if ((gPlayerInputs_2 & 0x40) != 0 && (gPlayerInputsPrev & 0x40) == 0) {
+        event_request_exit();
     }
 }
 
@@ -3621,37 +3621,37 @@ typedef struct {
     u8 pad1[0x7E0 - 0x6A0];
 } Ent_56;
 
-extern Blk_15 D_800F05A8_35;
-extern Ent_56 D_800E37C0_70[];
+extern Blk_15 gEvent_35;
+extern Ent_56 gRiders_70[];
 
-void func_8005B114(void) {
+void event_hillclimb_init(void) {
     Ent_56 *e;
 
-    D_800F05A8_35.f48 = -1;
-    D_800F05A8_35.f58 |= 0x10;
-    func_80064DB8();
-    for (e = D_800E37C0_70; e < &D_800E37C0_70[D_800EFD70_9.count]; e++) {
+    gEvent_35.f48 = -1;
+    gEvent_35.f58 |= 0x10;
+    race_reset_grid_order();
+    for (e = gRiders_70; e < &gRiders_70[gGame_9.count]; e++) {
         e->f69C = 7200;
     }
 }
 
-void func_8005B1AC(void)
+void event_stunt_init(void)
 {
-    u32 *p = (u32 *)D_800F05A8_2;
+    u32 *p = (u32 *)gEvent_2;
     p[0x58 / 4] = p[0x58 / 4] | 0x10;
     p[0x2C / 4] = 0x1C20;
-    func_80064DB8();
+    race_reset_grid_order();
 }
 
-void func_8005B1E0(void)
+void event_soccer_init(void)
 {
     u8 *p;
     s32 w;
 
-    p = D_800F05A8_2;
+    p = gEvent_2;
     w = *(s32 *)(p + 0x58);
     *(u16 *)(p + 0x26) = 0xB4;
-    *(s32 *)&D_800F05A8_2 = 6;
+    *(s32 *)&gEvent_2 = 6;
     *(u8 *)(p + 0x6E) = 0;
     *(u16 *)(p + 0x68) = 0;
     *(u16 *)(p + 0x6A) = 0;
@@ -3666,13 +3666,13 @@ typedef struct {
     s16 f24;
 } Ctl_16;
 
-void func_8005B218(void) {
-    Ctl_16 *c = &D_800F05A8;
+void event_reset_places(void) {
+    Ctl_16 *c = &gEvent;
     s32 i;
     s16 *t;
 
     if (c->state == 8) {
-        func_80064D28(2, 0);
+        race_set_grid_order(2, 0);
     }
     i = 0;
     c->f24 = 0;
@@ -3698,14 +3698,14 @@ typedef struct {
     u8 a[1];
 } Thing;
 
-extern Rider_4 D_800E37C0_71[];
-extern Thing *D_800CA930_13;
+extern Rider_4 gRiders_71[];
+extern Thing *gSeason_13;
 
-void func_8005B28C(void) {
+void event_clear_season_race_points(void) {
     s32 i;
-    for (i = 0; i < D_800F05A8.n; i++) {
-        if (D_800E37C0_71[i].x668 != -1) {
-            D_800CA930_13->a[i] = 0;
+    for (i = 0; i < gEvent.n; i++) {
+        if (gRiders_71[i].x668 != -1) {
+            gSeason_13->a[i] = 0;
         }
     }
 }
@@ -3716,15 +3716,15 @@ typedef struct {
     s32 cnt;
 } Blk_16;
 
-extern Blk_16 D_800F05A8_36;
+extern Blk_16 gEvent_36;
 
 void func_8005B2E8(void)
 {
-    func_800515A8();
-    if (D_800F05A8_36.state == 5) {
-        if (D_800F05A8_36.cnt != 0) {
-            s32 r = D_800F05A8_36.cnt - 1;
-            D_800F05A8_36.cnt = r;
+    event_update_countdown();
+    if (gEvent_36.state == 5) {
+        if (gEvent_36.cnt != 0) {
+            s32 r = gEvent_36.cnt - 1;
+            gEvent_36.cnt = r;
             if (r == 0) {
                 D_800E3E2A = 0x78;
             }
@@ -3732,29 +3732,29 @@ void func_8005B2E8(void)
     }
 }
 
-void func_8005B33C(void)
+void event_hud_free(void)
 {
     s32 i;
     s32 *p1;
     s32 *p2;
 
-    if (D_800EFD70_4[0x13] == 9) {
-        func_800BCB04(D_800F06B0);
+    if (gGame_4[0x13] == 9) {
+        mem_free(sGreyPalette);
     }
-    if (D_800EFD70_4[0xF] == 1) {
-        func_800BCB04(D_800F0730[0]);
-        func_800BCB04(D_800F0730[1]);
+    if (gGame_4[0xF] == 1) {
+        mem_free(D_800F0730[0]);
+        mem_free(D_800F0730[1]);
     }
     i = 0;
-    p2 = D_800F06B8;
-    p1 = D_800F0530;
+    p2 = gMenuTextObjs;
+    p1 = gHudTextObjs;
     do {
         i++;
         func_800C204C(*p1);
-        func_800BCB04(*p1);
+        mem_free(*p1);
         p1++;
         func_800C204C(*p2);
-        func_800BCB04(*p2);
+        mem_free(*p2);
         p2++;
     } while (i < 0x1e);
     return;
@@ -3773,18 +3773,18 @@ Gfx *func_8005B404(s32 p1, s32 p2, s32 p3, Gfx *dl, s32 p5)
     PKT_2(0xFC119623, 0xFF2FFFFF);
     base = D_800EFD6C;
     pb = base + 0x58;
-    dl = (Gfx *)func_8000A690(p1 - p3 * *pb * 8 - base[0x60] * 8, p2, base + 0x60, (u32 *)dl, p5, 1, 1, 6, 0);
+    dl = (Gfx *)render_draw_image(p1 - p3 * *pb * 8 - base[0x60] * 8, p2, base + 0x60, (u32 *)dl, p5, 1, 1, 6, 0);
     for (i = 0; i < p3; i++) {
         v = p3 - i;
-        dl = (Gfx *)func_8000A690(p1 - v * *pb * 8, p2, pb, (u32 *)dl, p5, 1, 1, 6, 0);
+        dl = (Gfx *)render_draw_image(p1 - v * *pb * 8, p2, pb, (u32 *)dl, p5, 1, 1, 6, 0);
     }
     return dl;
 }
 
-s32 func_8005B55C(void)
+s32 tutorial_lesson_has_demo(void)
 {
-    s32 idx = *(s16 *)(D_800CA930 + 0x64);
-    return D_800CADE4_12[idx * 10 + 7] != 0;
+    s32 idx = *(s16 *)(gSeason + 0x64);
+    return gTutorialLessons_12[idx * 10 + 7] != 0;
 }
 
 typedef struct Ent_57 {
@@ -3792,9 +3792,9 @@ typedef struct Ent_57 {
     s32 val;
 } Ent_57;
 
-s32 func_8005B58C(s32 key)
+s32 track_res_find(s32 key)
 {
-    Ent_57 *p = D_800F073C;
+    Ent_57 *p = sTrackResMap;
     if (p == NULL) {
         return -1;
     }

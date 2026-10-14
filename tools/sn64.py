@@ -6,7 +6,7 @@ Listings (need rabbitizer: pip install rabbitizer), one instruction per line, th
 and for an object: relocations resolved to the original's addresses through symbols.txt (`lui $v0, 0x800C` /
 `addiu $v0, $v0, 0x2384`), a `; D_XXXXXXXX` comment on each low half naming the address its %hi/%lo pair forms,
 branches and in-function jumps as `L+0x1c` (offset from the function start), calls by the callee's name
-(`jal func_8000ED10`). Literals in an object's own .rdata show as `%lo(rdata+0x10:3dcccccd)` (their bytes), jump
+(`jal mem_fill`). Literals in an object's own .rdata show as `%lo(rdata+0x10:3dcccccd)` (their bytes), jump
 tables as `jtbl=L+0x1c,...`.
 
 usage: python tools/sn64.py NAME                  listing of a function of the original images (functions.csv)

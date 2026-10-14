@@ -28,20 +28,20 @@ void func_800358C0(void)
     s32 u1;
     s32 u3;
 
-    func_8000ED10((u8 *)&D_800E8EF0, 0, 800);
+    mem_fill((u8 *)&D_800E8EF0, 0, 800);
     for (i = 0; i < 25; i++) {
         D_800E8EF0.cur.r[i].z = 0x32;
     }
     for (i = 0; i < 7; i++) {
         a = i * 0x2000 + 0xA000;
-        D_800E8EF0.cur.r[i * 3].x = (D_800C2C60[((a >> 4) - 0x400) & 0xFFF] * 15) >> 12;
-        D_800E8EF0.cur.r[i * 3].y = (D_800C2C60[(a >> 4) & 0xFFF] * 5) >> 11;
+        D_800E8EF0.cur.r[i * 3].x = (gCosTable[((a >> 4) - 0x400) & 0xFFF] * 15) >> 12;
+        D_800E8EF0.cur.r[i * 3].y = (gCosTable[(a >> 4) & 0xFFF] * 5) >> 11;
         u1 = (a + 0x200) >> 4;
-        D_800E8EF0.cur.r[i * 3 + 1].x = (D_800C2C60[(u1 - 0x400) & 0xFFF] * 0x41) >> 14;
+        D_800E8EF0.cur.r[i * 3 + 1].x = (gCosTable[(u1 - 0x400) & 0xFFF] * 0x41) >> 14;
         u3 = (a - 0x200) >> 4;
-        D_800E8EF0.cur.r[i * 3 + 1].y = (D_800C2C60[u1 & 0xFFF] * 0x2D) >> 14;
-        D_800E8EF0.cur.r[i * 3 + 2].x = (D_800C2C60[(u3 - 0x400) & 0xFFF] * 0x41) >> 14;
-        D_800E8EF0.cur.r[i * 3 + 2].y = (D_800C2C60[u3 & 0xFFF] * 0x2D) >> 14;
+        D_800E8EF0.cur.r[i * 3 + 1].y = (gCosTable[u1 & 0xFFF] * 0x2D) >> 14;
+        D_800E8EF0.cur.r[i * 3 + 2].x = (gCosTable[(u3 - 0x400) & 0xFFF] * 0x41) >> 14;
+        D_800E8EF0.cur.r[i * 3 + 2].y = (gCosTable[u3 & 0xFFF] * 0x2D) >> 14;
     }
     D_800E9080[0] = D_800E9080[-1];
 }
@@ -68,7 +68,7 @@ static inline s32 sel(Obj_27 *o)
     return t != 0;
 }
 
-void func_80035A84(Obj_27 *o)
+void engine_update_heat(Obj_27 *o)
 {
     s32 h;
     s32 g;
@@ -84,7 +84,7 @@ void func_80035A84(Obj_27 *o)
     if (o->stopped) {
         h = g = 0;
     }
-    f = D_800C9954[h][g];
+    f = sEngineHeatRates[h][g];
     if ((o->flags & 0x20000) && f > 0.0f) {
         f = f / o->div;
     }
@@ -132,16 +132,16 @@ typedef struct {
     u8 pad657[0x7E0 - 0x657];
 } Obj_28;
 
-extern Obj_28 D_800E37C0_34[];
+extern Obj_28 gRiders_34[];
 
-void func_80035BAC(s32 idx, s32 dt)
+void engine_update(s32 idx, s32 dt)
 {
     Obj_28 *o;
     f32 fs0, v, fv;
     s32 a1;
 
-    o = &D_800E37C0_34[idx];
-    func_80035A84(o);
+    o = &gRiders_34[idx];
+    engine_update_heat(o);
     {
         f32 z = 0.0f;
         o->f64C = z;
@@ -150,7 +150,7 @@ void func_80035BAC(s32 idx, s32 dt)
     if (o->f44 != 0) {
         o->flags &= ~0x20010;
     }
-    if (o->f458 < 1 && (D_800F0600 & 0x10) == 0) {
+    if (o->f458 < 1 && (gEventFlags & 0x10) == 0) {
         if (o->f420 < 4.5f && (o->flags & 0x20010) != 0) {
             v = o->rpm;
             if (v < 6500.0f) {
@@ -165,23 +165,23 @@ void func_80035BAC(s32 idx, s32 dt)
                 }
             }
         } else {
-            o->rpm = o->f4EC * D_800C9944[o->gear];
+            o->rpm = o->f4EC * sGearRatios[o->gear];
         }
-        fs0 = func_80036108(o->rpm);
-        if (D_800E76D0 - o->f650 >= 16) {
+        fs0 = engine_torque_at_rpm(o->rpm);
+        if (gRaceFrame - o->f650 >= 16) {
             if (o->gear != 0 && o->rpm < 6500.0f) {
-                fv = func_80036108(o->f420 * D_800C9944[o->gear - 1]);
+                fv = engine_torque_at_rpm(o->f420 * sGearRatios[o->gear - 1]);
                 if (fs0 < fv) {
                     o->gear--;
-                    o->f650 = D_800E76D0;
+                    o->f650 = gRaceFrame;
                     fs0 = fv;
                 }
             }
             if (o->gear < 3 && 9000.0f < o->rpm) {
-                fv = func_80036108(o->f420 * D_800C9944[o->gear + 1]);
+                fv = engine_torque_at_rpm(o->f420 * sGearRatios[o->gear + 1]);
                 if (fs0 < fv) {
                     o->gear++;
-                    o->f650 = D_800E76D0;
+                    o->f650 = gRaceFrame;
                     fs0 = fv;
                 }
             }
@@ -203,14 +203,14 @@ void func_80035BAC(s32 idx, s32 dt)
     if (14500.0f < o->rpm) {
         o->rpm = 14500.0f;
     }
-    if ((o->flags & 0x20010) != 0 && (D_800F0600 & 0x10) == 0) {
+    if ((o->flags & 0x20010) != 0 && (gEventFlags & 0x10) == 0) {
         if (o->f458 < 1) {
             if (o->f654 != 0) {
-                fv = D_800C9974;
+                fv = sOverheatPowerScale;
             } else if (o->flags & 0x20000) {
-                fv = D_800C996C;
+                fv = sTurboPowerScale;
             } else {
-                fv = D_800C9970;
+                fv = sThrottlePowerScale;
             }
             fs0 = fs0 * fv;
             o->f64C = fs0;
@@ -222,19 +222,19 @@ void func_80035BAC(s32 idx, s32 dt)
     }
     a1 = o->f424 * 65536.0f / 188.49556f;
     if (a1 > 0x1000) {
-        a1 = func_8000EFE8() << 8;
+        a1 = random_byte() << 8;
     }
     o->r40 += a1;
     if ((o->flags & 0x20010) != 0 || 1000.0f < o->rpm) {
-        a1 = o->rpm / D_800C9944[o->gear] * 65536.0f / 188.49556f;
+        a1 = o->rpm / sGearRatios[o->gear] * 65536.0f / 188.49556f;
         if (a1 > 0x1000) {
-            a1 = func_8000EFE8() << 8;
+            a1 = random_byte() << 8;
         }
     }
     o->r42 += a1;
 }
 
-f32 func_80036108(f32 x)
+f32 engine_torque_at_rpm(f32 x)
 {
     f32 r;
     f32 lo;
@@ -247,16 +247,16 @@ f32 func_80036108(f32 x)
         x = 14500.0f;
     }
     i = (s32)((x * 28.0f) / 14500.0f);
-    lo = D_800C98D0[i];
+    lo = sEngineTorqueCurve[i];
     r = lo;
     if (i < 0x1C) {
-        r = r + ((x - (f32)((i * 0x38A4) / 0x1C)) * (D_800C98D0[i + 1] - r)) / 517.0f;
+        r = r + ((x - (f32)((i * 0x38A4) / 0x1C)) * (sEngineTorqueCurve[i + 1] - r)) / 517.0f;
     }
     return r;
 }
 
-void func_800361EC(Vec3f *p)
+void engine_reset(Vec3f *p)
 {
-    func_8000ED10(p, 0, 4);
+    mem_fill(p, 0, 4);
     p->x = p->z = 0.0f;
 }

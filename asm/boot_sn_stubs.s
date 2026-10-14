@@ -3,11 +3,11 @@
 # vram: 0x80002CB0-0x80003660
 #
 # SN64 runtime code (hand-written asm in SN's library) that hooks the R4300 exception vectors for SN's
-# development hardware: boot_func_80002D20 (called from boot_func_800024EC) copies the two 5-instruction
+# development hardware: sn_install_exception_hooks (called from sn_debug_init) copies the two 5-instruction
 # vector templates over 0x80000180 (general exception) and 0x80000000 (TLB refill), saving the original
 # 5 instructions of each vector in D_80002CC4 / D_80002CFC; the 4-instruction stubs right after each save
 # area jump back into the original vector (+0x14), so a saved vector still runs as a chain. The handler
-# (boot_func_80002E1C) keeps its state in the BSS block at D_80018110 (full register dump, boot_func_80003350),
+# (sn_exception_handler) keeps its state in the BSS block at sSnRegisterDump (full register dump, boot_func_80003350),
 # polls PI status and the SN board's registers at 0xB1FFFFD8 / 0xB1FFFFF0, and dispatches `break` codes
 # 0x400-0x408 through the jump table jtbl_800031D0 (pointers, real data).
 # Not code: D_80002CC4 / D_80002CFC (5-word save areas, zero in the image), jtbl_800031D0 (9 pointers),
@@ -21,15 +21,15 @@
 .section .text, "ax"
 
 # template copied to 0x80000180 (general exception vector): jump to the handler
-.global boot_func_80002CB0
-boot_func_80002CB0:
+.global sn_exc_vector_template
+sn_exc_vector_template:
     /* 80002CB0 */  mtc0        $k0, $30
-    /* 80002CB4 */  lui         $k0, %hi(boot_func_80002E1C)
-    /* 80002CB8 */  addiu       $k0, $k0, %lo(boot_func_80002E1C)
+    /* 80002CB4 */  lui         $k0, %hi(sn_exception_handler)
+    /* 80002CB8 */  addiu       $k0, $k0, %lo(sn_exception_handler)
     /* 80002CBC */  jr          $k0
     /* 80002CC0 */   nop
 
-# the original 5 words of 0x80000180, saved by boot_func_80002D20 (run as code by the chain)
+# the original 5 words of 0x80000180, saved by sn_install_exception_hooks (run as code by the chain)
 D_80002CC4:
     /* 80002CC4 */  .word 0x00000000
     /* 80002CC8 */  .word 0x00000000
@@ -38,19 +38,19 @@ D_80002CC4:
     /* 80002CD4 */  .word 0x00000000
 
 # chain: continue in the original general exception vector
-.global boot_func_80002CD8
-boot_func_80002CD8:
+.global sn_exc_vector_chain
+sn_exc_vector_chain:
     /* 80002CD8 */  lui         $k0, (0x80000194 >> 16)
     /* 80002CDC */  ori         $k0, $k0, (0x80000194 & 0xFFFF)
     /* 80002CE0 */  jr          $k0
     /* 80002CE4 */   nop
 
 # template copied to 0x80000000 (TLB refill vector)
-.global boot_func_80002CE8
-boot_func_80002CE8:
+.global sn_tlb_vector_template
+sn_tlb_vector_template:
     /* 80002CE8 */  mtc0        $k0, $30
-    /* 80002CEC */  lui         $k0, %hi(boot_func_80002E1C)
-    /* 80002CF0 */  addiu       $k0, $k0, %lo(boot_func_80002E1C)
+    /* 80002CEC */  lui         $k0, %hi(sn_exception_handler)
+    /* 80002CF0 */  addiu       $k0, $k0, %lo(sn_exception_handler)
     /* 80002CF4 */  jr          $k0
     /* 80002CF8 */   nop
 
@@ -63,20 +63,20 @@ D_80002CFC:
     /* 80002D0C */  .word 0x00000000
 
 # chain: continue in the original TLB refill vector
-.global boot_func_80002D10
-boot_func_80002D10:
+.global sn_tlb_vector_chain
+sn_tlb_vector_chain:
     /* 80002D10 */  lui         $k0, (0x80000014 >> 16)
     /* 80002D14 */  ori         $k0, $k0, (0x80000014 & 0xFFFF)
     /* 80002D18 */  jr          $k0
     /* 80002D1C */   nop
 
 # install the vector hooks, flush the caches
-.global boot_func_80002D20
-boot_func_80002D20:
+.global sn_install_exception_hooks
+sn_install_exception_hooks:
     /* 80002D20 */  addi        $sp, $sp, -0x8
     /* 80002D24 */  sw          $ra, 0x0($sp)
-    /* 80002D28 */  lui         $t0, %hi(boot_func_80002CB0)
-    /* 80002D2C */  addiu       $t0, $t0, %lo(boot_func_80002CB0)
+    /* 80002D28 */  lui         $t0, %hi(sn_exc_vector_template)
+    /* 80002D2C */  addiu       $t0, $t0, %lo(sn_exc_vector_template)
     /* 80002D30 */  lui         $t1, %hi(D_80002CC4)
     /* 80002D34 */  addiu       $t1, $t1, %lo(D_80002CC4)
     /* 80002D38 */  lui         $t2, (0x80000180 >> 16)
@@ -92,8 +92,8 @@ boot_func_80002D20:
     /* 80002D5C */  sw          $t5, 0x0($t2)
     /* 80002D60 */  bne         $t0, $t3, .L80002D48
     /* 80002D64 */   addiu       $t2, $t2, 0x4
-    /* 80002D68 */  lui         $t0, %hi(boot_func_80002CE8)
-    /* 80002D6C */  addiu       $t0, $t0, %lo(boot_func_80002CE8)
+    /* 80002D68 */  lui         $t0, %hi(sn_tlb_vector_template)
+    /* 80002D6C */  addiu       $t0, $t0, %lo(sn_tlb_vector_template)
     /* 80002D70 */  lui         $t1, %hi(D_80002CFC)
     /* 80002D74 */  addiu       $t1, $t1, %lo(D_80002CFC)
     /* 80002D78 */  lui         $t2, 0x8000
@@ -108,9 +108,9 @@ boot_func_80002D20:
     /* 80002D98 */  sw          $t5, 0x0($t2)
     /* 80002D9C */  bne         $t0, $t3, .L80002D84
     /* 80002DA0 */   addiu       $t2, $t2, 0x4
-    /* 80002DA4 */  jal         boot_func_80002DCC
+    /* 80002DA4 */  jal         sn_flush_dcache
     /* 80002DA8 */   nop
-    /* 80002DAC */  jal         boot_func_80002DE8
+    /* 80002DAC */  jal         sn_inval_icache
     /* 80002DB0 */   nop
     /* 80002DB4 */  addiu       $t0, $zero, -0x802
     /* 80002DB8 */  lui         $at, %hi(D_80018448)
@@ -120,8 +120,8 @@ boot_func_80002D20:
     /* 80002DC8 */   addi        $sp, $sp, 0x8
 
 # write back + invalidate the data cache (8 KB)
-.global boot_func_80002DCC
-boot_func_80002DCC:
+.global sn_flush_dcache
+sn_flush_dcache:
     /* 80002DCC */  lui         $t0, 0x8000
     /* 80002DD0 */  addiu       $t1, $t0, 0x1FF0
 .L80002DD4:
@@ -132,8 +132,8 @@ boot_func_80002DCC:
     /* 80002DE4 */   nop
 
 # invalidate the instruction cache (16 KB)
-.global boot_func_80002DE8
-boot_func_80002DE8:
+.global sn_inval_icache
+sn_inval_icache:
     /* 80002DE8 */  lui         $t0, 0x8000
     /* 80002DEC */  addiu       $t1, $t0, 0x3FE0
 .L80002DF0:
@@ -144,24 +144,24 @@ boot_func_80002DE8:
     /* 80002E00 */   nop
 
 # read the Status register
-.global boot_func_80002E04
-boot_func_80002E04:
+.global sn_get_status_reg
+sn_get_status_reg:
     /* 80002E04 */  mfc0        $v0, $12
     /* 80002E08 */  jr          $ra
     /* 80002E0C */   nop
 
 # write the Status register
-.global boot_func_80002E10
-boot_func_80002E10:
+.global sn_set_status_reg
+sn_set_status_reg:
     /* 80002E10 */  mtc0        $a0, $12
     /* 80002E14 */  jr          $ra
     /* 80002E18 */   nop
 
 # exception handler (entered from the vector templates, k0 = old k0 in ErrorEPC)
-.global boot_func_80002E1C
-boot_func_80002E1C:
-    /* 80002E1C */  lui         $k0, %hi(D_80018110)
-    /* 80002E20 */  addiu       $k0, $k0, %lo(D_80018110)
+.global sn_exception_handler
+sn_exception_handler:
+    /* 80002E1C */  lui         $k0, %hi(sSnRegisterDump)
+    /* 80002E20 */  addiu       $k0, $k0, %lo(sSnRegisterDump)
     /* 80002E24 */  sd          $at, 0x328($k0)
     /* 80002E28 */  sd          $v0, 0x330($k0)
     /* 80002E2C */  mfc0        $at, $13
@@ -291,14 +291,14 @@ boot_func_80002E1C:
     /* 80002FEC */   nop
     /* 80002FF0 */  lui         $sp, %hi(D_80018AA0)
     /* 80002FF4 */  addiu       $sp, $sp, %lo(D_80018AA0)
-    /* 80002FF8 */  jal         boot_func_800025B8
+    /* 80002FF8 */  jal         sn_debug_command_loop
     /* 80002FFC */   nop
-    /* 80003000 */  jal         boot_func_80002DCC
+    /* 80003000 */  jal         sn_flush_dcache
     /* 80003004 */   nop
-    /* 80003008 */  jal         boot_func_80002DE8
+    /* 80003008 */  jal         sn_inval_icache
     /* 8000300C */   nop
-    /* 80003010 */  lui         $k0, %hi(D_80018110)
-    /* 80003014 */  addiu       $k0, $k0, %lo(D_80018110)
+    /* 80003010 */  lui         $k0, %hi(sSnRegisterDump)
+    /* 80003014 */  addiu       $k0, $k0, %lo(sSnRegisterDump)
     /* 80003018 */  addiu       $at, $zero, 0x1
     /* 8000301C */  sb          $at, 0x320($k0)
     /* 80003020 */  ld          $t0, 0x108($k0)
@@ -495,9 +495,9 @@ boot_func_8000328C:
     /* 800032D4 */  addi        $v1, $v1, 0x4
     /* 800032D8 */  bne         $v0, $a0, .L800032C8
     /* 800032DC */   nop
-    /* 800032E0 */  jal         boot_func_80002DCC
+    /* 800032E0 */  jal         sn_flush_dcache
     /* 800032E4 */   nop
-    /* 800032E8 */  jal         boot_func_80002DE8
+    /* 800032E8 */  jal         sn_inval_icache
     /* 800032EC */   nop
     /* 800032F0 */  jr          $ra
     /* 800032F4 */   nop
@@ -514,8 +514,8 @@ boot_func_8000328C:
     /* 80003318 */  j           .L80002FCC
     /* 8000331C */   nop
 .L80003320:
-    /* 80003320 */  lui         $v0, %hi(boot_func_800024EC)
-    /* 80003324 */  addiu       $v0, $v0, %lo(boot_func_800024EC)
+    /* 80003320 */  lui         $v0, %hi(sn_debug_init)
+    /* 80003324 */  addiu       $v0, $v0, %lo(sn_debug_init)
     /* 80003328 */  j           .L80003334
     /* 8000332C */   nop
 .L80003330:

@@ -13,7 +13,7 @@ typedef struct { u8 w8, h, flags, pad; u32 addr; } Tex_2;
 struct Seg_3 { u32 f0; u16 *pal; Tex_2 tex[1]; };
 struct Model { u32 f0; Vtx *vtx; u32 f8; u8 *cmd; };
 
-Gfx *func_80013D70(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
+Gfx *prim_build_dl(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
     u32 addr;
     Vtx *vtx;
     s32 blk, done;
@@ -60,8 +60,8 @@ Gfx *func_80013D70(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
             cmd += 4;
             break;
         case 6:
-            if (D_800C8C70_2 != 0) {
-                gSPMatrix(gdl++, &D_800C8C70_2[cmd[1]], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+            if (gPrimBoneMtx_2 != 0) {
+                gSPMatrix(gdl++, &gPrimBoneMtx_2[cmd[1]], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 mtx = 1;
             }
             cmd += 4;
@@ -76,17 +76,17 @@ Gfx *func_80013D70(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
                 w = segs[seg]->tex[a].w8 * 8;
                 h = segs[seg]->tex[a].h;
                 if (segs[seg]->tex[a].flags & 2) {
-                    if (D_800C8C7C != 1) {
-                        if (D_800C8C80 != NULL) gdl = D_800C8C80(gdl, 1, c);
-                        D_800C8C7C = 1;
+                    if (gPrimTexAlphaMode != 1) {
+                        if (sPrimTexModeCallback != NULL) gdl = sPrimTexModeCallback(gdl, 1, c);
+                        gPrimTexAlphaMode = 1;
                     }
-                } else if (D_800C8C7C != 0) {
-                    if (D_800C8C80 != NULL) gdl = D_800C8C80(gdl, ((u32)&cmd[1] & 1) >> 1, c);
-                    D_800C8C7C = 0;
+                } else if (gPrimTexAlphaMode != 0) {
+                    if (sPrimTexModeCallback != NULL) gdl = sPrimTexModeCallback(gdl, ((u32)&cmd[1] & 1) >> 1, c);
+                    gPrimTexAlphaMode = 0;
                 }
                 addr = segs[seg]->tex[a].addr;
                 if (rel) addr = ((addr - (u32)segs[seg]) & 0xFFFFFF) | ((seg + 2) << 24);
-                if (D_800C8C84 != NULL) D_800C8C84(&addr);
+                if (sPrimTexAddrCallback != NULL) sPrimTexAddrCallback(&addr);
                 t4 -= D_800C8C78;
                 fp -= D_800C8C78;
                 pl = c0 & 0xF;
@@ -103,9 +103,9 @@ Gfx *func_80013D70(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
                 if (blk == 0) {
                     gDPLoadTextureBlock_4b(gdl++, addr, G_IM_FMT_CI, w, h, pl, CMS(b), CMT(b), t4, fp, 0, 0);
                 } else {
-                    gDPLoadTextureBlock(gdl++, addr, D_800C8C74 ? G_IM_FMT_IA : G_IM_FMT_CI, G_IM_SIZ_8b, w, h, 0,
+                    gDPLoadTextureBlock(gdl++, addr, gPrimIATextures ? G_IM_FMT_IA : G_IM_FMT_CI, G_IM_SIZ_8b, w, h, 0,
                                         CMS(b), CMT(b), t4, fp, 0, 0);
-                    if (D_800C8C74 != 0 && segs[seg]->pal != NULL) {
+                    if (gPrimIATextures != 0 && segs[seg]->pal != NULL) {
                         s32 col = segs[seg]->pal[a];
                         s32 r, g, bb;
                         r = (col >> 8) & 0xF8; g = (col >> 3) & 0xF8; bb = (col << 2) & 0xF8;
@@ -114,7 +114,7 @@ Gfx *func_80013D70(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
                     }
                 }
                 if (segs[seg]->tex[a].flags & 8) {
-                    gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, (-(D_800E2038 * 2) & 0xFF) >> D_800C8C78, 0, 0);
+                    gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, (-(gFrameCounter * 2) & 0xFF) >> D_800C8C78, 0, 0);
                 }
             }
             cmd += 4;
@@ -129,7 +129,7 @@ Gfx *func_80013D70(s32 flags, Model *mdl, Seg_3 **segs, Gfx *gdl) {
     return gdl;
 }
 
-void func_800147C4(u32 *param_1, s32 param_2)
+void prim_animate_textures(u32 *param_1, s32 param_2)
 {
     u32 i;
     s32 a2;
@@ -148,8 +148,8 @@ void func_800147C4(u32 *param_1, s32 param_2)
         return;
     }
     i = 0;
-    tab = D_800C8CA8;
-    g = D_800C8C74;
+    tab = sTexAnimRates;
+    g = gPrimIATextures;
     do {
         a2 = *(u8 *)((s32)param_1 + (i << 3) + 0xA) & 0x34;
         if (a2 != 0) {
@@ -214,7 +214,7 @@ static inline void flip(u8 *pa, s32 row, s32 h)
     }
 }
 
-void func_80014948(ImgSet *s)
+void prim_flip_images(ImgSet *s)
 {
     u32 i;
 
@@ -227,25 +227,25 @@ void func_80014948(ImgSet *s)
     }
 }
 
-void func_80014A68(s32 a0)
+void prim_set_tex_mode_callback(s32 a0)
 {
-    D_800C8C80 = a0;
+    sPrimTexModeCallback = a0;
 }
 
-void func_80014A74(s32 a0)
+void prim_set_tex_addr_callback(s32 a0)
 {
-    D_800C8C84 = a0;
+    sPrimTexAddrCallback = a0;
 }
 
-void func_80014A80(void)
+void prim_init(void)
 {
-    func_800BFC40(D_800D614C, func_80014CCC);
-    func_800BFC40(D_800D6150, func_80014D20);
+    res_register_type(D_800D614C, prim_pkg_relocate);
+    res_register_type(D_800D6150, prim_n64_relocate);
     D_800E36D0 = -1;
     D_800C8C78 = 0;
 }
 
-void func_80014AD0(void)
+void prim_exit(void)
 {
 }
 
@@ -254,30 +254,30 @@ void func_80014AD8(s32 x)
     D_800C8C78 = x;
 }
 
-void func_80014AE4(void **param_1, u32 *param_2, s32 param_3, u32 param_4)
+void prim_alloc_seg_dl(void **param_1, u32 *param_2, s32 param_3, u32 param_4)
 {
     u32 r;
     u32 saved;
 
-    r = func_80013D70(param_4 | 0x21, param_2, param_3, D_800C29E0);
-    *param_1 = func_800BC908(r - D_800C29E0, 0, D_800D6154, 0x323);
+    r = prim_build_dl(param_4 | 0x21, param_2, param_3, gZBuffer);
+    *param_1 = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x323);
     saved = param_2[1];
     param_2[1] = 0x01000000;
-    func_80013D70(param_4 | 0x21, param_2, param_3, (u32)*param_1);
+    prim_build_dl(param_4 | 0x21, param_2, param_3, (u32)*param_1);
     param_2[1] = saved;
 }
 
-void func_80014B84(u32 *p1, u32 a1, u32 a2, u32 a3)
+void prim_alloc_dl(u32 *p1, u32 a1, u32 a2, u32 a3)
 {
     u32 r;
 
-    r = func_80013D70(a3 | 1, a1, a2, D_800C29E0);
-    r = func_800BC908(r - D_800C29E0, 0, D_800D6154, 0x33B);
+    r = prim_build_dl(a3 | 1, a1, a2, gZBuffer);
+    r = mem_alloc_dbg(r - gZBuffer, 0, D_800D6154, 0x33B);
     *p1 = r;
-    func_80013D70(a3 | 1, a1, a2, r);
+    prim_build_dl(a3 | 1, a1, a2, r);
 }
 
-void func_80014C14(u8 *p, s32 stride, s32 rows) {
+void prim_flip_image_rows(u8 *p, s32 stride, s32 rows) {
     u8 *q = p + stride * (rows - 1);
     s32 i;
     s32 j;
@@ -293,7 +293,7 @@ void func_80014C14(u8 *p, s32 stride, s32 rows) {
     }
 }
 
-void func_80014C80(Hdr **pp)
+void prim_pkg_unrelocate(Hdr **pp)
 {
     Hdr *h = *pp;
     u32 i;
@@ -306,7 +306,7 @@ void func_80014C80(Hdr **pp)
     }
 }
 
-void func_80014CCC(Hdr **pp)
+void prim_pkg_relocate(Hdr **pp)
 {
     Hdr *h = *pp;
     u32 i;
@@ -320,14 +320,14 @@ void func_80014CCC(Hdr **pp)
     }
 }
 
-void func_80014D20(u32 *p)
+void prim_n64_relocate(u32 *p)
 {
     u32 b = *p & 0xFFFFFFFC;
     *(u32 *)(b + 4) = *(u32 *)(b + 4) + b;
     *(u32 *)(b + 12) = *(u32 *)(b + 12) + b;
 }
 
-s32 func_80014D48(u16 *p, s32 r, s32 g, s32 b, s32 flag, s32 n)
+s32 prim_find_nearest_color(u16 *p, s32 r, s32 g, s32 b, s32 flag, s32 n)
 {
     s32 best = 99999999;
     s32 bi = 0;

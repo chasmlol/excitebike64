@@ -48,8 +48,8 @@ NOT_C = {
 FROM_ROM = {
     "game": [(0x800DB8E0, 0x800DC098, "D_800DB8E0", "u32",
               "unreferenced stale linker buffer")],
-    "boot": [(0x8000CE10, 0x8000DE10, "D_8000CE10", "u8", "a bitmap"),
-             (0x8000DE10, 0x8000F498, "D_8000DE10", "u8", "SWD-compressed data")],
+    "boot": [(0x8000CE10, 0x8000DE10, "sBootFontBitmap", "u8", "a bitmap"),
+             (0x8000DE10, 0x8000F498, "sBootSplashSwd", "u8", "SWD-compressed data")],
 }
 
 

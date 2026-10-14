@@ -9,9 +9,9 @@ typedef struct {
     u8 pad2[0x0C];
 } Ent;
 
-extern Ent *D_800FE8D4_2;
+extern Ent *sSoftmixVoices_2;
 
-s32 func_800BA6B0(s32 param_1, u32 param_2, s32 param_3, s32 arg3)
+s32 softmix_init(s32 param_1, u32 param_2, s32 param_3, s32 arg3)
 {
     s32 *piVar1;
     s32 iVar2, iVar3, iVar4, iVar6;
@@ -22,19 +22,19 @@ ret1:
     return 1;
 body:
     {
-        D_800FE8DC = param_2;
-        D_800FE8D8 = param_3;
-        D_800FE8E0 = param_1;
-        D_801004F0 = 0;
-        D_800D5608 = 0;
-        D_800FE8D4 = func_800BC908(param_1 * 0x30, 0, &D_800DB170, 0x2c8);
-        if (D_800FE8D4 == 0) goto ret1;
+        sSoftmixFlags = param_2;
+        sSoftmixOutputRate = param_3;
+        sSoftmixNumVoices = param_1;
+        sSoftmixSampleCount = 0;
+        sSoftmixEchoOn = 0;
+        sSoftmixVoices = mem_alloc_dbg(param_1 * 0x30, 0, &sStrSoftmixFile, 0x2c8);
+        if (sSoftmixVoices == 0) goto ret1;
         {
-            func_8000ED10((u8 *)D_800FE8D4, 0, param_1 * 0x30);
-            func_8000ED10((u8 *)&D_800FE8F0, 0, 0x1c00);
-            D_800FE8D0 = piVar1 = func_800BC908(0x8000, 0, &D_800DB170, 0x2d4);
+            mem_fill((u8 *)sSoftmixVoices, 0, param_1 * 0x30);
+            mem_fill((u8 *)&sSoftmixSamples, 0, 0x1c00);
+            sSoftmixVolumeTable = piVar1 = mem_alloc_dbg(0x8000, 0, &sStrSoftmixFile, 0x2d4);
             if (piVar1 == 0) {
-                func_800BCB04(D_800FE8D4);
+                mem_free(sSoftmixVoices);
                 return 2;
             }
             iVar6 = 0;
@@ -43,7 +43,7 @@ body:
                 do {
                     iVar4 = 0;
                     do {
-                        s32 prod = D_800D3404[iVar6] * iVar4;
+                        s32 prod = sSoftmixExpandTable[iVar6] * iVar4;
                         tp[iVar6 + iVar4 * 0x100] = prod / 0x1f;
                         iVar4 = iVar4 + 1;
                     } while (iVar4 < 0x20);
@@ -64,16 +64,16 @@ body:
                     iVar6 = iVar6 + 1;
                 } while (iVar6 < 0x100);
             }
-            D_800DB8B8 = D_800FE8D4;
-            D_800DB8BC = D_800FE8E0;
-            D_800DB8CC = D_800FE8D0;
-            if (func_800BF530(&D_800DB180, &D_800D5604) != 0) {
-                func_8000EB00((s32)&D_800DB184);
-                D_800D5604 = 0;
+            sMixVoices = sSoftmixVoices;
+            sMixNumVoices = sSoftmixNumVoices;
+            sMixVolumeTable = sSoftmixVolumeTable;
+            if (res_open_set(&sStrSfxResSet, &gSfxResSet) != 0) {
+                debug_printf((s32)&sStrNoSfxResSet);
+                gSfxResSet = 0;
             } else {
-                func_8000EB00((s32)&D_800DB1A4);
+                debug_printf((s32)&sStrOpenedResSet);
             }
-            func_800BFC40(&D_800DB1BC, func_800BB350);
+            res_register_type(&sStrSamType, softmix_sam_decompress);
             return 0;
         }
 }
@@ -89,9 +89,9 @@ typedef struct {
     s32 f;
 } Ent_102;
 
-extern Ent_102 D_800FE8F0_2[];
+extern Ent_102 sSoftmixSamples_2[];
 
-s32 func_800BA934(s32 param_1)
+s32 softmix_load_sample_file(s32 param_1)
 {
     s32 i;
     Ent_102 *e;
@@ -100,32 +100,32 @@ s32 func_800BA934(s32 param_1)
     u8 *bp;
 
     for (i = 0; i < 0x100; i++) {
-        if (D_800FE8F0_2[i].len == 0) break;
+        if (sSoftmixSamples_2[i].len == 0) break;
     }
     if (i == 0x100) return -1;
-    func_8000ED10((u8 *)&D_800FE8F0_2[i], 0, 0x1c);
-    if (D_800FE8DC & 2) {
-        sprintf(D_800FE880, D_800DB1C0, param_1);
+    mem_fill((u8 *)&sSoftmixSamples_2[i], 0, 0x1c);
+    if (sSoftmixFlags & 2) {
+        sprintf(sSoftmixNameBuf, sStrSampleFile16, param_1);
     } else {
-        sprintf(D_800FE880, D_800DB1C8, param_1);
+        sprintf(sSoftmixNameBuf, sStrSampleFile08, param_1);
     }
-    f = func_800BE694(D_800FE880, D_800DB1D0);
+    f = file_open(sSoftmixNameBuf, sStrModeRb);
     do { do { do { do { do { do { bp = buf; } while (0); } while (0); } while (0); } while (0); } while (0); } while (0);
     if (f == 0) return -2;
-    func_800BE848(bp, 1, 4, f);
-    func_800BE848((u8 *)&D_800FE8F0_2[i].len, 1, 4, f);
-    func_800BE848((u8 *)&D_800FE8F0_2[i].b, 1, 4, f);
-    func_800BE848((u8 *)&D_800FE8F0_2[i].c, 1, 4, f);
-    func_800BE848((u8 *)&D_800FE8F0_2[i].d, 1, 4, f);
-    func_800BE848(bp, 1, 4, f);
-    e = &D_800FE8F0_2[i];
-    e->data = func_800BC908(e->len, 0, D_800DB170, 0x368);
+    file_read(bp, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples_2[i].len, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples_2[i].b, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples_2[i].c, 1, 4, f);
+    file_read((u8 *)&sSoftmixSamples_2[i].d, 1, 4, f);
+    file_read(bp, 1, 4, f);
+    e = &sSoftmixSamples_2[i];
+    e->data = mem_alloc_dbg(e->len, 0, sStrSoftmixFile, 0x368);
     if (e->data == 0) {
-        func_800BE770(f);
+        file_close(f);
         return -4;
     }
-    func_800BE848((u8 *)e->data, 1, e->len, f);
-    func_800BE770(f);
+    file_read((u8 *)e->data, 1, e->len, f);
+    file_close(f);
     return i;
 }
 
@@ -139,9 +139,9 @@ typedef struct {
     s32 f18;
 } SamEnt;
 
-extern SamEnt D_800FE8F0_3[];
+extern SamEnt sSoftmixSamples_3[];
 
-s32 func_800BAB1C(s32 param_1, s32 arg1, s32 arg2, s32 arg3)
+s32 softmix_load_sample_name(s32 param_1, s32 arg1, s32 arg2, s32 arg3)
 {
     s32 i;
     SamEnt *e;
@@ -150,25 +150,25 @@ s32 func_800BAB1C(s32 param_1, s32 arg1, s32 arg2, s32 arg3)
     SamEnt *ent;
     s32 *pp;
 
-    if (D_800D5604 == 0) {
+    if (gSfxResSet == 0) {
         return -1;
     }
     for (i = 0; i < 0x100; i++) {
-        if (D_800FE8F0_3[i].f4 == 0) {
+        if (sSoftmixSamples_3[i].f4 == 0) {
             break;
         }
     }
     if (i == 0x100) {
         return -1;
     }
-    func_8000ED10((u8 *)&D_800FE8F0_3[i], 0, 0x1c);
-    if (D_800FE8DC & 2) {
-        sprintf(D_800FE880, D_800DB1D4, param_1);
+    mem_fill((u8 *)&sSoftmixSamples_3[i], 0, 0x1c);
+    if (sSoftmixFlags & 2) {
+        sprintf(sSoftmixNameBuf, sStrSamName16, param_1);
     } else {
-        sprintf(D_800FE880, D_800DB1E0, param_1);
+        sprintf(sSoftmixNameBuf, sStrSamName08, param_1);
     }
-    q = (s32 *)func_800BFF60_2(D_800D5604, D_800FE880, &D_800FE8F0_3[i].f18);
-    ent = &D_800FE8F0_3[i];
+    q = (s32 *)res_load_by_name_2(gSfxResSet, sSoftmixNameBuf, &sSoftmixSamples_3[i].f18);
+    ent = &sSoftmixSamples_3[i];
     ent->f14 = (s32)q;
     ent->f4 = ((volatile s32 *)q)[1];
     e = (SamEnt *)ent->f14;
@@ -192,28 +192,28 @@ typedef struct {
     s32 id;
 } Slot_16;
 
-extern Slot_16 D_800FE8F0_4[];
+extern Slot_16 sSoftmixSamples_4[];
 
-s32 func_800BAC58(s32 param)
+s32 softmix_load_sample_id(s32 param)
 {
     s32 i;
     Slot_16 *e;
 
-    if (D_800D5604 == NULL) {
+    if (gSfxResSet == NULL) {
         return -1;
     }
     for (i = 0; i < 0x100; i++) {
-        if (D_800FE8F0_4[i].f4 == 0) {
+        if (sSoftmixSamples_4[i].f4 == 0) {
             break;
         }
     }
     if (i == 0x100) {
         return -1;
     }
-    e = &D_800FE8F0_4[i];
-    func_8000ED10((u8 *)e, 0, sizeof(Slot_16));
+    e = &sSoftmixSamples_4[i];
+    mem_fill((u8 *)e, 0, sizeof(Slot_16));
     e->id = param;
-    e->hdr = func_800BF79C(D_800D5604, param);
+    e->hdr = res_load(gSfxResSet, param);
     e->f4 = e->hdr->f4;
     e->f8 = e->hdr->f8;
     e->fC = e->hdr->fC;
@@ -232,9 +232,9 @@ typedef struct {
     s32 f18;
 } Ent_103;
 
-extern Ent_103 D_800FE8F0_5[];
+extern Ent_103 sSoftmixSamples_5[];
 
-s32 func_800BAD40(u8 *p1, s32 p2, s32 p3, s32 p4, s32 p5)
+s32 softmix_create_sample(u8 *p1, s32 p2, s32 p3, s32 p4, s32 p5)
 {
     s32 n;
     s32 t;
@@ -243,7 +243,7 @@ s32 func_800BAD40(u8 *p1, s32 p2, s32 p3, s32 p4, s32 p5)
     Ent_103 *w;
     void *q;
 
-    base = D_800FE8F0_5;
+    base = sSoftmixSamples_5;
     n = 0;
     w = base;
 top:
@@ -261,17 +261,17 @@ done:
         return -1;
     }
     e = (Ent_103 *)((s32)(n * 0x1C) + (s32)base);
-    func_8000ED10((u8 *)e, 0, 0x1c);
+    mem_fill((u8 *)e, 0, 0x1c);
     e->size = p2;
     if (p2 == 0) {
         return -3;
     }
-    q = func_800BC908(p2, 0, D_800DB170, 0x421);
+    q = mem_alloc_dbg(p2, 0, sStrSoftmixFile, 0x421);
     e->ptr = q;
     if (q == 0) {
         return -4;
     }
-    func_800B9FE0(q, p1, e->size);
+    sfx_copy_bytes(q, p1, e->size);
     e->f8 = p3;
     e->fc = p4;
     e->f10 = p5;
@@ -281,7 +281,7 @@ done:
 
 typedef struct { u32 w[12]; } RecA_3;
 
-void func_800BAE54(s32 param_1, s32 param_2)
+void softmix_voice_set_sample(s32 param_1, s32 param_2)
 {
     RecA_3 *a;
     Rec_3 *b;
@@ -289,10 +289,10 @@ void func_800BAE54(s32 param_1, s32 param_2)
     Rec_3 *bb;
     u32 t;
     u32 fl;
-    func_8000EE20();
-    ab = D_800FE8D4;
+    critical_enter();
+    ab = sSoftmixVoices;
     a = (RecA_3 *)((s32)(param_1 * 0x30) + (s32)ab);
-    bb = D_800FE8F0_6;
+    bb = sSoftmixSamples_6;
     b = (Rec_3 *)((s32)(param_2 * 0x1c) + (s32)bb);
     a->w[2] = a->w[2] % b->w[1];
     a->w[7] = b->w[2];
@@ -306,44 +306,44 @@ void func_800BAE54(s32 param_1, s32 param_2)
     } else {
         a->w[6] = b->w[1];
     }
-    func_8000EE28();
+    critical_leave();
 }
 
-void func_800BAF14(s32 i, s32 val)
+void softmix_voice_set_volume(s32 i, s32 val)
 {
     s32 a, b, x, y;
 
-    D_800FE8D4_2[i].a = val;
-    if (D_800FE8DC & 1) {
-        a = D_800FE8D4_2[i].a;
-        b = D_800FE8D4_2[i].b;
+    sSoftmixVoices_2[i].a = val;
+    if (sSoftmixFlags & 1) {
+        a = sSoftmixVoices_2[i].a;
+        b = sSoftmixVoices_2[i].b;
 
         x = 15 - b;
         x = x * a / 10;
         y = b * a / 10;
         if (x > a) x = a;
         if (y > a) y = a;
-        D_800FE8D4_2[i].c = x;
-        D_800FE8D4_2[i].d = y;
+        sSoftmixVoices_2[i].c = x;
+        sSoftmixVoices_2[i].d = y;
     }
 }
 
-void func_800BAFD8(s32 i, s32 val)
+void softmix_voice_set_pan(s32 i, s32 val)
 {
     s32 a, b, x, y;
 
-    D_800FE8D4_2[i].b = val;
-    if (D_800FE8DC & 1) {
-        a = D_800FE8D4_2[i].a;
-        b = D_800FE8D4_2[i].b;
+    sSoftmixVoices_2[i].b = val;
+    if (sSoftmixFlags & 1) {
+        a = sSoftmixVoices_2[i].a;
+        b = sSoftmixVoices_2[i].b;
 
         x = 15 - b;
         x = x * a / 10;
         y = b * a / 10;
         if (x > a) x = a;
         if (y > a) y = a;
-        D_800FE8D4_2[i].c = x;
-        D_800FE8D4_2[i].d = y;
+        sSoftmixVoices_2[i].c = x;
+        sSoftmixVoices_2[i].d = y;
     }
 }
 
@@ -354,48 +354,48 @@ typedef struct {
     u8 pad2[0xC];
 } Ch_2;
 
-extern Ch_2 *D_800FE8D4_3;
+extern Ch_2 *sSoftmixVoices_3;
 
-void func_800BB09C(s32 *param_1, s32 param_2)
+void softmix_mix(s32 *param_1, s32 param_2)
 {
     s32 i;
     s32 n;
     s32 ix;
     u8 *pb;
 
-    D_800DB8C0 = param_2;
-    D_800DB8C4 = param_1;
+    sMixCount = param_2;
+    sMixSrc = param_1;
     D_800DB8DD = 1;
-    for (i = 0; i < D_800FE8E0; i++) {
-        D_80100600[i * 2] = D_800FE8D4_3[i].a;
-        D_80100600[i * 2 + 1] = D_800FE8D4_3[i].b;
-        D_800FE8D4_3[i].a = (D_800FE8D4_3[i].a * D_800D3400) >> 8;
-        D_800FE8D4_3[i].b = (D_800FE8D4_3[i].a * D_800D3400) >> 8;
+    for (i = 0; i < sSoftmixNumVoices; i++) {
+        sSoftmixSavedLevels[i * 2] = sSoftmixVoices_3[i].a;
+        sSoftmixSavedLevels[i * 2 + 1] = sSoftmixVoices_3[i].b;
+        sSoftmixVoices_3[i].a = (sSoftmixVoices_3[i].a * sSoftmixMasterVolume) >> 8;
+        sSoftmixVoices_3[i].b = (sSoftmixVoices_3[i].a * sSoftmixMasterVolume) >> 8;
     }
-    if (D_800FE8DC & 1) {
-        func_800DBAA0();
+    if (sSoftmixFlags & 1) {
+        softmix_mix_voices_stereo();
     } else {
-        func_800DB8E0();
+        softmix_mix_voices_mono();
     }
-    if (D_800D5608 != 0) {
+    if (sSoftmixEchoOn != 0) {
         n = param_2;
-        if (D_800FE8DC & 1) {
+        if (sSoftmixFlags & 1) {
             n = param_2 << 1;
         }
-        if (D_800FE8DC & 2) {
+        if (sSoftmixFlags & 2) {
             i = 0;
             if (0 < n) {
                 s8 *tb;
-                tb = D_80100500;
+                tb = sSoftmixEchoTable;
                 do {
-                    pb = D_800FE870;
-                    ix = D_800FE874;
+                    pb = sSoftmixEchoBuf;
+                    ix = sSoftmixEchoPos;
                     param_1[i] += *(s8 *)((s32)pb[ix] + (s32)tb) << 8;
                     pb[ix] = param_1[i] >> 10;
                     ix++;
-                    D_800FE874 = ix;
-                    if (ix == D_800FE878) {
-                        D_800FE874 = 0;
+                    sSoftmixEchoPos = ix;
+                    if (ix == sSoftmixEchoSize) {
+                        sSoftmixEchoPos = 0;
                     }
                     i++;
                 } while (i < n);
@@ -404,26 +404,26 @@ void func_800BB09C(s32 *param_1, s32 param_2)
             i = 0;
             if (0 < n) {
                 s8 *tb;
-                tb = D_80100500;
+                tb = sSoftmixEchoTable;
                 do {
-                    pb = D_800FE870;
-                    ix = D_800FE874;
+                    pb = sSoftmixEchoBuf;
+                    ix = sSoftmixEchoPos;
                     param_1[i] += *(s8 *)((s32)pb[ix] + (s32)tb);
                     pb[ix] = param_1[i] >> 2;
                     ix++;
-                    D_800FE874 = ix;
-                    if (ix == D_800FE878) {
-                        D_800FE874 = 0;
+                    sSoftmixEchoPos = ix;
+                    if (ix == sSoftmixEchoSize) {
+                        sSoftmixEchoPos = 0;
                     }
                     i++;
                 } while (i < n);
             }
         }
     }
-    D_801004F0 += param_2;
-    for (i = 0; i < D_800FE8E0; i++) {
-        D_800FE8D4_3[i].a = D_80100600[i * 2];
-        D_800FE8D4_3[i].b = D_80100600[i * 2 + 1];
+    sSoftmixSampleCount += param_2;
+    for (i = 0; i < sSoftmixNumVoices; i++) {
+        sSoftmixVoices_3[i].a = sSoftmixSavedLevels[i * 2];
+        sSoftmixVoices_3[i].b = sSoftmixSavedLevels[i * 2 + 1];
     }
 }
 
@@ -432,7 +432,7 @@ struct Hdr_13 {
     u32 size;
 };
 
-void func_800BB350(Hdr_13 **param_1)
+void softmix_sam_decompress(Hdr_13 **param_1)
 {
     Hdr_13 *p;
     Hdr_13 *q;
@@ -440,36 +440,36 @@ void func_800BB350(Hdr_13 **param_1)
 
     p = *param_1;
     if ((p->flags & 0xF) >= 2) {
-        if (D_800D560C != 0) {
-            if (D_800D5614 < p->size + 0x1c) goto spin;
-            memcpy(D_800D5610, p, p->size + 0x1c);
-            func_800BCB04(*param_1);
-            p = (Hdr_13 *)D_800D5610;
+        if (sSoftmixDecompressFn != 0) {
+            if (sSoftmixDecompressBufSize < p->size + 0x1c) goto spin;
+            memcpy(sSoftmixDecompressBuf, p, p->size + 0x1c);
+            mem_free(*param_1);
+            p = (Hdr_13 *)sSoftmixDecompressBuf;
             goto join;
         spin:
             while (1) {}
         join:
-            q = D_800D560C(p);
-            bp = &D_800D5610;
+            q = sSoftmixDecompressFn(p);
+            bp = &sSoftmixDecompressBuf;
             if (q == 0) {
-                func_8000ECB8(1);
+                fatal_halt(1);
             }
             if (p != (Hdr_13 *)*bp) {
-                func_800BCB04(p);
+                mem_free(p);
             }
             if (q == (Hdr_13 *)*bp) {
-                p = func_800BC908(p->size + 0x1c, 0, D_800DB170, 0x67b);
+                p = mem_alloc_dbg(p->size + 0x1c, 0, sStrSoftmixFile, 0x67b);
                 memcpy(p, q, p->size + 0x1c);
                 q = p;
             }
             *param_1 = q;
         } else {
-            func_8000ECB8(1);
+            fatal_halt(1);
         }
     }
 }
 
-s32 func_800BB47C(s32 *a, s32 *b, s32 *c)
+s32 softmix_get_caps(s32 *a, s32 *b, s32 *c)
 {
     *a = 8;
     *b = 3;
@@ -477,30 +477,30 @@ s32 func_800BB47C(s32 *a, s32 *b, s32 *c)
     return 0;
 }
 
-void func_800BB49C(void)
+void softmix_shutdown(void)
 {
-    func_800BCB04(D_800FE8D0);
-    func_800BCB04(D_800FE8D4);
-    if (D_800D5604 != 0) {
-        func_800BFDD4(D_800D5604);
+    mem_free(sSoftmixVolumeTable);
+    mem_free(sSoftmixVoices);
+    if (gSfxResSet != 0) {
+        res_close_set(gSfxResSet);
     }
-    D_800D5604 = 0;
+    gSfxResSet = 0;
 }
 
-void func_800BB4EC(u32 p)
+void softmix_free_sample(u32 p)
 {
     s32 *w;
     s32 *e;
     if (p < 0x101) {
-        w = D_800FE8F0_7;
+        w = sSoftmixSamples_7;
         e = &w[p * 7];
         if (e[1] != 0) {
             if (e[6] != -1) {
-                func_800BFEA4((u32 *)(D_800D5604_2[1] + e[6] * 4));
+                res_unload((u32 *)(gSfxResSet_2[1] + e[6] * 4));
             } else {
-                func_800BCB04(e[0]);
+                mem_free(e[0]);
             }
-            func_8000ED10((u8 *)&D_800FE8F0_7[p * 7], 0, 0x1c);
+            mem_fill((u8 *)&sSoftmixSamples_7[p * 7], 0, 0x1c);
         }
     }
 }
@@ -509,10 +509,10 @@ typedef struct {
     s32 f[7];
 } Rec_58;
 
-extern Rec_58 D_800FE8F0_8[];
+extern Rec_58 sSoftmixSamples_8[];
 
-void func_800BB590(s32 idx, s32 *out) {
-    Rec_58 *base = D_800FE8F0_8;
+void softmix_get_sample_info(s32 idx, s32 *out) {
+    Rec_58 *base = sSoftmixSamples_8;
     Rec_58 *r = base + idx;
     out[0] = r->f[1];
     out[1] = r->f[2];
@@ -526,11 +526,11 @@ typedef struct {
     u32 tail[2];
 } Ent_104;
 
-extern Ent_104 D_800FE8F0_9[];
+extern Ent_104 sSoftmixSamples_9[];
 
-void func_800BB5CC(s32 i, u32 *src)
+void softmix_set_sample_info(s32 i, u32 *src)
 {
-    Ent_104 *base = D_800FE8F0_9;
+    Ent_104 *base = sSoftmixSamples_9;
     Ent_104 *e = &base[i];
     e->w[0] = src[0];
     e->w[1] = src[1];
@@ -538,132 +538,132 @@ void func_800BB5CC(s32 i, u32 *src)
     e->w[3] = src[3];
 }
 
-void func_800BB608(s32 param_1, s32 param_2)
+void softmix_voice_set_rate(s32 param_1, s32 param_2)
 {
     s32 iVar1;
     s32 iVar2;
 
-    func_8000EE20();
-    iVar1 = param_2 % D_800FE8D8 * 65536;
-    iVar2 = iVar1 / D_800FE8D8;
-    iVar1 = param_1 * 0x30 + D_800FE8D4;
-    *(s32 *)(iVar1 + 0x10) = param_2 / D_800FE8D8;
+    critical_enter();
+    iVar1 = param_2 % sSoftmixOutputRate * 65536;
+    iVar2 = iVar1 / sSoftmixOutputRate;
+    iVar1 = param_1 * 0x30 + sSoftmixVoices;
+    *(s32 *)(iVar1 + 0x10) = param_2 / sSoftmixOutputRate;
     *(s32 *)(iVar1 + 0x14) = iVar2 * 65536;
-    func_8000EE28();
+    critical_leave();
 }
 
-void func_800BB6CC(s32 i, s32 v)
+void softmix_voice_set_position(s32 i, s32 v)
 {
-    *(s32 *)((u8 *)D_800FE8D4 + i * 48 + 8) = v;
+    *(s32 *)((u8 *)sSoftmixVoices + i * 48 + 8) = v;
 }
 
-s32 func_800BB6EC(s32 a0)
+s32 softmix_voice_get_position(s32 a0)
 {
-    return *(s32 *)(D_800FE8D4 + a0 * 0x30 + 8);
+    return *(s32 *)(sSoftmixVoices + a0 * 0x30 + 8);
 }
 
 typedef struct { s32 f0; s32 f1; s32 f2; s32 f3; s32 f4; s32 f5; s32 f6; } Row_7;
 typedef struct { u8 pad0[4]; u32 flags; u8 pad8[0x10]; s32 val; u8 pad1c[0xC]; s32 idx; u8 pad2c[4]; } Ent_105;
 
-extern Row_7 D_800FE8F0_10[];
+extern Row_7 sSoftmixSamples_10[];
 
-void func_800BB710(s32 n, u32 flags)
+void softmix_voice_set_flags(s32 n, u32 flags)
 {
-    Ent_105 *base = D_800FE8D4;
+    Ent_105 *base = sSoftmixVoices;
     Ent_105 *e = (Ent_105 *)((u32)(n * 0x30) + (u32)base);
     e->flags = flags;
     if (flags & 2) {
-        e->val = D_800FE8F0_10[e->idx].f3;
+        e->val = sSoftmixSamples_10[e->idx].f3;
         return;
     }
-    e->val = D_800FE8F0_10[e->idx].f1;
+    e->val = sSoftmixSamples_10[e->idx].f1;
 }
 
-s32 func_800BB780(s32 i)
+s32 softmix_voice_get_flags(s32 i)
 {
-    return *(s32 *)((u8 *)D_800FE8D4 + i * 48 + 4);
+    return *(s32 *)((u8 *)sSoftmixVoices + i * 48 + 4);
 }
 
-s32 func_800BB7A4(s32 arg0) {
-    return D_801004F0;
+s32 softmix_get_sample_count(s32 arg0) {
+    return sSoftmixSampleCount;
 }
 
-void func_800BB7B4(s32 a, s32 b, s32 c) {
+void softmix_convert_output(s32 a, s32 b, s32 c) {
     s32 flags;
 
-    D_800DB8C4 = a;
-    D_800DB8C8 = b;
-    flags = D_800FE8DC;
-    D_800DB8C0 = c;
+    sMixSrc = a;
+    sMixDst = b;
+    flags = sSoftmixFlags;
+    sMixCount = c;
     if (flags & 1) {
-        D_800DB8C0 = c << 1;
+        sMixCount = c << 1;
     }
     if (flags & 2) {
         D_800DB8D0 = 0;
         D_800DB8DC = 0;
-        D_800DB8D4 = (s32)0xFFFF8001;
-        D_800DB8D8 = 0x7FFF;
-        func_800DBD00();
+        sMixClampMin = (s32)0xFFFF8001;
+        sMixClampMax = 0x7FFF;
+        softmix_output_16bit();
     } else {
         D_800DB8DC = 0;
         D_800DB8D0 = 0;
-        D_800DB8D4 = 0;
-        D_800DB8D8 = 0xFF;
-        func_800DBCA4();
+        sMixClampMin = 0;
+        sMixClampMax = 0xFF;
+        softmix_output_8bit();
     }
 }
 
-s32 func_800BB85C(s32 size)
+s32 softmix_echo_init(s32 size)
 {
     s32 i;
     u8 *q;
 
-    if (D_800D5608 != 0) {
+    if (sSoftmixEchoOn != 0) {
         return -1;
     }
-    if (D_800FE8DC & 1) {
+    if (sSoftmixFlags & 1) {
         size <<= 1;
     }
-    D_800FE870 = q = func_800BC908(size, 0, D_800DB170, 0x601);
+    sSoftmixEchoBuf = q = mem_alloc_dbg(size, 0, sStrSoftmixFile, 0x601);
     if (q == NULL) {
         return 1;
     }
-    func_8000ED10(q, 0, size);
-    D_800FE878 = size;
+    mem_fill(q, 0, size);
+    sSoftmixEchoSize = size;
     i = 0xFF;
     {
-        u8 *pp = D_80100500 + i;
+        u8 *pp = sSoftmixEchoTable + i;
         do {
             *pp = i;
             i--;
             pp--;
         } while (i >= 0);
     }
-    D_800FE874 = 0;
-    D_800D5608 = 1;
+    sSoftmixEchoPos = 0;
+    sSoftmixEchoOn = 1;
     return 0;
 }
 
-void func_800BB920(s32 p)
+void softmix_echo_enable(s32 p)
 {
     if (p != 0) {
-        D_800D5608 = 1;
+        sSoftmixEchoOn = 1;
         return;
     }
-    if (D_800D5608 != 0) {
-        func_8000ED10(D_800FE870, 0, D_800FE878);
+    if (sSoftmixEchoOn != 0) {
+        mem_fill(sSoftmixEchoBuf, 0, sSoftmixEchoSize);
     }
-    D_800D5608 = 0;
+    sSoftmixEchoOn = 0;
 }
 
-void func_800BB978(s32 k)
+void softmix_echo_set_level(s32 k)
 {
     s32 i = 0;
     s32 x;
     u8 *dst;
     do {
         x = (s8)i * k;
-        dst = D_80100500 + i;
+        dst = sSoftmixEchoTable + i;
         if (x < 0) {
             x += 0xFF;
         }
@@ -672,11 +672,11 @@ void func_800BB978(s32 k)
     } while (i < 0x100);
 }
 
-void func_800BB9C0(s32 arg0)
+void softmix_echo_free(s32 arg0)
 {
-    if (D_800D5608 != 0) {
-        func_800BCB04(D_800FE870);
-        D_800D5608 = 0;
+    if (sSoftmixEchoOn != 0) {
+        mem_free(sSoftmixEchoBuf);
+        sSoftmixEchoOn = 0;
     }
 }
 
@@ -686,59 +686,59 @@ typedef struct {
     u8 unk8[0x1C - 0x8];
 } Chan_7;
 
-extern Chan_7 D_800FE8F0_11[];
+extern Chan_7 sSoftmixSamples_11[];
 
-void func_800BB9FC(u32 idx, u8 *src, s32 n) {
+void softmix_write_sample(u32 idx, u8 *src, s32 n) {
     s32 i;
 
     if (idx <= 0x100) {
-        if (D_800FE8F0_11[idx].len < n) {
-            n = D_800FE8F0_11[idx].len;
+        if (sSoftmixSamples_11[idx].len < n) {
+            n = sSoftmixSamples_11[idx].len;
         }
-        if (D_800FE8DC & 2) {
-            func_800B9FE0(D_800FE8F0_11[idx].buf, src, n);
+        if (sSoftmixFlags & 2) {
+            sfx_copy_bytes(sSoftmixSamples_11[idx].buf, src, n);
         } else {
             for (i = 0; i < n; i++) {
-                D_800FE8F0_11[idx].buf[i] = D_800D3404[src[i]] >> 8;
+                sSoftmixSamples_11[idx].buf[i] = sSoftmixExpandTable[src[i]] >> 8;
             }
         }
     }
 }
 
-void func_800BBAB0(s32 a0)
+void softmix_set_decompressor(s32 a0)
 {
-    D_800D560C = a0;
+    sSoftmixDecompressFn = a0;
 }
 
-void func_800BBABC(s32 a, s32 b)
+void softmix_set_decompress_buf(s32 a, s32 b)
 {
-    D_800D5610 = a;
-    D_800D5614 = b;
+    sSoftmixDecompressBuf = a;
+    sSoftmixDecompressBufSize = b;
 }
 
-void func_800BBAD0(s32 i)
+void softmix_voice_update_levels(s32 i)
 {
     s32 a, b, x, y;
-    if (D_800FE8DC & 1) {
-        a = D_800FE8D4_2[i].a;
-        b = D_800FE8D4_2[i].b;
+    if (sSoftmixFlags & 1) {
+        a = sSoftmixVoices_2[i].a;
+        b = sSoftmixVoices_2[i].b;
 
         x = 15 - b;
         x = x * a / 10;
         y = b * a / 10;
         if (x > a) x = a;
         if (y > a) y = a;
-        D_800FE8D4_2[i].c = x;
-        D_800FE8D4_2[i].d = y;
+        sSoftmixVoices_2[i].c = x;
+        sSoftmixVoices_2[i].d = y;
     }
 }
 
-s32 func_800BBB88(s32 a0)
+s32 softmix_get_sample_data(s32 a0)
 {
-    return *(s32 *)(D_800FE8F0_12 + a0 * 0x1C);
+    return *(s32 *)(sSoftmixSamples_12 + a0 * 0x1C);
 }
 
-void func_800BBBAC(s32 x)
+void softmix_set_master_volume(s32 x)
 {
-    D_800D3400 = x;
+    sSoftmixMasterVolume = x;
 }

@@ -1,8 +1,8 @@
 #include "game.h"
 
-Node_16 *func_80060270(Param *p)
+Node_16 *collide_build_sphere_tree(Param *p)
 {
-    Node_16 *n = D_800F0B04;
+    Node_16 *n = sCollideNodeNext;
     Node_16 *a;
     Node_16 *b;
     f32 pa[3];
@@ -10,15 +10,15 @@ Node_16 *func_80060270(Param *p)
     f32 d[3];
     f32 len;
 
-    D_800F0B04 = n + 1;
-    D_800F0B08 = D_800F0B08 + 1;
+    sCollideNodeNext = n + 1;
+    sCollideNodeCount = sCollideNodeCount + 1;
     if (p->kid == 0) {
         n->x = p->x;
         n->y = p->y - 0.5f;
         n->z = p->z;
         n->r = p->r;
     } else {
-        a = func_80060270(p + p->kid);
+        a = collide_build_sphere_tree(p + p->kid);
         n->c2 = a;
         b = a->c1;
         d[0] = b->x - a->x;
@@ -51,13 +51,13 @@ Node_16 *func_80060270(Param *p)
         n->r = __builtin_sqrtf(pa[0] * pa[0] + pa[1] * pa[1] + pa[2] * pa[2]) * 0.5f;
     }
     if (p->kid2 != 0) {
-        n->c1 = func_80060270(p + p->kid2);
+        n->c1 = collide_build_sphere_tree(p + p->kid2);
     }
     p->r = n->r;
     return n;
 }
 
-s32 func_80060538(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2)
+s32 collide_spheres_overlap(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2)
 {
     f32 r;
     f32 d;
@@ -94,7 +94,7 @@ s32 func_80060538(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2)
         } else if (b->child == 0 || b->f1c < a->f1c) {
             a = a->child;
             do {
-                if (func_80060538(a, b, x1, x2, o1, o2) & 0xff) {
+                if (collide_spheres_overlap(a, b, x1, x2, o1, o2) & 0xff) {
                     return 1;
                 }
                 a = a->next;
@@ -102,7 +102,7 @@ s32 func_80060538(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2)
             return 0;
         }
         for (b = b->child; b != 0; b = b->next) {
-            if (func_80060538(a, b, x1, x2, o1, o2) & 0xff) {
+            if (collide_spheres_overlap(a, b, x1, x2, o1, o2) & 0xff) {
                 return 1;
             }
         }
@@ -110,7 +110,7 @@ s32 func_80060538(Bv *a, Bv *b, Xf *x1, Xf *x2, Vec3f *o1, Vec3f *o2)
     return 0;
 }
 
-s32 func_800607BC(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2)
+s32 collide_find_deepest_overlap(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2)
 {
     f32 fVar3;
     f32 fVar4;
@@ -147,17 +147,17 @@ s32 func_800607BC(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2
         if (p1->child == 0) {
             if (p2->child == 0) {
                 d = (p1->r + p2->r) - __builtin_sqrtf(d);
-                if (D_800F0B18 < d) {
-                    D_800F0B18 = d;
-                    D_800F0B10 = p1;
-                    D_800F0B14 = p2;
+                if (sCollideDepth < d) {
+                    sCollideDepth = d;
+                    sCollideHitA = p1;
+                    sCollideHitB = p2;
                 }
                 return 0;
             }
         } else if (p2->child == 0 || p2->r < p1->r) {
             p1 = p1->child;
             do {
-                uVar1 = func_800607BC(p1, p2, m1, m2, v1, v2);
+                uVar1 = collide_find_deepest_overlap(p1, p2, m1, m2, v1, v2);
                 if ((uVar1 & 0xff) != 0) {
                     return 1;
                 }
@@ -166,7 +166,7 @@ s32 func_800607BC(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2
             return 0;
         }
         for (p2 = p2->child; p2 != 0; p2 = p2->next) {
-            uVar1 = func_800607BC(p1, p2, m1, m2, v1, v2);
+            uVar1 = collide_find_deepest_overlap(p1, p2, m1, m2, v1, v2);
             if ((uVar1 & 0xff) != 0) {
                 return 1;
             }
@@ -180,13 +180,13 @@ s32 func_800607BC(Box_3 *p1, Box_3 *p2, Xf_2 *m1, Xf_2 *m2, Vec3f *v1, Vec3f *v2
 #define GS8(p, o)  (*(s8 *)((u8 *)(p) + (o)))
 #define GS32(p, o) (*(s32 *)((u8 *)(p) + (o)))
 #define GF32(p, o) (*(f32 *)((u8 *)(p) + (o)))
-#define IDX(p)     ((s32)((Obj_41 *)(p) - D_800E37C0_75))
+#define IDX(p)     ((s32)((Obj_41 *)(p) - gRiders_75))
 
 typedef struct { u8 pad[0x7E0]; } Obj_41;
 
-extern Obj_41 D_800E37C0_75[];
+extern Obj_41 gRiders_75[];
 
-s32 func_80060AA0(void *p1, void *p2)
+s32 collide_resolve_rider_hit(void *p1, void *p2)
 {
     f32 vec[3];
     f32 o1[3];
@@ -196,15 +196,15 @@ s32 func_80060AA0(void *p1, void *p2)
     f32 *pa;
     s32 c;
 
-    if (D_800C2280 & 0x400) {
+    if (gCheatFlags & 0x400) {
         if (GU8(p1, 0x6E8) != 0) {
             if (GU8(p2, 0x6E8) != 0) goto skip0;
         } else if (GU8(p2, 0x6E8) != 0) {
-            func_800445B0(p2, 0x1c);
+            bike_crash_begin(p2, 0x1c);
             return 1;
         }
         if (GU8(p1, 0x6E8) == 0) goto skip0;
-        func_800445B0(p1, 0x1c);
+        bike_crash_begin(p1, 0x1c);
         return 1;
     }
 skip0:
@@ -215,7 +215,7 @@ skip0:
 
     a = GU8(p1, 0x6E8);
     b = GU8(p2, 0x6E8);
-    if ((a & b) == 0 || D_800F05D4 < 300) func_8004DFB4(IDX(p1), IDX(p2));
+    if ((a & b) == 0 || gEventTime < 300) announce_takeout(IDX(p1), IDX(p2));
     GS8(p2, 0x45) = -0x19;
     goto L1c8;
 
@@ -224,7 +224,7 @@ L12c:
     if (GS32(p1, 0x744) >= 0) goto L1d8;
     a = GU8(p1, 0x6E8);
     b = GU8(p2, 0x6E8);
-    if ((a & b) == 0 || D_800F05D4 < 300) func_8004DFB4(IDX(p2), IDX(p1));
+    if ((a & b) == 0 || gEventTime < 300) announce_takeout(IDX(p2), IDX(p1));
     GS8(p1, 0x45) = -0x1C;
 
 L1c8:
@@ -232,7 +232,7 @@ L1c8:
     GS32(p1, 0x648) = 0;
 
 L1d8:
-    if (D_800EFDBC == 6) {
+    if (gGameMode == 6) {
         if (GF32(p1, 0x50) < GF32(p2, 0x50)) {
             if (GF32(p1, 0x48) < GF32(p2, 0x48)) {
                 GS8(p2, 0x45) = -0x1F;
@@ -251,20 +251,20 @@ L1d8:
         return 1;
     }
 
-    if (D_800E76D0 - *(s32 *)((s32)p1 + (IDX(p2) << 2) + 0x784) < 0x3c) return 0;
+    if (gRaceFrame - *(s32 *)((s32)p1 + (IDX(p2) << 2) + 0x784) < 0x3c) return 0;
 
     pa = (f32 *)((u8 *)p1 + 0x48);
-    vec[0] = D_800F0B20_2[0] - pa[0];
-    vec[1] = D_800F0B20_2[1] - pa[1];
-    vec[2] = D_800F0B20_2[2] - pa[2];
+    vec[0] = gCollidePoint_2[0] - pa[0];
+    vec[1] = gCollidePoint_2[1] - pa[1];
+    vec[2] = gCollidePoint_2[2] - pa[2];
     q = (f32 *)((u8 *)p2 + 0x48);
-    func_80013310(vec, (f32 *)((u8 *)p1 + 0xA0), o1);
+    mtx3f_mul_vec3(vec, (f32 *)((u8 *)p1 + 0xA0), o1);
     if (-0.2f < o1[2] && o1[2] < 0.2f) return 0;
 
-    vec[0] = D_800F0B20_2[0] - q[0];
-    vec[1] = D_800F0B20_2[1] - q[1];
-    vec[2] = D_800F0B20_2[2] - q[2];
-    func_80013310(vec, (f32 *)((u8 *)q + 0x58), o2);
+    vec[0] = gCollidePoint_2[0] - q[0];
+    vec[1] = gCollidePoint_2[1] - q[1];
+    vec[2] = gCollidePoint_2[2] - q[2];
+    mtx3f_mul_vec3(vec, (f32 *)((u8 *)q + 0x58), o2);
     if (-0.2f < o2[2] && o2[2] < 0.2f) return 0;
 
     if (o2[2] > 0.0f && o1[2] < 0.0f) {
@@ -274,7 +274,7 @@ L1d8:
         }
         GU8(p1, 0x7A8) = 1;
         GS32(p1, 0x648) = 0;
-        if (GU8(p1, 0x6E8) == 0 || GU8(p2, 0x6E8) == 0) func_8004DFB4(IDX(p1), IDX(p2));
+        if (GU8(p1, 0x6E8) == 0 || GU8(p2, 0x6E8) == 0) announce_takeout(IDX(p1), IDX(p2));
         if (o1[0] - o2[0] > 0.0f) {
             GS8(p2, 0x45) = -0x1F;
         } else {
@@ -294,7 +294,7 @@ L1d8:
         }
         GU8(p2, 0x7A8) = 1;
         GS32(p2, 0x648) = 0;
-        if (GU8(p1, 0x6E8) == 0 || GU8(p2, 0x6E8) == 0) func_8004DFB4(IDX(p2), IDX(p1));
+        if (GU8(p1, 0x6E8) == 0 || GU8(p2, 0x6E8) == 0) announce_takeout(IDX(p2), IDX(p1));
         if (o2[0] - o1[0] > 0.0f) {
             GS8(p1, 0x45) = -0x1F;
         } else {
@@ -363,11 +363,11 @@ typedef struct {
     f32 r;
 } Ball;
 
-extern Ball *D_800F0B10_2;
-extern Ball *D_800F0B14_2;
-extern Bike_36 D_800E37C0_76[];
+extern Ball *sCollideHitA_2;
+extern Ball *sCollideHitB_2;
+extern Bike_36 gRiders_76[];
 
-s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
+s32 collide_apply_impulse(Obj_42 *a, Obj_42 *b) {
     Vec3f n;
     Vec3f ra;
     Vec3f rb;
@@ -381,9 +381,9 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
     Bike_36 *ba, *bb, *pa, *pb;
     s32 r, vol, ia, ib;
 
-    n.x = D_800F0B10_2->pos.x - D_800F0B14_2->pos.x;
-    n.y = D_800F0B10_2->pos.y - D_800F0B14_2->pos.y;
-    n.z = D_800F0B10_2->pos.z - D_800F0B14_2->pos.z;
+    n.x = sCollideHitA_2->pos.x - sCollideHitB_2->pos.x;
+    n.y = sCollideHitA_2->pos.y - sCollideHitB_2->pos.y;
+    n.z = sCollideHitA_2->pos.z - sCollideHitB_2->pos.z;
     NORM(n);
     if (n.y > 0.25f) {
         n.y = 0.25f;
@@ -392,32 +392,32 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
         n.y = -0.25f;
         NORM(n);
     }
-    h = D_800F0B18 * 0.5f;
-    D_800F0B20.x = n.x * (D_800F0B14_2->r - h);
-    D_800F0B20.y = n.y * (D_800F0B14_2->r - h);
-    D_800F0B20.z = n.z * (D_800F0B14_2->r - h);
-    D_800F0B20.x = D_800F0B14_2->pos.x + D_800F0B20.x;
-    D_800F0B20.y = D_800F0B14_2->pos.y + D_800F0B20.y;
-    D_800F0B20.z = D_800F0B14_2->pos.z + D_800F0B20.z;
-    D_800F0B20.y = (a->pos.y + b->pos.y) * 0.5f;
-    ra.x = D_800F0B20.x - a->pos.x;
-    ra.y = D_800F0B20.y - a->pos.y;
-    ra.z = D_800F0B20.z - a->pos.z;
-    func_800133A4(&ra, &a->rot, &va);
+    h = sCollideDepth * 0.5f;
+    gCollidePoint.x = n.x * (sCollideHitB_2->r - h);
+    gCollidePoint.y = n.y * (sCollideHitB_2->r - h);
+    gCollidePoint.z = n.z * (sCollideHitB_2->r - h);
+    gCollidePoint.x = sCollideHitB_2->pos.x + gCollidePoint.x;
+    gCollidePoint.y = sCollideHitB_2->pos.y + gCollidePoint.y;
+    gCollidePoint.z = sCollideHitB_2->pos.z + gCollidePoint.z;
+    gCollidePoint.y = (a->pos.y + b->pos.y) * 0.5f;
+    ra.x = gCollidePoint.x - a->pos.x;
+    ra.y = gCollidePoint.y - a->pos.y;
+    ra.z = gCollidePoint.z - a->pos.z;
+    vec3_cross(&ra, &a->rot, &va);
     va.x = a->vel.x + va.x;
     va.y = a->vel.y + va.y;
     va.z = a->vel.z + va.z;
-    rb.x = D_800F0B20.x - b->pos.x;
-    rb.y = D_800F0B20.y - b->pos.y;
-    rb.z = D_800F0B20.z - b->pos.z;
-    func_800133A4(&rb, &b->rot, &vb);
+    rb.x = gCollidePoint.x - b->pos.x;
+    rb.y = gCollidePoint.y - b->pos.y;
+    rb.z = gCollidePoint.z - b->pos.z;
+    vec3_cross(&rb, &b->rot, &vb);
     vb.x = b->vel.x + vb.x;
     vb.y = b->vel.y + vb.y;
     vb.z = b->vel.z + vb.z;
     dv.x = va.x - vb.x;
     dv.y = va.y - vb.y;
     dv.z = va.z - vb.z;
-    d = func_80013408(&dv, &n);
+    d = vec3_dot(&dv, &n);
     if (d > 0.0f) {
         return 0;
     }
@@ -429,18 +429,18 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
         b->mass *= bb->f7B4;
         b->inertia *= bb->f7B4;
         if (ba->f44 == 0 && bb->f44 == 0) {
-            r = func_80060AA0(ba, bb);
-            bb->f784[ba - D_800E37C0_76] = D_800E76D0;
-            ba->f784[bb - D_800E37C0_76] = D_800E76D0;
+            r = collide_resolve_rider_hit(ba, bb);
+            bb->f784[ba - gRiders_76] = gRaceFrame;
+            ba->f784[bb - gRiders_76] = gRaceFrame;
             if (r != 0) {
                 return r;
             }
         }
         if (a->type == 0) {
-            func_8003A8A8(ba);
+            particles_start_sparks(ba);
         }
         if (b->type == 0) {
-            func_8003A8A8(bb);
+            particles_start_sparks(bb);
         }
         vol = (s32)(-d) * 128.0f / 7.0f + 128.0f;
         if (vol > 255) {
@@ -450,10 +450,10 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
             vol = 0;
         }
         if (vol > 32) {
-            func_80010994(4, ba - D_800E37C0_76, vol);
+            snd_play_rider_sfx(4, ba - gRiders_76, vol);
         }
     }
-    d1 = func_80013408(&n, &ra);
+    d1 = vec3_dot(&n, &ra);
     t.x = n.x * d1;
     t.y = n.y * d1;
     t.z = n.z * d1;
@@ -462,7 +462,7 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
     t.z = ra.z - t.z;
     k = t.x * t.x + t.y * t.y + t.z * t.z;
     ka = a->mass / (k * a->mass / a->inertia + 1.0f);
-    d1 = func_80013408(&n, &rb);
+    d1 = vec3_dot(&n, &rb);
     t.x = n.x * d1;
     t.y = n.y * d1;
     t.z = n.z * d1;
@@ -488,11 +488,11 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
     b->vel.x = b->vel.x - imp.x;
     b->vel.y = b->vel.y - imp.y;
     b->vel.z = b->vel.z - imp.z;
-    func_800133A4(&ra, &n, &tq);
+    vec3_cross(&ra, &n, &tq);
     a->rot.x = a->rot.x + tq.x * (j / a->inertia);
     a->rot.y = a->rot.y + tq.y * (j / a->inertia);
     a->rot.z = a->rot.z + tq.z * (j / a->inertia);
-    func_800133A4(&rb, &n, &tq);
+    vec3_cross(&rb, &n, &tq);
     b->rot.x = b->rot.x - tq.x * (j / b->inertia);
     b->rot.y = b->rot.y - tq.y * (j / b->inertia);
     b->rot.z = b->rot.z - tq.z * (j / b->inertia);
@@ -504,17 +504,17 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
         pa = a->bike;
         pb = b->bike;
         if (pa->f458 <= 0) {
-            pa->f4EC = func_80013408((Vec3f *)pa->f4D8, &pa->f54);
+            pa->f4EC = vec3_dot((Vec3f *)pa->f4D8, &pa->f54);
         }
         if (pa->f4FC <= 0) {
-            pa->f590 = func_80013408((Vec3f *)pa->f57C, &pa->f54);
+            pa->f590 = vec3_dot((Vec3f *)pa->f57C, &pa->f54);
         }
         pa->f420 = __builtin_sqrtf(pa->f54.x * pa->f54.x + pa->f54.y * pa->f54.y + pa->f54.z * pa->f54.z);
         if (pb->f458 <= 0) {
-            pb->f4EC = func_80013408((Vec3f *)pb->f4D8, &pb->f54);
+            pb->f4EC = vec3_dot((Vec3f *)pb->f4D8, &pb->f54);
         }
         if (pb->f4FC <= 0) {
-            pb->f590 = func_80013408((Vec3f *)pb->f57C, &pb->f54);
+            pb->f590 = vec3_dot((Vec3f *)pb->f57C, &pb->f54);
         }
         pb->f420 = __builtin_sqrtf(pb->f54.x * pb->f54.x + pb->f54.y * pb->f54.y + pb->f54.z * pb->f54.z);
         if ((pa->f416 != 0 || pa->f3D0 < 17) && pa->f744 <= 0) {
@@ -527,23 +527,23 @@ s32 func_800610B0(Obj_42 *a, Obj_42 *b) {
             pb->f43C = pb->f54;
             return 1;
         }
-        if (pa->f662 + pb->f662 == 1 && D_800F05D4 < 360 && !(pa->f6E8 & pb->f6E8)) {
-            if (D_800E76D0 - D_800EFD28[pa - D_800E37C0_76] < 600) {
-                func_8004D1F4(pb - D_800E37C0_76, pb->f662);
+        if (pa->f662 + pb->f662 == 1 && gEventTime < 360 && !(pa->f6E8 & pb->f6E8)) {
+            if (gRaceFrame - gAnnounceTimes[pa - gRiders_76] < 600) {
+                announce_place(pb - gRiders_76, pb->f662);
                 return 1;
             }
-            ib = pb - D_800E37C0_76;
-            if (D_800E76D0 - D_800EFD28[ib] < 600) {
-                func_8004D1F4(pa - D_800E37C0_76, pa->f662);
+            ib = pb - gRiders_76;
+            if (gRaceFrame - gAnnounceTimes[ib] < 600) {
+                announce_place(pa - gRiders_76, pa->f662);
                 return 1;
             }
-            func_8004C854(pa - D_800E37C0_76, ib);
+            announce_lead_collision(pa - gRiders_76, ib);
         }
     }
     return 1;
 }
 
-s32 func_80061B90(u8 *p1, u8 *p2)
+s32 collide_bodies(u8 *p1, u8 *p2)
 {
     u8 *s0;
     u8 *v;
@@ -554,26 +554,26 @@ s32 func_80061B90(u8 *p1, u8 *p2)
         return 0;
     }
     v = *(u8 **)(p1 + 0x7C);
-    D_800F0B18 = 0.0f;
+    sCollideDepth = 0.0f;
     s0 = v;
     if (s0 != 0 && *s0 != 0) {
         *s0 = 0;
         s0 = *(u8 **)(s0 + 0x24);
         while (s0 != 0) {
-            func_80061D54(s0);
+            collide_tree_clear_cache(s0);
             s0 = *(u8 **)(s0 + 0x20);
         }
     }
     if (*(u8 **)(p1 + 0x180) == *(u8 **)(p2 + 0x180) &&
         *(*(u8 **)(p1 + 0x180) + 0x44) != 2) {
-        if (func_80060538(*(u8 **)(p1 + 0x7C), *(u8 **)(p2 + 0x7C), p1 + 0x58, p2 + 0x58, p1, p2) & 0xff) {
+        if (collide_spheres_overlap(*(u8 **)(p1 + 0x7C), *(u8 **)(p2 + 0x7C), p1 + 0x58, p2 + 0x58, p1, p2) & 0xff) {
             return 0;
         }
         *(*(u8 **)(p1 + 0x180) + 0x44) = 2;
     }
-    func_800607BC(*(u8 **)(p1 + 0x7C), *(u8 **)(p2 + 0x7C), p1 + 0x58, p2 + 0x58, p1, p2);
-    if (0.0f < D_800F0B18) {
-        if (func_800610B0(p1, p2) != 0) {
+    collide_find_deepest_overlap(*(u8 **)(p1 + 0x7C), *(u8 **)(p2 + 0x7C), p1 + 0x58, p2 + 0x58, p1, p2);
+    if (0.0f < sCollideDepth) {
+        if (collide_apply_impulse(p1, p2) != 0) {
             p2[0x17D] = p2[0x17D] | 1;
             if ((p1[0x17C] == 4 && p2[0x17C] == 0) || (p2[0x17C] == 4 && p1[0x17C] == 0)) {
                 if (p1[0x17C] == 4) {
@@ -600,30 +600,30 @@ s32 func_80061B90(u8 *p1, u8 *p2)
     return 0;
 }
 
-void func_80061D54(Node_17 *p) {
+void collide_tree_clear_cache(Node_17 *p) {
     if (p != NULL && p->flag != 0) {
         p->flag = 0;
         p = p->child;
         while (p != NULL) {
-            func_80061D54(p);
+            collide_tree_clear_cache(p);
             p = p->next;
         }
     }
 }
 
-void func_80061DA8(void) {
-    func_800BCB04(D_800F0B00);
+void collide_free_node_pool(void) {
+    mem_free(sCollideNodePool);
 }
 
-void func_80061DCC(void)
+void collide_init_node_pool(void)
 {
-    D_800F0B08 = 0;
-    D_800F0B00 = func_800BC908(16000, 0, D_800D8BA0, 0x103);
-    D_800F0B04 = D_800F0B00;
-    func_8000ED10(D_800F0B00, 0, 16000);
+    sCollideNodeCount = 0;
+    sCollideNodePool = mem_alloc_dbg(16000, 0, sStrCollideC, 0x103);
+    sCollideNodeNext = sCollideNodePool;
+    mem_fill(sCollideNodePool, 0, 16000);
 }
 
-void func_80061E20(u8 *p)
+void collide_reset_body(u8 *p)
 {
     f32 one = 1.0f;
     *(s32 *)(p + 0xC) = 0;
@@ -642,19 +642,19 @@ void func_80061E20(u8 *p)
     *(s32 *)(p + 0x34) = 0;
     *(s32 *)(p + 0x3C) = 0;
     *(f32 *)(p + 0x38) = one;
-    func_80013568((f32 *)(p + 0x58), (f32 *)(p + 0x30));
+    quat_to_mtx3f((f32 *)(p + 0x58), (f32 *)(p + 0x30));
 }
 
-void func_80061E8C(u8 *p)
+void collide_update_bike_speeds(u8 *p)
 {
     f32 s;
     f32 r;
 
     if (*(s32 *)(p + 0x458) < 1) {
-        *(f32 *)(p + 0x4EC) = func_80013408((f32 *)(p + 0x4D8), (f32 *)(p + 0x54));
+        *(f32 *)(p + 0x4EC) = vec3_dot((f32 *)(p + 0x4D8), (f32 *)(p + 0x54));
     }
     if (*(s32 *)(p + 0x4FC) < 1) {
-        *(f32 *)(p + 0x590) = func_80013408((f32 *)(p + 0x57C), (f32 *)(p + 0x54));
+        *(f32 *)(p + 0x590) = vec3_dot((f32 *)(p + 0x57C), (f32 *)(p + 0x54));
     }
     s = *(f32 *)(p + 0x54) * *(f32 *)(p + 0x54)
       + *(f32 *)(p + 0x58) * *(f32 *)(p + 0x58)
@@ -663,14 +663,14 @@ void func_80061E8C(u8 *p)
     *(f32 *)(p + 0x420) = r;
 }
 
-void func_80061F1C(Node_18 *p) {
+void collide_reset_tree(Node_18 *p) {
     Node_18 *q;
-    D_800F0B18 = 0;
+    sCollideDepth = 0;
     q = p;
     if (q != NULL && q->flag != 0) {
         q->flag = 0;
         for (q = q->first; q != NULL; q = q->sib) {
-            func_80061D54(q);
+            collide_tree_clear_cache(q);
         }
     }
 }

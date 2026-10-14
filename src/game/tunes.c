@@ -20,109 +20,109 @@ typedef struct {
 
 typedef struct { u8 pad[0x1C]; u32 tab[12]; u32 mode; } Game;
 
-extern Cmd *D_800EFD48;
-extern S70 D_800EFD70_6;
-extern Blk_3 D_800EFD70_7;
-extern Game D_800EFD70_3;
+extern Cmd *sSongCursor;
+extern S70 gGame_6;
+extern Blk_3 gGame_7;
+extern Game gGame_3;
 
 static inline void push_2(s32 v)
 {
-    if (D_800C8CE8 == 0 && D_800CCD64 == 0 && D_800C2358 == 0 && D_800CA858 < 8) {
-        D_800EFD00[D_800CA858] = v;
-        D_800CA858++;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
+        sSpeechQueue[sSpeechQueueCount] = v;
+        sSpeechQueueCount++;
     }
 }
 
 static inline s32 check(u32 *p)
 {
-    if (D_800C8CD8 != 0 && *p == D_800E3700) return 1;
-    if (D_800EFD70_6.mode == 2) return 1;
+    if (gGhostRace != 0 && *p == gGhostSlot) return 1;
+    if (gGame_6.mode == 2) return 1;
     if (*p >= 6) return 1;
-    D_800EFD28[*p] = D_800E76D0;
-    *p = D_800EFD70_6.map[*p];
+    gAnnounceTimes[*p] = gRaceFrame;
+    *p = gGame_6.map[*p];
     if (*p >= 6) return 1;
-    return (D_800EFD70_6.mode == 9) << 1;
+    return (gGame_6.mode == 9) << 1;
 }
 
 static inline void queue(s32 v)
 {
-    if (D_800C8CE8 == 0 && D_800CCD64 == 0 && D_800C2358 == 0 && D_800CA858 < 8) {
-        D_800EFD00[D_800CA858] = v;
-        D_800CA858++;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
+        sSpeechQueue[sSpeechQueueCount] = v;
+        sSpeechQueueCount++;
     }
 }
 
 static __inline__ void push_4(s32 v)
 {
-    if (D_800C8CE8 == 0 && D_800CCD64 == 0 && D_800C2358 == 0 && D_800CA858 < 8) {
-        D_800EFD00[D_800CA858] = v;
-        D_800CA858++;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
+        sSpeechQueue[sSpeechQueueCount] = v;
+        sSpeechQueueCount++;
     }
 }
 
 static inline s32 chk(u32 *p)
 {
-    if (D_800C8CD8 != 0 && *p == D_800E3700) {
+    if (gGhostRace != 0 && *p == gGhostSlot) {
         return 1;
     }
-    if (D_800EFD70_3.mode == 2) {
+    if (gGame_3.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
-    D_800EFD28[*p] = D_800E76D0;
-    *p = D_800EFD70_3.tab[*p];
+    gAnnounceTimes[*p] = gRaceFrame;
+    *p = gGame_3.tab[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (D_800EFD70_3.mode == 9) * 2;
+    return (gGame_3.mode == 9) * 2;
 }
 
 static inline void push(u32 v)
 {
-    if (D_800C8CE8 == 0 && D_800CCD64 == 0 && D_800C2358 == 0 && D_800CA858 < 8) {
-        D_800EFD00_2[D_800CA858] = v;
-        D_800CA858++;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
+        sSpeechQueue_2[sSpeechQueueCount] = v;
+        sSpeechQueueCount++;
     }
 }
 
 static inline void push_3(u32 v)
 {
-    if (D_800C8CE8 == 0 && D_800CCD64 == 0 && D_800C2358 == 0 && D_800CA858 < 8) {
-        D_800EFD00[D_800CA858] = v;
-        D_800CA858++;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
+        sSpeechQueue[sSpeechQueueCount] = v;
+        sSpeechQueueCount++;
     }
 }
 
-void func_8004B710(s32 param_1)
+void tunes_init(s32 param_1)
 {
     u8 *p;
     s32 i;
 
-    D_800CA858 = 0;
-    p = func_800BE9B0(D_800D7330);
+    sSpeechQueueCount = 0;
+    p = file_find(D_800D7330);
     if (p != NULL) {
-        D_800EECD4 = *(s32 *)(p + 0x18);
-        D_800EECBC = D_800EECD4 + *(s32 *)(p + 0x14);
-        D_800EFD4C = (s32)func_800BF79C(D_800D5604, D_800D1244);
-        if (D_800EFD4C != 0) {
-            D_800EECC4 = func_800BC908(0x2000, 0, D_800D7338, 0xFC);
-            D_800EFD20 = 0;
-            D_800EECD0 = 0;
-            D_800EFD50 = 0;
-            D_800D56B0 = func_8004F670;
-            func_8000ED10(D_800EECE0, 0, 0x1000);
-            D_800EFD54 = 0;
-            D_800EECCC = param_1;
-            D_800EFD24 = func_800BC908(0x130, 0, D_800D7338, 0x10C);
-            func_8000ED10(D_800EFD24, 0, 0x130);
-            for (i = 0; i < D_800EECCC; i++) {
-                func_8004F70C((s32 *)(D_800EFD24 + i * 0x4C));
+        sStreamDataBase = *(s32 *)(p + 0x18);
+        sStreamDataEnd = sStreamDataBase + *(s32 *)(p + 0x14);
+        sStreamSampleTable = (s32)res_load(gSfxResSet, D_800D1244);
+        if (sStreamSampleTable != 0) {
+            sStreamMixBuf = mem_alloc_dbg(0x2000, 0, D_800D7338, 0xFC);
+            sStreamMixFill = 0;
+            sStreamMixWritePos = 0;
+            sStreamMixReadPos = 0;
+            gN64SndMixCallback = tunes_mix_callback;
+            mem_fill(sStreamEchoBuf, 0, 0x1000);
+            sStreamEchoPos = 0;
+            sStreamChannelCount = param_1;
+            sStreamChannels = mem_alloc_dbg(0x130, 0, D_800D7338, 0x10C);
+            mem_fill(sStreamChannels, 0, 0x130);
+            for (i = 0; i < sStreamChannelCount; i++) {
+                tunes_init_channel((s32 *)(sStreamChannels + i * 0x4C));
             }
-            D_800CA860 = 0;
-            D_800CA85C = 0;
-            D_800CA844 = 1;
+            sCurrentSong = 0;
+            sStreamLock = 0;
+            sTunesActive = 1;
         }
     }
 }
@@ -149,7 +149,7 @@ typedef struct Stream {
     s32 vol;
 } Stream;
 
-extern Stream *D_800EFD24_2;
+extern Stream *sStreamChannels_2;
 
 static inline void noise(s16 *q, s32 n)
 {
@@ -157,7 +157,7 @@ static inline void noise(s16 *q, s32 n)
     s32 v;
 
     while (n != 0) {
-        p = &D_800EECE0_2[D_800EFD54];
+        p = &sStreamEchoBuf_2[sStreamEchoPos];
         v = *q + ((s16)*p >> 1);
         if (v > 0x7FFF)
             v = 0x7FFF;
@@ -165,12 +165,12 @@ static inline void noise(s16 *q, s32 n)
             v = -0x7FFF;
         *p = v;
         *q++ = v;
-        D_800EFD54 = (D_800EFD54 + 1) % 0x800;
+        sStreamEchoPos = (sStreamEchoPos + 1) % 0x800;
         n--;
     }
 }
 
-s32 func_8004B890(void)
+s32 tunes_mix_streams(void)
 {
     Stream *s;
     s32 i, j, n, v;
@@ -184,19 +184,19 @@ s32 func_8004B890(void)
     s32 flags;
     s32 *buf;
 
-    func_8004C644();
-    if (D_800EECDC == 0) {
-        D_800EFD24_2[2].vol = (D_800CA850 * D_800E32A0) >> 8;
+    tunes_update_speech();
+    if (sSpeechUseSfxVolume == 0) {
+        sStreamChannels_2[2].vol = (gSpeechVolume * gSndMasterVolume) >> 8;
     } else {
-        D_800EFD24_2[2].vol = (D_800C2B58 * D_800E32A0) >> 8;
+        sStreamChannels_2[2].vol = (gSfxVolume * gSndMasterVolume) >> 8;
     }
 
-    for (i = 0; i < D_800EECCC; i++) {
-        s = &D_800EFD24_2[i];
+    for (i = 0; i < sStreamChannelCount; i++) {
+        s = &sStreamChannels_2[i];
         if (s->handle >= 0) {
-            if (func_800BEF2C(s->handle) != 3)
+            if (dma_get_status(s->handle) != 3)
                 return 0;
-            func_800BEF8C(s->handle);
+            dma_release(s->handle);
             s->handle = -1;
             if (s->f38 >= 0) {
                 osInvalDCache(s->f8, 0x220);
@@ -216,15 +216,15 @@ s32 func_8004B890(void)
         }
     }
 
-    if (D_800CA85C != 0)
+    if (sStreamLock != 0)
         return 0;
-    if (D_800EFD20 > 0x780)
+    if (sStreamMixFill > 0x780)
         return 0;
 
     i = 0;
     j = 0;
-    for (; i < D_800EECCC; i++) {
-        s = &D_800EFD24_2[i];
+    for (; i < sStreamChannelCount; i++) {
+        s = &sStreamChannels_2[i];
         if (s->f10 == s->f30 && s->f14 >= s->f2C && s->f14 < s->f2C + 8)
             continue;
         if (s->f10 >= 0) {
@@ -250,12 +250,12 @@ s32 func_8004B890(void)
                 s->f30 = -1;
                 s->f10 = -1;
                 s->f2C = s->f14;
-                if (i == 3 && D_800EECC0 != 0)
-                    D_800EECC0 = 0;
+                if (i == 3 && sAmbientLocked != 0)
+                    sAmbientLocked = 0;
                 continue;
             }
         }
-        s->handle = func_800BEC20(D_801009A4, 0, (s32)addr, s->f8, 0x220);
+        s->handle = dma_start(gCartRomHandle, 0, (s32)addr, s->f8, 0x220);
         j = 1;
         s->f38 = s->f10;
         s->f34 = s->f14;
@@ -268,8 +268,8 @@ s32 func_8004B890(void)
         return 0;
 
     mixed = 0;
-    for (i = 0; i < D_800EECCC; i++) {
-        s = &D_800EFD24_2[i];
+    for (i = 0; i < sStreamChannelCount; i++) {
+        s = &sStreamChannels_2[i];
         q = s->pcm + (s->f14 - s->f2C) * 0x80;
         if (s->f18 <= 0)
             s->f30 = -1;
@@ -279,7 +279,7 @@ s32 func_8004B890(void)
             q = s->pcm;
             if ((s->flags & 3) != 3) {
                 if (s->f44 >= 0)
-                    func_8000ED10((u8 *)q, 0, 0x100);
+                    mem_fill((u8 *)q, 0, 0x100);
                 noise(q, 0x80);
                 if (++s->f44 >= 0x20)
                     s->f3C = 0;
@@ -288,17 +288,17 @@ s32 func_8004B890(void)
             s->f44 = -1;
         }
         flags = s->flags;
-        vol = D_800EFD24_2[i].vol;
+        vol = sStreamChannels_2[i].vol;
         if (!(flags & 1)) {
-            pos = D_800EECD0;
+            pos = sStreamMixWritePos;
             if (!mixed) {
                 for (j = 0; j < 0x80; j++) {
-                    D_800EECC4_2[pos] = (*q++ * vol) >> 8;
+                    sStreamMixBuf_2[pos] = (*q++ * vol) >> 8;
                     pos = (pos + 1) & 0x7FF;
                 }
             } else {
                 for (j = 0; j < 0x80; j++) {
-                    D_800EECC4_2[pos] += (*q++ * vol) >> 8;
+                    sStreamMixBuf_2[pos] += (*q++ * vol) >> 8;
                     pos = (pos + 1) & 0x7FF;
                 }
             }
@@ -310,11 +310,11 @@ s32 func_8004B890(void)
                 s->f14++;
                 s->f18--;
             }
-            pos = D_800EECD0;
+            pos = sStreamMixWritePos;
             s->flags ^= 2;
             if (!mixed) {
                 j = 0;
-                buf = D_800EECC4_2;
+                buf = sStreamMixBuf_2;
                 for (; j < 0x40; j++) {
                     s32 *b0 = (s32 *)(pos * 4 + (u32)buf);
                     s32 *b1;
@@ -328,7 +328,7 @@ s32 func_8004B890(void)
                 }
             } else {
                 j = 0;
-                buf = D_800EECC4_2;
+                buf = sStreamMixBuf_2;
                 for (; j < 0x40; j++) {
                     s32 *b0 = (s32 *)(pos * 4 + (u32)buf);
                     s32 *b1;
@@ -345,16 +345,16 @@ s32 func_8004B890(void)
         mixed = 1;
     }
     if (!mixed) {
-        pos = D_800EECD0;
+        pos = sStreamMixWritePos;
         for (j = 0; j < 0x80; j++) {
-            D_800EECC4_2[pos] = 0;
+            sStreamMixBuf_2[pos] = 0;
             pos = (pos + 1) & 0x7FF;
         }
     }
-    D_800EECD0 = pos;
-    D_800EFD20 += 0x80;
-    D_800EFCF4 += 1;
-    func_8004C014();
+    sStreamMixWritePos = pos;
+    sStreamMixFill += 0x80;
+    sSongTick += 1;
+    tunes_update_song();
     return 1;
 }
 
@@ -392,10 +392,10 @@ typedef struct {
     s32 vol;
 } Chan;
 
-extern Chan *D_800EFD24_3;
-extern Smp *D_800EFD4C_2;
+extern Chan *sStreamChannels_3;
+extern Smp *sStreamSampleTable_2;
 
-void func_8004C014(void)
+void tunes_update_song(void)
 {
     Song *s;
     Cmd *c;
@@ -403,28 +403,28 @@ void func_8004C014(void)
     Pair_6 *e;
     Song *s0;
 
-    if (D_800CA860 == NULL) {
+    if (sCurrentSong == NULL) {
         return;
     }
-    while (D_800EFD48->time <= D_800EFCF4) {
-        c = D_800EFD48;
-        s = D_800CA860;
+    while (sSongCursor->time <= sSongTick) {
+        c = sSongCursor;
+        s = sCurrentSong;
         if (c->note == 0xFE) {
-            D_800EFCF4 = 0;
-            D_800EFD48 = (Cmd *)&s->ent[s->count];
+            sSongTick = 0;
+            sSongCursor = (Cmd *)&s->ent[s->count];
         } else {
             if (c->note == 0xFF) {
-                D_800EFD24_3[c->ch & 0xF].note = -1;
+                sStreamChannels_3[c->ch & 0xF].note = -1;
             } else {
-                D_800EFD24_3[c->ch & 0xF].note = c->note;
-                D_800EFD24_3[c->ch & 0xF].f14 = 0;
+                sStreamChannels_3[c->ch & 0xF].note = c->note;
+                sStreamChannels_3[c->ch & 0xF].f14 = 0;
                 e = &((Pair_6 *)s)[c->note];
-                D_800EFD24_3[c->ch & 0xF].f20 = (sm = &D_800EFD4C_2[e->smp])->f08 + D_800EECD4;
-                D_800EFD24_3[c->ch & 0xF].f24 = s->ent[c->note].f04;
-                D_800EFD24_3[c->ch & 0xF].f1C = sm->f10;
-                D_800EFD24_3[c->ch & 0xF].vol = D_800CA848_2[c->ch & 0xF] * D_800E32A0 >> 8;
+                sStreamChannels_3[c->ch & 0xF].f20 = (sm = &sStreamSampleTable_2[e->smp])->f08 + sStreamDataBase;
+                sStreamChannels_3[c->ch & 0xF].f24 = s->ent[c->note].f04;
+                sStreamChannels_3[c->ch & 0xF].f1C = sm->f10;
+                sStreamChannels_3[c->ch & 0xF].vol = gStreamVolumes_2[c->ch & 0xF] * gSndMasterVolume >> 8;
             }
-            D_800EFD48++;
+            sSongCursor++;
         }
     }
 }
@@ -456,10 +456,10 @@ typedef struct {
     u8 pad2[0x4C - 0x3C];
 } Slot_11;
 
-extern Tab_5 D_800EE4B8;
-extern Slot_11 *D_800EFD24_4;
+extern Tab_5 sSongBuffer;
+extern Slot_11 *sStreamChannels_4;
 
-void func_8004C22C(s32 param_1)
+void tunes_play_song(s32 param_1)
 {
     s32 n;
     u32 j;
@@ -470,22 +470,22 @@ void func_8004C22C(s32 param_1)
     u32 *pw;
     u32 key;
 
-    if (D_800CA860_2 != 0) {
-        func_8004C3C4();
+    if (sCurrentSong_2 != 0) {
+        tunes_stop_song();
     }
     if (param_1 >= 0) {
-        D_800CA860_2 = func_800BF79C(D_800D5604_4, param_1);
-        n = func_800BD924(D_800CA860_2);
+        sCurrentSong_2 = res_load(gSfxResSet_4, param_1);
+        n = mem_get_size(sCurrentSong_2);
         if (n > 0x800) {
             while (1) ;
         }
-        tab = &D_800EE4B8;
-        memcpy(tab, D_800CA860_2, n);
-        func_800BFEA4((u32 *)D_800D5604_4[1] + param_1);
+        tab = &sSongBuffer;
+        memcpy(tab, sCurrentSong_2, n);
+        res_unload((u32 *)gSfxResSet_4[1] + param_1);
         n = 0;
-        D_800CA860_2 = (s32 *)tab;
-        if (D_800EE4B8.n != 0) {
-            r = D_800EFD4C;
+        sCurrentSong_2 = (s32 *)tab;
+        if (sSongBuffer.n != 0) {
+            r = sStreamSampleTable;
             t = tab;
             pw = (u32 *)t;
             do {
@@ -503,15 +503,15 @@ void func_8004C22C(s32 param_1)
                 n++;
             } while (n < t->n);
         }
-        D_800EFCF4 = 0;
-        D_800EFD48 = D_800CA860_2 + (D_800CA860_2[0] * 2 + 1);
+        sSongTick = 0;
+        sSongCursor = sCurrentSong_2 + (sCurrentSong_2[0] * 2 + 1);
         for (n = 0; n < 2; n++) {
-            D_800EFD24_4[n].f30 = -1;
-            D_800EFD24_4[n].f2C = -1;
-            D_800EFD24_4[n].f38 = -1;
-            D_800EFD24_4[n].f34 = -1;
+            sStreamChannels_4[n].f30 = -1;
+            sStreamChannels_4[n].f2C = -1;
+            sStreamChannels_4[n].f38 = -1;
+            sStreamChannels_4[n].f34 = -1;
         }
-        func_8004C014();
+        tunes_update_song();
     }
 }
 
@@ -530,38 +530,38 @@ typedef struct {
     s32 pad3C[4];
 } Ent_49; /* 0x4C */
 
-extern Ent_49 *D_800EFD24_5;
+extern Ent_49 *sStreamChannels_5;
 
-void func_8004C3C4(void) {
+void tunes_stop_song(void) {
     s32 i;
     s32 n;
     Ent_49 *p;
     Ent_49 *q;
 
-    for (i = 0; i < D_800EECCC; i++) {
-        D_800EFD24_5[i].f10 = -1;
-        D_800EFD24_5[i].f14 = -1;
-        D_800EFD24_5[i].f30 = -1;
-        D_800EFD24_5[i].f2C = -1;
-        D_800EFD24_5[i].f38 = -1;
-        D_800EFD24_5[i].f34 = -1;
+    for (i = 0; i < sStreamChannelCount; i++) {
+        sStreamChannels_5[i].f10 = -1;
+        sStreamChannels_5[i].f14 = -1;
+        sStreamChannels_5[i].f30 = -1;
+        sStreamChannels_5[i].f2C = -1;
+        sStreamChannels_5[i].f38 = -1;
+        sStreamChannels_5[i].f34 = -1;
     }
 
-    if (D_800CA860 != 0) {
-        D_800CA85C = 1;
-        for (i = 0; i < D_800EECCC; i++) {
-            p = &D_800EFD24_5[i];
+    if (sCurrentSong != 0) {
+        sStreamLock = 1;
+        for (i = 0; i < sStreamChannelCount; i++) {
+            p = &sStreamChannels_5[i];
             for (;;) {
                 if (p->f04 < 0) break;
-                if (func_800BEF2C(p->f04) == 3) {
-                    func_800BEF8C(p->f04);
+                if (dma_get_status(p->f04) == 3) {
+                    dma_release(p->f04);
                     p->f04 = -1;
                     break;
                 }
             }
         }
-        D_800CA85C = 0;
-        D_800CA860 = 0;
+        sStreamLock = 0;
+        sCurrentSong = 0;
     }
 }
 
@@ -575,27 +575,27 @@ typedef struct {
     s32 f120; s32 f124; s32 f128; s32 f12C;
 } Obj_37;
 
-extern Seq D_800EFCE0_2;
-extern Ent_50 *D_800EFD4C_3;
+extern Seq sCrowdQueue_2;
+extern Ent_50 *sStreamSampleTable_3;
 
-void func_8004C4E4(void)
+void tunes_update_crowd_queue(void)
 {
     Obj_37 *obj; Ent_50 *e;
-    if (D_800EFCF8 != 0) {
-        if (--D_800EFCE0_2.cnt <= 0) {
-            obj = D_800EFD24;
-            e = &D_800EFD4C_3[D_800EFCE0_2.idx];
-            obj->fF4 = D_800EFCE0_2.idx;
+    if (sCrowdQueueCount != 0) {
+        if (--sCrowdQueue_2.cnt <= 0) {
+            obj = sStreamChannels;
+            e = &sStreamSampleTable_3[sCrowdQueue_2.idx];
+            obj->fF4 = sCrowdQueue_2.idx;
             obj->f120 = 0;
             obj->f124 = 0;
             obj->fF8 = 0;
-            obj->f104 = e->f8 + D_800EECD4;
+            obj->f104 = e->f8 + sStreamDataBase;
             obj->f108 = e->fC;
             obj->f100 = e->f10;
-            obj->f12C = (D_800CA854_2[0] * D_800E32A0_2[0]) >> 8;
-            D_800EFCF8--;
-            D_800EFCE0_2.idx = D_800EFCE0_2.nidx;
-            D_800EFCE0_2.cnt = D_800EFCE0_2.ncnt;
+            obj->f12C = (gAmbientVolume_2[0] * gSndMasterVolume_2[0]) >> 8;
+            sCrowdQueueCount--;
+            sCrowdQueue_2.idx = sCrowdQueue_2.nidx;
+            sCrowdQueue_2.cnt = sCrowdQueue_2.ncnt;
         }
     }
 }
@@ -620,35 +620,35 @@ typedef struct {
     s32 f124;
 } Ctl_8;
 
-extern Ctl_8 *D_800EFD24_6;
-extern Ent_51 *D_800EFD4C_4;
+extern Ctl_8 *sStreamChannels_6;
+extern Ent_51 *sStreamSampleTable_4;
 
-void func_8004C5A0(s32 param_1, s32 param_2, s32 arg2)
+void tunes_set_ambient(s32 param_1, s32 param_2, s32 arg2)
 {
-    if (D_800EECC0 != 0) {
+    if (sAmbientLocked != 0) {
         return;
     }
     if (param_2 == 0) {
-        if (D_800EFD24_6->f0F4 != -1) {
-            D_800EFD24_6->f0F4 = -1;
-            D_800EFD24_6->f124 = 0;
-            D_800CA854 = 0;
+        if (sStreamChannels_6->f0F4 != -1) {
+            sStreamChannels_6->f0F4 = -1;
+            sStreamChannels_6->f124 = 0;
+            gAmbientVolume = 0;
         }
         return;
     }
-    if (D_800EFD24_6->f0F4 != param_1) {
+    if (sStreamChannels_6->f0F4 != param_1) {
         Ent_51 *t;
         s32 v10;
-        D_800EFD24_6->f0F4 = param_1;
-        t = D_800EFD4C_4 + param_1;
-        D_800EFD24_6->f0F8 = 0;
-        D_800EFD24_6->f104 = t->f08 + D_800EECD4;
-        D_800EFD24_6->f108 = t->f0C;
+        sStreamChannels_6->f0F4 = param_1;
+        t = sStreamSampleTable_4 + param_1;
+        sStreamChannels_6->f0F8 = 0;
+        sStreamChannels_6->f104 = t->f08 + sStreamDataBase;
+        sStreamChannels_6->f108 = t->f0C;
         v10 = t->f10;
-        D_800EFD24_6->f124 = 1;
-        D_800EFD24_6->f100 = v10;
+        sStreamChannels_6->f124 = 1;
+        sStreamChannels_6->f100 = v10;
     }
-    D_800CA854 = param_2;
+    gAmbientVolume = param_2;
 }
 
 typedef struct Plr_5 {
@@ -676,11 +676,11 @@ typedef struct Rec_30 {
 
 typedef struct { u8 pad[0x662]; s16 f; u8 rest[0x7E0 - 0x664]; } Tbl7E0;
 
-extern Plr_5 *D_800EFD24_7;
-extern Rec_30 *D_800EFD4C_5;
-extern Tbl7E0 D_800E37C0_52[];
+extern Plr_5 *sStreamChannels_7;
+extern Rec_30 *sStreamSampleTable_5;
+extern Tbl7E0 gRiders_52[];
 
-void func_8004C644(void)
+void tunes_update_speech(void)
 {
     s32 v;
     s32 n;
@@ -692,29 +692,29 @@ void func_8004C644(void)
     Plr_5 *p;
     Rec_30 *r;
 
-    if (D_800CA858_2[0] == 0) {
+    if (sSpeechQueueCount_2[0] == 0) {
         return;
     }
-    if (D_800EFD24_7->cur != -1 && D_800EECC8 >= 0) {
+    if (sStreamChannels_7->cur != -1 && sSpeechPriority >= 0) {
         return;
     }
-    v = D_800EFD00[0];
+    v = sSpeechQueue[0];
     if (v < 0) {
         t = (v >> 16) & 0xFF;
         if (t == 1) {
             n = (v >> 8) & 0xFF;
-            n = D_800E37C0_52[n].f;
+            n = gRiders_52[n].f;
             lo = v & 0xFF;
             if (lo < n) {
                 n = lo;
             }
-            lo = D_800F05CA - 2;
+            lo = gEventNumRiders - 2;
             if (lo < n) {
                 n = lo;
             }
         } else if (t == 2) {
             n = (v >> 8) & 0xFF;
-            n = D_800E37C0_52[n].f;
+            n = gRiders_52[n].f;
             lo = v & 0xFF;
             if (n < lo) {
                 n = lo;
@@ -725,77 +725,77 @@ void func_8004C644(void)
         } else {
             goto bad;
         }
-        v = D_800CA820[n];
+        v = sPlaceClips[n];
         goto ok;
     bad:
-        D_800CA858_2[0]--;
+        sSpeechQueueCount_2[0]--;
         return;
     }
 ok:
-    if (D_800C2358 == 0) {
-        if (D_800EFD24_7->cur != -1 && D_800EECC8 >= 0) {
+    if (gPodiumMode == 0) {
+        if (sStreamChannels_7->cur != -1 && sSpeechPriority >= 0) {
             f = 1;
         } else {
-            D_800EFD24_7->cur = v;
-            r = &D_800EFD4C_5[v];
-            D_800EFD24_7->fD4 = 0;
-            D_800EFD24_7->fD8 = 0;
-            D_800EFD24_7->fAC = 0;
-            D_800EFD24_7->fB8 = r->f8 + D_800EECD4;
-            D_800EECC8 = 0;
-            D_800EFD24_7->fBC = r->fC;
-            D_800EECDC = 0;
-            D_800EFD24_7->fB4 = r->f10;
+            sStreamChannels_7->cur = v;
+            r = &sStreamSampleTable_5[v];
+            sStreamChannels_7->fD4 = 0;
+            sStreamChannels_7->fD8 = 0;
+            sStreamChannels_7->fAC = 0;
+            sStreamChannels_7->fB8 = r->f8 + sStreamDataBase;
+            sSpeechPriority = 0;
+            sStreamChannels_7->fBC = r->fC;
+            sSpeechUseSfxVolume = 0;
+            sStreamChannels_7->fB4 = r->f10;
             f = 0;
         }
     }
     if (f == 0) {
-        p = D_800EFD24_7;
+        p = sStreamChannels_7;
         p->fD4 = 1;
-        e = D_800CA850;
-        c = --D_800CA858_2[0];
+        e = gSpeechVolume;
+        c = --sSpeechQueueCount_2[0];
         p->fE0 = e;
         if (c != 0) {
-            memcpy(D_800EFD00, D_800EFD00 + 1, c << 2);
+            memcpy(sSpeechQueue, sSpeechQueue + 1, c << 2);
         }
-        D_800EECB8 = D_800E76D0;
+        gLastSpeechTime = gRaceFrame;
     }
 }
 
 typedef struct { u32 pad[7]; u32 map[12]; u32 mode; } Ctl_9;
 
-extern Ctl_9 D_800EFD70_33;
+extern Ctl_9 gGame_33;
 
 static inline s32 check_2(u32 *p)
 {
-    if (D_800C8CD8 != 0 && *p == D_800E3700_2) return 1;
-    if (D_800EFD70_33.mode == 2) return 1;
+    if (gGhostRace != 0 && *p == gGhostSlot_2) return 1;
+    if (gGame_33.mode == 2) return 1;
     if (*p >= 6) return 1;
-    D_800EFD28[*p] = D_800E76D0;
-    *p = D_800EFD70_33.map[*p];
+    gAnnounceTimes[*p] = gRaceFrame;
+    *p = gGame_33.map[*p];
     if (*p >= 6) return 1;
-    return (D_800EFD70_33.mode == 9) * 2;
+    return (gGame_33.mode == 9) * 2;
 }
 
-void func_8004C854(u32 a, u32 b)
+void announce_lead_collision(u32 a, u32 b)
 {
-    if (D_800E76D0 - D_800EFCF0 < 600) return;
+    if (gRaceFrame - sLastLeadCollisionTime < 600) return;
     if (check_2(&a)) return;
     if (check_2(&b)) return;
-    D_800EFCF0 = D_800E76D0;
-    func_8000EFE8();
-    if (func_8000EFE8() & 1) {
-        if (D_800CA858 >= 5) return;
+    sLastLeadCollisionTime = gRaceFrame;
+    random_byte();
+    if (random_byte() & 1) {
+        if (sSpeechQueueCount >= 5) return;
         push_2(0x75);
-        push_2(D_800CA864[a + 12]);
+        push_2(sRiderNameClips[a + 12]);
         push_2(0xBA);
-        push_2(D_800CA864[b + 18]);
+        push_2(sRiderNameClips[b + 18]);
     } else {
-        if (D_800CA858 >= 5) return;
-        push_2(D_800CA864[a + 12]);
+        if (sSpeechQueueCount >= 5) return;
+        push_2(sRiderNameClips[a + 12]);
         push_2(0xBA);
-        push_2(D_800CA864[b + 18]);
-        if (func_8000EFE8() & 1) {
+        push_2(sRiderNameClips[b + 18]);
+        if (random_byte() & 1) {
             push_2(0x76);
         } else {
             push_2(0x74);
@@ -803,7 +803,7 @@ void func_8004C854(u32 a, u32 b)
     }
 }
 
-void func_8004CD78(s32 param_1)
+void announce_lap(s32 param_1)
 {
     if (param_1 == 0) {
         push_2(0x83);
@@ -814,76 +814,76 @@ void func_8004CD78(s32 param_1)
     }
 }
 
-void func_8004CE80(s32 param_1, s32 param_2)
+void announce_leader_lap(s32 param_1, s32 param_2)
 {
     s32 *t;
     s32 v;
 
-    if (D_800CA858 >= 6) {
+    if (sSpeechQueueCount >= 6) {
         return;
     }
     if (check((u32 *)&param_1)) {
         return;
     }
     if (param_2 == D_800F05C8 - 2) {
-        queue(D_800CA8D0[func_8000EFE8() & 1]);
+        queue(sFinalLapClips[random_byte() & 1]);
     } else if (param_2 == 0) {
-        queue(D_800CA8C4[func_8000EFE8() % 3]);
+        queue(sLeaderFirstLapClips[random_byte() % 3]);
     } else {
         if (param_2 != 1) {
             return;
         }
         queue(0x88);
     }
-    queue(D_800CA864[param_1 + 0x12]);
-    if (param_1 != D_800EECD8) {
-        queue(D_800CA8D8[func_8000EFE8() & 3]);
+    queue(sRiderNameClips[param_1 + 0x12]);
+    if (param_1 != sLastLeader) {
+        queue(sTakesLeadClips[random_byte() & 3]);
     } else {
-        queue(D_800CA8E8[func_8000EFE8() % 3]);
+        queue(sStillLeadsClips[random_byte() % 3]);
     }
-    D_800EECD8 = param_1;
+    sLastLeader = param_1;
 }
 
 typedef struct { u8 pad[0x668]; s16 f668; u8 pad2[0x7E0 - 0x66A]; } Plr_6;
 typedef struct { u32 pad[7]; u32 map[8]; u32 f3C; u32 f40; u32 f44; u32 f48; u32 mode; } Ctl_10;
 
-extern Plr_6 D_800E37C0_53[];
-extern Ctl_10 D_800EFD70_34;
+extern Plr_6 gRiders_53[];
+extern Ctl_10 gGame_34;
 
 static inline s32 check_3(u32 *p)
 {
-    if (D_800C8CD8 != 0 && *p == D_800E3700) return 1;
-    if (D_800EFD70_34.mode == 2) return 1;
+    if (gGhostRace != 0 && *p == gGhostSlot) return 1;
+    if (gGame_34.mode == 2) return 1;
     if (*p >= 6) return 1;
-    D_800EFD28[*p] = D_800E76D0;
-    *p = D_800EFD70_34.map[*p];
+    gAnnounceTimes[*p] = gRaceFrame;
+    *p = gGame_34.map[*p];
     if (*p >= 6) return 1;
-    return (D_800EFD70_34.mode == 9) * 2;
+    return (gGame_34.mode == 9) * 2;
 }
 
-void func_8004D1F4(u32 a, u32 b)
+void announce_place(u32 a, u32 b)
 {
-    if (D_800F05D4 < 0x168) return;
-    if (D_800CA858 >= 6) return;
-    if (D_800E37C0_53[a].f668 >= 0) return;
+    if (gEventTime < 0x168) return;
+    if (sSpeechQueueCount >= 6) return;
+    if (gRiders_53[a].f668 >= 0) return;
     if (check_3(&a)) return;
-    push_2(D_800CA864[a + 12]);
+    push_2(sRiderNameClips[a + 12]);
     if (b == 1) {
-        if (a != D_800EECD8_2) {
-            push_2(D_800CA8D8[func_8000EFE8() & 3]);
+        if (a != sLastLeader_2) {
+            push_2(sTakesLeadClips[random_byte() & 3]);
         } else {
             push_2(0x8A);
         }
-        D_800EECD8_2 = a;
-    } else if (b == D_800EFD70_34.f3C + D_800EFD70_34.f44) {
-        if (func_8000EFE8() & 1) {
+        sLastLeader_2 = a;
+    } else if (b == gGame_34.f3C + gGame_34.f44) {
+        if (random_byte() & 1) {
             push_2(0x7F);
         } else {
             push_2(0xBE);
             push_2(0x9F);
         }
     } else if (b == 2) {
-        if (func_8000EFE8() & 1) {
+        if (random_byte() & 1) {
             push_2(0x80);
         } else {
             push_2(0xBE);
@@ -901,120 +901,120 @@ void func_8004D1F4(u32 a, u32 b)
     }
 }
 
-void func_8004D7DC(u32 param_1)
+void announce_winner(u32 param_1)
 {
     s32 r;
 
-    r = (s32)func_8000EFE8() % 3;
+    r = (s32)random_byte() % 3;
     if (check(&param_1)) {
         return;
     }
     if (r == 0) {
-        if (D_800CA858 >= 6) {
+        if (sSpeechQueueCount >= 6) {
             return;
         }
-        if (func_8000EFE8() & 1) {
+        if (random_byte() & 1) {
             queue(0xB8);
         } else {
             queue(0xB9);
         }
-        queue(D_800CA864[param_1]);
+        queue(sRiderNameClips[param_1]);
         queue(0x78);
     } else if (r == 1) {
-        if (D_800CA858 >= 7) {
+        if (sSpeechQueueCount >= 7) {
             return;
         }
-        queue(D_800CA864[param_1]);
+        queue(sRiderNameClips[param_1]);
         queue(0x99);
     } else {
-        if (D_800CA858 >= 7) {
+        if (sSpeechQueueCount >= 7) {
             return;
         }
-        queue(D_800CA864[param_1]);
+        queue(sRiderNameClips[param_1]);
         queue(0x77);
     }
 }
 
 static __inline__ s32 chk_2(u32 *p)
 {
-    if (D_800C8CD8 != 0 && *p == D_800E3700_2) {
+    if (gGhostRace != 0 && *p == gGhostSlot_2) {
         return 1;
     }
-    if (D_800EFD70_7.mode == 2) {
+    if (gGame_7.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
-    D_800EFD28[*p] = D_800E76D0;
-    *p = D_800EFD70_7.tab[*p];
+    gAnnounceTimes[*p] = gRaceFrame;
+    *p = gGame_7.tab[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (D_800EFD70_7.mode == 9) << 1;
+    return (gGame_7.mode == 9) << 1;
 }
 
-void func_8004DBF8(u32 param_1)
+void announce_crash(u32 param_1)
 {
     u32 r;
 
-    if (D_800CA858 != 0) {
+    if (sSpeechQueueCount != 0) {
         return;
     }
     if (chk_2(&param_1) == 0) {
-        r = func_8000EFE8() % 3;
+        r = random_byte() % 3;
         if (r == 0) {
-            push_4(D_800CA864[param_1 + 0x12]);
+            push_4(sRiderNameClips[param_1 + 0x12]);
         } else {
-            push_4(D_800CA864[param_1 + 6]);
+            push_4(sRiderNameClips[param_1 + 6]);
         }
-        push_4(D_800CA8F4[r]);
+        push_4(sCrashClips[r]);
     }
 }
 
 static __inline__ s32 chk_3(u32 *p)
 {
-    if (D_800C8CD8 != 0 && *p == D_800E3700) {
+    if (gGhostRace != 0 && *p == gGhostSlot) {
         return 1;
     }
-    if (D_800EFD70_7.mode == 2) {
+    if (gGame_7.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
-    D_800EFD28[*p] = D_800E76D0;
-    *p = D_800EFD70_7.tab[*p];
+    gAnnounceTimes[*p] = gRaceFrame;
+    *p = gGame_7.tab[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (D_800EFD70_7.mode == 9) << 1;
+    return (gGame_7.mode == 9) << 1;
 }
 
-void func_8004DDD4(u32 param_1)
+void announce_crash_landing(u32 param_1)
 {
-    if (*(s32 *)(D_800EFD64 + 0x2c) != 0) {
-        func_8004DBF8_2(param_1);
+    if (*(s32 *)(gCurTrack + 0x2c) != 0) {
+        announce_crash_2(param_1);
         return;
     }
-    if (D_800CA858 != 0) {
+    if (sSpeechQueueCount != 0) {
         return;
     }
     if (chk_3(&param_1) == 0) {
-        push_4(D_800CA864[param_1 + 6]);
-        push_4(D_800CA900[func_8000EFE8() % 3]);
+        push_4(sRiderNameClips[param_1 + 6]);
+        push_4(sCrashLandingClips[random_byte() % 3]);
     }
 }
 
-void func_8004DFB4(u32 a, u32 b)
+void announce_takeout(u32 a, u32 b)
 {
     u32 r;
 
-    if (D_800CA858 != 0) {
+    if (sSpeechQueueCount != 0) {
         return;
     }
-    if ((s32)(D_800E76D0 - D_800EFD28[a]) < 0x1E0) {
-        func_8004DBF8(b);
+    if ((s32)(gRaceFrame - gAnnounceTimes[a]) < 0x1E0) {
+        announce_crash(b);
         return;
     }
     if (chk(&a) != 0) {
@@ -1023,14 +1023,14 @@ void func_8004DFB4(u32 a, u32 b)
     if (chk(&b) != 0) {
         return;
     }
-    r = func_8000EFE8() % 3;
+    r = random_byte() % 3;
     if (r == 0) {
-        push(D_800CA864[a + 12]);
+        push(sRiderNameClips[a + 12]);
     } else {
-        push(D_800CA864[a + 6]);
+        push(sRiderNameClips[a + 6]);
     }
-    push(D_800CA90C[r]);
-    push(D_800CA864[b + 18]);
+    push(sTakeoutClips[r]);
+    push(sRiderNameClips[b + 18]);
 }
 
 typedef struct {
@@ -1039,48 +1039,48 @@ typedef struct {
     s32 mode;
 } Cfg_7;
 
-extern Cfg_7 D_800EFD70_35;
+extern Cfg_7 gGame_35;
 
 static inline s32 check_4(u32 *p)
 {
-    if (D_800EFD70_35.mode == 2) {
+    if (gGame_35.mode == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
-    D_800EFD28[*p] = D_800E76D0;
-    *p = D_800EFD70_35.map[*p];
+    gAnnounceTimes[*p] = gRaceFrame;
+    *p = gGame_35.map[*p];
     if (*p >= 6) {
         return 1;
     }
-    return (D_800EFD70_35.mode == 9) * 2;
+    return (gGame_35.mode == 9) * 2;
 }
 
-void func_8004E2E0(u32 a, s32 b)
+void announce_trick(u32 a, s32 b)
 {
     s32 r;
     u32 *pa;
 
-    if (D_800CA858 < 7) {
+    if (sSpeechQueueCount < 7) {
         pa = &a;
-        if (D_800C8CD8 != 0 && a == D_800E3700) {
+        if (gGhostRace != 0 && a == gGhostSlot) {
             r = 1;
         } else {
             r = check_4(pa);
         }
-        if (r != 1 && D_800C8CE8 == 0 && D_800CCD64 == 0 && D_800C2358 == 0 && D_800CA858 < 8) {
-            D_800EFD00[D_800CA858++] = b;
+        if (r != 1 && gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < 8) {
+            sSpeechQueue[sSpeechQueueCount++] = b;
         }
     }
 }
 
 void func_8004E3EC(u32 a, u32 b, s32 c)
 {
-    if (D_800F05D4 < 0x168) {
+    if (gEventTime < 0x168) {
         return;
     }
-    if (D_800CA858 >= 6) {
+    if (sSpeechQueueCount >= 6) {
         return;
     }
     if (chk(&a) != 0) {
@@ -1089,35 +1089,35 @@ void func_8004E3EC(u32 a, u32 b, s32 c)
     if (chk(&b) != 0) {
         return;
     }
-    push(D_800CA864[a + 12]);
+    push(sRiderNameClips[a + 12]);
     if (c != 0) {
         push(0x95);
     } else {
         push(0x96);
     }
-    push(D_800CA864[b + 18]);
+    push(sRiderNameClips[b + 18]);
 }
 
 static inline s32 chk_4(u32 p, u32 *q)
 {
-    if (D_800C8CD8 != 0 && p == D_800E3700) {
+    if (gGhostRace != 0 && p == gGhostSlot) {
         return 1;
     }
-    if (D_800EFD70_3.mode == 2) {
+    if (gGame_3.mode == 2) {
         return 1;
     }
     if (*q >= 6) {
         return 1;
     }
-    D_800EFD28_2[*q] = D_800E76D0;
-    *q = D_800EFD70_3.tab[*q];
+    gAnnounceTimes_2[*q] = gRaceFrame;
+    *q = gGame_3.tab[*q];
     if (*q >= 6) {
         return 1;
     }
-    return (D_800EFD70_3.mode == 9) * 2;
+    return (gGame_3.mode == 9) * 2;
 }
 
-void func_8004E6D8(u32 param_1, s32 param_2, u32 param_3)
+void announce_place_change(u32 param_1, s32 param_2, u32 param_3)
 {
     u32 t1 = param_1;
     u32 uVar2;
@@ -1125,17 +1125,17 @@ void func_8004E6D8(u32 param_1, s32 param_2, u32 param_3)
     if (chk_4(t1, &param_1) != 0) {
         return;
     }
-    if (D_800C8CD8 != 0) {
+    if (gGhostRace != 0) {
         return;
     }
-    if ((s32)(D_800E76D0 - D_800EE4B0) < 900) {
+    if ((s32)(gRaceFrame - sLastPlaceChangeTime) < 900) {
         return;
     }
-    D_800EE4B0 = D_800E76D0;
-    if (D_800CA858 >= 6) {
+    sLastPlaceChangeTime = gRaceFrame;
+    if (sSpeechQueueCount >= 6) {
         return;
     }
-    push_3(D_800CA864[param_1 + 0xc]);
+    push_3(sRiderNameClips[param_1 + 0xc]);
     if (param_2 < (s32)param_3) {
         push_3(0x97);
         sh = t1 << 8;
@@ -1148,65 +1148,65 @@ void func_8004E6D8(u32 param_1, s32 param_2, u32 param_3)
     push_3(sh | (param_3 | uVar2));
 }
 
-void func_8004E960(u32 p)
+void announce_finish(u32 p)
 {
     if (chk(&p) != 0) {
         return;
     }
-    if (D_800CA858 >= 7) {
+    if (sSpeechQueueCount >= 7) {
         return;
     }
-    push(D_800CA864[p + 12]);
+    push(sRiderNameClips[p + 12]);
     push(0x79);
 }
 
-void func_8004EADC(u32 param_1)
+void announce_early_leader(u32 param_1)
 {
     if (chk(&param_1) != 0) {
         return;
     }
-    if (D_800CA858 >= 6) {
+    if (sSpeechQueueCount >= 6) {
         return;
     }
     push(0xB8);
-    push(D_800CA864[param_1]);
+    push(sRiderNameClips[param_1]);
     push(0x91);
 }
 
-void func_8004ECB4(u32 param_1)
+void announce_best_lap(u32 param_1)
 {
     if (chk(&param_1) != 0) {
         return;
     }
-    if (D_800CA858 >= 7) {
+    if (sSpeechQueueCount >= 7) {
         return;
     }
-    push(D_800CA864[param_1]);
+    push(sRiderNameClips[param_1]);
     push(0x7A);
 }
 
-void func_8004EE2C(u32 param_1)
+void announce_record(u32 param_1)
 {
     if (chk(&param_1) != 0) {
         return;
     }
-    if (D_800CA858 >= 7) {
+    if (sSpeechQueueCount >= 7) {
         return;
     }
-    push(D_800CA864[param_1]);
+    push(sRiderNameClips[param_1]);
     push(0x7B);
 }
 
-void func_8004EFA4(void)
+void announce_goal(void)
 {
     push_3(0x94);
-    if (D_800EFD64_4->f2C == 0) {
-        s32 k = D_800EFCF8;
-        s32 v = D_800CA840;
+    if (gCurTrack_4->f2C == 0) {
+        s32 k = sCrowdQueueCount;
+        s32 v = sCrowdCheerClip;
         if (k < 2) {
-            D_800EFCE0[k * 2] = v;
-            D_800EFCE0[k * 2 + 1] = 0x1E;
-            D_800EFCF8 = k + 1;
+            sCrowdQueue[k * 2] = v;
+            sCrowdQueue[k * 2 + 1] = 0x1E;
+            sCrowdQueueCount = k + 1;
         }
     }
 }
@@ -1222,20 +1222,20 @@ void func_8004F064(u32 param_1)
     if (param_1 == 0 || param_1 == 3) {
         return;
     }
-    b = D_800EFD24_8;
+    b = sStreamChannels_8;
     b[61] = 0x73;
     b[62] = 0;
-    s = D_800EFD4C;
-    b[65] = s[577] + D_800EECD4;
+    s = sStreamSampleTable;
+    b[65] = s[577] + sStreamDataBase;
     b[66] = s[578];
-    D_800EECC0 = 1;
+    sAmbientLocked = 1;
     b[64] = s[579];
     b[73] = 0;
-    D_800CA854_2[0] = D_800C2B58;
+    gAmbientVolume_2[0] = gSfxVolume;
 }
 
-s32 func_8004F180(void) {
-    return D_800CA860 != 0;
+s32 tunes_is_song_playing(void) {
+    return sCurrentSong != 0;
 }
 
 typedef struct {
@@ -1246,26 +1246,26 @@ typedef struct {
     s32 rest[15];
 } Ent4C;
 
-extern Ent4C *D_800EFD24_9;
+extern Ent4C *sStreamChannels_9;
 
-void func_8004F190(void)
+void tunes_shutdown(void)
 {
     s32 i;
-    if (D_800CA860 != 0) {
-        func_8004C3C4();
+    if (sCurrentSong != 0) {
+        tunes_stop_song();
     }
-    func_800BFEA4((u32 *)((u8 *)D_800D5604_2[1] + D_800D1244 * 4));
+    res_unload((u32 *)((u8 *)gSfxResSet_2[1] + D_800D1244 * 4));
     i = 0;
-    func_800BCB04(D_800EECC4);
-    if (0 < D_800EECCC) {
+    mem_free(sStreamMixBuf);
+    if (0 < sStreamChannelCount) {
         do {
-            func_800BCB04(D_800EFD24_9[i].w8);
-            func_800BCB04(D_800EFD24_9[i].wC);
+            mem_free(sStreamChannels_9[i].w8);
+            mem_free(sStreamChannels_9[i].wC);
             i++;
-        } while (i < D_800EECCC);
+        } while (i < sStreamChannelCount);
     }
-    func_800BCB04(D_800EFD24_9);
-    D_800CA844 = 0;
+    mem_free(sStreamChannels_9);
+    sTunesActive = 0;
 }
 
 typedef struct {
@@ -1288,41 +1288,41 @@ typedef struct {
     s32 e10;
 } Ent_52;
 
-extern Obj_38 *D_800EFD24_10;
-extern Ent_52 *D_800EFD4C_6;
+extern Obj_38 *sStreamChannels_10;
+extern Ent_52 *sStreamSampleTable_6;
 
-int func_8004F270(s32 param_1, s32 param_2, s32 param_3)
+int tunes_play_speech(s32 param_1, s32 param_2, s32 param_3)
 {
     Ent_52 *iVar3;
 
-    if (D_800C2358 != 0) {
-        return D_800C2358;
+    if (gPodiumMode != 0) {
+        return gPodiumMode;
     }
-    if (D_800EFD24_10->a8 != -1 && param_2 <= D_800EECC8) {
+    if (sStreamChannels_10->a8 != -1 && param_2 <= sSpeechPriority) {
         return 1;
     }
-    iVar3 = D_800EFD4C_6 + param_1;
-    D_800EFD24_10->d4 = 0;
-    D_800EFD24_10->d8 = 0;
-    D_800EFD24_10->a8 = param_1;
-    D_800EFD24_10->ac = 0;
-    D_800EFD24_10->b8 = iVar3->e8 + D_800EECD4;
-    D_800EECC8 = param_2;
-    D_800EFD24_10->bc = iVar3->ec;
-    D_800EECDC = param_3;
-    D_800EFD24_10->b4 = iVar3->e10;
+    iVar3 = sStreamSampleTable_6 + param_1;
+    sStreamChannels_10->d4 = 0;
+    sStreamChannels_10->d8 = 0;
+    sStreamChannels_10->a8 = param_1;
+    sStreamChannels_10->ac = 0;
+    sStreamChannels_10->b8 = iVar3->e8 + sStreamDataBase;
+    sSpeechPriority = param_2;
+    sStreamChannels_10->bc = iVar3->ec;
+    sSpeechUseSfxVolume = param_3;
+    sStreamChannels_10->b4 = iVar3->e10;
     return 0;
 }
 
-s32 func_8004F328(void)
+s32 tunes_get_speech_queue_time(void)
 {
     s32 i, sum, w, f;
 
     sum = 0;
-    for (i = 0; i < D_800CA858; i++) {
-        w = *(s32 *)(D_800EFD4C + ((D_800EFD00[i] * 5) << 2) + 0xc);
+    for (i = 0; i < sSpeechQueueCount; i++) {
+        w = *(s32 *)(sStreamSampleTable + ((sSpeechQueue[i] * 5) << 2) + 0xc);
         f = w * 2;
-        if (*(s32 *)(D_800EFD4C + ((f * 5) << 2) + 0x10) & 1) {
+        if (*(s32 *)(sStreamSampleTable + ((f * 5) << 2) + 0x10) & 1) {
             f = w << 2;
         }
         sum += (f * 0x3c) / 0x5622;
@@ -1330,13 +1330,13 @@ s32 func_8004F328(void)
     return sum;
 }
 
-u32 func_8004F3D0(u32 key)
+u32 tunes_find_sample(u32 key)
 {
     u32 *p;
     u32 i = 0;
     u32 n;
 
-    p = D_800EFD4C;
+    p = sStreamSampleTable;
     if (p[0] != 0) {
         n = p[0];
         do {
@@ -1351,48 +1351,48 @@ u32 func_8004F3D0(u32 key)
 }
 
 static inline void push_5(s32 v, s32 w) {
-    s32 n = D_800EFCF8;
+    s32 n = sCrowdQueueCount;
     if (n < 2) {
         do {
             do {
-                D_800EFCE0[n * 2] = v;
+                sCrowdQueue[n * 2] = v;
             } while (0);
         } while (0);
-        D_800EFCE0[n * 2 + 1] = w;
-        D_800EFCF8 = n + 1;
+        sCrowdQueue[n * 2 + 1] = w;
+        sCrowdQueueCount = n + 1;
     }
 }
 
-void func_8004F410(s32 p) {
-    if (D_800EFD64_3[11] == 0) {
-        push_5(D_800CA838[p], 0x1E);
+void tunes_queue_crowd(s32 p) {
+    if (gCurTrack_3[11] == 0) {
+        push_5(sCrowdClips[p], 0x1E);
     }
 }
 
-void func_8004F47C(void)
+void announce_reset(void)
 {
     s32 val = -0x708;
     s32 i = 7;
 
     do {
-        D_800EFD28[i] = val;
+        gAnnounceTimes[i] = val;
         i--;
     } while (i >= 0);
-    D_800EECD8 = -1;
-    D_800EECB8 = -1;
-    D_800EE4B0 = -0x708;
-    D_800EFCF0 = -0x708;
-    D_800EFCF8 = 0;
-    D_800EECC0 = 0;
+    sLastLeader = -1;
+    gLastSpeechTime = -1;
+    sLastPlaceChangeTime = -0x708;
+    sLastLeadCollisionTime = -0x708;
+    sCrowdQueueCount = 0;
+    sAmbientLocked = 0;
 }
 
-void func_8004F4DC(s32 a0)
+void tunes_queue_speech(s32 a0)
 {
-    if (D_800C8CE8 == 0 && D_800CCD64 == 0 && D_800C2358 == 0) {
-        s32 n = D_800CA858;
+    if (gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0) {
+        s32 n = sSpeechQueueCount;
         if (n < 8) {
-            D_800EFD00[n] = a0;
-            D_800CA858 = n + 1;
+            sSpeechQueue[n] = a0;
+            sSpeechQueueCount = n + 1;
         }
     }
 }
@@ -1410,14 +1410,14 @@ typedef struct {
     s32 fD0;
 } Obj_39;
 
-extern Obj_39 *D_800EFD24_11;
+extern Obj_39 *sStreamChannels_11;
 
-void func_8004F534(void)
+void tunes_stop_speech(void)
 {
     Obj_39 *o;
     u8 *p;
 
-    o = D_800EFD24_11;
+    o = sStreamChannels_11;
     p = o->p0;
     o->fA8 = -1;
     o->fAC = -1;
@@ -1425,11 +1425,11 @@ void func_8004F534(void)
     o->fC4 = -1;
     o->fD0 = -1;
     o->fCC = -1;
-    func_8000ED10(p, 0, 0x220);
-    func_8000ED10(D_800EFD24_11->p1, 0, 0x800);
-    D_800CA858 = 0;
-    func_8000ED10(D_800EECE0, 0, 0x1000);
-    func_8000ED10(D_800EECC4, 0, 0x2000);
+    mem_fill(p, 0, 0x220);
+    mem_fill(sStreamChannels_11->p1, 0, 0x800);
+    sSpeechQueueCount = 0;
+    mem_fill(sStreamEchoBuf, 0, 0x1000);
+    mem_fill(sStreamMixBuf, 0, 0x2000);
 }
 
 void func_8004F5C8(s32 on)
@@ -1441,28 +1441,28 @@ void func_8004F5C8(s32 on)
     }
 }
 
-void func_8004F670(s32 *p, s32 n)
+void tunes_mix_callback(s32 *p, s32 n)
 {
-    if (D_800EFD20 < n) {
-        n = D_800EFD20;
+    if (sStreamMixFill < n) {
+        n = sStreamMixFill;
     }
-    if (D_800CA85C == 0) {
-        D_800EFD20 = D_800EFD20 - n;
+    if (sStreamLock == 0) {
+        sStreamMixFill = sStreamMixFill - n;
         while (n != 0) {
-            *p = *p + D_800EECC4_2[D_800EFD50];
+            *p = *p + sStreamMixBuf_2[sStreamMixReadPos];
             p++;
-            *p = *p + D_800EECC4_2[D_800EFD50];
+            *p = *p + sStreamMixBuf_2[sStreamMixReadPos];
             p++;
-            D_800EFD50 = (D_800EFD50 + 1) & 0x7FF;
+            sStreamMixReadPos = (sStreamMixReadPos + 1) & 0x7FF;
             n--;
         }
     }
 }
 
-void func_8004F70C(s32 *p) {
+void tunes_init_channel(s32 *p) {
     if (p[2] == 0) {
-        p[2] = func_800BC908(0x220, 0, (s32)&D_800D7338, 0x128);
-        p[3] = func_800BC908(0x800, 0, (s32)&D_800D7338, 0x129);
+        p[2] = mem_alloc_dbg(0x220, 0, (s32)&D_800D7338, 0x128);
+        p[3] = mem_alloc_dbg(0x800, 0, (s32)&D_800D7338, 0x129);
         p[0] = 0;
         p[1] = -1;
         p[4] = -1;
@@ -1470,46 +1470,46 @@ void func_8004F70C(s32 *p) {
     }
 }
 
-void func_8004F788(u8 *param_1)
+void tunes_free_channel(u8 *param_1)
 {
     if (*(s32 *)(param_1 + 8) != 0) {
-        func_800BCB04(*(s32 *)(param_1 + 8));
-        func_800BCB04(*(s32 *)(param_1 + 0xC));
-        func_8000ED10(param_1, 0, 0x4C);
+        mem_free(*(s32 *)(param_1 + 8));
+        mem_free(*(s32 *)(param_1 + 0xC));
+        mem_fill(param_1, 0, 0x4C);
         *(s32 *)(param_1 + 4) = -1;
         *(s32 *)(param_1 + 0x10) = -1;
         *(s32 *)(param_1 + 0x30) = -1;
     }
 }
 
-void func_8004F7E8(void) {
-    if (D_800CA844 != 0) {
-        while (func_8004B890() != 0) {
+void tunes_update(void) {
+    if (sTunesActive != 0) {
+        while (tunes_mix_streams() != 0) {
         }
     }
 }
 
-void func_8004F818(s16 *p, s32 n) {
+void tunes_apply_echo(s16 *p, s32 n) {
     s32 v;
     s32 i2;
     s32 t;
     for (; n != 0; n--) {
-        v = *p + ((s16)D_800EECE0_2[D_800EFD54] >> 1);
+        v = *p + ((s16)sStreamEchoBuf_2[sStreamEchoPos] >> 1);
         if (v > 0x7FFF) {
             v = 0x7FFF;
         }
         if (v < -0x7FFF) {
             v = -0x7FFF;
         }
-        D_800EECE0_2[D_800EFD54] = v;
+        sStreamEchoBuf_2[sStreamEchoPos] = v;
         *p = v;
         p++;
-        i2 = D_800EFD54 + 1;
+        i2 = sStreamEchoPos + 1;
         t = i2;
         if (i2 < 0) {
-            t = D_800EFD54 + 0x800;
+            t = sStreamEchoPos + 0x800;
         }
-        D_800EFD54 = i2 - (t >> 11) * 0x800;
+        sStreamEchoPos = i2 - (t >> 11) * 0x800;
     }
 }
 
@@ -1518,14 +1518,14 @@ typedef struct {
     s32 f48;
 } Ent_53;
 
-void func_8004F8A4(void)
+void tunes_update_volumes(void)
 {
     s32 k = 0;
 
-    if (D_800CA844 != 0) {
-        s32 *p = D_800CA848_2;
-        s32 a2 = D_800E32A0;
-        Ent_53 *e = D_800EFD24;
+    if (sTunesActive != 0) {
+        s32 *p = gStreamVolumes_2;
+        s32 a2 = gSndMasterVolume;
+        Ent_53 *e = sStreamChannels;
         do {
             s32 v = *p;
             p++;
@@ -1536,23 +1536,23 @@ void func_8004F8A4(void)
     }
 }
 
-s32 func_8004F8FC(u32 *p)
+s32 announce_check_rider(u32 *p)
 {
     u32 *base;
     u32 u;
-    if (D_800C8CD8 != 0) {
-        if (*p == D_800E3700) {
+    if (gGhostRace != 0) {
+        if (*p == gGhostSlot) {
             return 1;
         }
     }
-    base = D_800EFD70_5;
+    base = gGame_5;
     if (base[19] == 2) {
         return 1;
     }
     if (*p >= 6) {
         return 1;
     }
-    D_800EFD28[*p] = D_800E76D0;
+    gAnnounceTimes[*p] = gRaceFrame;
     u = base[*p + 7];
     *p = u;
     if (u < 6) {

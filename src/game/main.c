@@ -52,17 +52,17 @@ typedef struct {
     s32 f790[6];                /* 0x790 */
 } Game_8;
 
-extern St D_800C295C[];
-extern St *D_800C29CC_2;
-extern Race *D_800CA930_6;
-extern Pad D_800E1E40_2[4];
-extern Pad D_800E25B0_4[4];
-extern Ctx D_800E25C0[2];
-extern Ctx *D_800E3080;
-extern Pad D_800E30B0_4[4];
-extern Game_8 D_800EFD70_18;
+extern St gGameStates[];
+extern St *gCurGameState_2;
+extern Race *gSeason_6;
+extern Pad gContPads_2[4];
+extern Pad gPadInputPrev_4[4];
+extern Ctx gGfxContexts[2];
+extern Ctx *gCurGfxContext;
+extern Pad gPadInput_4[4];
+extern Game_8 gGame_18;
 
-void func_8000D2E0(void)
+void game_main(void)
 {
     char buf[0x780];
     OSMesg msg;
@@ -79,101 +79,101 @@ void func_8000D2E0(void)
     msg = NULL;
     cfg = *(u16 *)0x80000402;
     if (cfg == 0xDEAD) {
-        D_800C2950 = 0;
+        gLoadedByBootLoader = 0;
     } else if (cfg == 0xBEEF) {
-        D_800C2950 = 1;
+        gLoadedByBootLoader = 1;
     } else {
         for (;;) {
         }
     }
-    if (D_800C2950 != 0) {
-        __builtin_memcpy(D_800E20A8, (void *)0x803FFFC0, 0x30);
-        D_800C294C = D_800E20D4;
+    if (gLoadedByBootLoader != 0) {
+        __builtin_memcpy(gBootHeader, (void *)0x803FFFC0, 0x30);
+        gResourceRomAddr = D_800E20D4;
         cfg = *(u16 *)0x80000406;
         if (cfg == 0xDEAF) {
             D_800C2954 = 1;
         }
     }
-    func_8000ED10((u8 *)D_800E25C0, 0, sizeof(D_800E25C0));
+    mem_fill((u8 *)gGfxContexts, 0, sizeof(gGfxContexts));
     if (osMemSize == 0x800000) {
-        D_800C2940 = 1;
+        gHasExpansionPak = 1;
     } else {
-        D_800C2940 = 0;
+        gHasExpansionPak = 0;
     }
     D_800E2034 = 0;
-    D_800E2038 = 0;
-    D_800E2030 = -1;
-    D_800E2064 = -1;
-    func_8000E5C0();
-    if (D_800C2940 != 0) {
+    gFrameCounter = 0;
+    sLastDrawFrame = -1;
+    sLastUpdateFrame = -1;
+    main_init_memory();
+    if (gHasExpansionPak != 0) {
         base = 0x80600000;
-        D_800E20E8 = 640;
-        D_800E20EC = 480;
+        gFbAllocWidth = 640;
+        gFbAllocHeight = 480;
     } else {
         base = 0x80300000;
-        D_800E20E8 = 512;
-        D_800E20EC = 240;
+        gFbAllocWidth = 512;
+        gFbAllocHeight = 240;
     }
-    sz = D_800E20E8 * D_800E20EC * 4 + 0x40;
-    D_800C29D8_2[0] = func_800BCCF0(base - sz, sz - 0x10, D_800D6014, 361);
-    D_800C29D8_2[1] = (u16 *)((u8 *)D_800C29D8_2[0] + D_800E20E8 * D_800E20EC * 2);
+    sz = gFbAllocWidth * gFbAllocHeight * 4 + 0x40;
+    gFramebuffers_2[0] = mem_alloc_at_dbg(base - sz, sz - 0x10, D_800D6014, 361);
+    gFramebuffers_2[1] = (u16 *)((u8 *)gFramebuffers_2[0] + gFbAllocWidth * gFbAllocHeight * 2);
     {
     void *z;
-    D_800C29E0 = z = func_800BCCF0(base, D_800E20E8 * D_800E20EC * 2, D_800D6014, 363);
-    if (D_800C29D8_2[0] == NULL || z == NULL) {
-        func_8000ECB8(1);
+    gZBuffer = z = mem_alloc_at_dbg(base, gFbAllocWidth * gFbAllocHeight * 2, D_800D6014, 363);
+    if (gFramebuffers_2[0] == NULL || z == NULL) {
+        fatal_halt(1);
     }
     }
-    func_8000ED10((u8 *)D_800C29D8_2[0], 0, D_800E20E8 * D_800E20EC * 4);
-    func_800BEE78();
-    func_8000E980();
-    func_8000ED10((u8 *)D_800E30B0_4, 0, sizeof(D_800E30B0_4));
-    func_8000CFE8();
+    mem_fill((u8 *)gFramebuffers_2[0], 0, gFbAllocWidth * gFbAllocHeight * 4);
+    dma_init();
+    main_init_sched();
+    mem_fill((u8 *)gPadInput_4, 0, sizeof(gPadInput_4));
+    cont_init();
     start_controller_read();
-    func_8000CD00();
-    func_8000CEAC();
+    cont_finish_read();
+    cont_read_pads();
     for (i = 0; i < 4; i++) {
-        func_8000E31C(&D_800E1E40_2[i], &D_800E30B0_4[i]);
+        main_convert_pad_input(&gContPads_2[i], &gPadInput_4[i]);
     }
-    D_800E203C = func_800BC908(0xC800, 0, D_800D6014, 405);
-    D_800E30C4 = func_800BC908(0x401, 0, D_800D6014, 412);
-    D_800E3084 = func_800BC908(0xC00, 0, D_800D6014, 413);
-    func_800BDF80(D_800C294C);
-    func_800C0258(0);
-    D_800C29CC_2 = &D_800C295C[0];
-    D_800E25C0[0].dl = NULL;
-    D_800E25C0[1].dl = NULL;
+    gReplayBuffer = mem_alloc_dbg(0xC800, 0, D_800D6014, 405);
+    sGfxDramStack = mem_alloc_dbg(0x401, 0, D_800D6014, 412);
+    sGfxYieldBuffer = mem_alloc_dbg(0xC00, 0, D_800D6014, 413);
+    file_init(gResourceRomAddr);
+    res_set_load_buffer(0);
+    gCurGameState_2 = &gGameStates[0];
+    gGfxContexts[0].dl = NULL;
+    gGfxContexts[1].dl = NULL;
     func_8005B5E0();
-    osCreateMesgQueue(&D_800E2048, D_800E20F0, 16);
-    osCreateThread(&D_800E30C8, 5, func_8000E6E8, NULL, D_800E25B0_4, 12);
-    osStartThread(&D_800E30C8);
-    func_800657FC((s32)D_800E2040, (s32)&D_800E2048);
-    func_8000F060();
-    D_800CB120 = 0;
-    func_8000E8F4();
+    osCreateMesgQueue(&sSchedEventQueue, sSchedEventMsgs, 16);
+    osCreateThread(&sSchedEventThread, 5, main_sched_event_thread, NULL, gPadInputPrev_4, 12);
+    osStartThread(&sSchedEventThread);
+    sched_add_client((s32)D_800E2040, (s32)&sSchedEventQueue);
+    snd_init();
+    gIsDrawing = 0;
+    main_init_dev_pi_handle();
     func_8000E8B0(0);
 
     for (;;) {
-        if (D_800C2934 != 0) {
-            for (i = 0; i < D_800C2938; i++) {
+        if (sDebugLagEnable != 0) {
+            for (i = 0; i < sDebugLagLoops; i++) {
             }
-            D_800C2938 += 100;
+            sDebugLagLoops += 100;
         }
-        D_800E3278 = __osSpGetStatus();
+        sSpStatus = __osSpGetStatus();
         {
         s32 n;
-        D_800E2060 = osMemSize - (n = D_80100634 * 16 + 0x400000);
+        gDebugFreeMem = osMemSize - (n = gMemFreeUnits * 16 + 0x400000);
         }
-        D_800E2060 = D_800E2060 - D_800E20E8 * D_800E20EC * 6 + 0xB4000;
-        osRecvMesg(&D_800E3090, &msg, 1);
+        gDebugFreeMem = gDebugFreeMem - gFbAllocWidth * gFbAllocHeight * 6 + 0xB4000;
+        osRecvMesg(&sMainQueue, &msg, 1);
         switch (*(s16 *)msg) {
         case 1:
-            if (D_800C29CC_2->mode == 0) {
-                if (D_800E25C0[0].dl == NULL) {
-                    D_800E25C0[0].dl = func_800BC908(D_800C29CC_2->dlsize * 8, 0, D_800D6014, 523);
-                    D_800E25C0[1].dl = func_800BC908(D_800C29CC_2->dlsize * 8, 0, D_800D6014, 524);
+            if (gCurGameState_2->mode == 0) {
+                if (gGfxContexts[0].dl == NULL) {
+                    gGfxContexts[0].dl = mem_alloc_dbg(gCurGameState_2->dlsize * 8, 0, D_800D6014, 523);
+                    gGfxContexts[1].dl = mem_alloc_dbg(gCurGameState_2->dlsize * 8, 0, D_800D6014, 524);
                 }
-                i = D_800C29CC_2 - D_800C295C;
+                i = gCurGameState_2 - gGameStates;
                 if (i == 0 || i == 2) {
                     st = 1;
                 } else if (i == 3) {
@@ -181,159 +181,159 @@ void func_8000D2E0(void)
                 } else if (i == 1) {
                     st = 1;
                 }
-                D_800CCCA4 = st;
-                while (D_800CCCA4 != D_800CCCA8) {
+                gViModeRequest = st;
+                while (gViModeRequest != gViMode) {
                 }
-                func_8000ED10((u8 *)D_800C29D8_2[0], 0, D_800E20E8 * D_800E20EC * 2);
-                func_8000ED10((u8 *)D_800C29D8_2[1], 0, D_800E20E8 * D_800E20EC * 2);
-                D_800C29CC_2->mode = 2;
+                mem_fill((u8 *)gFramebuffers_2[0], 0, gFbAllocWidth * gFbAllocHeight * 2);
+                mem_fill((u8 *)gFramebuffers_2[1], 0, gFbAllocWidth * gFbAllocHeight * 2);
+                gCurGameState_2->mode = 2;
                 D_800C29E4 = 4;
-                if (D_800EFD70_18.flags & 0x8000) {
-                    D_800C8CE8 = 1;
+                if (gGame_18.flags & 0x8000) {
+                    gReplayPlayback = 1;
                 } else {
-                    D_800C8CE8 = 0;
+                    gReplayPlayback = 0;
                 }
-                D_800C29CC_2->fn0(0);
+                gCurGameState_2->fn0(0);
                 break;
             }
-            D_800E2038++;
-            if (D_800E1E18 != 0) {
-                func_8000CD00();
-                func_8000CEAC();
+            gFrameCounter++;
+            if (gContReadPending != 0) {
+                cont_finish_read();
+                cont_read_pads();
             }
-            if ((D_800E1E40_2[0].button & 0xC00) == 0xC00) {
+            if ((gContPads_2[0].button & 0xC00) == 0xC00) {
                 func_8000E8B0(1);
                 do {
                     start_controller_read();
-                    func_8000CD00();
-                    func_8000CEAC();
-                } while ((D_800E1E40_2[0].button & 0x300) != 0x300);
+                    cont_finish_read();
+                    cont_read_pads();
+                } while ((gContPads_2[0].button & 0x300) != 0x300);
                 func_8000E8B0(0);
                 do {
                     start_controller_read();
-                    func_8000CD00();
-                    func_8000CEAC();
-                } while ((D_800E1E40_2[0].button & 0x300) == 0x300);
+                    cont_finish_read();
+                    cont_read_pads();
+                } while ((gContPads_2[0].button & 0x300) == 0x300);
             }
             start_controller_read();
-            *(Blk *)D_800E25B0_4 = *(Blk *)D_800E30B0_4;
+            *(Blk *)gPadInputPrev_4 = *(Blk *)gPadInput_4;
             for (i = 0; i < 4; i++) {
-                func_8000E31C(&D_800E1E40_2[i], &D_800E30B0_4[i]);
+                main_convert_pad_input(&gContPads_2[i], &gPadInput_4[i]);
             }
-            pads = D_800E30B0_4;
-            D_800E30C0 = osGetCount();
-            func_80010D44();
-            D_800E20E4 = osGetCount();
-            D_800E2134 = D_800E20E4 - D_800E30C0;
-            if (D_800E2038 - D_800E2064 > 0 || D_800C29CC_2->mode == 5) {
-                if (D_800C29CC_2->mode == 2) {
-                    if (D_800C29CC_2->fn4 != NULL) {
-                        D_800C29CC_2->fn4(pads);
+            pads = gPadInput_4;
+            sAudioTickStart = osGetCount();
+            snd_update();
+            sAudioTickEnd = osGetCount();
+            sAudioTickTime = sAudioTickEnd - sAudioTickStart;
+            if (gFrameCounter - sLastUpdateFrame > 0 || gCurGameState_2->mode == 5) {
+                if (gCurGameState_2->mode == 2) {
+                    if (gCurGameState_2->fn4 != NULL) {
+                        gCurGameState_2->fn4(pads);
                     }
                 }
-                if (D_800C29CC_2->mode == 3) {
-                    D_800C29CC_2->mode = 5;
-                    D_800C29CC_2->cnt = 10;
+                if (gCurGameState_2->mode == 3) {
+                    gCurGameState_2->mode = 5;
+                    gCurGameState_2->cnt = 10;
                 }
-                if (D_800C29CC_2->mode == 5 && D_800C29CC_2->cnt == 0) {
-                    D_800C29CC_2->mode = 3;
+                if (gCurGameState_2->mode == 5 && gCurGameState_2->cnt == 0) {
+                    gCurGameState_2->mode = 3;
                 }
-                if (D_800C29CC_2->mode == 3) {
-                    D_800C29CC_2->mode = 4;
-                    D_800C29CC_2->fnC(0);
-                    i = D_800C29CC_2 - D_800C295C;
-                    D_800C29CC_2->mode = 0;
+                if (gCurGameState_2->mode == 3) {
+                    gCurGameState_2->mode = 4;
+                    gCurGameState_2->fnC(0);
+                    i = gCurGameState_2 - gGameStates;
+                    gCurGameState_2->mode = 0;
                     if (i == 2) {
                         i = 0;
-                        if (D_800EFD70_18.flags & 2) {
-                            D_800CA920 = 6;
+                        if (gGame_18.flags & 2) {
+                            gRaceExitCode = 6;
                         } else {
-                            D_800EFD64 = &D_800CB210[21];
+                            gCurTrack = &gTracks[21];
                             i = 1;
                         }
                     } else if (i == 3) {
                         i = 0;
-                    } else if (D_800EFD70_18.flags & 0x40) {
+                    } else if (gGame_18.flags & 0x40) {
                         i = 3;
-                    } else if (i == 0 && (D_800EFD70_18.flags & 0x20)) {
+                    } else if (i == 0 && (gGame_18.flags & 0x20)) {
                         i = 2;
                     } else if (D_800CA924[0] > 0 && D_800CA924[1] < D_800CA924[0]) {
                         i = 1;
                     } else {
-                        if (D_800EFD70_18.f4C == 1 && D_800CA930_6 != NULL && !(D_800EFD70_18.flags & 0x8000)) {
-                            D_800EFD64 = &D_800CB210[D_800CA930_6->trk->arr[D_800CA930_6->f64]];
+                        if (gGame_18.f4C == 1 && gSeason_6 != NULL && !(gGame_18.flags & 0x8000)) {
+                            gCurTrack = &gTracks[gSeason_6->trk->arr[gSeason_6->f64]];
                         }
                         if (i == 1) {
-                            if (D_800EFD70_18.flags & 0x40000) {
+                            if (gGame_18.flags & 0x40000) {
                                 s32 k;
                                 for (k = 0; k < 6; k++) {
-                                    D_800EFD70_18.f1C[k] = D_800EFD70_18.f778[k];
-                                    D_800EFD70_18.f43C[k] = D_800EFD70_18.f790[k];
+                                    gGame_18.f1C[k] = gGame_18.f778[k];
+                                    gGame_18.f43C[k] = gGame_18.f790[k];
                                 }
                             }
                         }
-                        if (i == 1 && D_800CA920 == 8) {
+                        if (i == 1 && gRaceExitCode == 8) {
                             i = 2;
-                        } else if (i == 1 && (D_800EFD70_18.flags & 0x808000) == 0x800000) {
-                            D_800CCD64 = 1;
-                            D_800EFD70_18.f4C = 0;
-                            D_800EFD70_18.flags = (D_800EFD70_18.flags | 0x4000000) & 0xFF0BFF7F;
-                            D_800CA920 = 6;
-                            D_800EFD64 = &D_800CB210[13];
-                            D_800EFD70_18.f3C = 1;
-                        } else if (!(D_800EFD70_18.flags & 4)) {
+                        } else if (i == 1 && (gGame_18.flags & 0x808000) == 0x800000) {
+                            gCreditsMode = 1;
+                            gGame_18.f4C = 0;
+                            gGame_18.flags = (gGame_18.flags | 0x4000000) & 0xFF0BFF7F;
+                            gRaceExitCode = 6;
+                            gCurTrack = &gTracks[13];
+                            gGame_18.f3C = 1;
+                        } else if (!(gGame_18.flags & 4)) {
                             i ^= 1;
                         }
                     }
-                    next = &D_800C295C[i];
-                    if (D_800C29CC_2->dlsize != next->dlsize) {
-                        func_800BCB04(D_800E25C0[0].dl);
-                        func_800BCB04(D_800E25C0[1].dl);
-                        D_800E25C0[0].dl = NULL;
+                    next = &gGameStates[i];
+                    if (gCurGameState_2->dlsize != next->dlsize) {
+                        mem_free(gGfxContexts[0].dl);
+                        mem_free(gGfxContexts[1].dl);
+                        gGfxContexts[0].dl = NULL;
                     }
-                    D_800C29CC_2 = next;
+                    gCurGameState_2 = next;
                 }
-                D_800E2064 = D_800E2038;
+                sLastUpdateFrame = gFrameCounter;
             }
-            D_800E30C0 = osGetCount();
-            func_80010D44();
-            D_800E20E4 = osGetCount();
-            D_800E2134 = D_800E20E4 - D_800E30C0;
-            if (D_800C2958 < 2 && D_800C29CC_2->fn8 != NULL) {
-                if (D_800C29CC_2->mode == 5) {
-                    if (D_800C2958 == 0) {
-                        D_800C29CC_2->cnt--;
+            sAudioTickStart = osGetCount();
+            snd_update();
+            sAudioTickEnd = osGetCount();
+            sAudioTickTime = sAudioTickEnd - sAudioTickStart;
+            if (sGfxTasksPending < 2 && gCurGameState_2->fn8 != NULL) {
+                if (gCurGameState_2->mode == 5) {
+                    if (sGfxTasksPending == 0) {
+                        gCurGameState_2->cnt--;
                     }
-                } else if (D_800C29CC_2->mode == 2) {
-                    D_800E2030 = D_800E2038;
-                    D_800E3080 = &D_800E25C0[D_800C29E8];
-                    D_800E20E0 = D_800E3080->dl;
+                } else if (gCurGameState_2->mode == 2) {
+                    sLastDrawFrame = gFrameCounter;
+                    gCurGfxContext = &gGfxContexts[sGfxContextIndex];
+                    sGfxHead = gCurGfxContext->dl;
                     {
-                    OSScTask *t = &D_800E25C0[D_800C29E8].task;
-                    if (D_800E76D0 < 60) {
+                    OSScTask *t = &gGfxContexts[sGfxContextIndex].task;
+                    if (gRaceFrame < 60) {
                         func_80065A5C();
                     }
-                    D_800CB120 = 1;
-                    D_800E30A8 = D_800C29E8;
-                    D_800C29CC_2->fn8(D_800E3080, D_800C29E8, &D_800E20E0);
-                    D_800CB120 = 0;
-                    gDPPipeSync(D_800E20E0++);
-                    gDPFullSync(D_800E20E0++);
-                    gSPEndDisplayList(D_800E20E0++);
-                    D_800E308C = D_800E20E0 - D_800E3080->dl;
-                    cur = D_800C29CC_2;
-                    if (D_800C29EC < D_800E308C) {
-                        D_800C29EC = D_800E308C;
+                    gIsDrawing = 1;
+                    gGfxFrameIndex = sGfxContextIndex;
+                    gCurGameState_2->fn8(gCurGfxContext, sGfxContextIndex, &sGfxHead);
+                    gIsDrawing = 0;
+                    gDPPipeSync(sGfxHead++);
+                    gDPFullSync(sGfxHead++);
+                    gSPEndDisplayList(sGfxHead++);
+                    sGfxDlLength = sGfxHead - gCurGfxContext->dl;
+                    cur = gCurGameState_2;
+                    if (sGfxDlMaxLength < sGfxDlLength) {
+                        sGfxDlMaxLength = sGfxDlLength;
                     }
-                    if (D_800E308C >= cur->dlsize) {
+                    if (sGfxDlLength >= cur->dlsize) {
                         for (;;) {
                         }
                     }
                     osWritebackDCacheAll();
-                    t->list.t.data_ptr = (u64 *)D_800E3080->dl;
+                    t->list.t.data_ptr = (u64 *)gCurGfxContext->dl;
                     q = t;
 #define T q
-                    T->list.t.data_size = (D_800E20E0 - D_800E3080->dl) * sizeof(Gfx);
+                    T->list.t.data_size = (sGfxHead - gCurGfxContext->dl) * sizeof(Gfx);
                     T->list.t.type = 1;
                     T->list.t.flags = 6;
                     T->list.t.ucode_boot = (u64 *)D_800A9C30;
@@ -341,56 +341,56 @@ void func_8000D2E0(void)
                     T->list.t.ucode = (u64 *)D_800AB0A0;
                     T->list.t.ucode_data = (u64 *)D_800D19E0;
                     T->list.t.ucode_data_size = 0x800;
-                    T->list.t.dram_stack = D_800E30C4;
+                    T->list.t.dram_stack = sGfxDramStack;
                     T->list.t.dram_stack_size = 0x400;
                     T->list.t.output_buff = NULL;
                     T->list.t.output_buff_size = NULL;
-                    T->list.t.yield_data_ptr = D_800E3084;
+                    T->list.t.yield_data_ptr = sGfxYieldBuffer;
                     T->list.t.yield_data_size = 0xC00;
                     T->next = NULL;
                     T->flags = 0x63;
-                    T->msgQ = &D_800E2048;
-                    D_800E25C0[D_800C29E8].msgtype = 2;
-                    T->msg = &D_800E25C0[D_800C29E8].msgtype;
-                    T->framebuffer = D_800C29D8_2[D_800C29E8];
+                    T->msgQ = &sSchedEventQueue;
+                    gGfxContexts[sGfxContextIndex].msgtype = 2;
+                    T->msg = &gGfxContexts[sGfxContextIndex].msgtype;
+                    T->framebuffer = gFramebuffers_2[sGfxContextIndex];
                     T->totalTime = 0;
                     sched_submit_task((s32)q);
-                    D_800C2958++;
-                    D_800C29E8 = 1 - D_800C29E8;
-                    D_800E30C0 = osGetCount();
-                    func_80010D44();
-                    D_800E20E4 = osGetCount();
-                    D_800E2134 = D_800E20E4 - D_800E30C0;
+                    sGfxTasksPending++;
+                    sGfxContextIndex = 1 - sGfxContextIndex;
+                    sAudioTickStart = osGetCount();
+                    snd_update();
+                    sAudioTickEnd = osGetCount();
+                    sAudioTickTime = sAudioTickEnd - sAudioTickStart;
                     }
                 }
             }
             break;
         case 2:
-            if (D_800C2948 != 0) {
+            if (sScreenshotRequest != 0) {
                 s32 x, y;
                 __builtin_strcpy(buf, "e:\\log\\scr");
-                D_800C293C = D_800E2038 * 765 % 99999;
-                func_8000EE30(D_800C293C, buf + strlen(buf));
-                func_8000ED30(buf, ".raw");
-                D_800C293C++;
-                for (y = 0; y < D_800F13F0; y++) {
-                    for (x = 0; x < D_800F13EC; x++) {
-                        s32 c = D_800C29D8_2[D_800C2944][y * D_800F13EC + x];
+                sScreenshotCounter = gFrameCounter * 765 % 99999;
+                int_to_str(sScreenshotCounter, buf + strlen(buf));
+                str_cat(buf, ".raw");
+                sScreenshotCounter++;
+                for (y = 0; y < gScreenHeight; y++) {
+                    for (x = 0; x < gScreenWidth; x++) {
+                        s32 c = gFramebuffers_2[sLastDoneFb][y * gScreenWidth + x];
                         buf[x * 3 + 0] = (c >> 11) << 3;
                         buf[x * 3 + 1] = (c >> 6) << 3;
                         buf[x * 3 + 2] = (c >> 1) << 3;
                     }
                 }
-                D_800C2948 = 0;
+                sScreenshotRequest = 0;
             }
-            D_800C2944 = 1 - D_800C2944;
-            D_800C2958--;
+            sLastDoneFb = 1 - sLastDoneFb;
+            sGfxTasksPending--;
             break;
         }
     }
 }
 
-void func_8000E31C(OSContPad *pad, u32 *out)
+void main_convert_pad_input(OSContPad *pad, u32 *out)
 {
     s32 x;
     s32 y;
@@ -484,7 +484,7 @@ done:
     }
 }
 
-void func_8000E5C0(void)
+void main_init_memory(void)
 {
     u32 top;
     u32 s0;
@@ -498,24 +498,24 @@ void func_8000E5C0(void)
     s2 = (u32)D_800A42C0;
     s3 = (u32)D_800A9C20;
     if (s0 & 0xF) {
-        func_8000ECB8(0x33);
+        fatal_halt(0x33);
     }
     if (s2 & 0xF) {
-        func_8000ECB8(0x34);
+        fatal_halt(0x34);
     }
     if (s3 & 0xF) {
-        func_8000ECB8(0x35);
+        fatal_halt(0x35);
     }
     s1 = (u32)D_80105680;
     s1 = (s1 + 0xFF) & ~0xFF;
     osViBlack(1);
-    func_8000ED10((u8 *)s1, 0, top - s1);
-    func_800BD698(0, 0, s0, top - s0);
+    mem_fill((u8 *)s1, 0, top - s1);
+    mem_init(0, 0, s0, top - s0);
     t = 0x30;
-    func_800BCCF0(s0 + 0x30, s2 - t - s0, (u32)D_800D6014, 0x4FA);
+    mem_alloc_at_dbg(s0 + 0x30, s2 - t - s0, (u32)D_800D6014, 0x4FA);
     t = 0x10;
-    func_800BCCF0(s2 + 0x10, s3 - t - s2, (u32)D_800D6014, 0x4FB);
-    func_800BCCF0(s3 + 0x10, s1 - t - s3, (u32)D_800D6014, 0x4FC);
+    mem_alloc_at_dbg(s2 + 0x10, s3 - t - s2, (u32)D_800D6014, 0x4FB);
+    mem_alloc_at_dbg(s3 + 0x10, s1 - t - s3, (u32)D_800D6014, 0x4FC);
 }
 
 typedef struct {
@@ -528,9 +528,9 @@ typedef struct {
     u32 d;            /* 0x55C */
 } Task;
 
-extern Task D_800E25C0_2[2];
+extern Task gGfxContexts_2[2];
 
-void func_8000E6E8(void)
+void main_sched_event_thread(void)
 {
     s16 *msg;
     u32 idx;
@@ -538,36 +538,36 @@ void func_8000E6E8(void)
     u32 v;
 
     for (;;) {
-        osRecvMesg(&D_800E2048, (OSMesg *)&msg, 1);
+        osRecvMesg(&sSchedEventQueue, (OSMesg *)&msg, 1);
         switch (*msg) {
         case 1:
-            D_800C29F0++;
-            idx = func_80065858() != (s32)D_800E25C0_2[0].f4E8;
-            if (idx != D_800C29F8) {
-                D_800E25C0_2[idx].a = osGetCount();
+            sRetraceCount++;
+            idx = sched_get_current_task() != (s32)gGfxContexts_2[0].f4E8;
+            if (idx != sDisplayedFb) {
+                gGfxContexts_2[idx].a = osGetCount();
             }
-            D_800C29F8 = idx;
-            if ((D_800C29FC ^ D_800C2350) & 0x1000) {
-                D_800C29FC = D_800C2350 & 0x1000;
-                osViSetSpecialFeatures(D_800C29FC ? 0x6A : 0xAA);
+            sDisplayedFb = idx;
+            if ((sViDitherFilter ^ gDrawFlags) & 0x1000) {
+                sViDitherFilter = gDrawFlags & 0x1000;
+                osViSetSpecialFeatures(sViDitherFilter ? 0x6A : 0xAA);
             }
-            if (MQ_GET_COUNT(&D_800E3090) < 14) {
-                osSendMesg(&D_800E3090, msg, 0);
+            if (MQ_GET_COUNT(&sMainQueue) < 14) {
+                osSendMesg(&sMainQueue, msg, 0);
             }
             break;
         case 2:
-            idx = msg != D_800E25C0_2[0].msg;
-            D_800C29F4++;
-            if (D_800CEC04 != 0) {
-                func_800A11BC(idx);
+            idx = msg != gGfxContexts_2[0].msg;
+            sGfxDoneCount++;
+            if (gNesActive != 0) {
+                nes_draw_back_sprites(idx);
             } else {
-                func_800325FC(idx);
-                func_80033E30(idx);
+                sun_check_occlusion(idx);
+                sky_scan_zbuffer(idx);
             }
             t = osGetCount();
-            D_800E25C0_2[idx].b = t;
-            D_800E25C0_2[idx].c = t - D_800E25C0_2[idx].a;
-            osSendMesg(&D_800E3090, msg, 1);
+            gGfxContexts_2[idx].b = t;
+            gGfxContexts_2[idx].c = t - gGfxContexts_2[idx].a;
+            osSendMesg(&sMainQueue, msg, 1);
             break;
         }
     }
@@ -575,7 +575,7 @@ void func_8000E6E8(void)
 
 void func_8000E8B0(s32 param_1)
 {
-    u8 *p = D_800E2138;
+    u8 *p = sDevPiHandle;
     s32 flag = 0;
     if (param_1 != 0) {
         flag = -1;
@@ -591,33 +591,33 @@ typedef struct {
     u32 fc;
 } Obj_4;
 
-extern Obj_4 D_800E2138_2;
+extern Obj_4 sDevPiHandle_2;
 
-void func_8000E8F4(void)
+void main_init_dev_pi_handle(void)
 {
     s32 r;
 
-    func_8000ED10((u8 *)&D_800E2138_2, 0, 0x74);
-    D_800E2138_2.fc = 0xAFF70000;
-    D_800E2138_2.f5 = 5;
-    D_800E2138_2.f8 = 0xC;
-    D_800E2138_2.f6 = 0xD;
-    D_800E2138_2.f7 = 2;
-    D_800E2138_2.f4 = 0;
-    D_800E2138_2.f9 = 1;
+    mem_fill((u8 *)&sDevPiHandle_2, 0, 0x74);
+    sDevPiHandle_2.fc = 0xAFF70000;
+    sDevPiHandle_2.f5 = 5;
+    sDevPiHandle_2.f8 = 0xC;
+    sDevPiHandle_2.f6 = 0xD;
+    sDevPiHandle_2.f7 = 2;
+    sDevPiHandle_2.f4 = 0;
+    sDevPiHandle_2.f9 = 1;
     r = __osDisableInt();
-    D_800E2138_2.next = __osPiTable;
-    __osPiTable = &D_800E2138_2;
+    sDevPiHandle_2.next = __osPiTable;
+    __osPiTable = &sDevPiHandle_2;
     __osRestoreInt(r);
 }
 
-void func_8000E980(void)
+void main_init_sched(void)
 {
-    osCreateMesgQueue(&D_800E3090, D_800E2068, 0x10);
-    func_800651A0(0xD, 1);
+    osCreateMesgQueue(&sMainQueue, sMainMsgs, 0x10);
+    sched_init(0xD, 1);
 }
 
-void func_8000E9B8(void)
+void main_hang(void)
 {
     while (1) {}
 }
@@ -630,7 +630,7 @@ void func_8000E9C0(void)
     osViSwapBuffer((void *)0x80200000);
     osViBlack(0);
     osViSwapBuffer((void *)0x80200000);
-    func_8000ED10((u8 *)0x80200000, 0xFF, 0x25800);
+    mem_fill((u8 *)0x80200000, 0xFF, 0x25800);
     osWritebackDCacheAll();
     __asm__ volatile("break 0x407");
     while (1) {}
@@ -641,8 +641,8 @@ void func_8000EA24(void)
 }
 
 void func_8000EA2C(void) {
-    func_8000EFB0();
-    func_8000EFB0(&D_800D6010);
+    debug_log();
+    debug_log(&D_800D6010);
 }
 
 void func_8000EA54(void)

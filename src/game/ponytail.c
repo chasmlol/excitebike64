@@ -54,10 +54,10 @@ struct Obj_60 {
     Mtx3 m140;          /* 0x140 */
 };
 
-extern Rider_7 D_800DC150_12[];
-extern Player_26 D_800E37C0_90[];
+extern Rider_7 gRiderGfx_12[];
+extern Player_26 gRiders_90[];
 
-void func_80070600(s32 idx, Obj_60 *o) {
+void ponytail_simulate(s32 idx, Obj_60 *o) {
     Vec3f prev;
     s32 v[3];
     s32 w[3];
@@ -79,23 +79,23 @@ void func_80070600(s32 idx, Obj_60 *o) {
     s32 sn;
     s16 cs;
 
-    n = D_800DC150_12[idx].nodes;
+    n = gRiderGfx_12[idx].nodes;
     prev = n->pos;
     v[0] = 0;
     v[1] = 10;
     v[2] = -88;
-    func_80012DC8(v, o->m140.m, w);
+    vec3i_mul_mtx3i(v, o->m140.m, w);
     w[0] += o->off[0];
     w[1] += o->off[1];
     w[2] += o->off[2];
-    if (D_800E37C0_90[idx].f44 == 0) {
-        bx = D_800E37C0_90[idx].pos[0];
-        by = D_800E37C0_90[idx].pos[1];
-        bz = D_800E37C0_90[idx].pos[2];
+    if (gRiders_90[idx].f44 == 0) {
+        bx = gRiders_90[idx].pos[0];
+        by = gRiders_90[idx].pos[1];
+        bz = gRiders_90[idx].pos[2];
     } else {
-        bx = D_800E37C0_90[idx].alt[0];
-        by = D_800E37C0_90[idx].alt[1];
-        bz = D_800E37C0_90[idx].alt[2];
+        bx = gRiders_90[idx].alt[0];
+        by = gRiders_90[idx].alt[1];
+        bz = gRiders_90[idx].alt[2];
     }
     n->pos.x = (f32)(w[0] + bx) / 1000.0f;
     n->pos.y = (f32)(w[1] + by) / 1000.0f;
@@ -110,7 +110,7 @@ void func_80070600(s32 idx, Obj_60 *o) {
     }
 
     g = 9.8f;
-    prev = D_800E37C0_90[idx].vel;
+    prev = gRiders_90[idx].vel;
     {
         f32 l = __builtin_sqrtf(prev.x * prev.x + prev.y * prev.y + prev.z * prev.z);
         if (l != 0.0f) {
@@ -119,7 +119,7 @@ void func_80070600(s32 idx, Obj_60 *o) {
             prev.z /= l;
         }
     }
-    t = D_800E37C0_90[idx].f60 * prev.z - D_800E37C0_90[idx].f68 * prev.x;
+    t = gRiders_90[idx].f60 * prev.z - gRiders_90[idx].f68 * prev.x;
     if (t < 2.0f && t > -2.0f) {
         t = 0.0f;
     }
@@ -132,9 +132,9 @@ void func_80070600(s32 idx, Obj_60 *o) {
         n[i].acc.z = 0.0f;
         n[i].acc.x -= prev.z * 0.1f;
         n[i].acc.z += prev.x * 0.1f;
-        n[i].acc.x -= D_800E37C0_90[idx].vel.x * 0.05f;
-        n[i].acc.y -= D_800E37C0_90[idx].vel.y * 0.05f;
-        n[i].acc.z -= D_800E37C0_90[idx].vel.z * 0.05f;
+        n[i].acc.x -= gRiders_90[idx].vel.x * 0.05f;
+        n[i].acc.y -= gRiders_90[idx].vel.y * 0.05f;
+        n[i].acc.z -= gRiders_90[idx].vel.z * 0.05f;
     }
 
     for (k = 1; k < 4; k++) {
@@ -202,23 +202,23 @@ void func_80070600(s32 idx, Obj_60 *o) {
     }
 
     m = o->mC0;
-    func_80012D94(m.m);
+    mtx3i_transpose(m.m);
     for (i = 1; i < 4; i++) {
         v[0] = (s32)(n[i].pos.x * 1000.0f) - (bx + o->pos[0]);
         v[1] = (s32)(n[i].pos.y * 1000.0f) - (by + o->pos[1]);
         v[2] = (s32)(n[i].pos.z * 1000.0f) - (bz + o->pos[2]);
-        func_80012DC8(v, m.m, w);
+        vec3i_mul_mtx3i(v, m.m, w);
         if (w[2] > -100) {
             w[2] = -100;
         }
-        func_80012DC8(w, o->mC0.m, v);
+        vec3i_mul_mtx3i(w, o->mC0.m, v);
         n[i].pos.x = (f32)(v[0] + bx + o->pos[0]) / 1000.0f;
         n[i].pos.y = (f32)(v[1] + by + o->pos[1]) / 1000.0f;
         n[i].pos.z = (f32)(v[2] + bz + o->pos[2]) / 1000.0f;
     }
 
     if (idx) i = 5;
-    sk = D_800DC150_12[idx].skel;
+    sk = gRiderGfx_12[idx].skel;
     sk->pos[0] = (s32)(n->pos.x * 1000.0f) - bx;
     sk->pos[1] = (s32)(n->pos.y * 1000.0f) - by;
     sk->pos[2] = (s32)(n->pos.z * 1000.0f) - bz;
@@ -228,17 +228,17 @@ void func_80070600(s32 idx, Obj_60 *o) {
         sk[i].p[1] = n[i].ppos.y * 1000.0f - by;
         sk[i].p[2] = n[i].ppos.z * 1000.0f - bz;
         iy = (n[i + 1].pos.y - n[i].ppos.y) * 1000.0f;
-        func_8001254C((n[i + 1].pos.x - n[i].ppos.x) * 1000.0f, (n[i + 1].pos.z - n[i].ppos.z) * 1000.0f, &a1, &r1);
-        func_8001254C(iy, r1, &a2, &r2);
+        math_to_polar((n[i + 1].pos.x - n[i].ppos.x) * 1000.0f, (n[i + 1].pos.z - n[i].ppos.z) * 1000.0f, &a1, &r1);
+        math_to_polar(iy, r1, &a2, &r2);
         if (i != 0) {
-            a1 = a1 + D_800C2C60[((u32)(D_800E76D0 * 4000 + i * 10000) >> 4) & 0xFFF] / 16 * D_800E37C0_90[idx].f420 / 25.0f;
-            a2 = a2 + (s16)((s16)D_800C2C60[(((D_800E76D0 * 4400 + i * 12000) >> 4) - 0x400) & 0xFFF] / 12) * D_800E37C0_90[idx].f420 / 25.0f;
+            a1 = a1 + gCosTable[((u32)(gRaceFrame * 4000 + i * 10000) >> 4) & 0xFFF] / 16 * gRiders_90[idx].f420 / 25.0f;
+            a2 = a2 + (s16)((s16)gCosTable[(((gRaceFrame * 4400 + i * 12000) >> 4) - 0x400) & 0xFFF] / 12) * gRiders_90[idx].f420 / 25.0f;
         }
-        func_80011A58(sk[i].m, a2, 0, 0x8000 - a1);
+        mtx3i_from_angles(sk[i].m, a2, 0, 0x8000 - a1);
         c[0] = 0;
         c[1] = 0;
-        c[2] = D_800CCFD0[i + 1] * 1000.0f;
-        func_80012DC8(c, sk[i].m, d);
+        c[2] = sPonytailNodeOffsets[i + 1] * 1000.0f;
+        vec3i_mul_mtx3i(c, sk[i].m, d);
         n[i + 1].ppos.x = n[i].pos.x + (f32)d[0] / 1000.0f;
         n[i + 1].ppos.y = n[i].pos.y + (f32)d[1] / 1000.0f;
         n[i + 1].ppos.z = n[i].pos.z + (f32)d[2] / 1000.0f;
@@ -269,27 +269,27 @@ typedef struct Pl_2 {
 typedef struct { u16 x, y, z; } V3u;
 typedef struct { u8 pad0[0x10]; s32 m[0x1C]; } Obj80;
 
-extern Pl_2 D_800DC150_13[];
+extern Pl_2 gRiderGfx_13[];
 extern V3u D_800F2178[];
 extern V3u D_800F2160[];
 
-void func_800712E4(s32 n)
+void ponytail_init(s32 n)
 {
-    Pl_2 *pl = &D_800DC150_13[n];
+    Pl_2 *pl = &gRiderGfx_13[n];
     s32 i;
     Obj80 *r;
 
-    pl->a4c = func_800BC908(0x180, 0, D_800D9178, 0x16A);
-    pl->a58 = func_800BC908(0x10, 0, D_800D9178, 0x16B);
+    pl->a4c = mem_alloc_dbg(0x180, 0, sStrPonytailC, 0x16A);
+    pl->a58 = mem_alloc_dbg(0x10, 0, sStrPonytailC, 0x16B);
     i = 0;
-    pl->a50 = func_8003C2E0(D_800E7728, D_800D0D88);
-    func_8003C7A8(pl->a50, 3);
-    pl->nodes = func_800BC908(0x120, 0, D_800D9178, 0x170);
-    func_8000ED10(pl->nodes, 0, 0x120);
+    pl->a50 = skel_load(D_800E7728, D_800D0D88);
+    skel_reset_pose(pl->a50, 3);
+    pl->nodes = mem_alloc_dbg(0x120, 0, sStrPonytailC, 0x170);
+    mem_fill(pl->nodes, 0, 0x120);
     for (; i < 4; i++) {
         pl->nodes[i].f0 = 0;
         pl->nodes[i].f4 = 0;
-        pl->nodes[i].f8 = D_800CCFD0[i];
+        pl->nodes[i].f8 = sPonytailNodeOffsets[i];
         if (i != 0) {
             pl->nodes[i].prev = &pl->nodes[i - 1];
         }
@@ -305,44 +305,44 @@ void func_800712E4(s32 n)
             pl->nodes[i].f44 = -(pl->nodes[i].next->f8 - pl->nodes[i].f8);
         }
     }
-    pl->a54 = D_800C27A8;
-    if (D_800C27A8 == NULL) {
-        D_800C27A8 = func_800BF79C(D_800E7728, D_800D0A68);
-        func_8003C720(pl->a50, D_800C27A8);
-        r = func_8003C2E0(D_800E7728, D_800D0D44);
+    pl->a54 = sPonytailMesh;
+    if (sPonytailMesh == NULL) {
+        sPonytailMesh = res_load(D_800E7728, D_800D0A68);
+        skel_make_verts_bone_local(pl->a50, sPonytailMesh);
+        r = skel_load(D_800E7728, D_800D0D44);
         for (i = 0; i < 3; i++) {
-            func_80012EBC(r[i].m, &D_800F2178[i].x, &D_800F2178[i].y, &D_800F2178[i].z);
+            mtx3i_to_angles(r[i].m, &D_800F2178[i].x, &D_800F2178[i].y, &D_800F2178[i].z);
         }
-        func_800BCB04(r);
-        r = func_8003C2E0(D_800E7728, D_800D0C18);
+        mem_free(r);
+        r = skel_load(D_800E7728, D_800D0C18);
         for (i = 0; i < 3; i++) {
-            func_80012EBC(r[i].m, &D_800F2160[i].x, &D_800F2160[i].y, &D_800F2160[i].z);
+            mtx3i_to_angles(r[i].m, &D_800F2160[i].x, &D_800F2160[i].y, &D_800F2160[i].z);
         }
-        func_800BCB04(r);
-        pl->a54 = D_800C27A8;
+        mem_free(r);
+        pl->a54 = sPonytailMesh;
     }
 }
 
-void func_800715DC(s32 a0)
+void ponytail_free(s32 a0)
 {
     u8 *base;
     u8 *p;
 
-    base = D_800DC150_14;
+    base = gRiderGfx_14;
     p = base + a0 * 0xA80;
     if (*(s32 *)(p + 0xA58) != 0) {
-        func_800BCB04(*(s32 *)(p + 0xA58));
+        mem_free(*(s32 *)(p + 0xA58));
     }
     if (*(s32 *)(p + 0xA50) != 0) {
-        func_800BCB04(*(s32 *)(p + 0xA50));
+        mem_free(*(s32 *)(p + 0xA50));
     }
     if (*(s32 *)(p + 0xA4C) != 0) {
-        func_800BCB04(*(s32 *)(p + 0xA4C));
+        mem_free(*(s32 *)(p + 0xA4C));
     }
     if (*(s32 *)(p + 0xA48) == 0) {
         *(s32 *)(p + 0xA58) = 0;
     } else {
-        func_800BCB04(*(s32 *)(p + 0xA48));
+        mem_free(*(s32 *)(p + 0xA48));
         *(s32 *)(p + 0xA58) = 0;
     }
     *(s32 *)(p + 0xA50) = 0;
@@ -350,7 +350,7 @@ void func_800715DC(s32 a0)
     *(s32 *)(p + 0xA48) = 0;
 }
 
-void func_80071678(s32 a0, s32 a1, s32 a2, void *a3) {
-    func_80070600(a0, a1);
-    func_80013ACC(a2, a3, 3);
+void ponytail_update(s32 a0, s32 a1, s32 a2, void *a3) {
+    ponytail_simulate(a0, a1);
+    mtx_from_bones(a2, a3, 3);
 }

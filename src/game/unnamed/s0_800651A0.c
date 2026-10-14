@@ -1,28 +1,28 @@
 #include "game.h"
 
-void func_800651A0(u8 *param_1, int arg1)
+void sched_init(u8 *param_1, int arg1)
 {
-    func_8000ED10(D_800F13A8, 0, 0x10);
-    func_8000ED10(D_800F0DC8, 0, 8);
-    D_800F13E8 = -1;
-    D_800F0DA8 = 1;
-    D_800CCCC8 = 0;
-    D_800F0DA0 = 1;
-    D_800CCCCC = 0;
-    osCreateMesgQueue(&D_800F13B8, D_800F13F8, 8);
-    osCreateMesgQueue(&D_800F13D0, D_800F0DD0, 8);
+    mem_fill(sSchedClients, 0, 0x10);
+    mem_fill(sSchedCurTask, 0, 8);
+    sSchedRdpIdle = -1;
+    sSchedRetraceMsg = 1;
+    sSchedSwapDeferred = 0;
+    gSchedMinRetraces = 1;
+    gSchedFrameLimit = 0;
+    osCreateMesgQueue(&sSchedSysEventQueue, sSchedSysEventMsgs, 8);
+    osCreateMesgQueue(&sSchedTaskQueue, sSchedTaskMsgs, 8);
     osCreateViManager(param_1 + 10);
-    func_800656B4(0);
-    func_800656B4(1);
-    func_800656B4(2);
-    func_80065904(1);
+    sched_init_vi_mode(0);
+    sched_init_vi_mode(1);
+    sched_init_vi_mode(2);
+    sched_set_vi_mode(1);
     osViBlack(1);
     osViSetSpecialFeatures(0xAA);
     osViSwapBuffer(0x80200000);
     osViSwapBuffer(0x80200000);
     osViRepeatLine(0);
-    osCreateThread(&D_800F11F8, 1, func_800652DC, 0, D_800F11F0, param_1);
-    osStartThread(&D_800F11F8);
+    osCreateThread(&sSchedThread, 1, sched_thread, 0, sSchedRetracesSinceTask, param_1);
+    osStartThread(&sSchedThread);
 }
 
 typedef struct Item_5 {
@@ -43,10 +43,10 @@ typedef struct Pair_8 {
     s32 b;
 } Pair_8;
 
-extern CurNext D_800F0DC8_2;
+extern CurNext sSchedCurTask_2;
 extern Pair_8 D_800F45F0[];
 
-void func_800652DC(void)
+void sched_thread(void)
 {
     s32 msg;
     s32 n;
@@ -54,52 +54,52 @@ void func_800652DC(void)
     Pair_8 *p;
     Pair_8 *base;
 
-    osViSetEvent(&D_800F13B8, 1, 1);
-    osSetEventMesg(9, &D_800F13B8, 2);
-    osSetEventMesg(0xE, &D_800F13B8, 3);
+    osViSetEvent(&sSchedSysEventQueue, 1, 1);
+    osSetEventMesg(9, &sSchedSysEventQueue, 2);
+    osSetEventMesg(0xE, &sSchedSysEventQueue, 3);
     if (D_800F4780 == 0) {
-        osSetEventMesg(0xC, &D_800F13B8, 4);
-        osSetEventMesg(0xA, &D_800F13B8, 4);
+        osSetEventMesg(0xC, &sSchedSysEventQueue, 4);
+        osSetEventMesg(0xA, &sSchedSysEventQueue, 4);
     }
 
     while (1) {
-        osRecvMesg(&D_800F13B8, &msg, 1);
+        osRecvMesg(&sSchedSysEventQueue, &msg, 1);
         if (msg == 1) {
             if (D_800C2930 != 0) {
                 continue;
             }
             D_800F11F4 = osViGetCurrentLine();
-            D_800CCCC4++;
-            if (D_800CCCA4 != D_800CCCA8) {
-                func_80065904(D_800CCCA4);
+            sSchedRetraceCount++;
+            if (gViModeRequest != gViMode) {
+                sched_set_vi_mode(gViModeRequest);
             }
-            D_800F11F0_2++;
-            if (D_800F13E8 != 0) {
-                if (D_800F0DC8_2.next == NULL) {
-                    if (osRecvMesg(&D_800F13D0, &msg, 0) == 0) {
-                        D_800F0DC8_2.next = (Item_5 *)msg;
+            sSchedRetracesSinceTask_2++;
+            if (sSchedRdpIdle != 0) {
+                if (sSchedCurTask_2.next == NULL) {
+                    if (osRecvMesg(&sSchedTaskQueue, &msg, 0) == 0) {
+                        sSchedCurTask_2.next = (Item_5 *)msg;
                     }
                 }
-                D_800F0DC8_2.cur = D_800F0DC8_2.next;
-                D_800F0DC8_2.next = NULL;
-                if (D_800F0DC8_2.cur != NULL) {
-                    func_800658CC((u8 *)D_800F0DC8_2.cur);
-                    D_800F11F0_2 = 0;
+                sSchedCurTask_2.cur = sSchedCurTask_2.next;
+                sSchedCurTask_2.next = NULL;
+                if (sSchedCurTask_2.cur != NULL) {
+                    sched_run_task((u8 *)sSchedCurTask_2.cur);
+                    sSchedRetracesSinceTask_2 = 0;
                 }
             }
-            func_80065868(&D_800F0DA8);
-            if (D_800CCCC8 != 0) {
-                osSendMesg(&D_800F13B8, 2, 0);
-                D_800CCCC8 = 0;
+            sched_notify_clients(&sSchedRetraceMsg);
+            if (sSchedSwapDeferred != 0) {
+                osSendMesg(&sSchedSysEventQueue, 2, 0);
+                sSchedSwapDeferred = 0;
             }
         } else if (msg == 2) {
             n = osViGetCurrentLine();
-            if (n < 10 || D_800F13B8.validCount == 1) {
-                osSendMesg(&D_800F13B8, msg, 0);
+            if (n < 10 || sSchedSysEventQueue.validCount == 1) {
+                osSendMesg(&sSchedSysEventQueue, msg, 0);
                 continue;
             }
-            if (D_800F11F0_2 < D_800F0DA0 && D_800CCCCC != 0) {
-                D_800CCCC8 = 1;
+            if (sSchedRetracesSinceTask_2 < gSchedMinRetraces && gSchedFrameLimit != 0) {
+                sSchedSwapDeferred = 1;
                 continue;
             }
             if (D_800F141C < n) {
@@ -108,40 +108,40 @@ void func_800652DC(void)
             if (n < D_800F1418) {
                 D_800F1418 = n;
             }
-            D_800F13E8 = 1;
-            osViSwapBuffer(D_800F0DC8_2.cur->f0C);
-            if (D_800CCCA0 != 0) {
-                if (--D_800CCCA0 == 0) {
+            sSchedRdpIdle = 1;
+            osViSwapBuffer(sSchedCurTask_2.cur->f0C);
+            if (sViBlackFrames != 0) {
+                if (--sViBlackFrames == 0) {
                     osViBlack(0);
                 }
             }
-            osSendMesg(D_800F0DC8_2.cur->f50, D_800F0DC8_2.cur->f54, 0);
+            osSendMesg(sSchedCurTask_2.cur->f50, sSchedCurTask_2.cur->f54, 0);
         } else if (msg == 3) {
             osViBlack(1);
-            func_80065904(0);
+            sched_set_vi_mode(0);
             osViBlack(1);
             osViSetYScale(1.0f);
-            func_8000CD00();
+            cont_finish_read();
             for (i = 0; i < 4; i++) {
-                func_8000D0A0(i, -1);
+                rumble_start(i, -1);
             }
-            D_800C2924 = 1;
+            gRumbleResetRequest = 1;
             start_controller_read();
-            func_8000CD00();
+            cont_finish_read();
             for (;;) ;
         } else if (msg == 4) {
             base = D_800F45F0;
-            func_80065904(0);
-            func_8000ED10((u8 *)D_800C29D8_3, 0, 0x25800);
+            sched_set_vi_mode(0);
+            mem_fill((u8 *)gFramebuffers_3, 0, 0x25800);
             osWritebackDCacheAll();
-            osViSwapBuffer(D_800C29D8_3);
+            osViSwapBuffer(gFramebuffers_3);
             osViBlack(0);
-            if (!(D_800EFD70 & 0x20000000)) {
+            if (!(gGame & 0x20000000)) {
                 for (;;) ;
             }
-            func_800659B4(0x32, 0x1E, D_800F46EC);
+            fault_draw_hex(0x32, 0x1E, D_800F46EC);
             for (i = 0; i < 0x1F; i++) {
-                func_800659B4((i & 1) * 150 + 0x32, (i / 2) * 10 + 0x28, base[i].b);
+                fault_draw_hex((i & 1) * 150 + 0x32, (i / 2) * 10 + 0x28, base[i].b);
             }
             osWritebackDCacheAll();
             for (;;) ;
@@ -161,9 +161,9 @@ typedef struct {
     s32 f40[4];
 } Rec_37;
 
-extern Rec_37 D_800F0CB0[];
+extern Rec_37 sViModes[];
 
-void func_800656B4(s32 p)
+void sched_init_vi_mode(s32 p)
 {
     Rec_37 *s;
     Rec_37 *b;
@@ -183,27 +183,27 @@ void func_800656B4(s32 p)
             s = &osViModeMpalLpn1;
         }
     } else {
-        func_8000E9B8();
+        main_hang();
     }
-    D_800F0CB0[p] = *s;
+    sViModes[p] = *s;
     off = p * 0x50;
-    base = D_800F0CB0;
+    base = sViModes;
     if (p != 2) {
         b = (Rec_37 *)(off + (s32)base);
-        b->f8 = D_800CCCAC[p];
-        b->f20 = (D_800CCCAC[p] << 9) / 320;
-        b->f28 = D_800CCCAC[p] << 1;
-        b->f3C = D_800CCCAC[p] << 1;
+        b->f8 = sViModeWidths[p];
+        b->f20 = (sViModeWidths[p] << 9) / 320;
+        b->f28 = sViModeWidths[p] << 1;
+        b->f3C = sViModeWidths[p] << 1;
     }
 }
 
-void func_800657FC(s32 a0, s32 a1)
+void sched_add_client(s32 a0, s32 a1)
 {
     s32 i;
     s32 *p;
 
     i = 0;
-    p = D_800F13A8;
+    p = sSchedClients;
     do {
         i = i + 1;
         if (*p == 0) {
@@ -216,53 +216,53 @@ void func_800657FC(s32 a0, s32 a1)
 
 void sched_submit_task(s32 a0)
 {
-    osSendMesg(&D_800F13D0, a0, 1);
+    osSendMesg(&sSchedTaskQueue, a0, 1);
 }
 
-s32 func_80065858(void) {
-    return D_800F0DC8_3;
+s32 sched_get_current_task(void) {
+    return sSchedCurTask_3;
 }
 
-void func_80065868(void *arg)
+void sched_notify_clients(void *arg)
 {
     s32 i;
     u32 *p;
-    for (i = 0, p = &D_800F13A8; i < 4; i++, p++) {
+    for (i = 0, p = &sSchedClients; i < 4; i++, p++) {
         if (p[0] != 0) {
             osSendMesg(p[0], arg, 0);
         }
     }
 }
 
-void func_800658CC(u8 *param_1) {
+void sched_run_task(u8 *param_1) {
     void *p = param_1 + 0x10;
-    D_800F13E8 = 0;
+    sSchedRdpIdle = 0;
     osSpTaskLoad(p);
     osSpTaskStartGo(p);
 }
 
-void func_80065904(s32 p)
+void sched_set_vi_mode(s32 p)
 {
     osViBlack(1);
-    D_800CCCA0 = 3;
+    sViBlackFrames = 3;
     osWritebackDCache(0, 0x800000);
-    osViSetMode(D_800F0CB0_2 + p * 0x50);
+    osViSetMode(sViModes_2 + p * 0x50);
     osViSetSpecialFeatures(0xA2);
-    *(volatile s32 *)&D_800F13EC = D_800CCCAC[p];
-    *(volatile s32 *)&D_800F13F0 = D_800CCCB8[p];
-    *(volatile s32 *)&D_800CCCA8 = p;
+    *(volatile s32 *)&gScreenWidth = sViModeWidths[p];
+    *(volatile s32 *)&gScreenHeight = sViModeHeights[p];
+    *(volatile s32 *)&gViMode = p;
     osViBlack(1);
 }
 
-void func_800659B4(s32 x, s32 y, u32 bits)
+void fault_draw_hex(s32 x, s32 y, u32 bits)
 {
     s32 i, j, k;
     u8 *r;
     u16 *p;
 
     for (i = 0; i < 8; i++) {
-        r = D_800CCC20 + ((bits >> ((7 - i) * 4)) & 0xF) * 8;
-        p = D_800C29D8_4 + (y * 0x140 + x);
+        r = sFaultHexFont + ((bits >> ((7 - i) * 4)) & 0xF) * 8;
+        p = gFramebuffers_4 + (y * 0x140 + x);
         for (j = 0; j < 8; j++) {
             k = 7;
             do {
@@ -285,7 +285,7 @@ void func_80065A5C(void)
 {
 }
 
-void *func_80065A64(s32 a0) {
+void *sched_get_os_vi_mode(s32 a0) {
     void *s0;
     if (osTvType == 1) {
         if (a0 == 2) {
@@ -300,7 +300,7 @@ void *func_80065A64(s32 a0) {
             s0 = osViModeMpalLpn1_2;
         }
     } else {
-        func_8000E9B8();
+        main_hang();
     }
     return s0;
 }

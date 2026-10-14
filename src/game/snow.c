@@ -9,33 +9,33 @@ typedef struct {
     u16 *list;
 } SubEnt;
 
-extern SubEnt D_800F21B8[];
+extern SubEnt sRemoveGroups[];
 
-void func_80071990(void)
+void snow_init(void)
 {
     s32 i;
 
-    if (D_800EFD64_2 - D_800CB210 == 0x13 && D_800C2594 == 1) {
-        D_800CCFFC = func_800BC908(0xE00, 0, (s32)D_800D9190, 0x6B);
-        D_800F219C = func_800BF79C(D_800E7728, D_800D1000);
+    if (gCurTrack_2 - gTracks == 0x13 && gNumViews == 1) {
+        sSnowflakes = mem_alloc_dbg(0xE00, 0, (s32)D_800D9190, 0x6B);
+        sSnowTextures = res_load(D_800E7728, D_800D1000);
         for (i = 0; i < 0x80; i++) {
-            func_800729D0(&D_800CCFFC[i]);
+            snow_respawn_flake(&sSnowflakes[i]);
         }
-        D_800CCFF8 = 0;
+        sSnowSplatTimer = 0;
     }
 }
 
 typedef struct { s32 x, y, z, pad[3]; s32 on; } Star;
 typedef struct { u8 pad[8]; u8 w, h; u8 pad2[2]; void *img2; u8 pad3[4]; void *img; } TexInfo_3;
 
-extern TexInfo_3 *D_800F219C_2;
+extern TexInfo_3 *sSnowTextures_2;
 
-Gfx *func_80071A7C(Gfx *gdl, s32 mtx, s32 arg2)
+Gfx *snow_draw(Gfx *gdl, s32 mtx, s32 arg2)
 {
     Star *p;
     s32 i, cx, cy, s, x, y, z, a, r;
 
-    p = D_800CCFFC;
+    p = sSnowflakes;
     if (p == NULL) {
         return gdl;
     }
@@ -46,16 +46,16 @@ Gfx *func_80071A7C(Gfx *gdl, s32 mtx, s32 arg2)
     { Gfx *g = gdl++; g->words.w0 = 0xE3000C00; g->words.w1 = ((u32)g & 1) >> 1; }
     { Gfx *g = gdl++; g->words.w0 = 0xE3001001; g->words.w1 = ((u32)g & 1) >> 1; }
     {
-        s32 w = D_800F13EC;
-        s32 h = D_800F13F0;
+        s32 w = gScreenWidth;
+        s32 h = gScreenHeight;
         cx = w / 2;
         cy = h / 2;
     }
-    gDPLoadTextureBlock(gdl++, D_800F219C_2->img, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 8, 0,
+    gDPLoadTextureBlock(gdl++, sSnowTextures_2->img, G_IM_FMT_IA, G_IM_SIZ_8b, 8, 8, 0,
                         G_TX_CLAMP, G_TX_CLAMP, 3, 3, G_TX_NOLOD, G_TX_NOLOD);
     for (i = 0; i < 0x80; i++) {
         if (p[i].on != 0) {
-            s = D_800C2C60[(((D_800E76D0 & 0xFFFFFF) * 256 + i * 512) >> 4) & 0xFFF] / 2;
+            s = gCosTable[(((gRaceFrame & 0xFFFFFF) * 256 + i * 512) >> 4) & 0xFFF] / 2;
             z = p[i].z;
             x = p[i].x + s;
             x = cx + x * cx / z;
@@ -73,18 +73,18 @@ Gfx *func_80071A7C(Gfx *gdl, s32 mtx, s32 arg2)
             gDPPipeSync(gdl++);
             gDPSetColor(gdl++, G_SETPRIMCOLOR, a | 0xFFFFFF00);
             gSPTextureRectangle(gdl++, (x - r) << 2, (y - r) << 2, (x + r) << 2, (y + r) << 2,
-                                G_TX_RENDERTILE, 0, 0, D_800CD000[r].b, D_800CD000[r].b);
+                                G_TX_RENDERTILE, 0, 0, sSnowflakeTexScale[r].b, sSnowflakeTexScale[r].b);
         }
     }
-    if (D_800CCFF8 != 0) {
-        gDPSetColor(gdl++, G_SETPRIMCOLOR, (D_800CCFF8 * 255 / 60) | 0xFFFFFF00);
-        gDPLoadTextureBlock(gdl++, D_800F219C_2->img2, G_IM_FMT_IA, G_IM_SIZ_8b,
-                            D_800F219C_2->w * 8, D_800F219C_2->h, 0,
+    if (sSnowSplatTimer != 0) {
+        gDPSetColor(gdl++, G_SETPRIMCOLOR, (sSnowSplatTimer * 255 / 60) | 0xFFFFFF00);
+        gDPLoadTextureBlock(gdl++, sSnowTextures_2->img2, G_IM_FMT_IA, G_IM_SIZ_8b,
+                            sSnowTextures_2->w * 8, sSnowTextures_2->h, 0,
                             G_TX_CLAMP, G_TX_CLAMP, 8, 8, G_TX_NOLOD, G_TX_NOLOD);
         gDPPipeSync(gdl++);
         gDPSetTexturePersp(gdl++, G_TP_PERSP);
         gSPMatrix(gdl++, mtx + 0x300, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-        gSPVertex(gdl++, D_800CD018, 4, 0);
+        gSPVertex(gdl++, sSnowSplatVtx, 4, 0);
         gSP2Triangles(gdl++, 0, 2, 1, 0, 0, 3, 2, 0);
     }
     gDPPipeSync(gdl++);
@@ -98,25 +98,25 @@ typedef struct {
     s32 f18;
 } Part_6;
 
-extern Part_6 *D_800CCFFC_2;
+extern Part_6 *sSnowflakes_2;
 
 static inline void respawn(Part_6 *p, s32 k) {
-    if (D_800E7FF0 & 0x40) {
+    if (gCamSegFlags & 0x40) {
         p->f18 = 0;
     } else {
         p->f18 = 1;
     }
-    p->z = func_8000EFE8() * 192 + 0x4000;
-    p->x = ((s32)func_8000EFE8() - 128) * p->z / 128;
-    if (func_8000EFE8() & 1) {
-        p->y = ((s32)func_8000EFE8() - 128) * p->z / 256;
+    p->z = random_byte() * 192 + 0x4000;
+    p->x = ((s32)random_byte() - 128) * p->z / 128;
+    if (random_byte() & 1) {
+        p->y = ((s32)random_byte() - 128) * p->z / 256;
     } else {
         p->y = p->z;
     }
-    p->f14 = func_8000EFE8() + 0x100;
+    p->f14 = random_byte() + 0x100;
 }
 
-void func_80072114(void) {
+void snow_update(void) {
     s32 dx, dz, ang, s, c;
     s32 mx, mz, rot, dy, ny;
     s32 i;
@@ -124,100 +124,100 @@ void func_80072114(void) {
     s32 a, t3, t2;
     s32 w, h;
 
-    if (D_800CCFFC_2 == NULL || D_800E3710 != 0 || (D_800C2358 != 0 && D_800E1B70 == 0x100)) {
+    if (sSnowflakes_2 == NULL || gPauseMenu != 0 || (gPodiumMode != 0 && gDesaturation == 0x100)) {
         return;
     }
-    dz = D_800E8090_2.z - D_800F2190.z;
-    ang = -D_800E8000_2 >> 4;
-    s = D_800C2C60[ang & 0xFFF];
-    c = D_800C2C60[(ang - 0x400) & 0xFFF];
-    dx = D_800E8090_2.x - D_800F2190.x;
-    D_800CCFF0 = -1;
-    dy = D_800E8090_2.y - D_800F2190.y;
+    dz = gCamPos_2.z - sSnowLastCamPos.z;
+    ang = -gCamYaw_2 >> 4;
+    s = gCosTable[ang & 0xFFF];
+    c = gCosTable[(ang - 0x400) & 0xFFF];
+    dx = gCamPos_2.x - sSnowLastCamPos.x;
+    sSnowSplatX = -1;
+    dy = gCamPos_2.y - sSnowLastCamPos.y;
     mz = (s * dz + c * dx) >> 14;
     mx = (c * dz - s * dx) >> 14;
-    rot = (D_800E8000_2 - D_800F21A0) / 64;
+    rot = (gCamYaw_2 - sSnowLastCamYaw) / 64;
     i = 0;
     ny = -dy * 3;
-    D_800F2190.x = D_800E8090_2.x;
-    D_800F2190.y = D_800E8090_2.y;
-    D_800F2190.z = D_800E8090_2.z;
-    D_800F21A0 = D_800E8000_2;
-    h = D_800F13F0;
+    sSnowLastCamPos.x = gCamPos_2.x;
+    sSnowLastCamPos.y = gCamPos_2.y;
+    sSnowLastCamPos.z = gCamPos_2.z;
+    sSnowLastCamYaw = gCamYaw_2;
+    h = gScreenHeight;
     for (; i < 128; i++) {
-        { s32 t = D_800CCFFC_2[i].z; D_800CCFFC_2[i].z = t - mz * 3; }
-        D_800CCFFC_2[i].y += ny - D_800CCFFC_2[i].f14;
-        { s32 t = D_800CCFFC_2[i].x; D_800CCFFC_2[i].x = t + mx * 3; }
-        D_800CCFFC_2[i].x += rot * D_800CCFFC_2[i].z / 256;
-        z = D_800CCFFC_2[i].z;
+        { s32 t = sSnowflakes_2[i].z; sSnowflakes_2[i].z = t - mz * 3; }
+        sSnowflakes_2[i].y += ny - sSnowflakes_2[i].f14;
+        { s32 t = sSnowflakes_2[i].x; sSnowflakes_2[i].x = t + mx * 3; }
+        sSnowflakes_2[i].x += rot * sSnowflakes_2[i].z / 256;
+        z = sSnowflakes_2[i].z;
         if (z < 0x1000) {
-            if (D_800CCFFC_2[i].x < z && -z < D_800CCFFC_2[i].x) {
-                if (D_800CCFFC_2[i].y < z && -z < D_800CCFFC_2[i].y && z > 0 && D_800CCFFC_2[i].f18 != 0) {
-                    hw = D_800F13EC / 2;
-                    sx = hw + D_800CCFFC_2[i].x * hw / z;
-                    hh = D_800F13F0 / 2;
-                    sy = hh - D_800CCFFC_2[i].y * hh / z;
-                    if (sx >= 20 && sx < D_800F13EC - 20 && sy >= 20 && sy < D_800F13F0 - 20) {
-                        D_800CCFF0 = sx;
-                        D_800CCFF4 = sy;
+            if (sSnowflakes_2[i].x < z && -z < sSnowflakes_2[i].x) {
+                if (sSnowflakes_2[i].y < z && -z < sSnowflakes_2[i].y && z > 0 && sSnowflakes_2[i].f18 != 0) {
+                    hw = gScreenWidth / 2;
+                    sx = hw + sSnowflakes_2[i].x * hw / z;
+                    hh = gScreenHeight / 2;
+                    sy = hh - sSnowflakes_2[i].y * hh / z;
+                    if (sx >= 20 && sx < gScreenWidth - 20 && sy >= 20 && sy < gScreenHeight - 20) {
+                        sSnowSplatX = sx;
+                        sSnowSplatY = sy;
                     }
                 }
             }
-            respawn(&D_800CCFFC_2[i], i);
-        } else if (D_800CCFFC_2[i].y < -z) {
-            respawn(&D_800CCFFC_2[i], i);
-        } else if (D_800CCFFC_2[i].x < -z) {
-            respawn(&D_800CCFFC_2[i], i);
-        } else if (z < D_800CCFFC_2[i].x) {
-            respawn(&D_800CCFFC_2[i], i);
+            respawn(&sSnowflakes_2[i], i);
+        } else if (sSnowflakes_2[i].y < -z) {
+            respawn(&sSnowflakes_2[i], i);
+        } else if (sSnowflakes_2[i].x < -z) {
+            respawn(&sSnowflakes_2[i], i);
+        } else if (z < sSnowflakes_2[i].x) {
+            respawn(&sSnowflakes_2[i], i);
         } else if (z > 0x10000) {
-            respawn(&D_800CCFFC_2[i], i);
+            respawn(&sSnowflakes_2[i], i);
         }
     }
-    if (D_800CCFF8 != 0) {
-        D_800CCFF8--;
+    if (sSnowSplatTimer != 0) {
+        sSnowSplatTimer--;
     }
-    func_8000EFE8();
-    func_8000EFE8();
-    if (D_800CCFF8 == 0 && D_800CCFF0 != -1) {
-        i = func_8000EFE8() << 5;
-        t2 = D_800C2C60[(i >> 4) & 0xFFF] >> 10;
-        t3 = D_800C2C60[((i >> 4) - 0x400) & 0xFFF] >> 10;
-        x = D_800CCFF0;
-        y = D_800CCFF4;
-        D_800CCFF8 = 60;
-        D_800CD018[0].v.ob[0] = (x + t3 - 160) * D_800F13EC / 320;
-        D_800CD018[0].v.ob[1] = (y + t2 - 120) * D_800F13F0 / 240;
-        D_800CD018[1].v.ob[0] = (x + t2 - 160) * D_800F13EC / 320;
-        D_800CD018[1].v.ob[1] = (y - t3 - 120) * D_800F13F0 / 240;
-        D_800CD018[2].v.ob[0] = (x - t3 - 160) * D_800F13EC / 320;
-        D_800CD018[2].v.ob[1] = (y - t2 - 120) * D_800F13F0 / 240;
-        D_800CD018[3].v.ob[0] = (x - t2 - 160) * D_800F13EC / 320;
-        D_800CD018[3].v.ob[1] = (y + t3 - 120) * D_800F13F0 / 240;
+    random_byte();
+    random_byte();
+    if (sSnowSplatTimer == 0 && sSnowSplatX != -1) {
+        i = random_byte() << 5;
+        t2 = gCosTable[(i >> 4) & 0xFFF] >> 10;
+        t3 = gCosTable[((i >> 4) - 0x400) & 0xFFF] >> 10;
+        x = sSnowSplatX;
+        y = sSnowSplatY;
+        sSnowSplatTimer = 60;
+        sSnowSplatVtx[0].v.ob[0] = (x + t3 - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[0].v.ob[1] = (y + t2 - 120) * gScreenHeight / 240;
+        sSnowSplatVtx[1].v.ob[0] = (x + t2 - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[1].v.ob[1] = (y - t3 - 120) * gScreenHeight / 240;
+        sSnowSplatVtx[2].v.ob[0] = (x - t3 - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[2].v.ob[1] = (y - t2 - 120) * gScreenHeight / 240;
+        sSnowSplatVtx[3].v.ob[0] = (x - t2 - 160) * gScreenWidth / 320;
+        sSnowSplatVtx[3].v.ob[1] = (y + t3 - 120) * gScreenHeight / 240;
     }
 }
 
-void func_800729D0(s32 *param_1)
+void snow_respawn_flake(s32 *param_1)
 {
     s32 x;
     u32 u;
 
-    if (D_800E7FF0 & 0x40) {
+    if (gCamSegFlags & 0x40) {
         param_1[6] = 0;
     } else {
         param_1[6] = 1;
     }
-    u = func_8000EFE8();
+    u = random_byte();
     param_1[2] = u * 0xc0 + 0x4000;
-    u = func_8000EFE8();
+    u = random_byte();
     x = ((s32)u - 0x80) * param_1[2];
     if (x < 0) {
         x += 0x7f;
     }
     param_1[0] = x >> 7;
-    u = func_8000EFE8();
+    u = random_byte();
     if (u & 1) {
-        u = func_8000EFE8();
+        u = random_byte();
         x = ((s32)u - 0x80) * param_1[2];
         if (x < 0) {
             x += 0xff;
@@ -227,15 +227,15 @@ void func_800729D0(s32 *param_1)
         x = param_1[2];
     }
     param_1[1] = x;
-    u = func_8000EFE8();
+    u = random_byte();
     param_1[5] = u + 0x100;
 }
 
-void func_80072A9C(void)
+void snow_free(void)
 {
-    if (D_800CCFFC != 0) {
-        func_800BCB04(D_800CCFFC);
-        D_800CCFFC = 0;
+    if (sSnowflakes != 0) {
+        mem_free(sSnowflakes);
+        sSnowflakes = 0;
     }
 }
 
@@ -255,45 +255,45 @@ struct Obj2 {
     s32 n;
 };
 
-void func_80072AD0(Mdl2 *m, Obj2 *o)
+void remove_walls_init(Mdl2 *m, Obj2 *o)
 {
     s32 i, j, k;
     SubEnt *e;
 
-    D_800F21B0 = 0;
+    sRemoveGroupCount = 0;
     for (i = 0; i < m->n; i++) {
         if (m->r[i].flags & 6) {
-            D_800F21B8[D_800F21B0].index = i;
-            D_800F21B8[D_800F21B0].flags = m->r[i].flags;
-            D_800F21B8[D_800F21B0++].type = (m->r[i].flags >> 1) & 3;
+            sRemoveGroups[sRemoveGroupCount].index = i;
+            sRemoveGroups[sRemoveGroupCount].flags = m->r[i].flags;
+            sRemoveGroups[sRemoveGroupCount++].type = (m->r[i].flags >> 1) & 3;
         }
     }
-    if (D_800F21B0 == 0) return;
-    for (i = 0; i < D_800F21B0; i++) {
-        D_800F21B8[i].count = 0;
+    if (sRemoveGroupCount == 0) return;
+    for (i = 0; i < sRemoveGroupCount; i++) {
+        sRemoveGroups[i].count = 0;
     }
     for (k = 0; k < o->n; k++) {
-        i = (D_800C9800[k] >> 3) & 3;
+        i = (gWallEdgeFlags[k] >> 3) & 3;
         if (i) {
-            for (j = 0; j < D_800F21B0; j++) {
-                if (D_800F21B8[j].type == i) break;
+            for (j = 0; j < sRemoveGroupCount; j++) {
+                if (sRemoveGroups[j].type == i) break;
             }
-            D_800F21B8[j].count++;
+            sRemoveGroups[j].count++;
         }
     }
-    for (i = 0; i < D_800F21B0; i++) {
-        if (D_800F21B8[i].count) {
-            D_800F21B8[i].list = func_800BC908(D_800F21B8[i].count * 2, 0, (s32)D_800D91A0, 0x5D);
-            D_800F21B8[i].count = 0;
+    for (i = 0; i < sRemoveGroupCount; i++) {
+        if (sRemoveGroups[i].count) {
+            sRemoveGroups[i].list = mem_alloc_dbg(sRemoveGroups[i].count * 2, 0, (s32)D_800D91A0, 0x5D);
+            sRemoveGroups[i].count = 0;
         }
     }
     for (k = 0; k < o->n; k++) {
-        i = (D_800C9800[k] >> 3) & 3;
+        i = (gWallEdgeFlags[k] >> 3) & 3;
         if (i) {
-            for (j = 0; j < D_800F21B0; j++) {
-                if (D_800F21B8[j].type == i) break;
+            for (j = 0; j < sRemoveGroupCount; j++) {
+                if (sRemoveGroups[j].type == i) break;
             }
-            D_800F21B8[j].list[D_800F21B8[j].count++] = k;
+            sRemoveGroups[j].list[sRemoveGroups[j].count++] = k;
         }
     }
 }
@@ -307,27 +307,27 @@ typedef struct {
     u16 *tab;
 } Ent_81;
 
-extern Ent_81 D_800F21B8_2[];
+extern Ent_81 sRemoveGroups_2[];
 
-void func_80072D64(s32 id)
+void remove_walls_trigger(s32 id)
 {
     s32 i;
     s32 k;
 
-    for (i = 0; i < D_800F21B0; i++) {
-        if (D_800F21B8_2[i].id == id) {
+    for (i = 0; i < sRemoveGroupCount; i++) {
+        if (sRemoveGroups_2[i].id == id) {
             break;
         }
     }
-    if (i != D_800F21B0) {
-        for (k = 0; k < D_800F21B8_2[i].n; k++) {
-            D_800C9800[D_800F21B8_2[i].tab[k]] |= 0x20;
+    if (i != sRemoveGroupCount) {
+        for (k = 0; k < sRemoveGroups_2[i].n; k++) {
+            gWallEdgeFlags[sRemoveGroups_2[i].tab[k]] |= 0x20;
         }
-        k = D_800F21B8_2[i].idx;
-        if (D_800E7834[k] & 1) {
-            func_80067818(k);
+        k = sRemoveGroups_2[i].idx;
+        if (gObjectFlags[k] & 1) {
+            shatter_break_object(k);
         } else {
-            D_800E7834[k] |= 8;
+            gObjectFlags[k] |= 8;
         }
     }
 }
@@ -338,18 +338,18 @@ typedef struct {
     s32 f14;
 } Ent_82;
 
-extern Ent_82 D_800F21B8_3[];
+extern Ent_82 sRemoveGroups_3[];
 
-void func_80072E7C(void)
+void remove_walls_free(void)
 {
     s32 i = 0;
-    if (0 < D_800F21B0) {
+    if (0 < sRemoveGroupCount) {
         do {
-            if (D_800F21B8_3[i].f10 != 0) {
-                func_800BCB04(D_800F21B8_3[i].f14);
+            if (sRemoveGroups_3[i].f10 != 0) {
+                mem_free(sRemoveGroups_3[i].f14);
             }
             i++;
-        } while (D_800F21B0 > i);
+        } while (sRemoveGroupCount > i);
     }
 }
 
@@ -359,13 +359,13 @@ typedef struct {
     u16 *idx;
 } Ent_83;
 
-void func_80072EF0(void) {
+void remove_walls_reset(void) {
     s32 i;
     s32 j;
-    for (i = 0; i < D_800F21B0; i++) {
-        Ent_83 *e = &D_800F21B8[i];
+    for (i = 0; i < sRemoveGroupCount; i++) {
+        Ent_83 *e = &sRemoveGroups[i];
         for (j = 0; j < e->n; j++) {
-            u8 *b = D_800C9800 + e->idx[j];
+            u8 *b = gWallEdgeFlags + e->idx[j];
             *b &= 0xDF;
         }
     }
@@ -378,9 +378,9 @@ typedef struct {
     s16 f58;
 } State_6;
 
-extern State_6 D_800EFD70_52;
+extern State_6 gGame_52;
 
-Gfx *func_80072F70(Gfx *gdl, Dyn *arg1, s32 arg2)
+Gfx *screen_draw_wipe(Gfx *gdl, Dyn *arg1, s32 arg2)
 {
     s32 a;
     s32 i;
@@ -388,30 +388,30 @@ Gfx *func_80072F70(Gfx *gdl, Dyn *arg1, s32 arg2)
     s32 w;
     s32 x;
 
-    if (D_800EFD70_52.flags & 0x10000000) {
+    if (gGame_52.flags & 0x10000000) {
         a = 0xFF;
     } else {
-        if (D_800EFD70_52.mode == 1) {
+        if (gGame_52.mode == 1) {
             return gdl;
         }
-        if (D_800EFD70_52.mode == 0) {
+        if (gGame_52.mode == 0) {
             goto m0;
         }
-        if (D_800EFD70_52.mode == 2) {
+        if (gGame_52.mode == 2) {
             goto m2;
         }
         goto body;
     m0:
-        a = 0xFF - D_800EFD70_52.f58;
+        a = 0xFF - gGame_52.f58;
         goto body;
     m2:
-        a = D_800EFD70_52.f58;
+        a = gGame_52.f58;
     }
 body:
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
     gDPSetRenderMode(gdl++, 0x00404240, 0);
-    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, D_800F13EC, D_800F13F0);
-    gSPViewport(gdl++, &D_800C25E8);
+    gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, gScreenWidth, gScreenHeight);
+    gSPViewport(gdl++, &gScreenViewport);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_OFF);
     for (i = 0; i < 64; i++) {
         c = a * 2 + i * 8 - 0x100;
@@ -421,13 +421,13 @@ body:
         if (c < 0) {
             c = 0;
         }
-        w = D_800F13EC / 64;
-        x = i * D_800F13EC / 64;
-        if (D_800EFD70_52.mode == 2) {
-            x = D_800F13EC - w - x;
+        w = gScreenWidth / 64;
+        x = i * gScreenWidth / 64;
+        if (gGame_52.mode == 2) {
+            x = gScreenWidth - w - x;
         }
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, c);
-        gDPFillRectangle(gdl++, x, 0, x + w, D_800F13F0);
+        gDPFillRectangle(gdl++, x, 0, x + w, gScreenHeight);
     }
     return gdl;
 }

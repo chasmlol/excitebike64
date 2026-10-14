@@ -8,7 +8,7 @@ struct MtxS_2 {
 #define SETM(r, c, x) { v = (x); m->i[r][c] = v >> 16; m->f[r][c] = v; }
 #define SETS(r, c, x) { v = (x); v = v * scale / 256; m->i[r][c] = v >> 16; m->f[r][c] = v; }
 
-void func_80011490(MtxS *m, s32 rx, s32 ry, s32 rz, s32 tx, s32 ty, s32 tz, s32 scale)
+void mtx_from_angles_pos_scale(MtxS *m, s32 rx, s32 ry, s32 rz, s32 tx, s32 ty, s32 tz, s32 scale)
 {
     s32 cx, cy, sx, sy, sz, cz;
     s32 cycx, cysx;
@@ -27,12 +27,12 @@ void func_80011490(MtxS *m, s32 rx, s32 ry, s32 rz, s32 tx, s32 ty, s32 tz, s32 
     m->f[3][0] = tx << 12;
     m->f[3][1] = ty << 12;
     m->f[3][2] = tz << 12;
-    cx = D_800C2C60[(rx - 0x400) & 0xFFF];
-    cy = D_800C2C60[(ry - 0x400) & 0xFFF];
-    sx = D_800C2C60[rx & 0xFFF];
-    sy = D_800C2C60[ry & 0xFFF];
-    sz = D_800C2C60[rz & 0xFFF];
-    cz = D_800C2C60[(rz - 0x400) & 0xFFF];
+    cx = gCosTable[(rx - 0x400) & 0xFFF];
+    cy = gCosTable[(ry - 0x400) & 0xFFF];
+    sx = gCosTable[rx & 0xFFF];
+    sy = gCosTable[ry & 0xFFF];
+    sz = gCosTable[rz & 0xFFF];
+    cz = gCosTable[(rz - 0x400) & 0xFFF];
     cycx = cy * cx / 0x4000;
     cysx = cy * sx / 0x4000;
     if (scale == 0x100) {
@@ -58,12 +58,12 @@ void func_80011490(MtxS *m, s32 rx, s32 ry, s32 rz, s32 tx, s32 ty, s32 tz, s32 
     }
 }
 
-void func_800118DC(MtxS_2 *m, f32 c, f32 sn, s32 s) {
+void mtx_from_rot_y_scale(MtxS_2 *m, f32 c, f32 sn, s32 s) {
     s32 ci = (s32)(c * 16384.0f);
     s32 si = (s32)(sn * 16384.0f);
     s32 t;
 
-    func_8000ED10((u8 *)m, 0, 0x40);
+    mem_fill((u8 *)m, 0, 0x40);
     t = (ci << 14) >> 12;
     t = (t * s) / 256;
     m->f[0][0] = t;
@@ -96,7 +96,7 @@ void func_800118DC(MtxS_2 *m, f32 c, f32 sn, s32 s) {
     m->f[2][2] = t;
 }
 
-void func_80011A58(s32 *param_1, s32 param_2, s32 param_3, s32 param_4)
+void mtx3i_from_angles(s32 *param_1, s32 param_2, s32 param_3, s32 param_4)
 {
     s32 iVar1;
     s32 iVar2;
@@ -109,13 +109,13 @@ void func_80011A58(s32 *param_1, s32 param_2, s32 param_3, s32 param_4)
     s32 q4;
     s32 q1;
 
-    iVar7 = D_800C2C60[((param_2 >> 4) - 0x400) & 0xfff];
-    iVar8 = D_800C2C60[((param_3 >> 4) - 0x400) & 0xfff];
+    iVar7 = gCosTable[((param_2 >> 4) - 0x400) & 0xfff];
+    iVar8 = gCosTable[((param_3 >> 4) - 0x400) & 0xfff];
     iVar4 = iVar8 * iVar7;
-    iVar6 = D_800C2C60[(param_2 >> 4) & 0xfff];
-    iVar3 = D_800C2C60[(param_3 >> 4) & 0xfff];
-    iVar5 = D_800C2C60[(param_4 >> 4) & 0xfff];
-    iVar2 = D_800C2C60[((param_4 >> 4) - 0x400) & 0xfff];
+    iVar6 = gCosTable[(param_2 >> 4) & 0xfff];
+    iVar3 = gCosTable[(param_3 >> 4) & 0xfff];
+    iVar5 = gCosTable[(param_4 >> 4) & 0xfff];
+    iVar2 = gCosTable[((param_4 >> 4) - 0x400) & 0xfff];
     if (iVar4 < 0) {
         iVar4 = iVar4 + 0x3fff;
     }
@@ -136,7 +136,7 @@ void func_80011A58(s32 *param_1, s32 param_2, s32 param_3, s32 param_4)
     param_1[8] = (iVar2 * q4 + iVar6 * iVar5) >> 14;
 }
 
-void func_80011C1C(s32 *a, s32 *b, s32 *c)
+void mtx3i_mul(s32 *a, s32 *b, s32 *c)
 {
     s32 t;
 
@@ -187,7 +187,7 @@ void func_80011C1C(s32 *a, s32 *b, s32 *c)
     c[8] = t >> 14;
 }
 
-void func_80011EF0(f32 *r, f32 *a, f32 *b)
+void mtx3f_mul_transposed(f32 *r, f32 *a, f32 *b)
 {
     r[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     r[1] = a[0] * b[3] + a[1] * b[4] + a[2] * b[5];
@@ -202,7 +202,7 @@ void func_80011EF0(f32 *r, f32 *a, f32 *b)
 
 #define EL(m, i) (((s32)(m)[i] << 16) | (u16)(m)[(i) + 16])
 
-void func_800120A4(s16 *a, s16 *b, s16 *o)
+void mtx_mul(s16 *a, s16 *b, s16 *o)
 {
     s32 r, c, k, t, p, n, u;
     f32 sum;
@@ -247,7 +247,7 @@ void func_800120A4(s16 *a, s16 *b, s16 *o)
     }
 }
 
-void func_80012250(f32 *p, s32 *o1, s32 *o2, s32 *o3)
+void quat_to_angles(f32 *p, s32 *o1, s32 *o2, s32 *o3)
 {
     s32 q[9];
     s32 *m;
@@ -294,15 +294,15 @@ void func_80012250(f32 *p, s32 *o1, s32 *o2, s32 *o3)
     m[4] = (s32)fd;
     m[8] = (s32)fi;
     m[0] = (s32)fj;
-    i2 = func_80013010(q[1]);
-    u6 = D_800C2C60[((u32)(i2 << 16)) >> 20];
+    i2 = math_asini(q[1]);
+    u6 = gCosTable[((u32)(i2 << 16)) >> 20];
     sv2 = (s16)i2;
     if (u6 != 0) {
-        sv3 = func_80013010((q[2] << 14) / u6);
+        sv3 = math_asini((q[2] << 14) / u6);
         if ((q[0] ^ u6 ^ ((s16)sv3 - 0x4000)) >= 0) {
             sv3 = -0x8000 - sv3;
         }
-        sv4 = func_80013010((-(q[7] << 14)) / u6);
+        sv4 = math_asini((-(q[7] << 14)) / u6);
         if ((q[4] ^ u6 ^ ((s16)sv4 - 0x4000)) >= 0) {
             sv4 = -0x8000 - sv4;
         }
@@ -312,7 +312,7 @@ void func_80012250(f32 *p, s32 *o1, s32 *o2, s32 *o3)
     }
 }
 
-void func_8001254C(s32 x, s32 y, s16 *pAng, s32 *pRatio)
+void math_to_polar(s32 x, s32 y, s16 *pAng, s32 *pRatio)
 {
     s32 a;
     s32 t;
@@ -327,26 +327,26 @@ void func_8001254C(s32 x, s32 y, s16 *pAng, s32 *pRatio)
     if (x > 0) {
         if (y > 0) {
             if (x < y) {
-                t = D_800C4C60[(x << 12) / y];
-                *pRatio = (y << 14) / D_800C2C60[(t >> 4) & 0xFFF];
+                t = sAtanTable[(x << 12) / y];
+                *pRatio = (y << 14) / gCosTable[(t >> 4) & 0xFFF];
                 a = t;
                 *pAng = a;
                 return;
             } else {
-                a = 0x4000 - D_800C4C60[(y << 12) / x];
-                *pRatio = (x << 14) / D_800C2C60[((a >> 4) - 0x400) & 0xFFF];
+                a = 0x4000 - sAtanTable[(y << 12) / x];
+                *pRatio = (x << 14) / gCosTable[((a >> 4) - 0x400) & 0xFFF];
                 *pAng = a;
                 return;
             }
         } else {
             if (-y < x) {
-                a = D_800C4C60[(-y << 12) / x] + 0x4000;
-                *pRatio = (x << 14) / D_800C2C60[((a >> 4) - 0x400) & 0xFFF];
+                a = sAtanTable[(-y << 12) / x] + 0x4000;
+                *pRatio = (x << 14) / gCosTable[((a >> 4) - 0x400) & 0xFFF];
                 *pAng = a;
                 return;
             } else {
-                a = 0x8000 - D_800C4C60[(x << 12) / -y];
-                *pRatio = (y << 14) / D_800C2C60[(a >> 4) & 0xFFF];
+                a = 0x8000 - sAtanTable[(x << 12) / -y];
+                *pRatio = (y << 14) / gCosTable[(a >> 4) & 0xFFF];
                 *pAng = a;
                 return;
             }
@@ -356,25 +356,25 @@ void func_8001254C(s32 x, s32 y, s16 *pAng, s32 *pRatio)
         if (y < 0) {
             ny = -y;
             if (nx < ny) {
-                a = D_800C4C60[(nx << 12) / ny] + 0x8000;
-                *pRatio = (y << 14) / D_800C2C60[(a >> 4) & 0xFFF];
+                a = sAtanTable[(nx << 12) / ny] + 0x8000;
+                *pRatio = (y << 14) / gCosTable[(a >> 4) & 0xFFF];
                 *pAng = a;
                 return;
             } else {
-                a = 0xC000 - D_800C4C60[(ny << 12) / nx];
-                *pRatio = (x << 14) / D_800C2C60[((a >> 4) - 0x400) & 0xFFF];
+                a = 0xC000 - sAtanTable[(ny << 12) / nx];
+                *pRatio = (x << 14) / gCosTable[((a >> 4) - 0x400) & 0xFFF];
                 *pAng = a;
                 return;
             }
         } else {
             if (y < nx) {
-                a = D_800C4C60[(y << 12) / nx] + 0xC000;
-                *pRatio = (x << 14) / D_800C2C60[((a >> 4) - 0x400) & 0xFFF];
+                a = sAtanTable[(y << 12) / nx] + 0xC000;
+                *pRatio = (x << 14) / gCosTable[((a >> 4) - 0x400) & 0xFFF];
                 *pAng = a;
                 return;
             } else {
-                a = -D_800C4C60[(nx << 12) / y];
-                *pRatio = (y << 14) / D_800C2C60[(a >> 4) & 0xFFF];
+                a = -sAtanTable[(nx << 12) / y];
+                *pRatio = (y << 14) / gCosTable[(a >> 4) & 0xFFF];
                 *pAng = a;
                 return;
             }
@@ -382,7 +382,7 @@ void func_8001254C(s32 x, s32 y, s16 *pAng, s32 *pRatio)
     }
 }
 
-void func_80012958(f32 *m, s16 a, s16 b, s16 c)
+void mtx3f_from_angles(f32 *m, s16 a, s16 b, s16 c)
 {
     f32 sa, sb, cb, sc, cc;
     f32 ca;
@@ -391,7 +391,7 @@ void func_80012958(f32 *m, s16 a, s16 b, s16 c)
     s16 *tb;
     f32 cbca, cbsa;
 
-    tb = D_800C2C60;
+    tb = gCosTable;
     ia = a >> 4;
     i1 = tb[ia & 0xFFF];
     i2 = tb[(ia - 0x400) & 0xFFF];
@@ -417,7 +417,7 @@ void func_80012958(f32 *m, s16 a, s16 b, s16 c)
 }
 
 static inline u8 r250(void) {
-    u32 i = D_800E36CC;
+    u32 i = sR250Index;
     u32 j;
     u8 r;
 
@@ -426,22 +426,22 @@ static inline u8 r250(void) {
     } else {
         j = i + 103;
     }
-    r = D_800E35D0[i] ^= D_800E35D0[j];
-    if (++D_800E36CC >= 250) {
-        D_800E36CC = 0;
+    r = sR250Buffer[i] ^= sR250Buffer[j];
+    if (++sR250Index >= 250) {
+        sR250Index = 0;
     }
     return r;
 }
 
-void func_80012B14(void) {
+void r250_init(void) {
     u32 seed;
     s32 i;
     u8 *p;
     u8 msb;
     u8 mask;
 
-    D_800E36CC = 0;
-    p = D_800E35D0;
+    sR250Index = 0;
+    p = sR250Buffer;
     seed = 12345;
     for (i = 250; i != 0; i--) {
         seed = (seed * 1277) & 0xFFFF;
@@ -449,7 +449,7 @@ void func_80012B14(void) {
     }
     msb = 0x80;
     mask = 0xFF;
-    p = &D_800E35D0[14];
+    p = &sR250Buffer[14];
     while (msb != 0) {
         *p &= mask;
         *p |= msb;
@@ -464,11 +464,11 @@ void func_80012B14(void) {
 
 static __inline__ void mulrot(s32 *in, s32 *t, s32 *out, s32 rx, s32 ry, s32 rz)
 {
-    func_80011A58(t, rx, ry, rz);
-    func_80011C1C(in, t, out);
+    mtx3i_from_angles(t, rx, ry, rz);
+    mtx3i_mul(in, t, out);
 }
 
-void func_80012C00(void)
+void mtx3i_test_angles(void)
 {
     s32 a[10];
     s32 b[10];
@@ -479,21 +479,21 @@ void func_80012C00(void)
     s16 x;
     s32 *pa;
 
-    func_80011A58(a, 0, 0, 0x2000);
+    mtx3i_from_angles(a, 0, 0, 0x2000);
     pa = a;
-    func_8001254C(pa[2], a[0], &ang[3], &w);
+    math_to_polar(pa[2], a[0], &ang[3], &w);
     mulrot(pa, b, c, 0, 0, -ang[3]);
-    func_8001254C(c[1], c[0], &y, &w);
+    math_to_polar(c[1], c[0], &y, &w);
     mulrot(c, b, pa, 0, -y, 0);
-    func_8001254C(pa[5], pa[4], &x, &w);
+    math_to_polar(pa[5], pa[4], &x, &w);
     mulrot(pa, b, c, -x, 0, 0);
     ang[0] = x;
     ang[1] = y;
     ang[2] = ang[3];
-    func_8000EB00(D_800D60C0, x, y, ang[3]);
+    debug_printf(D_800D60C0, x, y, ang[3]);
 }
 
-void func_80012D30(u8 *p)
+void mtx_transpose_rot(u8 *p)
 {
     u16 t1 = *(u16 *)(p + 0x2);
     u16 t0 = *(u16 *)(p + 0x8);
@@ -521,7 +521,7 @@ void func_80012D30(u8 *p)
     *(u16 *)(p + 0x32) = t1;
 }
 
-void func_80012D94(s32 *p)
+void mtx3i_transpose(s32 *p)
 {
     s32 t;
     t = p[1];
@@ -535,7 +535,7 @@ void func_80012D94(s32 *p)
     p[7] = t;
 }
 
-void func_80012DC8(s32 *param_1, s32 *param_2, s32 *param_3)
+void vec3i_mul_mtx3i(s32 *param_1, s32 *param_2, s32 *param_3)
 {
     s32 iVar1;
 
@@ -566,30 +566,30 @@ typedef struct {
     u16 l26[3];
 } Frame;
 
-void func_80012EBC(s32 *param_1, u16 *param_2, u16 *param_3, u16 *param_4)
+void mtx3i_to_angles(s32 *param_1, u16 *param_2, u16 *param_3, u16 *param_4)
 {
     Frame f;
 
-    func_8001254C(param_1[2], param_1[0], f.l30, &f.iS);
-    func_80011A58(f.m, 0, 0, -(s16)f.l30[0]);
-    func_80011C1C(param_1, f.m, f.r58);
-    func_8001254C(f.r58[1], f.r58[0], &f.l28, &f.iS);
-    func_80011A58(f.m, 0, -(s16)f.l28, 0);
-    func_80011C1C(f.r58, f.m, param_1);
-    func_8001254C(param_1[5], param_1[4], f.l26, &f.iS);
-    func_80011A58(f.m, -(s16)f.l26[0], 0, 0);
-    func_80011C1C(param_1, f.m, f.r58);
+    math_to_polar(param_1[2], param_1[0], f.l30, &f.iS);
+    mtx3i_from_angles(f.m, 0, 0, -(s16)f.l30[0]);
+    mtx3i_mul(param_1, f.m, f.r58);
+    math_to_polar(f.r58[1], f.r58[0], &f.l28, &f.iS);
+    mtx3i_from_angles(f.m, 0, -(s16)f.l28, 0);
+    mtx3i_mul(f.r58, f.m, param_1);
+    math_to_polar(param_1[5], param_1[4], f.l26, &f.iS);
+    mtx3i_from_angles(f.m, -(s16)f.l26[0], 0, 0);
+    mtx3i_mul(param_1, f.m, f.r58);
     *param_2 = f.l26[0];
     *param_3 = f.l28;
     *param_4 = f.l30[0];
 }
 
-s32 func_80012FE4(s32 a) {
-    s32 r = func_80013010(a);
+s32 math_acosi(s32 a) {
+    s32 r = math_asini(a);
     return (s16)(0x4000 - r);
 }
 
-s32 func_80013010(s32 x)
+s32 math_asini(s32 x)
 {
     s32 t;
     u16 *tbl;
@@ -599,7 +599,7 @@ s32 func_80013010(s32 x)
             return 0x4000;
         }
         t = x + 2;
-        tbl = D_800C6C64;
+        tbl = sAsinTable;
         if (t < 0) {
             t = x + 5;
         }
@@ -609,32 +609,32 @@ s32 func_80013010(s32 x)
         return -0x4000;
     }
     x = 2 - x;
-    tbl2 = D_800C6C64;
+    tbl2 = sAsinTable;
     if (x < 0) {
         x = x + 3;
     }
     return (s16)(-tbl2[x >> 2]);
 }
 
-f32 func_80013098(f32 p1, f32 p2)
+f32 math_atan2f(f32 p1, f32 p2)
 {
     f32 r = 0.0f;
     if (p2 < 0.0f) {
-        r = func_80013098(p1, -p2);
+        r = math_atan2f(p1, -p2);
         r = -r;
     } else if (p1 < 0.0f) {
-        r = func_80013098(-p1, p2);
+        r = math_atan2f(-p1, p2);
         r = 3.1415927f - r;
     } else if (p1 < p2) {
-        r = func_80013098(p2, p1);
+        r = math_atan2f(p2, p1);
         r = 1.5707964f - r;
     } else if (p1 != 0.0f || p2 != 0.0f) {
-        r = (f32)D_800C4C60[(s32)(p2 * 4096.0f / p1)] * 3.1415927f * 3.0517578e-05f;
+        r = (f32)sAtanTable[(s32)(p2 * 4096.0f / p1)] * 3.1415927f * 3.0517578e-05f;
     }
     return r;
 }
 
-f32 func_8001318C(f32 p) {
+f32 math_asinf(f32 p) {
     s32 x;
     s32 v;
     s32 r;
@@ -652,7 +652,7 @@ tbl:
     {
         u16 *tb;
         v = x + 2;
-        tb = D_800C6C64;
+        tb = sAsinTable;
         if (v < 0) {
             v = x + 5;
         }
@@ -667,7 +667,7 @@ neg:
     {
         u16 *tb;
         v = 2 - x;
-        tb = D_800C6C64;
+        tb = sAsinTable;
         if (v < 0) {
             v = v + 3;
         }
@@ -677,7 +677,7 @@ done:
     return (f32)(s16)r * 3.1415927f * 3.0517578e-05f;
 }
 
-void func_80013248(f32 m[3][3])
+void mtx3f_transpose(f32 m[3][3])
 {
     f32 t;
 
@@ -686,33 +686,33 @@ void func_80013248(f32 m[3][3])
     t = m[1][2]; m[1][2] = m[2][1]; m[2][1] = t;
 }
 
-void func_8001327C(f32 *v, f32 *m, f32 *o)
+void vec3_mul_mtx3f(f32 *v, f32 *m, f32 *o)
 {
     o[0] = v[0] * m[0] + v[1] * m[3] + v[2] * m[6];
     o[1] = v[0] * m[1] + v[1] * m[4] + v[2] * m[7];
     o[2] = v[0] * m[2] + v[1] * m[5] + v[2] * m[8];
 }
 
-void func_80013310(f32 *a, f32 *b, f32 *o)
+void mtx3f_mul_vec3(f32 *a, f32 *b, f32 *o)
 {
     o[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     o[1] = a[0] * b[3] + a[1] * b[4] + a[2] * b[5];
     o[2] = a[0] * b[6] + a[1] * b[7] + a[2] * b[8];
 }
 
-void func_800133A4(Vec3f *a, Vec3f *b, Vec3f *r)
+void vec3_cross(Vec3f *a, Vec3f *b, Vec3f *r)
 {
     r->x = a->y * b->z - b->y * a->z;
     r->y = a->z * b->x - b->z * a->x;
     r->z = a->x * b->y - b->x * a->y;
 }
 
-f32 func_80013408(f32 *a, f32 *b)
+f32 vec3_dot(f32 *a, f32 *b)
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-void func_80013438(f32 *out, f32 x, f32 y, f32 z)
+void quat_from_euler(f32 *out, f32 x, f32 y, f32 z)
 {
     f32 hx, hy, hz;
     f32 c1, s1, c2, s2, c3, s3;
@@ -738,7 +738,7 @@ void func_80013438(f32 *out, f32 x, f32 y, f32 z)
     out[3] = p2s * s3 + ps1 * c3;
 }
 
-void func_80013568(f32 *m, f32 *q)
+void quat_to_mtx3f(f32 *m, f32 *q)
 {
     f32 xx, xy, xz, yy, yz, zz, wx, wy, wz;
 
@@ -762,7 +762,7 @@ void func_80013568(f32 *m, f32 *q)
     m[8] = (0.5f - xx - yy) * 2.0f;
 }
 
-void func_80013650(s32 *m, f32 *q)
+void quat_to_mtx3i(s32 *m, f32 *q)
 {
     f32 x, y, z, w;
     f32 xy, xz, xw, yy, yz, yw, zz, zw, ww;
@@ -791,7 +791,7 @@ void func_80013650(s32 *m, f32 *q)
     m[8] = (s32)((0.5f - yy - zz) * 32768.0f);
 }
 
-f32 func_80013774(f32 x)
+f32 math_exp(f32 x)
 {
     f32 r, u, p;
     s32 i;
@@ -803,10 +803,10 @@ f32 func_80013774(f32 x)
         return 0.0f;
     }
     if (1.0f < x) {
-        return func_80013774(x - 1.0f) * 2.7182817f;
+        return math_exp(x - 1.0f) * 2.7182817f;
     }
     if (x < -1.0f) {
-        return func_80013774(x + 1.0f) / 2.7182817f;
+        return math_exp(x + 1.0f) / 2.7182817f;
     }
     r = x;
     u = x;
@@ -823,8 +823,8 @@ f32 func_80013774(f32 x)
     return r + 1.0f;
 }
 
-u8 func_800138A4(void) {
-    u32 x = D_800E36CC;
+u8 r250_next(void) {
+    u32 x = sR250Index;
     u32 idx = x + 0x67;
     u8 r;
     u32 n;
@@ -832,17 +832,17 @@ u8 func_800138A4(void) {
     if (x > 0x92) {
         idx = x - 0x93;
     }
-    r = D_800E35D0[x] ^ D_800E35D0[idx];
-    D_800E35D0[x] = r;
-    n = D_800E36CC + 1;
-    D_800E36CC = n;
+    r = sR250Buffer[x] ^ sR250Buffer[idx];
+    sR250Buffer[x] = r;
+    n = sR250Index + 1;
+    sR250Index = n;
     if (n > 0xF9) {
-        D_800E36CC = 0;
+        sR250Index = 0;
     }
     return r;
 }
 
-u32 func_800138FC(f32 *p) {
+u32 math_sin_rand(f32 *p) {
     f32 c, d;
     s32 i;
     u32 r;
@@ -864,7 +864,7 @@ u32 func_800138FC(f32 *p) {
     return r;
 }
 
-void func_800139A8(s32 *src, u16 *aux, s16 *dst)
+void mtx_from_rot3i_pos(s32 *src, u16 *aux, s16 *dst)
 {
     u16 *h = (u16 *)src;
     dst[0] = src[0] >> 14;
@@ -926,7 +926,7 @@ struct Obj_5 {
     u8 pad64[0x80 - 0x64];
 };
 
-void func_80013ACC(Obj_5 *src, MtxS_2 *dst, s32 n)
+void mtx_from_bones(Obj_5 *src, MtxS_2 *dst, s32 n)
 {
     s32 i;
 
@@ -968,7 +968,7 @@ void func_80013ACC(Obj_5 *src, MtxS_2 *dst, s32 n)
     }
 }
 
-void func_80013C20(f32 *o, f32 *p, f32 *q) {
+void quat_mul(f32 *o, f32 *p, f32 *q) {
     f32 p0 = p[0];
     f32 p1 = p[1];
     f32 q0 = q[0];

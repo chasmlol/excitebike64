@@ -35,15 +35,15 @@ typedef struct {
 
 typedef struct { u8 b[0x68]; } Ctl;
 
-extern Rec_47 *D_800F4A10[];
-extern Rec_47 D_800CE168;
-extern Font_2 *D_800F4A58;
-extern Msg D_800CE068[];
-extern Ctl D_800E1C78_2[4];
+extern Rec_47 *sPakNoteTables[];
+extern Rec_47 sPakNewNoteEntry;
+extern Font_2 *sPakButtonIcons;
+extern Msg sPakMessages[];
+extern Ctl sPakFs_2[4];
 
-extern Rec_47 *D_800F48E0[];
+extern Rec_47 *sPakNoteList[];
 
-void func_80088500(s32 p, s32 z)
+void pak_build_note_list(s32 p, s32 z)
 {
     s32 *cnt;
     s32 i;
@@ -51,40 +51,40 @@ void func_80088500(s32 p, s32 z)
     s32 j;
     Rec_47 *rec;
 
-    D_800F4AE0[p] = 0;
+    sPakNoteCount[p] = 0;
     if (z != 0) {
-        D_800F48E0[p * 17] = &D_800CE168;
-        D_800F4AE0[p] = 1;
+        sPakNoteList[p * 17] = &sPakNewNoteEntry;
+        sPakNoteCount[p] = 1;
     }
     for (i = 0; i < 16; i++) {
-        rec = &D_800F4A10[p][i];
+        rec = &sPakNoteTables[p][i];
         if (rec->used != -1) {
             if (rec->magic != 0x4E4D5847) {
                 r = 1;
             } else {
-                r = D_800F4A28_2.fn(rec->data, D_800F47D0, D_800F4A28_2.v == 0);
+                r = gPakScreen_2.fn(rec->data, sPakStrBuf, gPakScreen_2.v == 0);
                 if (r == 2) {
-                    if (D_800F4A28_2.v == 1) {
+                    if (gPakScreen_2.v == 1) {
                         continue;
                     }
                     r = 1;
                 }
             }
-            if (r != 1 || D_800F4A28_2.v != 1) {
-                func_8000ED10((u8 *)rec->buf, 0, 0x30);
+            if (r != 1 || gPakScreen_2.v != 1) {
+                mem_fill((u8 *)rec->buf, 0, 0x30);
                 *(Name16 *)rec->buf = rec->name;
                 if (rec->ext.c[0] != 0) {
-                    func_8000ED30(rec->buf, D_800DA708);
+                    str_cat(rec->buf, D_800DA708);
                     *(Ext4 *)&rec->buf[strlen(rec->buf)] = rec->ext;
                 }
                 if (r != 1) {
-                    func_8000ED30(rec->buf, D_800DA70C);
-                    func_8000ED30(rec->buf, D_800F47D0);
+                    str_cat(rec->buf, D_800DA70C);
+                    str_cat(rec->buf, sPakStrBuf);
                 }
                 rec->status = r;
-                j = p * 17; j += D_800F4AE0[p];
-                D_800F48E0[j] = rec;
-                D_800F4AE0[p]++;
+                j = p * 17; j += sPakNoteCount[p];
+                sPakNoteList[j] = rec;
+                sPakNoteCount[p]++;
             }
         }
     }
@@ -101,14 +101,14 @@ static inline Gfx *drawStr(Gfx *gdl, u8 *str, s32 p3, s32 p4, s32 x, s32 y)
             }
         }
     }
-    func_800C1E60(D_800CE164, 0x80, p3, p4, 0);
-    func_800C1F2C(D_800CE164, (char *)str);
-    func_800C0ACC(D_800CE164, x, y);
-    gdl = func_800C1394(gdl);
+    font_text_create(sPakText, 0x80, p3, p4, 0);
+    font_text_add(sPakText, (char *)str);
+    font_draw_text(sPakText, x, y);
+    gdl = font_render(gdl);
     return gdl;
 }
 
-Gfx *func_80088734(Gfx *gdl, u8 *s, s32 p3, s32 p4, s32 x, s32 y)
+Gfx *pak_draw_button_text(Gfx *gdl, u8 *s, s32 p3, s32 p4, s32 x, s32 y)
 {
     s32 k = 0;
     s32 code;
@@ -116,46 +116,46 @@ Gfx *func_80088734(Gfx *gdl, u8 *s, s32 p3, s32 p4, s32 x, s32 y)
 
     if (*s != 0) { i = 0; do {
         if (s[i] != 0x40) {
-            D_800F47D0[k] = s[i];
+            sPakStrBuf[k] = s[i];
             i++;
             k++;
         } else {
-            D_800F47D0[k] = 0;
+            sPakStrBuf[k] = 0;
             if (k != 0) {
                 if (gdl != NULL) {
-                    gdl = drawStr(gdl, D_800F47D0, p3, p4, x, y);
+                    gdl = drawStr(gdl, sPakStrBuf, p3, p4, x, y);
                 } else {
-                    func_800C1E60(D_800CE164, 0x80, p3, p4, 0);
-                    func_800C1F2C(D_800CE164, (char *)D_800F47D0);
+                    font_text_create(sPakText, 0x80, p3, p4, 0);
+                    font_text_add(sPakText, (char *)sPakStrBuf);
                 }
-                x += D_800CE164[6];
+                x += sPakText[6];
             }
             i++;
             k = 0;
             code = s[i] - 0x41;
             if (gdl != NULL) {
                 gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-                gDPLoadTLUT_pal256(gdl++, D_800F4A58->pal);
+                gDPLoadTLUT_pal256(gdl++, sPakButtonIcons->pal);
                 {
                     Gfx *g = gdl++;
                     g->words.w0 = 0xFCFFFFFF;
                     g->words.w1 = 0xFFFCF279;
                 }
-                gdl = func_8000A690(x, y - 4, &D_800F4A58->g[code], gdl, D_800E30A8, 1, 1, 3, 0);
+                gdl = render_draw_image(x, y - 4, &sPakButtonIcons->g[code], gdl, gGfxFrameIndex, 1, 1, 3, 0);
             }
             i++;
-            x += D_800F4A58->g[code].w * 8;
+            x += sPakButtonIcons->g[code].w * 8;
         }
     } while (s[i] != 0); }
-    D_800F47D0[k] = 0;
+    sPakStrBuf[k] = 0;
     if (k != 0) {
         if (gdl != NULL) {
-                    gdl = drawStr(gdl, D_800F47D0, p3, p4, x, y);
+                    gdl = drawStr(gdl, sPakStrBuf, p3, p4, x, y);
                 } else {
-                    func_800C1E60(D_800CE164, 0x80, p3, p4, 0);
-                    func_800C1F2C(D_800CE164, (char *)D_800F47D0);
+                    font_text_create(sPakText, 0x80, p3, p4, 0);
+                    font_text_add(sPakText, (char *)sPakStrBuf);
                 }
-        x += D_800CE164[6];
+        x += sPakText[6];
     }
     if (gdl != NULL) {
         return gdl;
@@ -163,52 +163,52 @@ Gfx *func_80088734(Gfx *gdl, u8 *s, s32 p3, s32 p4, s32 x, s32 y)
     return (Gfx *)x;
 }
 
-void func_80088AE0(void)
+void pak_screen_init(void)
 {
     s32 *g;
     s32 wA, hA, wB, hB, wC, wD, hC, hD;
     f32 fa, fb, fc, fd;
 
-    D_800F4A08 = 0;
-    D_800F4A5C = 0;
-    D_800E2004 = 0;
-    D_800F4A78 = -1;
-    D_800F4A7C = -1;
-    D_800F4A04 = 0;
+    sPakRepairDeclined = 0;
+    sPakPlugMask = 0;
+    sPakValidMask = 0;
+    sPakFrameCounter = -1;
+    sPakOverwriteExt = -1;
+    gPakScreenDone = 0;
     D_800F483C = -1;
-    D_800F4AF0 = 0;
-    D_800F4A28_3[1] = 0;
-    D_800F4A28_3[2] = 0;
-    D_800F4A28_3[3] = 0;
-    D_800F4A28_3[4] = 0;
-    D_800F4A28_3[5] = 0;
-    D_800F4A28_3[6] = 0;
-    g = &D_800F49F8;
-    *g = D_800F47C0;
-    func_8008C6D0();
-    wA = *(volatile s32 *)&D_800F13EC;
-    hA = *(volatile s32 *)&D_800F13F0;
-    wB = *(volatile s32 *)&D_800F13EC;
-    hB = *(volatile s32 *)&D_800F13F0;
-    wC = *(volatile s32 *)&D_800F13EC;
+    sPakWaitTimer = 0;
+    gPakScreen_3[1] = 0;
+    gPakScreen_3[2] = 0;
+    gPakScreen_3[3] = 0;
+    gPakScreen_3[4] = 0;
+    gPakScreen_3[5] = 0;
+    gPakScreen_3[6] = 0;
+    g = &sPakGuiRes;
+    *g = gGuiRes;
+    pak_alloc_note_tables();
+    wA = *(volatile s32 *)&gScreenWidth;
+    hA = *(volatile s32 *)&gScreenHeight;
+    wB = *(volatile s32 *)&gScreenWidth;
+    hB = *(volatile s32 *)&gScreenHeight;
+    wC = *(volatile s32 *)&gScreenWidth;
     fa = (f32)-(wC / 2);
-    wD = *(volatile s32 *)&D_800F13EC;
+    wD = *(volatile s32 *)&gScreenWidth;
     fb = (f32)(wD / 2);
-    hC = *(volatile s32 *)&D_800F13F0;
+    hC = *(volatile s32 *)&gScreenHeight;
     fc = (f32)-(hC / 2);
-    hD = *(volatile s32 *)&D_800F13F0;
+    hD = *(volatile s32 *)&gScreenHeight;
     fd = (f32)(hD / 2);
-    D_800F4868[0] = (s16)(wA << 1);
-    D_800F4868[1] = (s16)(hA << 1);
-    D_800F4868[4] = (s16)(wB << 1);
-    D_800F4868[5] = (s16)(hB << 1);
-    guOrtho((s32 *)D_800F4A88, fa, fb, fc, fd, 50.0f, 16384.0f, 1.0f);
-    D_800F4A20 = func_800BF79C(*g, D_800D13A0);
-    D_800F49F0 = func_800BF79C(*g, D_800D1488);
-    D_800F49F4 = func_800BF79C(*g, D_800D14A8);
-    D_800F4A60 = func_800BF79C(*g, D_800D1418);
-    D_800F4A58 = func_800BF79C(*g, D_800D1434);
-    D_800CE164 = func_800C1E60((s32 *)0, 0x80, 1, 4, 0);
+    sPakViewport[0] = (s16)(wA << 1);
+    sPakViewport[1] = (s16)(hA << 1);
+    sPakViewport[4] = (s16)(wB << 1);
+    sPakViewport[5] = (s16)(hB << 1);
+    guOrtho((s32 *)sPakOrthoMtx, fa, fb, fc, fd, 50.0f, 16384.0f, 1.0f);
+    sPakIconTex = res_load(*g, D_800D13A0);
+    sPakBgTex = res_load(*g, D_800D1488);
+    sPakUiTex = res_load(*g, D_800D14A8);
+    sPakLogoTex = res_load(*g, D_800D1418);
+    sPakButtonIcons = res_load(*g, D_800D1434);
+    sPakText = font_text_create((s32 *)0, 0x80, 1, 4, 0);
 }
 
 typedef struct {
@@ -233,12 +233,12 @@ typedef struct {
     s32 scroll;
 } PakState;
 
-extern Font_3 *D_800F49F0_2;
-extern Font_3 *D_800F49F4_2;
-extern Font_3 *D_800F4A20_2;
-extern Font_3 *D_800F4A60_2;
-extern PakState D_800F4A28_4;
-extern Entry_6 *D_800F48E0_2[4][17];
+extern Font_3 *sPakBgTex_2;
+extern Font_3 *sPakUiTex_2;
+extern Font_3 *sPakIconTex_2;
+extern Font_3 *sPakLogoTex_2;
+extern PakState gPakScreen_4;
+extern Entry_6 *sPakNoteList_2[4][17];
 
 static inline Gfx *drawStr_2(Gfx *gdl, u8 *str, s32 p3, s32 p4, s32 x, s32 y)
 {
@@ -251,22 +251,22 @@ static inline Gfx *drawStr_2(Gfx *gdl, u8 *str, s32 p3, s32 p4, s32 x, s32 y)
             }
         }
     }
-    func_800C1E60(D_800CE164_2, 0x80, p3, p4, 0);
-    func_800C1F2C(D_800CE164_2, (char *)str);
-    func_800C0ACC(D_800CE164_2, x, y);
-    gdl = func_800C1394(gdl);
+    font_text_create(sPakText_2, 0x80, p3, p4, 0);
+    font_text_add(sPakText_2, (char *)str);
+    font_draw_text(sPakText_2, x, y);
+    gdl = font_render(gdl);
     return gdl;
 }
 
 static inline Gfx *drawCtr(Gfx *gdl, char *str, s32 p3, s32 p4, s32 cx, s32 y)
 {
-    func_800C1E60(D_800CE164_2, 0x80, p3, p4, 0);
-    func_800C1F2C(D_800CE164_2, str);
-    func_800C0ACC(D_800CE164_2, cx - (D_800CE164_2[6] >> 1), y);
-    return func_800C1394(gdl);
+    font_text_create(sPakText_2, 0x80, p3, p4, 0);
+    font_text_add(sPakText_2, str);
+    font_draw_text(sPakText_2, cx - (sPakText_2[6] >> 1), y);
+    return font_render(gdl);
 }
 
-void func_80088CF8(s32 arg0, s32 arg1, Gfx **pgdl)
+void pak_screen_draw(s32 arg0, s32 arg1, Gfx **pgdl)
 {
     Gfx *gdl;
     s32 c;
@@ -290,105 +290,105 @@ void func_80088CF8(s32 arg0, s32 arg1, Gfx **pgdl)
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
-    func_800C2224();
-    gDPLoadTLUT_pal256(gdl++, D_800F49F0_2->pal);
-    gdl = func_8000A690(0, 0, &D_800F49F0_2->g[0], gdl, arg1, 1, 1, 3, 0);
-    gDPLoadTLUT_pal256(gdl++, D_800F4A60_2->pal);
-    gdl = func_8000A690(0x4E, 0x16, &D_800F4A60_2->g[0], gdl, arg1, 1, 1, 3, 0);
+    font_reset_queue();
+    gDPLoadTLUT_pal256(gdl++, sPakBgTex_2->pal);
+    gdl = render_draw_image(0, 0, &sPakBgTex_2->g[0], gdl, arg1, 1, 1, 3, 0);
+    gDPLoadTLUT_pal256(gdl++, sPakLogoTex_2->pal);
+    gdl = render_draw_image(0x4E, 0x16, &sPakLogoTex_2->g[0], gdl, arg1, 1, 1, 3, 0);
     gDPSetTextureLUT(gdl++, G_TT_NONE);
-    gdl = func_8000A690(0x4E, 0x13, &D_800F49F4_2->g[3], gdl, arg1, 1, 1, 6, 0);
+    gdl = render_draw_image(0x4E, 0x13, &sPakUiTex_2->g[3], gdl, arg1, 1, 1, 6, 0);
     gDPSetCombine(gdl++, 0x11FE23, 0xFFFFF3F9);
     c = 0xFF;
-    if (D_800F4A28_4.msg == 0) {
+    if (gPakScreen_4.msg == 0) {
         c = 0x80;
     }
     gDPSetPrimColor(gdl++, 0, 0, c, c, c, 255);
-    gdl = func_8000A690(0x2B, 0x32, &D_800F49F4_2->g[2], gdl, arg1, 1, 1, 6, 0);
+    gdl = render_draw_image(0x2B, 0x32, &sPakUiTex_2->g[2], gdl, arg1, 1, 1, 6, 0);
     c ^= 0x7F;
     gDPSetPrimColor(gdl++, 0, 0, c, c, c, 255);
-    gdl = func_8000A690(0x28, 0x95, &D_800F49F4_2->g[1], gdl, arg1, 1, 1, 6, 0);
+    gdl = render_draw_image(0x28, 0x95, &sPakUiTex_2->g[1], gdl, arg1, 1, 1, 6, 0);
     gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
     for (j = 0; j < 0x200; j += 0x10) {
-        gdl = func_8000A690(j, 0xB4, &D_800F49F4_2->g[0], gdl, arg1, 1, 1, 6, 0);
+        gdl = render_draw_image(j, 0xB4, &sPakUiTex_2->g[0], gdl, arg1, 1, 1, 6, 0);
     }
     gDPSetTextureLUT(gdl++, G_TT_RGBA16);
-    gDPLoadTLUT_pal256(gdl++, D_800F4A20_2->pal);
+    gDPLoadTLUT_pal256(gdl++, sPakIconTex_2->pal);
     gDPSetCombine(gdl++, 0xFF97FF, 0xFF2CFE7F);
     for (i = 0; i < 4; i++) {
-        if ((D_800C292C >> i) & 1) {
+        if ((gContMask >> i) & 1) {
             c = 0x80;
-            if ((D_800E2004 | D_800E2008) & (1 << i)) {
+            if ((sPakValidMask | sPakBadMask) & (1 << i)) {
                 c = 0xFF;
             }
             gDPSetColor(gdl++, G_SETPRIMCOLOR, c | 0xFFFFFF00);
-            gdl = func_8000A690(0x37 + i * 100, 0x9C, &D_800F4A20_2->g[(u32)(D_800F4A78 / 2) % D_800F4A20_2->n], gdl,
+            gdl = render_draw_image(0x37 + i * 100, 0x9C, &sPakIconTex_2->g[(u32)(sPakFrameCounter / 2) % sPakIconTex_2->n], gdl,
                                 arg1, 1, 1, 3, 0);
         }
     }
-    gdl = drawStr_2(gdl, (u8 *)D_800CDEF0[D_800F4A28_4.mode], 1, 2, 0x62, 0x1D);
-    __builtin_strcpy((char *)D_800F47D0, "Pak  ");
+    gdl = drawStr_2(gdl, (u8 *)sPakTitles[gPakScreen_4.mode], 1, 2, 0x62, 0x1D);
+    __builtin_strcpy((char *)sPakStrBuf, "Pak  ");
     for (i = 0; i < 4; i++) {
-        if ((D_800E2004 | D_800E2008) & (1 << i)) {
-            D_800F47D0[4] = i + '1';
-            gdl = drawStr_2(gdl, D_800F47D0, 1, (i == D_800F4A28_4.pak) ? 4 : 2, 0x55 + i * 100, 0x9F);
+        if ((sPakValidMask | sPakBadMask) & (1 << i)) {
+            sPakStrBuf[4] = i + '1';
+            gdl = drawStr_2(gdl, sPakStrBuf, 1, (i == gPakScreen_4.pak) ? 4 : 2, 0x55 + i * 100, 0x9F);
         }
     }
-    if (D_800E2004 & (1 << D_800F4A28_4.pak)) {
-        for (i = 0; i < D_800F4AE0[D_800F4A28_4.pak]; i++) {
-            c = i - D_800F4A28_4.scroll;
+    if (sPakValidMask & (1 << gPakScreen_4.pak)) {
+        for (i = 0; i < sPakNoteCount[gPakScreen_4.pak]; i++) {
+            c = i - gPakScreen_4.scroll;
             if (c >= 0) if (c < 8) {
-                e = D_800F48E0_2[D_800F4A28_4.pak][i];
+                e = sPakNoteList_2[gPakScreen_4.pak][i];
                 x = 0x58 - c * 5 / 2;
                 y = c * 10 + 0x3B;
-                func_8000EF8C((char *)D_800F47D0, e->name);
-                if (D_800F4A28_4.msg == 0) {
+                str_copy((char *)sPakStrBuf, e->name);
+                if (gPakScreen_4.msg == 0) {
                     c = 6;
-                } else if (i == D_800F4A28_4.sel) {
+                } else if (i == gPakScreen_4.sel) {
                     c = 5;
-                } else if (e == &D_800CE168) {
+                } else if (e == &sPakNewNoteEntry) {
                     c = 7;
                     w = 0;
                 } else {
                     c = 2;
                 }
-                gdl = drawStr_2(gdl, D_800F47D0, 2, c, x, y);
-                if (e != &D_800CE168) {
+                gdl = drawStr_2(gdl, sPakStrBuf, 2, c, x, y);
+                if (e != &sPakNewNoteEntry) {
                     n = e->size;
                     n += 0xFF;
                     n >>= 8;
-                    func_8000EE30(n, (char *)D_800F47D0);
-                    func_800C1E60(D_800CE164_2, 0x80, 2, c, 0);
-                    func_800C1F2C(D_800CE164_2, (char *)D_800F47D0);
-                    func_800C0ACC(D_800CE164_2, x + (0x140 - D_800CE164_2[6]), y);
-                    gdl = func_800C1394(gdl);
-                    __builtin_strcpy((char *)D_800F47D0, "page");
+                    int_to_str(n, (char *)sPakStrBuf);
+                    font_text_create(sPakText_2, 0x80, 2, c, 0);
+                    font_text_add(sPakText_2, (char *)sPakStrBuf);
+                    font_draw_text(sPakText_2, x + (0x140 - sPakText_2[6]), y);
+                    gdl = font_render(gdl);
+                    __builtin_strcpy((char *)sPakStrBuf, "page");
                     if (n != 1) {
-                        func_8000ED30((char *)D_800F47D0, "s");
+                        str_cat((char *)sPakStrBuf, "s");
                     }
-                    gdl = drawStr_2(gdl, D_800F47D0, 2, c, x + 0x14A, y);
+                    gdl = drawStr_2(gdl, sPakStrBuf, 2, c, x + 0x14A, y);
                 }
             }
         }
-    } else if (D_800E2008 & (1 << D_800F4A28_4.pak)) {
+    } else if (sPakBadMask & (1 << gPakScreen_4.pak)) {
         gdl = drawCtr(gdl, "Damaged or Corrupted Controller Pak!", 2, 6, 0x100, 0x5C);
     }
-    if (D_800F4A28_4.mode == 2 || D_800F4A28_4.mode == 0) {
-        if (D_800E2004 & (1 << D_800F4A28_4.pak)) {
-            func_8000EE30(D_800F4A68[D_800F4A28_4.pak], (char *)D_800F47D0);
-            func_8000ED30((char *)D_800F47D0, " page");
-            if (D_800F4A68[D_800F4A28_4.pak] != 1) {
-                func_8000ED30((char *)D_800F47D0, "s");
+    if (gPakScreen_4.mode == 2 || gPakScreen_4.mode == 0) {
+        if (sPakValidMask & (1 << gPakScreen_4.pak)) {
+            int_to_str(sPakFreePages[gPakScreen_4.pak], (char *)sPakStrBuf);
+            str_cat((char *)sPakStrBuf, " page");
+            if (sPakFreePages[gPakScreen_4.pak] != 1) {
+                str_cat((char *)sPakStrBuf, "s");
             }
-            func_8000ED30((char *)D_800F47D0, " free");
-            gdl = drawCtr(gdl, (char *)D_800F47D0, 1, 2, 0x18B, 0x1E);
+            str_cat((char *)sPakStrBuf, " free");
+            gdl = drawCtr(gdl, (char *)sPakStrBuf, 1, 2, 0x18B, 0x1E);
         }
     }
-    if (D_800CE068[D_800F4A28_4.msg].lines != NULL) {
-        lines = D_800CE068[D_800F4A28_4.msg].lines;
+    if (sPakMessages[gPakScreen_4.msg].lines != NULL) {
+        lines = sPakMessages[gPakScreen_4.msg].lines;
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFDF6FB);
         gDPSetRenderMode(gdl++, 0x404240, 0);
         gDPSetPrimColor(gdl++, 0, 0, 0, 0, 0, 0xC0);
-        gDPFillRectangle(gdl++, 0, 0, D_800F13EC - 1, 0xB4);
+        gDPFillRectangle(gdl++, 0, 0, gScreenWidth - 1, 0xB4);
         gDPPipeSync(gdl++);
         for (i = 0; lines[i] != NULL; i++) {
         }
@@ -397,33 +397,33 @@ void func_80088CF8(s32 arg0, s32 arg1, Gfx **pgdl)
         gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
         gDPSetCombine(gdl++, 0xFFFFFF, 0xFFFCF279);
         gDPSetTextureLUT(gdl++, G_TT_NONE);
-        gDPLoadTextureBlock(gdl++, D_800F49F4_2->g[0].addr, G_IM_FMT_IA, G_IM_SIZ_8b, D_800F49F4_2->g[0].w * 8,
-                            D_800F49F4_2->g[0].h, 0, G_TX_CLAMP, G_TX_CLAMP, 4, 8, G_TX_NOLOD, G_TX_NOLOD);
+        gDPLoadTextureBlock(gdl++, sPakUiTex_2->g[0].addr, G_IM_FMT_IA, G_IM_SIZ_8b, sPakUiTex_2->g[0].w * 8,
+                            sPakUiTex_2->g[0].h, 0, G_TX_CLAMP, G_TX_CLAMP, 4, 8, G_TX_NOLOD, G_TX_NOLOD);
         gSPTextureRectangle(gdl++, 0, 0x114, 0x800, 0x130, 0, 0, 0, 0x400, 0x400);
         gSPTextureRectangle(gdl++, 0, (h - 1) * 4, 0x800, (h + 7) * 4, 0, 0, 0x5C0, 0x400, 0x400);
         gDPPipeSync(gdl++);
         for (i = 0; lines[i] != NULL; i++) {
             gdl = drawCtr(gdl, lines[i], 1, 2, 0x100, 0x53 + i * 14);
         }
-        if (D_800CE068[D_800F4A28_4.msg].extra != NULL) {
-            w = (s32)func_80088734(NULL, (u8 *)D_800CE068[D_800F4A28_4.msg].extra, 1, 4, 0, 0);
-            gdl = func_80088734(gdl, (u8 *)D_800CE068[D_800F4A28_4.msg].extra, 1, 4, 0x100 - w / 2, 0xC6);
+        if (sPakMessages[gPakScreen_4.msg].extra != NULL) {
+            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0, 0);
+            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0x100 - w / 2, 0xC6);
         }
-    } else if (D_800CE068[D_800F4A28_4.msg].text != NULL) {
-        gdl = drawCtr(gdl, D_800CE068[D_800F4A28_4.msg].text, 1, 2, 0x100, 0xBE);
-        if (D_800CE068[D_800F4A28_4.msg].extra != NULL) {
-            w = (s32)func_80088734(NULL, (u8 *)D_800CE068[D_800F4A28_4.msg].extra, 1, 4, 0, 0);
-            gdl = func_80088734(gdl, (u8 *)D_800CE068[D_800F4A28_4.msg].extra, 1, 4, 0x100 - w / 2, 0xCE);
+    } else if (sPakMessages[gPakScreen_4.msg].text != NULL) {
+        gdl = drawCtr(gdl, sPakMessages[gPakScreen_4.msg].text, 1, 2, 0x100, 0xBE);
+        if (sPakMessages[gPakScreen_4.msg].extra != NULL) {
+            w = (s32)pak_draw_button_text(NULL, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0, 0);
+            gdl = pak_draw_button_text(gdl, (u8 *)sPakMessages[gPakScreen_4.msg].extra, 1, 4, 0x100 - w / 2, 0xCE);
         }
     }
-    if (D_800F4AF0 != 0) {
-        D_800F4AF0--;
+    if (sPakWaitTimer != 0) {
+        sPakWaitTimer--;
     }
     gDPPipeSync(gdl++);
     *pgdl = gdl;
 }
 
-void func_80089E30(s32 p)
+void pak_refresh(s32 p)
 {
     s32 n;
     s32 r;
@@ -432,28 +432,28 @@ void func_80089E30(s32 p)
 
     n = 3;
     do {
-        if (func_8008B7B4(p) == 0) {
+        if (pak_read_note_states(p) == 0) {
             break;
         }
         n = n - 1;
     } while (n != 0);
     if (n == 0) {
-        D_800E2008 = D_800E2008 | (1 << p);
-        D_800E2004 = D_800E2004 & ~(1 << p);
+        sPakBadMask = sPakBadMask | (1 << p);
+        sPakValidMask = sPakValidMask & ~(1 << p);
     }
     n = 3;
     do {
-        r = func_8008C068(p);
+        r = pak_get_free_bytes(p);
         if (r < 0) {
             r = r + 0xFF;
         }
-        D_800F4A68[p] = r >> 8;
+        sPakFreePages[p] = r >> 8;
     } while ((r >> 8) < 0 && (n = n - 1) != 0);
     if (n == 0) {
-        D_800E2008 = D_800E2008 | (1 << p);
-        D_800E2004 = D_800E2004 & ~(1 << p);
+        sPakBadMask = sPakBadMask | (1 << p);
+        sPakValidMask = sPakValidMask & ~(1 << p);
     }
-    func_80088500(p, 0);
+    pak_build_note_list(p, 0);
 }
 
 typedef struct {
@@ -485,34 +485,34 @@ typedef struct {
     s32 f2C;
 } PakState_2;
 
-extern PakState_2 D_800F4A28_5;
-extern PakState_2 D_800F4838;
-extern Entry_7 *D_800F4A10_2[];
-extern Entry_7 *D_800F48E0_3[4][17];
+extern PakState_2 gPakScreen_5;
+extern PakState_2 sPakScreenSaved;
+extern Entry_7 *sPakNoteTables_2[];
+extern Entry_7 *sPakNoteList_3[4][17];
 
 static inline void SET(s32 s, s32 m) {
-    D_800F4A28_5.state = s;
-    D_800F4A28_5.sub = 0;
-    D_800F4A00 = m;
+    gPakScreen_5.state = s;
+    gPakScreen_5.sub = 0;
+    sPakSound = m;
 }
 
 static inline void SND(s32 m) {
-    D_800F4A00 = m;
+    sPakSound = m;
 }
 
 static inline void SET2(s32 s) {
-    D_800F4A28_5.state = s;
-    D_800F4A28_5.sub = 0;
+    gPakScreen_5.state = s;
+    gPakScreen_5.sub = 0;
 }
 
 static inline void compact(s32 pak) {
-    if (D_800F48E0_3[pak][0] == &D_800CE168 && D_800F4AE0[pak] > 0) {
-        *(EntryRow *)&D_800F48E0_3[pak][0] = *(EntryRow *)&D_800F48E0_3[pak][1];
-        D_800F4AE0[pak]--;
+    if (sPakNoteList_3[pak][0] == &sPakNewNoteEntry && sPakNoteCount[pak] > 0) {
+        *(EntryRow *)&sPakNoteList_3[pak][0] = *(EntryRow *)&sPakNoteList_3[pak][1];
+        sPakNoteCount[pak]--;
     }
 }
 
-void func_80089F2C(Pad16 *arg0) {
+void pak_screen_update(Pad16 *arg0) {
     u8 st[8];
     u32 pad;
     u32 prev;
@@ -523,24 +523,24 @@ void func_80089F2C(Pad16 *arg0) {
     s32 bit;
     Entry_7 *e;
 
-    if (D_800F4A04 != 0) {
+    if (gPakScreenDone != 0) {
         return;
     }
-    D_800F4A00 = -1;
-    D_800CE068[5].text = D_800CE05C[D_800F4A28_5.mode];
-    if (D_800F4A28_5.mode == 0) {
-        D_800CE068[12].lines = D_800CDF64;
+    sPakSound = -1;
+    sPakMessages[5].text = sPakModePrompts[gPakScreen_5.mode];
+    if (gPakScreen_5.mode == 0) {
+        sPakMessages[12].lines = D_800CDF64;
     } else if (D_800F01F8 == 1) {
-        D_800CE068[12].lines = D_800CDF6C;
+        sPakMessages[12].lines = D_800CDF6C;
     } else {
-        D_800CE068[12].lines = D_800CDF78;
+        sPakMessages[12].lines = D_800CDF78;
     }
-    if (D_800F4A28_5.mode == 2) {
-        D_800CE068[0].extra = D_800CE034;
+    if (gPakScreen_5.mode == 2) {
+        sPakMessages[0].extra = D_800CE034;
     } else {
-        D_800CE068[0].extra = D_800CE01C;
+        sPakMessages[0].extra = D_800CE01C;
     }
-    pad = D_800E30B0;
+    pad = gPadInput;
     if (pad & 0x2000) {
         pad |= 4;
     }
@@ -553,146 +553,146 @@ void func_80089F2C(Pad16 *arg0) {
     if (pad & 0x1000) {
         pad |= 2;
     }
-    i = D_800F49FC;
-    D_800F49FC = pad;
+    i = sPakPrevButtons;
+    sPakPrevButtons = pad;
     pad &= ~i;
-    D_800F4A78++;
-    if (D_800F4A78 % 15 == 0 && func_8008CA68_2(st) == 0 && st[0] != D_800F4A5C) {
+    sPakFrameCounter++;
+    if (sPakFrameCounter % 15 == 0 && pak_get_plug_mask_2(st) == 0 && st[0] != sPakPlugMask) {
         for (i = 0; i < 4; i++) {
-            if (((st[0] ^ D_800F4A5C) >> i) & 1) {
-                D_800F4A08 &= ~(1 << i);
-                func_8008B9BC(i);
-                if (D_800E2004 & (1 << i)) {
-                    func_80089E30(i);
+            if (((st[0] ^ sPakPlugMask) >> i) & 1) {
+                sPakRepairDeclined &= ~(1 << i);
+                pak_probe_port(i);
+                if (sPakValidMask & (1 << i)) {
+                    pak_refresh(i);
                 } else {
-                    func_8000ED10((u8 *)D_800F4A10_2[i], 0, 0x740);
+                    mem_fill((u8 *)sPakNoteTables_2[i], 0, 0x740);
                 }
-                if ((D_800E2008 & (1 << i)) && (D_800F4A28_5.state == 0 || D_800F4A28_5.state == 14)) {
-                    D_800F4A28_5.pak = i;
+                if ((sPakBadMask & (1 << i)) && (gPakScreen_5.state == 0 || gPakScreen_5.state == 14)) {
+                    gPakScreen_5.pak = i;
                     SET(1, 3);
                 }
             }
         }
-        D_800F4A5C = st[0];
+        sPakPlugMask = st[0];
     }
-    D_800E2008 &= D_800C292C;
-    D_800E2004 &= D_800C292C;
-    D_800E1C60 &= D_800C292C;
-    D_800F4A08 &= D_800E2008;
-    if (D_800F4A28_5.state == 0 || D_800F4A28_5.state == 14) {
+    sPakBadMask &= gContMask;
+    sPakValidMask &= gContMask;
+    gRumblePakMask &= gContMask;
+    sPakRepairDeclined &= sPakBadMask;
+    if (gPakScreen_5.state == 0 || gPakScreen_5.state == 14) {
         for (i = 0; i < 4; i++) {
-            n = (D_800F4A28_5.pak + i) % 4;
-            if ((D_800E2008 & (1 << n)) && !((D_800F4A08 >> n) & 1)) {
-                D_800F4A28_5.pak = n;
+            n = (gPakScreen_5.pak + i) % 4;
+            if ((sPakBadMask & (1 << n)) && !((sPakRepairDeclined >> n) & 1)) {
+                gPakScreen_5.pak = n;
                 SET(1, 3);
             }
         }
     }
-    if (D_800F4A28_5.state == 5 && D_800F4AE0[D_800F4A28_5.pak] == 0) {
-        D_800F4A28_5.state = 0;
-        D_800F4A28_5.sub = 0;
+    if (gPakScreen_5.state == 5 && sPakNoteCount[gPakScreen_5.pak] == 0) {
+        gPakScreen_5.state = 0;
+        gPakScreen_5.sub = 0;
     }
-    if ((D_800F4A28_5.state < 14 || D_800F4A28_5.state > 16) && D_800F4A28_5.state != 20) {
-        if ((D_800E2004 | D_800E2008) == 0 && D_800F4A28_5.state != 14) {
-            D_800F4A28_5.state = 14;
-            D_800F4A28_5.sub = 0;
-        } else if (!((D_800E2004 | D_800E2008) & (1 << D_800F4A28_5.pak)) && D_800F4A28_5.state != 0) {
-            D_800F4A28_5.state = 0;
-            D_800F4A28_5.sub = 0;
+    if ((gPakScreen_5.state < 14 || gPakScreen_5.state > 16) && gPakScreen_5.state != 20) {
+        if ((sPakValidMask | sPakBadMask) == 0 && gPakScreen_5.state != 14) {
+            gPakScreen_5.state = 14;
+            gPakScreen_5.sub = 0;
+        } else if (!((sPakValidMask | sPakBadMask) & (1 << gPakScreen_5.pak)) && gPakScreen_5.state != 0) {
+            gPakScreen_5.state = 0;
+            gPakScreen_5.sub = 0;
         }
     }
     for (i = 0; i < 4; i++) {
-        if (!((D_800E2008 | D_800E2004) & (1 << D_800F4A28_5.pak))) {
-            D_800F4A28_5.pak = (D_800F4A28_5.pak + 1) % 4;
+        if (!((sPakBadMask | sPakValidMask) & (1 << gPakScreen_5.pak))) {
+            gPakScreen_5.pak = (gPakScreen_5.pak + 1) % 4;
         }
     }
-    if (D_800F4838.state != -1 && D_800F4A28_5.state == 0 && D_800F4A28_5.mode == 0) {
-        D_800F4A28_5 = D_800F4838;
-        D_800F4838.state = -1;
-        D_800F4A28_5.state = 0;
-        D_800F4A28_5.sub = 0;
+    if (sPakScreenSaved.state != -1 && gPakScreen_5.state == 0 && gPakScreen_5.mode == 0) {
+        gPakScreen_5 = sPakScreenSaved;
+        sPakScreenSaved.state = -1;
+        gPakScreen_5.state = 0;
+        gPakScreen_5.sub = 0;
     }
-    switch (D_800F4A28_5.state) {
+    switch (gPakScreen_5.state) {
     case 0:
-        compact(D_800F4A28_5.pak);
-        D_800F4A28_5.sel = 0;
-        D_800F4A28_5.scroll = 0;
+        compact(gPakScreen_5.pak);
+        gPakScreen_5.sel = 0;
+        gPakScreen_5.scroll = 0;
         if (pad & 4) {
-            for (i = D_800F4A28_5.pak - 1; i >= 0; i--) {
-                if ((D_800E2004 | D_800E2008) & (1 << i)) {
+            for (i = gPakScreen_5.pak - 1; i >= 0; i--) {
+                if ((sPakValidMask | sPakBadMask) & (1 << i)) {
                     break;
                 }
             }
             if (i < 0) {
-                D_800F4A00 = 3;
+                sPakSound = 3;
             } else {
-                D_800F4A28_5.pak = i;
-                D_800F4A00 = 0;
+                gPakScreen_5.pak = i;
+                sPakSound = 0;
             }
         } else if (pad & 8) {
-            for (i = D_800F4A28_5.pak + 1; i < 4; i++) {
-                if ((D_800E2004 | D_800E2008) & (1 << i)) {
+            for (i = gPakScreen_5.pak + 1; i < 4; i++) {
+                if ((sPakValidMask | sPakBadMask) & (1 << i)) {
                     break;
                 }
             }
             if (i >= 4) {
-                D_800F4A00 = 3;
+                sPakSound = 3;
             } else {
-                D_800F4A28_5.pak = i;
-                D_800F4A00 = 0;
+                gPakScreen_5.pak = i;
+                sPakSound = 0;
             }
         }
         if (pad & 0x20) {
-            if (D_800F4A28_5.mode == 1) {
+            if (gPakScreen_5.mode == 1) {
                 SET(18, 2);
-            } else if (D_800F4A28_5.mode == 2) {
+            } else if (gPakScreen_5.mode == 2) {
                 SET(17, 2);
             } else {
-                D_800F4AF4 = 0;
+                gPakScreenAborted = 0;
                 if (D_800CDE70 != 0) {
-                    D_800F4A04 = 1;
-                    D_800F4A00 = 1;
+                    gPakScreenDone = 1;
+                    sPakSound = 1;
                     D_800CDE70 = 0;
                     break;
                 }
                 SET(20, 2);
             }
         } else if (pad & 0x10) {
-            if (D_800E2004 & (1 << D_800F4A28_5.pak)) {
+            if (sPakValidMask & (1 << gPakScreen_5.pak)) {
                 n = 0;
                 for (i = 0; i < 16; i++) {
-                    if (D_800F4A10_2[D_800F4A28_5.pak][i].fileNo != -1) {
+                    if (sPakNoteTables_2[gPakScreen_5.pak][i].fileNo != -1) {
                         n++;
                     }
                 }
-                D_800F4A28_5.sel = 0;
-                if (D_800F4A28_5.mode == 2) {
+                gPakScreen_5.sel = 0;
+                if (gPakScreen_5.mode == 2) {
                     if (n == 16) {
                         SET(8, 1);
                     } else {
-                        func_80088500(D_800F4A28_5.pak, 1);
+                        pak_build_note_list(gPakScreen_5.pak, 1);
                         SET(5, 1);
                     }
-                } else if (D_800F4A28_5.mode == 0 && n == 0) {
+                } else if (gPakScreen_5.mode == 0 && n == 0) {
                     SET(12, 3);
-                } else if (D_800F4A28_5.mode == 1 && D_800F4AE0[D_800F4A28_5.pak] == 0) {
+                } else if (gPakScreen_5.mode == 1 && sPakNoteCount[gPakScreen_5.pak] == 0) {
                     SET(12, 3);
                 } else {
                     SET(5, 1);
                 }
-            } else if (D_800E2008 & (1 << D_800F4A28_5.pak)) {
+            } else if (sPakBadMask & (1 << gPakScreen_5.pak)) {
                 SET(1, 3);
             }
         }
         break;
     case 5:
-        if (D_800F4A28_5.sel >= D_800F4AE0[D_800F4A28_5.pak]) {
-            D_800F4A28_5.sel = D_800F4AE0[D_800F4A28_5.pak] - 1;
+        if (gPakScreen_5.sel >= sPakNoteCount[gPakScreen_5.pak]) {
+            gPakScreen_5.sel = sPakNoteCount[gPakScreen_5.pak] - 1;
         }
-        if (D_800F4A28_5.sel < 0) {
-            D_800F4A28_5.sel = 0;
+        if (gPakScreen_5.sel < 0) {
+            gPakScreen_5.sel = 0;
         }
-        j = D_800F4A28_5.sel;
+        j = gPakScreen_5.sel;
         n = 0;
         if (pad & 2) {
             n = 1;
@@ -702,16 +702,16 @@ void func_80089F2C(Pad16 *arg0) {
             n = -1;
         }
         j += n;
-        cnt = D_800F4AE0[D_800F4A28_5.pak];
+        cnt = sPakNoteCount[gPakScreen_5.pak];
         do {
             if (j < 0) {
                 if (n != 0) {
                     j = i;
                     goto done;
                 }
-                j = D_800F4AE0[D_800F4A28_5.pak] - 1;
+                j = sPakNoteCount[gPakScreen_5.pak] - 1;
             }
-            if (j >= D_800F4AE0[D_800F4A28_5.pak]) {
+            if (j >= sPakNoteCount[gPakScreen_5.pak]) {
                 if (n == 0) {
                     j = 0;
                 } else {
@@ -719,54 +719,54 @@ void func_80089F2C(Pad16 *arg0) {
                     goto done;
                 }
             }
-            if (D_800F4A28_5.mode != 2 || D_800F48E0_3[D_800F4A28_5.pak][j] == &D_800CE168 ||
-                D_800F48E0_3[D_800F4A28_5.pak][j]->code == 0x4E4D5847) {
+            if (gPakScreen_5.mode != 2 || sPakNoteList_3[gPakScreen_5.pak][j] == &sPakNewNoteEntry ||
+                sPakNoteList_3[gPakScreen_5.pak][j]->code == 0x4E4D5847) {
                 goto done;
             }
             j += n;
         } while (n != 0 || (n = 1, --cnt != 0));
     done:
-        D_800F4A28_5.sel = j;
-        if (j < D_800F4A28_5.scroll) {
-            D_800F4A28_5.scroll = j;
+        gPakScreen_5.sel = j;
+        if (j < gPakScreen_5.scroll) {
+            gPakScreen_5.scroll = j;
         }
-        if (D_800F4A28_5.scroll < j - 7) {
-            D_800F4A28_5.scroll = j - 7;
+        if (gPakScreen_5.scroll < j - 7) {
+            gPakScreen_5.scroll = j - 7;
         }
-        if (D_800F4AE0[D_800F4A28_5.pak] - 8 < D_800F4A28_5.scroll) {
-            D_800F4A28_5.scroll = D_800F4AE0[D_800F4A28_5.pak] - 8;
+        if (sPakNoteCount[gPakScreen_5.pak] - 8 < gPakScreen_5.scroll) {
+            gPakScreen_5.scroll = sPakNoteCount[gPakScreen_5.pak] - 8;
         }
-        if (D_800F4A28_5.scroll < 0) {
-            D_800F4A28_5.scroll = 0;
+        if (gPakScreen_5.scroll < 0) {
+            gPakScreen_5.scroll = 0;
         }
         if (pad & 3) {
             if (i == j) {
-                D_800F4A00 = 3;
+                sPakSound = 3;
             } else {
-                D_800F4A00 = 0;
+                sPakSound = 0;
             }
         }
         if (pad & 0x20) {
             SET(0, 2);
         }
         if (pad & 0x10) {
-            if (D_800F4A28_5.mode == 0) {
+            if (gPakScreen_5.mode == 0) {
                 SET(7, 1);
-            } else if (D_800F4A28_5.mode == 2) {
-                e = D_800F48E0_3[D_800F4A28_5.pak][D_800F4A28_5.sel];
-                if (e == &D_800CE168) {
-                    if (D_800F4A68[D_800F4A28_5.pak] < D_800F4A28_5.pages) {
+            } else if (gPakScreen_5.mode == 2) {
+                e = sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel];
+                if (e == &sPakNewNoteEntry) {
+                    if (sPakFreePages[gPakScreen_5.pak] < gPakScreen_5.pages) {
                         SET(8, 1);
                         break;
                     }
                 } else {
                     j = (e->size + 0xFF) >> 8;
-                    if (D_800F4A68[D_800F4A28_5.pak] + j < D_800F4A28_5.pages) {
+                    if (sPakFreePages[gPakScreen_5.pak] + j < gPakScreen_5.pages) {
                         SET(8, 1);
                         break;
                     }
                 }
-                if (e != &D_800CE168) {
+                if (e != &sPakNewNoteEntry) {
                     SET(6, 1);
                 } else {
                     SET(10, 1);
@@ -785,25 +785,25 @@ void func_80089F2C(Pad16 *arg0) {
         }
         break;
     case 13:
-        switch (D_800F4A28_5.sub) {
+        switch (gPakScreen_5.sub) {
         case 0:
-            D_800F4AF0 = 30;
-            D_800F4A28_5.sub = 1;
+            sPakWaitTimer = 30;
+            gPakScreen_5.sub = 1;
             break;
         case 1:
-            if (D_800F4AF0 == 0) {
-                D_800F4A28_5.sub = 2;
+            if (sPakWaitTimer == 0) {
+                gPakScreen_5.sub = 2;
             }
             break;
         case 2:
-            if (func_8008C1FC(D_800F4A28_5.pak, D_800F48E0_3[D_800F4A28_5.pak][D_800F4A28_5.sel]->fileNo) != 0) {
+            if (pak_delete_note(gPakScreen_5.pak, sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel]->fileNo) != 0) {
                 SET(11, 3);
-            } else if (D_800F4A28_5.mode != 0) {
-                func_80089E30(D_800F4A28_5.pak);
+            } else if (gPakScreen_5.mode != 0) {
+                pak_refresh(gPakScreen_5.pak);
                 SET(0, 1);
             } else {
-                func_80089E30(D_800F4A28_5.pak);
-                if (D_800F48E0_3[D_800F4A28_5.pak] == NULL) {
+                pak_refresh(gPakScreen_5.pak);
+                if (sPakNoteList_3[gPakScreen_5.pak] == NULL) {
                     SET(0, 1);
                 } else {
                     SET(5, 1);
@@ -813,14 +813,14 @@ void func_80089F2C(Pad16 *arg0) {
         }
         break;
     case 1:
-        D_800CDF00[0][0x11] = D_800F4A28_5.pak + '1';
+        D_800CDF00[0][0x11] = gPakScreen_5.pak + '1';
         if (pad & 0x10) {
             SET(2, 1);
         }
         if (pad & 0x20) {
             SND(2);
             SET2(0);
-            D_800F4A08 |= 1 << D_800F4A28_5.pak;
+            sPakRepairDeclined |= 1 << gPakScreen_5.pak;
         }
         break;
     case 12:
@@ -829,24 +829,24 @@ void func_80089F2C(Pad16 *arg0) {
         }
         break;
     case 2:
-        switch (D_800F4A28_5.sub) {
+        switch (gPakScreen_5.sub) {
         case 0:
-            D_800F4AF0 = 30;
-            D_800F4A28_5.sub = 1;
+            sPakWaitTimer = 30;
+            gPakScreen_5.sub = 1;
             break;
         case 1:
-            if (D_800F4AF0 == 0) {
-                D_800F4A28_5.sub = 2;
+            if (sPakWaitTimer == 0) {
+                gPakScreen_5.sub = 2;
             }
             break;
         case 2:
-            if (func_8008C55C(D_800F4A28_5.pak) != 0) {
+            if (pak_repair(gPakScreen_5.pak) != 0) {
                 SET(4, 3);
             } else {
-                D_800F4A28_5.state = 3;
-                D_800F4A00 = 1;
-                D_800F4A28_5.sub = 0;
-                D_800F4A5C &= ~(1 << D_800F4A28_5.pak);
+                gPakScreen_5.state = 3;
+                sPakSound = 1;
+                gPakScreen_5.sub = 0;
+                sPakPlugMask &= ~(1 << gPakScreen_5.pak);
             }
             break;
         }
@@ -857,7 +857,7 @@ void func_80089F2C(Pad16 *arg0) {
         }
         if (pad & 0x20) {
             SET(0, 1);
-            D_800F4A08 |= 1 << D_800F4A28_5.pak;
+            sPakRepairDeclined |= 1 << gPakScreen_5.pak;
         }
         break;
     case 3:
@@ -870,14 +870,14 @@ void func_80089F2C(Pad16 *arg0) {
             SET(5, 2);
         }
         if (pad & 0x10) {
-            e = D_800F48E0_3[D_800F4A28_5.pak][D_800F4A28_5.sel];
-            if (func_8008C1FC(D_800F4A28_5.pak, e->fileNo) != 0) {
+            e = sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel];
+            if (pak_delete_note(gPakScreen_5.pak, e->fileNo) != 0) {
                 SET(11, 3);
             } else {
                 if (e->code == 0x4E4D5847) {
-                    D_800F4A7C = e->ext;
+                    sPakOverwriteExt = e->ext;
                 } else {
-                    D_800F4A7C = -1;
+                    sPakOverwriteExt = -1;
                 }
                 SET(10, 1);
             }
@@ -886,44 +886,44 @@ void func_80089F2C(Pad16 *arg0) {
     case 11:
         if (pad & 0x10) {
             SET(5, 1);
-            D_800F4A5C = 0;
-            D_800E2004 = 0;
-            D_800F4A78 = -1;
+            sPakPlugMask = 0;
+            sPakValidMask = 0;
+            sPakFrameCounter = -1;
         }
         break;
     case 14:
-        if (D_800E2008 | D_800E2004) {
-            D_800F4A28_5.state = 0;
-            D_800F4A28_5.sub = 0;
+        if (sPakBadMask | sPakValidMask) {
+            gPakScreen_5.state = 0;
+            gPakScreen_5.sub = 0;
         } else if (pad & 0x20) {
-            D_800F4AF4 = 1;
-            D_800F4A04 = 1;
-            D_800F4A00 = 2;
+            gPakScreenAborted = 1;
+            gPakScreenDone = 1;
+            sPakSound = 2;
         }
         break;
     case 9:
-        switch (D_800F4A28_5.sub) {
+        switch (gPakScreen_5.sub) {
         case 0:
-            D_800F4AF0 = 30;
-            D_800F4A28_5.sub = 1;
+            sPakWaitTimer = 30;
+            gPakScreen_5.sub = 1;
             break;
         case 1:
-            if (D_800F4AF0 == 0) {
-                D_800F4A28_5.sub = 2;
+            if (sPakWaitTimer == 0) {
+                gPakScreen_5.sub = 2;
             }
             break;
         case 2:
-            e = D_800F48E0_3[D_800F4A28_5.pak][D_800F4A28_5.sel];
-            if (D_800F4A28_5.pages < (e->size + 0xFF) >> 8) {
+            e = sPakNoteList_3[gPakScreen_5.pak][gPakScreen_5.sel];
+            if (gPakScreen_5.pages < (e->size + 0xFF) >> 8) {
                 SET(19, 3);
                 return;
             }
-            func_8000ED10(D_800F4A28_5.buf, 0, D_800F4A28_5.pages << 8);
-            if (func_8008C2BC(D_800F4A28_5.pak, e->fileNo, 0, (e->size + 0xFF) & ~0xFF, D_800F4A28_5.buf) != 0) {
+            mem_fill(gPakScreen_5.buf, 0, gPakScreen_5.pages << 8);
+            if (pak_read_note(gPakScreen_5.pak, e->fileNo, 0, (e->size + 0xFF) & ~0xFF, gPakScreen_5.buf) != 0) {
                 SET(11, 3);
                 return;
             }
-            if (D_800F4A28_5.cb != NULL && D_800F4A28_5.cb(D_800F4A28_5.buf, (e->size + 0xFF) & ~0xFF) != 0) {
+            if (gPakScreen_5.cb != NULL && gPakScreen_5.cb(gPakScreen_5.buf, (e->size + 0xFF) & ~0xFF) != 0) {
                 SET(19, 3);
                 return;
             }
@@ -932,27 +932,27 @@ void func_80089F2C(Pad16 *arg0) {
         }
         break;
     case 10:
-        switch (D_800F4A28_5.sub) {
+        switch (gPakScreen_5.sub) {
         case 0:
-            D_800F4AF0 = 30;
-            D_800F4A28_5.sub = 1;
+            sPakWaitTimer = 30;
+            gPakScreen_5.sub = 1;
             break;
         case 1:
-            if (D_800F4AF0 == 0) {
-                D_800F4A28_5.sub = 2;
+            if (sPakWaitTimer == 0) {
+                gPakScreen_5.sub = 2;
             }
             break;
         case 2:
-            if (D_800F4A7C == -1) {
+            if (sPakOverwriteExt == -1) {
                 n = 'A';
                 for (;;) {
-                    for (i = 0; i < D_800F4AE0[D_800F4A28_5.pak]; i++) {
-                        e = D_800F48E0_3[D_800F4A28_5.pak][i];
+                    for (i = 0; i < sPakNoteCount[gPakScreen_5.pak]; i++) {
+                        e = sPakNoteList_3[gPakScreen_5.pak][i];
                         if (e->code == 0x4E4D5847 && e->ext == n) {
                             break;
                         }
                     }
-                    if (i == D_800F4AE0[D_800F4A28_5.pak]) {
+                    if (i == sPakNoteCount[gPakScreen_5.pak]) {
                         break;
                     }
                     if (++n > 'Z') {
@@ -960,36 +960,36 @@ void func_80089F2C(Pad16 *arg0) {
                     }
                 }
             } else {
-                n = D_800F4A7C;
+                n = sPakOverwriteExt;
             }
-            D_800F4A7C = -1;
-            func_8000ED10(D_800F47D0, 0, 4);
-            D_800F47D0[0] = n;
-            j = func_8008C0E4(D_800F4A28_5.pak, D_800CDEFC, D_800F47D0, 0x3031, 0x4E4D5847, D_800F4A28_5.pages << 8);
+            sPakOverwriteExt = -1;
+            mem_fill(sPakStrBuf, 0, 4);
+            sPakStrBuf[0] = n;
+            j = pak_create_note(gPakScreen_5.pak, sPakGameName, sPakStrBuf, 0x3031, 0x4E4D5847, gPakScreen_5.pages << 8);
             if (j < 0) {
                 SET(11, 3);
             }
-            if (func_8008C370(D_800F4A28_5.pak, j, 0, D_800F4A28_5.pages << 8, D_800F4A28_5.buf) != 0) {
-                func_8008C1FC(D_800F4A28_5.pak, j);
+            if (pak_write_note(gPakScreen_5.pak, j, 0, gPakScreen_5.pages << 8, gPakScreen_5.buf) != 0) {
+                pak_delete_note(gPakScreen_5.pak, j);
                 SET(11, 3);
             }
-            D_800F4A80 = func_800BC908(D_800F4A28_5.pages << 8, 0, "pak.c", 0x5E6);
-            n = func_8008C2BC(D_800F4A28_5.pak, j, 0, D_800F4A28_5.pages << 8, D_800F4A80);
+            sPakVerifyBuf = mem_alloc_dbg(gPakScreen_5.pages << 8, 0, "pak.c", 0x5E6);
+            n = pak_read_note(gPakScreen_5.pak, j, 0, gPakScreen_5.pages << 8, sPakVerifyBuf);
             if (n == 0) {
-                for (i = 0; i < D_800F4A28_5.pages << 8; i++) {
-                    if (D_800F4A80[i] != D_800F4A28_5.buf[i]) {
+                for (i = 0; i < gPakScreen_5.pages << 8; i++) {
+                    if (sPakVerifyBuf[i] != gPakScreen_5.buf[i]) {
                         n = 1;
                     }
                 }
             }
-            func_800BCB04(D_800F4A80);
+            mem_free(sPakVerifyBuf);
             if (n != 0) {
-                func_8008C1FC(D_800F4A28_5.pak, j);
+                pak_delete_note(gPakScreen_5.pak, j);
                 SET(11, 3);
             }
-            func_80089E30(D_800F4A28_5.pak);
-            D_800F4A28_5.state = 15;
-            D_800F4A28_5.sub = 0;
+            pak_refresh(gPakScreen_5.pak);
+            gPakScreen_5.state = 15;
+            gPakScreen_5.sub = 0;
             break;
         }
         break;
@@ -998,24 +998,24 @@ void func_80089F2C(Pad16 *arg0) {
             SET(7, 1);
         } else if (pad & 0x20) {
             SET(0, 1);
-            D_800F4A5C = 0;
-            D_800E2004 = 0;
-            D_800F4A78 = -1;
+            sPakPlugMask = 0;
+            sPakValidMask = 0;
+            sPakFrameCounter = -1;
         }
         break;
     case 8:
         if (pad & 0x20) {
             SET(0, 2);
         } else if (pad & 0x10) {
-            D_800F4838 = D_800F4A28_5;
-            D_800F4A28_5.mode = 0;
-            func_80088500(D_800F4A28_5.pak, 0);
-            compact(D_800F4A28_5.pak);
+            sPakScreenSaved = gPakScreen_5;
+            gPakScreen_5.mode = 0;
+            pak_build_note_list(gPakScreen_5.pak, 0);
+            compact(gPakScreen_5.pak);
             SET(5, 1);
         }
         break;
     case 17:
-        D_800F4AF4 = 1;
+        gPakScreenAborted = 1;
         if (pad & 0x10) {
             SET(20, 1);
         } else if (pad & 0x20) {
@@ -1023,7 +1023,7 @@ void func_80089F2C(Pad16 *arg0) {
         }
         break;
     case 18:
-        D_800F4AF4 = 1;
+        gPakScreenAborted = 1;
         if (pad & 0x10) {
             SET(20, 1);
         } else if (pad & 0x20) {
@@ -1032,43 +1032,43 @@ void func_80089F2C(Pad16 *arg0) {
         break;
     case 15:
     case 16:
-        D_800F4AF4 = 0;
+        gPakScreenAborted = 0;
     case 20:
         if (pad & 0x10) {
-            D_800F4A04 = 1;
-            D_800F4A00 = 1;
+            gPakScreenDone = 1;
+            sPakSound = 1;
         }
         break;
     }
-    if (D_800F4A04 != 0 && D_800F4838.state != -1) {
-        D_800F4A28_5 = D_800F4838;
-        D_800F4838.state = -1;
-        D_800F4A28_5.state = 0;
-        D_800F4A28_5.sub = 0;
-        D_800F4A04 = 0;
+    if (gPakScreenDone != 0 && sPakScreenSaved.state != -1) {
+        gPakScreen_5 = sPakScreenSaved;
+        sPakScreenSaved.state = -1;
+        gPakScreen_5.state = 0;
+        gPakScreen_5.sub = 0;
+        gPakScreenDone = 0;
     }
-    if (D_800F4A00 != -1) {
-        func_8001102C(D_800F4A00);
+    if (sPakSound != -1) {
+        snd_play_menu_sound(sPakSound);
     }
-    if (D_800F4A04 != 0) {
-        func_8008BC30();
-        if (D_800F4A04 != 0) {
+    if (gPakScreenDone != 0) {
+        pak_probe_all();
+        if (gPakScreenDone != 0) {
             D_800CDE70 = 0;
         }
     }
 }
 
-void func_8008B6DC(void)
+void pak_screen_exit(void)
 {
-    func_800BFEA4((u32 *)(D_800F49F8_2[1] + D_800D13A0 * 4));
-    func_800BFEA4((u32 *)(D_800F49F8_2[1] + D_800D1488 * 4));
-    func_800BFEA4((u32 *)(D_800F49F8_2[1] + D_800D14A8 * 4));
-    func_800BFEA4((u32 *)(D_800F49F8_2[1] + D_800D1418 * 4));
-    func_800BFEA4((u32 *)(D_800F49F8_2[1] + D_800D1434 * 4));
-    func_800C204C(D_800CE164);
-    func_800BCB04(D_800CE164);
-    func_8008C744();
-    func_8008BC30();
+    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D13A0 * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D1488 * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D14A8 * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D1418 * 4));
+    res_unload((u32 *)(sPakGuiRes_2[1] + D_800D1434 * 4));
+    func_800C204C(sPakText);
+    mem_free(sPakText);
+    pak_free_note_tables();
+    pak_probe_all();
 }
 
 typedef struct { u32 w[8]; } Hdr_10;
@@ -1084,36 +1084,36 @@ typedef struct {
     u8 rest[0x74 - 0x40];
 } Slot_13;
 
-extern Slot_13 *D_800F4A10_3[];
+extern Slot_13 *sPakNoteTables_3[];
 
-s32 func_8008B7B4(u32 p)
+s32 pak_read_note_states(u32 p)
 {
     Hdr_10 tmp;
     s32 i, k, r;
 
-    if (!(D_800E2004 & (1 << p))) {
+    if (!(sPakValidMask & (1 << p))) {
         return -1;
     }
-    func_8000CD00();
+    cont_finish_read();
     for (i = 0; i < 16; i++) {
-        D_800F4A10_3[p][i].id = -1;
+        sPakNoteTables_3[p][i].id = -1;
     }
     k = 0;
     i = 0;
     do {
-        r = osPfsFileState(&D_800E1C78_2[p], i, &D_800F4A10_3[p][k]);
+        r = osPfsFileState(&sPakFs_2[p], i, &sPakNoteTables_3[p][k]);
         if (r == 5) {
-            func_8000ED10((u8 *)&D_800F4A10_3[p][k], 0, 0x74);
-            D_800F4A10_3[p][k].id = -1;
+            mem_fill((u8 *)&sPakNoteTables_3[p][k], 0, 0x74);
+            sPakNoteTables_3[p][k].id = -1;
         } else if (r == 0) {
-            D_800F4A10_3[p][k].id = i;
-            func_8008C670(D_800F4A10_3[p][k].b, 0x10);
-            func_8008C670(D_800F4A10_3[p][k].a, 4);
-            if (D_800F4A10_3[p][k].magic == 0x4E4D5847) {
-                if (func_8008C2BC(p, i, 0, 0x20, (u8 *)&tmp) != 0) {
-                    D_800F4A10_3[p][k].magic = 0;
+            sPakNoteTables_3[p][k].id = i;
+            pak_pfs_to_ascii(sPakNoteTables_3[p][k].b, 0x10);
+            pak_pfs_to_ascii(sPakNoteTables_3[p][k].a, 4);
+            if (sPakNoteTables_3[p][k].magic == 0x4E4D5847) {
+                if (pak_read_note(p, i, 0, 0x20, (u8 *)&tmp) != 0) {
+                    sPakNoteTables_3[p][k].magic = 0;
                 }
-                D_800F4A10_3[p][k].hdr = tmp;
+                sPakNoteTables_3[p][k].hdr = tmp;
             }
             k++;
         } else {
@@ -1124,95 +1124,95 @@ s32 func_8008B7B4(u32 p)
     return 0;
 }
 
-void func_8008B9BC(s32 chan)
+void pak_probe_port(s32 chan)
 {
     u32 bit = 1 << chan;
     s32 msg[2];
     s32 i;
 
-    if (D_800E1E18 != 0) {
-        func_8000CD00();
+    if (gContReadPending != 0) {
+        cont_finish_read();
     }
-    osContStartQuery(&D_800E1C48);
-    osRecvMesg(&D_800E1C48, msg, 1);
-    osContGetQuery(D_800E1C68);
-    D_800C292C = 0;
-    D_800C292D = 0;
+    osContStartQuery(&gSiMesgQueue);
+    osRecvMesg(&gSiMesgQueue, msg, 1);
+    osContGetQuery(gContStatus);
+    gContMask = 0;
+    gContCount = 0;
     for (i = 0; i < 4; i++) {
-        if (D_800E1C68[i].errno == 0) {
-            if (D_800C292C == 0) {
-                D_800C292E = i;
+        if (gContStatus[i].errno == 0) {
+            if (gContMask == 0) {
+                gContFirst = i;
             }
-            D_800C292C |= 1 << i;
-            D_800C292D++;
+            gContMask |= 1 << i;
+            gContCount++;
         }
     }
-    if ((D_800C292C & bit) == 0) {
+    if ((gContMask & bit) == 0) {
         return;
     }
     i = chan;
-    D_800E2004 &= ~bit;
-    D_800E1C60 &= ~bit;
-    D_800E2008 &= ~bit;
-    switch (osPfsInitPak(&D_800E1C48, &D_800E1C78_2[i], i)) {
+    sPakValidMask &= ~bit;
+    gRumblePakMask &= ~bit;
+    sPakBadMask &= ~bit;
+    switch (osPfsInitPak(&gSiMesgQueue, &sPakFs_2[i], i)) {
     case 0:
-        D_800E2004 |= bit;
+        sPakValidMask |= bit;
         break;
     case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9:
         break;
     case 11:
-        if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) != 0) {
-            if (osGbpakInit(&D_800E1C48, &D_800F4878, i) != 0) {
-                D_800E2008 |= 1 << i;
+        if (osMotorInit(&gSiMesgQueue, &gRumblePfs[i], i) != 0) {
+            if (osGbpakInit(&gSiMesgQueue, &sGbPakFs, i) != 0) {
+                sPakBadMask |= 1 << i;
             }
         } else {
-            __osMotorAccess(&D_800E1E60[i], 0);
-            D_800E1C60 |= bit;
+            __osMotorAccess(&gRumblePfs[i], 0);
+            gRumblePakMask |= bit;
         }
         break;
     case 10:
-        if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) == 0) {
-            __osMotorAccess(&D_800E1E60[i], 0);
-            D_800E1C60 |= bit;
+        if (osMotorInit(&gSiMesgQueue, &gRumblePfs[i], i) == 0) {
+            __osMotorAccess(&gRumblePfs[i], 0);
+            gRumblePakMask |= bit;
         } else {
-            D_800E2008 |= bit;
+            sPakBadMask |= bit;
         }
         break;
     }
 }
 
-void func_8008BC30(void)
+void pak_probe_all(void)
 {
     u32 buf[2];
     s32 i;
 
-    if (D_800E1E18 != 0) {
-        func_8000CD00();
+    if (gContReadPending != 0) {
+        cont_finish_read();
     }
-    osContStartQuery(&D_800E1C48);
-    osRecvMesg(&D_800E1C48, buf, 1);
-    osContGetQuery(D_800E1C68);
-    D_800C292C = 0;
-    D_800C292D = 0;
+    osContStartQuery(&gSiMesgQueue);
+    osRecvMesg(&gSiMesgQueue, buf, 1);
+    osContGetQuery(gContStatus);
+    gContMask = 0;
+    gContCount = 0;
     for (i = 0; i < 4; i++) {
-        if (D_800E1C68[i].errno == 0) {
-            if (D_800C292C == 0) {
-                D_800C292E = i;
+        if (gContStatus[i].errno == 0) {
+            if (gContMask == 0) {
+                gContFirst = i;
             }
-            D_800C292C |= 1 << i;
-            D_800C292D++;
+            gContMask |= 1 << i;
+            gContCount++;
         }
     }
-    D_800E2020 = 0;
-    D_800E2004 = 0;
-    D_800E1C60 = 0;
-    D_800E2008 = 0;
+    gRumbleActiveMask = 0;
+    sPakValidMask = 0;
+    gRumblePakMask = 0;
+    sPakBadMask = 0;
     for (i = 0; i < 4; i++) {
-        D_800E2010[i] = 0;
-        if ((D_800C292C >> i) & 1) {
-            switch (osPfsInitPak(&D_800E1C48, &D_800E1C78_3[i], i)) {
+        gRumbleTimers[i] = 0;
+        if ((gContMask >> i) & 1) {
+            switch (osPfsInitPak(&gSiMesgQueue, &sPakFs_3[i], i)) {
             case 0:
-                D_800E2004 |= 1 << i;
+                sPakValidMask |= 1 << i;
                 break;
             case 1:
             case 2:
@@ -1225,57 +1225,57 @@ void func_8008BC30(void)
             case 9:
                 break;
             case 11:
-                if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) == 0) {
-                    __osMotorAccess(&D_800E1E60[i], 0);
-                    D_800E1C60 |= 1 << i;
-                } else if (osGbpakInit(&D_800E1C48, &D_800F4878, i) != 0) {
-                    D_800E2008 |= 1 << i;
+                if (osMotorInit(&gSiMesgQueue, &gRumblePfs[i], i) == 0) {
+                    __osMotorAccess(&gRumblePfs[i], 0);
+                    gRumblePakMask |= 1 << i;
+                } else if (osGbpakInit(&gSiMesgQueue, &sGbPakFs, i) != 0) {
+                    sPakBadMask |= 1 << i;
                 }
                 break;
             case 10:
-                if (osMotorInit(&D_800E1C48, &D_800E1E60[i], i) == 0) {
-                    __osMotorAccess(&D_800E1E60[i], 0);
-                    D_800E1C60 |= 1 << i;
+                if (osMotorInit(&gSiMesgQueue, &gRumblePfs[i], i) == 0) {
+                    __osMotorAccess(&gRumblePfs[i], 0);
+                    gRumblePakMask |= 1 << i;
                 } else {
-                    D_800E2008 |= 1 << i;
+                    sPakBadMask |= 1 << i;
                 }
                 break;
             }
         }
     }
-    D_800C2928 = osEepromProbe(&D_800E1C48);
+    sEepromType = osEepromProbe(&gSiMesgQueue);
 }
 
-void func_8008BE9C(void)
+void pak_query_controllers(void)
 {
     s32 buf[2];
     s32 k;
     u8 *p;
 
-    if (D_800E1E18 != 0) {
-        func_8000CD00();
+    if (gContReadPending != 0) {
+        cont_finish_read();
     }
-    osContStartQuery(&D_800E1C48);
-    osRecvMesg(&D_800E1C48, buf, 1);
-    osContGetQuery(D_800E1C68);
+    osContStartQuery(&gSiMesgQueue);
+    osRecvMesg(&gSiMesgQueue, buf, 1);
+    osContGetQuery(gContStatus);
     k = 0;
-    D_800C292C = 0;
-    D_800C292D = 0;
-    p = D_800E1C68;
+    gContMask = 0;
+    gContCount = 0;
+    p = gContStatus;
     do {
         if (p[3] == 0) {
-            if (D_800C292C == 0) {
-                D_800C292E = k;
+            if (gContMask == 0) {
+                gContFirst = k;
             }
-            D_800C292C = D_800C292C | (1 << k);
-            D_800C292D = D_800C292D + 1;
+            gContMask = gContMask | (1 << k);
+            gContCount = gContCount + 1;
         }
         k++;
         p += 4;
     } while (k < 4);
 }
 
-void func_8008BF60(void)
+void pak_update_free_pages(void)
 {
     s32 i;
     s32 a;
@@ -1283,15 +1283,15 @@ void func_8008BF60(void)
     s32 c;
     s32 x;
 
-    func_8008BC30();
+    pak_probe_all();
     for (i = 0; i < 4; i++) {
-        D_800F4AC8[i] = -2;
-        if ((D_800E2004 & (1 << i)) && osPfsNumFiles(&D_800E1C78[i * 0x68], &a, &b) == 0) {
-            if (!(D_800E2004 & (1 << i))) {
+        gPakFreePages[i] = -2;
+        if ((sPakValidMask & (1 << i)) && osPfsNumFiles(&sPakFs[i * 0x68], &a, &b) == 0) {
+            if (!(sPakValidMask & (1 << i))) {
                 x = -1;
             } else {
-                func_8000CD00();
-                if (osPfsFreeBlocks(&D_800E1C78[i * 0x68], &c) != 0) {
+                cont_finish_read();
+                if (osPfsFreeBlocks(&sPakFs[i * 0x68], &c) != 0) {
                     x = -2;
                 } else {
                     x = c;
@@ -1299,46 +1299,46 @@ void func_8008BF60(void)
             }
             x &= ~0xFF;
             if (b == 0x10) {
-                D_800F4AC8[i] = -1;
+                gPakFreePages[i] = -1;
             } else {
-                D_800F4AC8[i] = x / 256;
+                gPakFreePages[i] = x / 256;
             }
         }
     }
 }
 
-int func_8008C068(u32 param_1)
+int pak_get_free_bytes(u32 param_1)
 {
     int local_10[2];
 
-    if ((D_800E2004 & (1 << param_1)) == 0) {
+    if ((sPakValidMask & (1 << param_1)) == 0) {
         return -1;
     }
-    func_8000CD00();
-    if (osPfsFreeBlocks((u32 *)(D_800E1C78 + param_1 * 0x68), local_10) != 0) {
+    cont_finish_read();
+    if (osPfsFreeBlocks((u32 *)(sPakFs + param_1 * 0x68), local_10) != 0) {
         return -2;
     }
     return local_10[0];
 }
 
-s32 func_8008C0E4(u32 param_1, char *param_2, char *param_3, s32 param_4, s32 param_5, s32 param_6)
+s32 pak_create_note(u32 param_1, char *param_2, char *param_3, s32 param_4, s32 param_5, s32 param_6)
 {
     s32 iVar2;
     u8 acStack_38[16];
     u8 acStack_28[8];
     s32 local_20[2];
 
-    if ((D_800E2004 & (1 << param_1)) == 0) {
+    if ((sPakValidMask & (1 << param_1)) == 0) {
         iVar2 = -1;
     } else {
-        func_8000CD00();
-        func_8000ED10(acStack_28, 0, 4);
-        func_8000EF8C(acStack_28, param_3);
-        func_8000ED10(acStack_38, 0, 0x10);
-        func_8000EF8C(acStack_38, param_2);
-        func_8008C5E8(acStack_38, 0x10);
-        func_8008C5E8(acStack_28, 4);
-        iVar2 = osPfsAllocateFile(D_800E1C78 + param_1 * 0x68, (u16)param_4, param_5, acStack_38, acStack_28, param_6, local_20);
+        cont_finish_read();
+        mem_fill(acStack_28, 0, 4);
+        str_copy(acStack_28, param_3);
+        mem_fill(acStack_38, 0, 0x10);
+        str_copy(acStack_38, param_2);
+        pak_ascii_to_pfs(acStack_38, 0x10);
+        pak_ascii_to_pfs(acStack_28, 4);
+        iVar2 = osPfsAllocateFile(sPakFs + param_1 * 0x68, (u16)param_4, param_5, acStack_38, acStack_28, param_6, local_20);
         if (iVar2 == 0) {
             iVar2 = local_20[0];
         } else {
@@ -1348,58 +1348,58 @@ s32 func_8008C0E4(u32 param_1, char *param_2, char *param_3, s32 param_4, s32 pa
     return iVar2;
 }
 
-s32 func_8008C1FC(s32 channel, s32 file_no) {
+s32 pak_delete_note(s32 channel, s32 file_no) {
     volatile s32 pad[6];
     OSPfsState state;
     s32 ret;
     s32 r2;
 
-    if (!(D_800E2004 & (1 << channel))) {
+    if (!(sPakValidMask & (1 << channel))) {
         return -1;
     }
-    func_8000CD00();
-    ret = osPfsFileState(&D_800E1C78_4[channel], file_no, &state);
+    cont_finish_read();
+    ret = osPfsFileState(&sPakFs_4[channel], file_no, &state);
     if (ret != 0) {
         return 100 - ret;
     }
-    r2 = osPfsDeleteFile(&D_800E1C78_4[channel], state.company_code, state.game_code, state.game_name, state.ext_name);
+    r2 = osPfsDeleteFile(&sPakFs_4[channel], state.company_code, state.game_code, state.game_name, state.ext_name);
     if (r2 != 0) {
         return -r2;
     }
     return 0;
 }
 
-s32 func_8008C2BC(u32 param_1, s32 param_2, u32 param_3, u32 param_4, u8 *param_5)
+s32 pak_read_note(u32 param_1, s32 param_2, u32 param_3, u32 param_4, u8 *param_5)
 {
     s32 r;
 
-    if ((D_800E2004 & (1 << param_1)) == 0) {
+    if ((sPakValidMask & (1 << param_1)) == 0) {
         return -1;
     }
-    func_8000CD00();
-    r = osPfsReadWriteFile((u8 *)D_800E1C78 + param_1 * 0x68, param_2, 0, param_3, param_4, param_5);
+    cont_finish_read();
+    r = osPfsReadWriteFile((u8 *)sPakFs + param_1 * 0x68, param_2, 0, param_3, param_4, param_5);
     if (r == 0) {
         return 0;
     }
     return -r;
 }
 
-s32 func_8008C370(u32 p1, s32 p2, u32 p3, u32 p4, u8 *p5)
+s32 pak_write_note(u32 p1, s32 p2, u32 p3, u32 p4, u8 *p5)
 {
     s32 r;
 
-    if ((D_800E2004 & (1u << p1)) == 0) {
+    if ((sPakValidMask & (1u << p1)) == 0) {
         return -1;
     }
-    func_8000CD00();
-    r = osPfsReadWriteFile(D_800E1C78 + p1 * 0x68, p2, 1, p3, p4, p5);
+    cont_finish_read();
+    r = osPfsReadWriteFile(sPakFs + p1 * 0x68, p2, 1, p3, p4, p5);
     if (r != 0) {
         return -r;
     }
     return 0;
 }
 
-void func_8008C424(s32 c, u8 *buf, s32 n)
+void pak_eeprom_read(s32 c, u8 *buf, s32 n)
 {
     s32 full;
     s32 v;
@@ -1408,8 +1408,8 @@ void func_8008C424(s32 c, u8 *buf, s32 n)
     u8 *p;
 
     v = 0x55;
-    func_8000CD00();
-    func_8000ED10_4(buf, 0x55, n << 3);
+    cont_finish_read();
+    mem_fill_4(buf, 0x55, n << 3);
     if (0 < n) {
         do {
             i = 0;
@@ -1425,9 +1425,9 @@ void func_8008C424(s32 c, u8 *buf, s32 n)
                     if (j != 8) {
                         full = full + 1;
                     } else {
-                        func_8000ED10_4(p, v + 1, 8);
+                        mem_fill_4(p, v + 1, 8);
                         osWritebackDCache(p, 8);
-                        osEepromRead((s32)&D_800E1C48, (u8)(c + i), p);
+                        osEepromRead((s32)&gSiMesgQueue, (u8)(c + i), p);
                         osInvalDCache(p, 8);
                     }
                     i = i + 1;
@@ -1440,20 +1440,20 @@ void func_8008C424(s32 c, u8 *buf, s32 n)
     osInvalDCache(buf, n << 3);
 }
 
-s32 func_8008C55C(u32 param_1)
+s32 pak_repair(u32 param_1)
 {
     u8 *p;
     s32 r;
 
-    func_8000CD00_2();
-    p = D_800E1C78 + param_1 * 0x68;
-    osPfsInitPak(&D_800E1C48, p, param_1);
+    cont_finish_read_2();
+    p = sPakFs + param_1 * 0x68;
+    osPfsInitPak(&gSiMesgQueue, p, param_1);
     r = osPfsRepairId(p);
-    osPfsInitPak(&D_800E1C48, p, param_1);
+    osPfsInitPak(&gSiMesgQueue, p, param_1);
     return r;
 }
 
-void func_8008C5E8(u8 *p, s32 n)
+void pak_ascii_to_pfs(u8 *p, s32 n)
 {
     u8 *q;
     u8 c;
@@ -1462,14 +1462,14 @@ void func_8008C5E8(u8 *p, s32 n)
 
     for (i = 0; i < n; i++, p++) {
         j = 0;
-        if (D_800CDE74[0] == 0) goto nf;
+        if (sPakCharset[0] == 0) goto nf;
         q = p;
         c = *p;
-        while (D_800CDE74[j] != 0) {
-            if (c == D_800CDE74[j]) break;
+        while (sPakCharset[j] != 0) {
+            if (c == sPakCharset[j]) break;
             j++;
         }
-        if (D_800CDE74[j] != 0) goto st;
+        if (sPakCharset[j] != 0) goto st;
     nf:
         if (*p != 0) goto nz;
         *p = 0;
@@ -1484,7 +1484,7 @@ void func_8008C5E8(u8 *p, s32 n)
     }
 }
 
-void func_8008C670(u8 *buf, s32 n)
+void pak_pfs_to_ascii(u8 *buf, s32 n)
 {
     s32 i = 0;
     u8 *p;
@@ -1492,7 +1492,7 @@ void func_8008C670(u8 *buf, s32 n)
         do {
             p = buf + i;
             if ((u8)(*p - 0xF) < 0x33) {
-                *p = D_800CDE74[*p - 0xF];
+                *p = sPakCharset[*p - 0xF];
             } else {
                 if (*p != 0) {
                     goto nonzero;
@@ -1508,18 +1508,18 @@ void func_8008C670(u8 *buf, s32 n)
     }
 }
 
-void func_8008C6D0(void) {
+void pak_alloc_note_tables(void) {
     s32 i;
     for (i = 0; i < 4; i++) {
-        D_800F4A10[i] = func_800BC908(0x740, 0, (s32)"pak.c", 0x75F);
-        func_8000ED10(D_800F4A10[i], 0x77, 0x740);
+        sPakNoteTables[i] = mem_alloc_dbg(0x740, 0, (s32)"pak.c", 0x75F);
+        mem_fill(sPakNoteTables[i], 0x77, 0x740);
     }
 }
 
-void func_8008C744(void) {
+void pak_free_note_tables(void) {
     s32 i;
     for (i = 0; i < 4; i++) {
-        func_800BCB04(D_800F4A10[i]);
+        mem_free(sPakNoteTables[i]);
     }
 }
 
@@ -1528,28 +1528,28 @@ typedef struct {
     s32 w[16];
 } Ent_84;
 
-extern Ent_84 D_800F48E0_4[];
+extern Ent_84 sPakNoteList_4[];
 
-void func_8008C790(s32 idx)
+void pak_remove_new_note_entry(s32 idx)
 {
     Quad *dst;
     Quad *src;
     Quad *end;
 
-    if (D_800F48E0_4[idx].f0 == (s32)D_800CE168_2 && D_800F4AE0[idx] > 0) {
-        dst = (Quad *)&D_800F48E0_4[idx];
-        src = (Quad *)D_800F48E0_4[idx].w;
+    if (sPakNoteList_4[idx].f0 == (s32)sPakNewNoteEntry_2 && sPakNoteCount[idx] > 0) {
+        dst = (Quad *)&sPakNoteList_4[idx];
+        src = (Quad *)sPakNoteList_4[idx].w;
         end = src + 4;
         do {
             *dst = *src;
             dst++;
             src++;
         } while (src != end);
-        D_800F4AE0[idx] = D_800F4AE0[idx] - 1;
+        sPakNoteCount[idx] = sPakNoteCount[idx] - 1;
     }
 }
 
-void func_8008C830(s32 *p1, char *p2, s32 p3, s32 p4, s32 p5, s32 p6)
+void pak_draw_text(s32 *p1, char *p2, s32 p3, s32 p4, s32 p5, s32 p6)
 {
     char *q;
     if (p3 == 2) {
@@ -1563,64 +1563,64 @@ void func_8008C830(s32 *p1, char *p2, s32 p3, s32 p4, s32 p5, s32 p6)
             } while (*q != 0);
         }
     }
-    func_800C1E60(D_800CE164, 0x80, p3, p4, 0);
-    func_800C1F2C(D_800CE164, p2);
-    func_800C0ACC(D_800CE164, p5, p6);
-    func_800C1394(p1);
+    font_text_create(sPakText, 0x80, p3, p4, 0);
+    font_text_add(sPakText, p2);
+    font_draw_text(sPakText, p5, p6);
+    font_render(p1);
 }
 
-void func_8008C8D8(char *param_1, s32 param_2, s32 param_3) {
-    func_800C1E60(D_800CE164, 0x80, param_2, param_3, 0);
-    func_800C1F2C(D_800CE164, param_1);
+void pak_set_text(char *param_1, s32 param_2, s32 param_3) {
+    font_text_create(sPakText, 0x80, param_2, param_3, 0);
+    font_text_add(sPakText, param_1);
 }
 
-void func_8008C92C(void *param_1, void *param_2, s32 param_3, s32 param_4, s32 param_5, s32 param_6)
+void pak_draw_text_centered(void *param_1, void *param_2, s32 param_3, s32 param_4, s32 param_5, s32 param_6)
 {
-    func_800C1E60(D_800CE164, 0x80, param_3, param_4, 0);
-    func_800C1F2C(D_800CE164, param_2);
-    func_800C0ACC(D_800CE164, param_5 - ((u32)D_800CE164[6] >> 1), param_6);
-    func_800C1394(param_1);
+    font_text_create(sPakText, 0x80, param_3, param_4, 0);
+    font_text_add(sPakText, param_2);
+    font_draw_text(sPakText, param_5 - ((u32)sPakText[6] >> 1), param_6);
+    font_render(param_1);
 }
 
-void func_8008C9B8(void *param_1, void *param_2, s32 param_3, s32 param_4, s32 param_5, s32 param_6)
+void pak_draw_text_right(void *param_1, void *param_2, s32 param_3, s32 param_4, s32 param_5, s32 param_6)
 {
-    func_800C1E60(D_800CE164, 0x80, param_3, param_4, 0);
-    func_800C1F2C(D_800CE164, param_2);
-    func_800C0ACC(D_800CE164, param_5 - D_800CE164[6], param_6);
-    func_800C1394(param_1);
+    font_text_create(sPakText, 0x80, param_3, param_4, 0);
+    font_text_add(sPakText, param_2);
+    font_draw_text(sPakText, param_5 - sPakText[6], param_6);
+    font_render(param_1);
 }
 
-void func_8008CA40(s32 a0, s32 a1)
+void pak_set_state(s32 a0, s32 a1)
 {
     u8 *p;
 
-    p = D_800F4A28_6;
+    p = gPakScreen_6;
     *(s32 *)(p + 4) = a0;
     *(s32 *)(p + 8) = 0;
     if (a1 != -1) {
-        D_800F4A00 = a1;
+        sPakSound = a1;
     }
 }
 
-void func_8008CA68(u8 *param_1)
+void pak_get_plug_mask(u8 *param_1)
 {
     s32 i;
     u8 *q;
 
-    func_8000CD00();
+    cont_finish_read();
     i = 0;
-    D_800C292C = 0;
-    D_800C292D = 0;
+    gContMask = 0;
+    gContCount = 0;
     do {
-        q = D_800E1C68_2 + i * 4;
+        q = gContStatus_2 + i * 4;
         if (q[3] == 0) {
-            if (D_800C292C == 0) {
-                D_800C292E = i;
+            if (gContMask == 0) {
+                gContFirst = i;
             }
-            D_800C292C = D_800C292C | (1 << i);
-            D_800C292D = D_800C292D + 1;
+            gContMask = gContMask | (1 << i);
+            gContCount = gContCount + 1;
         }
         i++;
     } while (i < 4);
-    osPfsIsPlug(&D_800E1C48, param_1);
+    osPfsIsPlug(&gSiMesgQueue, param_1);
 }

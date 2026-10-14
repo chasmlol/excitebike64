@@ -1,5 +1,5 @@
 #include "game.h"
 
-s32 func_80013D50(void) {
+s32 cic_is_6103(void) {
     return osCicId == 0x17D7;
 }

@@ -1,10 +1,10 @@
 #include "game.h"
 
-void func_8000EB00(s32 a, ...)
+void debug_printf(s32 a, ...)
 {
 }
 
-u16 func_8000EB18(u32 r)
+u16 isqrt_u32(u32 r)
 {
     s32 v;
     s32 t;
@@ -109,20 +109,20 @@ u16 func_8000EB18(u32 r)
     return (u16)v;
 }
 
-void func_8000ECB8(s32 arg0)
+void fatal_halt(s32 arg0)
 {
     __asm__ volatile("break 0x407");
     while (1) {}
 }
 
-void func_8000ECC4(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
-    func_800BC3D0(arg0, arg1, arg2, arg3);
+void fatal_halt_mem_report(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    mem_report(arg0, arg1, arg2, arg3);
     __asm__ volatile("break 0x407");
     while (1) {
     }
 }
 
-s32 func_8000ECE0(s32 a0)
+s32 char_to_upper(s32 a0)
 {
     if ((u32)(a0 - 0x61) < 0x1A) {
         a0 = a0 - 0x20;
@@ -130,7 +130,7 @@ s32 func_8000ECE0(s32 a0)
     return a0;
 }
 
-s32 func_8000ECF8(s32 a0)
+s32 char_to_lower(s32 a0)
 {
     if ((u32)(a0 - 0x41) < 0x1A) {
         a0 = a0 + 0x20;
@@ -138,7 +138,7 @@ s32 func_8000ECF8(s32 a0)
     return a0;
 }
 
-void func_8000ED10(u8 *a0, u8 a1, s32 a2)
+void mem_fill(u8 *a0, u8 a1, s32 a2)
 {
     while (a2 > 0) {
         *a0 = a1;
@@ -147,7 +147,7 @@ void func_8000ED10(u8 *a0, u8 a1, s32 a2)
     }
 }
 
-void func_8000ED30(char *dst, char *src)
+void str_cat(char *dst, char *src)
 {
     while (*dst != '\0') {
         dst++;
@@ -164,7 +164,7 @@ done:
     return;
 }
 
-void func_8000ED70(u8 *d, u8 *s, s32 n)
+void str_copy_n(u8 *d, u8 *s, s32 n)
 {
     for (;;) {
         n = n - 1;
@@ -189,7 +189,7 @@ static inline s32 up(s32 c)
     return c;
 }
 
-s32 func_8000EDA0(u8 *param_1, u8 *param_2)
+s32 str_icmp(u8 *param_1, u8 *param_2)
 {
     for (;;) {
         s32 c1 = *param_1;
@@ -208,15 +208,15 @@ s32 func_8000EDA0(u8 *param_1, u8 *param_2)
     }
 }
 
-void func_8000EE20(void)
+void critical_enter(void)
 {
 }
 
-void func_8000EE28(void)
+void critical_leave(void)
 {
 }
 
-void func_8000EE30(s32 v, char *out)
+void int_to_str(s32 v, char *out)
 {
     s32 u;
     s32 d;
@@ -247,7 +247,7 @@ void func_8000EE30(s32 v, char *out)
     *out = 0;
 }
 
-void func_8000EF0C(u32 param_1, char *param_2) {
+void u32_to_hex_str(u32 param_1, char *param_2) {
     s32 i;
     s32 d;
     for (i = 0; i < 8; i++) {
@@ -261,7 +261,7 @@ void func_8000EF0C(u32 param_1, char *param_2) {
     param_2[i] = 0;
 }
 
-void func_8000EF50(u8 *s)
+void str_upper(u8 *s)
 {
     u8 c = *s;
     while (c != 0) {
@@ -275,7 +275,7 @@ void func_8000EF50(u8 *s)
     }
 }
 
-void func_8000EF8C(char *a0, char *a1)
+void str_copy(char *a0, char *a1)
 {
     while (1) {
         *a0 = *a1;
@@ -287,26 +287,26 @@ void func_8000EF8C(char *a0, char *a1)
     }
 }
 
-void func_8000EFB0()
+void debug_log()
 {
-    if (D_800C2AC0 == -1) {
-        D_800C2AC0 = 0;
+    if (sDebugLogFd == -1) {
+        sDebugLogFd = 0;
     }
 }
 
-void func_8000EFCC(void)
+void debug_log_close(void)
 {
-    if (D_800C2AC0 >= 0) {
-        D_800C2AC0 = -1;
+    if (sDebugLogFd >= 0) {
+        sDebugLogFd = -1;
     }
 }
 
-u32 func_8000EFE8(void) {
+u32 random_byte(void) {
     s32 x;
     s32 v;
 
-    x = D_800C2AC4 * 0x35DF + 0x3038;
+    x = sRandomSeed * 0x35DF + 0x3038;
     v = x - (x / 0xFFFB) * 0xFFFB;
-    D_800C2AC4 = v;
+    sRandomSeed = v;
     return v & 0xFF;
 }
