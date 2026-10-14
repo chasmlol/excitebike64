@@ -303,12 +303,13 @@ void podium_update(void)
     }
 }
 
+/* Frees the ceremony's matrices and stops its music. */
 void podium_exit(void) {
     mem_free(sPodiumMtxBuf);
     tunes_stop_song();
 }
 
-/* Turns (x, z) by the 16-bit angle into (*outX, *outZ). */
+/* Turns (x, z) by the 16-bit angle into (*outX, *outZ). Not called. */
 void podium_rotate_xz(s32 angle, s32 x, s32 z, s32 *outX, s32 *outZ) {
     s16 *cosTable = gCosTable;
     s32 a = ((s32)(angle << 16)) >> 20;

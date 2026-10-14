@@ -1707,7 +1707,7 @@ void race_init_ghost_replay(s32 ghostData)
     }
 }
 
-/* Frees what race_begin set up. */
+/* Frees what race_begin set up. Not called. */
 void race_teardown(void)
 {
     race_finish_replay(0);
@@ -1772,7 +1772,7 @@ void race_load_ghost_setup(s32 replay)
     }
 }
 
-/* Waits for the video mode the race uses (race_init's test). */
+/* Waits for the video mode the race uses (race_init's test). Not called. */
 void race_set_video_mode(void)
 {
     if ((gGame.flags & (GAME_FRONTEND_RACE | GAME_TRACK_INTRO)) == 0 && (gSaveData.options & SAVE_OPT_HIGH_RES) != 0 &&
@@ -1802,6 +1802,7 @@ void race_alloc_text_objs(void)
     } while (i < RACE_NUM_TEXTS);
 }
 
+/* Destroys the race's text objects. */
 void race_free_text_objs(void)
 {
     s32 i;
@@ -1815,6 +1816,7 @@ void race_free_text_objs(void)
     mem_free(gRaceTextObjs);
 }
 
+/* Not called. */
 void race_mute_volumes(void)
 {
     snd_set_volume(SND_VOL_EFFECTS, 0);

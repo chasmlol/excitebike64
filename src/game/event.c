@@ -2943,6 +2943,7 @@ Gfx *event_draw_temp_gauge(Gfx *gdl, s32 dyn, s32 fb, s32 view) {
     { Rect *tab = gViewLayouts_3; return render_draw_image(RX(tab, gNumScreens) - 24, RY(tab, gNumScreens) + yOfs, &sTempGaugeTextures_2->img[1], gdl, fb, 1, 1, 6, 0); }
 }
 
+/* Whether there is a lesson before this one. */
 s32 tutorial_has_prev_lesson(void)
 {
     return gSeason->round != 0;
@@ -3029,6 +3030,7 @@ s32 event_request_exit(void)
     return 0;
 }
 
+/* The desert's, hill climb's, stunt course's and soccer's setup, as event_init does it. Not called. */
 void event_gates_init(void) {
     gEvent.flags |= EVENT_STOPPED;
     race_reset_grid_order();
@@ -3040,7 +3042,8 @@ void event_stop_sounds_rumble(void)
     rumble_stop_all();
 }
 
-/* The desert: the clock, which stops at 60 minutes; START leaves at the end. */
+/* The desert: the clock, which stops at 60 minutes; START leaves at the end. Not called: event_update does the
+   same. */
 void event_update_gates(void)
 {
     Event *event;
@@ -3128,6 +3131,7 @@ void event_clear_season_race_points(void) {
     }
 }
 
+/* Counts the clock down after the start; at 0, rider 0's lap message shows. Not called. */
 void func_8005B2E8(void)
 {
     event_update_countdown();
@@ -3171,7 +3175,7 @@ void event_hud_free(void)
     return;
 }
 
-/* Draws a bar of count segments of the finish-line images ending at x, with its end piece. */
+/* Draws a bar of count segments of the finish-line images ending at x, with its end piece. Not called. */
 Gfx *tutorial_draw_bar(s32 x, s32 y, s32 count, Gfx *dl, s32 fb)
 {
     s32 i = 0;
@@ -3191,6 +3195,7 @@ Gfx *tutorial_draw_bar(s32 x, s32 y, s32 count, Gfx *dl, s32 fb)
     return dl;
 }
 
+/* Whether the lesson has a demo. */
 s32 tutorial_lesson_has_demo(void)
 {
     s32 idx = gSeason->round;

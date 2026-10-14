@@ -615,6 +615,7 @@ void main_init_dev_pi_handle(void)
     __osRestoreInt(mask);
 }
 
+/* The main thread's message queue, and the scheduler. */
 void main_init_sched(void)
 {
     osCreateMesgQueue(&sMainQueue, sMainMsgs, 0x10);
@@ -626,7 +627,7 @@ void main_hang(void)
     while (1) {}
 }
 
-/* Shows a white 320x240 screen and halts. */
+/* Shows a white 320x240 screen and halts. Not called. */
 void main_halt_white_screen(void)
 {
     osCreateViManager(10);
@@ -645,6 +646,7 @@ void main_on_dma_start(void)
 {
 }
 
+/* Logs an empty line (the debug log is stubbed out). Not called. */
 void main_debug_newline(void) {
     debug_log();
     debug_log(&sStrCrLf);
