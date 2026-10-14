@@ -187,11 +187,11 @@ enum ScreenType {
     SCREEN_TYPE_RECORDS = 18,
     SCREEN_TYPE_CONTROLLER_SETTINGS = 19,
     SCREEN_TYPE_INITIALS = 20,          /* initials entry for a new record */
-    SCREEN_TYPE_SPLASH = 21,            /* boot splash, 120 frames */
-    SCREEN_TYPE_SPLASH_2 = 22,          /* boot splash with the Expansion Pak picture blinking when present */
-    SCREEN_TYPE_SPLASH_3 = 23,
-    SCREEN_TYPE_PAK_STATUS = 24,        /* free pages of each Controller Pak */
-    SCREEN_TYPE_BACKUP_LOST = 25
+    SCREEN_TYPE_SPLASH = 21,            /* a splash (the Left Field logo), 180 frames */
+    SCREEN_TYPE_SPLASH_2 = 22,          /* the Nintendo splash, the Expansion Pak picture blinking when present */
+    SCREEN_TYPE_SPLASH_3 = 23,          /* the N64 Sports logo (GAME_FLAG_SPLASH_3) */
+    SCREEN_TYPE_PAK_STATUS = 24,        /* free pages of each Controller Pak, 1200 frames */
+    SCREEN_TYPE_BACKUP_LOST = 25        /* "Game Pak backup memory has been lost.", 600 frames */
 };
 
 /* Index in sScreens. The data defines sScreens in pieces where other data points into it (sScreenTitle is
