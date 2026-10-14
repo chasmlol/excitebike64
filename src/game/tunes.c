@@ -353,7 +353,8 @@ void tunes_update_song(void)
                 sStreamChannels[ev->channel & 0xF].sample = ev->note;
                 sStreamChannels[ev->channel & 0xF].block = 0;
                 pair = (s32 *)song + ev->note * 2;     /* pair[1]: song->samples[ev->note].sample */
-                sStreamChannels[ev->channel & 0xF].data = (u8 *)((smp = &sStreamSampleTable[pair[1]])->offset + sStreamDataBase);
+                sStreamChannels[ev->channel & 0xF].data =
+                    (u8 *)((smp = &sStreamSampleTable[pair[1]])->offset + sStreamDataBase);
                 sStreamChannels[ev->channel & 0xF].size = song->samples[ev->note].size;
                 sStreamChannels[ev->channel & 0xF].flags = smp->flags;
                 sStreamChannels[ev->channel & 0xF].volume = gStreamVolumes_2[ev->channel & 0xF] * gSndMasterVolume >> 8;
@@ -612,7 +613,7 @@ static inline s32 racer_to_rider_3(u32 *racer)
    ANNOUNCER_RIDERS) and the CLIP_* words. Most give up unless the queue has room for the whole phrase (a phrase of n
    clips needs sSpeechQueueCount < SPEECH_QUEUE_SIZE + 1 - n). */
 
-/* Two racers fighting for the lead collide: "And battling, A and B" or "A and B are battling / fighting". */
+/* The two leaders collide: CLIP_AND_BATTLING A CLIP_AND B, or A CLIP_AND B CLIP_ARE_BATTLING / CLIP_ARE_FIGHTING. */
 void announce_lead_collision(u32 racerA, u32 racerB)
 {
     if (gRaceFrame - sLastLeadCollisionTime < ANNOUNCE_COLLISION_INTERVAL) return;
@@ -651,7 +652,8 @@ void announce_lap(s32 lap)
     }
 }
 
-/* The leader at the end of the first, second or last but one lap: "<lap> <rider> takes / still has the lead". */
+/* The leader as the first or second lap ends or the final lap starts: that lap's clip, the rider, then a takes-
+   the-lead or still-leads clip. */
 void announce_leader_lap(s32 racer, s32 lap)
 {
     s32 *t;
@@ -693,7 +695,7 @@ static inline s32 racer_to_rider_4(u32 *racer)
     return (gGame.mode == GAME_MODE_TUTORIAL) * 2;
 }
 
-/* A racer's place (1: first) early in the race: takes the lead, is in second, third ... or last place. */
+/* A racer's place (1: first): takes the lead, is in second, third ... or last place. */
 void announce_place(u32 racer, u32 place)
 {
     if (gEvent.time < ANNOUNCE_START_DELAY) return;
@@ -901,7 +903,8 @@ void announce_trick(u32 racer, s32 clip)
         } else {
             result = racer_to_rider_no_ghost(racerPtr);
         }
-        if (result != 1 && gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0 && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
+        if (result != 1 && gReplayPlayback == 0 && gCreditsMode == 0 && gPodiumMode == 0
+            && sSpeechQueueCount < SPEECH_QUEUE_SIZE) {
             sSpeechQueue[sSpeechQueueCount++] = clip;
         }
     }
