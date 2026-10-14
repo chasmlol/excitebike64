@@ -58,8 +58,6 @@ typedef struct Obj_30 Obj_30;
 typedef struct Joint_2 Joint_2;
 typedef struct Obj_31 Obj_31;
 typedef struct Row_4 Row_4;
-typedef struct Gen Gen;
-typedef struct Elem_2 Elem_2;
 typedef struct Pt_4 Pt_4;
 typedef struct Body_4 Body_4;
 typedef struct Obj_35 Obj_35;
@@ -519,39 +517,6 @@ typedef struct Ent_39 {
     u16 f6E;
     u8 p4[0x10];
 } Ent_39;
-
-typedef struct Field {
-    s32 x;
-    s32 z;
-    s32 f8;
-    s32 seed;           /* 0x0C */
-    s32 sp;             /* 0x10 */
-    u32 stack[64];      /* 0x14 */
-    u8 rowE[129];       /* 0x114 */
-    u8 colE[129];       /* 0x195 */
-    u8 buf[2][128];     /* 0x216 */
-    s32 toggle;         /* 0x318 */
-    u8 *map;            /* 0x31C */
-} Field;
-
-typedef struct Obj_34 {
-    s32 x;      /* 0x324 */
-    s32 val;    /* 0x328 */
-    s32 z;      /* 0x32C */
-    s32 f330;
-    s32 f334;
-    s32 type;   /* 0x338 */
-    s32 idx;    /* 0x33C */
-} Obj_34;
-
-typedef struct Field_2 {
-    s32 x;
-    s32 z;
-    u8 pad[0x314];
-    s8 *map;    /* 0x31C */
-    s32 count;  /* 0x320 */
-    Obj_34 obj[8]; /* 0x324 */
-} Field_2;
 
 typedef struct Node_53 Node_53;
 

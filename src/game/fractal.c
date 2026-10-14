@@ -1,17 +1,5 @@
 #include "game.h"
 
-typedef struct {
-    s32 x;
-    s32 z;
-    s16 vis;
-    s16 pad;
-    u8 pad2[0x310];
-    s32 tex;
-    u8 rest[0xE4];
-} Tile_2;
-
-extern Tile_2 *gDesertTiles_3;
-
 void fractal_update_tiles(s32 px, s32 pz)
 {
     s32 i, j, x, z, idx, tx, tz, q, wa, xa;
@@ -26,29 +14,29 @@ void fractal_update_tiles(s32 px, s32 pz)
             q = (z & 3) * 4;
             x = sFractalCenterX + j;
             idx = q + (x & 3);
-            if (gDesertTiles_3[idx].x != x || gDesertTiles_3[idx].z != z) {
-                gDesertTiles_3[idx].tex = sFractalMap + ((idx / 4) * 0x10000 + (idx % 4) * 0x80);
-                fractal_tile_init(&gDesertTiles_3[idx], x, z);
+            if (gDesertTiles[idx].x != x || gDesertTiles[idx].z != z) {
+                gDesertTiles[idx].map = sFractalMap + ((idx / 4) * 0x10000 + (idx % 4) * 0x80);
+                fractal_tile_init(&gDesertTiles[idx], x, z);
             }
-            gDesertTiles_3[idx].vis = 1;
-            tx = gDesertTiles_3[idx].x * 0x80;
-            tz = gDesertTiles_3[idx].z << 7;
+            gDesertTiles[idx].visible = 1;
+            tx = gDesertTiles[idx].x * 0x80;
+            tz = gDesertTiles[idx].z << 7;
             wa = tx + 0x7f;
             xa = tz + 0x7f;
-            if (px + 0x7f < tx) gDesertTiles_3[idx].vis = 0;
-            if (pz + 0x7f < tz) gDesertTiles_3[idx].vis = 0;
-            if (wa < px - 0x80) gDesertTiles_3[idx].vis = 0;
-            if (xa < pz - 0x80) gDesertTiles_3[idx].vis = 0;
+            if (px + 0x7f < tx) gDesertTiles[idx].visible = 0;
+            if (pz + 0x7f < tz) gDesertTiles[idx].visible = 0;
+            if (wa < px - 0x80) gDesertTiles[idx].visible = 0;
+            if (xa < pz - 0x80) gDesertTiles[idx].visible = 0;
         }
     }
     for (i = 0; i < 16; i++) {
-        if (gDesertTiles_3[i].vis != 0) fractal_generate(&gDesertTiles_3[i], -1);
+        if (gDesertTiles[i].visible != 0) fractal_generate(&gDesertTiles[i], -1);
     }
 }
 
 #define RND() (sFractalRand = (sFractalRand * 0x35DF + 0x3038) % 65531)
 
-void fractal_generate(Field *f, s32 n)
+void fractal_generate(DesertTile *f, s32 n)
 {
     u32 e;
     s32 row, col, i, v, t;
@@ -66,24 +54,24 @@ void fractal_generate(Field *f, s32 n)
         }
         f->sp--;
         e = f->stack[f->sp];
-        if ((e >> 24) == 2) {
+        if ((e >> 24) == DESERT_WORK_OBJECTS) {
             fractal_place_objects(f);
             continue;
         }
-        if ((e >> 24) == 1) {
+        if ((e >> 24) == DESERT_WORK_SMOOTH) {
             e &= 0xFFFFFF;
             row = e >> 7;
             col = e & 0x7F;
             if (row == 0 && col == 0) {
-                __builtin_memcpy(f->buf[0], f->map, 128);
-                f->toggle = 1;
+                __builtin_memcpy(f->smooth[0], f->map, 128);
+                f->smoothCur = 1;
             }
-            t = f->toggle;
-            prev = f->buf[1 - t];
-            cur = f->buf[t];
+            t = f->smoothCur;
+            prev = f->smooth[1 - t];
+            cur = f->smooth[t];
             p = f->map + (row << 9);
             if (row == 127) {
-                next = f->rowE;
+                next = f->nextRow;
             } else {
                 next = p + 0x200;
             }
@@ -142,16 +130,16 @@ void fractal_generate(Field *f, s32 n)
                 v = prev[-1];
                 v += prev[0] * 2;
                 if (row != 0) {
-                    v += f->colE[row - 1];
+                    v += f->nextCol[row - 1];
                 } else {
-                    v += f->colE[row];
+                    v += f->nextCol[row];
                 }
                 v += cur[-1] * 2;
                 v += cur[0] * 4;
-                v += f->colE[row] * 2;
+                v += f->nextCol[row] * 2;
                 v += next[-1];
                 v += next[0] * 2;
-                v += f->colE[row + 1];
+                v += f->nextCol[row + 1];
                 v >>= 4;
                 v = (v * v) >> 8;
                 if (v < 4) {
@@ -160,10 +148,10 @@ void fractal_generate(Field *f, s32 n)
                 v ^= 0x80;
                 *p = v;
                 e++;
-                f->toggle ^= 1;
+                f->smoothCur ^= 1;
             }
             if (e < 0x4000) {
-                f->stack[f->sp++] = e | 0x1000000;
+                f->stack[f->sp++] = e | (DESERT_WORK_SMOOTH << 24);
             }
             cnt--;
         } else {
@@ -180,19 +168,19 @@ void fractal_generate(Field *f, s32 n)
             c00 = f->map[y | x];
             if (x2 == 128) {
                 if (y2 == 0x10000) {
-                    c01 = f->colE[y / 512];
-                    c10 = f->rowE[x];
-                    c11 = f->colE[128];
+                    c01 = f->nextCol[y / 512];
+                    c10 = f->nextRow[x];
+                    c11 = f->nextCol[128];
                 } else {
-                    c01 = f->colE[y / 512];
+                    c01 = f->nextCol[y / 512];
                     c10 = f->map[y2 | x];
-                    c11 = f->colE[y2 / 512];
+                    c11 = f->nextCol[y2 / 512];
                 }
             } else {
                 if (y2 == 0x10000) {
                     c01 = f->map[y | x2];
-                    c10 = f->rowE[x];
-                    c11 = f->rowE[x2];
+                    c10 = f->nextRow[x];
+                    c11 = f->nextRow[x2];
                 } else {
                     c01 = f->map[y | x2];
                     c10 = f->map[y2 | x];
@@ -303,156 +291,124 @@ void fractal_subdivide_edge(u8 *buf)
     } while (step != 0);
 }
 
-struct Gen {
-    s32 x;
-    s32 y;
-    s32 pad8;
-    s32 seed;
-    volatile s32 ctl;
-    s32 f14;
-    s32 f18;
-    s32 f1C;
-    u8 pad20[0x114 - 0x20];
-    u8 a[0x81];
-    u8 b[0x81];
-    u8 pad216[0x31C - 0x216];
-    u8 *buf;
-};
-
-static inline s32 Seed(s32 x, s32 y)
+static inline s32 Seed(s32 x, s32 z)
 {
-    return ((x * (y + 123) * 456) << (x % 12634)) + y;
+    return ((x * (z + 123) * 456) << (x % 12634)) + z;
 }
 
-void fractal_tile_init(Gen *p, s32 x, s32 y)
+void fractal_tile_init(DesertTile *t, s32 x, s32 z)
 {
     s32 i;
-    s32 t;
+    s32 seed;
 
     for (i = 0; i < 0x10000; i += 0x200) {
-        mem_fill(p->buf + i, 0, 0x80);
+        mem_fill(t->map + i, 0, 0x80);
     }
-    p->f14 = 0x2000000;
-    p->ctl = 0;
-    p->ctl = 1;
-    p->f18 = 0x1000000;
-    p->ctl = 2;
-    p->x = x;
-    p->y = y;
-    p->f1C = 7;
-    t = Seed(x, y);
-    p->ctl = 3;
-    p->seed = t;
-    p->buf[0] = fractal_corner_height(x, y);
-    p->b[0] = fractal_corner_height(x + 1, y);
-    p->b[0x80] = fractal_corner_height(x + 1, y + 1);
-    p->a[0] = fractal_corner_height(x, y + 1);
-    p->a[0x80] = p->b[0x80];
-    sFractalRand = Seed(x, y + 1) + 1;
-    fractal_subdivide_edge(p->a);
-    sFractalRand = Seed(x + 1, y) + 2;
-    fractal_subdivide_edge(p->b);
-    sFractalRand = p->seed + 1;
-    sFractalEdgeBuf[0] = p->buf[0];
-    sFractalEdgeBuf[0x80] = p->b[0];
+    /* every store of the count stays: volatile */
+    t->stack[0] = DESERT_WORK_OBJECTS << 24;
+    *(volatile s32 *)&t->sp = 0;
+    *(volatile s32 *)&t->sp = 1;
+    t->stack[1] = DESERT_WORK_SMOOTH << 24;
+    *(volatile s32 *)&t->sp = 2;
+    t->x = x;
+    t->z = z;
+    t->stack[2] = 7; /* subdivide the whole tile */
+    seed = Seed(x, z);
+    *(volatile s32 *)&t->sp = 3;
+    t->seed = seed;
+    t->map[0] = fractal_corner_height(x, z);
+    t->nextCol[0] = fractal_corner_height(x + 1, z);
+    t->nextCol[0x80] = fractal_corner_height(x + 1, z + 1);
+    t->nextRow[0] = fractal_corner_height(x, z + 1);
+    t->nextRow[0x80] = t->nextCol[0x80];
+    sFractalRand = Seed(x, z + 1) + 1;
+    fractal_subdivide_edge(t->nextRow);
+    sFractalRand = Seed(x + 1, z) + 2;
+    fractal_subdivide_edge(t->nextCol);
+    sFractalRand = t->seed + 1;
+    sFractalEdgeBuf[0] = t->map[0];
+    sFractalEdgeBuf[0x80] = t->nextCol[0];
     fractal_subdivide_edge(sFractalEdgeBuf);
     for (i = 0; i < 0x80; i++) {
-        p->buf[i] = sFractalEdgeBuf[i];
+        t->map[i] = sFractalEdgeBuf[i];
     }
-    sFractalRand = p->seed + 2;
-    sFractalEdgeBuf[0] = p->buf[0];
-    sFractalEdgeBuf[0x80] = p->a[0];
+    sFractalRand = t->seed + 2;
+    sFractalEdgeBuf[0] = t->map[0];
+    sFractalEdgeBuf[0x80] = t->nextRow[0];
     fractal_subdivide_edge(sFractalEdgeBuf);
     for (i = 0; i < 0x80; i++) {
-        ((u8 (*)[0x200])p->buf)[i][0] = sFractalEdgeBuf[i];
+        t->map[i * 0x200] = sFractalEdgeBuf[i];
     }
 }
 
-typedef struct Ent_41 {
-    s32 a, b, c;
-} Ent_41;
-
-extern Ent_41 gDesertFires[];
-
-void fractal_place_objects(volatile Field_2 *f)
+void fractal_place_objects(volatile DesertTile *t)
 {
-    s32 t0, t1, t2, t3;
-    s32 i, n, k, v, b, w;
-    s32 *q;
+    s32 x, cellX, z, cellZ;
+    s32 i, n, k, y, fireZ, fireY;
+    DesertTile *p;
 
     desert_export_checkpoints();
     n = 0;
     for (i = 0; i < gDesertFireCount; i++) {
-        divmod_floor(gDesertFires[i].a, 0x3E800, &t0, &t1);
-        if (t0 == f->x) {
-            divmod_floor(gDesertFires[i].b, 0x3E800, &t2, &t3);
-            if (t2 == f->z) {
-                f->obj[n].x = gDesertFires[i].a;
-                t1 = t1 / 2000;
-                t3 = t3 / 2000;
-                f->obj[n].val = f->map[t3 * 512 + t1] << 6;
-                b = gDesertFires[i].b;
-                f->obj[n].type = 2;
-                w = f->obj[n].val;
-                f->obj[n].idx = i;
-                f->obj[n].f330 = 0;
-                f->obj[n].f334 = 0;
-                f->obj[n].z = b;
+        divmod_floor(gDesertFires[i].x, 0x3E800, &x, &cellX);
+        if (x == t->x) {
+            divmod_floor(gDesertFires[i].z, 0x3E800, &z, &cellZ);
+            if (z == t->z) {
+                t->objs[n].x = gDesertFires[i].x;
+                cellX = cellX / 2000;
+                cellZ = cellZ / 2000;
+                /* the heights are read signed here */
+                t->objs[n].y = ((s8 *)t->map)[cellZ * 512 + cellX] << 6;
+                fireZ = gDesertFires[i].z;
+                t->objs[n].kind = 2;
+                fireY = t->objs[n].y;
+                t->objs[n].ref = i;
+                t->objs[n].radius = 0;
+                t->objs[n].height = 0;
+                t->objs[n].z = fireZ;
                 n++;
-                gDesertFires[i].c = w;
+                gDesertFires[i].y = fireY;
             }
         }
     }
+    /* scenery in the rest */
+    p = (DesertTile *)t; /* stores that need not be volatile */
     i = n;
     if (i < 8) {
         do {
-            q = (s32 *)f + i * 7;
             do {
                 k = 0;
-                sFractalRand_2[0] = (sFractalRand_2[0] * 0x35DF + 0x3038) % 0xFFFB;
-                t0 = (sFractalRand_2[0] & 0xFF) % 120 + 4;
-                sFractalRand_2[0] = (sFractalRand_2[0] * 0x35DF + 0x3038) % 0xFFFB;
-                t2 = (sFractalRand_2[0] & 0xFF) % 120 + 4;
-                v = f->map[t2 * 512 + t0];
-                t0 = t0 * 2000;
-                t0 = t0 + f->x * 0x3E800;
-                t2 = t2 * 2000;
-                t2 = t2 + f->z * 0x3E800;
-                v <<= 6;
+                RND();
+                x = (sFractalRand & 0xFF) % 120 + 4;
+                RND();
+                z = (sFractalRand & 0xFF) % 120 + 4;
+                y = ((s8 *)t->map)[z * 512 + x];
+                x = x * 2000;
+                x = x + t->x * 0x3E800;
+                z = z * 2000;
+                z = z + t->z * 0x3E800;
+                y <<= 6;
+                /* meant to keep it off the objects placed before; it tests the new object itself */
                 for (k = 0; k < i; k++) {
-                    if (q[0xC9] == t0 && q[0xCB] == t2) {
+                    if (p->objs[i].x == x && p->objs[i].z == z) {
                         break;
                     }
                 }
             } while (k != i);
-            q[0xCA] = v;
-            q[0xC9] = t0;
-            q[0xCB] = t2;
-            q[0xCE] = (s32)random_byte() % 2;
-            q[0xCC] = 400;
-            q[0xCD] = 1000;
+            p->objs[i].y = y;
+            p->objs[i].x = x;
+            p->objs[i].z = z;
+            p->objs[i].kind = (s32)random_byte() % 2;
+            p->objs[i].radius = 400;
+            p->objs[i].height = 1000;
             if (i) k = 1; else k = 2;
             i++;
         } while (i < 8);
     }
-    f->count = 8;
+    t->numObjs = 8;
 }
 
-struct Elem_2 {
-    s32 x, y, z, w, a, b, c;
-};
-
-typedef struct {
-    u8 pad[0x10];
-    s32 busy;
-    u8 pad2[0x30C];
-    s32 n;
-    Elem_2 e[8];
-} Group;
-
-extern Group *gDesertTiles_4;
-
-s32 fractal_get_visible_objects(s32 x, s32 z, s32 ang, s32 range, Elem_2 *out, s32 max)
+s32 fractal_get_visible_objects(s32 x, s32 z, s32 ang, s32 range, DesertObj *out, s32 max)
 {
     s32 n;
     s32 i, j;
@@ -467,13 +423,13 @@ s32 fractal_get_visible_objects(s32 x, s32 z, s32 ang, s32 range, Elem_2 *out, s
         if (n >= max) {
             break;
         }
-        if (gDesertTiles_4[i].busy == 0) {
-            for (j = 0; j < gDesertTiles_4[i].n; j++) {
+        if (gDesertTiles[i].sp == 0) {
+            for (j = 0; j < gDesertTiles[i].numObjs; j++) {
                 if (n >= max) {
                     break;
                 }
-                dx = (gDesertTiles_4[i].e[j].x - x) / 16;
-                dz = (gDesertTiles_4[i].e[j].z - z) / 16;
+                dx = (gDesertTiles[i].objs[j].x - x) / 16;
+                dz = (gDesertTiles[i].objs[j].z - z) / 16;
                 a = (c * dx + s * dz) >> 14;
                 b = (c * dz - s * dx) >> 14;
                 if (b > range) {
@@ -490,17 +446,12 @@ s32 fractal_get_visible_objects(s32 x, s32 z, s32 ang, s32 range, Elem_2 *out, s
                         continue;
                     }
                 }
-                out[n++] = gDesertTiles_4[i].e[j];
+                out[n++] = gDesertTiles[i].objs[j];
             }
         }
     }
     return n;
 }
-
-typedef struct { s32 x, y, z, a, b, kind, ref; } Ent_42;
-typedef struct { u8 pad[0x320]; s32 count; Ent_42 e[8]; } Tile_3;
-
-extern Tile_3 *gDesertTiles_5;
 
 void fractal_emit_fire_smoke(void)
 {
@@ -508,7 +459,7 @@ void fractal_emit_fire_smoke(void)
     f32 vel[3];
     u8 col[4];
     s32 i, j;
-    Ent_42 *p;
+    DesertObj *p;
 
     if ((gRaceFrame & 7) != 0) {
         return;
@@ -518,8 +469,8 @@ void fractal_emit_fire_smoke(void)
     col[2] = 0;
     col[3] = 0;
     for (i = 0; i < 16; i++) {
-        for (j = 0; j < gDesertTiles_5[i].count; j++) {
-            p = &gDesertTiles_5[i].e[j];
+        for (j = 0; j < gDesertTiles[i].numObjs; j++) {
+            p = &gDesertTiles[i].objs[j];
             if (p->kind == 2 && p->ref == gDesWaypoint) {
                 pos[0] = (f32)p->x / 1000.0f;
                 pos[1] = (f32)p->y / 1000.0f + 1.0f;
@@ -533,44 +484,32 @@ void fractal_emit_fire_smoke(void)
     }
 }
 
-void fractal_init(s32 param_1) {
-    s32 *dst = &gDesertTiles;
-    sFractalMap = param_1;
-    *dst = mem_alloc_dbg(0x4040, 0, (s32)&D_800D6FE0, 0x266);
+void fractal_init(u8 *map)
+{
+    DesertTile **dst = &gDesertTiles;
+
+    sFractalMap = map;
+    *dst = mem_alloc_dbg(16 * sizeof(DesertTile), 0, (s32)&D_800D6FE0, 0x266);
 }
 
 void fractal_reset(void)
 {
     s32 i;
-    s32 off;
-    u8 *p;
-    u32 hi;
+    DesertTile *t;
 
-    mem_fill(gDesertTiles, 0, 4);
-    i = 0xF;
-    p = gDesertTiles + 0x3C3C;
+    mem_fill((u8 *)gDesertTiles, 0, 4); /* only the first word */
+    i = 15;
+    t = &gDesertTiles[15];
     do {
-        *(s32 *)p = -0x3E7;
-        i = i - 1;
-        p = p - 0x404;
+        t->x = -999;
+        i--;
+        t--;
     } while (i >= 0);
     fractal_update_tiles(0, 0);
-    i = 0;
-    hi = 0x800F0000;
-    off = i;
-    for (; i < 0x10; i++) {
-        fractal_generate(*(u8 **)(hi - 0x1EC8) + off, -1);
-        off = off + 0x404;
+    for (i = 0; i < 16; i++) {
+        fractal_generate(&gDesertTiles[i], -1);
     }
 }
-
-typedef struct {
-    u8 pad[0x10];
-    s32 f10;
-    u8 pad2[0x3F0];
-} Ent_43;
-
-extern Ent_43 *gDesertTiles_6;
 
 void fractal_generate_step(s32 n)
 {
@@ -578,15 +517,15 @@ void fractal_generate_step(s32 n)
 
     cnt = 0;
     for (i = 0; i < 16; i++) {
-        if (gDesertTiles_6[i].f10 != 0) {
+        if (gDesertTiles[i].sp != 0) {
             cnt++;
         }
     }
     if (cnt != 0) {
         n = (n + cnt - 1) / cnt;
         for (i = 0; i < 16; i++) {
-            if (gDesertTiles_6[i].f10 != 0) {
-                fractal_generate(&gDesertTiles_6[i], n);
+            if (gDesertTiles[i].sp != 0) {
+                fractal_generate(&gDesertTiles[i], n);
             }
         }
     }

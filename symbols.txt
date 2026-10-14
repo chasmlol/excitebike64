@@ -1770,7 +1770,6 @@ sDesArrowAngle                        game  0x800CA3B0  data      0x4
 gDesWaypoint                          game  0x800CA3B4  data      0x4
 D_800CA3B8                            game  0x800CA3B8  data      0x4
 sDesObjModels                         game  0x800CA3BC  data     0x20
-sDesObjModels_2                       game  0x800CA3BC  data        -  sDesObjModels
 D_800CA3DC                            game  0x800CA3DC  data     0x10
 D_800CA3EC                            game  0x800CA3EC  data     0x10
 D_800CA3FC                            game  0x800CA3FC  data     0x14
@@ -3883,7 +3882,6 @@ D_800E1900                            game  0x800E1900  data        -
 D_800E1900_2                          game  0x800E1900  data        -  D_800E1900
 gProjScale                            game  0x800E1930  data        -
 D_800E1938                            game  0x800E1938  data        -
-D_800E1938_2                          game  0x800E1938  data        -  D_800E1938
 D_800E19B8                            game  0x800E19B8  data        -
 sCreditsScrollY                       game  0x800E19BC  data        -
 gViewports                            game  0x800E19C0  data        -
@@ -4195,7 +4193,6 @@ sCamSection                           game  0x800E77FC  data        -
 sObjectSegs                           game  0x800E7808  data        -
 sSectionBounds                        game  0x800E7814  data        -
 gObjectTexSet                         game  0x800E781C  data        -
-gObjectTexSet_5                       game  0x800E781C  data        -  gObjectTexSet
 D_800E7820                            game  0x800E7820  data        -
 gWaterTexSet                          game  0x800E7824  data        -
 gObjectDLs                            game  0x800E7828  data        -
@@ -4203,8 +4200,6 @@ sTexAnimGroupLen                      game  0x800E782C  data        -
 sTexAnimGroupStart                    game  0x800E7830  data        -
 gObjectFlags                          game  0x800E7834  data        -
 gTerrainTexSet                        game  0x800E783C  data        -
-gTerrainTexSet_3                      game  0x800E783C  data        -  gTerrainTexSet
-gTerrainTexSet_4                      game  0x800E783C  data        -  gTerrainTexSet
 sSplashPos                            game  0x800E7840  data        -
 gSectionDLs                           game  0x800E78A0  data        -
 sTexAnimTick                          game  0x800E78AC  data        -
@@ -4356,25 +4351,20 @@ D_800EA7B8                            game  0x800EA7B8  data        -
 D_800EA7C0                            game  0x800EA7C0  data        -
 D_800EA7C4                            game  0x800EA7C4  data        -
 sDesObjects                           game  0x800EA7C8  data        -
-sDesObjects_2                         game  0x800EA7C8  data        -  sDesObjects
 sDesArrowModel                        game  0x800EA988  data        -
 D_800EA98C                            game  0x800EA98C  data        -
 gDesertHeightMap                      game  0x800EA990  data        -
 D_800EA998                            game  0x800EA998  data        -
-D_800EA998_2                          game  0x800EA998  data        -  D_800EA998
 sDesPatchDLs                          game  0x800EA9A8  data        -
 sDesBlockMtx                          game  0x800EA9E8  data        -
 sDesFreePatchCount                    game  0x800EB9E8  data        -
 sDesBlockCount                        game  0x800EB9EC  data        -
 sDesLodGrid                           game  0x800EB9F0  data        -
-sDesLodGrid_2                         game  0x800EB9F0  data        -  sDesLodGrid
 D_800EBDF0                            game  0x800EBDF0  data        -
 D_800EBDF4                            game  0x800EBDF4  data        -
 sDesObjMtx                            game  0x800EBDF8  data        -
-sDesObjMtx_2                          game  0x800EBDF8  data        -  sDesObjMtx
 D_800EBE00                            game  0x800EBE00  data        -
 sDesArrowTex                          game  0x800EBE04  data        -
-sDesArrowTex_2                        game  0x800EBE04  data        -  sDesArrowTex
 sDesPatchGrid                         game  0x800EBE08  data        -
 sDesObjectCount                       game  0x800ED608  data        -
 D_800ED610                            game  0x800ED610  data        -
@@ -4387,9 +4377,6 @@ D_800ED6A8                            game  0x800ED6A8  data        -
 D_800ED728                            game  0x800ED728  data        -
 D_800ED7A8                            game  0x800ED7A8  data        -
 sDesPatches                           game  0x800ED7AC  data        -
-sDesPatches_2                         game  0x800ED7AC  data        -  sDesPatches
-sDesPatches_3                         game  0x800ED7AC  data        -  sDesPatches
-sDesPatches_4                         game  0x800ED7AC  data        -  sDesPatches
 D_800ED7B0                            game  0x800ED7B0  data        -
 D_800ED7B4                            game  0x800ED7B4  data        -
 D_800ED7B8                            game  0x800ED7B8  data        -
@@ -4398,7 +4385,6 @@ D_800ED7C0                            game  0x800ED7C0  data        -
 sDesFreePatches                       game  0x800ED7C8  data        -
 D_800EDBB0                            game  0x800EDBB0  data        -
 sDesArrowMtx                          game  0x800EDBB4  data        -
-sDesArrowMtx_2                        game  0x800EDBB4  data        -  sDesArrowMtx
 D_800EDBB8                            game  0x800EDBB8  data        -
 D_800EDBBC                            game  0x800EDBBC  data        -
 D_800EDBC0                            game  0x800EDBC0  data        -
@@ -4410,18 +4396,12 @@ D_800EDFD4                            game  0x800EDFD4  data        -
 D_800EDFD8                            game  0x800EDFD8  data        -
 sFractalEdgeBuf                       game  0x800EDFE0  data        -
 gDesertFires                          game  0x800EE068  data        -
-gDesertFires_2                        game  0x800EE068  data        -  gDesertFires
 sFractalRand                          game  0x800EE128  data        -
-sFractalRand_2                        game  0x800EE128  data        -  sFractalRand
 sFractalMap                           game  0x800EE12C  data        -
 sFractalCenterX                       game  0x800EE130  data        -
 sFractalCenterZ                       game  0x800EE134  data        -
 gDesertTiles                          game  0x800EE138  data        -
 gDesertTiles_2                        game  0x800EE138  data        -  gDesertTiles
-gDesertTiles_3                        game  0x800EE138  data        -  gDesertTiles
-gDesertTiles_4                        game  0x800EE138  data        -  gDesertTiles
-gDesertTiles_5                        game  0x800EE138  data        -  gDesertTiles
-gDesertTiles_6                        game  0x800EE138  data        -  gDesertTiles
 D_800EE140                            game  0x800EE140  data        -
 D_800EE150                            game  0x800EE150  data        -
 D_800EE160                            game  0x800EE160  data        -
