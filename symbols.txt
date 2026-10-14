@@ -1805,7 +1805,6 @@ sHackLeftysMill                       game  0x800CCB3C  data     0x24
 sHackGravelPit                        game  0x800CCB60  data     0x24
 sTrackHacks                           game  0x800CCB84  data      0xc
 sGravelPitMovers                      game  0x800CCB90  data     0x80
-sGravelPitMovers_2                    game  0x800CCB90  data        -  sGravelPitMovers
 sGravelPitItemResIds                  game  0x800CCC10  data     0x10
 sFaultHexFont                         game  0x800CCC20  data     0x80
 sViBlackFrames                        game  0x800CCCA0  data      0x4

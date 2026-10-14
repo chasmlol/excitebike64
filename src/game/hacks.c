@@ -1,30 +1,20 @@
 #include "game.h"
 
-typedef struct {
-    s32 x0, y0, x1, y1;
-    s32 f10, f14, f18, f1C, f20, f24;
-    s32 n;
-    s32 f2C;
-    u16 ang;
-    s16 arr[3];
-    u8 idx[4];
-    void *buf;
-} Track_14;
-
-extern Track_14 sGravelPitMovers[2];
+extern GravelPitMover sGravelPitMovers[GRAVEL_PIT_NUM_MOVERS];
 
 extern TrackHack *sTrackHacks[];
 
+/* Finds the current track's hooks in sTrackHacks, allocates their buffers, loads their resources and runs their
+   init. */
 void hacks_init(void)
 {
-    s32 key;
-    TrackHack **pp;
+    s32 track;
     s32 i;
 
-    key = gCurTrack_7 - gTracks_3;
+    track = gCurTrack_7 - gTracks_3;
     sCurTrackHack = NULL;
     for (i = 0; sTrackHacks[i] != NULL; i++) {
-        if (sTrackHacks[i]->track == key) {
+        if (sTrackHacks[i]->track == track) {
             sCurTrackHack = sTrackHacks[i];
             break;
         }
@@ -34,6 +24,7 @@ void hacks_init(void)
         sHackBuffers[1] = NULL;
         sHackResources = NULL;
         if (sCurTrackHack->numBufs != 0) {
+            /* two banks of numBufs 0x40-byte buffers */
             sHackBuffers[0] = mem_alloc_dbg(sCurTrackHack->numBufs << 7, 0, sStrHacksFile, 0x9f);
             sHackBuffers[1] = (u8 *)sHackBuffers[0] + (sCurTrackHack->numBufs << 6);
         }
@@ -50,81 +41,74 @@ void hacks_init(void)
 typedef struct {
     s32 a, b, c;
     s32 data;
-} Res_4;
+} ItemModelRes;
 
+/* The Gravel Pit: lays each mover's line on the ground, spreads its items along it, and loads the four item models
+   (their vertex data moved to the end of the Z buffer). */
 void hack_gravel_pit_init(void)
 {
     s32 i, j;
-    s32 r, cx, cy, t;
-    Track_14 *p;
-    Res_4 *res;
-    s32 sp18;
-    s32 d, e;
+    s32 midX, midZ, size;
+    GravelPitMover *mover;
+    ItemModelRes *res;
+    s32 len;
+    s32 ofs, ofs2;
 
     gGravelPitMoverTimer = 0;
-    for (i = 0; i < 2; i++) {
-        p = &sGravelPitMovers[i];
-        math_to_polar(p->x1 - p->x0, p->y1 - p->y0, &p->ang, &sp18);
-        cx = (p->x0 + p->x1) / 2;
-        cy = (p->y0 + p->y1) / 2;
-        sp18 = p->n * 0x2CEC;
-        p->f10 = cx + gCosTable[(((s16)p->ang >> 4) - 0x400) & 0xFFF] * sp18 / 0x4000;
-        p->f18 = cy + gCosTable[p->ang >> 4] * sp18 / 0x4000;
-        p->f1C = cx - gCosTable[(((s16)p->ang >> 4) - 0x400) & 0xFFF] * sp18 / 0x4000;
-        p->f24 = cy - gCosTable[p->ang >> 4] * sp18 / 0x4000;
-        p->f14 = height_get_ground(cx, 50000, cy);
-        p->f20 = height_get_ground(cx, 50000, cy);
-        p->f2C = gGroundArea;
-        for (j = 0; j < p->n; j++) {
-            p->arr[j] = (j << 8) / p->n;
-            p->idx[j] = j;
+    for (i = 0; i < GRAVEL_PIT_NUM_MOVERS; i++) {
+        mover = &sGravelPitMovers[i];
+        math_to_polar(mover->lineX1 - mover->lineX0, mover->lineZ1 - mover->lineZ0, &mover->angle, &len);
+        midX = (mover->lineX0 + mover->lineX1) / 2;
+        midZ = (mover->lineZ0 + mover->lineZ1) / 2;
+        len = mover->count * GRAVEL_PIT_ITEM_LENGTH; /* half the line's length */
+        mover->start.x = midX + gCosTable[(((s16)mover->angle >> 4) - 0x400) & 0xFFF] * len / 0x4000;
+        mover->start.z = midZ + gCosTable[mover->angle >> 4] * len / 0x4000;
+        mover->end.x = midX - gCosTable[(((s16)mover->angle >> 4) - 0x400) & 0xFFF] * len / 0x4000;
+        mover->end.z = midZ - gCosTable[mover->angle >> 4] * len / 0x4000;
+        mover->start.y = height_get_ground(midX, 50000, midZ);
+        mover->end.y = height_get_ground(midX, 50000, midZ);
+        mover->section = gGroundArea;
+        for (j = 0; j < mover->count; j++) {
+            mover->progress[j] = (j << 8) / mover->count;
+            mover->model[j] = j;
         }
-        p->buf = mem_alloc_dbg(p->n << 9, 0, "hacks.c", 0x116);
+        mover->mtx = mem_alloc_dbg(mover->count << 9, 0, "hacks.c", 0x116);
     }
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < GRAVEL_PIT_NUM_MODELS; i++) {
         res = res_load(gResourceSet, *sGravelPitItemResIds[i]);
-        sp18 = res->data - (s32)res;
-        t = mem_get_size(res);
-        d = 0x1E000;
-        memcpy(gZBuffer + d, res->data, t - sp18);
-        d = 0;
-        mem_realloc_dbg(res, sp18, d, "hacks.c", 0x124);
-        e = 0x1E000;
-        res->data = gZBuffer + e;
+        len = res->data - (s32)res; /* the header's size */
+        size = mem_get_size(res);
+        ofs = 0x1E000;
+        memcpy(gZBuffer + ofs, res->data, size - len);
+        ofs = 0;
+        mem_realloc_dbg(res, len, ofs, "hacks.c", 0x124);
+        ofs2 = 0x1E000;
+        res->data = gZBuffer + ofs2;
         prim_alloc_dl(&sGravelPitModels[i], res, sObjectSegs, 0xC);
     }
 }
 
-typedef struct {
-    u8 pad0[0x28];
-    s32 count;
-    s32 id;
-    u8 pad30[2];
-    s16 t[3];
-    u8 v[8];
-} Ent_62;
-
-extern Ent_62 sGravelPitMovers_2[];
-
+/* The Gravel Pit: moves the items along the lines (a new random model each time one starts over). A human rider
+   doing a trick over a mover's section switches an ambient sound for 300 frames (gGravelPitMoverTimer). */
 void hack_gravel_pit_update(void)
 {
     s32 j;
     s32 i;
-    Ent_62 *e;
+    GravelPitMover *mover;
 
-    for (j = 0; j < 2; j++) {
-        e = &sGravelPitMovers_2[j];
-        for (i = 0; i < e->count; i++) {
-            if (++e->t[i] >= 0x100) {
-                e->t[i] = 0;
-                e->v[i] = random_byte() & 3;
+    for (j = 0; j < GRAVEL_PIT_NUM_MOVERS; j++) {
+        mover = &sGravelPitMovers[j];
+        for (i = 0; i < mover->count; i++) {
+            if (++mover->progress[i] >= 0x100) {
+                mover->progress[i] = 0;
+                mover->model[i] = random_byte() & 3;
             }
         }
     }
 
     for (i = 0; i < 8; i++) {
         if (gRiders[i].inactive == 0 && gRiders[i].isCpu == 0 && gRiders[i].anim != -1 && gRiders[i].anim < 16) {
-            if (gRiderSection[i] == sGravelPitMovers_2[0].id || gRiderSection[i] == sGravelPitMovers_2[1].id) {
+            if (gRiderSection[i] == sGravelPitMovers[0].section || gRiderSection[i] == sGravelPitMovers[1].section) {
                 gGravelPitMoverTimer = 300;
             }
         }
@@ -135,34 +119,19 @@ void hack_gravel_pit_update(void)
     }
 }
 
-typedef struct {
-    u32 pad0[4];
-    s32 x0;
-    s32 y0;
-    s32 z0;
-    s32 x1;
-    s32 y1;
-    s32 z1;
-    s32 cnt;
-    s32 idx;
-    s16 sh30;
-    s16 sk[3];
-    u8 bt[4];
-    Mtx *base;
-} Cell_6;
-
-Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
+/* The Gravel Pit: draws the items of the movers whose section is visible in this view. */
+Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 fb, s32 view)
 {
     s32 i, k;
-    s32 *v;
-    s32 *tab;
-    s32 sh;
-    Cell_6 *c;
+    s32 *cam;
+    s32 *camPos;
+    s32 visBit;
+    GravelPitMover *mover;
     Mtx *m;
-    Gfx **tbl;
+    Gfx **models;
     s32 x, y, z;
 
-    sh = p4 * 2;
+    visBit = view * 2;
     gDPPipeSync(gdl++);
     gSPTexture(gdl++, 0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON);
     gDPSetRenderMode(gdl++, 0x00443078, 0);
@@ -172,101 +141,103 @@ Gfx *hack_gravel_pit_draw_pass2(Gfx *gdl, s32 unused, s32 p3, s32 p4)
     gSPSetGeometryMode(gdl++, G_SHADE | G_SHADING_SMOOTH);
 
     i = 0;
-    tab = gCamPos;
-    v = tab + (sh + p4);
-    for (; i < 2; i++) {
-        c = &sGravelPitMovers[i];
-        if ((gTrackSections->e[c->idx].mask >> sh) & 1) {
+    camPos = gCamPos;
+    cam = camPos + (visBit + view); /* this view's camera position */
+    for (; i < GRAVEL_PIT_NUM_MOVERS; i++) {
+        mover = &sGravelPitMovers[i];
+        if ((gTrackSections->e[mover->section].mask >> visBit) & 1) {
             k = 0;
-            if (c->cnt > 0) {
-                tbl = sGravelPitModels;
+            if (mover->count > 0) {
+                models = sGravelPitModels;
                 do {
-                    x = c->x0 + (c->x1 - c->x0) * c->sk[k] / 256;
-                    z = c->z0 + (c->z1 - c->z0) * c->sk[k] / 256;
-                    y = c->y0;
-                    m = &c->base[p3 * (c->cnt << 2) + p4 * c->cnt + k];
-                    mtx_from_angles_pos_scale(m, 0, 0, 0x8000 - c->sh30, x - v[0], y - v[1], z - v[2], 0x100);
+                    x = mover->start.x + (mover->end.x - mover->start.x) * mover->progress[k] / 256;
+                    z = mover->start.z + (mover->end.z - mover->start.z) * mover->progress[k] / 256;
+                    y = mover->start.y;
+                    m = &mover->mtx[fb * (mover->count << 2) + view * mover->count + k];
+                    mtx_from_angles_pos_scale(m, 0, 0, 0x8000 - (s16)mover->angle, x - cam[0], y - cam[1], z - cam[2],
+                                              0x100);
                     gSPMatrix(gdl++, m, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                    gSPDisplayList(gdl++, tbl[c->bt[k]]);
+                    gSPDisplayList(gdl++, models[mover->model[k]]);
                     k++;
-                } while (k < c->cnt);
+                } while (k < mover->count);
             }
         }
     }
     return gdl;
 }
 
+/* Lefty's Mill: presses the planks down under the riders' wheels and bobs them on the water. */
 void hack_mill_update(void)
 {
-    s32 c, s;
-    s32 i, j, m;
-    u32 k;
-    Rider *b, *bb, *base;
-    V4 *p;
-    Vec3i *e;
-    s32 dx, dz, a, v, t, r, w;
-    s32 ang;
+    s32 cosA, sinA;
+    s32 i, n;
+    u32 angle;
+    Vec3i *state;
+    s32 dx, dz, front, rear, t, press, bob;
 
-    k = gInstanceItems[0].rot >> 4;
-    c = gCosTable[k | 0xC00];
-    s = gCosTable[k];
-    for (m = 0; m < sMillObjCount; m++) {
-        sMillObjState[m].z = 0;
+    angle = gInstanceItems[0].rot >> 4;
+    cosA = gCosTable[angle | 0xC00];
+    sinA = gCosTable[angle];
+    for (n = 0; n < sMillObjCount; n++) {
+        sMillObjState[n].z = 0;
     }
-    for (m = 0; m < 8; m++) {
-        if (gRiders[m].inactive != 0 || gRiders[m].rearWheel.airTicks >= 0x15 || gRiders[m].frontWheel.airTicks >= 0x15) continue;
+    for (n = 0; n < 8; n++) {
+        if (gRiders[n].inactive != 0 || gRiders[n].rearWheel.airTicks >= 0x15 || gRiders[n].frontWheel.airTicks >= 0x15) continue;
         for (i = 0; i < sMillObjCount; i++) {
-            dx = (s32)(gRiders[m].frontWheel.contact.x * 1000.0f) - gInstanceItems[i].x;
-            if ((u32)(dx + 0x10000) > 0x20000) continue;
-            dz = (s32)(gRiders[m].frontWheel.contact.z * 1000.0f) - gInstanceItems[i].z;
-            if ((u32)(dz + 0x10000) > 0x20000) continue;
-            a = (dx * c + dz * s) >> 14;
-            dx = (s32)(gRiders[m].rearWheel.contact.x * 1000.0f) - gInstanceItems[i].x;
-            if ((u32)(dx + 0x10000) > 0x20000) continue;
-            dz = (s32)(gRiders[m].rearWheel.contact.z * 1000.0f) - gInstanceItems[i].z;
-            if ((u32)(dz + 0x10000) > 0x20000) continue;
-            v = (dx * c + dz * s) >> 14;
-            if (a > 0 && v < 0) {
-                r = 0x100;
-            } else if (a < 0 && v > 0) {
-                r = 0x100;
+            /* each wheel's distance across the plank's axis */
+            dx = (s32)(gRiders[n].frontWheel.contact.x * 1000.0f) - gInstanceItems[i].x;
+            if ((u32)(dx + MILL_REACH) > 2 * MILL_REACH) continue;
+            dz = (s32)(gRiders[n].frontWheel.contact.z * 1000.0f) - gInstanceItems[i].z;
+            if ((u32)(dz + MILL_REACH) > 2 * MILL_REACH) continue;
+            front = (dx * cosA + dz * sinA) >> 14;
+            dx = (s32)(gRiders[n].rearWheel.contact.x * 1000.0f) - gInstanceItems[i].x;
+            if ((u32)(dx + MILL_REACH) > 2 * MILL_REACH) continue;
+            dz = (s32)(gRiders[n].rearWheel.contact.z * 1000.0f) - gInstanceItems[i].z;
+            if ((u32)(dz + MILL_REACH) > 2 * MILL_REACH) continue;
+            rear = (dx * cosA + dz * sinA) >> 14;
+            if (front > 0 && rear < 0) {
+                press = 0x100; /* the wheels straddle the plank */
+            } else if (front < 0 && rear > 0) {
+                press = 0x100;
             } else {
-                if (a > 0) {
-                    r = v;
-                    if (a < r) r = a;
-                    v = 400;
-                    v -= r;
-                    r = (v << 8) / 400;
-                } else if (a < 0) {
-                    r = v;
-                    if (r < a) r = a;
-                    v = r + 400;
-                    r = (v << 8) / 400;
+                /* the nearer wheel presses more the closer it is (rear is reused as a temporary) */
+                if (front > 0) {
+                    press = rear;
+                    if (front < press) press = front;
+                    rear = MILL_PRESS_DIST;
+                    rear -= press;
+                    press = (rear << 8) / MILL_PRESS_DIST;
+                } else if (front < 0) {
+                    press = rear;
+                    if (press < front) press = front;
+                    rear = press + MILL_PRESS_DIST;
+                    press = (rear << 8) / MILL_PRESS_DIST;
                 } else {
                     goto store;
                 }
-                if (r < 0) r = 0;
-                if (r >= 0x100) r = 0xFF;
+                if (press < 0) press = 0;
+                if (press >= 0x100) press = 0xFF;
             }
 store:
-            if (sMillObjState[i].z < r) sMillObjState[i].z = r;
+            if (sMillObjState[i].z < press) sMillObjState[i].z = press;
         }
     }
     i = 0;
     if (sMillObjCount > 0) {
         do {
-            e = &sMillObjState[i];
-            t = e->z;
-            w = (gCosTable[(((gRaceFrame << 9) + i * 0x1000) >> 4) & 0xFFF] * (0xFF - t)) >> 15;
-            w -= t;
-            w /= 2;
-            w -= 200;
-            if (w < e->y - 16) {
-                e->y = e->y - 16;
+            state = &sMillObjState[i];
+            t = state->z;
+            bob = (gCosTable[(((gRaceFrame << 9) + i * 0x1000) >> 4) & 0xFFF] * (0xFF - t)) >> 15;
+            bob -= t;
+            bob /= 2;
+            bob -= 200;
+            /* rises at once, sinks 16 a frame at most */
+            if (bob < state->y - 16) {
+                state->y = state->y - 16;
             } else {
-                e->y = w;
+                state->y = bob;
             }
-            ((MtxS *)gInstanceMtx)[i].i[3][1] = (e->x + e->y) >> 4; /* the y translation */
+            ((MtxS *)gInstanceMtx)[i].i[3][1] = (state->x + state->y) >> 4; /* the y translation */
             i++;
         } while (i < sMillObjCount);
     }
@@ -279,6 +250,7 @@ void hacks_update(void)
     }
 }
 
+/* Frees the current track hook's resources and buffers and runs its exit. */
 void hacks_exit(void) {
     if (sCurTrackHack != NULL) {
         if (sCurTrackHack->numRes != 0) {
@@ -291,35 +263,37 @@ void hacks_exit(void) {
     }
 }
 
-s32 hacks_draw_pass2(s32 a0, Dyn *arg1, s32 arg2, s32 arg3)
+/* render.c's hooks: the current track's draw passes, which take and return the display list pointer. */
+s32 hacks_draw_pass2(s32 gdl, Dyn *arg1, s32 arg2, s32 arg3)
 {
     if (sCurTrackHack != 0) {
-        a0 = sCurTrackHack->drawPass2(a0);
+        gdl = sCurTrackHack->drawPass2(gdl);
     }
-    return a0;
+    return gdl;
 }
 
-s32 hacks_draw_pass1(s32 x, Dyn *arg1, s32 arg2, s32 arg3)
+s32 hacks_draw_pass1(s32 gdl, Dyn *arg1, s32 arg2, s32 arg3)
 {
     if (sCurTrackHack != 0) {
-        x = sCurTrackHack->drawPass1(x);
+        gdl = sCurTrackHack->drawPass1(gdl);
     }
-    return x;
+    return gdl;
 }
 
 typedef struct {
-    s32 val;
-    s32 zero;
-    s32 pad;
-} Rec_34;
+    s32 restY;
+    s32 offset;
+    s32 press;
+} MillState;
 
+/* Lefty's Mill: one state per instance, resting at the instance's height. */
 void hack_mill_init(void)
 {
     s32 i;
     s32 n;
     s32 cnt;
-    Rec_34 *out;
-    Instance *e;
+    MillState *out;
+    Instance *inst;
 
     sMillObjCount = gInstanceHeader->numItems;
     sMillObjState = (s32 *)mem_alloc_dbg(sMillObjCount * 12, 0, sStrHacksFile, 0x1B1);
@@ -327,14 +301,14 @@ void hack_mill_init(void)
     n = sMillObjCount;
     if (n > 0) {
         cnt = n;
-        out = (Rec_34 *)sMillObjState;
-        e = gInstanceItems;
+        out = (MillState *)sMillObjState;
+        inst = gInstanceItems;
         do {
-            s32 v = e->y;
-            e++;
+            s32 y = inst->y;
+            inst++;
             i++;
-            out->zero = 0;
-            out->val = v;
+            out->offset = 0;
+            out->restY = y;
             out++;
         } while (i < cnt);
     }
@@ -345,44 +319,40 @@ void hack_mill_exit(void)
     mem_free(sMillObjState);
 }
 
-s32 hack_mill_draw_pass1(s32 x)
+s32 hack_mill_draw_pass1(s32 gdl)
 {
-    return x;
+    return gdl;
 }
 
-void *hack_mill_draw_pass2(void *p)
+void *hack_mill_draw_pass2(void *gdl)
 {
-    return p;
+    return gdl;
 }
 
-typedef struct {
-    u8 pad[0x3C];
-    u32 v;
-} Blk_17;
-
+/* The Gravel Pit: frees the movers' matrices and the item models. */
 void hack_gravel_pit_exit(void) {
     s32 i = 0;
-    Blk_17 *p = sGravelPitMovers;
-    u32 *q;
+    GravelPitMover *mover = sGravelPitMovers;
+    u32 *models;
 
     do {
-        u32 v = p->v;
-        p++;
+        Mtx *mtx = mover->mtx;
+        mover++;
         i++;
-        mem_free(v);
-    } while (i < 2);
+        mem_free(mtx);
+    } while (i < GRAVEL_PIT_NUM_MOVERS);
 
     i = 0;
-    q = sGravelPitModels;
+    models = sGravelPitModels;
     do {
-        u32 v = *q;
-        q++;
+        u32 model = *models;
+        models++;
         i++;
-        mem_free(v);
-    } while (i < 4);
+        mem_free(model);
+    } while (i < GRAVEL_PIT_NUM_MODELS);
 }
 
-s32 hack_gravel_pit_draw_pass1(s32 x)
+s32 hack_gravel_pit_draw_pass1(s32 gdl)
 {
-    return x;
+    return gdl;
 }
