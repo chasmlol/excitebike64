@@ -47,14 +47,14 @@ typedef struct TrackInfoView {
     /* 0x1E */ s16 laps;            /* the race length the records are kept for */
     /* 0x20 */ u8 unk_20[0x34 - 0x20];
     /* 0x34 */ TrackRecord record;
-    /* 0x50 */ u32 flags;           /* TRACK_SAVES_RECORDS */
+    /* 0x50 */ u32 flags;           /* TRACK_FLAG_RECORDS */
     /* 0x54 */ u8 unk_54[4];
     /* 0x58 */ u16 fogMax[4];       /* by the number of screens */
     /* 0x60 */ u16 fogMin[4];
     /* 0x68 */ u8 unk_68[0xA0 - 0x68];
 } TrackInfoView; /* size 0xA0 */
 
-#define TRACK_SAVES_RECORDS 0x200   /* the track's records are kept in the save data */
+#define TRACK_FLAG_RECORDS 0x200    /* the track keeps records (gGame.records, the save data) */
 
 /* N64 matrices (Mtx) as these functions declare them. */
 typedef struct { s16 m[4][4][2]; } MtxQ;
@@ -207,6 +207,11 @@ Gfx *finishline_draw_tutorial(Gfx *gdl, Mtx *dyn, s32 fb)
 #define SX(n) (gScreenWidth / 2 - gScreenWidth * (n) / 512)
 #define SY(n) (gScreenHeight * (n) / 240)
 
+/* gCups: the five season cups, then the custom cup and the tutorial's levels. */
+#define CUP_CHALLENGE   4   /* one race against one rider */
+#define CUP_CUSTOM      5
+#define CUP_TUTORIAL    6
+
 /* Text alignments of font_text_create. */
 #define TEXT_LEFT_MIDDLE   (TEXT_HALIGN_LEFT | TEXT_VALIGN_CENTER)
 #define TEXT_CENTER_MIDDLE (TEXT_HALIGN_CENTER | TEXT_VALIGN_CENTER)
@@ -276,8 +281,7 @@ Gfx *hud_draw_track_intro(Gfx *gdl, s32 dyn, s32 fb, s32 view)
     }
     if (gGame.mode == GAME_MODE_SEASON) {
         font_text_create(gRaceTextObjs->text[4], 0x40, 2, 7, TEXT_CENTER_MIDDLE);
-        /* the last cup is raced against one opponent */
-        if (gSeason->cup - gCups == 4) {
+        if (gSeason->cup - gCups == CUP_CHALLENGE) {
             if (gSeason->round == gSeason->cup->numRounds - 1) {
                 font_text_add(gRaceTextObjs->text[4], sStrBeatOpponentFinal);
             } else {
@@ -484,9 +488,6 @@ void finishline_free_models(void)
     mem_free(sPropDL);
 }
 
-/* gCups: the five season cups, then the custom cup and the tutorial's levels. */
-#define CUP_CUSTOM      5
-#define CUP_TUTORIAL    6
 #define CUSTOM_CUP_END  0x1F    /* a track index that ends the custom cup's list */
 
 /* Fills the save image with its defaults: the tracks' records from gGame.records, an empty custom cup, the volumes,
@@ -511,7 +512,7 @@ void save_init_defaults(void)
     src = gGame.records;
     do {
         i++;
-        if (track->flags & TRACK_SAVES_RECORDS) {
+        if (track->flags & TRACK_FLAG_RECORDS) {
             *dst = *src;
             dst++;
             src++;
@@ -533,7 +534,7 @@ void save_init_defaults(void)
     gSaveData.volumes[0] = 0x8C;
     gSaveData.volumes[1] = 200;
     gSaveData.volumes[2] = 0xA0;
-    gSaveData.options = 1;
+    gSaveData.options = SAVE_OPT_STEREO;
     gSaveData.unlockedTrackCount = 1;
     gSaveData.roundsDone = 0x1F;
     gSaveData.tutorialProgress = 7;
@@ -670,7 +671,7 @@ void save_load(s32 arg0)
         if (i < gSaveData.unlockedTrackCount) {
             gUnlockedTracks |= 1 << i;
         }
-        if (gTracks_12[i].flags & TRACK_SAVES_RECORDS) {
+        if (gTracks_12[i].flags & TRACK_FLAG_RECORDS) {
             TrackRecord *dst = &gTracks_12[i].record;
             TrackRecord *src = &gSaveData.records[j];
             *dst = *src;

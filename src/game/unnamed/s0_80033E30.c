@@ -1,10 +1,10 @@
 #include "game.h"
 
 /* gSkyMode, chosen by render_init from the track's resources. */
-#define SKY_MODE_CLEAR          0   /* no sky: the views are cleared to the fog colour */
-#define SKY_MODE_IMAGE          1   /* the 2D backdrop drawn here (GID_PkgSky) */
-#define SKY_MODE_MODEL          2   /* a sky model (GID_ArnSky) */
-#define SKY_MODE_MODEL_TEXTURED 3   /* a sky model textured with the sky image */
+#define SKY_FILL        0   /* no sky: the views are cleared to the fog colour */
+#define SKY_IMAGE       1   /* the 2D backdrop drawn here (GID_PkgSky) */
+#define SKY_MODEL       2   /* a sky model (GID_ArnSky) */
+#define SKY_MODEL_IMAGE 3   /* a sky model textured with the sky image */
 
 /* The sky image is 256 x 256 CI8 texels, loaded and drawn in strips of 8 rows; this is the last strip's row. */
 #define SKY_LAST_STRIP  0xF8
@@ -257,7 +257,7 @@ Gfx *sky_draw_strip(s32 row, s32 view, s32 *texture, Gfx *gdl)
     return gdl;
 }
 
-/* Draws the 2D sky backdrop (SKY_MODE_IMAGE) into every view, strip by strip: point sampled, without perspective
+/* Draws the 2D sky backdrop (SKY_IMAGE) into every view, strip by strip: point sampled, without perspective
    correction and with noise dither, which are set back afterwards. */
 Gfx *sky_draw(Gfx *gdl, s32 unused, TexSet *sky)
 {
@@ -307,7 +307,7 @@ s32 sky_get_sun_screen_pos(s32 *outx, s32 *outy, s32 mtx, s32 view)
     s32 scale;
     s32 product;
 
-    if (gSkyMode == SKY_MODE_IMAGE) {
+    if (gSkyMode == SKY_IMAGE) {
         scale = (gViewRects[0][0].w << 7) / sSkyScaleX[view];
         x = (s16)((u16)gCamYaw[0] - 0x7AEC);
         product = x * scale;

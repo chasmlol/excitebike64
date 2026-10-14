@@ -37,9 +37,9 @@
 #define GAME_MODE_TIME_TRIAL    8
 #define GAME_MODE_TUTORIAL      9
 #define GAME_MODE_STUNT_COURSE  10
-#define GAME_MODE_NES           12      /* Original Excitebike */
-#define GAME_MODE_TEST_RIDE     13      /* the editor's test ride */
-#define GAME_MODE_TEST_RIDE_2   14
+#define GAME_MODE_ORIGINAL      12      /* Original Excitebike, the NES game */
+#define GAME_MODE_TEST_LOOP     13      /* the editor's test ride, closed track */
+#define GAME_MODE_TEST_OPEN     14      /* the editor's test ride, track not closed */
 
 /* Screen fades (gGame.fadeState; gGame.fadeLevel 0-255 is how far along). */
 #define FADE_OUT    0
@@ -143,6 +143,7 @@
 #define SAVE_MAGIC              0x5748FB3A
 #define SAVE_CHECKSUM_XOR       0xFCB1121D  /* the checksum is the sum of the other words, xor this */
 #define SAVE_WORDS              0x200       /* words the checksum covers (the first 0x800 bytes) */
+#define SAVE_OPT_STEREO         0x01        /* SaveData.options */
 /* save_write's sections: what has changed. */
 #define SAVE_SECTION_NES_TRACK  0       /* the NES design track */
 #define SAVE_SECTION_PROGRESS   1       /* season, custom cup and tutorial progress */
