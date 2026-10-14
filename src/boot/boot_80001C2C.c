@@ -93,7 +93,7 @@ void boot_func_800024EC(void)
     u32 x;
 
     r = boot_func_80001B50();
-    func_80002D20();
+    boot_func_80002D20();
     boot_func_80001BB8(0xB1FFFFF0, 0);
     boot_func_80001BB8(0xB1FFFFFC, 0);
     D_80018430 = 1;

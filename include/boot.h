@@ -95,12 +95,10 @@ void __osMotorAccess();
 void __osInitialize_autodetect(void);
 
 /* other code */
-void func_80002D20(void);
+void boot_func_80002D20(void);
 u32 boot_func_80002E04(void);
-u32 func_80002E04(void);
 void boot_func_80002E10(u32 v);
-void func_80002E10(u32 a);
-void func_800113E4(void);
+void boot_func_800113E4(void);
 
 extern s32 D_8000CDF0;
 extern void (*D_8000CE04)(s32, s32, s32);

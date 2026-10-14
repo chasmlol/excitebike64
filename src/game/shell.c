@@ -2250,7 +2250,7 @@ void func_800770F0(Item_9 *item, Ctl_19 *ctl, s32 *btn, Pad16 *arg3) {
             }
         }
         if (D_800EFD70_65.w54 != 1) {
-            prev = curA_800F47C4;
+            prev = D_800F47C4_4;
             if (*btn & 4) {
                 if (item->p4 == NULL) {
                     if (item->p8) {
@@ -5542,7 +5542,7 @@ Gfx *func_8007CEDC(Mtx *m, s32 fb, Gfx *gdl, Ctl_21 *pad, s32 e)
                     a |= 0x40000000;
                 }
                 func_800C1E60(gp->txt[0], 0x40, 5, tmp, a);
-                func_800C1F2C(gp->txt[0], D3_800CDAC8);
+                func_800C1F2C(gp->txt[0], D_800CDAC8_2);
                 func_800C0ACC(gp->txt[0], D_800CDA70[j].x, D_800CDA70[j].y + 11);
             }
         }

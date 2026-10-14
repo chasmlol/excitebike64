@@ -4,8 +4,8 @@ u32 boot_func_80001B50(void)
 {
     u32 v;
 
-    v = func_80002E04();
-    func_80002E10(v & 0xFFFFFFFE);
+    v = boot_func_80002E04();
+    boot_func_80002E10(v & 0xFFFFFFFE);
     return v & 1;
 }
 
@@ -13,8 +13,8 @@ void boot_func_80001B88(u32 a0)
 {
     u32 v;
 
-    v = func_80002E04();
-    func_80002E10(v | a0);
+    v = boot_func_80002E04();
+    boot_func_80002E10(v | a0);
 }
 
 void boot_func_80001BB8(s32 *p, s32 v)

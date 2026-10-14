@@ -2063,8 +2063,8 @@ D_800CDA70                 game  0x800CDA70  data     0x24
 D_800CDA94                 game  0x800CDA94  data      0xc
 D_800CDAA0                 game  0x800CDAA0  data     0x1c
 D_800CDABC                 game  0x800CDABC  data      0xc
-D3_800CDAC8                game  0x800CDAC8  data        -
 D_800CDAC8                 game  0x800CDAC8  data      0x4
+D_800CDAC8_2               game  0x800CDAC8  data        -  D_800CDAC8
 D_800CDACC                 game  0x800CDACC  data     0x90
 D_800CDB5C                 game  0x800CDB5C  data      0x4
 D_800CDB60                 game  0x800CDB60  data      0x4
@@ -4582,7 +4582,6 @@ D_800EFD54                 game  0x800EFD54  data        -
 D_800EFD60                 game  0x800EFD60  data        -
 D_800EFD60_2               game  0x800EFD60  data        -  D_800EFD60
 D_800EFD64                 game  0x800EFD64  data        -
-objB_800EFD64              game  0x800EFD64  data        -
 D_800EFD64_10              game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_11              game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_12              game  0x800EFD64  data        -  D_800EFD64
@@ -4619,6 +4618,7 @@ D_800EFD64_4               game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_40              game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_41              game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_42              game  0x800EFD64  data        -  D_800EFD64
+D_800EFD64_43              game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_5               game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_6               game  0x800EFD64  data        -  D_800EFD64
 D_800EFD64_7               game  0x800EFD64  data        -  D_800EFD64
@@ -4743,14 +4743,14 @@ D_800F0200                 game  0x800F0200  data        -
 D_800F04E4                 game  0x800F04E4  data        -
 D_800F0520                 game  0x800F0520  data        -
 D_800F0524                 game  0x800F0524  data        -
-hudA_800F0524              game  0x800F0524  data        -
 D_800F0524_2               game  0x800F0524  data        -  D_800F0524
+D_800F0524_3               game  0x800F0524  data        -  D_800F0524
 D_800F0528                 game  0x800F0528  data        -
 D_800F0528_2               game  0x800F0528  data        -  D_800F0528
-B_800F0530                 game  0x800F0530  data        -
 D_800F0530                 game  0x800F0530  data        -
 D_800F0530_2               game  0x800F0530  data        -  D_800F0530
 D_800F0530_3               game  0x800F0530  data        -  D_800F0530
+D_800F0530_4               game  0x800F0530  data        -  D_800F0530
 D_800F0544                 game  0x800F0544  data        -
 D_800F0548                 game  0x800F0548  data        -
 D_800F054C                 game  0x800F054C  data        -
@@ -5065,9 +5065,9 @@ D_800F47C0                 game  0x800F47C0  data        -
 D_800F47C0_2               game  0x800F47C0  data        -  D_800F47C0
 D_800F47C0_3               game  0x800F47C0  data        -  D_800F47C0
 D_800F47C4                 game  0x800F47C4  data        -
-curA_800F47C4              game  0x800F47C4  data        -
 D_800F47C4_2               game  0x800F47C4  data        -  D_800F47C4
 D_800F47C4_3               game  0x800F47C4  data        -  D_800F47C4
+D_800F47C4_4               game  0x800F47C4  data        -  D_800F47C4
 D_800F47D0                 game  0x800F47D0  data        -
 D_800F4838                 game  0x800F4838  data        -
 D_800F483C                 game  0x800F483C  data        -
@@ -5235,7 +5235,6 @@ D_800FE8F0_6               game  0x800FE8F0  data        -  D_800FE8F0
 D_800FE8F0_7               game  0x800FE8F0  data        -  D_800FE8F0
 D_800FE8F0_8               game  0x800FE8F0  data        -  D_800FE8F0
 D_800FE8F0_9               game  0x800FE8F0  data        -  D_800FE8F0
-D_80100200                 game  0x80100200  data        -
 D_801004F0                 game  0x801004F0  data        -
 D_80100500                 game  0x80100500  data        -
 D_80100600                 game  0x80100600  data        -
@@ -5395,13 +5394,10 @@ boot_func_80002CE8         boot  0x80002CE8  func      0x8
 boot_func_80002CF0         boot  0x80002CF0  func      0xc
 boot_func_80002D10         boot  0x80002D10  func     0x10
 boot_func_80002D20         boot  0x80002D20  func     0xac
-func_80002D20              boot  0x80002D20  func        -
 boot_func_80002DCC         boot  0x80002DCC  func     0x1c
 boot_func_80002DE8         boot  0x80002DE8  func     0x1c
 boot_func_80002E04         boot  0x80002E04  func      0xc
-func_80002E04              boot  0x80002E04  func        -
 boot_func_80002E10         boot  0x80002E10  func      0xc
-func_80002E10              boot  0x80002E10  func        -
 boot_func_80002E1C         boot  0x80002E1C  func    0x3b4
 boot_func_800031D0         boot  0x800031D0  func    0x484
 boot_func_80003654         boot  0x80003654  func      0xc
@@ -5543,7 +5539,6 @@ D_800113B8                 boot  0x800113B8  data        -
 D_800113BC                 boot  0x800113BC  data        -
 D_800113C0                 boot  0x800113C0  data        -
 boot_func_800113E4         boot  0x800113E4  func    0x150
-func_800113E4              boot  0x800113E4  func        -
 boot_func_80011534         boot  0x80011534  func     0x50
 D_80011584                 boot  0x80011584  data        -
 boot_func_80011584         boot  0x80011584  func     0x60

@@ -1303,7 +1303,7 @@ typedef struct Node_3 {
 extern Flag D_800E7FC8_4[];
 extern Node_3 *D_800EE498_8;
 extern Obj_16 *D_800EFD64_20;
-extern Obj_16 *objB_800EFD64;
+extern Obj_16 *D_800EFD64_43;
 extern Big D_800E37C0_29[];
 
 s32 func_8002B870(void)
@@ -1408,7 +1408,7 @@ s32 func_8002B870(void)
                 off += sizeof(RecB);
                 k++;
             }
-            if (k < objB_800EFD64->nB) goto loopB;
+            if (k < D_800EFD64_43->nB) goto loopB;
         }
         pass++;
         cur = D_800EE498_8[cur].next;

@@ -2144,10 +2144,10 @@ Gfx *func_800549E4(Gfx *gdl, s32 a1, s32 a2, s32 idx)
         *p = '/';
         if (D_800CCCA8 == 2) z = y + 0x2C;
         else z = y + 0x20;
-        func_800C1F2C(B_800F0530[3], D_800D850C);
-        func_800C0ACC(B_800F0530[3], 0x23, z);
-        func_800C1F2C(B_800F0530[4], buf);
-        func_800C0ACC(B_800F0530[4], 100, z);
+        func_800C1F2C(D_800F0530_4[3], D_800D850C);
+        func_800C0ACC(D_800F0530_4[3], 0x23, z);
+        func_800C1F2C(D_800F0530_4[4], buf);
+        func_800C0ACC(D_800F0530_4[4], 100, z);
     }
 
     if (D_800E37C0_65[0].f668 != -1) {
@@ -3416,7 +3416,7 @@ typedef struct {
 } Player_19;
 
 extern HudTex *D_800F0524_2;
-extern HudTex *hudA_800F0524[];
+extern HudTex *D_800F0524_3[];
 extern Player_19 D_800E37C0_69[];
 
 Gfx *func_8005A4C8(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
@@ -3482,7 +3482,7 @@ Gfx *func_8005A4C8(Gfx *gdl, s32 a1, s32 a2, s32 pl) {
         GW(gdl++, 0xE7000000, 0);
     }
     if (D_800E37C0_69[pl].f654) {
-        HudTex *h = hudA_800F0524[0]; GW(gdl++, 0xFA000000, (((h->pal[2] >> 8) & 0xF8) << 24) | (((D_800E2038 << 3) & 0x100) ? ((D_800E2038 << 3) & 0xFF) : (0xFF ^ ((D_800E2038 << 3) & 0xFF))));
+        HudTex *h = D_800F0524_3[0]; GW(gdl++, 0xFA000000, (((h->pal[2] >> 8) & 0xF8) << 24) | (((D_800E2038 << 3) & 0x100) ? ((D_800E2038 << 3) & 0xFF) : (0xFF ^ ((D_800E2038 << 3) & 0xFF))));
             { Rect *tab = D_800C2494_3; gdl = func_8000A690(RX(tab, D_800E1898) - 24, RY(tab, D_800E1898) + fp, &D_800F0524_2->img[2], gdl, a2, 1, 1, 6, 0); }
     }
     GW(gdl++, 0xFA000000, (((D_800F0524_2->pal[1] >> 8) & 0xF8) << 24) | (((D_800F0524_2->pal[1] >> 3) & 0xF8) << 16) | ((D_800F0524_2->pal[1] << 10) & 0xF800) | 0x82);
