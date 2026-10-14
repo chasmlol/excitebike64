@@ -159,7 +159,7 @@ s32 tunes_mix_streams(void)
     for (i = 0; i < sStreamChannelCount; i++) {
         ch = &sStreamChannels[i];
         if (ch->dmaHandle >= 0) {
-            if (dma_get_status(ch->dmaHandle) != 3) /* 3: done */
+            if (dma_get_status(ch->dmaHandle) != DMA_DONE)
                 return 0;
             dma_release(ch->dmaHandle);
             ch->dmaHandle = -1;
@@ -448,7 +448,7 @@ void tunes_stop_song(void)
             ch = &sStreamChannels[i];
             for (;;) {
                 if (ch->dmaHandle < 0) break;
-                if (dma_get_status(ch->dmaHandle) == 3) {
+                if (dma_get_status(ch->dmaHandle) == DMA_DONE) {
                     dma_release(ch->dmaHandle);
                     ch->dmaHandle = -1;
                     break;
