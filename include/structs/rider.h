@@ -7,6 +7,117 @@
 #include "common.h"
 #include "structs/surface.h"
 
+/* Values of the game's setup that the rider code tests. */
+
+/* gGame.mode */
+#define GAME_MODE_EXHIBITION        0
+#define GAME_MODE_SEASON            1
+#define GAME_MODE_SOCCER            2
+#define GAME_MODE_DESERT            5
+#define GAME_MODE_EXCITE_3D         6
+#define GAME_MODE_HILL_CLIMB        7
+#define GAME_MODE_TIME_TRIAL        8
+#define GAME_MODE_TUTORIAL          9
+#define GAME_MODE_STUNT_COURSE      10
+#define GAME_MODE_ORIGINAL          12  /* Original Excitebike, the NES game */
+#define GAME_MODE_TEST_LOOP         13  /* the editor's test ride, closed track */
+#define GAME_MODE_TEST_OPEN         14  /* the editor's test ride, track not closed */
+
+/* gGame.flags */
+#define GAME_FLAG_FRONT_END_RACE    0x00000001 /* a race the front end runs behind the title or rider select */
+#define GAME_FLAG_RIDER_SELECT      0x00000010
+#define GAME_FLAG_TRACK_CHOSEN      0x00000080
+#define GAME_FLAG_REPLAY            0x00008000 /* replay playback */
+
+/* gCheatFlags: bit n is cheat n of sCheatTable */
+#define CHEAT_BIG_HEAD              0x0001
+#define CHEAT_MIRROR                0x0002
+#define CHEAT_DEBUG                 0x0004
+#define CHEAT_DOWN_HILL             0x0008
+#define CHEAT_STUNT_BONUS           0x0010
+#define CHEAT_INVISIBLE_RIDER       0x0020
+#define CHEAT_NIGHT                 0x0040
+#define CHEAT_ODD_COLOR             0x0080
+#define CHEAT_TRANSPARENT_RIDER     0x0100
+#define CHEAT_ALL_STUNTS            0x0200
+#define CHEAT_INVINCIBLE            0x0400
+#define CHEAT_TEAM_PHOTO            0x0800
+#define CHEAT_BEAT_THIS             0x1000
+#define CHEAT_PIN_HEAD              0x2000
+
+/* The game's input word (gPadInput, gPlayerInputs, Rider.input; main_convert_pad_input), not libultra's button
+   bits. Bits 24-27 and 28-31 hold the stick's x and y magnitude; the direction bits give the signs. */
+#define INPUT_STICK_UP              0x00000001
+#define INPUT_STICK_DOWN            0x00000002
+#define INPUT_STICK_LEFT            0x00000004
+#define INPUT_STICK_RIGHT           0x00000008
+#define INPUT_A                     0x00000010 /* throttle */
+#define INPUT_B                     0x00000020 /* brake */
+#define INPUT_START                 0x00000040
+#define INPUT_C_UP                  0x00000080
+#define INPUT_C_DOWN                0x00000100
+#define INPUT_C_LEFT                0x00000200
+#define INPUT_C_RIGHT               0x00000400
+#define INPUT_D_UP                  0x00000800
+#define INPUT_D_DOWN                0x00001000
+#define INPUT_D_LEFT                0x00002000
+#define INPUT_D_RIGHT               0x00004000
+#define INPUT_L                     0x00008000
+#define INPUT_R                     0x00010000 /* air tricks; with B, a power slide */
+#define INPUT_Z                     0x00020000 /* turbo */
+#define INPUT_STICK_X_SHIFT         24
+#define INPUT_STICK_Y_SHIFT         28
+
+/* Rider.flags */
+#define RIDER_OUT                   0x08 /* out of the race */
+#define RIDER_FINISHED              0x10 /* finished: brakes automatically */
+
+/* RigidBody.type */
+#define BODY_BIKE                   0   /* a human rider's bike */
+#define BODY_CPU_BIKE               1
+#define BODY_CRASHED_BIKE           2
+#define BODY_RIDER                  3   /* the rider, thrown off */
+#define BODY_BALL                   4   /* the soccer ball */
+
+/* Rider.crashState */
+#define CRASH_STATE_RIDING          0
+#define CRASH_STATE_CRASHED         1
+#define CRASH_STATE_CLEAR           2   /* the rider is clear of the bike */
+
+/* Animations and tricks: indices of gRiderAnims (Rider.anim, trick, pendingCrash) */
+#define ANIM_NONE                   (-1)
+#define ANIM_FENDER_GRAB            0   /* 0-15: the tricks */
+#define ANIM_CORDOVA                1
+#define ANIM_CLIFF_HANGER           2
+#define ANIM_LAZYBOY                3
+#define ANIM_DBL_CAN_CAN            4
+#define ANIM_NAC_NAC                5
+#define ANIM_SUPERMAN               6
+#define ANIM_BAR_HOP                7
+#define ANIM_SARAN_WRAP             8
+#define ANIM_HEEL_CLICKER           9
+#define ANIM_FENDER_KISS            10
+#define ANIM_SKI_JUMP               11
+#define ANIM_NO_HANDER              12
+#define ANIM_NO_FOOTER              13
+#define ANIM_NOTHING                14
+#define ANIM_KOBE                   15
+#define ANIM_TRICK_COUNT            16
+#define ANIM_AIR_TURN               16
+#define ANIM_AIR_TURN_2             17
+#define ANIM_PUMP                   18
+#define ANIM_FINISH_1ST             19  /* finish poses, by place: 1st to 6th */
+#define ANIM_FINISH_2ND             20
+#define ANIM_FINISH_3RD             21
+#define ANIM_FINISH_4TH             22
+#define ANIM_FINISH_5TH             23
+#define ANIM_FINISH_6TH             24
+#define ANIM_CRASH_BACK             25  /* crashes, three variants each */
+#define ANIM_CRASH_FRONT            28
+#define ANIM_CRASH_LEFT             31
+#define ANIM_CRASH_RIGHT            34
+#define ANIM_COUNT                  37
+
 struct Rider;
 
 /* A bone of a skeleton (skel.c): resources of 0x38-byte entries become these. */
